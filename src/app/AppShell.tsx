@@ -54,7 +54,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="grid h-screen grid-cols-[300px_minmax(0,1fr)] text-[color:var(--text)] max-md:grid-cols-1 max-xl:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="grid h-screen grid-cols-[300px_minmax(0,1fr)] bg-[color:var(--workspace)] text-[color:var(--text)] max-md:grid-cols-1 max-xl:grid-cols-[300px_minmax(0,1fr)]">
       <Sidebar
         projects={mockProjects}
         activeView={state.activeView}
@@ -75,7 +75,7 @@ export function AppShell() {
         }
       />
 
-      <section className="flex min-w-0 flex-col">
+      <section className="flex min-w-0 flex-col bg-[color:var(--workspace)]">
         <WorkspaceHeader
           activeView={state.activeView}
           currentTitle={currentTitle}
@@ -90,8 +90,8 @@ export function AppShell() {
         <div
           className={
             state.diffVisible
-              ? "grid flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 px-[18px] min-h-0 max-xl:grid-cols-1"
-              : "grid flex-1 grid-cols-[minmax(0,1fr)] gap-3 px-[18px] min-h-0"
+              ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 px-5 max-xl:grid-cols-1"
+              : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 px-5"
           }
         >
           <main className={mainPanelClass}>
@@ -108,7 +108,7 @@ export function AppShell() {
           ) : null}
         </div>
 
-        <footer className="grid gap-2.5 px-[18px] pt-3 pb-[18px]">
+        <footer className="grid gap-2.5 px-5 pt-3 pb-[18px]">
           <Composer
             activeView={state.activeView}
             hostLabel={shellState?.availableHosts[0] ?? "Local"}
@@ -122,7 +122,7 @@ export function AppShell() {
       </section>
 
       {toast ? (
-        <SurfacePanel className="fixed right-[18px] bottom-[18px] border-[color:var(--border-strong)] bg-[rgba(27,31,42,0.95)] px-3.5 py-2.5">
+        <SurfacePanel className="fixed right-[18px] bottom-[18px] border-[color:var(--border-strong)] bg-[rgba(35,39,52,0.95)] px-3.5 py-2.5">
           {toast}
         </SurfacePanel>
       ) : null}

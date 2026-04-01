@@ -13,7 +13,11 @@ export function NavButton({ icon, label, active, onClick }: NavButtonProps) {
   return (
     <button
       type="button"
-      className={cn(navButtonClass, active && "bg-[var(--accent-soft)] text-[color:var(--text)]")}
+      className={cn(
+        navButtonClass,
+        active &&
+          "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.03)]",
+      )}
       onClick={onClick}
     >
       {icon}

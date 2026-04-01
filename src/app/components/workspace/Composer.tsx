@@ -1,7 +1,6 @@
-import { ChevronDown, Mic, Plus, Send, Settings, SquareTerminal, X } from "lucide-react";
+import { ChevronDown, Globe, Mic, Plus, Send, Settings, SquareTerminal, X } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { View } from "../../types";
-import { panelChromeClass } from "../../ui/classes";
 import { IconButton } from "../common/IconButton";
 import { PrimaryButton } from "../common/PrimaryButton";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -18,11 +17,18 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
   return (
     <>
       {activeView === "home" ? (
-        <SurfacePanel className="flex items-center justify-between gap-4 px-[18px] py-4 max-md:flex-wrap">
-          <div>
-            <div className="mb-1 text-[15px]">Let Pi work while you’re away</div>
-            <div className="text-[color:var(--muted)]">
-              Run your threads on a remote machine and pick back up when you return.
+        <SurfacePanel className="flex items-center justify-between gap-4 px-5 py-4 max-md:flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)]">
+              <Globe size={16} />
+            </div>
+            <div>
+              <div className="mb-1 text-[15px] text-[color:var(--text)]">
+                Let Pi work while you’re away
+              </div>
+              <div className="text-[color:var(--muted)]">
+                Run your threads on a remote machine and pick back up when you return.
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 max-md:flex-wrap">
@@ -38,16 +44,16 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
         </SurfacePanel>
       ) : null}
 
-      <SurfacePanel className="grid gap-2.5 p-3">
+      <SurfacePanel className="grid gap-2.5 p-2.5">
         <textarea
-          className="min-h-[110px] w-full resize-none bg-transparent text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+          className="min-h-[98px] w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
           placeholder={
             activeView === "thread"
               ? "Ask for follow-up changes"
               : "Ask Pi anything, @ to add files, / for commands, $ for skills"
           }
         />
-        <div className="flex items-center justify-between gap-2 max-md:flex-wrap">
+        <div className="flex items-center justify-between gap-2 px-1 max-md:flex-wrap">
           <div className="flex items-center gap-2 max-md:flex-wrap">
             <ToolbarButton
               label="Add files and more"
@@ -75,15 +81,17 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
 
           <button
             type="button"
-            className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[rgba(183,186,245,0.18)] text-[color:var(--accent)]"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.42)] text-[color:var(--workspace)]"
             onClick={() => onAction("composer.send")}
             aria-label="Send"
           >
-            <Send size={18} />
+            <Send size={16} />
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-[color:var(--muted)] max-md:flex-wrap">
+        <div className="h-px bg-[color:var(--border)]" />
+
+        <div className="flex items-center gap-2 px-1 text-[color:var(--muted)] max-md:flex-wrap">
           <ToolbarButton
             label={hostLabel}
             icon={<SquareTerminal size={14} />}

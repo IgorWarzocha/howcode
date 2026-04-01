@@ -13,7 +13,11 @@ export function IconButton({ label, icon, onClick, active }: IconButtonProps) {
   return (
     <button
       type="button"
-      className={cn(iconButtonClass, active && "bg-[var(--accent-soft)] text-[color:var(--text)]")}
+      className={cn(
+        iconButtonClass,
+        active &&
+          "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.03)]",
+      )}
       onClick={onClick}
       aria-label={label}
       title={label}

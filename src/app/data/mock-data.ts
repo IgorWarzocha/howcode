@@ -49,10 +49,11 @@ export const threadMessages: Message[] = [
   {
     id: "assistant-1",
     role: "assistant",
+    format: "list",
     content: [
-      "The plugin is fixed into the shape it should have been.",
-      "The core change is in pi_run.py: it now extracts only the final assistant response and keeps a workspace-scoped session alive so normal usage can feel like a Pi-backed delegated thread instead of shell glue.",
-      "I also synced the changes into the installed cache path and verified the final plugin path end to end.",
+      "no ad hoc temp session dirs in normal use",
+      "same built-in session continuation",
+      "fail clearly when a provider/model returns an empty assistant message instead of fabricating an answer",
     ],
   },
   {
@@ -66,11 +67,17 @@ export const threadMessages: Message[] = [
     id: "assistant-2",
     role: "assistant",
     content: [
-      "So yes: you can now use it in the intended way, as a Pi-backed delegated thread with normal workspace session continuity.",
-      "Next for desktop parity, we should mirror Codex UX with a project/thread rail, a top action bar, a bottom composer, and a togglable terminal + diff panel.",
+      "The plugin is fixed into the shape it should have been.",
+      "The core change is in `pi_run.py` (line 118): it now extracts only the final assistant response, not arbitrary text from the event stream, and it fails hard on broken model output instead of inventing an answer. The hard-failure path is in `pi_run.py` (line 240), and the wrapper keeps using a workspace-scoped session automatically so normal usage no longer needs random temp session dirs.",
+      "I also updated the skill contract in `SKILL.md` (line 10) and the plugin docs in `README.md` (line 5) to describe it as a bounded Pi subagent handoff.",
+      "I synced the changes into the installed cache under `/home/igorw/.codex/plugins/cache/local-dev/pi-coding-agent/local/...` and verified the real plugin path end to end. A clean Codex run through the plugin produced: `first: 391` and `second: 410`.",
+      "I also verified the broken GLM case. `zai/glm-5-turbo` is still returning an empty assistant message through `pi` here, but the plugin now reports that honestly as `empty_assistant_response` instead of echoing the prompt back.",
+      "So yes: you can now use it in the intended way, as a Pi-backed delegated thread with normal workspace session continuity via `--continue`, not as ad hoc shell glue.",
     ],
   },
 ];
+
+export const threadPreviousMessageCount = 7;
 
 export const pluginCards: FeatureCard[] = [
   {

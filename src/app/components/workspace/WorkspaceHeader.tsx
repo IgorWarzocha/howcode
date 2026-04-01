@@ -1,8 +1,15 @@
-import { ChevronDown, Grip, MoreHorizontal, PanelBottom, PanelRight, Play } from "lucide-react";
+import {
+  ChevronDown,
+  CopyPlus,
+  Grip,
+  MoreHorizontal,
+  PanelBottom,
+  PanelRight,
+  Play,
+} from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { View } from "../../types";
 import { IconButton } from "../common/IconButton";
-import { SplitButton } from "../common/SplitButton";
 import { TextButton } from "../common/TextButton";
 
 type WorkspaceHeaderProps = {
@@ -27,13 +34,13 @@ export function WorkspaceHeader({
   onToggleDiff,
 }: WorkspaceHeaderProps) {
   return (
-    <header className="flex items-center justify-between gap-4 px-[18px] pt-3.5 pb-2.5 max-md:flex-wrap">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 pt-3 pb-2 max-md:grid-cols-1">
       <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-2 truncate text-sm">
-          <span className="truncate text-base">{currentTitle}</span>
+        <div className="flex min-w-0 items-center gap-2 truncate text-sm text-[color:var(--muted)]">
+          <span className="truncate text-[15px] text-[color:var(--text)]">{currentTitle}</span>
           {activeView === "thread" ? (
             <>
-              <TextButton onClick={() => onAction("project.switch")}>
+              <TextButton className="px-0.5 py-0" onClick={() => onAction("project.switch")}>
                 {currentProjectName}
               </TextButton>
               <IconButton
@@ -51,13 +58,19 @@ export function WorkspaceHeader({
         </div>
       </div>
 
+      <button
+        type="button"
+        className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+        onClick={() => onAction("product.menu")}
+      >
+        <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[11px] font-bold text-[#171821]">
+          P
+        </div>
+        <ChevronDown size={14} className="text-[color:var(--muted)]" />
+      </button>
+
       <div className="flex items-center gap-2 max-md:flex-wrap">
-        <SplitButton
-          primaryLabel="Open"
-          secondaryLabel="Secondary action"
-          onPrimary={() => onAction("workspace.open")}
-          onSecondary={() => onAction("workspace.secondary")}
-        />
+        <div className="h-5 w-px bg-[color:var(--border)] max-md:hidden" />
         <IconButton
           label="Toggle terminal"
           active={terminalVisible}
@@ -75,16 +88,11 @@ export function WorkspaceHeader({
           onClick={() => onAction("workspace.popout")}
           icon={<Grip size={16} />}
         />
-        <button
-          type="button"
-          className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)] px-2.5"
-          onClick={() => onAction("product.menu")}
-        >
-          <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f5eb84,#7ab0ff)] text-[11px] font-bold text-[#171821]">
-            P
-          </div>
-          <ChevronDown size={14} />
-        </button>
+        <IconButton
+          label="Duplicate workspace"
+          onClick={() => onAction("workspace.secondary")}
+          icon={<CopyPlus size={16} />}
+        />
       </div>
     </header>
   );

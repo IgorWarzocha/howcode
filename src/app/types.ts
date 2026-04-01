@@ -21,6 +21,7 @@ export type Project = {
 export type Message = {
   id: string;
   role: "assistant" | "user";
+  format?: "prose" | "list";
   content: string[];
 };
 

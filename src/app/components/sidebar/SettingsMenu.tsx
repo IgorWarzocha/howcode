@@ -1,22 +1,23 @@
-import { Bot, Clock3, Globe, LogOut, Settings, UserRound } from "lucide-react";
+import { Clock3, Globe, LogOut, Settings, UserRound } from "lucide-react";
 import { MenuItem } from "../common/MenuItem";
 import { SurfacePanel } from "../common/SurfacePanel";
 
 export function SettingsMenu() {
   return (
-    <SurfacePanel className="absolute bottom-14 left-2.5 z-10 grid w-[292px] gap-1 border-[color:var(--border-strong)] bg-[rgba(35,39,52,0.98)] p-2">
+    <SurfacePanel className="absolute right-2.5 bottom-12 left-2.5 z-10 grid gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
       <div className="flex items-center gap-3 rounded-[14px] px-2.5 py-2 text-left">
         <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--accent)]">
           <UserRound size={16} />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-sm text-[color:var(--text)]">pi@desktop.mock</div>
+          <div className="truncate text-sm text-[color:var(--muted)]">igorwarzocha@gmail.com</div>
           <div className="truncate text-xs text-[color:var(--muted)]">Personal account</div>
         </div>
       </div>
-      <MenuItem icon={<Settings size={15} />} title="Settings" />
-      <MenuItem icon={<Globe size={15} />} title="Language" />
-      <MenuItem icon={<Clock3 size={15} />} title="Rate limits remaining" />
+      <div className="mx-2 my-1 h-px bg-[color:var(--border)]" />
+      <MenuItem icon={<Settings size={15} />} title="Settings" active />
+      <MenuItem icon={<Globe size={15} />} title="Language" caret />
+      <MenuItem icon={<Clock3 size={15} />} title="Rate limits remaining" caret />
       <MenuItem icon={<LogOut size={15} />} title="Log out" />
     </SurfacePanel>
   );

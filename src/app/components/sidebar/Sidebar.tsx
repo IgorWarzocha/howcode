@@ -9,11 +9,13 @@ import {
   PanelLeft,
   Settings,
   Sparkles,
+  Square,
   Workflow,
 } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { Project, View } from "../../types";
 import { sidebarSectionLabelClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
 import { IconButton } from "../common/IconButton";
 import { NavButton } from "../common/NavButton";
 import { ProjectTree } from "./ProjectTree";
@@ -59,16 +61,12 @@ export function Sidebar({
       <aside
         className={
           sidebarVisible
-            ? "relative flex flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[rgba(32,35,46,0.88)] px-2.5 pt-3.5 pb-2.5"
+            ? "relative flex flex-col gap-4 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3.5 pb-2.5"
             : "hidden"
         }
       >
         <div className="flex items-center gap-1.5">
-          <IconButton
-            label="Hide sidebar"
-            onClick={onToggleSidebar}
-            icon={<PanelLeft size={16} />}
-          />
+          <IconButton label="Hide sidebar" onClick={onToggleSidebar} icon={<Square size={13} />} />
           <IconButton
             label="Back"
             onClick={() => onAction("nav.back")}
@@ -148,7 +146,10 @@ export function Sidebar({
 
         <button
           type="button"
-          className="mt-auto flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)] hover:text-[color:var(--text)]"
+          className={cn(
+            "mt-auto flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[14px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+            settingsOpen && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
+          )}
           onClick={onToggleSettings}
         >
           <Settings size={16} />
