@@ -27,10 +27,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleCloseProjectActionDialog,
     handleConfirmProjectAction,
     handleCollapseAll,
+    handleCloseTakeoverTerminal,
     handleOpenArchivedThreads,
     handleProjectSelect,
-    handleHideTerminal,
-    handleShowFullscreenTerminal,
+    handleShowTakeoverTerminal,
     handleShowView,
     handleThreadOpen,
     handleToggleDiff,
@@ -47,8 +47,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   } = controller;
 
   const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
-  const fullscreenTerminalVisible = state.terminalMode === "fullscreen";
-  const dockedTerminalVisible = state.terminalMode === "docked";
+  const takeoverVisible = state.takeoverVisible;
+  const dockedTerminalVisible = state.terminalVisible;
 
   return (
     <>
@@ -84,7 +84,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             currentTitle={currentTitle}
             currentProjectName={currentProjectName}
             sidebarVisible={state.sidebarVisible}
-            terminalVisible={state.terminalMode !== null}
+            terminalVisible={state.terminalVisible}
             diffVisible={state.diffVisible}
             projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
@@ -94,18 +94,18 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
           <div
             className={
-              state.diffVisible && !fullscreenTerminalVisible
+              state.diffVisible && !takeoverVisible
                 ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
                 : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
             }
           >
-            {fullscreenTerminalVisible ? (
+            {takeoverVisible ? (
               <div className="min-h-0 overflow-hidden pt-1.5 pb-4">
                 <TerminalPanel
                   projectId={composerProjectId}
                   sessionPath={terminalSessionPath}
-                  onClose={handleHideTerminal}
-                  mode="workspace"
+                  onClose={handleCloseTakeoverTerminal}
+                  mode="takeover"
                 />
               </div>
             ) : (
@@ -118,14 +118,14 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 />
               </main>
             )}
-            {state.diffVisible && !fullscreenTerminalVisible ? (
+            {state.diffVisible && !takeoverVisible ? (
               <div className="max-xl:hidden">
                 <DiffPanel onAction={(action, payload) => void handleAction(action, payload)} />
               </div>
             ) : null}
           </div>
 
-          {fullscreenTerminalVisible ? null : (
+          {takeoverVisible ? null : (
             <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
               <div className="mx-auto w-full max-w-[744px]">
                 <Composer
@@ -138,7 +138,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                   projectId={composerProjectId}
                   sessionPath={terminalSessionPath}
-                  onOpenFullscreenTerminal={handleShowFullscreenTerminal}
+                  onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                   onPickAttachments={pickComposerAttachments}
                   onAction={handleAction}
                 />

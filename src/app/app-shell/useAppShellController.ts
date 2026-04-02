@@ -26,6 +26,7 @@ export function useAppShellController() {
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
   const [liveThreads, setLiveThreads] = useState<Record<string, ThreadData>>({});
+  const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
   );
@@ -59,7 +60,7 @@ export function useAppShellController() {
     () => selectThread(selectedProject, state.selectedThreadId),
     [selectedProject, state.selectedThreadId],
   );
-  const threadData = useDesktopThread(state.selectedSessionPath);
+  const threadData = useDesktopThread(state.selectedSessionPath, threadRefreshKey);
   const liveThreadData = state.selectedSessionPath ? liveThreads[state.selectedSessionPath] : null;
   const activeThreadData = state.selectedSessionPath
     ? (liveThreadData ??
@@ -387,11 +388,15 @@ export function useAppShellController() {
     handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
     handleConfirmProjectAction,
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
+    handleCloseTakeoverTerminal: () => {
+      dispatch({ type: "hide-takeover" });
+      setThreadRefreshKey((current) => current + 1);
+      void refreshShellState();
+    },
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleShowView,
     handleThreadOpen,
-    handleShowFullscreenTerminal: () => dispatch({ type: "show-full-terminal" }),
-    handleHideTerminal: () => dispatch({ type: "hide-terminal" }),
+    handleShowTakeoverTerminal: () => dispatch({ type: "show-takeover" }),
     handleToggleDiff: () => dispatch({ type: "toggle-diff" }),
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),

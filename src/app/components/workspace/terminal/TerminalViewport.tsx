@@ -13,6 +13,7 @@ import {
 type TerminalViewportProps = {
   projectId: string;
   sessionPath: string | null;
+  launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
 };
 
@@ -61,6 +62,7 @@ function extractTerminalLinks(line: string) {
 export function TerminalViewport({
   projectId,
   sessionPath,
+  launchMode = "shell",
   preserveSessionOnUnmount = false,
 }: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -210,6 +212,7 @@ export function TerminalViewport({
       const snapshot = await openDesktopTerminal({
         projectId,
         sessionPath,
+        launchMode,
         cols: Math.max(terminal.cols, 20),
         rows: Math.max(terminal.rows, 5),
       });
@@ -254,7 +257,7 @@ export function TerminalViewport({
         void closeDesktopTerminal({ sessionId });
       }
     };
-  }, [preserveSessionOnUnmount, projectId, sessionPath]);
+  }, [launchMode, preserveSessionOnUnmount, projectId, sessionPath]);
 
   return <div ref={containerRef} className="h-full min-h-[220px] overflow-hidden rounded-[12px]" />;
 }

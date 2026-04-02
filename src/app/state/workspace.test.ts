@@ -68,24 +68,24 @@ describe("workspace state", () => {
     expect(nextState.collapsedProjectIds["claw-phone"]).toBe(false);
   });
 
-  it("can switch into fullscreen terminal mode", () => {
+  it("can switch into takeover terminal mode", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
-      type: "show-full-terminal",
+      type: "show-takeover",
     });
 
-    expect(nextState.terminalMode).toBe("fullscreen");
+    expect(nextState.takeoverVisible).toBe(true);
   });
 
-  it("closes terminal mode when toggled from fullscreen", () => {
+  it("can hide takeover terminal mode", () => {
     const nextState = workspaceReducer(
       {
         ...createInitialWorkspaceState(mockProjects),
-        terminalMode: "fullscreen",
+        takeoverVisible: true,
       },
-      { type: "toggle-terminal" },
+      { type: "hide-takeover" },
     );
 
-    expect(nextState.terminalMode).toBeNull();
+    expect(nextState.takeoverVisible).toBe(false);
   });
 
   it("resolves fallback project and thread titles safely", () => {

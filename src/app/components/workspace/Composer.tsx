@@ -21,7 +21,7 @@ type ComposerProps = {
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
   sessionPath: string | null;
-  onOpenFullscreenTerminal: () => void;
+  onOpenTakeoverTerminal: () => void;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => Promise<void>;
 };
@@ -36,7 +36,7 @@ export function Composer({
   availableThinkingLevels,
   projectId,
   sessionPath,
-  onOpenFullscreenTerminal,
+  onOpenTakeoverTerminal,
   onPickAttachments,
   onAction,
 }: ComposerProps) {
@@ -207,17 +207,19 @@ export function Composer({
         <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
         <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
-          <ToolbarButton
-            label={
-              <span className="inline-flex items-center gap-2">
-                <span>Terminal</span>
-                <FeatureStatusBadge statusId="feature:composer.terminal-workspace" />
-              </span>
-            }
-            icon={<SquareTerminal size={14} />}
-            onClick={onOpenFullscreenTerminal}
-            className={getFeatureStatusButtonClass("feature:composer.terminal-workspace")}
-          />
+          {sessionPath ? (
+            <ToolbarButton
+              label={
+                <span className="inline-flex items-center gap-2">
+                  <span>Open in Pi terminal</span>
+                  <FeatureStatusBadge statusId="feature:composer.terminal-takeover" />
+                </span>
+              }
+              icon={<SquareTerminal size={14} />}
+              onClick={onOpenTakeoverTerminal}
+              className={getFeatureStatusButtonClass("feature:composer.terminal-takeover")}
+            />
+          ) : null}
           <ToolbarButton
             label={
               <span className="inline-flex items-center gap-2">

@@ -26,7 +26,7 @@ export const featureStatusById = {
   "feature:composer.connections.add": { status: "mock", label: "Mock" },
   "feature:composer.connections.dismiss": { status: "mock", label: "Mock" },
   "feature:composer.dictate": { status: "mock", label: "Mock" },
-  "feature:composer.terminal-workspace": { status: "partial", label: "Partial" },
+  "feature:composer.terminal-takeover": { status: "partial", label: "Partial" },
   "feature:composer.host": { status: "mock", label: "Mock" },
   "feature:composer.profile": { status: "mock", label: "Mock" },
   "feature:views.plugins": { status: "mock", label: "Mock" },

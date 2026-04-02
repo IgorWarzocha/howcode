@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import type { ThreadData } from "../desktop/types";
 
-export function useDesktopThread(sessionPath: string | null | undefined) {
+export function useDesktopThread(sessionPath: string | null | undefined, refreshKey = 0) {
   const [threadData, setThreadData] = useState<ThreadData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    void refreshKey;
 
     const loadThread = async () => {
       if (!sessionPath || !window.piDesktop?.getThread) {
@@ -30,7 +31,7 @@ export function useDesktopThread(sessionPath: string | null | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [sessionPath]);
+  }, [refreshKey, sessionPath]);
 
   return threadData;
 }

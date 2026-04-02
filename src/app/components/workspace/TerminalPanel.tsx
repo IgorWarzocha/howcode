@@ -9,7 +9,7 @@ type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
-  mode?: "docked" | "workspace";
+  mode?: "docked" | "takeover";
 };
 
 export function TerminalPanel({
@@ -19,7 +19,7 @@ export function TerminalPanel({
   mode = "docked",
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
-  const closeLabel = mode === "workspace" ? "Return to chat" : "Close terminal";
+  const closeLabel = mode === "takeover" ? "Return to chat" : "Close terminal";
 
   return (
     <section
@@ -31,7 +31,7 @@ export function TerminalPanel({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-mono text-xs">
           <SquareTerminal size={14} />
-          <span>Terminal</span>
+          <span>{mode === "takeover" ? "Pi terminal" : "Terminal"}</span>
           <FeatureStatusBadge statusId={statusId} />
         </div>
         <button
@@ -48,7 +48,8 @@ export function TerminalPanel({
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
-          preserveSessionOnUnmount
+          launchMode={mode === "takeover" ? "pi-session" : "shell"}
+          preserveSessionOnUnmount={mode === "docked"}
         />
       </div>
     </section>

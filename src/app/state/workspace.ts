@@ -6,7 +6,8 @@ export type WorkspaceState = {
   selectedThreadId: string | null;
   selectedSessionPath: string | null;
   sidebarVisible: boolean;
-  terminalMode: "docked" | "fullscreen" | null;
+  terminalVisible: boolean;
+  takeoverVisible: boolean;
   diffVisible: boolean;
   settingsOpen: boolean;
   archivedThreadsOpen: boolean;
@@ -20,8 +21,8 @@ export type WorkspaceAction =
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | { type: "toggle-sidebar" }
   | { type: "toggle-terminal" }
-  | { type: "show-full-terminal" }
-  | { type: "hide-terminal" }
+  | { type: "show-takeover" }
+  | { type: "hide-takeover" }
   | { type: "toggle-diff" }
   | { type: "toggle-settings" }
   | { type: "set-archived-threads-open"; open: boolean }
@@ -39,7 +40,8 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     sidebarVisible: true,
-    terminalMode: null,
+    terminalVisible: false,
+    takeoverVisible: false,
     diffVisible: false,
     settingsOpen: false,
     archivedThreadsOpen: false,
@@ -110,19 +112,11 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "toggle-sidebar":
       return { ...state, sidebarVisible: !state.sidebarVisible };
     case "toggle-terminal":
-      return {
-        ...state,
-        terminalMode:
-          state.terminalMode === "docked"
-            ? null
-            : state.terminalMode === "fullscreen"
-              ? null
-              : "docked",
-      };
-    case "show-full-terminal":
-      return { ...state, terminalMode: "fullscreen" };
-    case "hide-terminal":
-      return { ...state, terminalMode: null };
+      return { ...state, terminalVisible: !state.terminalVisible };
+    case "show-takeover":
+      return { ...state, takeoverVisible: true };
+    case "hide-takeover":
+      return { ...state, takeoverVisible: false };
     case "toggle-diff":
       return { ...state, diffVisible: !state.diffVisible };
     case "toggle-settings":

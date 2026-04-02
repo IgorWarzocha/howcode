@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { constants, accessSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Utils } from "electrobun/bun";
 import type {
@@ -55,6 +55,7 @@ function makeSessionId(request: TerminalOpenRequest) {
     projectId: request.projectId,
     sessionPath: request.sessionPath ?? null,
     cwd: request.cwd ?? request.projectId,
+    launchMode: request.launchMode ?? "shell",
   });
 
   return `term_${createHash("sha256").update(sessionKey).digest("hex").slice(0, 24)}`;
@@ -100,7 +101,38 @@ function clearSessionBindings(record: TerminalSessionRecord) {
   record.cleanup = [];
 }
 
-function resolveShell() {
+function findExecutable(name: string) {
+  const pathEntries = (process.env.PATH ?? "").split(path.delimiter);
+
+  for (const entry of pathEntries) {
+    if (!entry) {
+      continue;
+    }
+
+    const candidate = path.join(entry, name);
+
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  return name;
+}
+
+function resolveTerminalCommand(request: TerminalOpenRequest) {
+  if (request.launchMode === "pi-session") {
+    const executable =
+      process.platform === "win32" ? findExecutable("pi.cmd") : findExecutable("pi");
+
+    return {
+      shell: executable,
+      args: request.sessionPath ? ["--session", request.sessionPath] : ["--continue"],
+    };
+  }
+
   if (process.platform === "win32") {
     return {
       shell: process.env.COMSPEC || "powershell.exe",
@@ -117,7 +149,14 @@ function resolveShell() {
 async function startProcess(record: TerminalSessionRecord, reason: "started" | "restarted") {
   clearSessionBindings(record);
   const adapter = getTerminalAdapter();
-  const shell = resolveShell();
+  const shell = resolveTerminalCommand({
+    projectId: record.snapshot.projectId,
+    sessionPath: record.snapshot.sessionPath,
+    cwd: record.snapshot.cwd,
+    launchMode: record.snapshot.launchMode,
+    cols: record.snapshot.cols,
+    rows: record.snapshot.rows,
+  } as TerminalOpenRequest);
 
   try {
     const processHandle = await adapter.spawn({
@@ -229,6 +268,7 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     projectId: request.projectId,
     sessionPath: request.sessionPath ?? null,
     cwd,
+    launchMode: request.launchMode ?? "shell",
     status: "starting",
     pid: null,
     cols: request.cols,

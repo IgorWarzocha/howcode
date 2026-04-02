@@ -4,6 +4,7 @@ export type TerminalOpenRequest = {
   projectId: string;
   sessionPath?: string | null;
   cwd?: string | null;
+  launchMode?: "shell" | "pi-session";
   cols: number;
   rows: number;
   env?: Record<string, string>;
@@ -30,6 +31,7 @@ export type TerminalSessionSnapshot = {
   projectId: string;
   sessionPath: string | null;
   cwd: string;
+  launchMode: "shell" | "pi-session";
   status: TerminalStatus;
   pid: number | null;
   cols: number;
