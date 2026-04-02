@@ -28,10 +28,10 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 2. New thread creation
 - [x] Implement `thread.new` as a real action
-  - files: `shared/desktop-actions.ts`, `electron/pi-threads.cts`, `src/app/components/sidebar/Sidebar.tsx`
+  - files: `shared/desktop-actions.ts`, `electron/pi-threads/action-router.cts`, `electron/runtime/composer-service.cts`, `src/app/components/sidebar/Sidebar.tsx`
 - [ ] Decide whether sessions are created immediately or on first send
 - [ ] Ensure new threads appear in SQLite before/when first message is sent
-  - files: `electron/thread-state-db.cts`
+  - files: `electron/thread-state-db/*`
 
 ### P1 — Replace remaining fake workspace surfaces
 
@@ -44,12 +44,12 @@ This turns `docs/mock-features.md` into an execution backlog.
   - [ ] archive all threads
   - [ ] remove project from app index
   - [ ] create permanent worktree
-  - files: `electron/pi-threads.cts`, `electron/thread-state-db.cts`, `src/app/components/sidebar/ProjectActionMenu.tsx`
+  - files: `electron/pi-threads/action-router.cts`, `electron/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`
 
 #### 4. Thread action menu / run action
 - [ ] Implement `thread.actions`
 - [ ] Implement `thread.run-action`
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads.cts`
+  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
 
 #### 5. Terminal panel
 - [ ] Replace static terminal transcript with real PTY or run log
@@ -59,13 +59,13 @@ This turns `docs/mock-features.md` into an execution backlog.
   - [ ] a Pi run log
   - [ ] a hybrid
 - [ ] Implement close/show state coherently with backend events if needed
-  - files: `src/app/AppShell.tsx`, `electron/main.cts`
+  - files: `src/app/app-shell/useAppShellController.ts`, `electron/main.cts`
 
 #### 6. Diff panel
 - [ ] Replace hardcoded diff cards with real data
   - files: `src/app/components/workspace/DiffPanel.tsx`
 - [ ] Implement `diff.review`
-  - files: `electron/pi-threads.cts`, `src/app/components/workspace/DiffPanel.tsx`
+  - files: `electron/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
 
 ### P2 — Improve fidelity and non-core navigation
 
@@ -74,19 +74,19 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
 - [x] Replace `previousMessageCount: 0` with real history metadata
-  - files: `electron/pi-threads.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
+  - files: `shared/pi-message-mapper.ts`, `electron/pi-threads/thread-loader.cts`, `electron/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
 
 #### 8. Sidebar utility controls
 - [ ] Implement thread filtering/search
 - [ ] Implement add/import project flow
 - [ ] Decide whether nav back/forward are renderer history or app history
-  - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `electron/pi-threads.cts`
+  - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `electron/pi-threads/action-router.cts`
 
 #### 9. Landing project switcher / product menu
 - [ ] Implement `landing.project-switcher`
 - [ ] Implement `project.switch`
 - [ ] Implement `product.menu`
-  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads.cts`
+  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
 
@@ -121,8 +121,9 @@ Key files:
 - `electron/main.cts`
 - `electron/contracts.cts`
 - `electron/preload.cts`
-- `electron/pi-threads.cts`
-- `electron/thread-state-db.cts`
+- `electron/pi-threads/*`
+- `electron/runtime/*`
+- `electron/thread-state-db/*`
 
 ### Renderer / app-state checklist
 
@@ -136,10 +137,12 @@ Key files:
 
 Key files:
 - `src/app/AppShell.tsx`
+- `src/app/app-shell/*`
 - `src/app/hooks/useDesktopShell.ts`
 - `src/app/hooks/useDesktopThread.ts`
 - `src/app/state/workspace.ts`
 - `src/app/components/workspace/Composer.tsx`
+- `src/app/components/workspace/composer/*`
 - `src/app/views/ThreadView.tsx`
 
 ### Sidebar / navigation checklist
@@ -155,6 +158,7 @@ Key files:
 - `src/app/components/sidebar/Sidebar.tsx`
 - `src/app/components/sidebar/ProjectTree.tsx`
 - `src/app/components/sidebar/ProjectActionMenu.tsx`
+- `src/app/components/sidebar/project-tree/*`
 - `src/app/views/LandingView.tsx`
 
 ### SQLite / persistence checklist
@@ -167,8 +171,8 @@ Key files:
 - [ ] Add indexes only after real usage patterns are confirmed
 
 Key files:
-- `electron/thread-state-db.cts`
-- `electron/pi-threads.cts`
+- `electron/thread-state-db/*`
+- `electron/pi-threads/*`
 
 ---
 
@@ -185,3 +189,15 @@ Definition of done:
 - [ ] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
 
 This milestone is now in place. Next, finish the remaining non-chat composer actions and then move to project actions / terminal / diff parity.
+
+## Hardening progress snapshot
+
+- [x] Shared Pi message/title mapping extracted to `shared/pi-message-mapper.ts`
+- [x] SQLite layer split into `electron/thread-state-db/*`
+- [x] Pi runtime split into `electron/runtime/*`
+- [x] Pi thread loader/router split into `electron/pi-threads/*`
+- [x] App shell split into `src/app/app-shell/*`
+- [x] Composer split into `src/app/components/workspace/composer/*`
+- [x] Project tree split into `src/app/components/sidebar/project-tree/*`
+- [x] Desktop action coverage made explicit in `shared/desktop-action-coverage.ts`
+- [x] Deterministic tests added for shared mapping and payload parsing under `src/test/*`

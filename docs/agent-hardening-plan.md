@@ -2,6 +2,20 @@
 
 This plan captures the next hardening pass for the repo using the `agent-native-hardening` lens.
 
+## Status update
+
+Completed from this plan:
+
+- shared Pi message/title mapping now lives in `shared/pi-message-mapper.ts`
+- `electron/thread-state-db.cts` has been split into `electron/thread-state-db/*`
+- `electron/pi-desktop-runtime.cts` is now a thin facade over `electron/runtime/*`
+- `electron/pi-threads.cts` is now a thin facade over `electron/pi-threads/*`
+- `src/app/AppShell.tsx` is now a thin composition wrapper over `src/app/app-shell/*`
+- `Composer.tsx` and `ProjectTree.tsx` have been split into focused subcomponents/controllers
+- primary ARIA/traversability fixes landed for dialogs, menus, landmarks, and expanded/current state
+
+Remaining value from this doc is mainly the follow-up work around still-mock desktop actions, richer thread fidelity, and any additional accessibility polish.
+
 Primary goals:
 
 1. split godfiles into single-purpose modules
