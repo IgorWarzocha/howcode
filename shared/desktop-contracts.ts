@@ -27,12 +27,50 @@ export type ArchivedThread = {
   sessionPath: string;
 };
 
-export type Message = {
+export type ProseMessage = {
   id: string;
   role: "assistant" | "user";
   format?: "prose" | "list";
   content: string[];
 };
+
+export type ToolResultMessage = {
+  id: string;
+  role: "toolResult";
+  toolName: string;
+  content: string[];
+  isError: boolean;
+};
+
+export type BashExecutionMessage = {
+  id: string;
+  role: "bashExecution";
+  command: string;
+  output: string[];
+  exitCode: number | null;
+  cancelled: boolean;
+  truncated: boolean;
+};
+
+export type CustomThreadMessage = {
+  id: string;
+  role: "custom";
+  customType: string;
+  content: string[];
+};
+
+export type SummaryThreadMessage = {
+  id: string;
+  role: "branchSummary" | "compactionSummary";
+  content: string[];
+};
+
+export type Message =
+  | ProseMessage
+  | ToolResultMessage
+  | BashExecutionMessage
+  | CustomThreadMessage
+  | SummaryThreadMessage;
 
 export type ComposerThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 

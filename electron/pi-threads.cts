@@ -6,7 +6,6 @@ import type {
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
-  Message,
   ShellState,
   Thread,
   ThreadData,
@@ -22,6 +21,11 @@ import {
   startNewThread,
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "./pi-desktop-runtime.cjs";
+import {
+  getFirstUserTurnTitle,
+  mapAgentMessagesToUiMessages,
+  normalizeThreadTitle,
+} from "./pi-message-mapper.cjs";
 import {
   archiveThread,
   collapseAllProjects,
@@ -40,22 +44,6 @@ import {
 } from "./thread-state-db.cjs";
 
 type PiModule = typeof import("@mariozechner/pi-coding-agent");
-
-type TextPart = {
-  type?: string;
-  text?: string;
-};
-
-type AgentMessageEntry = {
-  role: string;
-  content: string | TextPart[];
-  timestamp?: string | number;
-};
-
-type BranchEntry = {
-  type: string;
-  message: AgentMessageEntry;
-};
 
 type SessionSummary = {
   id: string;
@@ -79,80 +67,6 @@ function getPiModule() {
   }
 
   return piModulePromise;
-}
-
-function normalizeThreadTitle(value: unknown) {
-  const text = String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!text) {
-    return "New thread";
-  }
-
-  return text.length > 72 ? `${text.slice(0, 69)}...` : text;
-}
-
-function extractTextContent(content: AgentMessageEntry["content"]) {
-  if (typeof content === "string") {
-    return content.trim();
-  }
-
-  if (!Array.isArray(content)) {
-    return "";
-  }
-
-  return content
-    .filter((part) => part?.type === "text" && typeof part.text === "string")
-    .map((part) => part.text)
-    .join("\n")
-    .trim();
-}
-
-function splitParagraphs(text: string) {
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-}
-
-function mapAgentMessageToUiMessage(entry: AgentMessageEntry, index: number): Message | null {
-  if (entry.role === "user") {
-    const text = extractTextContent(entry.content);
-    if (!text) {
-      return null;
-    }
-
-    return {
-      id: `${entry.timestamp ?? index}-user-${index}`,
-      role: "user",
-      content: [text],
-    };
-  }
-
-  if (entry.role === "assistant") {
-    const paragraphs = Array.isArray(entry.content)
-      ? entry.content
-          .filter((part) => part?.type === "text" && typeof part.text === "string")
-          .flatMap((part) => splitParagraphs(part.text ?? ""))
-      : [];
-
-    if (paragraphs.length === 0) {
-      return null;
-    }
-
-    return {
-      id: `${entry.timestamp ?? index}-assistant-${index}`,
-      role: "assistant",
-      content: paragraphs,
-    };
-  }
-
-  return null;
-}
-
-function getFirstUserTurnTitle(messages: Message[]) {
-  const firstUserMessage = messages.find((message) => message.role === "user");
-  return normalizeThreadTitle(firstUserMessage?.content[0]);
 }
 
 function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
@@ -257,11 +171,8 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
 
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
-  const branchEntries = manager.getBranch() as BranchEntry[];
-  const messages = branchEntries
-    .filter((entry) => entry.type === "message")
-    .map((entry, index) => mapAgentMessageToUiMessage(entry.message, index))
-    .filter((entry): entry is Message => entry !== null);
+  const sessionContext = manager.buildSessionContext();
+  const messages = mapAgentMessagesToUiMessages(sessionContext.messages);
 
   const title = cachedThread?.title || getFirstUserTurnTitle(messages);
   saveThreadCache(sessionPath, title, messages, currentModifiedMs);

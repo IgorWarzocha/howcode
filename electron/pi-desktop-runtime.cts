@@ -13,6 +13,7 @@ import type {
   Message,
   ThreadData,
 } from "../shared/desktop-contracts.js";
+import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from "./pi-message-mapper.cjs";
 import { saveThreadCache, upsertThreadSummary } from "./thread-state-db.cjs";
 
 type PiModule = typeof import("@mariozechner/pi-coding-agent");
@@ -23,17 +24,6 @@ type PiRuntime = {
 };
 
 type RuntimeThreadReason = Extract<DesktopEvent, { type: "thread-update" }>["reason"];
-
-type TextPart = {
-  type?: string;
-  text?: string;
-};
-
-type MessageWithContent = {
-  role?: string;
-  content?: string | TextPart[];
-  timestamp?: string | number;
-};
 
 type ProcessedComposerAttachments = {
   text: string;
@@ -58,83 +48,6 @@ function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
     listener(event);
   }
-}
-
-function normalizeThreadTitle(value: unknown) {
-  const text = String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!text) {
-    return "New thread";
-  }
-
-  return text.length > 72 ? `${text.slice(0, 69)}...` : text;
-}
-
-function isTextPart(part: unknown): part is TextPart {
-  return typeof part === "object" && part !== null;
-}
-
-function extractTextContent(content: MessageWithContent["content"]) {
-  if (typeof content === "string") {
-    return content.trim();
-  }
-
-  if (!Array.isArray(content)) {
-    return "";
-  }
-
-  return content
-    .filter((part) => isTextPart(part) && part.type === "text" && typeof part.text === "string")
-    .map((part) => part.text)
-    .join("\n")
-    .trim();
-}
-
-function splitParagraphs(text: string) {
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-}
-
-function mapRuntimeMessageToUiMessage(message: AgentMessage, index: number): Message | null {
-  const runtimeMessage = message as MessageWithContent;
-
-  if (runtimeMessage.role === "user") {
-    const text = extractTextContent(runtimeMessage.content);
-    if (!text) {
-      return null;
-    }
-
-    return {
-      id: `${runtimeMessage.timestamp ?? index}-user-${index}`,
-      role: "user",
-      content: [text],
-    };
-  }
-
-  if (runtimeMessage.role === "assistant") {
-    const paragraphs = Array.isArray(runtimeMessage.content)
-      ? runtimeMessage.content
-          .filter(
-            (part) => isTextPart(part) && part.type === "text" && typeof part.text === "string",
-          )
-          .flatMap((part) => splitParagraphs(part.text ?? ""))
-      : [];
-
-    if (paragraphs.length === 0) {
-      return null;
-    }
-
-    return {
-      id: `${runtimeMessage.timestamp ?? index}-assistant-${index}`,
-      role: "assistant",
-      content: paragraphs,
-    };
-  }
-
-  return null;
 }
 
 function mapComposerModel(model: AgentSession["model"]): ComposerModel | null {
@@ -249,21 +162,17 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
 
   session.subscribe((event) => {
     if (event.type === "message_end") {
-      const message = event.message as MessageWithContent;
-      if (message.role === "user") {
+      if (event.message.role === "user") {
         void publishThreadUpdate(runtime, "start");
       }
-      if (message.role === "assistant") {
+      if (event.message.role === "assistant") {
         void publishThreadUpdate(runtime, "end");
       }
       return;
     }
 
-    if (event.type === "message_update") {
-      const message = event.message as MessageWithContent;
-      if (message.role === "assistant") {
-        void publishThreadUpdate(runtime, "update");
-      }
+    if (event.type === "message_update" && event.message.role === "assistant") {
+      void publishThreadUpdate(runtime, "update");
     }
   });
 
@@ -330,11 +239,6 @@ async function buildComposerState(runtime: PiRuntime): Promise<ComposerState> {
   };
 }
 
-function getFirstUserTurnTitle(messages: Message[]) {
-  const firstUserMessage = messages.find((message) => message.role === "user");
-  return normalizeThreadTitle(firstUserMessage?.content[0]);
-}
-
 function buildLiveThreadData(runtime: PiRuntime): ThreadData | null {
   const sessionPath = runtime.session.sessionFile;
   if (!sessionPath) {
@@ -343,9 +247,7 @@ function buildLiveThreadData(runtime: PiRuntime): ThreadData | null {
 
   const streamMessage = runtime.session.state.streamMessage;
   const sourceMessages = [...runtime.session.messages, ...(streamMessage ? [streamMessage] : [])];
-  const messages = sourceMessages
-    .map((message, index) => mapRuntimeMessageToUiMessage(message, index))
-    .filter((message): message is Message => message !== null);
+  const messages = mapAgentMessagesToUiMessages(sourceMessages as AgentMessage[]);
 
   return {
     sessionPath,

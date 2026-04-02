@@ -196,15 +196,26 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 12. Thread metadata / message fidelity
 
-**Status:** Partially simplified.
+**Status:** Improved, still partial.
 
-- Thread messages are reduced to user + assistant prose/list only: `electron/pi-threads.cts`
-- Tool results, bash execution, custom messages, branch summaries, compaction summaries are not rendered as first-class UI
+- Thread mapping now includes:
+  - user messages
+  - assistant messages
+  - tool results
+  - bash execution entries
+  - custom messages
+  - branch summaries
+  - compaction summaries
+  - files: `electron/pi-message-mapper.cts`, `electron/pi-desktop-runtime.cts`, `electron/pi-threads.cts`, `src/app/components/common/ThreadMessage.tsx`
+- Still simplified:
+  - tool calls are not rendered as their own in-progress blocks
+  - assistant thinking content is not rendered explicitly
+  - image attachments are shown as text placeholders, not inline previews
 - `previousMessageCount` is hardcoded to `0`: `electron/pi-threads.cts`
 
 **Expansion direction:**
-- Expand the renderer message model beyond simplified prose/list content.
-- Add explicit renderers for tool calls/results and branch/compaction markers.
+- Add explicit live tool-call state blocks during streaming.
+- Render inline image previews / richer custom-message layouts where appropriate.
 
 ### 13. Thread creation / continuation lifecycle
 
