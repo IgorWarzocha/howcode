@@ -1,8 +1,8 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { Database } from "bun:sqlite";
 
 let schemaReady = false;
 
-function hasColumn(database: DatabaseSync, tableName: string, columnName: string) {
+function hasColumn(database: Database, tableName: string, columnName: string) {
   const columns = database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
     name: string;
   }>;
@@ -10,7 +10,7 @@ function hasColumn(database: DatabaseSync, tableName: string, columnName: string
   return columns.some((column) => column.name === columnName);
 }
 
-export function ensureThreadStateSchema(database: DatabaseSync) {
+export function ensureThreadStateSchema(database: Database) {
   if (schemaReady) {
     return;
   }

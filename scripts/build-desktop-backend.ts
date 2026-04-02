@@ -18,11 +18,11 @@ const builds = [
 for (const build of builds) {
   const result = await Bun.build({
     entrypoints: [build.entrypoint],
-    outfile: build.outfile,
     target: "bun",
     format: "esm",
     sourcemap: "linked",
     external: ["@mariozechner/pi-coding-agent"],
+    throw: false,
   });
 
   if (!result.success) {
@@ -31,5 +31,10 @@ for (const build of builds) {
     }
 
     process.exit(1);
+  }
+
+  for (const output of result.outputs) {
+    const targetPath = output.path.endsWith(".map") ? `${build.outfile}.map` : build.outfile;
+    await Bun.write(targetPath, output);
   }
 }

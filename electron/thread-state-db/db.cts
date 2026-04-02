@@ -1,10 +1,10 @@
+import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { Utils } from "electrobun/bun";
 import { ensureThreadStateSchema } from "./schema";
 
-let database: DatabaseSync | null = null;
+let database: Database | null = null;
 
 function getDatabasePath() {
   const databaseDir = path.join(Utils.paths.userData, "state");
@@ -17,7 +17,7 @@ export function getThreadStateDatabase() {
     return database;
   }
 
-  database = new DatabaseSync(getDatabasePath());
+  database = new Database(getDatabasePath());
   ensureThreadStateSchema(database);
   return database;
 }
