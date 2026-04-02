@@ -7,89 +7,37 @@ import {
   PanelRight,
   Play,
 } from "lucide-react";
-import { useRef, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass } from "../../features/feature-status";
-import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
-import type { Project, View } from "../../types";
+import type { View } from "../../types";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { IconButton } from "../common/IconButton";
 import { TextButton } from "../common/TextButton";
-import { ProductMenu } from "./header/ProductMenu";
-import { ProjectSwitchMenu } from "./header/ProjectSwitchMenu";
-import { RunActionMenu } from "./header/RunActionMenu";
-import { ThreadActionsMenu } from "./header/ThreadActionsMenu";
 
 type WorkspaceHeaderProps = {
   activeView: View;
   currentTitle: string;
   currentProjectName: string;
-  diffVisible: boolean;
-  projects: Project[];
-  selectedProjectId: string;
-  selectedThreadId: string | null;
   sidebarVisible: boolean;
   terminalVisible: boolean;
+  diffVisible: boolean;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
-  onArchiveSelectedThread: () => void;
-  onDeleteSelectedThread: () => void;
-  onOpenArchivedThreads: () => void;
-  onOpenSettingsPanel: () => void;
-  onProjectSwitch: (projectId: string) => void;
-  onToggleDiff: () => void;
   onToggleTerminal: () => void;
+  onToggleDiff: () => void;
 };
 
 export function WorkspaceHeader({
   activeView,
   currentTitle,
   currentProjectName,
-  diffVisible,
-  projects,
-  selectedProjectId,
-  selectedThreadId,
   sidebarVisible,
   terminalVisible,
+  diffVisible,
   onAction,
-  onArchiveSelectedThread,
-  onDeleteSelectedThread,
-  onOpenArchivedThreads,
-  onOpenSettingsPanel,
-  onProjectSwitch,
-  onToggleDiff,
   onToggleTerminal,
+  onToggleDiff,
 }: WorkspaceHeaderProps) {
-  const [openMenu, setOpenMenu] = useState<"product" | "project" | "run" | "thread" | null>(null);
-  const projectMenuRef = useRef<HTMLDivElement>(null);
-  const projectContainerRef = useRef<HTMLDivElement>(null);
-  const threadMenuRef = useRef<HTMLDivElement>(null);
-  const threadContainerRef = useRef<HTMLDivElement>(null);
-  const runMenuRef = useRef<HTMLDivElement>(null);
-  const runContainerRef = useRef<HTMLDivElement>(null);
-  const productMenuRef = useRef<HTMLDivElement>(null);
-  const productContainerRef = useRef<HTMLDivElement>(null);
-
-  useDismissibleLayer({
-    open: openMenu !== null,
-    onDismiss: () => setOpenMenu(null),
-    refs: [
-      projectContainerRef,
-      threadContainerRef,
-      runContainerRef,
-      productContainerRef,
-      projectMenuRef,
-      threadMenuRef,
-      runMenuRef,
-      productMenuRef,
-    ],
-  });
-
-  const productMenuId = "header-product-menu";
-  const projectMenuId = "header-project-menu";
-  const threadMenuId = "header-thread-menu";
-  const runMenuId = "header-run-menu";
-
   return (
     <header
       className={
@@ -103,137 +51,50 @@ export function WorkspaceHeader({
           <span className="truncate text-[13.5px] text-[color:var(--text)]">{currentTitle}</span>
           {activeView === "thread" ? (
             <>
-              <div ref={projectContainerRef} className="relative">
-                <TextButton
-                  className={cn(
-                    "inline-flex items-center gap-2 px-0.5 py-0 text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]",
-                    getFeatureStatusButtonClass("feature:header.project-switch"),
-                  )}
-                  onClick={() =>
-                    setOpenMenu((current) => (current === "project" ? null : "project"))
-                  }
-                  aria-haspopup="menu"
-                  aria-expanded={openMenu === "project"}
-                  aria-controls={projectMenuId}
-                >
-                  {currentProjectName}
-                  <FeatureStatusBadge statusId="feature:header.project-switch" />
-                </TextButton>
-                {openMenu === "project" ? (
-                  <ProjectSwitchMenu
-                    menuId={projectMenuId}
-                    panelRef={projectMenuRef}
-                    projects={projects}
-                    selectedProjectId={selectedProjectId}
-                    onSelectProject={(projectId) => {
-                      setOpenMenu(null);
-                      onProjectSwitch(projectId);
-                    }}
-                  />
-                ) : null}
-              </div>
-
-              <div ref={threadContainerRef} className="relative">
-                <IconButton
-                  label="Thread actions"
-                  onClick={() => setOpenMenu((current) => (current === "thread" ? null : "thread"))}
-                  icon={<MoreHorizontal size={16} />}
-                  className={getFeatureStatusButtonClass("feature:header.thread-actions")}
-                  aria-haspopup="menu"
-                  aria-expanded={openMenu === "thread"}
-                  aria-controls={threadMenuId}
-                />
-                {openMenu === "thread" && selectedThreadId ? (
-                  <ThreadActionsMenu
-                    menuId={threadMenuId}
-                    panelRef={threadMenuRef}
-                    onArchiveThread={() => {
-                      setOpenMenu(null);
-                      onArchiveSelectedThread();
-                    }}
-                    onDeleteThread={() => {
-                      setOpenMenu(null);
-                      onDeleteSelectedThread();
-                    }}
-                  />
-                ) : null}
-              </div>
-
-              <div ref={runContainerRef} className="relative">
-                <IconButton
-                  label="Set up a run action"
-                  onClick={() => setOpenMenu((current) => (current === "run" ? null : "run"))}
-                  icon={<Play size={16} />}
-                  className={getFeatureStatusButtonClass("feature:header.thread-run-action")}
-                  aria-haspopup="menu"
-                  aria-expanded={openMenu === "run"}
-                  aria-controls={runMenuId}
-                />
-                {openMenu === "run" ? (
-                  <RunActionMenu
-                    diffVisible={diffVisible}
-                    menuId={runMenuId}
-                    panelRef={runMenuRef}
-                    terminalVisible={terminalVisible}
-                    onOpenBoth={() => {
-                      setOpenMenu(null);
-                      if (!terminalVisible) {
-                        onToggleTerminal();
-                      }
-                      if (!diffVisible) {
-                        onToggleDiff();
-                      }
-                    }}
-                    onToggleDiff={() => {
-                      setOpenMenu(null);
-                      onToggleDiff();
-                    }}
-                    onToggleTerminal={() => {
-                      setOpenMenu(null);
-                      onToggleTerminal();
-                    }}
-                  />
-                ) : null}
-              </div>
+              <TextButton
+                className={cn(
+                  "inline-flex items-center gap-2 px-0.5 py-0 text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+                  getFeatureStatusButtonClass("feature:header.project-switch"),
+                )}
+                onClick={() => onAction("project.switch")}
+              >
+                {currentProjectName}
+                <FeatureStatusBadge statusId="feature:header.project-switch" />
+              </TextButton>
+              <IconButton
+                label="Thread actions"
+                onClick={() => onAction("thread.actions")}
+                icon={<MoreHorizontal size={16} />}
+                className={getFeatureStatusButtonClass("feature:header.thread-actions")}
+              />
+              <IconButton
+                label="Set up a run action"
+                onClick={() => onAction("thread.run-action")}
+                icon={<Play size={16} />}
+                className={getFeatureStatusButtonClass("feature:header.thread-run-action")}
+              />
             </>
           ) : null}
         </div>
       </div>
 
-      <div ref={productContainerRef} className="relative">
-        <button
-          type="button"
-          className={cn(
-            "inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-            getFeatureStatusButtonClass("feature:header.product-menu"),
-          )}
-          onClick={() => setOpenMenu((current) => (current === "product" ? null : "product"))}
-          data-feature-id="feature:header.product-menu"
-          aria-haspopup="menu"
-          aria-expanded={openMenu === "product"}
-          aria-controls={productMenuId}
-        >
-          <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[11px] font-bold text-[#171821]">
-            P
-          </div>
-          <FeatureStatusBadge statusId="feature:header.product-menu" />
-          <ChevronDown size={14} className="text-[color:var(--muted)]" />
-        </button>
-        {openMenu === "product" ? (
-          <ProductMenu
-            menuId={productMenuId}
-            panelRef={productMenuRef}
-            onOpenArchivedThreads={() => {
-              setOpenMenu(null);
-              onOpenArchivedThreads();
-            }}
-            onOpenSettings={() => {
-              setOpenMenu(null);
-              onOpenSettingsPanel();
-            }}
-          />
-        ) : null}
-      </div>
+      <button
+        type="button"
+        className={cn(
+          "inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+          getFeatureStatusButtonClass("feature:header.product-menu"),
+        )}
+        onClick={() => onAction("product.menu")}
+        data-feature-id="feature:header.product-menu"
+        aria-haspopup="menu"
+        aria-expanded={false}
+      >
+        <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[11px] font-bold text-[#171821]">
+          P
+        </div>
+        <FeatureStatusBadge statusId="feature:header.product-menu" />
+        <ChevronDown size={14} className="text-[color:var(--muted)]" />
+      </button>
 
       <div className="flex items-center gap-2 max-md:flex-wrap">
         <div className="h-5 w-px bg-[color:var(--border)] max-md:hidden" />
