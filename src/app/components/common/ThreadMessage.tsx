@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Message } from "../../types";
 import { inlineCodeClass } from "../../ui/classes";
 
@@ -51,7 +52,7 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
   );
 }
 
-export function ThreadMessage({ message }: ThreadMessageProps) {
+export const ThreadMessage = memo(function ThreadMessage({ message }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
       <div className="ml-auto min-w-0 max-w-[438px] rounded-[18px] bg-[rgba(47,50,66,0.8)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
@@ -139,4 +140,4 @@ export function ThreadMessage({ message }: ThreadMessageProps) {
   }
 
   return null;
-}
+});

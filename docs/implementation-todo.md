@@ -85,7 +85,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
 - [x] Replace `previousMessageCount: 0` with real history metadata
-- [x] Keep the centered thread scrollbar inside the chat lane and lazily reveal older messages from latest to earliest
+- [x] Keep the centered thread scrollbar inside the chat lane and virtualize the visible thread timeline instead of rendering the full DOM at once
   - files: `shared/pi-message-mapper.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
 
 #### 8. Sidebar utility controls

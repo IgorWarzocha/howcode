@@ -12,7 +12,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - Bun-native main process with Electrobun RPC bridge into the renderer
 - real xterm.js terminal panel backed by Bun PTY first, with `node-pty` kept only as the Windows compatibility fallback
 - Pi takeover terminal view that replaces the thread pane with an embedded native Pi TUI lane
-- centered thread scroller with latest-first lazy rendering and bottom-stick behavior during live updates
+- centered thread scroller with TanStack virtualization, bottom-stick behavior during live updates, and preserved in-lane scrolling
 - real checkpoint-backed diff panel using `@pierre/diffs`, with whole-thread and per-turn patch rendering for completed composer turns in git repos
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting

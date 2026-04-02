@@ -213,7 +213,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Status:** Partially real.
 
 - UI: `src/app/views/ThreadView.tsx`, `src/app/views/MainView.tsx`, `src/app/app-shell/AppShellLayout.tsx`
-- The centered thread lane now owns its own scrollbar instead of using the far-right workspace scrollbar.
+- The centered thread lane now owns its own scrollbar instead of using the far-right workspace scrollbar, and the visible message DOM is TanStack-virtualized.
 - Message rendering now lazy-loads from latest to earliest, with an earlier-messages divider used to reveal older content.
 - Live updates only auto-follow when the user is already near the bottom of the thread; scrolling in the middle preserves the user's position.
 
