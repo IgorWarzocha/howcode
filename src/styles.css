@@ -87,6 +87,60 @@ code {
   display: none;
 }
 
+.motion-collapse-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: grid-template-rows 180ms ease, opacity 180ms ease, transform 180ms ease, margin-top
+    180ms ease;
+}
+
+.motion-collapse-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.motion-collapse-panel__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.motion-popover {
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transform-origin: bottom left;
+  pointer-events: none;
+  transition: opacity 170ms ease, transform 170ms ease;
+}
+
+.motion-popover[data-open="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.motion-overlay-panel {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.motion-overlay-panel[data-open="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-collapse-panel,
+  .motion-popover,
+  .motion-overlay-panel {
+    transition: none;
+    transform: none;
+  }
+}
+
 .xterm {
   height: 100%;
 }

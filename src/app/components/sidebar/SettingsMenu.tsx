@@ -5,18 +5,21 @@ import { SurfacePanel } from "../common/SurfacePanel";
 
 type SettingsMenuProps = {
   menuId: string;
+  open: boolean;
   onOpenArchivedThreads: () => void;
   panelRef?: RefObject<HTMLDivElement | null>;
 };
 
-export function SettingsMenu({ menuId, onOpenArchivedThreads, panelRef }: SettingsMenuProps) {
+export function SettingsMenu({ menuId, open, onOpenArchivedThreads, panelRef }: SettingsMenuProps) {
   return (
     <SurfacePanel
       ref={panelRef}
       id={menuId}
       role="menu"
       aria-label="Settings menu"
-      className="fixed bottom-12 left-2.5 z-40 grid w-[280px] gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]"
+      data-open={open ? "true" : "false"}
+      aria-hidden={!open}
+      className="motion-popover fixed bottom-12 left-2.5 z-40 grid w-[280px] gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]"
     >
       <div className="flex items-center gap-3 rounded-[14px] px-2.5 py-2 text-left">
         <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--accent)]">

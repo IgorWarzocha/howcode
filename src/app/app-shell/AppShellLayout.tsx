@@ -6,6 +6,7 @@ import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
+import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
 import type { AppShellController } from "./useAppShellController";
@@ -63,6 +64,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const overlayDiffVisible =
     diffVisible && mainSectionWidth !== null && mainSectionWidth < DIFF_OVERLAY_BREAKPOINT;
   const splitDiffVisible = diffVisible && !overlayDiffVisible;
+  const overlayDiffPresent = useAnimatedPresence(overlayDiffVisible);
 
   useEffect(() => {
     const element = mainSectionRef.current;
@@ -266,8 +268,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               </footer>
             )}
 
-            {overlayDiffVisible ? (
-              <div className="absolute inset-0 z-20 bg-[color:var(--workspace)]">
+            {overlayDiffPresent ? (
+              <div
+                data-open={overlayDiffVisible ? "true" : "false"}
+                className="motion-overlay-panel absolute inset-0 z-20 bg-[color:var(--workspace)]"
+              >
                 <DiffPanel
                   projectId={composerProjectId}
                   threadData={activeThreadData}

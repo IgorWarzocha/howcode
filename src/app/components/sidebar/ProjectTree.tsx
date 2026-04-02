@@ -1,11 +1,43 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
+import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import type { Project, View } from "../../types";
 import { ProjectActionMenu } from "./ProjectActionMenu";
 import { EmptyThreadsState } from "./project-tree/EmptyThreadsState";
 import { ProjectRow } from "./project-tree/ProjectRow";
 import { ThreadRow } from "./project-tree/ThreadRow";
 import { useProjectMenuDismiss } from "./project-tree/useProjectMenuDismiss";
+
+type ProjectThreadsGroupProps = {
+  isExpanded: boolean;
+  threadGroupId: string;
+  projectName: string;
+  children: ReactNode;
+};
+
+function ProjectThreadsGroup({
+  isExpanded,
+  threadGroupId,
+  projectName,
+  children,
+}: ProjectThreadsGroupProps) {
+  const present = useAnimatedPresence(isExpanded);
+
+  if (!present) {
+    return null;
+  }
+
+  return (
+    <div
+      id={threadGroupId}
+      aria-label={`Threads in ${projectName}`}
+      data-open={isExpanded ? "true" : "false"}
+      className="motion-collapse-panel mt-0.5"
+    >
+      <div className="motion-collapse-panel__inner">{children}</div>
+    </div>
+  );
+}
 
 type ProjectTreeProps = {
   projects: Project[];
@@ -83,43 +115,45 @@ export function ProjectTree({
               />
             ) : null}
 
-            {isExpanded ? (
-              <div id={threadGroupId} className="mt-0.5" aria-label={`Threads in ${project.name}`}>
-                {hasThreads ? (
-                  project.threads.map((thread) => {
-                    const isSelected = selectedThreadId === thread.id && activeView === "thread";
+            <ProjectThreadsGroup
+              isExpanded={isExpanded}
+              threadGroupId={threadGroupId}
+              projectName={project.name}
+            >
+              {hasThreads ? (
+                project.threads.map((thread) => {
+                  const isSelected = selectedThreadId === thread.id && activeView === "thread";
 
-                    return (
-                      <ThreadRow
-                        key={thread.id}
-                        age={thread.age}
-                        isSelected={isSelected}
-                        title={thread.title}
-                        onArchive={() =>
-                          onAction("thread.archive", {
-                            projectId: project.id,
-                            threadId: thread.id,
-                          })
+                  return (
+                    <ThreadRow
+                      key={thread.id}
+                      age={thread.age}
+                      isSelected={isSelected}
+                      title={thread.title}
+                      onArchive={() =>
+                        onAction("thread.archive", {
+                          projectId: project.id,
+                          threadId: thread.id,
+                        })
+                      }
+                      onOpen={() => {
+                        if (!thread.sessionPath) {
+                          return;
                         }
-                        onOpen={() => {
-                          if (!thread.sessionPath) {
-                            return;
-                          }
 
-                          onThreadOpen(project.id, thread.id, thread.sessionPath);
-                          setOpenProjectMenuId(null);
-                        }}
-                        onPin={() =>
-                          onAction("thread.pin", { projectId: project.id, threadId: thread.id })
-                        }
-                      />
-                    );
-                  })
-                ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
-                  <EmptyThreadsState />
-                ) : null}
-              </div>
-            ) : null}
+                        onThreadOpen(project.id, thread.id, thread.sessionPath);
+                        setOpenProjectMenuId(null);
+                      }}
+                      onPin={() =>
+                        onAction("thread.pin", { projectId: project.id, threadId: thread.id })
+                      }
+                    />
+                  );
+                })
+              ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
+                <EmptyThreadsState />
+              ) : null}
+            </ProjectThreadsGroup>
           </div>
         );
       })}

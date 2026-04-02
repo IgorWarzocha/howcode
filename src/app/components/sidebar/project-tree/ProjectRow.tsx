@@ -49,12 +49,12 @@ export function ProjectRow({
         {isExpanded ? (
           <ChevronDown
             size={14}
-            className="absolute opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
+            className="absolute opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
           />
         ) : (
           <ChevronRight
             size={14}
-            className="absolute opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
+            className="absolute opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
           />
         )}
       </button>

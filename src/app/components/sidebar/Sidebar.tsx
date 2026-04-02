@@ -14,6 +14,7 @@ import {
 import { useCallback, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass } from "../../features/feature-status";
+import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
 import { sidebarSectionLabelClass } from "../../ui/classes";
@@ -65,6 +66,7 @@ export function Sidebar({
   const settingsMenuRef = useRef<HTMLDivElement>(null);
   const threadsHeadingId = "sidebar-threads-heading";
   const settingsMenuId = "sidebar-settings-menu";
+  const settingsMenuPresent = useAnimatedPresence(settingsOpen);
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -208,9 +210,10 @@ export function Sidebar({
           <span>Settings</span>
         </button>
 
-        {settingsOpen ? (
+        {settingsMenuPresent ? (
           <SettingsMenu
             menuId={settingsMenuId}
+            open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenArchivedThreads={onOpenArchivedThreads}
           />
