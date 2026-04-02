@@ -14,6 +14,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - Pi takeover terminal view that replaces the thread pane with an embedded native Pi TUI lane
 - centered thread scroller with TanStack virtualization, bottom-stick behavior during live updates, and preserved in-lane scrolling
 - real checkpoint-backed diff panel using `@pierre/diffs`, with whole-thread and per-turn patch rendering for completed composer turns in git repos
+- React Query-backed desktop data loading with React Pacer used to debounce shell refresh churn after desktop event bursts
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting
 - Husky + lint-staged pre-commit scaffolding
@@ -57,6 +58,7 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/components/workspace/composer/*` — composer subcomponents/controller
 - `src/app/components/sidebar/project-tree/*` — project tree subcomponents/controller
 - `src/app/views/` — main content modes
+- `src/app/query/*` — React Query client + desktop query helpers
 - `src/app/state/` — reducer/selectors and tests
 - `src/app/data/` — mock fixtures
 - `src/app/ui/` — shared Tailwind class primitives

@@ -1,37 +1,16 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { ThreadData } from "../desktop/types";
+import { desktopQueryKeys, getThreadQuery } from "../query/desktop-query";
 
 export function useDesktopThread(sessionPath: string | null | undefined, refreshKey = 0) {
-  const [threadData, setThreadData] = useState<ThreadData | null>(null);
+  const query = useQuery<ThreadData | null>({
+    queryKey: sessionPath
+      ? desktopQueryKeys.thread(sessionPath, refreshKey)
+      : ["desktop", "thread", null, refreshKey],
+    queryFn: () => (sessionPath ? getThreadQuery(sessionPath) : Promise.resolve(null)),
+    enabled: Boolean(sessionPath),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    void refreshKey;
-
-    const loadThread = async () => {
-      if (!sessionPath || !window.piDesktop?.getThread) {
-        setThreadData(null);
-        return;
-      }
-
-      try {
-        const nextThread = await window.piDesktop.getThread(sessionPath);
-        if (!cancelled) {
-          setThreadData(nextThread);
-        }
-      } catch {
-        if (!cancelled) {
-          setThreadData(null);
-        }
-      }
-    };
-
-    void loadThread();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey, sessionPath]);
-
-  return threadData;
+  return query.data ?? null;
 }

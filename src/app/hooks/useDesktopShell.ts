@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { Debouncer } from "@tanstack/react-pacer";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo } from "react";
 import type {
   ArchivedThread,
   ComposerAttachment,
@@ -8,103 +10,121 @@ import type {
   ShellState,
   Thread,
 } from "../desktop/types";
+import {
+  desktopQueryKeys,
+  getArchivedThreadsQuery,
+  getComposerStateQuery,
+  getProjectGitStateQuery,
+  getProjectThreadsQuery,
+  getShellStateQuery,
+  pickComposerAttachmentsQuery,
+} from "../query/desktop-query";
 
 export function useDesktopShell() {
-  const [shellState, setShellState] = useState<ShellState | null>(null);
+  const queryClient = useQueryClient();
+  const shellStateQuery = useQuery<ShellState | null>({
+    queryKey: desktopQueryKeys.shellState(),
+    queryFn: getShellStateQuery,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+  const shellRefreshDebouncer = useMemo(
+    () =>
+      new Debouncer(
+        () => {
+          void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.shellState() });
+        },
+        { wait: 140 },
+      ),
+    [queryClient],
+  );
 
   const refreshShellState = useCallback(async () => {
-    try {
-      const nextState = await window.piDesktop?.getShellState();
-      if (nextState) {
-        setShellState(nextState);
-      }
-    } catch {
-      setShellState(null);
-    }
-  }, []);
-
-  const loadProjectThreads = useCallback(async (projectId: string) => {
-    if (!window.piDesktop?.getProjectThreads) {
-      return [] as Thread[];
-    }
-
-    const threads = await window.piDesktop.getProjectThreads(projectId);
-    setShellState((currentState) => {
-      if (!currentState) {
-        return currentState;
-      }
-
-      return {
-        ...currentState,
-        projects: currentState.projects.map((project) =>
-          project.id === projectId
-            ? { ...project, threads, threadCount: threads.length, threadsLoaded: true }
-            : project,
-        ),
-      };
+    const nextState = await queryClient.fetchQuery({
+      queryKey: desktopQueryKeys.shellState(),
+      queryFn: getShellStateQuery,
+      staleTime: 0,
     });
 
-    return threads;
-  }, []);
+    return nextState;
+  }, [queryClient]);
+
+  const scheduleShellStateRefresh = useCallback(() => {
+    shellRefreshDebouncer.maybeExecute();
+  }, [shellRefreshDebouncer]);
+
+  const loadProjectThreads = useCallback(
+    async (projectId: string) => {
+      const threads = await queryClient.fetchQuery({
+        queryKey: desktopQueryKeys.projectThreads(projectId),
+        queryFn: () => getProjectThreadsQuery(projectId),
+        staleTime: 0,
+      });
+
+      queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
+        if (!currentState) {
+          return currentState ?? null;
+        }
+
+        return {
+          ...currentState,
+          projects: currentState.projects.map((project) =>
+            project.id === projectId
+              ? { ...project, threads, threadCount: threads.length, threadsLoaded: true }
+              : project,
+          ),
+        };
+      });
+
+      return threads;
+    },
+    [queryClient],
+  );
 
   const loadArchivedThreads = useCallback(async () => {
-    if (!window.piDesktop?.getArchivedThreads) {
-      return [] as ArchivedThread[];
-    }
+    return queryClient.fetchQuery({
+      queryKey: desktopQueryKeys.archivedThreads(),
+      queryFn: getArchivedThreadsQuery,
+      staleTime: 0,
+    }) as Promise<ArchivedThread[]>;
+  }, [queryClient]);
 
-    return window.piDesktop.getArchivedThreads();
-  }, []);
+  const loadComposerState = useCallback(
+    async (request: ComposerStateRequest = {}) => {
+      return queryClient.fetchQuery({
+        queryKey: desktopQueryKeys.composerState(request),
+        queryFn: () => getComposerStateQuery(request),
+        staleTime: 0,
+      }) as Promise<ComposerState | null>;
+    },
+    [queryClient],
+  );
 
-  const loadComposerState = useCallback(async (request: ComposerStateRequest = {}) => {
-    if (!window.piDesktop?.getComposerState) {
-      return null as ComposerState | null;
-    }
-
-    return window.piDesktop.getComposerState(request);
-  }, []);
-
-  const loadProjectGitState = useCallback(async (projectId: string) => {
-    if (!window.piDesktop?.getProjectGitState) {
-      return null as ProjectGitState | null;
-    }
-
-    return window.piDesktop.getProjectGitState(projectId);
-  }, []);
+  const loadProjectGitState = useCallback(
+    async (projectId: string) => {
+      return queryClient.fetchQuery({
+        queryKey: desktopQueryKeys.projectGitState(projectId),
+        queryFn: () => getProjectGitStateQuery(projectId),
+        staleTime: 0,
+      }) as Promise<ProjectGitState | null>;
+    },
+    [queryClient],
+  );
 
   const pickComposerAttachments = useCallback(async (projectId?: string | null) => {
-    if (!window.piDesktop?.pickComposerAttachments) {
-      return [] as ComposerAttachment[];
-    }
-
-    return window.piDesktop.pickComposerAttachments(projectId ?? null);
+    return pickComposerAttachmentsQuery(projectId ?? null) as Promise<ComposerAttachment[]>;
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const loadShellState = async () => {
-      try {
-        const nextState = await window.piDesktop?.getShellState();
-        if (!cancelled && nextState) {
-          setShellState(nextState);
-        }
-      } catch {
-        if (!cancelled) {
-          setShellState(null);
-        }
-      }
-    };
-
-    void loadShellState();
-
     return () => {
-      cancelled = true;
+      shellRefreshDebouncer.cancel();
     };
-  }, []);
+  }, [shellRefreshDebouncer]);
 
   return {
-    shellState,
+    shellState: shellStateQuery.data ?? null,
     refreshShellState,
+    scheduleShellStateRefresh,
     loadProjectThreads,
     loadArchivedThreads,
     loadComposerState,

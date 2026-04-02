@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { TurnDiffResult } from "../desktop/types";
+import { desktopQueryKeys, getThreadDiffQuery } from "../query/desktop-query";
 
 type DiffState = {
   diff: TurnDiffResult | null;
@@ -7,64 +8,24 @@ type DiffState = {
   error: string | null;
 };
 
-const idleState: DiffState = {
-  diff: null,
-  isLoading: false,
-  error: null,
-};
-
 export function useDesktopDiff(
   sessionPath: string | null,
   checkpointTurnCount: number | null,
   enabled = true,
 ) {
-  const [state, setState] = useState<DiffState>(idleState);
+  const query = useQuery<TurnDiffResult | null, Error>({
+    queryKey: sessionPath
+      ? desktopQueryKeys.diff(sessionPath, checkpointTurnCount)
+      : ["desktop", "diff", null, checkpointTurnCount],
+    queryFn: () =>
+      sessionPath ? getThreadDiffQuery(sessionPath, checkpointTurnCount) : Promise.resolve(null),
+    enabled: enabled && Boolean(sessionPath),
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!enabled || !sessionPath) {
-      setState(idleState);
-      return;
-    }
-
-    setState((current) => ({
-      diff: current.diff,
-      isLoading: true,
-      error: null,
-    }));
-
-    const loadDiff = async () => {
-      try {
-        const nextDiff =
-          checkpointTurnCount === null
-            ? await window.piDesktop?.getFullThreadDiff?.(sessionPath)
-            : await window.piDesktop?.getTurnDiff?.(sessionPath, checkpointTurnCount);
-
-        if (!cancelled) {
-          setState({
-            diff: nextDiff ?? null,
-            isLoading: false,
-            error: null,
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setState({
-            diff: null,
-            isLoading: false,
-            error: error instanceof Error ? error.message : "Failed to load diff.",
-          });
-        }
-      }
-    };
-
-    void loadDiff();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [checkpointTurnCount, enabled, sessionPath]);
-
-  return state;
+  return {
+    diff: query.data ?? null,
+    isLoading: query.isLoading || query.isFetching,
+    error: query.error?.message ?? null,
+  } satisfies DiffState;
 }

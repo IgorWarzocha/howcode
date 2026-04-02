@@ -38,6 +38,7 @@ export function useAppShellController() {
     loadProjectThreads,
     pickComposerAttachments,
     refreshShellState,
+    scheduleShellStateRefresh,
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
@@ -205,12 +206,12 @@ export function useAppShellController() {
 
       if (event.reason === "end") {
         void loadProjectThreads(event.projectId);
-        void refreshShellState();
+        scheduleShellStateRefresh();
       }
     });
 
     return unsubscribe;
-  }, [loadProjectThreads, refreshShellState]);
+  }, [loadProjectThreads, scheduleShellStateRefresh]);
 
   const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
     const contextualPayload =
