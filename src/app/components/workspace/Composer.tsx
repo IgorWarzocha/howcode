@@ -75,7 +75,10 @@ export function Composer({
     <>
       {activeView === "home" ? <ComposerBanner onAction={onAction} /> : null}
 
-      <SurfacePanel className="grid gap-0 overflow-hidden shadow-none" aria-label="Composer panel">
+      <SurfacePanel
+        className="grid gap-0 overflow-hidden border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        aria-label="Composer panel"
+      >
         <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
         <textarea
           className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"

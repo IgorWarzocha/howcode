@@ -126,7 +126,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           </div>
 
           {takeoverVisible ? null : (
-            <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
+            <footer className="relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
               <div className="mx-auto w-full max-w-[744px]">
                 <Composer
                   activeView={state.activeView}

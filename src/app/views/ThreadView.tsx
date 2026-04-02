@@ -19,7 +19,7 @@ export function ThreadView({ messages, previousMessageCount }: ThreadViewProps) 
 
   return (
     <div className="mx-auto w-full max-w-[744px] pt-4">
-      <div className="grid gap-4.5 pb-2 [&>*]:min-w-0">
+      <div className="grid gap-4.5 pb-8 [&>*]:min-w-0">
         {firstMessage ? <ThreadMessage message={firstMessage} /> : null}
 
         {remainingMessages.length > 0 && previousMessageCount > 0 ? (
