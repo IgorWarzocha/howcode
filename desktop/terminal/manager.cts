@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Utils } from "electrobun/bun";
@@ -50,13 +51,13 @@ function emitTerminalEvent(event: TerminalEvent) {
 }
 
 function makeSessionId(request: TerminalOpenRequest) {
-  return Buffer.from(
-    JSON.stringify({
-      projectId: request.projectId,
-      sessionPath: request.sessionPath ?? null,
-      cwd: request.cwd ?? request.projectId,
-    }),
-  ).toString("base64url");
+  const sessionKey = JSON.stringify({
+    projectId: request.projectId,
+    sessionPath: request.sessionPath ?? null,
+    cwd: request.cwd ?? request.projectId,
+  });
+
+  return `term_${createHash("sha256").update(sessionKey).digest("hex").slice(0, 24)}`;
 }
 
 function getTranscriptPath(sessionId: string) {
