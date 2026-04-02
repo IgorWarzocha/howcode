@@ -17,8 +17,10 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
   if (activeView === "thread") {
     return (
       <ThreadView
+        key={threadData?.sessionPath ?? "new-thread"}
         messages={threadData?.messages ?? []}
         previousMessageCount={threadData?.previousMessageCount ?? 0}
+        isStreaming={threadData?.isStreaming ?? false}
       />
     );
   }

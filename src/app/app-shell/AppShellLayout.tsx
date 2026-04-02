@@ -112,7 +112,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 />
               </div>
             ) : (
-              <main className={mainPanelClass}>
+              <main
+                className={
+                  state.activeView === "thread"
+                    ? "mb-5 min-h-0 overflow-hidden pt-1.5"
+                    : mainPanelClass
+                }
+              >
                 <MainView
                   activeView={state.activeView}
                   currentProjectName={currentProjectName}

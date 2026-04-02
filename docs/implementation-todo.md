@@ -62,6 +62,8 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 5. Terminal panel
 - [x] Replace static terminal transcript with a real PTY-backed xterm.js viewport
   - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `desktop/terminal/*`, `src/bun/index.ts`
+- [x] Add takeover mode that replaces the thread pane with a centered composer-lite Pi TUI surface
+  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `src/app/app-shell/AppShellLayout.tsx`, `shared/terminal-contracts.ts`, `desktop/terminal/*`
 - [ ] Decide if terminal should remain:
   - [ ] a real shell
   - [ ] a Pi run log
@@ -83,6 +85,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
 - [x] Replace `previousMessageCount: 0` with real history metadata
+- [x] Keep the centered thread scrollbar inside the chat lane and lazily reveal older messages from latest to earliest
   - files: `shared/pi-message-mapper.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
 
 #### 8. Sidebar utility controls

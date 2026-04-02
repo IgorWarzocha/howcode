@@ -189,6 +189,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - UI: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`
 - Renderer now uses real `xterm.js` + fit addon and streams keystrokes/output over the desktop bridge.
+- Takeover mode now swaps the thread pane for a composer-lite `Pi desktop` surface that embeds the native Pi TUI in the same centered `744px` lane as the thread/composer view.
 - Backend PTY/session manager exists in:
   - `desktop/terminal/manager.cts`
   - `desktop/terminal/bun-pty.cts`
@@ -206,6 +207,22 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Add multi-terminal/session controls if Codex parity needs them.
 - Add path link detection + open-in-editor behavior.
 - Decide whether terminal should stay project/thread-scoped or grow into a richer run-log/PTY hybrid.
+
+### 9a. Thread scroller behavior
+
+**Status:** Partially real.
+
+- UI: `src/app/views/ThreadView.tsx`, `src/app/views/MainView.tsx`, `src/app/app-shell/AppShellLayout.tsx`
+- The centered thread lane now owns its own scrollbar instead of using the far-right workspace scrollbar.
+- Message rendering now lazy-loads from latest to earliest, with an earlier-messages divider used to reveal older content.
+- Live updates only auto-follow when the user is already near the bottom of the thread; scrolling in the middle preserves the user's position.
+
+**Still partial because:**
+- the lazy window is renderer-local only; there is no server-side/page-based thread hydration yet
+- earlier-message paging is size-based rather than semantic chunking or date grouping
+
+**Expansion direction:**
+- Move from fixed-size client paging to explicit branch/page hydration if very large Pi sessions require it.
 
 ### 10. Remote connections banner on home
 
