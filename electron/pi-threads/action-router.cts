@@ -53,6 +53,32 @@ export async function handleDesktopAction(
   payload: DesktopActionPayload,
 ): Promise<void> {
   switch (action) {
+    case "nav.back":
+    case "nav.forward":
+    case "threads.filter":
+    case "project.add":
+    case "project.actions":
+    case "project.switch":
+    case "thread.actions":
+    case "thread.run-action":
+    case "workspace.open":
+    case "workspace.secondary":
+    case "workspace.popout":
+    case "product.menu":
+    case "connections.add":
+    case "connections.dismiss-banner":
+    case "composer.attach-menu":
+    case "composer.dictate":
+    case "composer.host":
+    case "composer.profile":
+    case "plugins.open-card":
+    case "automations.open-card":
+    case "debug.open-card":
+    case "landing.project-switcher":
+    case "diff.review":
+    case "terminal.close":
+      return;
+
     case "project.select":
       await selectProjectRuntime(getComposerRequest(payload));
       return;
@@ -146,8 +172,8 @@ export async function handleDesktopAction(
       });
       return;
     }
-
-    default:
-      return;
   }
+
+  const exhaustiveAction: never = action;
+  return exhaustiveAction;
 }

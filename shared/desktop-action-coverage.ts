@@ -1,0 +1,46 @@
+import type { DesktopAction } from "./desktop-actions.js";
+
+export const implementedDesktopActions = [
+  "project.select",
+  "project.expand",
+  "project.collapse",
+  "threads.collapse-all",
+  "thread.pin",
+  "thread.open",
+  "thread.archive",
+  "thread.restore",
+  "thread.delete",
+  "thread.new",
+  "composer.model",
+  "composer.thinking",
+  "composer.send",
+] as const satisfies readonly DesktopAction[];
+
+// These actions are intentionally accepted by the bridge but currently no-op on the
+// backend until their renderer/desktop integrations are implemented.
+export const unimplementedDesktopActions = [
+  "nav.back",
+  "nav.forward",
+  "threads.filter",
+  "project.add",
+  "project.actions",
+  "project.switch",
+  "thread.actions",
+  "thread.run-action",
+  "workspace.open",
+  "workspace.secondary",
+  "workspace.popout",
+  "product.menu",
+  "connections.add",
+  "connections.dismiss-banner",
+  "composer.attach-menu",
+  "composer.dictate",
+  "composer.host",
+  "composer.profile",
+  "plugins.open-card",
+  "automations.open-card",
+  "debug.open-card",
+  "landing.project-switcher",
+  "diff.review",
+  "terminal.close",
+] as const satisfies readonly DesktopAction[];
