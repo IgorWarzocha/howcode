@@ -37,6 +37,8 @@ This repo is intentionally split around future Pi desktop integration seams.
   - IPC channel contracts and shell defaults
 - `electron/pi-module.cts`
   - single dynamic-import boundary for the Pi package
+- `electron/project-git.cts`
+  - selected-project git/branch/diff-stat probing used by header chrome
 - `electron/runtime/*`
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `electron/pi-threads/*`

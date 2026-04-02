@@ -57,6 +57,7 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/ui/` — shared Tailwind class primitives
 - `electron/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
 - `electron/pi-threads/*` — shell loading, thread hydration, action routing
+- `electron/project-git.cts` — selected-project git/branch/diff-stat probing for header chrome
 - `electron/thread-state-db/*` — SQLite schema/query/write/mapping lanes
 - `shared/` — shared contracts, mapping helpers, action coverage metadata
 - `docs/lane-map.md` — concise ownership map
@@ -65,4 +66,4 @@ The `prepare` script will then activate Husky automatically.
 
 ## Next integration step
 
-Finish the remaining mock desktop controls (`project.actions`, header controls, host/profile/dictate, terminal/diff backing data) while keeping the new lane boundaries intact.
+Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, terminal/diff backing data) while keeping the new lane boundaries intact.
