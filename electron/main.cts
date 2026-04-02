@@ -1,9 +1,18 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
-const path = require("node:path");
-const { DEFAULT_SHELL_STATE, isDesktopAction } = require("./contracts.cjs");
-const { loadShellState, loadThread } = require("./pi-threads.cjs");
+import path from "node:path";
+import { BrowserWindow, app, ipcMain } from "electron";
+import {
+  DEFAULT_SHELL_STATE,
+  type GetThreadRequest,
+  IPC_CHANNELS,
+  type InvokeActionRequest,
+  type ShellState,
+  type ThreadData,
+  isDesktopAction,
+} from "./contracts.cjs";
+import { loadShellState, loadThread } from "./pi-threads.cjs";
 
-const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
+const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+const isDev = Boolean(devServerUrl);
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -22,16 +31,16 @@ function createWindow() {
     },
   });
 
-  if (isDev) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL);
+  if (isDev && devServerUrl) {
+    void win.loadURL(devServerUrl);
     return;
   }
 
-  win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  void win.loadFile(path.join(__dirname, "..", "..", "dist", "index.html"));
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle("pi:get-shell-state", async () => {
+  ipcMain.handle(IPC_CHANNELS.getShellState, async (): Promise<ShellState> => {
     try {
       return await loadShellState(process.cwd());
     } catch {
@@ -39,19 +48,22 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.handle("pi:get-thread", async (_event, request) => {
-    if (!request?.sessionPath || typeof request.sessionPath !== "string") {
-      return null;
-    }
+  ipcMain.handle(
+    IPC_CHANNELS.getThread,
+    async (_event, request: GetThreadRequest | null | undefined): Promise<ThreadData | null> => {
+      if (!request?.sessionPath || typeof request.sessionPath !== "string") {
+        return null;
+      }
 
-    try {
-      return await loadThread(request.sessionPath, process.cwd());
-    } catch {
-      return null;
-    }
-  });
+      try {
+        return await loadThread(request.sessionPath);
+      } catch {
+        return null;
+      }
+    },
+  );
 
-  ipcMain.handle("pi:invoke-action", async (_event, request) => {
+  ipcMain.handle(IPC_CHANNELS.invokeAction, async (_event, request: InvokeActionRequest | null) => {
     if (!request || !isDesktopAction(request.action)) {
       throw new Error(`Unsupported desktop action: ${request?.action ?? "unknown"}`);
     }

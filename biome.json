@@ -16,7 +16,7 @@
     }
   },
   "files": {
-    "ignore": ["dist", "node_modules"]
+    "ignore": ["build", "dist", "node_modules"]
   },
   "javascript": {
     "formatter": {

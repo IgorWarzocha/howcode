@@ -1,6 +1,4 @@
-// Keep this allowlist aligned with src/app/desktop/actions.ts until the Electron
-// shell is moved to TypeScript or a generated shared contract.
-const DESKTOP_ACTIONS = [
+export const desktopActions = [
   "nav.back",
   "nav.forward",
   "threads.collapse-all",
@@ -36,26 +34,6 @@ const DESKTOP_ACTIONS = [
   "landing.project-switcher",
   "diff.review",
   "terminal.close",
-];
+] as const;
 
-const DEFAULT_SHELL_STATE = Object.freeze({
-  platform: process.platform,
-  mockMode: true,
-  productName: "Pi Desktop Mock",
-  cwd: process.cwd(),
-  agentDir: "",
-  sessionDir: "",
-  projects: [],
-  availableHosts: ["Local"],
-  composerProfiles: ["Pi session"],
-});
-
-function isDesktopAction(action) {
-  return typeof action === "string" && DESKTOP_ACTIONS.includes(action);
-}
-
-module.exports = {
-  DESKTOP_ACTIONS,
-  DEFAULT_SHELL_STATE,
-  isDesktopAction,
-};
+export type DesktopAction = (typeof desktopActions)[number];
