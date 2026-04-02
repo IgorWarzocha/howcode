@@ -1,5 +1,6 @@
 import { ThreadMessage } from "../components/common/ThreadMessage";
 import type { Message } from "../types";
+import { centeredWorkspaceColumnClass } from "../ui/classes";
 
 type ThreadViewProps = {
   messages: Message[];
@@ -11,15 +12,17 @@ export function ThreadView({ messages, previousMessageCount }: ThreadViewProps) 
 
   if (messages.length === 0) {
     return (
-      <div className="mx-auto grid w-full max-w-[744px] self-stretch place-items-center px-4 pt-16 text-[color:var(--muted)]">
+      <div
+        className={`${centeredWorkspaceColumnClass} grid self-stretch place-items-center pt-16 text-[color:var(--muted)]`}
+      >
         No messages yet.
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[744px] self-stretch pt-4">
-      <div className="grid gap-4.5 px-4 pb-2">
+    <div className={`${centeredWorkspaceColumnClass} self-stretch pt-4`}>
+      <div className="grid gap-4.5 pb-2">
         {firstMessage ? <ThreadMessage message={firstMessage} /> : null}
 
         {remainingMessages.length > 0 && previousMessageCount > 0 ? (

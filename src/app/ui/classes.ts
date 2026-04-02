@@ -7,6 +7,8 @@ export const panelChromeClass =
 
 export const mainPanelClass = "min-h-0 overflow-y-auto overflow-x-hidden px-5 pt-1.5";
 
+export const centeredWorkspaceColumnClass = "mx-auto w-full max-w-[744px] px-4";
+
 export const iconButtonClass =
   "inline-flex h-7 w-7 items-center justify-center rounded-[9px] border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 

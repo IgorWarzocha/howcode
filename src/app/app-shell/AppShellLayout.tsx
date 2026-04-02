@@ -5,7 +5,7 @@ import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
-import { mainPanelClass } from "../ui/classes";
+import { centeredWorkspaceColumnClass, mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
 import type { AppShellController } from "./useAppShellController";
 
@@ -127,7 +127,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
           {takeoverVisible ? null : (
             <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
-              <div className="mx-auto w-full max-w-[744px]">
+              <div className={centeredWorkspaceColumnClass}>
                 <Composer
                   activeView={state.activeView}
                   hostLabel={shellState?.availableHosts[0] ?? "Local"}
@@ -144,7 +144,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 />
               </div>
               {dockedTerminalVisible ? (
-                <div className="mx-auto w-full max-w-[744px]">
+                <div className={centeredWorkspaceColumnClass}>
                   <TerminalPanel
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}
