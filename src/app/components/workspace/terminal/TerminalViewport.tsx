@@ -24,28 +24,29 @@ function writeSystemMessage(terminal: Terminal, message: string) {
 function terminalThemeFromApp(): ITheme {
   const rootStyles = getComputedStyle(document.documentElement);
   return {
-    background: rootStyles.getPropertyValue("--workspace").trim() || "#1f2230",
+    background: rootStyles.getPropertyValue("--terminal-bg").trim() || "#171923",
     foreground: rootStyles.getPropertyValue("--text").trim() || "#d5daed",
-    cursor: "#b9bff3",
-    selectionBackground: "rgba(185, 191, 243, 0.18)",
+    cursor: rootStyles.getPropertyValue("--accent").trim() || "#b9bff3",
+    cursorAccent: rootStyles.getPropertyValue("--terminal-bg").trim() || "#171923",
+    selectionBackground: "rgba(185, 191, 243, 0.16)",
     scrollbarSliderBackground: "rgba(255, 255, 255, 0.08)",
     scrollbarSliderHoverBackground: "rgba(255, 255, 255, 0.14)",
     scrollbarSliderActiveBackground: "rgba(255, 255, 255, 0.2)",
-    black: "#1f2230",
-    red: "#d06b72",
-    green: "#86d9a0",
-    yellow: "#d8b46a",
-    blue: "#93b7ff",
-    magenta: "#c4a4ff",
-    cyan: "#7fdae0",
+    black: "#171923",
+    red: "#db7d84",
+    green: "#8ad7a5",
+    yellow: "#d9ba77",
+    blue: "#96b8ff",
+    magenta: "#c7a8ff",
+    cyan: "#88dee4",
     white: "#d5daed",
-    brightBlack: "#727894",
-    brightRed: "#e88b93",
-    brightGreen: "#9beab2",
-    brightYellow: "#e7ca88",
-    brightBlue: "#abc6ff",
-    brightMagenta: "#d7bcff",
-    brightCyan: "#9ce8ed",
+    brightBlack: "#7c839f",
+    brightRed: "#ec979d",
+    brightGreen: "#a5e7bb",
+    brightYellow: "#e6cc93",
+    brightBlue: "#afc8ff",
+    brightMagenta: "#d7bfff",
+    brightCyan: "#a2e9ef",
     brightWhite: "#f4f7ff",
   };
 }
@@ -84,10 +85,14 @@ export function TerminalViewport({
     const fitAddon = new FitAddon();
     const terminal = new Terminal({
       cursorBlink: true,
-      lineHeight: 1.2,
-      fontSize: 12,
+      lineHeight: 1.32,
+      fontSize: 13,
       scrollback: 5_000,
-      fontFamily: '"SF Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+      fontFamily:
+        'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+      fontWeight: "400",
+      fontWeightBold: "600",
+      letterSpacing: 0,
       theme: terminalThemeFromApp(),
     });
 
@@ -312,7 +317,7 @@ export function TerminalViewport({
   return (
     <div
       ref={containerRef}
-      className="h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px]"
+      className="terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] border border-[rgba(169,178,215,0.04)] bg-[color:var(--terminal-bg)]"
     />
   );
 }
