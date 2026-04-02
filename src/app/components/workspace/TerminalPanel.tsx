@@ -41,7 +41,7 @@ export function TerminalPanel({ onAction }: TerminalPanelProps) {
       <div className={terminalOutputClass}>
         <div className="truncate">
           <span className="text-[#b9c8ff]">~/Work/howcode</span>{" "}
-          <span className="text-[color:var(--green)]">❯</span> npm run dev
+          <span className="text-[color:var(--green)]">❯</span> bun run dev
         </div>
         <div className="truncate text-[color:var(--muted)]">
           ➜ Launching Pi Desktop Mock UI with Electron shell

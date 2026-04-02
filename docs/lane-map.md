@@ -76,9 +76,9 @@ This repo is intentionally split around future Pi desktop integration seams.
 
 ## Checks
 
-- `npm run lint`
-- `npm run format`
-- `npm run typecheck`
-- `npm run test`
-- `npm run build`
-- `npm run check`
+- `bun run lint`
+- `bun run format`
+- `bun run typecheck`
+- `bun run test`
+- `bun run build`
+- `bun run check`

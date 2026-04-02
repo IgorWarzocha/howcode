@@ -16,19 +16,19 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 ## Run
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ## Checks
 
 ```bash
-npm run lint
-npm run format
-npm run typecheck
-npm run test
-npm run build
-npm run check
+bun run lint
+bun run format
+bun run typecheck
+bun run test
+bun run build
+bun run check
 ```
 
 ## Pre-commit hooks
@@ -39,7 +39,7 @@ If this directory is turned into a git repo later, run:
 
 ```bash
 git init
-npm install
+bun install
 ```
 
 The `prepare` script will then activate Husky automatically.

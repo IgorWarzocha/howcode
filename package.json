@@ -3,24 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "description": "Codex-inspired desktop UI mock for Pi",
+  "packageManager": "bun@1.3.9",
   "main": "build/electron/main.cjs",
   "scripts": {
-    "dev": "concurrently -k \"npm:dev:web\" \"npm:dev:electron:tsc\" \"npm:dev:electron\"",
+    "dev": "concurrently -k \"bun run dev:web\" \"bun run dev:electron:tsc\" \"bun run dev:electron\"",
     "dev:web": "vite",
     "dev:electron:tsc": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
     "dev:electron": "wait-on tcp:5173 build/electron/main.cjs && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
-    "build": "vite build && npm run build:electron",
+    "build": "vite build && bun run build:electron",
     "build:electron": "tsc -p tsconfig.electron.json",
     "preview": "vite preview",
     "prepare": "test -d .git && husky || true",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "npm run typecheck:web && npm run typecheck:electron",
+    "typecheck": "bun run typecheck:web && bun run typecheck:electron",
     "typecheck:web": "tsc --noEmit",
     "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
