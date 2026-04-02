@@ -44,7 +44,7 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 flex-1 overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.92)] p-1.5">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.92)] p-1.5">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}

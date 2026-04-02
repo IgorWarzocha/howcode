@@ -69,6 +69,10 @@ export function TerminalViewport({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const resizeFrameRef = useRef<number | null>(null);
+  const lastSizeRef = useRef<{ width: number; height: number; cols: number; rows: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     const mount = containerRef.current;
@@ -91,6 +95,12 @@ export function TerminalViewport({
     terminal.open(mount);
     fitAddon.fit();
     terminal.focus();
+    lastSizeRef.current = {
+      width: mount.clientWidth,
+      height: mount.clientHeight,
+      cols: terminal.cols,
+      rows: terminal.rows,
+    };
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
@@ -197,11 +207,47 @@ export function TerminalViewport({
         return;
       }
 
-      activeFitAddon.fit();
-      void resizeDesktopTerminal({
-        sessionId,
-        cols: activeTerminal.cols,
-        rows: activeTerminal.rows,
+      const width = mount.clientWidth;
+      const height = mount.clientHeight;
+      if (width <= 0 || height <= 0) {
+        return;
+      }
+
+      if (resizeFrameRef.current !== null) {
+        cancelAnimationFrame(resizeFrameRef.current);
+      }
+
+      resizeFrameRef.current = requestAnimationFrame(() => {
+        resizeFrameRef.current = null;
+
+        activeFitAddon.fit();
+
+        const previousSize = lastSizeRef.current;
+        const nextSize = {
+          width,
+          height,
+          cols: activeTerminal.cols,
+          rows: activeTerminal.rows,
+        };
+
+        const changed =
+          !previousSize ||
+          previousSize.width !== nextSize.width ||
+          previousSize.height !== nextSize.height ||
+          previousSize.cols !== nextSize.cols ||
+          previousSize.rows !== nextSize.rows;
+
+        lastSizeRef.current = nextSize;
+
+        if (!changed) {
+          return;
+        }
+
+        void resizeDesktopTerminal({
+          sessionId,
+          cols: activeTerminal.cols,
+          rows: activeTerminal.rows,
+        });
       });
     });
 
@@ -247,6 +293,10 @@ export function TerminalViewport({
       const sessionId = sessionIdRef.current;
       sessionIdRef.current = null;
       resizeObserver.disconnect();
+      if (resizeFrameRef.current !== null) {
+        cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = null;
+      }
       themeObserver.disconnect();
       unsubscribe();
       inputDisposable.dispose();
@@ -259,5 +309,10 @@ export function TerminalViewport({
     };
   }, [launchMode, preserveSessionOnUnmount, projectId, sessionPath]);
 
-  return <div ref={containerRef} className="h-full min-h-[220px] overflow-hidden rounded-[12px]" />;
+  return (
+    <div
+      ref={containerRef}
+      className="h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px]"
+    />
+  );
 }
