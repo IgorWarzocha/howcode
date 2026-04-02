@@ -44,7 +44,28 @@ const rpc = Electroview.defineRPC<PiDesktopRpc>({
 
 let electrobun: InstanceType<typeof Electrobun.Electroview<typeof rpc>> | null = null;
 
-function getElectroview() {
+function hasElectrobunGlobals() {
+  return (
+    typeof window.__electrobunWebviewId === "number" &&
+    typeof window.__electrobunRpcSocketPort === "number"
+  );
+}
+
+async function waitForElectrobunGlobals(timeoutMs = 3_000) {
+  const startedAt = Date.now();
+
+  while (!hasElectrobunGlobals()) {
+    if (Date.now() - startedAt >= timeoutMs) {
+      throw new Error("Electrobun RPC globals are unavailable.");
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+  }
+}
+
+async function getElectroview() {
+  await waitForElectrobunGlobals();
+
   if (!electrobun) {
     electrobun = new Electrobun.Electroview({ rpc });
   }
@@ -52,8 +73,8 @@ function getElectroview() {
   return electrobun;
 }
 
-function getRpc() {
-  const bridge = getElectroview().rpc;
+async function getRpc() {
+  const bridge = (await getElectroview()).rpc;
   if (!bridge) {
     throw new Error("Electrobun RPC bridge is unavailable.");
   }
@@ -62,47 +83,54 @@ function getRpc() {
 }
 
 export const piDesktopApi = {
-  getShellState: () => getRpc().request.getShellState({}) as Promise<ShellState>,
-  getProjectGitState: (projectId: string) =>
-    getRpc().request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
-  pickComposerAttachments: (projectId: string | null = null) =>
-    getRpc().request.pickComposerAttachments({ projectId }) as Promise<ComposerAttachment[]>,
-  getComposerState: (request: ComposerStateRequest = {}) =>
-    getRpc().request.getComposerState(request) as Promise<ComposerState>,
-  getProjectThreads: (projectId: string) =>
-    getRpc().request.getProjectThreads({ projectId }) as Promise<Thread[]>,
-  getArchivedThreads: () => getRpc().request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
-  getThread: (sessionPath: string) =>
-    getRpc().request.getThread({ sessionPath }) as Promise<ThreadData | null>,
-  openTerminal: (request: TerminalOpenRequest) =>
-    getRpc().request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
+  getShellState: async () => (await getRpc()).request.getShellState({}) as Promise<ShellState>,
+  getProjectGitState: async (projectId: string) =>
+    (await getRpc()).request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
+  pickComposerAttachments: async (projectId: string | null = null) =>
+    (await getRpc()).request.pickComposerAttachments({
+      projectId,
+    }) as Promise<ComposerAttachment[]>,
+  getComposerState: async (request: ComposerStateRequest = {}) =>
+    (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
+  getProjectThreads: async (projectId: string) =>
+    (await getRpc()).request.getProjectThreads({ projectId }) as Promise<Thread[]>,
+  getArchivedThreads: async () =>
+    (await getRpc()).request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
+  getThread: async (sessionPath: string) =>
+    (await getRpc()).request.getThread({ sessionPath }) as Promise<ThreadData | null>,
+  openTerminal: async (request: TerminalOpenRequest) =>
+    (await getRpc()).request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
   writeTerminal: async (sessionId: string, data: string) => {
-    await getRpc().request.terminalWrite({ sessionId, data });
+    await (await getRpc()).request.terminalWrite({ sessionId, data });
   },
   resizeTerminal: async (request: TerminalResizeRequest) => {
-    await getRpc().request.terminalResize(request);
+    await (await getRpc()).request.terminalResize(request);
   },
   closeTerminal: async (request: TerminalCloseRequest) => {
-    await getRpc().request.terminalClose(request);
+    await (await getRpc()).request.terminalClose(request);
   },
   openExternal: async (url: string) => {
-    const response = await getRpc().request.openExternal({ url });
+    const response = await (await getRpc()).request.openExternal({ url });
     return response.ok;
   },
   subscribe: (listener: (event: DesktopEvent) => void) => {
-    getElectroview();
     desktopListeners.add(listener);
+
+    void getElectroview().catch(() => undefined);
+
     return () => {
       desktopListeners.delete(listener);
     };
   },
   subscribeTerminal: (listener: (event: TerminalEvent) => void) => {
-    getElectroview();
     terminalListeners.add(listener);
+
+    void getElectroview().catch(() => undefined);
+
     return () => {
       terminalListeners.delete(listener);
     };
   },
-  invokeAction: (action: DesktopAction, payload: DesktopActionPayload = {}) =>
-    getRpc().request.invokeAction({ action, payload }) as Promise<DesktopActionResult>,
+  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
+    (await getRpc()).request.invokeAction({ action, payload }) as Promise<DesktopActionResult>,
 };
