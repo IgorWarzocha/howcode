@@ -42,10 +42,18 @@ const rpc = Electroview.defineRPC<PiDesktopRpc>({
   },
 });
 
-const electrobun = new Electrobun.Electroview({ rpc });
+let electrobun: InstanceType<typeof Electrobun.Electroview<typeof rpc>> | null = null;
+
+function getElectroview() {
+  if (!electrobun) {
+    electrobun = new Electrobun.Electroview({ rpc });
+  }
+
+  return electrobun;
+}
 
 function getRpc() {
-  const bridge = electrobun.rpc;
+  const bridge = getElectroview().rpc;
   if (!bridge) {
     throw new Error("Electrobun RPC bridge is unavailable.");
   }
@@ -82,12 +90,14 @@ export const piDesktopApi = {
     return response.ok;
   },
   subscribe: (listener: (event: DesktopEvent) => void) => {
+    getElectroview();
     desktopListeners.add(listener);
     return () => {
       desktopListeners.delete(listener);
     };
   },
   subscribeTerminal: (listener: (event: TerminalEvent) => void) => {
+    getElectroview();
     terminalListeners.add(listener);
     return () => {
       terminalListeners.delete(listener);
