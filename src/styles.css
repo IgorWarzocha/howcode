@@ -92,10 +92,6 @@ code {
   border-radius: 10px;
 }
 
-.terminal-viewport .xterm-screen {
-  width: 100%;
-}
-
 .xterm-viewport {
   border-radius: 10px;
 }
