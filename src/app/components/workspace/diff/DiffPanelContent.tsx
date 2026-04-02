@@ -4,12 +4,12 @@ import { Columns2, GitCompareArrows, Rows3 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type { ThreadData } from "../../../desktop/types";
-import { getFeatureStatusButtonClass } from "../../../features/feature-status";
+import {
+  getFeatureStatusAccentClass,
+  getFeatureStatusButtonClass,
+} from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
-import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
-import { SurfacePanel } from "../../common/SurfacePanel";
-import { TextButton } from "../../common/TextButton";
 import { buildPatchCacheKey, resolveDiffThemeName } from "./diff-rendering";
 
 type DiffRenderMode = "stacked" | "split";
@@ -200,26 +200,35 @@ export function DiffPanelContent({
   }, [diff?.toTurnCount, selectedFilePath]);
 
   return (
-    <SurfacePanel
+    <aside
       className={cn(
-        "grid min-h-0 gap-0 overflow-hidden p-0 xl:w-full",
-        getFeatureStatusButtonClass("feature:diff.panel"),
+        "grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)] xl:w-full",
       )}
       data-feature-id="feature:diff.panel"
       data-feature-status="partial"
     >
-      <div className="flex items-center justify-between border-b border-[color:var(--border)] px-4 py-3">
-        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
+      <div className="flex h-11 items-center justify-between border-b border-[color:var(--border)] px-3.5">
+        <div className="inline-flex min-w-0 items-center gap-2 text-[12.5px] font-medium text-[color:var(--text)]">
           <GitCompareArrows size={14} />
           <span>Diff</span>
-          <FeatureStatusBadge statusId="feature:diff.panel" />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-1.5 w-1.5 rounded-full border",
+              getFeatureStatusAccentClass("feature:diff.panel"),
+            )}
+          />
         </div>
-        <TextButton
-          className={getFeatureStatusButtonClass("feature:diff.review")}
+        <button
+          type="button"
+          className={cn(
+            "inline-flex h-7 items-center rounded-[8px] border border-transparent px-2 text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+            getFeatureStatusButtonClass("feature:diff.review"),
+          )}
           onClick={() => onAction("diff.review")}
         >
-          Review <FeatureStatusBadge statusId="feature:diff.review" className="ml-2" />
-        </TextButton>
+          Review
+        </button>
       </div>
 
       {!threadData ? (
@@ -236,12 +245,12 @@ export function DiffPanelContent({
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2 border-b border-[color:var(--border)] px-3 py-2">
+          <div className="flex min-h-10 items-center justify-between gap-2 border-b border-[color:var(--border)] px-3 py-1.5">
             <div className="diff-turn-strip flex min-w-0 flex-1 gap-1 overflow-x-auto py-0.5">
               <button
                 type="button"
                 className={cn(
-                  "shrink-0 rounded-md border px-2 py-1 text-left transition-colors",
+                  "shrink-0 rounded-[8px] border px-2 py-1 text-left transition-colors",
                   selectedTurnCount === null
                     ? "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]"
                     : "border-[color:var(--border)] bg-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
@@ -255,7 +264,7 @@ export function DiffPanelContent({
                   key={summary.checkpointTurnCount}
                   type="button"
                   className={cn(
-                    "shrink-0 rounded-md border px-2 py-1 text-left transition-colors",
+                    "shrink-0 rounded-[8px] border px-2 py-1 text-left transition-colors",
                     summary.checkpointTurnCount === selectedTurnCount
                       ? "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]"
                       : "border-[color:var(--border)] bg-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
@@ -278,7 +287,7 @@ export function DiffPanelContent({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex h-7 w-7 items-center justify-center rounded-[8px] border text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]",
+                  "inline-flex h-7 w-7 items-center justify-center rounded-[8px] border text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
                   diffRenderMode === "stacked"
                     ? "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)]"
                     : "border-[color:var(--border)] bg-transparent",
@@ -292,7 +301,7 @@ export function DiffPanelContent({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex h-7 w-7 items-center justify-center rounded-[8px] border text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]",
+                  "inline-flex h-7 w-7 items-center justify-center rounded-[8px] border text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
                   diffRenderMode === "split"
                     ? "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)]"
                     : "border-[color:var(--border)] bg-transparent",
@@ -325,7 +334,7 @@ export function DiffPanelContent({
               </div>
             ) : renderablePatch.kind === "files" ? (
               <Virtualizer
-                className="h-full min-h-0 overflow-auto px-2 pb-2"
+                className="h-full min-h-0 overflow-auto"
                 config={{
                   overscrollSize: 600,
                   intersectionObserverMargin: 1200,
@@ -338,7 +347,7 @@ export function DiffPanelContent({
                     <div
                       key={`${fileKey}:dark`}
                       data-diff-file-path={filePath}
-                      className="mb-2 rounded-md first:mt-2 last:mb-0"
+                      className="first:mt-0"
                       onClickCapture={(event) => {
                         const nativeEvent = event.nativeEvent as MouseEvent;
                         const composedPath = nativeEvent.composedPath?.() ?? [];
@@ -381,6 +390,6 @@ export function DiffPanelContent({
           </div>
         </>
       )}
-    </SurfacePanel>
+    </aside>
   );
 }

@@ -97,7 +97,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           <div
             className={
               state.diffVisible && !takeoverVisible
-                ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(360px,560px)] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
+                ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(380px,48vw)] overflow-hidden pl-5 pr-0 max-xl:grid-cols-1"
                 : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
             }
           >

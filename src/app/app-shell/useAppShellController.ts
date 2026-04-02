@@ -387,6 +387,19 @@ export function useAppShellController() {
     dispatch({ type: "set-diff-turn", checkpointTurnCount });
   };
 
+  const handleToggleDiffPanel = () => {
+    if (!state.diffVisible) {
+      dispatch({
+        type: "open-diff",
+        checkpointTurnCount: null,
+        filePath: null,
+      });
+      return;
+    }
+
+    dispatch({ type: "toggle-diff" });
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -412,7 +425,7 @@ export function useAppShellController() {
     handleShowView,
     handleThreadOpen,
     handleShowTakeoverTerminal: () => dispatch({ type: "show-takeover" }),
-    handleToggleDiff: () => dispatch({ type: "toggle-diff" }),
+    handleToggleDiff: handleToggleDiffPanel,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
