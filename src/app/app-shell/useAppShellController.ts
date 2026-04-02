@@ -341,6 +341,47 @@ export function useAppShellController() {
     void handleAction("thread.open", { projectId, threadId, sessionPath });
   };
 
+  const handleProjectSwitch = (projectId: string) => {
+    dispatch({ type: "select-project", projectId });
+    void runDesktopAction("project.select", { projectId });
+  };
+
+  const handleArchiveSelectedThread = () => {
+    if (!state.selectedProjectId || !state.selectedThreadId) {
+      return;
+    }
+
+    void handleAction("thread.archive", {
+      projectId: state.selectedProjectId,
+      threadId: state.selectedThreadId,
+    });
+  };
+
+  const handleDeleteSelectedThread = () => {
+    if (!state.selectedProjectId || !state.selectedThreadId) {
+      return;
+    }
+
+    if (!window.confirm("Delete this thread from the app and disk?")) {
+      return;
+    }
+
+    void handleAction("thread.delete", {
+      projectId: state.selectedProjectId,
+      threadId: state.selectedThreadId,
+    });
+  };
+
+  const handleOpenSettingsPanel = () => {
+    if (!state.sidebarVisible) {
+      dispatch({ type: "toggle-sidebar" });
+    }
+
+    if (!state.settingsOpen) {
+      dispatch({ type: "toggle-settings" });
+    }
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -350,12 +391,16 @@ export function useAppShellController() {
     currentProjectName,
     currentTitle,
     handleAction,
+    handleArchiveSelectedThread,
     handleCloseArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: false }),
     handleCollapseAll,
     handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
+    handleDeleteSelectedThread,
     handleConfirmProjectAction,
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
+    handleOpenSettingsPanel,
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleProjectSwitch,
     handleShowView,
     handleThreadOpen,
     handleToggleDiff: () => dispatch({ type: "toggle-diff" }),

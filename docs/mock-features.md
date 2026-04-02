@@ -115,24 +115,26 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 5. Header controls
 
-**Status:** Visual only except local pane toggles.
+**Status:** Partially real.
 
 - Header UI: `src/app/components/workspace/WorkspaceHeader.tsx`
+- Real/local behaviors now exist for:
+  - project switcher menu
+  - thread actions menu (archive/delete)
+  - product menu (settings/archived threads entrypoints)
+  - run-action helper menu for terminal/diff panels
+  - files: `src/app/components/workspace/header/*`, `src/app/app-shell/useAppShellController.ts`
 - Local reducer-backed only:
   - terminal toggle
   - diff toggle
-- Stubbed actions:
-  - `project.switch`
-  - `thread.actions`
-  - `thread.run-action`
-  - `product.menu`
+- Still stubbed actions:
   - `workspace.popout`
   - `workspace.secondary`
 
 **Expansion direction:**
 - Add real thread action menu.
 - Define workspace duplication/popout behavior in Electron.
-- Define project switcher behavior.
+- If desired, move more of the header menu behavior into typed shared contracts instead of renderer-local control only.
 
 ### 6. Landing page / project switcher
 

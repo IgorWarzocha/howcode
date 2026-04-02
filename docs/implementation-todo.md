@@ -47,9 +47,10 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `electron/pi-threads/action-router.cts`, `electron/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`, `src/app/components/sidebar/ProjectActionDialog.tsx`
 
 #### 4. Thread action menu / run action
-- [ ] Implement `thread.actions`
-- [ ] Implement `thread.run-action`
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+- [x] Implement a local thread actions menu
+- [x] Implement a local run-action helper menu for terminal/diff panels
+  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `src/app/components/workspace/header/*`, `src/app/app-shell/useAppShellController.ts`
+- [ ] Decide whether these should stay renderer-local or become explicit shared action contracts end-to-end
 
 #### 5. Terminal panel
 - [ ] Replace static terminal transcript with real PTY or run log
@@ -84,9 +85,10 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 9. Landing project switcher / product menu
 - [ ] Implement `landing.project-switcher`
-- [ ] Implement `project.switch`
-- [ ] Implement `product.menu`
-  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+- [x] Implement a local header project switcher menu
+- [x] Implement a local header product menu entrypoint
+  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `src/app/components/workspace/header/*`
+- [ ] Decide whether these should stay renderer-local or become explicit shared action contracts end-to-end
 
 ### P3 — Secondary product areas
 
@@ -152,7 +154,7 @@ Key files:
 - [ ] Real thread filtering
 - [x] Real project action menu operations except worktree creation
 - [ ] Real back/forward semantics
-- [ ] Real project switcher semantics
+- [x] Real project switcher semantics in the header
 
 Key files:
 - `src/app/components/sidebar/Sidebar.tsx`

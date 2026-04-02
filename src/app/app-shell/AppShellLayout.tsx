@@ -23,12 +23,16 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     currentProjectName,
     currentTitle,
     handleAction,
+    handleArchiveSelectedThread,
     handleCloseArchivedThreads,
     handleCloseProjectActionDialog,
     handleConfirmProjectAction,
     handleCollapseAll,
+    handleDeleteSelectedThread,
     handleOpenArchivedThreads,
+    handleOpenSettingsPanel,
     handleProjectSelect,
+    handleProjectSwitch,
     handleShowView,
     handleThreadOpen,
     handleToggleDiff,
@@ -76,10 +80,18 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             activeView={state.activeView}
             currentTitle={currentTitle}
             currentProjectName={currentProjectName}
+            diffVisible={state.diffVisible}
+            projects={projects}
+            selectedProjectId={state.selectedProjectId}
+            selectedThreadId={state.selectedThreadId}
             sidebarVisible={state.sidebarVisible}
             terminalVisible={state.terminalVisible}
-            diffVisible={state.diffVisible}
             onAction={(action, payload) => void handleAction(action, payload)}
+            onArchiveSelectedThread={handleArchiveSelectedThread}
+            onDeleteSelectedThread={handleDeleteSelectedThread}
+            onOpenArchivedThreads={handleOpenArchivedThreads}
+            onOpenSettingsPanel={handleOpenSettingsPanel}
+            onProjectSwitch={handleProjectSwitch}
             onToggleTerminal={handleToggleTerminal}
             onToggleDiff={handleToggleDiff}
           />
