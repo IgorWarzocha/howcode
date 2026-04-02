@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type { ArchivedThread, ComposerState, DesktopEvent, ThreadData } from "../desktop/types";
+import type {
+  ArchivedThread,
+  ComposerState,
+  DesktopEvent,
+  ProjectGitState,
+  ThreadData,
+} from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
@@ -18,6 +24,7 @@ export function useAppShellController() {
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
+  const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
   const [liveThreads, setLiveThreads] = useState<Record<string, ThreadData>>({});
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
@@ -26,6 +33,7 @@ export function useAppShellController() {
     shellState,
     loadArchivedThreads,
     loadComposerState,
+    loadProjectGitState,
     loadProjectThreads,
     pickComposerAttachments,
     refreshShellState,
@@ -142,6 +150,30 @@ export function useAppShellController() {
       cancelled = true;
     };
   }, [composerProjectId, loadComposerState, state.activeView, state.selectedSessionPath]);
+
+  useEffect(() => {
+    if (!composerProjectId) {
+      setProjectGitState(null);
+      return;
+    }
+
+    setProjectGitState(null);
+
+    let cancelled = false;
+
+    const syncProjectGitState = async () => {
+      const nextProjectGitState = await loadProjectGitState(composerProjectId);
+      if (!cancelled) {
+        setProjectGitState(nextProjectGitState);
+      }
+    };
+
+    void syncProjectGitState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [composerProjectId, loadProjectGitState]);
 
   useEffect(() => {
     if (!window.piDesktop?.subscribe) {
@@ -366,6 +398,7 @@ export function useAppShellController() {
     pickComposerAttachments,
     pendingProjectAction,
     projects,
+    projectGitState,
     shellState,
     state,
   };

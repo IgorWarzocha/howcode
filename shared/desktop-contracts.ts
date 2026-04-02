@@ -100,6 +100,14 @@ export type ComposerStateRequest = {
   sessionPath?: string | null;
 };
 
+export type ProjectGitState = {
+  projectId: string;
+  isGitRepo: boolean;
+  branch: string | null;
+  insertions: number;
+  deletions: number;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;

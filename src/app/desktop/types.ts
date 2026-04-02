@@ -8,6 +8,7 @@ export type {
   DesktopEvent,
   DesktopActionPayload,
   DesktopActionResult,
+  ProjectGitState,
   ShellState,
   Thread,
   ThreadData,

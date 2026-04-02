@@ -7,6 +7,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectGitState,
   ShellState,
   Thread,
   ThreadData,
@@ -14,6 +15,7 @@ import type {
 
 export const IPC_CHANNELS = {
   getShellState: "pi:get-shell-state",
+  getProjectGitState: "pi:get-project-git-state",
   pickComposerAttachments: "pi:pick-composer-attachments",
   getComposerState: "pi:get-composer-state",
   getProjectThreads: "pi:get-project-threads",
@@ -47,6 +49,10 @@ export type GetThreadRequest = {
 
 export type GetComposerStateRequest = ComposerStateRequest;
 
+export type GetProjectGitStateRequest = {
+  projectId: string;
+};
+
 export type PickComposerAttachmentsRequest = {
   projectId?: string | null;
 };
@@ -72,6 +78,7 @@ export type {
   DesktopAction,
   DesktopActionPayload,
   DesktopActionResult,
+  ProjectGitState,
   ShellState,
   Thread,
   ThreadData,

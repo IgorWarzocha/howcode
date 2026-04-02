@@ -9,6 +9,7 @@ import {
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "../pi-desktop-runtime.cjs";
 import { getPiModule } from "../pi-module.cjs";
+import { loadProjectGitState } from "../project-git.cjs";
 import { listProjects, syncSessionSummaries } from "../thread-state-db.cjs";
 
 type SessionSummary = {
@@ -83,5 +84,7 @@ export async function loadComposerState(
 ): Promise<ComposerState> {
   return getComposerState(request);
 }
+
+export { loadProjectGitState };
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents;

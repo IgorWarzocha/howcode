@@ -7,11 +7,13 @@ import {
   DEFAULT_SHELL_STATE,
   type DesktopEvent,
   type GetComposerStateRequest,
+  type GetProjectGitStateRequest,
   type GetProjectThreadsRequest,
   type GetThreadRequest,
   IPC_CHANNELS,
   type InvokeActionRequest,
   type PickComposerAttachmentsRequest,
+  type ProjectGitState,
   type ShellState,
   type Thread,
   type ThreadData,
@@ -21,6 +23,7 @@ import {
   handleDesktopAction,
   loadArchivedThreadList,
   loadComposerState,
+  loadProjectGitState,
   loadProjectThreads,
   loadShellState,
   loadThread,
@@ -78,6 +81,24 @@ app.whenReady().then(() => {
       return DEFAULT_SHELL_STATE;
     }
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.getProjectGitState,
+    async (
+      _event,
+      request: GetProjectGitStateRequest | null | undefined,
+    ): Promise<ProjectGitState | null> => {
+      if (!request?.projectId || typeof request.projectId !== "string") {
+        return null;
+      }
+
+      try {
+        return await loadProjectGitState(request.projectId);
+      } catch {
+        return null;
+      }
+    },
+  );
 
   ipcMain.handle(
     IPC_CHANNELS.pickComposerAttachments,

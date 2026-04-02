@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   ChevronDown,
   FolderOpen,
   GitCommitHorizontal,
@@ -9,7 +10,8 @@ import {
   SquareArrowOutUpRight,
 } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
-import { getFeatureStatusButtonClass } from "../../features/feature-status";
+import type { ProjectGitState } from "../../desktop/types";
+import { type FeatureStatusId, getFeatureStatusAccentClass } from "../../features/feature-status";
 import type { View } from "../../types";
 import { cn } from "../../utils/cn";
 
@@ -20,17 +22,41 @@ type WorkspaceHeaderProps = {
   sidebarVisible: boolean;
   terminalVisible: boolean;
   diffVisible: boolean;
+  projectGitState: ProjectGitState | null;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onToggleTerminal: () => void;
   onToggleDiff: () => void;
 };
 
-const headerButtonClass =
-  "inline-flex h-7 items-center justify-center rounded-[10px] border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2 text-[12.5px] leading-none text-[color:var(--muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)] hover:text-[color:var(--text)]";
+const headerSurfaceButtonClass =
+  "relative inline-flex h-7 items-center justify-center rounded-[10px] border border-[rgba(107,115,150,0.18)] bg-[rgba(39,43,57,0.72)] text-[color:var(--muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)] hover:text-[color:var(--text)]";
 
-const headerIconButtonClass = `${headerButtonClass} w-9 px-0`;
-const headerChevronButtonClass = `${headerButtonClass} w-[23px] px-0`;
-const headerTextButtonClass = `${headerButtonClass} gap-1.5 px-2.5`;
+const headerSplitIconButtonClass = `${headerSurfaceButtonClass} w-[31px]`;
+const headerChevronButtonClass = `${headerSurfaceButtonClass} w-[23px]`;
+const headerTextButtonClass = `${headerSurfaceButtonClass} gap-1.5 px-2.5 text-[12.5px] leading-none`;
+const headerQuietIconButtonClass =
+  "relative inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+const headerDividerClass = "mx-1 h-5 w-px bg-[rgba(121,128,160,0.18)]";
+
+type HeaderStatusDotProps = {
+  statusId: FeatureStatusId;
+};
+
+function HeaderStatusDot({ statusId }: HeaderStatusDotProps) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full border p-0",
+        getFeatureStatusAccentClass(statusId),
+      )}
+    />
+  );
+}
+
+function formatDiffCount(value: number) {
+  return value.toLocaleString("en-US");
+}
 
 export function WorkspaceHeader({
   activeView,
@@ -39,6 +65,7 @@ export function WorkspaceHeader({
   sidebarVisible,
   terminalVisible,
   diffVisible,
+  projectGitState,
   onAction,
   onToggleTerminal,
   onToggleDiff,
@@ -46,6 +73,10 @@ export function WorkspaceHeader({
   const isThreadView = activeView === "thread";
   const title = isThreadView ? currentTitle : "New thread";
   const projectName = currentProjectName || "Project";
+  const isGitRepo = projectGitState?.isGitRepo ?? false;
+  const hasGitChanges = Boolean(
+    projectGitState && (projectGitState.insertions || projectGitState.deletions),
+  );
 
   return (
     <header
@@ -55,16 +86,13 @@ export function WorkspaceHeader({
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="truncate text-[13.5px] text-[color:var(--text)]">{title}</span>
+        <span className="truncate text-[13px] font-medium text-[color:var(--text)]">{title}</span>
 
         {isThreadView ? (
           <>
             <button
               type="button"
-              className={cn(
-                "inline-flex h-7 items-center gap-1 rounded-[10px] border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2 text-[12.5px] text-[color:var(--muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)] hover:text-[color:var(--text)]",
-                getFeatureStatusButtonClass("feature:header.project-switch"),
-              )}
+              className={cn(headerTextButtonClass, "h-6.5 gap-1 px-2 text-[12px]")}
               onClick={() => onAction("project.switch")}
               data-feature-id="feature:header.project-switch"
               data-feature-status="mock"
@@ -73,16 +101,16 @@ export function WorkspaceHeader({
               aria-expanded={false}
               title="Project switcher"
             >
-              <span className="truncate">{projectName}</span>
-              <ChevronDown size={14} />
+              <span className="max-w-[180px] truncate text-[color:var(--muted)]">
+                {projectName}
+              </span>
+              <ChevronDown size={13} />
+              <HeaderStatusDot statusId="feature:header.project-switch" />
             </button>
 
             <button
               type="button"
-              className={cn(
-                headerIconButtonClass,
-                getFeatureStatusButtonClass("feature:header.thread-actions"),
-              )}
+              className={headerQuietIconButtonClass}
               onClick={() => onAction("thread.actions")}
               data-feature-id="feature:header.thread-actions"
               data-feature-status="mock"
@@ -92,103 +120,74 @@ export function WorkspaceHeader({
               title="Thread actions"
             >
               <MoreHorizontal size={15} />
+              <HeaderStatusDot statusId="feature:header.thread-actions" />
             </button>
           </>
         ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {isThreadView ? (
+        <button
+          type="button"
+          className={headerQuietIconButtonClass}
+          onClick={() => onAction("thread.run-action")}
+          data-feature-id="feature:header.thread-run-action"
+          data-feature-status="mock"
+          aria-label="Set up a run action"
+          title="Set up a run action"
+        >
+          <Play size={14} />
+          <HeaderStatusDot statusId="feature:header.thread-run-action" />
+        </button>
+
+        <button
+          type="button"
+          className={headerSplitIconButtonClass}
+          onClick={() => onAction("workspace.open")}
+          data-feature-id="feature:header.open"
+          data-feature-status="mock"
+          aria-label="Open"
+          title="Open"
+        >
+          <span className="inline-flex h-[16px] w-[16px] items-center justify-center rounded-[4px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[#171821]">
+            <FolderOpen size={10} />
+          </span>
+          <HeaderStatusDot statusId="feature:header.open" />
+        </button>
+        <button
+          type="button"
+          className={headerChevronButtonClass}
+          onClick={() => onAction("workspace.open-options")}
+          data-feature-id="feature:header.open-options"
+          data-feature-status="mock"
+          aria-label="Open options"
+          aria-haspopup="menu"
+          aria-expanded={false}
+          title="Open options"
+        >
+          <ChevronDown size={13} />
+          <HeaderStatusDot statusId="feature:header.open-options" />
+        </button>
+
+        {isGitRepo ? (
           <>
             <button
               type="button"
-              className={cn(
-                headerIconButtonClass,
-                getFeatureStatusButtonClass("feature:header.thread-run-action"),
-              )}
-              onClick={() => onAction("thread.run-action")}
-              data-feature-id="feature:header.thread-run-action"
+              className={headerTextButtonClass}
+              onClick={() => onAction("workspace.handoff")}
+              data-feature-id="feature:header.handoff"
               data-feature-status="mock"
-              aria-label="Set up a run action"
-              title="Set up a run action"
+              aria-label="Handoff"
+              title="Handoff"
             >
-              <Play size={14} />
+              <ArrowLeftRight size={13} />
+              <span>Handoff</span>
+              <HeaderStatusDot statusId="feature:header.handoff" />
             </button>
 
             <button
               type="button"
-              className={cn(
-                headerIconButtonClass,
-                getFeatureStatusButtonClass("feature:header.open"),
-              )}
-              onClick={() => onAction("workspace.open")}
-              data-feature-id="feature:header.open"
-              data-feature-status="mock"
-              aria-label="Open"
-              title="Open"
-            >
-              <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[#171821]">
-                <FolderOpen size={11} />
-              </span>
-            </button>
-            <button
-              type="button"
-              className={cn(
-                headerChevronButtonClass,
-                getFeatureStatusButtonClass("feature:header.open-options"),
-              )}
-              onClick={() => onAction("workspace.open-options")}
-              data-feature-id="feature:header.open-options"
-              data-feature-status="mock"
-              aria-label="Open options"
-              aria-haspopup="menu"
-              aria-expanded={false}
-              title="Open options"
-            >
-              <ChevronDown size={13} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className={cn(
-                headerIconButtonClass,
-                getFeatureStatusButtonClass("feature:header.open"),
-              )}
-              onClick={() => onAction("workspace.open")}
-              data-feature-id="feature:header.open"
-              data-feature-status="mock"
-              aria-label="Open"
-              title="Open"
-            >
-              <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[#171821]">
-                <FolderOpen size={11} />
-              </span>
-            </button>
-            <button
-              type="button"
-              className={cn(
-                headerChevronButtonClass,
-                getFeatureStatusButtonClass("feature:header.open-options"),
-              )}
-              onClick={() => onAction("workspace.open-options")}
-              data-feature-id="feature:header.open-options"
-              data-feature-status="mock"
-              aria-label="Open options"
-              aria-haspopup="menu"
-              aria-expanded={false}
-              title="Open options"
-            >
-              <ChevronDown size={13} />
-            </button>
-
-            <button
-              type="button"
-              className={cn(
-                headerTextButtonClass,
-                getFeatureStatusButtonClass("feature:header.commit"),
-              )}
+              className={headerTextButtonClass}
               onClick={() => onAction("workspace.commit")}
               data-feature-id="feature:header.commit"
               data-feature-status="mock"
@@ -197,13 +196,11 @@ export function WorkspaceHeader({
             >
               <GitCommitHorizontal size={14} />
               <span>Commit</span>
+              <HeaderStatusDot statusId="feature:header.commit" />
             </button>
             <button
               type="button"
-              className={cn(
-                headerChevronButtonClass,
-                getFeatureStatusButtonClass("feature:header.commit-options"),
-              )}
+              className={headerChevronButtonClass}
               onClick={() => onAction("workspace.commit-options")}
               data-feature-id="feature:header.commit-options"
               data-feature-status="mock"
@@ -213,18 +210,18 @@ export function WorkspaceHeader({
               title="Commit options"
             >
               <ChevronDown size={13} />
+              <HeaderStatusDot statusId="feature:header.commit-options" />
             </button>
           </>
-        )}
+        ) : null}
 
-        <div className="mx-1 h-5 w-px bg-[color:var(--border)]" />
+        <div className={headerDividerClass} />
 
         <button
           type="button"
           className={cn(
-            headerIconButtonClass,
-            terminalVisible && "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)]",
-            getFeatureStatusButtonClass("feature:header.terminal-toggle"),
+            headerQuietIconButtonClass,
+            terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
           )}
           onClick={onToggleTerminal}
           data-feature-id="feature:header.terminal-toggle"
@@ -233,60 +230,49 @@ export function WorkspaceHeader({
           title="Toggle terminal"
           aria-pressed={terminalVisible}
         >
-          <PanelBottom size={15} />
+          <PanelBottom size={14} />
+          <HeaderStatusDot statusId="feature:header.terminal-toggle" />
         </button>
-
-        {isThreadView ? (
-          <button
-            type="button"
-            className={cn(
-              headerIconButtonClass,
-              diffVisible && "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)]",
-              getFeatureStatusButtonClass("feature:header.diff-toggle"),
-            )}
-            onClick={onToggleDiff}
-            data-feature-id="feature:header.diff-toggle"
-            data-feature-status="partial"
-            aria-label="Toggle diff panel"
-            title="Toggle diff panel"
-            aria-pressed={diffVisible}
-          >
-            <GitCompareArrows size={15} />
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={cn(
-              "inline-flex h-7 items-center gap-2 rounded-[10px] border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[12px] leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)]",
-              diffVisible && "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)]",
-              getFeatureStatusButtonClass("feature:header.diff-toggle"),
-            )}
-            onClick={onToggleDiff}
-            data-feature-id="feature:header.diff-toggle"
-            data-feature-status="partial"
-            aria-label="Toggle diff panel"
-            title="Toggle diff panel"
-            aria-pressed={diffVisible}
-          >
-            <GitCompareArrows size={14} />
-            <span className="text-[#79d3a2]">+4,274</span>
-            <span className="text-[#ff8e8e]">-91</span>
-          </button>
-        )}
 
         <button
           type="button"
           className={cn(
-            headerIconButtonClass,
-            getFeatureStatusButtonClass("feature:header.workspace-popout"),
+            headerQuietIconButtonClass,
+            diffVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
           )}
+          onClick={onToggleDiff}
+          data-feature-id="feature:header.diff-toggle"
+          data-feature-status="partial"
+          aria-label="Toggle diff panel"
+          title="Toggle diff panel"
+          aria-pressed={diffVisible}
+        >
+          <GitCompareArrows size={14} />
+          <HeaderStatusDot statusId="feature:header.diff-toggle" />
+        </button>
+
+        {isGitRepo && hasGitChanges ? (
+          <div className="ml-1 flex items-center gap-1 text-[12px] leading-none">
+            <span className="text-[#5cc9a5]">
+              +{formatDiffCount(projectGitState?.insertions ?? 0)}
+            </span>
+            <span className="text-[#d06b72]">
+              -{formatDiffCount(projectGitState?.deletions ?? 0)}
+            </span>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className={headerQuietIconButtonClass}
           onClick={() => onAction("workspace.popout")}
           data-feature-id="feature:header.workspace-popout"
           data-feature-status="mock"
           aria-label="Open in Popout Window"
           title="Open in Popout Window"
         >
-          <SquareArrowOutUpRight size={14} />
+          <SquareArrowOutUpRight size={13} />
+          <HeaderStatusDot statusId="feature:header.workspace-popout" />
         </button>
       </div>
     </header>

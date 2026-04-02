@@ -7,6 +7,7 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  ProjectGitState,
   ShellState,
   Thread,
   ThreadData,
@@ -15,6 +16,7 @@ import { type DesktopActionPayload, IPC_CHANNELS, isDesktopAction } from "./cont
 
 type PiDesktopApi = {
   getShellState: () => Promise<ShellState>;
+  getProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   pickComposerAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   getComposerState: (request?: ComposerStateRequest) => Promise<ComposerState>;
   getProjectThreads: (projectId: string) => Promise<Thread[]>;
@@ -29,6 +31,8 @@ type PiDesktopApi = {
 
 const api: PiDesktopApi = {
   getShellState: () => ipcRenderer.invoke(IPC_CHANNELS.getShellState),
+  getProjectGitState: (projectId) =>
+    ipcRenderer.invoke(IPC_CHANNELS.getProjectGitState, { projectId }),
   pickComposerAttachments: (projectId = null) =>
     ipcRenderer.invoke(IPC_CHANNELS.pickComposerAttachments, { projectId }),
   getComposerState: (request = {}) => ipcRenderer.invoke(IPC_CHANNELS.getComposerState, request),

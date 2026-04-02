@@ -119,8 +119,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Header UI: `src/app/components/workspace/WorkspaceHeader.tsx`
 - Codex-style structure now differs by view:
-  - home/new-thread: open split button, commit split button, terminal, diff-with-stats, popout
-  - thread: title + project switcher + thread actions on the left, then run action, open split button, terminal, diff, popout on the right
+  - non-git: run action, open split button, terminal, diff, popout
+  - git-backed projects: run action, open split button, handoff, commit split button, terminal, diff, inline diff stats, popout
+  - thread: title + project switcher + thread actions on the left, controls on the right
 - Local reducer-backed only:
   - terminal toggle
   - diff toggle
@@ -130,6 +131,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `thread.run-action`
   - `workspace.open`
   - `workspace.open-options`
+  - `workspace.handoff`
   - `workspace.commit`
   - `workspace.commit-options`
   - `workspace.popout`

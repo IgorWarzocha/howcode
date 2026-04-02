@@ -34,6 +34,7 @@ export const unimplementedDesktopActions = [
   "thread.run-action",
   "workspace.open",
   "workspace.open-options",
+  "workspace.handoff",
   "workspace.commit",
   "workspace.commit-options",
   "workspace.popout",

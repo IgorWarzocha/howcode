@@ -4,6 +4,7 @@ import type {
   ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
+  ProjectGitState,
   ShellState,
   Thread,
 } from "../desktop/types";
@@ -62,6 +63,14 @@ export function useDesktopShell() {
     return window.piDesktop.getComposerState(request);
   }, []);
 
+  const loadProjectGitState = useCallback(async (projectId: string) => {
+    if (!window.piDesktop?.getProjectGitState) {
+      return null as ProjectGitState | null;
+    }
+
+    return window.piDesktop.getProjectGitState(projectId);
+  }, []);
+
   const pickComposerAttachments = useCallback(async (projectId?: string | null) => {
     if (!window.piDesktop?.pickComposerAttachments) {
       return [] as ComposerAttachment[];
@@ -99,6 +108,7 @@ export function useDesktopShell() {
     loadProjectThreads,
     loadArchivedThreads,
     loadComposerState,
+    loadProjectGitState,
     pickComposerAttachments,
   };
 }

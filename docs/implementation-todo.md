@@ -54,6 +54,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 4b. Header open / commit controls
 - [ ] Implement `workspace.open`
 - [ ] Implement `workspace.open-options`
+- [ ] Implement `workspace.handoff`
 - [ ] Implement `workspace.commit`
 - [ ] Implement `workspace.commit-options`
   - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`

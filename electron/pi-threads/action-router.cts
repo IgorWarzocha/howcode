@@ -69,6 +69,7 @@ export async function handleDesktopAction(
     case "thread.run-action":
     case "workspace.open":
     case "workspace.open-options":
+    case "workspace.handoff":
     case "workspace.commit":
     case "workspace.commit-options":
     case "workspace.popout":

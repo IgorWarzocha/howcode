@@ -39,6 +39,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     pendingProjectAction,
     pickComposerAttachments,
     projects,
+    projectGitState,
     shellState,
     state,
   } = controller;
@@ -79,6 +80,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             sidebarVisible={state.sidebarVisible}
             terminalVisible={state.terminalVisible}
             diffVisible={state.diffVisible}
+            projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
             onToggleTerminal={handleToggleTerminal}
             onToggleDiff={handleToggleDiff}

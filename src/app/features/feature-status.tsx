@@ -16,6 +16,7 @@ export const featureStatusById = {
   "feature:header.thread-run-action": { status: "mock", label: "Mock" },
   "feature:header.open": { status: "mock", label: "Mock" },
   "feature:header.open-options": { status: "mock", label: "Mock" },
+  "feature:header.handoff": { status: "mock", label: "Mock" },
   "feature:header.commit": { status: "mock", label: "Mock" },
   "feature:header.commit-options": { status: "mock", label: "Mock" },
   "feature:header.terminal-toggle": { status: "partial", label: "Partial" },

@@ -7,6 +7,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectGitState,
   ShellState,
   Thread,
   ThreadData,
@@ -16,6 +17,7 @@ declare global {
   interface Window {
     piDesktop?: {
       getShellState: () => Promise<ShellState>;
+      getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
