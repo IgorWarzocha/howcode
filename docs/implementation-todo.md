@@ -7,19 +7,19 @@ This turns `docs/mock-features.md` into an execution backlog.
 ### P0 — Make Pi actually usable from the composer
 
 #### 1. Real composer -> Pi thread pipeline
-- [ ] Add renderer composer state instead of uncontrolled textarea
+- [x] Add renderer composer state instead of uncontrolled textarea
   - files: `src/app/components/workspace/Composer.tsx`
-- [ ] Add IPC contract(s) for creating a thread and sending a prompt
+- [x] Add IPC contract(s) for creating a thread and sending a prompt
   - files: `electron/contracts.cts`, `electron/preload.cts`, `src/types.d.ts`
-- [ ] Implement Electron handlers that create/continue Pi sessions
+- [x] Implement Electron handlers that create/continue Pi sessions
   - files: `electron/main.cts`, `electron/pi-threads.cts`
-- [ ] Use `createAgentSession()` or equivalent Pi session continuation path
+- [x] Use `createAgentSession()` or equivalent Pi session continuation path
   - files: `electron/pi-threads.cts`
-- [ ] Persist thread/session metadata into SQLite on send
+- [x] Persist thread/session metadata into SQLite on send
   - files: `electron/thread-state-db.cts`
-- [ ] Refresh shell state + opened thread after send
+- [x] Refresh shell state + opened thread after send
   - files: `src/app/hooks/useDesktopShell.ts`, `src/app/hooks/useDesktopThread.ts`, `src/app/AppShell.tsx`
-- [ ] Support streaming assistant output instead of waiting for full completion
+- [x] Support streaming assistant output instead of waiting for full completion
   - files: `electron/main.cts`, `electron/preload.cts`, `src/app/*`
 
 #### 2. New thread creation
@@ -102,9 +102,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 ### Electron / backend checklist
 
-- [ ] Add real send-thread IPC
+- [x] Add real send-thread IPC
 - [ ] Add real new-thread IPC
-- [ ] Add stream/event IPC for assistant output
+- [x] Add stream/event IPC for assistant output
 - [ ] Implement typed project actions instead of generic `project.actions`
 - [ ] Implement diff review backend
 - [ ] Implement terminal backend or run-log backend
@@ -122,9 +122,9 @@ Key files:
 
 ### Renderer / app-state checklist
 
-- [ ] Add controlled composer state
-- [ ] Add optimistic / streaming thread UI state
-- [ ] Refresh shell + thread state coherently after mutations
+- [x] Add controlled composer state
+- [x] Add optimistic / streaming thread UI state
+- [x] Refresh shell + thread state coherently after mutations
 - [ ] Add thread filter/search UI
 - [ ] Add proper menus for thread actions / product menu / project switching
 - [ ] Replace mock plugin/automation/debug data or remove views
@@ -174,10 +174,10 @@ Key files:
 
 Definition of done:
 
-- [ ] Clicking send on a new thread creates a real Pi session
-- [ ] Clicking send on an existing thread appends to the real Pi session
-- [ ] Assistant output appears in the thread UI
-- [ ] Sidebar updates recency/title/thread presence correctly
+- [x] Clicking send on a new thread creates a real Pi session
+- [x] Clicking send on an existing thread appends to the real Pi session
+- [x] Assistant output appears in the thread UI
+- [x] Sidebar updates recency/title/thread presence correctly
 - [ ] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
 
-This should be the next thing we build before expanding any more shell chrome.
+This milestone is now in place. Next, finish the remaining non-chat composer actions and then move to project actions / terminal / diff parity.

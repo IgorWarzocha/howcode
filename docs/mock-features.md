@@ -31,24 +31,24 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 1. Composer / message sending
 
-**Status:** UI-only. No real compose/send pipeline yet.
+**Status:** Partially real.
 
-- Textarea is uncontrolled UI only: `src/app/components/workspace/Composer.tsx`
-- Send button only dispatches `composer.send`: `src/app/components/workspace/Composer.tsx`
-- No Electron/backend implementation for:
-  - `composer.send`
+- Controlled composer state exists in renderer: `src/app/components/workspace/Composer.tsx`
+- Send is wired through real Pi sessions with per-cwd runtimes: `electron/pi-desktop-runtime.cts`, `electron/pi-threads.cts`
+- Existing thread continuation is real via `session.switchSession(...)`: `electron/pi-desktop-runtime.cts`
+- Streaming thread updates are pushed over Electron IPC and rendered live: `electron/main.cts`, `electron/preload.cts`, `src/app/AppShell.tsx`
+- Real model + thinking selectors are wired to Pi session state: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+- Still stubbed in this area:
   - `composer.attach-menu`
-  - `composer.model`
-  - `composer.thinking`
   - `composer.dictate`
   - `composer.host`
   - `composer.profile`
   - Source of truth: `shared/desktop-actions.ts`, `electron/pi-threads.cts`
 
 **Expansion direction:**
-- Create a real composer state model in renderer.
-- Add IPC request(s) for create-thread / append-message / stream-response.
-- Wire to Pi session creation + continuation in Electron.
+- Add attachment/image flows.
+- Surface send failures / auth failures more explicitly in the renderer.
+- Render richer live turn data than plain user/assistant prose.
 
 ### 2. New thread creation
 
@@ -208,14 +208,17 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 13. Thread creation / continuation lifecycle
 
-**Status:** Read-mostly right now.
+**Status:** Partially real.
 
 - Existing thread indexing/opening is real
-- No real workflow yet for:
-  - creating a new Pi thread from the UI
-  - sending follow-up prompts
-  - live streaming assistant output
-  - refreshing a thread after send
+- New-thread-on-first-send is real
+- Existing-thread follow-up prompting is real
+- Live assistant streaming into the open thread is real
+- Sidebar/thread cache refresh after send is real
+- Still missing / incomplete:
+  - explicit `thread.new` backend action
+  - richer streamed tool/bash/custom-message fidelity
+  - clearer failure / retry UI
 
 **Key files:**
 - `src/app/components/workspace/Composer.tsx`
@@ -244,7 +247,7 @@ This is fine for tests, but the card/view content is still placeholder product s
 
 ## Good next expansion order
 
-1. Real composer send / create-thread / continue-thread pipeline
+1. Finish the remaining non-chat parts of the composer flow (`thread.new`, attachments, host/profile/dictate)
 2. Project action menu implementation
 3. Replace terminal + diff mock panels with real backing data
 4. Replace plugin/automation/debug mock cards with real registries or remove until ready
