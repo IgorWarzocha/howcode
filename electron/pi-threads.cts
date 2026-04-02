@@ -23,6 +23,7 @@ import {
 } from "./pi-desktop-runtime.cjs";
 import {
   getFirstUserTurnTitle,
+  getPreviousMessageCount,
   mapAgentMessagesToUiMessages,
   normalizeThreadTitle,
 } from "./pi-message-mapper.cjs";
@@ -154,6 +155,10 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
   const cachedThread = getCachedThread(sessionPath);
   const fileStats = await stat(sessionPath);
   const currentModifiedMs = Math.floor(fileStats.mtimeMs);
+  const { SessionManager } = await getPiModule();
+  const manager = SessionManager.open(sessionPath);
+  const branchEntries = manager.getBranch();
+  const previousMessageCount = getPreviousMessageCount(branchEntries);
 
   if (
     cachedThread?.messages &&
@@ -164,13 +169,11 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
       sessionPath,
       title: cachedThread.title,
       messages: cachedThread.messages,
-      previousMessageCount: 0,
+      previousMessageCount,
       isStreaming: false,
     };
   }
 
-  const { SessionManager } = await getPiModule();
-  const manager = SessionManager.open(sessionPath);
   const sessionContext = manager.buildSessionContext();
   const messages = mapAgentMessagesToUiMessages(sessionContext.messages);
 
@@ -181,7 +184,7 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
     sessionPath,
     title,
     messages,
-    previousMessageCount: 0,
+    previousMessageCount,
     isStreaming: false,
   };
 }

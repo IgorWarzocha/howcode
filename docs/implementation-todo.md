@@ -73,7 +73,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render tool results as first-class blocks
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
-- [ ] Replace `previousMessageCount: 0` with real history metadata
+- [x] Replace `previousMessageCount: 0` with real history metadata
   - files: `electron/pi-threads.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
 
 #### 8. Sidebar utility controls

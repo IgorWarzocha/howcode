@@ -212,7 +212,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - tool calls are not rendered as their own in-progress blocks
   - assistant thinking content is not rendered explicitly
   - image attachments are shown as text placeholders, not inline previews
-- `previousMessageCount` is hardcoded to `0`: `electron/pi-threads.cts`
+- `previousMessageCount` is now derived from Pi compaction metadata on the active branch: `electron/pi-message-mapper.cts`, `electron/pi-threads.cts`, `electron/pi-desktop-runtime.cts`
 
 **Expansion direction:**
 - Add explicit live tool-call state blocks during streaming.

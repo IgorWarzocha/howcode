@@ -32,6 +32,12 @@ type RuntimeMessage = {
   summary?: string;
 };
 
+type SessionBranchEntry = {
+  type: string;
+  id: string;
+  firstKeptEntryId?: string;
+};
+
 function splitParagraphs(text: string) {
   return text
     .split(/\n{2,}/)
@@ -201,4 +207,40 @@ export function getFirstUserTurnTitle(messages: Message[]) {
     | Extract<Message, { role: "assistant" | "user" }>
     | undefined;
   return normalizeThreadTitle(firstUserMessage?.content[0]);
+}
+
+export function getPreviousMessageCount(entries: SessionBranchEntry[]) {
+  const latestCompactionIndex = [...entries]
+    .reverse()
+    .findIndex((entry) => entry.type === "compaction");
+  if (latestCompactionIndex === -1) {
+    return 0;
+  }
+
+  const compactionIndex = entries.length - latestCompactionIndex - 1;
+  const compactionEntry = entries[compactionIndex];
+  const firstKeptEntryId = compactionEntry?.firstKeptEntryId;
+
+  if (!firstKeptEntryId) {
+    return 0;
+  }
+
+  let count = 0;
+
+  for (let index = 0; index < compactionIndex; index += 1) {
+    const entry = entries[index];
+    if (entry?.id === firstKeptEntryId) {
+      break;
+    }
+
+    if (
+      entry?.type === "message" ||
+      entry?.type === "custom_message" ||
+      entry?.type === "branch_summary"
+    ) {
+      count += 1;
+    }
+  }
+
+  return count;
 }

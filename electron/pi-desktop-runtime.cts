@@ -13,7 +13,11 @@ import type {
   Message,
   ThreadData,
 } from "../shared/desktop-contracts.js";
-import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from "./pi-message-mapper.cjs";
+import {
+  getFirstUserTurnTitle,
+  getPreviousMessageCount,
+  mapAgentMessagesToUiMessages,
+} from "./pi-message-mapper.cjs";
 import { saveThreadCache, upsertThreadSummary } from "./thread-state-db.cjs";
 
 type PiModule = typeof import("@mariozechner/pi-coding-agent");
@@ -248,12 +252,13 @@ function buildLiveThreadData(runtime: PiRuntime): ThreadData | null {
   const streamMessage = runtime.session.state.streamMessage;
   const sourceMessages = [...runtime.session.messages, ...(streamMessage ? [streamMessage] : [])];
   const messages = mapAgentMessagesToUiMessages(sourceMessages as AgentMessage[]);
+  const previousMessageCount = getPreviousMessageCount(runtime.session.sessionManager.getBranch());
 
   return {
     sessionPath,
     title: getFirstUserTurnTitle(messages),
     messages,
-    previousMessageCount: 0,
+    previousMessageCount,
     isStreaming: runtime.session.isStreaming,
   };
 }
