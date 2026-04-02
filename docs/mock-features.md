@@ -115,9 +115,12 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 5. Header controls
 
-**Status:** Visual only except local pane toggles.
+**Status:** Layout now matches Codex more closely, but most controls are still stubbed except local pane toggles.
 
 - Header UI: `src/app/components/workspace/WorkspaceHeader.tsx`
+- Codex-style structure now differs by view:
+  - home/new-thread: open split button, commit split button, terminal, diff-with-stats, popout
+  - thread: title + project switcher + thread actions on the left, then run action, open split button, terminal, diff, popout on the right
 - Local reducer-backed only:
   - terminal toggle
   - diff toggle
@@ -125,14 +128,17 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `project.switch`
   - `thread.actions`
   - `thread.run-action`
-  - `product.menu`
+  - `workspace.open`
+  - `workspace.open-options`
+  - `workspace.commit`
+  - `workspace.commit-options`
   - `workspace.popout`
-  - `workspace.secondary`
 
 **Expansion direction:**
 - Add real thread action menu.
-- Define workspace duplication/popout behavior in Electron.
+- Define open/commit split-button behavior in Electron.
 - Define project switcher behavior.
+- Replace mock home diff stats with real workspace diff data when the diff lane is implemented.
 
 ### 6. Landing page / project switcher
 

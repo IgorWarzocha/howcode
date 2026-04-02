@@ -68,9 +68,10 @@ export async function handleDesktopAction(
     case "thread.actions":
     case "thread.run-action":
     case "workspace.open":
-    case "workspace.secondary":
+    case "workspace.open-options":
+    case "workspace.commit":
+    case "workspace.commit-options":
     case "workspace.popout":
-    case "product.menu":
     case "connections.add":
     case "connections.dismiss-banner":
     case "composer.attach-menu":

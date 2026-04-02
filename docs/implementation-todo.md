@@ -51,6 +51,13 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Implement `thread.run-action`
   - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
 
+#### 4b. Header open / commit controls
+- [ ] Implement `workspace.open`
+- [ ] Implement `workspace.open-options`
+- [ ] Implement `workspace.commit`
+- [ ] Implement `workspace.commit-options`
+  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+
 #### 5. Terminal panel
 - [ ] Replace static terminal transcript with real PTY or run log
   - files: `src/app/components/workspace/TerminalPanel.tsx`
@@ -82,10 +89,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Decide whether nav back/forward are renderer history or app history
   - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `electron/pi-threads/action-router.cts`
 
-#### 9. Landing project switcher / product menu
+#### 9. Landing project switcher
 - [ ] Implement `landing.project-switcher`
 - [ ] Implement `project.switch`
-- [ ] Implement `product.menu`
   - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
@@ -131,7 +137,7 @@ Key files:
 - [x] Add optimistic / streaming thread UI state
 - [x] Refresh shell + thread state coherently after mutations
 - [ ] Add thread filter/search UI
-- [ ] Add proper menus for thread actions / product menu / project switching
+- [ ] Add proper menus for thread actions / project switching / header split-button actions
 - [ ] Replace mock plugin/automation/debug data or remove views
 - [ ] Add richer thread block renderers
 

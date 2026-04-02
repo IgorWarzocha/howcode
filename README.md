@@ -65,4 +65,4 @@ The `prepare` script will then activate Husky automatically.
 
 ## Next integration step
 
-Finish the remaining mock desktop controls (`project.actions`, header menus, host/profile/dictate, terminal/diff backing data) while keeping the new lane boundaries intact.
+Finish the remaining mock desktop controls (`project.actions`, header controls, host/profile/dictate, terminal/diff backing data) while keeping the new lane boundaries intact.
