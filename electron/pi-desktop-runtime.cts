@@ -372,6 +372,16 @@ export async function sendComposerPrompt(
   }
 
   const processedAttachments = await processComposerAttachments(request.attachments ?? []);
+  if (
+    processedAttachments.images.length > 0 &&
+    runtime.session.model &&
+    !runtime.session.model.input?.includes("image")
+  ) {
+    throw new Error(
+      `${runtime.session.model.name ?? runtime.session.model.id} does not support image attachments.`,
+    );
+  }
+
   const message = `${request.text}${processedAttachments.text ? `\n\n${processedAttachments.text.trimEnd()}` : ""}`;
 
   await runtime.session.prompt(message, {

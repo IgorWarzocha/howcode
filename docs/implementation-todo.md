@@ -23,6 +23,8 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `electron/main.cts`, `electron/preload.cts`, `src/app/*`
 - [x] Add attachment picking + file/image send support
   - files: `electron/main.cts`, `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+- [x] Surface basic composer send/model errors inline
+  - files: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 
 #### 2. New thread creation
 - [x] Implement `thread.new` as a real action

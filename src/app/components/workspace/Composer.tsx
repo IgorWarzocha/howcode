@@ -71,6 +71,15 @@ export function Composer({
 
   const canSend = draft.trim().length > 0 && !isSending;
 
+  const runComposerAction = async (action: DesktopAction, payload: Record<string, unknown>) => {
+    try {
+      await onAction(action, payload);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not update the composer.");
+    }
+  };
+
   const send = async () => {
     const text = draft.trim();
     if (!text || isSending) {
@@ -155,6 +164,11 @@ export function Composer({
           className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          onInput={() => {
+            if (errorMessage) {
+              setErrorMessage(null);
+            }
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -225,7 +239,7 @@ export function Composer({
                         className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
                         onClick={() => {
                           setModelMenuOpen(false);
-                          void onAction("composer.model", {
+                          void runComposerAction("composer.model", {
                             provider: availableModel.provider,
                             modelId: availableModel.id,
                             projectId,
@@ -270,7 +284,7 @@ export function Composer({
                         className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
                         onClick={() => {
                           setThinkingMenuOpen(false);
-                          void onAction("composer.thinking", {
+                          void runComposerAction("composer.thinking", {
                             level,
                             projectId,
                             sessionPath,

@@ -39,6 +39,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Existing thread continuation is real via `session.switchSession(...)`: `electron/pi-desktop-runtime.cts`
 - Streaming thread updates are pushed over Electron IPC and rendered live: `electron/main.cts`, `electron/preload.cts`, `src/app/AppShell.tsx`
 - Real model + thinking selectors are wired to Pi session state: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+- Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 - Still stubbed in this area:
   - `composer.dictate`
   - `composer.host`
@@ -48,7 +49,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Add attachment/image flows.
 - Improve attachment handling to match Pi CLI file processing more closely (auto-resize, binary rejection, richer previews).
-- Surface send failures / auth failures more explicitly in the renderer.
+- Expand failure UX beyond inline composer text (retry affordances, auth-specific actions).
 - Render richer live turn data than plain user/assistant prose.
 
 ### 2. New thread creation
