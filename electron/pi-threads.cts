@@ -16,6 +16,7 @@ import {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  startNewThread,
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "./pi-desktop-runtime.cjs";
 import {
@@ -342,6 +343,11 @@ export async function handleDesktopAction(
         }
       }
       deleteThreadRecord(threadId);
+      return;
+    }
+
+    case "thread.new": {
+      await startNewThread(getComposerRequest(payload));
       return;
     }
 

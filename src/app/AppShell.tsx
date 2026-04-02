@@ -170,14 +170,10 @@ export function AppShell() {
           threadId: event.threadId,
           sessionPath: event.sessionPath,
         });
-        void refreshShellState();
-      }
-
-      if (event.reason === "start" || event.reason === "end") {
-        void loadProjectThreads(event.projectId);
       }
 
       if (event.reason === "end") {
+        void loadProjectThreads(event.projectId);
         void refreshShellState();
       }
     });
@@ -232,6 +228,15 @@ export function AppShell() {
         sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
       });
 
+      if (nextComposerState) {
+        setComposerState(nextComposerState);
+      }
+    }
+
+    if (action === "thread.new") {
+      dispatch({ type: "show-view", view: "home" });
+
+      const nextComposerState = await loadComposerState({ projectId: composerProjectId });
       if (nextComposerState) {
         setComposerState(nextComposerState);
       }

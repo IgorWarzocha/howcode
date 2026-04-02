@@ -23,7 +23,7 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `electron/main.cts`, `electron/preload.cts`, `src/app/*`
 
 #### 2. New thread creation
-- [ ] Implement `thread.new` as a real action
+- [x] Implement `thread.new` as a real action
   - files: `shared/desktop-actions.ts`, `electron/pi-threads.cts`, `src/app/components/sidebar/Sidebar.tsx`
 - [ ] Decide whether sessions are created immediately or on first send
 - [ ] Ensure new threads appear in SQLite before/when first message is sent

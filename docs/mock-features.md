@@ -52,14 +52,13 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 2. New thread creation
 
-**Status:** Not implemented.
+**Status:** Partially real.
 
-- “New thread” nav item only switches local view to home: `src/app/components/sidebar/Sidebar.tsx`
-- Action exists in contract but is not used/handled: `shared/desktop-actions.ts`, `electron/pi-threads.cts`
+- “New thread” now creates a fresh Pi session context for the selected project and returns the UI to home: `src/app/components/sidebar/Sidebar.tsx`, `electron/pi-desktop-runtime.cts`, `electron/pi-threads.cts`
+- Session persistence still happens on first assistant-backed send, matching Pi session behavior.
 
 **Expansion direction:**
-- Introduce real `thread.new` flow in Electron.
-- Allocate a persisted Pi session immediately or on first send.
+- Decide whether desktop should ever force eager on-disk session creation before first assistant response.
 
 ### 3. Project actions menu
 

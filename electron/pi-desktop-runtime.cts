@@ -1,13 +1,6 @@
+import { stat } from "node:fs/promises";
 import type { AgentMessage, ThinkingLevel } from "@mariozechner/pi-agent-core";
-import {
-  type AgentSession,
-  AuthStorage,
-  ModelRegistry,
-  SessionManager,
-  SettingsManager,
-  createAgentSession,
-  getAgentDir,
-} from "@mariozechner/pi-coding-agent";
+import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
   ComposerModel,
   ComposerState,
@@ -18,6 +11,8 @@ import type {
   ThreadData,
 } from "../shared/desktop-contracts.js";
 import { saveThreadCache, upsertThreadSummary } from "./thread-state-db.cjs";
+
+type PiModule = typeof import("@mariozechner/pi-coding-agent");
 
 type PiRuntime = {
   cwd: string;
@@ -41,6 +36,15 @@ const runtimePromises = new Map<string, Promise<PiRuntime>>();
 const liveThreads = new Map<string, ThreadData>();
 const sessionPathToCwd = new Map<string, string>();
 const desktopListeners = new Set<(event: DesktopEvent) => void>();
+let piModulePromise: Promise<PiModule> | undefined;
+
+function getPiModule() {
+  if (!piModulePromise) {
+    piModulePromise = import("@mariozechner/pi-coding-agent");
+  }
+
+  return piModulePromise;
+}
 
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
@@ -144,6 +148,14 @@ function mapThinkingLevels(levels: ThinkingLevel[]) {
 }
 
 async function createRuntime(cwd: string): Promise<PiRuntime> {
+  const {
+    AuthStorage,
+    ModelRegistry,
+    SessionManager,
+    SettingsManager,
+    createAgentSession,
+    getAgentDir,
+  } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
@@ -208,6 +220,7 @@ async function resolveCwd(request: ComposerStateRequest = {}) {
       return mappedCwd;
     }
 
+    const { SessionManager } = await getPiModule();
     return SessionManager.open(request.sessionPath).getCwd();
   }
 
@@ -289,17 +302,28 @@ async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReas
   const threadId = runtime.session.sessionId;
   const projectId = runtime.cwd;
   const timestamp = Date.now();
+  let hasPersistedSessionFile = false;
 
-  upsertThreadSummary({
-    id: threadId,
-    cwd: projectId,
-    sessionPath,
-    title: thread.title,
-    lastModifiedMs: timestamp,
-  });
-  saveThreadCache(sessionPath, thread.title, thread.messages, timestamp);
+  try {
+    await stat(sessionPath);
+    hasPersistedSessionFile = true;
+  } catch {
+    hasPersistedSessionFile = false;
+  }
+
   liveThreads.set(sessionPath, thread);
   sessionPathToCwd.set(sessionPath, projectId);
+
+  if (hasPersistedSessionFile) {
+    upsertThreadSummary({
+      id: threadId,
+      cwd: projectId,
+      sessionPath,
+      title: thread.title,
+      lastModifiedMs: timestamp,
+    });
+    saveThreadCache(sessionPath, thread.title, thread.messages, timestamp);
+  }
 
   emitDesktopEvent({
     type: "thread-update",
@@ -378,4 +402,19 @@ export async function sendComposerPrompt(
   }
 
   await runtime.session.prompt(request.text);
+}
+
+export async function startNewThread(request: ComposerStateRequest = {}): Promise<void> {
+  const runtime = await getRuntimeForRequest(request);
+
+  await runtime.session.newSession();
+
+  if (runtime.session.sessionFile) {
+    sessionPathToCwd.set(runtime.session.sessionFile, runtime.cwd);
+  }
+
+  emitDesktopEvent({
+    type: "composer-update",
+    composer: await buildComposerState(runtime),
+  });
 }

@@ -89,7 +89,12 @@ export function Sidebar({
             icon={<Sparkles size={16} />}
             label="New thread"
             active={activeView === "home"}
-            onClick={() => onShowView("home")}
+            onClick={() => {
+              onShowView("home");
+              onAction("thread.new", {
+                projectId: (selectedProjectId || projects[0]?.id) ?? null,
+              });
+            }}
           />
           <NavButton
             icon={<LayoutGrid size={16} />}
