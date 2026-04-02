@@ -10,6 +10,8 @@ import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
 import type { AppShellController } from "./useAppShellController";
 
+const DIFF_OVERLAY_BREAKPOINT = 1180;
+
 type AppShellLayoutProps = {
   controller: AppShellController;
 };
@@ -54,7 +56,34 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const dockedTerminalVisible = state.terminalVisible;
   const diffVisible = state.diffVisible && !takeoverVisible;
   const [diffPanelWidth, setDiffPanelWidth] = useState(540);
+  const [mainSectionWidth, setMainSectionWidth] = useState<number | null>(null);
   const resizeStartRef = useRef<{ pointerX: number; width: number } | null>(null);
+  const mainSectionRef = useRef<HTMLElement>(null);
+
+  const overlayDiffVisible =
+    diffVisible && mainSectionWidth !== null && mainSectionWidth < DIFF_OVERLAY_BREAKPOINT;
+  const splitDiffVisible = diffVisible && !overlayDiffVisible;
+
+  useEffect(() => {
+    const element = mainSectionRef.current;
+    if (!element) {
+      return;
+    }
+
+    setMainSectionWidth(element.clientWidth);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      setMainSectionWidth(entry.contentRect.width);
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -80,7 +109,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     };
   }, []);
 
-  const diffLayoutStyle = diffVisible
+  const diffLayoutStyle = splitDiffVisible
     ? ({ "--diff-panel-width": `${diffPanelWidth}px` } as CSSProperties)
     : undefined;
 
@@ -112,68 +141,133 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           onToggleProjectCollapse={handleToggleProjectCollapse}
         />
 
-        <section className="flex min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]">
+        <section
+          ref={mainSectionRef}
+          className="flex min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]"
+        >
           <WorkspaceHeader
             activeView={state.activeView}
             currentTitle={currentTitle}
             currentProjectName={currentProjectName}
             sidebarVisible={state.sidebarVisible}
             terminalVisible={state.terminalVisible}
-            diffVisible={state.diffVisible}
+            diffVisible={diffVisible}
             projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
             onToggleTerminal={handleToggleTerminal}
             onToggleDiff={handleToggleDiff}
           />
 
-          <div
-            style={diffLayoutStyle}
-            className={
-              diffVisible
-                ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] overflow-hidden pl-5 pr-0 max-xl:grid-cols-1"
-                : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
-            }
-          >
-            {takeoverVisible ? (
-              <div className="mx-auto min-h-0 w-full max-w-[744px] overflow-hidden pt-1.5 pb-4">
-                <TerminalPanel
-                  projectId={composerProjectId}
-                  sessionPath={terminalSessionPath}
-                  onClose={handleCloseTakeoverTerminal}
-                  mode="takeover"
-                  hostLabel={shellState?.availableHosts[0] ?? "Local"}
-                  profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
-                  onAction={(action, payload) => void handleAction(action, payload)}
-                />
-              </div>
-            ) : (
-              <main
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              style={diffLayoutStyle}
+              className={
+                splitDiffVisible
+                  ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] overflow-hidden pl-5 pr-0"
+                  : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
+              }
+            >
+              {takeoverVisible ? (
+                <div className="mx-auto min-h-0 w-full max-w-[744px] overflow-hidden pt-1.5 pb-4">
+                  <TerminalPanel
+                    projectId={composerProjectId}
+                    sessionPath={terminalSessionPath}
+                    onClose={handleCloseTakeoverTerminal}
+                    mode="takeover"
+                    hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                    profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                    onAction={(action, payload) => void handleAction(action, payload)}
+                  />
+                </div>
+              ) : (
+                <main
+                  className={
+                    state.activeView === "thread"
+                      ? "mb-5 min-h-0 overflow-hidden pt-1.5"
+                      : mainPanelClass
+                  }
+                >
+                  <MainView
+                    activeView={state.activeView}
+                    currentProjectName={currentProjectName}
+                    threadData={activeThreadData}
+                    onAction={(action, payload) => void handleAction(action, payload)}
+                    onOpenTurnDiff={handleOpenDiffSelection}
+                  />
+                </main>
+              )}
+              {splitDiffVisible ? (
+                <div className="relative min-h-0">
+                  <div
+                    className="absolute top-0 bottom-0 left-0 z-20 w-2 -translate-x-1/2 cursor-col-resize"
+                    onPointerDown={(event) => {
+                      resizeStartRef.current = {
+                        pointerX: event.clientX,
+                        width: diffPanelWidth,
+                      };
+                    }}
+                  />
+                  <DiffPanel
+                    projectId={composerProjectId}
+                    threadData={activeThreadData}
+                    isGitRepo={projectGitState?.isGitRepo ?? false}
+                    selectedTurnCount={state.selectedDiffTurnCount}
+                    selectedFilePath={state.selectedDiffFilePath}
+                    onSelectTurn={handleSelectDiffTurn}
+                    layoutMode="split"
+                    onClose={handleToggleDiff}
+                    onAction={(action, payload) => void handleAction(action, payload)}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            {takeoverVisible ? null : (
+              <footer
+                style={diffLayoutStyle}
                 className={
-                  state.activeView === "thread"
-                    ? "mb-5 min-h-0 overflow-hidden pt-1.5"
-                    : mainPanelClass
+                  splitDiffVisible
+                    ? "relative z-10 -mt-5 shrink-0 grid grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] pl-5 pr-0 pt-0 pb-4"
+                    : "relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4"
                 }
               >
-                <MainView
-                  activeView={state.activeView}
-                  currentProjectName={currentProjectName}
-                  threadData={activeThreadData}
-                  onAction={(action, payload) => void handleAction(action, payload)}
-                  onOpenTurnDiff={handleOpenDiffSelection}
-                />
-              </main>
+                <div className="grid gap-2.5">
+                  <div className="mx-auto w-full max-w-[744px]">
+                    <Composer
+                      activeView={state.activeView}
+                      hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                      profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                      model={activeComposerState?.currentModel ?? null}
+                      availableModels={activeComposerState?.availableModels ?? []}
+                      thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                      availableThinkingLevels={
+                        activeComposerState?.availableThinkingLevels ?? ["off"]
+                      }
+                      projectId={composerProjectId}
+                      sessionPath={terminalSessionPath}
+                      onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                      onPickAttachments={pickComposerAttachments}
+                      onAction={handleAction}
+                    />
+                  </div>
+                  {dockedTerminalVisible ? (
+                    <div className="mx-auto w-full max-w-[744px]">
+                      <TerminalPanel
+                        projectId={composerProjectId}
+                        sessionPath={terminalSessionPath}
+                        onClose={handleToggleTerminal}
+                        mode="docked"
+                        onAction={(action, payload) => void handleAction(action, payload)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {splitDiffVisible ? <div /> : null}
+              </footer>
             )}
-            {diffVisible ? (
-              <div className="relative min-h-0 max-xl:hidden">
-                <div
-                  className="absolute top-0 bottom-0 left-0 z-20 w-2 -translate-x-1/2 cursor-col-resize"
-                  onPointerDown={(event) => {
-                    resizeStartRef.current = {
-                      pointerX: event.clientX,
-                      width: diffPanelWidth,
-                    };
-                  }}
-                />
+
+            {overlayDiffVisible ? (
+              <div className="absolute inset-0 z-20 bg-[color:var(--workspace)]">
                 <DiffPanel
                   projectId={composerProjectId}
                   threadData={activeThreadData}
@@ -181,56 +275,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   selectedTurnCount={state.selectedDiffTurnCount}
                   selectedFilePath={state.selectedDiffFilePath}
                   onSelectTurn={handleSelectDiffTurn}
+                  layoutMode="overlay"
                   onClose={handleToggleDiff}
                   onAction={(action, payload) => void handleAction(action, payload)}
                 />
               </div>
             ) : null}
           </div>
-
-          {takeoverVisible ? null : (
-            <footer
-              style={diffLayoutStyle}
-              className={
-                diffVisible
-                  ? "relative z-10 -mt-5 shrink-0 grid grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] pl-5 pr-0 pt-0 pb-4 max-xl:grid-cols-1"
-                  : "relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4"
-              }
-            >
-              <div className="grid gap-2.5">
-                <div className="mx-auto w-full max-w-[744px]">
-                  <Composer
-                    activeView={state.activeView}
-                    hostLabel={shellState?.availableHosts[0] ?? "Local"}
-                    profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
-                    model={activeComposerState?.currentModel ?? null}
-                    availableModels={activeComposerState?.availableModels ?? []}
-                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                    availableThinkingLevels={
-                      activeComposerState?.availableThinkingLevels ?? ["off"]
-                    }
-                    projectId={composerProjectId}
-                    sessionPath={terminalSessionPath}
-                    onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-                    onPickAttachments={pickComposerAttachments}
-                    onAction={handleAction}
-                  />
-                </div>
-                {dockedTerminalVisible ? (
-                  <div className="mx-auto w-full max-w-[744px]">
-                    <TerminalPanel
-                      projectId={composerProjectId}
-                      sessionPath={terminalSessionPath}
-                      onClose={handleToggleTerminal}
-                      mode="docked"
-                      onAction={(action, payload) => void handleAction(action, payload)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-              {diffVisible ? <div className="max-xl:hidden" /> : null}
-            </footer>
-          )}
         </section>
       </div>
 

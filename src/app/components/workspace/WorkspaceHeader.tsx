@@ -37,6 +37,7 @@ const headerTextButtonClass = `${headerSurfaceButtonClass} gap-1.5 px-2.5 text-[
 const headerQuietIconButtonClass =
   "relative inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 const headerDividerClass = "mx-1 h-5 w-px bg-[rgba(121,128,160,0.18)]";
+const headerOptionalControlClass = "max-[1180px]:hidden";
 
 type HeaderStatusDotProps = {
   statusId: FeatureStatusId;
@@ -81,7 +82,7 @@ export function WorkspaceHeader({
   return (
     <header
       className={cn(
-        "flex items-center justify-between gap-4 px-5 pt-2.5 pb-2",
+        "flex min-w-0 items-center justify-between gap-4 px-5 pt-2.5 pb-2",
         !sidebarVisible && "pl-16",
       )}
     >
@@ -124,10 +125,10 @@ export function WorkspaceHeader({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex min-w-0 shrink-0 items-center gap-1.5">
         <button
           type="button"
-          className={headerQuietIconButtonClass}
+          className={cn(headerQuietIconButtonClass, headerOptionalControlClass)}
           onClick={() => onAction("thread.run-action")}
           data-feature-id="feature:header.thread-run-action"
           data-feature-status="mock"
@@ -140,7 +141,7 @@ export function WorkspaceHeader({
 
         <button
           type="button"
-          className={headerSplitIconButtonClass}
+          className={cn(headerSplitIconButtonClass, headerOptionalControlClass)}
           onClick={() => onAction("workspace.open")}
           data-feature-id="feature:header.open"
           data-feature-status="mock"
@@ -154,7 +155,7 @@ export function WorkspaceHeader({
         </button>
         <button
           type="button"
-          className={headerChevronButtonClass}
+          className={cn(headerChevronButtonClass, headerOptionalControlClass)}
           onClick={() => onAction("workspace.open-options")}
           data-feature-id="feature:header.open-options"
           data-feature-status="mock"
@@ -171,7 +172,7 @@ export function WorkspaceHeader({
           <>
             <button
               type="button"
-              className={headerTextButtonClass}
+              className={cn(headerTextButtonClass, headerOptionalControlClass)}
               onClick={() => onAction("workspace.handoff")}
               data-feature-id="feature:header.handoff"
               data-feature-status="mock"
@@ -185,7 +186,7 @@ export function WorkspaceHeader({
 
             <button
               type="button"
-              className={headerTextButtonClass}
+              className={cn(headerTextButtonClass, headerOptionalControlClass)}
               onClick={() => onAction("workspace.commit")}
               data-feature-id="feature:header.commit"
               data-feature-status="mock"
@@ -198,7 +199,7 @@ export function WorkspaceHeader({
             </button>
             <button
               type="button"
-              className={headerChevronButtonClass}
+              className={cn(headerChevronButtonClass, headerOptionalControlClass)}
               onClick={() => onAction("workspace.commit-options")}
               data-feature-id="feature:header.commit-options"
               data-feature-status="mock"
@@ -213,7 +214,7 @@ export function WorkspaceHeader({
           </>
         ) : null}
 
-        <div className={headerDividerClass} />
+        <div className={cn(headerDividerClass, headerOptionalControlClass)} />
 
         <button
           type="button"
@@ -250,7 +251,7 @@ export function WorkspaceHeader({
         </button>
 
         {isGitRepo && hasGitChanges ? (
-          <div className="ml-1 flex items-center gap-1 text-[12px] leading-none">
+          <div className="ml-1 hidden items-center gap-1 text-[12px] leading-none min-[1181px]:flex">
             <span className="text-[#5cc9a5]">
               +{formatDiffCount(projectGitState?.insertions ?? 0)}
             </span>
@@ -262,7 +263,7 @@ export function WorkspaceHeader({
 
         <button
           type="button"
-          className={headerQuietIconButtonClass}
+          className={cn(headerQuietIconButtonClass, headerOptionalControlClass)}
           onClick={() => onAction("workspace.popout")}
           data-feature-id="feature:header.workspace-popout"
           data-feature-status="mock"

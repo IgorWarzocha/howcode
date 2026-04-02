@@ -132,6 +132,7 @@ type DiffPanelContentProps = {
   selectedTurnCount: number | null;
   selectedFilePath: string | null;
   onSelectTurn: (checkpointTurnCount: number | null) => void;
+  layoutMode?: "split" | "overlay";
   onClose: () => void;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
@@ -143,6 +144,7 @@ export function DiffPanelContent({
   selectedTurnCount,
   selectedFilePath,
   onSelectTurn,
+  layoutMode = "split",
   onClose,
   onAction,
 }: DiffPanelContentProps) {
@@ -200,7 +202,10 @@ export function DiffPanelContent({
 
   return (
     <aside
-      className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)] xl:w-full"
+      className={cn(
+        "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)]",
+        layoutMode === "split" && "border-l border-[color:var(--border)] xl:w-full",
+      )}
       data-feature-id="feature:diff.panel"
       data-feature-status="partial"
     >
