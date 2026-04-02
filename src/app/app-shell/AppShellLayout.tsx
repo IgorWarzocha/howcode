@@ -126,7 +126,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             </div>
             {state.terminalVisible ? (
               <div className="mx-auto w-full max-w-[744px]">
-                <TerminalPanel onAction={(action, payload) => void handleAction(action, payload)} />
+                <TerminalPanel
+                  projectId={composerProjectId}
+                  sessionPath={state.activeView === "thread" ? state.selectedSessionPath : null}
+                  onClose={handleToggleTerminal}
+                />
               </div>
             ) : null}
           </footer>

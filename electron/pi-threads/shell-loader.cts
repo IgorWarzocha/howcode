@@ -2,15 +2,15 @@ import type {
   ComposerState,
   ComposerStateRequest,
   ShellState,
-} from "../../shared/desktop-contracts.js";
-import { normalizeThreadTitle } from "../../shared/pi-message-mapper.js";
+} from "../../shared/desktop-contracts";
+import { normalizeThreadTitle } from "../../shared/pi-message-mapper";
 import {
   getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
-} from "../pi-desktop-runtime.cjs";
-import { getPiModule } from "../pi-module.cjs";
-import { loadProjectGitState } from "../project-git.cjs";
-import { listProjects, syncSessionSummaries } from "../thread-state-db.cjs";
+} from "../pi-desktop-runtime";
+import { getPiModule } from "../pi-module";
+import { loadProjectGitState } from "../project-git";
+import { listProjects, syncSessionSummaries } from "../thread-state-db";
 
 type SessionSummary = {
   id: string;

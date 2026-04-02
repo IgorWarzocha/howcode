@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import type { ImageContent } from "@mariozechner/pi-ai";
-import type { ComposerAttachment } from "../../shared/desktop-contracts.js";
+import type { ComposerAttachment } from "../../shared/desktop-contracts";
 
 type ProcessedComposerAttachments = {
   text: string;

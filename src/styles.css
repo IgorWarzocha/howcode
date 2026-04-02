@@ -76,3 +76,15 @@ code {
   background: rgba(140, 148, 181, 0.22);
   background-clip: padding-box;
 }
+
+.xterm {
+  height: 100%;
+}
+
+.xterm-viewport {
+  border-radius: 10px;
+}
+
+.xterm-screen canvas {
+  cursor: text;
+}

@@ -29,16 +29,18 @@ This repo is intentionally split around future Pi desktop integration seams.
 
 ## Desktop bridge lanes
 
-- `electron/main.cts`
-  - BrowserWindow boot + IPC registration
-- `electron/preload.cts`
-  - renderer-safe bridge exposure
-- `electron/contracts.cts`
-  - IPC channel contracts and shell defaults
+- `src/bun/index.ts`
+  - Electrobun `BrowserWindow` boot + Bun-side RPC handlers for the renderer
+- `src/app/desktop/electrobun-api.ts`
+  - renderer-side Electrobun bridge that preserves the `window.piDesktop` shape
+- `shared/electrobun-rpc.ts`
+  - typed Bun <-> webview RPC contract
 - `electron/pi-module.cts`
   - single dynamic-import boundary for the Pi package
 - `electron/project-git.cts`
   - selected-project git/branch/diff-stat probing used by header chrome
+- `electron/terminal/*`
+  - PTY abstraction, Bun/node-pty adapter selection, transcript persistence, terminal event fanout
 - `electron/runtime/*`
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `electron/pi-threads/*`
@@ -51,6 +53,8 @@ This repo is intentionally split around future Pi desktop integration seams.
   - shared desktop action payload parsing/validation helpers
 - `shared/desktop-action-coverage.ts`
   - explicit implemented vs intentional no-op desktop action partition
+- `shared/terminal-contracts.ts`
+  - terminal session request/snapshot/event contract boundary
 
 ## Tooling lanes
 

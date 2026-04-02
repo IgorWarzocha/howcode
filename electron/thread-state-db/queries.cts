@@ -1,11 +1,6 @@
-import type { ArchivedThread, Project, Thread } from "../../shared/desktop-contracts.js";
-import { getThreadStateDatabase } from "./db.cjs";
-import {
-  mapArchivedThreadRow,
-  mapCachedThreadRow,
-  mapProjectRow,
-  mapThreadRow,
-} from "./mappers.cjs";
+import type { ArchivedThread, Project, Thread } from "../../shared/desktop-contracts";
+import { getThreadStateDatabase } from "./db";
+import { mapArchivedThreadRow, mapCachedThreadRow, mapProjectRow, mapThreadRow } from "./mappers";
 import type {
   ArchivedThreadRow,
   CachedThread,
@@ -13,8 +8,8 @@ import type {
   ProjectRow,
   ThreadPathRow,
   ThreadRow,
-} from "./types.cjs";
-import { ensureProject } from "./writes.cjs";
+} from "./types";
+import { ensureProject } from "./writes";
 
 export function listProjects(cwd: string): Project[] {
   const db = getThreadStateDatabase();

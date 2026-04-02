@@ -1,7 +1,7 @@
 import path from "node:path";
-import type { Message } from "../../shared/desktop-contracts.js";
-import { getThreadStateDatabase } from "./db.cjs";
-import type { SessionSummaryRecord } from "./types.cjs";
+import type { Message } from "../../shared/desktop-contracts";
+import { getThreadStateDatabase } from "./db";
+import type { SessionSummaryRecord } from "./types";
 
 export function ensureProject(cwd: string) {
   const db = getThreadStateDatabase();

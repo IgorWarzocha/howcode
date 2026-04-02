@@ -1,15 +1,15 @@
 import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ComposerState, DesktopEvent, ThreadData } from "../../shared/desktop-contracts.js";
+import type { ComposerState, DesktopEvent, ThreadData } from "../../shared/desktop-contracts";
 import {
   getFirstUserTurnTitle,
   getPreviousMessageCount,
   mapAgentMessagesToUiMessages,
-} from "../../shared/pi-message-mapper.js";
-import { saveThreadCache, upsertThreadSummary } from "../thread-state-db.cjs";
-import { buildComposerState } from "./composer-state.cjs";
-import { rememberSessionPath } from "./session-path-index.cjs";
-import type { PiRuntime, RuntimeThreadReason } from "./types.cjs";
+} from "../../shared/pi-message-mapper";
+import { saveThreadCache, upsertThreadSummary } from "../thread-state-db";
+import { buildComposerState } from "./composer-state";
+import { rememberSessionPath } from "./session-path-index";
+import type { PiRuntime, RuntimeThreadReason } from "./types";
 
 const liveThreads = new Map<string, ThreadData>();
 const desktopListeners = new Set<(event: DesktopEvent) => void>();

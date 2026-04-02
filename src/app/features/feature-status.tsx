@@ -33,7 +33,7 @@ export const featureStatusById = {
   "feature:views.debug": { status: "mock", label: "Mock" },
   "feature:diff.panel": { status: "mock", label: "Mock" },
   "feature:diff.review": { status: "mock", label: "Mock" },
-  "feature:terminal.panel": { status: "mock", label: "Mock" },
+  "feature:terminal.panel": { status: "partial", label: "Partial" },
   "feature:settings.menu.settings": { status: "mock", label: "Mock" },
   "feature:settings.menu.language": { status: "mock", label: "Mock" },
   "feature:settings.menu.rate-limits": { status: "mock", label: "Mock" },

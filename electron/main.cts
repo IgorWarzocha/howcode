@@ -18,7 +18,7 @@ import {
   type Thread,
   type ThreadData,
   isDesktopAction,
-} from "./contracts.cjs";
+} from "./contracts";
 import {
   handleDesktopAction,
   loadArchivedThreadList,
@@ -28,7 +28,7 @@ import {
   loadShellState,
   loadThread,
   subscribeDesktopEvents,
-} from "./pi-threads.cjs";
+} from "./pi-threads";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
@@ -52,7 +52,7 @@ function createWindow() {
     title: "Pi Desktop Mock",
     trafficLightPosition: { x: 18, y: 18 },
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,

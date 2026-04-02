@@ -10,7 +10,7 @@ Execution backlog lives in: `docs/implementation-todo.md`
   - Action list: `shared/desktop-actions.ts`
   - Explicit implemented vs no-op partition: `shared/desktop-action-coverage.ts`
   - Action bridge: `src/app/hooks/useDesktopBridge.ts`
-  - IPC dispatch: `electron/main.cts`
+  - Bun RPC dispatch: `src/bun/index.ts`, `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`
   - Backend action router: `electron/pi-threads/action-router.cts`
   - Shell loading lane: `electron/pi-threads/shell-loader.cts`
   - Thread hydration lane: `electron/pi-threads/thread-loader.cts`
@@ -28,7 +28,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Shell/project index backed by SQLite: `electron/thread-state-db/*`, `electron/pi-threads/shell-loader.cts`
 - Project collapsed state persistence: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/state/workspace.ts`
-- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `electron/main.cts`, `electron/pi-threads/thread-loader.cts`
+- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`, `electron/pi-threads/thread-loader.cts`
 - Lazy loading + caching of opened thread content: `src/app/hooks/useDesktopThread.ts`, `electron/pi-threads/thread-loader.cts`, `electron/thread-state-db/*`
 - Thread pin persistence: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
 - Thread archive / restore / permanent delete: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
@@ -46,9 +46,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Controlled composer state exists in renderer: `src/app/components/workspace/Composer.tsx`
 - Send is wired through real Pi sessions with per-cwd runtimes: `electron/runtime/*`, `electron/pi-threads/action-router.cts`
-- File picker attachments are wired and text/image files are sent through the Pi prompt path: `electron/main.cts`, `electron/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
+- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/bun/index.ts`, `electron/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
 - Existing thread continuation is real via runtime session activation: `electron/runtime/runtime-registry.cts`
-- Streaming thread updates are pushed over Electron IPC and rendered live: `electron/main.cts`, `electron/preload.cts`, `src/app/app-shell/useAppShellController.ts`
+- Streaming thread updates are pushed over Electrobun RPC messages and rendered live: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/app-shell/useAppShellController.ts`
 - Real model + thinking selectors are wired to Pi session state: `electron/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
 - Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `electron/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
 - Still stubbed in this area:
@@ -110,7 +110,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `project.add`
 
 **Expansion direction:**
-- Decide whether these are renderer-only behaviors, Electron actions, or both.
+- Decide whether these are renderer-only behaviors, desktop actions, or both.
 - Add search/filter state + project import/create flows.
 
 ### 5. Header controls
@@ -139,7 +139,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Expansion direction:**
 - Add real thread action menu.
-- Define open/commit split-button behavior in Electron.
+- Define open/commit split-button behavior in the Bun desktop bridge.
 - Define real handoff behavior.
 - Define project switcher behavior.
 - Replace mock home diff stats with real workspace diff data when the diff lane is implemented.
@@ -185,15 +185,27 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 9. Terminal panel
 
-**Status:** Mock shell transcript.
+**Status:** Partially real.
 
-- UI: `src/app/components/workspace/TerminalPanel.tsx`
-- Static output lines
-- Read-only input
-- `terminal.close` action itself is an explicit backend no-op; local hide/show is reducer-only via `src/app/app-shell/useAppShellController.ts`
+- UI: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`
+- Renderer now uses real `xterm.js` + fit addon and streams keystrokes/output over the desktop bridge.
+- Backend PTY/session manager exists in:
+  - `electron/terminal/manager.cts`
+  - `electron/terminal/bun-pty.cts`
+  - `electron/terminal/node-pty.cts`
+  - `shared/terminal-contracts.ts`
+  - `src/bun/index.ts`
+- Bun PTY is used on POSIX Electrobun runs; `node-pty` remains as the Windows fallback.
+- Transcript history is persisted per session and replayed on reopen.
+- Still partial because:
+  - only one terminal is surfaced per current project/thread context
+  - no split panes / multi-terminal session UI yet
+  - no path-to-editor link opening yet; only external URL links are handled
 
 **Expansion direction:**
-- Decide whether this should be a real PTY, Pi terminal stream, or just a run log panel.
+- Add multi-terminal/session controls if Codex parity needs them.
+- Add path link detection + open-in-editor behavior.
+- Decide whether terminal should stay project/thread-scoped or grow into a richer run-log/PTY hybrid.
 
 ### 10. Remote connections banner on home
 

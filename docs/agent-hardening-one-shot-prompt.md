@@ -28,7 +28,7 @@ Also inspect the current relevant implementation files before changing anything:
 - `src/app/state/workspace.ts`
 - `src/app/state/workspace.test.ts`
 - `shared/desktop-contracts.ts`
-- `electron/main.cts`
+- `src/bun/index.ts`
 
 ## Important operating rules
 
@@ -72,7 +72,7 @@ You have two top-level objectives:
 
 ## Execute in this order unless evidence forces a better order
 
-### Lane A — shared Electron thread/message utilities
+### Lane A — shared desktop thread/message utilities
 
 Goal:
 
@@ -82,7 +82,7 @@ Goal:
 Expected outputs:
 
 - a shared helper module for thread/message mapping
-- reduced duplication in both Electron files
+- reduced duplication in both desktop runtime files
 - minimal deterministic tests for extracted pure transforms if practical
 
 ### Lane B — database layer split

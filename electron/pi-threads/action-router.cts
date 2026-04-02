@@ -1,7 +1,7 @@
 import { unlink } from "node:fs/promises";
-import { shell } from "electron";
-import type { DesktopAction } from "../../shared/desktop-actions.js";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts.js";
+import { Utils } from "electrobun/bun";
+import type { DesktopAction } from "../../shared/desktop-actions";
+import type { DesktopActionPayload } from "../../shared/desktop-contracts";
 import {
   getComposerAttachments,
   getComposerModelSelection,
@@ -11,7 +11,7 @@ import {
   getProjectId,
   getProjectName,
   getThreadId,
-} from "../../shared/pi-thread-action-payloads.js";
+} from "../../shared/pi-thread-action-payloads";
 import {
   openThreadRuntime,
   selectProjectRuntime,
@@ -19,7 +19,7 @@ import {
   setComposerModel,
   setComposerThinkingLevel,
   startNewThread,
-} from "../pi-desktop-runtime.cjs";
+} from "../pi-desktop-runtime";
 import {
   archiveProjectThreads,
   archiveThread,
@@ -31,7 +31,7 @@ import {
   restoreThread,
   setProjectCollapsed,
   toggleThreadPinned,
-} from "../thread-state-db.cjs";
+} from "../thread-state-db";
 
 async function deletePersistedThread(threadId: string) {
   const sessionPath = getThreadSessionPath(threadId);
@@ -113,9 +113,8 @@ export async function handleDesktopAction(
         return;
       }
 
-      const error = await shell.openPath(projectId);
-      if (error) {
-        throw new Error(error);
+      if (!Utils.openPath(projectId)) {
+        throw new Error(`Unable to open path: ${projectId}`);
       }
       return;
     }

@@ -1,64 +1,44 @@
-import { AtSign, SquareTerminal, X } from "lucide-react";
-import type { DesktopAction } from "../../desktop/actions";
-import { getFeatureStatusButtonClass } from "../../features/feature-status";
-import { panelChromeClass, terminalOutputClass } from "../../ui/classes";
+import { SquareTerminal, X } from "lucide-react";
+import type { FeatureStatusId } from "../../features/feature-status";
+import { panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
+import { TerminalViewport } from "./terminal/TerminalViewport";
 
 type TerminalPanelProps = {
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  projectId: string;
+  sessionPath: string | null;
+  onClose: () => void;
 };
 
-export function TerminalPanel({ onAction }: TerminalPanelProps) {
+export function TerminalPanel({ projectId, sessionPath, onClose }: TerminalPanelProps) {
+  const statusId: FeatureStatusId = "feature:terminal.panel";
+
   return (
     <section
       aria-label="Terminal panel"
-      className={cn(
-        panelChromeClass,
-        "grid gap-2.5 p-3",
-        getFeatureStatusButtonClass("feature:terminal.panel"),
-      )}
+      className={cn(panelChromeClass, "grid gap-2.5 p-3")}
       data-feature-id="feature:terminal.panel"
-      data-feature-status="mock"
+      data-feature-status="partial"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-mono text-xs">
           <SquareTerminal size={14} />
           <span>Terminal</span>
-          <FeatureStatusBadge statusId="feature:terminal.panel" />
-          <span className="text-[color:var(--muted)]">fish</span>
+          <FeatureStatusBadge statusId={statusId} />
         </div>
         <button
           type="button"
           className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-[color:var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[color:var(--text)]"
           aria-label="Close terminal"
           title="Close terminal"
-          onClick={() => onAction("terminal.close")}
+          onClick={onClose}
         >
           <X size={14} />
         </button>
       </div>
-      <div className={terminalOutputClass}>
-        <div className="truncate">
-          <span className="text-[#b9c8ff]">~/Work/howcode</span>{" "}
-          <span className="text-[color:var(--green)]">❯</span> bun run dev
-        </div>
-        <div className="truncate text-[color:var(--muted)]">
-          ➜ Launching Pi Desktop Mock UI with Electron shell
-        </div>
-        <div className="truncate text-[color:var(--muted)]">
-          ➜ Future hook: createAgentSession() adapter + event stream
-        </div>
-      </div>
-      <div className="flex items-center gap-2 px-0.5 font-mono text-xs text-[color:var(--muted)]">
-        <AtSign size={14} />
-        <input
-          aria-label="Terminal input"
-          value=""
-          readOnly
-          placeholder="Terminal input"
-          className="flex-1 border-0 bg-transparent text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-        />
+      <div className="overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.92)] p-1.5">
+        <TerminalViewport projectId={projectId} sessionPath={sessionPath} />
       </div>
     </section>
   );

@@ -1,11 +1,11 @@
-import type { ArchivedThread, Project, Thread } from "../../shared/desktop-contracts.js";
+import type { ArchivedThread, Project, Thread } from "../../shared/desktop-contracts";
 import type {
   ArchivedThreadRow,
   CachedThread,
   CachedThreadRow,
   ProjectRow,
   ThreadRow,
-} from "./types.cjs";
+} from "./types";
 
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);

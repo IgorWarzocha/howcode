@@ -1,5 +1,5 @@
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
-import type { DesktopEvent } from "../../shared/desktop-contracts.js";
+import type { DesktopEvent } from "../../shared/desktop-contracts";
 
 export type PiRuntime = {
   cwd: string;

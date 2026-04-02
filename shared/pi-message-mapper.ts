@@ -1,5 +1,5 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Message } from "./desktop-contracts.js";
+import type { Message } from "./desktop-contracts";
 
 type TextPart = {
   type?: string;

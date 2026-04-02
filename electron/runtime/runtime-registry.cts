@@ -1,8 +1,8 @@
-import type { ComposerStateRequest } from "../../shared/desktop-contracts.js";
-import { getPiModule } from "../pi-module.cjs";
-import { getMappedCwd, rememberSessionPath } from "./session-path-index.cjs";
-import { publishThreadUpdate } from "./thread-publisher.cjs";
-import type { PiRuntime } from "./types.cjs";
+import type { ComposerStateRequest } from "../../shared/desktop-contracts";
+import { getPiModule } from "../pi-module";
+import { getMappedCwd, rememberSessionPath } from "./session-path-index";
+import { publishThreadUpdate } from "./thread-publisher";
+import type { PiRuntime } from "./types";
 
 const runtimePromises = new Map<string, Promise<PiRuntime>>();
 

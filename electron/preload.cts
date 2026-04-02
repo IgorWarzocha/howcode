@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { DesktopAction } from "../shared/desktop-actions.js";
+import type { DesktopAction } from "../shared/desktop-actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
@@ -11,8 +11,8 @@ import type {
   ShellState,
   Thread,
   ThreadData,
-} from "../shared/desktop-contracts.js";
-import { type DesktopActionPayload, IPC_CHANNELS, isDesktopAction } from "./contracts.cjs";
+} from "../shared/desktop-contracts";
+import { type DesktopActionPayload, IPC_CHANNELS, isDesktopAction } from "./contracts";
 
 type PiDesktopApi = {
   getShellState: () => Promise<ShellState>;

@@ -3,7 +3,7 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
   DesktopActionPayload,
-} from "./desktop-contracts.js";
+} from "./desktop-contracts";
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
   "off",

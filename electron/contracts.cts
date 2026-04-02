@@ -1,4 +1,4 @@
-import { type DesktopAction, desktopActions } from "../shared/desktop-actions.js";
+import { type DesktopAction, desktopActions } from "../shared/desktop-actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
@@ -11,7 +11,7 @@ import type {
   ShellState,
   Thread,
   ThreadData,
-} from "../shared/desktop-contracts.js";
+} from "../shared/desktop-contracts";
 
 export const IPC_CHANNELS = {
   getShellState: "pi:get-shell-state",

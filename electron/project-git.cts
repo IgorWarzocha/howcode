@@ -1,6 +1,6 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import type { ProjectGitState } from "../shared/desktop-contracts.js";
+import type { ProjectGitState } from "../shared/desktop-contracts";
 
 const execFile = promisify(execFileCallback);
 

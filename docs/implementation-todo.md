@@ -9,10 +9,10 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 1. Real composer -> Pi thread pipeline
 - [x] Add renderer composer state instead of uncontrolled textarea
   - files: `src/app/components/workspace/Composer.tsx`
-- [x] Add IPC contract(s) for creating a thread and sending a prompt
-  - files: `electron/contracts.cts`, `electron/preload.cts`, `src/types.d.ts`
-- [x] Implement Electron handlers that create/continue Pi sessions
-  - files: `electron/main.cts`, `electron/pi-threads.cts`
+- [x] Add desktop bridge contract(s) for creating a thread and sending a prompt
+  - files: `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`, `src/types.d.ts`
+- [x] Implement desktop-runtime handlers that create/continue Pi sessions
+  - files: `src/bun/index.ts`, `electron/pi-threads.cts`
 - [x] Use `createAgentSession()` or equivalent Pi session continuation path
   - files: `electron/pi-threads.cts`
 - [x] Persist thread/session metadata into SQLite on send
@@ -20,9 +20,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Refresh shell state + opened thread after send
   - files: `src/app/hooks/useDesktopShell.ts`, `src/app/hooks/useDesktopThread.ts`, `src/app/AppShell.tsx`
 - [x] Support streaming assistant output instead of waiting for full completion
-  - files: `electron/main.cts`, `electron/preload.cts`, `src/app/*`
+  - files: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/*`
 - [x] Add attachment picking + file/image send support
-  - files: `electron/main.cts`, `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+  - files: `src/bun/index.ts`, `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 - [x] Surface basic composer send/model errors inline
   - files: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 
@@ -60,14 +60,15 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
 
 #### 5. Terminal panel
-- [ ] Replace static terminal transcript with real PTY or run log
-  - files: `src/app/components/workspace/TerminalPanel.tsx`
-- [ ] Decide if terminal is:
+- [x] Replace static terminal transcript with a real PTY-backed xterm.js viewport
+  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `electron/terminal/*`, `src/bun/index.ts`
+- [ ] Decide if terminal should remain:
   - [ ] a real shell
   - [ ] a Pi run log
   - [ ] a hybrid
-- [ ] Implement close/show state coherently with backend events if needed
-  - files: `src/app/app-shell/useAppShellController.ts`, `electron/main.cts`
+- [x] Implement open/write/resize/close event flow with Bun PTY + Windows `node-pty` fallback
+  - files: `shared/terminal-contracts.ts`, `shared/electrobun-rpc.ts`, `electron/terminal/*`, `src/app/hooks/useDesktopTerminal.ts`
+- [ ] Add multi-terminal/split terminal UI if Codex parity requires it
 
 #### 6. Diff panel
 - [ ] Replace hardcoded diff cards with real data
@@ -111,11 +112,11 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 ## Checklist by layer
 
-### Electron / backend checklist
+### Bun / desktop backend checklist
 
-- [x] Add real send-thread IPC
-- [ ] Add real new-thread IPC
-- [x] Add stream/event IPC for assistant output
+- [x] Add real send-thread desktop bridge requests
+- [ ] Add real new-thread desktop bridge requests
+- [x] Add stream/event desktop bridge messages for assistant output
 - [ ] Implement typed project actions instead of generic `project.actions`
 - [ ] Implement diff review backend
 - [ ] Implement terminal backend or run-log backend
@@ -125,10 +126,11 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Add DB migrations/versioning for future schema changes
 
 Key files:
-- `electron/main.cts`
-- `electron/contracts.cts`
-- `electron/preload.cts`
+- `src/bun/index.ts`
+- `shared/electrobun-rpc.ts`
+- `src/app/desktop/electrobun-api.ts`
 - `electron/pi-threads/*`
+- `electron/terminal/*`
 - `electron/runtime/*`
 - `electron/thread-state-db/*`
 

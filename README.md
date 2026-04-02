@@ -4,11 +4,13 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 
 ## Current scope
 
-- Electron desktop shell
+- Electrobun desktop shell
 - React/Vite renderer
 - Tailwind CSS v4 styling
 - modular UI shell with typed desktop action contracts and explicit mock/no-op coverage
-- split Electron runtime / thread / SQLite lanes
+- split desktop runtime / thread / SQLite lanes
+- Bun-native main process with Electrobun RPC bridge into the renderer
+- real xterm.js terminal panel backed by Bun PTY on POSIX with `node-pty` Windows fallback
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting
 - Husky + lint-staged pre-commit scaffolding
@@ -55,9 +57,11 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/state/` — reducer/selectors and tests
 - `src/app/data/` — mock fixtures
 - `src/app/ui/` — shared Tailwind class primitives
+- `src/bun/index.ts` — Electrobun main-process entry and RPC request handlers
 - `electron/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
 - `electron/pi-threads/*` — shell loading, thread hydration, action routing
 - `electron/project-git.cts` — selected-project git/branch/diff-stat probing for header chrome
+- `electron/terminal/*` — PTY adapters and terminal session manager
 - `electron/thread-state-db/*` — SQLite schema/query/write/mapping lanes
 - `shared/` — shared contracts, mapping helpers, action coverage metadata
 - `docs/lane-map.md` — concise ownership map
@@ -66,4 +70,4 @@ The `prepare` script will then activate Husky automatically.
 
 ## Next integration step
 
-Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, terminal/diff backing data) while keeping the new lane boundaries intact.
+Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, diff backing data, terminal multi-session polish) while keeping the new lane boundaries intact.

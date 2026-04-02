@@ -1,11 +1,11 @@
-export type { CachedThread, SessionSummaryRecord } from "./thread-state-db/types.cjs";
+export type { CachedThread, SessionSummaryRecord } from "./thread-state-db/types";
 export {
   getCachedThread,
   getThreadSessionPath,
   listArchivedThreads,
   listProjectThreads,
   listProjects,
-} from "./thread-state-db/queries.cjs";
+} from "./thread-state-db/queries";
 export {
   archiveProjectThreads,
   archiveThread,
@@ -20,4 +20,4 @@ export {
   syncSessionSummaries,
   toggleThreadPinned,
   upsertThreadSummary,
-} from "./thread-state-db/writes.cjs";
+} from "./thread-state-db/writes";

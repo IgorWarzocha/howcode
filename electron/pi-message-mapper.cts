@@ -4,4 +4,4 @@ export {
   mapAgentMessageToUiMessage,
   mapAgentMessagesToUiMessages,
   normalizeThreadTitle,
-} from "../shared/pi-message-mapper.js";
+} from "../shared/pi-message-mapper";

@@ -8,4 +8,4 @@ export {
   setComposerThinkingLevel,
   startNewThread,
   subscribeDesktopEvents,
-} from "./runtime/composer-service.cjs";
+} from "./runtime/composer-service";

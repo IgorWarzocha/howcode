@@ -216,11 +216,11 @@ Target split:
 ## Files to leave alone for now
 
 - `src/app/state/workspace.ts`: focused reducer/selectors and already covered by `src/app/state/workspace.test.ts`
-- `electron/main.cts`: mostly IPC registration; revisit only after Electron domain modules are cleaner
+- `src/bun/index.ts`: mostly Electrobun window/bootstrap wiring; revisit only after desktop domain modules are cleaner
 
 ## Recommended implementation order
 
-### Lane A: shared Electron thread/message utilities
+### Lane A: shared desktop thread/message utilities
 
 - extract shared title normalization and message mapping
 - make `pi-desktop-runtime.cts` and `pi-threads.cts` consume the same helpers

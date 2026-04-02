@@ -1,4 +1,4 @@
-import type { DesktopAction } from "./desktop-actions.js";
+import type { DesktopAction } from "./desktop-actions";
 
 export const implementedDesktopActions = [
   "project.select",

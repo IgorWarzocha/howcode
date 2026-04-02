@@ -1,4 +1,4 @@
-import type { Message } from "../../shared/desktop-contracts.js";
+import type { Message } from "../../shared/desktop-contracts";
 
 export type SessionSummaryRecord = {
   id: string;

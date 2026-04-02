@@ -1,19 +1,19 @@
 import { stat } from "node:fs/promises";
-import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts.js";
+import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts";
 import {
   getFirstUserTurnTitle,
   getPreviousMessageCount,
   mapAgentMessagesToUiMessages,
-} from "../../shared/pi-message-mapper.js";
-import { getLiveThread } from "../pi-desktop-runtime.cjs";
-import { getPiModule } from "../pi-module.cjs";
+} from "../../shared/pi-message-mapper";
+import { getLiveThread } from "../pi-desktop-runtime";
+import { getPiModule } from "../pi-module";
 import {
   ensureProject,
   getCachedThread,
   listArchivedThreads,
   listProjectThreads,
   saveThreadCache,
-} from "../thread-state-db.cjs";
+} from "../thread-state-db";
 
 export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
   ensureProject(projectId);
