@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { DesktopAction } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
   DesktopActionResult,
@@ -14,6 +15,7 @@ import { type DesktopActionPayload, IPC_CHANNELS, isDesktopAction } from "./cont
 
 type PiDesktopApi = {
   getShellState: () => Promise<ShellState>;
+  pickComposerAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   getComposerState: (request?: ComposerStateRequest) => Promise<ComposerState>;
   getProjectThreads: (projectId: string) => Promise<Thread[]>;
   getArchivedThreads: () => Promise<ArchivedThread[]>;
@@ -27,6 +29,8 @@ type PiDesktopApi = {
 
 const api: PiDesktopApi = {
   getShellState: () => ipcRenderer.invoke(IPC_CHANNELS.getShellState),
+  pickComposerAttachments: (projectId = null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.pickComposerAttachments, { projectId }),
   getComposerState: (request = {}) => ipcRenderer.invoke(IPC_CHANNELS.getComposerState, request),
   getProjectThreads: (projectId) =>
     ipcRenderer.invoke(IPC_CHANNELS.getProjectThreads, { projectId }),

@@ -51,6 +51,12 @@ export type ComposerState = {
   availableThinkingLevels: ComposerThinkingLevel[];
 };
 
+export type ComposerAttachment = {
+  path: string;
+  name: string;
+  kind: "text" | "image";
+};
+
 export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;

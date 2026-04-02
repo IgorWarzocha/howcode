@@ -1,6 +1,7 @@
 import type { DesktopAction } from "./app/desktop/actions";
 import type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -15,6 +16,7 @@ declare global {
   interface Window {
     piDesktop?: {
       getShellState: () => Promise<ShellState>;
+      pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;

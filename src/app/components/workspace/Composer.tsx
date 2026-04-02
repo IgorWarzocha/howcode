@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
-import type { ComposerModel, ComposerThinkingLevel } from "../../desktop/types";
+import type { ComposerAttachment, ComposerModel, ComposerThinkingLevel } from "../../desktop/types";
 import type { View } from "../../types";
 import { IconButton } from "../common/IconButton";
 import { PrimaryButton } from "../common/PrimaryButton";
@@ -28,6 +28,7 @@ type ComposerProps = {
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
   sessionPath: string | null;
+  onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => Promise<void>;
 };
 
@@ -58,12 +59,15 @@ export function Composer({
   availableThinkingLevels,
   projectId,
   sessionPath,
+  onPickAttachments,
   onAction,
 }: ComposerProps) {
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [thinkingMenuOpen, setThinkingMenuOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -74,14 +78,19 @@ export function Composer({
     }
 
     setIsSending(true);
+    setErrorMessage(null);
 
     try {
       await onAction("composer.send", {
         text,
+        attachments,
         projectId,
         sessionPath,
       });
       setDraft("");
+      setAttachments([]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not send prompt.");
     } finally {
       setIsSending(false);
     }
@@ -118,6 +127,30 @@ export function Composer({
       ) : null}
 
       <SurfacePanel className="grid gap-0 overflow-hidden shadow-none">
+        {attachments.length > 0 ? (
+          <div className="flex flex-wrap gap-2 px-3.5 pt-3 pb-0.5">
+            {attachments.map((attachment) => (
+              <button
+                key={attachment.path}
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.04)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
+                onClick={() =>
+                  setAttachments((current) =>
+                    current.filter(
+                      (currentAttachment) => currentAttachment.path !== attachment.path,
+                    ),
+                  )
+                }
+              >
+                <span className="text-[color:var(--muted)]">
+                  {attachment.kind === "image" ? "Image" : "File"}
+                </span>
+                <span>{attachment.name}</span>
+                <X size={12} />
+              </button>
+            ))}
+          </div>
+        ) : null}
         <textarea
           className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
           value={draft}
@@ -139,7 +172,35 @@ export function Composer({
             <ToolbarButton
               label="Add files and more"
               icon={<Plus size={16} />}
-              onClick={() => onAction("composer.attach-menu")}
+              onClick={async () => {
+                let nextAttachments: ComposerAttachment[] = [];
+
+                try {
+                  nextAttachments = await onPickAttachments(projectId);
+                } catch (error) {
+                  setErrorMessage(
+                    error instanceof Error ? error.message : "Could not open the file picker.",
+                  );
+                  return;
+                }
+
+                if (nextAttachments.length === 0) {
+                  return;
+                }
+
+                setAttachments((current) => {
+                  const byPath = new Map(
+                    current.map((attachment) => [attachment.path, attachment]),
+                  );
+
+                  for (const attachment of nextAttachments) {
+                    byPath.set(attachment.path, attachment);
+                  }
+
+                  return [...byPath.values()];
+                });
+                setErrorMessage(null);
+              }}
             />
             <div className="relative">
               <ToolbarButton
@@ -243,6 +304,10 @@ export function Composer({
             <Send size={16} />
           </button>
         </div>
+
+        {errorMessage ? (
+          <div className="px-3.5 pb-2 text-[12px] text-[#f2a7a7]">{errorMessage}</div>
+        ) : null}
 
         <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 

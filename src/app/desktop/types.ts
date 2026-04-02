@@ -1,5 +1,6 @@
 export type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerModel,
   ComposerState,
   ComposerStateRequest,

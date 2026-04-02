@@ -2,6 +2,7 @@ import { stat, unlink } from "node:fs/promises";
 import type { DesktopAction } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -391,12 +392,22 @@ export async function handleDesktopAction(
 
     case "composer.send": {
       const text = typeof payload.text === "string" ? payload.text.trim() : "";
+      const attachments = Array.isArray(payload.attachments)
+        ? payload.attachments.filter(
+            (attachment): attachment is ComposerAttachment =>
+              typeof attachment === "object" &&
+              attachment !== null &&
+              typeof attachment.path === "string" &&
+              typeof attachment.name === "string" &&
+              (attachment.kind === "text" || attachment.kind === "image"),
+          )
+        : [];
 
       if (!text) {
         return;
       }
 
-      await sendComposerPrompt({ ...getComposerRequest(payload), text });
+      await sendComposerPrompt({ ...getComposerRequest(payload), text, attachments });
       return;
     }
 

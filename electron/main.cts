@@ -1,7 +1,8 @@
 import path from "node:path";
-import { BrowserWindow, app, ipcMain } from "electron";
+import { BrowserWindow, type OpenDialogOptions, app, dialog, ipcMain } from "electron";
 import {
   type ArchivedThread,
+  type ComposerAttachment,
   type ComposerState,
   DEFAULT_SHELL_STATE,
   type DesktopEvent,
@@ -10,6 +11,7 @@ import {
   type GetThreadRequest,
   IPC_CHANNELS,
   type InvokeActionRequest,
+  type PickComposerAttachmentsRequest,
   type ShellState,
   type Thread,
   type ThreadData,
@@ -27,6 +29,15 @@ import {
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
+
+function getAttachmentKind(filePath: string): ComposerAttachment["kind"] {
+  const ext = path.extname(filePath).toLowerCase();
+  if ([".png", ".jpg", ".jpeg", ".gif", ".webp"].includes(ext)) {
+    return "image";
+  }
+
+  return "text";
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -67,6 +78,36 @@ app.whenReady().then(() => {
       return DEFAULT_SHELL_STATE;
     }
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.pickComposerAttachments,
+    async (
+      event,
+      request: PickComposerAttachmentsRequest | null | undefined,
+    ): Promise<ComposerAttachment[]> => {
+      const browserWindow = BrowserWindow.fromWebContents(event.sender);
+      const dialogOptions: OpenDialogOptions = {
+        defaultPath:
+          typeof request?.projectId === "string" && request.projectId
+            ? request.projectId
+            : process.cwd(),
+        properties: ["openFile", "multiSelections"],
+      };
+      const result = browserWindow
+        ? await dialog.showOpenDialog(browserWindow, dialogOptions)
+        : await dialog.showOpenDialog(dialogOptions);
+
+      if (result.canceled) {
+        return [];
+      }
+
+      return result.filePaths.map((filePath) => ({
+        path: filePath,
+        name: path.basename(filePath),
+        kind: getAttachmentKind(filePath),
+      }));
+    },
+  );
 
   ipcMain.handle(
     IPC_CHANNELS.getComposerState,

@@ -1,7 +1,10 @@
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import type { AgentMessage, ThinkingLevel } from "@mariozechner/pi-agent-core";
+import type { ImageContent } from "@mariozechner/pi-ai";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
+  ComposerAttachment,
   ComposerModel,
   ComposerState,
   ComposerStateRequest,
@@ -30,6 +33,11 @@ type MessageWithContent = {
   role?: string;
   content?: string | TextPart[];
   timestamp?: string | number;
+};
+
+type ProcessedComposerAttachments = {
+  text: string;
+  images: ImageContent[];
 };
 
 const runtimePromises = new Map<string, Promise<PiRuntime>>();
@@ -145,6 +153,66 @@ function mapComposerModel(model: AgentSession["model"]): ComposerModel | null {
 
 function mapThinkingLevels(levels: ThinkingLevel[]) {
   return levels as ComposerThinkingLevel[];
+}
+
+function isImageAttachment(filePath: string) {
+  return [".png", ".jpg", ".jpeg", ".gif", ".webp"].includes(path.extname(filePath).toLowerCase());
+}
+
+function getImageMimeType(filePath: string) {
+  const ext = path.extname(filePath).toLowerCase();
+
+  switch (ext) {
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    default:
+      return null;
+  }
+}
+
+async function processComposerAttachments(
+  attachments: ComposerAttachment[],
+): Promise<ProcessedComposerAttachments> {
+  let text = "";
+  const images: ImageContent[] = [];
+
+  for (const attachment of attachments) {
+    const fileStats = await stat(attachment.path);
+    if (fileStats.size === 0) {
+      continue;
+    }
+
+    if (isImageAttachment(attachment.path)) {
+      const mimeType = getImageMimeType(attachment.path);
+      if (!mimeType) {
+        continue;
+      }
+
+      const content = await readFile(attachment.path);
+      images.push({
+        type: "image",
+        mimeType,
+        data: content.toString("base64"),
+      });
+      text += `<file name="${attachment.path}"></file>\n`;
+      continue;
+    }
+
+    const content = await readFile(attachment.path, "utf-8");
+    text += `<file name="${attachment.path}">\n${content}\n</file>\n`;
+  }
+
+  return {
+    text,
+    images,
+  };
 }
 
 async function createRuntime(cwd: string): Promise<PiRuntime> {
@@ -394,14 +462,19 @@ export async function setComposerThinkingLevel(
 }
 
 export async function sendComposerPrompt(
-  request: ComposerStateRequest & { text: string },
+  request: ComposerStateRequest & { text: string; attachments?: ComposerAttachment[] },
 ): Promise<void> {
   const runtime = await getRuntimeForRequest(request);
   if (!request.sessionPath) {
     await createFreshThreadIfNeeded(runtime);
   }
 
-  await runtime.session.prompt(request.text);
+  const processedAttachments = await processComposerAttachments(request.attachments ?? []);
+  const message = `${request.text}${processedAttachments.text ? `\n\n${processedAttachments.text.trimEnd()}` : ""}`;
+
+  await runtime.session.prompt(message, {
+    images: processedAttachments.images,
+  });
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}): Promise<void> {

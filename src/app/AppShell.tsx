@@ -31,6 +31,7 @@ export function AppShell() {
     loadArchivedThreads,
     loadComposerState,
     loadProjectThreads,
+    pickComposerAttachments,
     refreshShellState,
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
@@ -346,6 +347,7 @@ export function AppShell() {
                 availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 projectId={composerProjectId}
                 sessionPath={state.activeView === "thread" ? state.selectedSessionPath : null}
+                onPickAttachments={pickComposerAttachments}
                 onAction={handleAction}
               />
             </div>

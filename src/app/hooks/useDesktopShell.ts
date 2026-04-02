@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
   ShellState,
@@ -61,6 +62,14 @@ export function useDesktopShell() {
     return window.piDesktop.getComposerState(request);
   }, []);
 
+  const pickComposerAttachments = useCallback(async (projectId?: string | null) => {
+    if (!window.piDesktop?.pickComposerAttachments) {
+      return [] as ComposerAttachment[];
+    }
+
+    return window.piDesktop.pickComposerAttachments(projectId ?? null);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -90,5 +99,6 @@ export function useDesktopShell() {
     loadProjectThreads,
     loadArchivedThreads,
     loadComposerState,
+    pickComposerAttachments,
   };
 }

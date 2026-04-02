@@ -1,6 +1,7 @@
 import { type DesktopAction, desktopActions } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -13,6 +14,7 @@ import type {
 
 export const IPC_CHANNELS = {
   getShellState: "pi:get-shell-state",
+  pickComposerAttachments: "pi:pick-composer-attachments",
   getComposerState: "pi:get-composer-state",
   getProjectThreads: "pi:get-project-threads",
   getArchivedThreads: "pi:get-archived-threads",
@@ -45,6 +47,10 @@ export type GetThreadRequest = {
 
 export type GetComposerStateRequest = ComposerStateRequest;
 
+export type PickComposerAttachmentsRequest = {
+  projectId?: string | null;
+};
+
 export type GetProjectThreadsRequest = {
   projectId: string;
 };
@@ -60,6 +66,7 @@ export function isDesktopAction(action: unknown): action is DesktopAction {
 
 export type {
   ArchivedThread,
+  ComposerAttachment,
   ComposerState,
   DesktopEvent,
   DesktopAction,

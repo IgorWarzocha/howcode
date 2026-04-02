@@ -21,6 +21,8 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `src/app/hooks/useDesktopShell.ts`, `src/app/hooks/useDesktopThread.ts`, `src/app/AppShell.tsx`
 - [x] Support streaming assistant output instead of waiting for full completion
   - files: `electron/main.cts`, `electron/preload.cts`, `src/app/*`
+- [x] Add attachment picking + file/image send support
+  - files: `electron/main.cts`, `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 
 #### 2. New thread creation
 - [x] Implement `thread.new` as a real action
