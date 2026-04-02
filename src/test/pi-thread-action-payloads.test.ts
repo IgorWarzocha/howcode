@@ -6,6 +6,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
   getProjectId,
+  getProjectName,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
 
@@ -29,6 +30,9 @@ describe("pi thread action payloads", () => {
       projectId: null,
       sessionPath: null,
     });
+
+    expect(getProjectName({ projectName: "  Renamed project  " })).toBe("Renamed project");
+    expect(getProjectName({ projectName: "   " })).toBeNull();
   });
 
   it("filters invalid attachments and trims composer text", () => {

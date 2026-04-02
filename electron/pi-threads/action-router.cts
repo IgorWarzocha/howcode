@@ -1,4 +1,5 @@
 import { unlink } from "node:fs/promises";
+import { shell } from "electron";
 import type { DesktopAction } from "../../shared/desktop-actions.js";
 import type { DesktopActionPayload } from "../../shared/desktop-contracts.js";
 import {
@@ -8,6 +9,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
   getProjectId,
+  getProjectName,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads.js";
 import {
@@ -19,10 +21,13 @@ import {
   startNewThread,
 } from "../pi-desktop-runtime.cjs";
 import {
+  archiveProjectThreads,
   archiveThread,
   collapseAllProjects,
   deleteThreadRecord,
   getThreadSessionPath,
+  hideProject,
+  renameProject,
   restoreThread,
   setProjectCollapsed,
   toggleThreadPinned,
@@ -58,6 +63,7 @@ export async function handleDesktopAction(
     case "threads.filter":
     case "project.add":
     case "project.actions":
+    case "project.create-worktree":
     case "project.switch":
     case "thread.actions":
     case "thread.run-action":
@@ -95,6 +101,44 @@ export async function handleDesktopAction(
       const projectId = getProjectId(payload);
       if (projectId) {
         setProjectCollapsed(projectId, true);
+      }
+      return;
+    }
+
+    case "project.open-in-file-manager": {
+      const projectId = getProjectId(payload);
+      if (!projectId) {
+        return;
+      }
+
+      const error = await shell.openPath(projectId);
+      if (error) {
+        throw new Error(error);
+      }
+      return;
+    }
+
+    case "project.edit-name": {
+      const projectId = getProjectId(payload);
+      const projectName = getProjectName(payload);
+      if (projectId && projectName) {
+        renameProject(projectId, projectName);
+      }
+      return;
+    }
+
+    case "project.archive-threads": {
+      const projectId = getProjectId(payload);
+      if (projectId) {
+        archiveProjectThreads(projectId);
+      }
+      return;
+    }
+
+    case "project.remove-project": {
+      const projectId = getProjectId(payload);
+      if (projectId) {
+        hideProject(projectId);
       }
       return;
     }

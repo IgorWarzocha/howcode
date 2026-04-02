@@ -36,15 +36,15 @@ This turns `docs/mock-features.md` into an execution backlog.
 ### P1 — Replace remaining fake workspace surfaces
 
 #### 3. Project actions menu
-- [ ] Replace generic `project.actions` stub with typed project operations
-  - files: `shared/desktop-actions.ts`, `electron/contracts.cts`
+- [x] Replace generic project menu stubs with explicit project actions for current supported items
+  - files: `shared/desktop-actions.ts`, `electron/pi-threads/action-router.cts`, `shared/desktop-action-coverage.ts`
 - [ ] Implement:
-  - [ ] open in file manager
-  - [ ] edit name
-  - [ ] archive all threads
-  - [ ] remove project from app index
+  - [x] open in file manager
+  - [x] edit name
+  - [x] archive all threads
+  - [x] remove project from app index
   - [ ] create permanent worktree
-  - files: `electron/pi-threads/action-router.cts`, `electron/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`
+  - files: `electron/pi-threads/action-router.cts`, `electron/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`, `src/app/components/sidebar/ProjectActionDialog.tsx`
 
 #### 4. Thread action menu / run action
 - [ ] Implement `thread.actions`
@@ -147,10 +147,10 @@ Key files:
 
 ### Sidebar / navigation checklist
 
-- [ ] Real new thread creation
+- [x] Real new thread creation
 - [ ] Real project add/import
 - [ ] Real thread filtering
-- [ ] Real project action menu operations
+- [x] Real project action menu operations except worktree creation
 - [ ] Real back/forward semantics
 - [ ] Real project switcher semantics
 

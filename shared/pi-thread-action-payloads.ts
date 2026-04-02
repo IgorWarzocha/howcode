@@ -29,6 +29,11 @@ export function getThreadId(payload: DesktopActionPayload) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
 }
 
+export function getProjectName(payload: DesktopActionPayload) {
+  const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
+  return projectName.length > 0 ? projectName : null;
+}
+
 export function getComposerText(payload: DesktopActionPayload) {
   return typeof payload.text === "string" ? payload.text.trim() : "";
 }

@@ -75,20 +75,26 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 3. Project actions menu
 
-**Status:** Menu exists; actions are stubbed.
+**Status:** Partially real.
 
 - UI menu: `src/app/components/sidebar/ProjectActionMenu.tsx`
-- Emits `project.actions` with sub-actions like:
-  - `open-in-file-manager`
-  - `create-worktree`
-  - `edit-name`
-  - `archive-threads`
-  - `remove-project`
-- No backend implementation beyond explicit no-op coverage: `shared/desktop-action-coverage.ts`, `electron/pi-threads/action-router.cts`
+- Real actions now exist for:
+  - open in file manager
+  - edit display name in the app index
+  - archive all project threads in the app index
+  - remove/hide project from the sidebar index
+- Files:
+  - `src/app/components/sidebar/ProjectActionMenu.tsx`
+  - `src/app/components/sidebar/ProjectActionDialog.tsx`
+  - `src/app/app-shell/useAppShellController.ts`
+  - `electron/pi-threads/action-router.cts`
+  - `electron/thread-state-db/*`
+- Still stubbed:
+  - `project.create-worktree`
 
 **Expansion direction:**
-- Split `project.actions` into real typed IPC operations or add a typed sub-action contract.
-- Persist project metadata (rename, hide, archive-all, open path, worktree creation).
+- Worktree creation remains deferred.
+- If needed later, replace the remaining legacy `project.actions` compatibility path with a stricter payload contract everywhere.
 
 ### 4. Sidebar utility controls
 
@@ -270,7 +276,7 @@ This is fine for tests, but the card/view content is still placeholder product s
 ## Good next expansion order
 
 1. Finish the remaining non-chat parts of the composer flow (host/profile/dictate)
-2. Project action menu implementation
+2. Header/project-switch/product-menu implementation
 3. Replace terminal + diff mock panels with real backing data
 4. Replace plugin/automation/debug mock cards with real registries or remove until ready
 5. Improve thread rendering fidelity for tool results and non-chat session entries

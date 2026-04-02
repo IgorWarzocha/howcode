@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
+import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
 import type { ArchivedThread, ComposerState, DesktopEvent, ThreadData } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
@@ -18,6 +19,9 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [liveThreads, setLiveThreads] = useState<Record<string, ThreadData>>({});
+  const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
+    null,
+  );
   const {
     shellState,
     loadArchivedThreads,
@@ -174,7 +178,7 @@ export function useAppShellController() {
     return unsubscribe;
   }, [loadProjectThreads, refreshShellState]);
 
-  const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
+  const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
     const contextualPayload =
       action === "composer.model" || action === "composer.send" || action === "composer.thinking"
         ? {
@@ -215,6 +219,44 @@ export function useAppShellController() {
       }
     }
 
+    if (action === "project.edit-name") {
+      await refreshShellState();
+      if (state.archivedThreadsOpen) {
+        setArchivedThreads(await loadArchivedThreads());
+      }
+    }
+
+    if (action === "project.archive-threads") {
+      const projectId =
+        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
+
+      if (projectId) {
+        await loadProjectThreads(projectId);
+      }
+
+      await refreshShellState();
+
+      if (state.archivedThreadsOpen) {
+        setArchivedThreads(await loadArchivedThreads());
+      }
+
+      if (contextualPayload.projectId === state.selectedProjectId) {
+        dispatch({ type: "show-view", view: "home" });
+      }
+    }
+
+    if (action === "project.remove-project") {
+      if (contextualPayload.projectId === state.selectedProjectId) {
+        dispatch({ type: "show-view", view: "home" });
+      }
+
+      await refreshShellState();
+
+      if (state.archivedThreadsOpen) {
+        setArchivedThreads(await loadArchivedThreads());
+      }
+    }
+
     if (action === "composer.model" || action === "composer.thinking") {
       const nextComposerState = await loadComposerState({
         projectId: composerProjectId,
@@ -234,6 +276,49 @@ export function useAppShellController() {
         setComposerState(nextComposerState);
       }
     }
+  };
+
+  const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
+    if (
+      action === "project.edit-name" ||
+      action === "project.archive-threads" ||
+      action === "project.remove-project"
+    ) {
+      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
+      if (!projectId) {
+        return;
+      }
+
+      const resolvedProject = projects.find((project) => project.id === projectId);
+      const projectName =
+        typeof payload.projectName === "string" && payload.projectName.trim().length > 0
+          ? payload.projectName.trim()
+          : (resolvedProject?.name ?? projectId);
+
+      setPendingProjectAction({
+        action,
+        projectId,
+        projectName,
+      });
+      return;
+    }
+
+    await runDesktopAction(action, payload);
+  };
+
+  const handleConfirmProjectAction = async (payload: Record<string, unknown> = {}) => {
+    if (!pendingProjectAction) {
+      return;
+    }
+
+    const nextAction = pendingProjectAction;
+    setPendingProjectAction(null);
+
+    await runDesktopAction(nextAction.action, {
+      projectId: nextAction.projectId,
+      projectName: nextAction.projectName,
+      ...payload,
+    });
   };
 
   const handleShowView = (view: View) => {
@@ -268,6 +353,8 @@ export function useAppShellController() {
     handleCloseArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: false }),
     handleCollapseAll,
     handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
+    handleConfirmProjectAction,
+    handleCloseProjectActionDialog: () => setPendingProjectAction(null),
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleShowView,
     handleThreadOpen,
@@ -277,6 +364,7 @@ export function useAppShellController() {
     handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
     pickComposerAttachments,
+    pendingProjectAction,
     projects,
     shellState,
     state,

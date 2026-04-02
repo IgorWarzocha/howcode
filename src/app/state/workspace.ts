@@ -50,6 +50,13 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {
   switch (action.type) {
     case "sync-projects": {
+      const hasSelectedProject = action.projects.some(
+        (project) => project.id === state.selectedProjectId,
+      );
+      const selectedProjectId = hasSelectedProject
+        ? state.selectedProjectId
+        : action.projects[0]?.id || "";
+
       const collapsedProjectIds = Object.fromEntries(
         action.projects.map((project) => [
           project.id,
@@ -59,7 +66,15 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
 
       return {
         ...state,
-        selectedProjectId: state.selectedProjectId || action.projects[0]?.id || "",
+        activeView:
+          hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
+            ? state.activeView
+            : "home",
+        selectedProjectId,
+        selectedThreadId:
+          hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
+        selectedSessionPath:
+          hasSelectedProject || !state.selectedProjectId ? state.selectedSessionPath : null,
         collapsedProjectIds,
       };
     }

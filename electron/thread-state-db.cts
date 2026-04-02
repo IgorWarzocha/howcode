@@ -7,10 +7,13 @@ export {
   listProjects,
 } from "./thread-state-db/queries.cjs";
 export {
+  archiveProjectThreads,
   archiveThread,
   collapseAllProjects,
   deleteThreadRecord,
   ensureProject,
+  hideProject,
+  renameProject,
   restoreThread,
   saveThreadCache,
   setProjectCollapsed,

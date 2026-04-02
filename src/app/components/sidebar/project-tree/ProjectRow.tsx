@@ -98,7 +98,6 @@ export function ProjectRow({
           type="button"
           className={cn(
             "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]",
-            getFeatureStatusButtonClass("feature:sidebar.project.rename"),
           )}
           onClick={onEdit}
           aria-label="Edit project"

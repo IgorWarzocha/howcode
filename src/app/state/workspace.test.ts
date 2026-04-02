@@ -32,6 +32,27 @@ describe("workspace state", () => {
     expect(state.collapsedProjectIds.beta).toBe(true);
   });
 
+  it("falls back to the first project if the selected project disappears", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        selectedProjectId: "missing-project",
+        selectedThreadId: "missing-thread",
+        selectedSessionPath: "/tmp/missing-thread.jsonl",
+      },
+      {
+        type: "sync-projects",
+        projects: [{ id: "alpha", name: "alpha", collapsed: false, threads: [] }],
+      },
+    );
+
+    expect(nextState.activeView).toBe("home");
+    expect(nextState.selectedProjectId).toBe("alpha");
+    expect(nextState.selectedThreadId).toBeNull();
+    expect(nextState.selectedSessionPath).toBeNull();
+  });
+
   it("opens a thread and forces its project expanded", () => {
     const state = createInitialWorkspaceState(mockProjects);
     const nextState = workspaceReducer(state, {

@@ -1,4 +1,5 @@
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
+import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
@@ -23,6 +24,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     currentTitle,
     handleAction,
     handleCloseArchivedThreads,
+    handleCloseProjectActionDialog,
+    handleConfirmProjectAction,
     handleCollapseAll,
     handleOpenArchivedThreads,
     handleProjectSelect,
@@ -33,6 +36,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleToggleSettings,
     handleToggleSidebar,
     handleToggleTerminal,
+    pendingProjectAction,
     pickComposerAttachments,
     projects,
     shellState,
@@ -132,6 +136,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         threads={archivedThreads}
         onClose={handleCloseArchivedThreads}
         onAction={(action, payload) => void handleAction(action, payload)}
+      />
+
+      <ProjectActionDialog
+        pendingAction={pendingProjectAction}
+        onClose={handleCloseProjectActionDialog}
+        onConfirm={handleConfirmProjectAction}
       />
     </>
   );

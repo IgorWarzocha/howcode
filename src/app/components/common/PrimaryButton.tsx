@@ -1,16 +1,25 @@
-import type { PropsWithChildren } from "react";
+import { type ButtonHTMLAttributes, type PropsWithChildren, forwardRef } from "react";
 import { primaryButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
-type PrimaryButtonProps = PropsWithChildren<{
-  onClick: () => void;
-  className?: string;
-}>;
+type PrimaryButtonProps = PropsWithChildren<
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+    className?: string;
+  }
+>;
 
-export function PrimaryButton({ onClick, className, children }: PrimaryButtonProps) {
-  return (
-    <button type="button" className={cn(primaryButtonClass, className)} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
+export const PrimaryButton = forwardRef<HTMLButtonElement, PrimaryButtonProps>(
+  function PrimaryButton({ onClick, className, children, type = "button", ...buttonProps }, ref) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cn(primaryButtonClass, className)}
+        onClick={onClick}
+        {...buttonProps}
+      >
+        {children}
+      </button>
+    );
+  },
+);

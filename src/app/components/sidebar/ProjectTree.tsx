@@ -57,7 +57,10 @@ export function ProjectTree({
               name={project.name}
               threadGroupId={threadGroupId}
               onEdit={() =>
-                onAction("project.actions", { projectId: project.id, menuAction: "edit-name" })
+                onAction("project.edit-name", {
+                  projectId: project.id,
+                  projectName: project.name,
+                })
               }
               onSelect={() => {
                 onProjectSelect(project.id);
@@ -74,6 +77,7 @@ export function ProjectTree({
               <ProjectActionMenu
                 menuId={actionMenuId}
                 projectId={project.id}
+                projectName={project.name}
                 onAction={onAction}
                 onClose={() => setOpenProjectMenuId(null)}
               />

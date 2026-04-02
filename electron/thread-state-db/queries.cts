@@ -25,13 +25,14 @@ export function listProjects(cwd: string): Project[] {
       `
         SELECT
           projects.cwd AS id,
-          projects.name AS name,
+          COALESCE(projects.custom_name, projects.name) AS name,
           projects.collapsed AS collapsed,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
         LEFT JOIN threads ON threads.cwd = projects.cwd AND threads.archived = 0
-        GROUP BY projects.cwd, projects.name, projects.collapsed
+        WHERE projects.hidden = 0
+        GROUP BY projects.cwd, COALESCE(projects.custom_name, projects.name), projects.collapsed
         ORDER BY
           CASE WHEN projects.cwd = ? THEN 0 ELSE 1 END,
           latestModifiedMs DESC,
@@ -94,7 +95,7 @@ export function listArchivedThreads(): ArchivedThread[] {
           threads.title AS title,
           threads.session_path AS sessionPath,
           threads.cwd AS projectId,
-          projects.name AS projectName,
+          COALESCE(projects.custom_name, projects.name) AS projectName,
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         INNER JOIN projects ON projects.cwd = threads.cwd

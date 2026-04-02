@@ -9,10 +9,11 @@ export function ensureProject(cwd: string) {
 
   db.prepare(
     `
-      INSERT INTO projects (cwd, name, collapsed)
-      VALUES (?, ?, 1)
+      INSERT INTO projects (cwd, name, collapsed, hidden)
+      VALUES (?, ?, 1, 0)
       ON CONFLICT(cwd) DO UPDATE SET
         name = excluded.name,
+        hidden = 0,
         updated_at = CURRENT_TIMESTAMP
     `,
   ).run(cwd, projectName);
@@ -22,8 +23,8 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
   const db = getThreadStateDatabase();
   const insertProject = db.prepare(
     `
-      INSERT INTO projects (cwd, name, collapsed)
-      VALUES (?, ?, 1)
+      INSERT INTO projects (cwd, name, collapsed, hidden)
+      VALUES (?, ?, 1, 0)
       ON CONFLICT(cwd) DO UPDATE SET
         name = excluded.name,
         updated_at = CURRENT_TIMESTAMP
@@ -142,6 +143,39 @@ export function archiveThread(threadId: string) {
       WHERE id = ?
     `,
   ).run(threadId);
+}
+
+export function archiveProjectThreads(projectId: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE threads
+      SET archived = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ? AND archived = 0
+    `,
+  ).run(projectId);
+}
+
+export function renameProject(projectId: string, projectName: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE projects
+      SET custom_name = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(projectName, projectId);
+}
+
+export function hideProject(projectId: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE projects
+      SET hidden = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(projectId);
 }
 
 export function restoreThread(threadId: string) {
