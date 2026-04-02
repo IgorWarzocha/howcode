@@ -11,14 +11,14 @@ export function ThreadView({ messages, previousMessageCount }: ThreadViewProps) 
 
   if (messages.length === 0) {
     return (
-      <div className="grid w-full max-w-[744px] self-stretch place-items-center px-4 pt-16 text-[color:var(--muted)]">
+      <div className="mx-auto grid w-full max-w-[744px] self-stretch place-items-center px-4 pt-16 text-[color:var(--muted)]">
         No messages yet.
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[744px] self-stretch pt-4">
+    <div className="mx-auto w-full max-w-[744px] self-stretch pt-4">
       <div className="grid gap-4.5 px-4 pb-2">
         {firstMessage ? <ThreadMessage message={firstMessage} /> : null}
 
