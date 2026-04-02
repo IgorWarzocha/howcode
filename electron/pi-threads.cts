@@ -9,6 +9,11 @@ import type {
   ThreadData,
 } from "../shared/desktop-contracts.js";
 import {
+  getComposerState,
+  setComposerModel,
+  setComposerThinkingLevel,
+} from "./pi-desktop-runtime.cjs";
+import {
   archiveThread,
   collapseAllProjects,
   deleteThreadRecord,
@@ -177,6 +182,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
 
   await syncShellIndex(cwd);
+  const composer = await getComposerState(cwd);
 
   return {
     platform: process.platform,
@@ -187,6 +193,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
     availableHosts: ["Local"],
     composerProfiles: ["Pi session"],
+    composer,
     projects: listProjects(cwd),
   };
 }
@@ -308,6 +315,32 @@ export async function handleDesktopAction(
         }
       }
       deleteThreadRecord(threadId);
+      return;
+    }
+
+    case "composer.model": {
+      const provider = typeof payload.provider === "string" ? payload.provider : null;
+      const modelId = typeof payload.modelId === "string" ? payload.modelId : null;
+
+      if (provider && modelId) {
+        await setComposerModel(process.cwd(), provider, modelId);
+      }
+      return;
+    }
+
+    case "composer.thinking": {
+      const level = typeof payload.level === "string" ? payload.level : null;
+
+      if (
+        level === "off" ||
+        level === "minimal" ||
+        level === "low" ||
+        level === "medium" ||
+        level === "high" ||
+        level === "xhigh"
+      ) {
+        await setComposerThinkingLevel(process.cwd(), level);
+      }
       return;
     }
 

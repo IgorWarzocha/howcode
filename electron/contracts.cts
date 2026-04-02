@@ -26,6 +26,12 @@ export const DEFAULT_SHELL_STATE: Readonly<ShellState> = Object.freeze({
   projects: [],
   availableHosts: ["Local"],
   composerProfiles: ["Pi session"],
+  composer: {
+    currentModel: null,
+    availableModels: [],
+    currentThinkingLevel: "off",
+    availableThinkingLevels: ["off"],
+  },
 });
 
 export type GetThreadRequest = {

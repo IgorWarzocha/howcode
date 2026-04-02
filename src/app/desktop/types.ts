@@ -1,5 +1,8 @@
 export type {
   ArchivedThread,
+  ComposerModel,
+  ComposerState,
+  ComposerThinkingLevel,
   DesktopActionPayload,
   DesktopActionResult,
   ShellState,

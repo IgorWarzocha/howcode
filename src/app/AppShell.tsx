@@ -25,7 +25,8 @@ import { MainView } from "./views/MainView";
 export function AppShell() {
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
-  const { shellState, loadArchivedThreads, loadProjectThreads } = useDesktopShell();
+  const { shellState, loadArchivedThreads, loadProjectThreads, refreshShellState } =
+    useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
   const collapsedProjectIds = useMemo(
@@ -127,6 +128,10 @@ export function AppShell() {
         dispatch({ type: "show-view", view: "home" });
       }
     }
+
+    if (action === "composer.model" || action === "composer.thinking") {
+      await refreshShellState();
+    }
   };
 
   const handleShowView = (view: View) => {
@@ -226,6 +231,10 @@ export function AppShell() {
                 activeView={state.activeView}
                 hostLabel={shellState?.availableHosts[0] ?? "Local"}
                 profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                model={shellState?.composer.currentModel ?? null}
+                availableModels={shellState?.composer.availableModels ?? []}
+                thinkingLevel={shellState?.composer.currentThinkingLevel ?? "off"}
+                availableThinkingLevels={shellState?.composer.availableThinkingLevels ?? ["off"]}
                 onAction={(action, payload) => void handleAction(action, payload)}
               />
             </div>

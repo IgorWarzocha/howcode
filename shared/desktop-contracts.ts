@@ -34,6 +34,23 @@ export type Message = {
   content: string[];
 };
 
+export type ComposerThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
+export type ComposerModel = {
+  provider: string;
+  id: string;
+  name: string;
+  reasoning: boolean;
+  input: Array<"text" | "image">;
+};
+
+export type ComposerState = {
+  currentModel: ComposerModel | null;
+  availableModels: ComposerModel[];
+  currentThinkingLevel: ComposerThinkingLevel;
+  availableThinkingLevels: ComposerThinkingLevel[];
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;
@@ -44,6 +61,7 @@ export type ShellState = {
   projects: Project[];
   availableHosts: string[];
   composerProfiles: string[];
+  composer: ComposerState;
 };
 
 export type ThreadData = {

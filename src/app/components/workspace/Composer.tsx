@@ -1,5 +1,17 @@
-import { ChevronDown, Globe, Mic, Plus, Send, Settings, SquareTerminal, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Globe,
+  Mic,
+  Plus,
+  Send,
+  Settings,
+  SquareTerminal,
+  X,
+} from "lucide-react";
+import { useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
+import type { ComposerModel, ComposerThinkingLevel } from "../../desktop/types";
 import type { View } from "../../types";
 import { IconButton } from "../common/IconButton";
 import { PrimaryButton } from "../common/PrimaryButton";
@@ -10,10 +22,43 @@ type ComposerProps = {
   activeView: View;
   hostLabel: string;
   profileLabel: string;
+  model: ComposerModel | null;
+  availableModels: ComposerModel[];
+  thinkingLevel: ComposerThinkingLevel;
+  availableThinkingLevels: ComposerThinkingLevel[];
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
 
-export function Composer({ activeView, hostLabel, profileLabel, onAction }: ComposerProps) {
+const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
+  off: "Off",
+  minimal: "Minimal",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "X-High",
+};
+
+function getModelLabel(model: ComposerModel | null) {
+  if (!model) {
+    return "No model";
+  }
+
+  return model.name;
+}
+
+export function Composer({
+  activeView,
+  hostLabel,
+  profileLabel,
+  model,
+  availableModels,
+  thinkingLevel,
+  availableThinkingLevels,
+  onAction,
+}: ComposerProps) {
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [thinkingMenuOpen, setThinkingMenuOpen] = useState(false);
+
   return (
     <>
       {activeView === "home" ? (
@@ -60,18 +105,85 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
               icon={<Plus size={16} />}
               onClick={() => onAction("composer.attach-menu")}
             />
-            <ToolbarButton
-              label="GPT-5.4"
-              icon={<ChevronDown size={14} />}
-              onClick={() => onAction("composer.model")}
-              trailing
-            />
-            <ToolbarButton
-              label="High"
-              icon={<ChevronDown size={14} />}
-              onClick={() => onAction("composer.thinking")}
-              trailing
-            />
+            <div className="relative">
+              <ToolbarButton
+                label={getModelLabel(model)}
+                icon={<ChevronDown size={14} />}
+                onClick={() => {
+                  setModelMenuOpen((current) => !current);
+                  setThinkingMenuOpen(false);
+                }}
+                trailing
+              />
+              {modelMenuOpen ? (
+                <SurfacePanel className="absolute bottom-[calc(100%+8px)] left-0 z-30 grid max-h-[280px] w-[280px] overflow-y-auto rounded-[16px] border-[color:var(--border-strong)] bg-[rgba(39,42,57,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+                  {availableModels.map((availableModel) => {
+                    const isSelected =
+                      model?.provider === availableModel.provider && model.id === availableModel.id;
+
+                    return (
+                      <button
+                        key={`${availableModel.provider}/${availableModel.id}`}
+                        type="button"
+                        className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
+                        onClick={() => {
+                          setModelMenuOpen(false);
+                          onAction("composer.model", {
+                            provider: availableModel.provider,
+                            modelId: availableModel.id,
+                          });
+                        }}
+                      >
+                        <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+                          {isSelected ? <Check size={14} /> : null}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate">{availableModel.name}</span>
+                          <span className="block truncate text-[11px] text-[color:var(--muted)]">
+                            {availableModel.provider}/{availableModel.id}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </SurfacePanel>
+              ) : null}
+            </div>
+            <div className="relative">
+              <ToolbarButton
+                label={thinkingLevelLabels[thinkingLevel]}
+                icon={<ChevronDown size={14} />}
+                onClick={() => {
+                  setThinkingMenuOpen((current) => !current);
+                  setModelMenuOpen(false);
+                }}
+                trailing
+              />
+              {thinkingMenuOpen ? (
+                <SurfacePanel className="absolute bottom-[calc(100%+8px)] left-0 z-30 grid w-[180px] rounded-[16px] border-[color:var(--border-strong)] bg-[rgba(39,42,57,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+                  {availableThinkingLevels.map((level) => {
+                    const isSelected = level === thinkingLevel;
+
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
+                        onClick={() => {
+                          setThinkingMenuOpen(false);
+                          onAction("composer.thinking", { level });
+                        }}
+                      >
+                        <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+                          {isSelected ? <Check size={14} /> : null}
+                        </span>
+                        <span>{thinkingLevelLabels[level]}</span>
+                      </button>
+                    );
+                  })}
+                </SurfacePanel>
+              ) : null}
+            </div>
             <ToolbarButton
               label="Dictate"
               icon={<Mic size={15} />}
