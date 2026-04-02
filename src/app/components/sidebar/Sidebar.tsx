@@ -40,6 +40,7 @@ type SidebarProps = {
   onOpenArchivedThreads: () => void;
   onCollapseAll: () => void;
   onProjectSelect: (projectId: string) => void;
+  onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
 };
@@ -59,6 +60,7 @@ export function Sidebar({
   onOpenArchivedThreads,
   onCollapseAll,
   onProjectSelect,
+  onProjectReorder,
   onThreadOpen,
   onToggleProjectCollapse,
 }: SidebarProps) {
@@ -186,6 +188,7 @@ export function Sidebar({
               collapsedProjectIds={collapsedProjectIds}
               onAction={onAction}
               onProjectSelect={onProjectSelect}
+              onProjectReorder={onProjectReorder}
               onThreadOpen={onThreadOpen}
               onToggleProjectCollapse={onToggleProjectCollapse}
             />

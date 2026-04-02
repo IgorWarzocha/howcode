@@ -167,6 +167,34 @@ export function renameProject(projectId: string, projectName: string) {
   ).run(projectName, projectId);
 }
 
+export function reorderProjects(projectIds: string[]) {
+  if (projectIds.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const updateProjectOrder = db.prepare(
+    `
+      UPDATE projects
+      SET order_index = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    projectIds.forEach((projectId, index) => {
+      updateProjectOrder.run(index, projectId);
+    });
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 export function hideProject(projectId: string) {
   const db = getThreadStateDatabase();
   db.prepare(

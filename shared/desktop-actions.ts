@@ -9,6 +9,7 @@ export const desktopActions = [
   "project.collapse",
   "project.actions",
   "project.open-in-file-manager",
+  "project.reorder",
   "project.edit-name",
   "project.archive-threads",
   "project.remove-project",

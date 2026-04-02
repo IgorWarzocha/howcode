@@ -81,6 +81,41 @@ export function useDesktopShell() {
     [queryClient],
   );
 
+  const applyProjectOrder = useCallback(
+    (projectIds: string[]) => {
+      queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
+        if (!currentState) {
+          return currentState ?? null;
+        }
+
+        const orderIndexById = new Map(projectIds.map((projectId, index) => [projectId, index]));
+
+        return {
+          ...currentState,
+          projects: [...currentState.projects].sort((left, right) => {
+            const leftIndex = orderIndexById.get(left.id);
+            const rightIndex = orderIndexById.get(right.id);
+
+            if (leftIndex !== undefined && rightIndex !== undefined) {
+              return leftIndex - rightIndex;
+            }
+
+            if (leftIndex !== undefined) {
+              return -1;
+            }
+
+            if (rightIndex !== undefined) {
+              return 1;
+            }
+
+            return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+          }),
+        };
+      });
+    },
+    [queryClient],
+  );
+
   const loadArchivedThreads = useCallback(async () => {
     return queryClient.fetchQuery({
       queryKey: desktopQueryKeys.archivedThreads(),
@@ -126,6 +161,7 @@ export function useDesktopShell() {
     refreshShellState,
     scheduleShellStateRefresh,
     loadProjectThreads,
+    applyProjectOrder,
     loadArchivedThreads,
     loadComposerState,
     loadProjectGitState,

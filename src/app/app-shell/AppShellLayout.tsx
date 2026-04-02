@@ -34,6 +34,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleCloseTakeoverTerminal,
     handleOpenArchivedThreads,
     handleOpenDiffSelection,
+    handleProjectReorder,
     handleProjectSelect,
     handleSelectDiffTurn,
     handleShowTakeoverTerminal,
@@ -141,6 +142,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           onOpenArchivedThreads={handleOpenArchivedThreads}
           onCollapseAll={handleCollapseAll}
           onProjectSelect={handleProjectSelect}
+          onProjectReorder={handleProjectReorder}
           onThreadOpen={handleThreadOpen}
           onToggleProjectCollapse={handleToggleProjectCollapse}
         />

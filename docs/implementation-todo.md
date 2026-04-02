@@ -91,7 +91,8 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 8. Sidebar utility controls
 - [ ] Implement thread filtering/search
 - [ ] Implement add/import project flow
-- [ ] Add optional drag-and-drop reordering for projects/threads once ordering semantics are finalized
+- [x] Add drag-and-drop project reordering with persisted sidebar order
+- [ ] Extend drag-and-drop to thread-level ordering only if thread ordering semantics become explicit
 - [ ] Decide whether nav back/forward are renderer history or app history
   - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `desktop/pi-threads/action-router.cts`
 
@@ -163,10 +164,16 @@ Key files:
 - [x] Real new thread creation
 - [ ] Real project add/import
 - [ ] Real thread filtering
-- [ ] Optional drag-and-drop reordering for project/thread organization
+- [x] Drag-and-drop project reordering
+- [ ] Optional thread-level drag-and-drop only if thread ordering becomes a real product rule
 - [x] Real project action menu operations except worktree creation
 - [ ] Real back/forward semantics
 - [ ] Real project switcher semantics
+
+### Routing / navigation note
+
+- [ ] Revisit router adoption only when thread/diff/settings state clearly deserves deep-linkable route/search-param ownership
+- [ ] Do not add a router just for structure; add it when it materially improves navigation semantics
 
 Key files:
 - `src/app/components/sidebar/Sidebar.tsx`

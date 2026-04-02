@@ -6,6 +6,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
   getProjectId,
+  getProjectIds,
   getProjectName,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
@@ -14,6 +15,7 @@ describe("pi thread action payloads", () => {
   it("extracts project and thread ids safely", () => {
     expect(getProjectId({ projectId: "/tmp/project" })).toBe("/tmp/project");
     expect(getProjectId({ projectId: 12 })).toBeNull();
+    expect(getProjectIds({ projectIds: ["a", 12, "b", null] })).toEqual(["a", "b"]);
     expect(getThreadId({ threadId: "thread-1" })).toBe("thread-1");
     expect(getThreadId({})).toBeNull();
   });

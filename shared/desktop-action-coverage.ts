@@ -5,6 +5,7 @@ export const implementedDesktopActions = [
   "project.expand",
   "project.collapse",
   "project.open-in-file-manager",
+  "project.reorder",
   "project.edit-name",
   "project.archive-threads",
   "project.remove-project",

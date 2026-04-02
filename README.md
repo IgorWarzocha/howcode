@@ -15,6 +15,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - centered thread scroller with TanStack virtualization, bottom-stick behavior during live updates, and preserved in-lane scrolling
 - real checkpoint-backed diff panel using `@pierre/diffs`, with whole-thread and per-turn patch rendering for completed composer turns in git repos
 - React Query-backed desktop data loading with React Pacer used to debounce shell refresh churn after desktop event bursts
+- dnd-kit-backed project drag-and-drop with persisted sidebar project ordering
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting
 - Husky + lint-staged pre-commit scaffolding
@@ -76,3 +77,9 @@ The `prepare` script will then activate Husky automatically.
 ## Next integration step
 
 Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, diff backing data, terminal multi-session polish) while keeping the new lane boundaries intact.
+
+## Routing note for later
+
+- Defer router adoption until `/home/igorw/Work/howcode` has clearly navigable state worth encoding as route/search params.
+- Strong triggers for later adoption would be deep-linkable thread selection, diff turn/file selection, archived/settings panels, and real back/forward semantics.
+- Until then, reducer-driven shell state is intentionally simpler than introducing a route model too early.

@@ -34,15 +34,22 @@ export function listProjects(cwd: string): Project[] {
         SELECT
           projects.cwd AS id,
           COALESCE(projects.custom_name, projects.name) AS name,
+          projects.order_index AS orderIndex,
           projects.collapsed AS collapsed,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
         LEFT JOIN threads ON threads.cwd = projects.cwd AND threads.archived = 0
         WHERE projects.hidden = 0
-        GROUP BY projects.cwd, COALESCE(projects.custom_name, projects.name), projects.collapsed
+        GROUP BY
+          projects.cwd,
+          COALESCE(projects.custom_name, projects.name),
+          projects.order_index,
+          projects.collapsed
         ORDER BY
-          CASE WHEN projects.cwd = ? THEN 0 ELSE 1 END,
+          CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,
+          projects.order_index ASC,
+          CASE WHEN projects.order_index IS NULL AND projects.cwd = ? THEN 0 ELSE 1 END,
           latestModifiedMs DESC,
           projects.name COLLATE NOCASE ASC
       `,

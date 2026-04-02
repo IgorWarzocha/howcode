@@ -1,11 +1,24 @@
-import { ChevronDown, ChevronRight, Folder, MoreHorizontal, SquarePen } from "lucide-react";
+import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  GripVertical,
+  MoreHorizontal,
+  SquarePen,
+} from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { cn } from "../../../utils/cn";
 
 type ProjectRowProps = {
   actionMenuId: string;
   actionMenuOpen: boolean;
+  dragHandleProps: {
+    attributes: DraggableAttributes;
+    listeners: DraggableSyntheticListeners | undefined;
+  };
   isActive: boolean;
+  isDragging: boolean;
   isExpanded: boolean;
   name: string;
   threadGroupId: string;
@@ -18,7 +31,9 @@ type ProjectRowProps = {
 export function ProjectRow({
   actionMenuId,
   actionMenuOpen,
+  dragHandleProps,
   isActive,
+  isDragging,
   isExpanded,
   name,
   threadGroupId,
@@ -32,6 +47,7 @@ export function ProjectRow({
       className={cn(
         "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] px-2 py-0.5 transition-colors duration-150 ease-out hover:bg-[rgba(183,186,245,0.08)] focus-within:bg-[rgba(183,186,245,0.08)]",
         (isActive || actionMenuOpen) && "bg-[rgba(183,186,245,0.08)]",
+        isDragging && "ring-1 ring-[rgba(183,186,245,0.24)]",
       )}
     >
       <button
@@ -77,8 +93,19 @@ export function ProjectRow({
         className={cn(
           "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
           actionMenuOpen && "opacity-100",
+          isDragging && "opacity-100",
         )}
       >
+        <button
+          type="button"
+          className="inline-flex h-6 w-6 cursor-grab items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)] active:cursor-grabbing"
+          aria-label="Reorder project"
+          title="Reorder project"
+          {...dragHandleProps.attributes}
+          {...dragHandleProps.listeners}
+        >
+          <GripVertical size={13} />
+        </button>
         <button
           type="button"
           className={cn(

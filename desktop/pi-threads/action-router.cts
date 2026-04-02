@@ -9,6 +9,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
   getProjectId,
+  getProjectIds,
   getProjectName,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
@@ -28,6 +29,7 @@ import {
   getThreadSessionPath,
   hideProject,
   renameProject,
+  reorderProjects,
   restoreThread,
   setProjectCollapsed,
   toggleThreadPinned,
@@ -115,6 +117,14 @@ export async function handleDesktopAction(
 
       if (!Utils.openPath(projectId)) {
         throw new Error(`Unable to open path: ${projectId}`);
+      }
+      return;
+    }
+
+    case "project.reorder": {
+      const projectIds = getProjectIds(payload);
+      if (projectIds.length > 0) {
+        reorderProjects(projectIds);
       }
       return;
     }

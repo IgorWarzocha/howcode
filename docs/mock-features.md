@@ -112,7 +112,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Decide whether these are renderer-only behaviors, desktop actions, or both.
 - Add search/filter state + project import/create flows.
-- If project/thread ordering becomes important, adopt drag-and-drop intentionally instead of layering ad hoc pointer logic onto the current sidebar.
+- Project ordering now supports intentional drag-and-drop. If thread ordering becomes important later, add it as an explicit product rule instead of layering ad hoc pointer logic onto the current sidebar.
 
 ### 5. Header controls
 

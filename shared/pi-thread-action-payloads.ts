@@ -34,6 +34,12 @@ export function getProjectName(payload: DesktopActionPayload) {
   return projectName.length > 0 ? projectName : null;
 }
 
+export function getProjectIds(payload: DesktopActionPayload) {
+  return Array.isArray(payload.projectIds)
+    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === "string")
+    : [];
+}
+
 export function getComposerText(payload: DesktopActionPayload) {
   return typeof payload.text === "string" ? payload.text.trim() : "";
 }

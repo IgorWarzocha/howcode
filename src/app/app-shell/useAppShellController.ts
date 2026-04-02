@@ -36,6 +36,7 @@ export function useAppShellController() {
     loadComposerState,
     loadProjectGitState,
     loadProjectThreads,
+    applyProjectOrder,
     pickComposerAttachments,
     refreshShellState,
     scheduleShellStateRefresh,
@@ -401,6 +402,12 @@ export function useAppShellController() {
     dispatch({ type: "toggle-diff" });
   };
 
+  const handleProjectReorder = async (projectIds: string[]) => {
+    applyProjectOrder(projectIds);
+    await runDesktopAction("project.reorder", { projectIds });
+    scheduleShellStateRefresh();
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -422,6 +429,7 @@ export function useAppShellController() {
     },
     handleOpenDiffSelection,
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleProjectReorder,
     handleSelectDiffTurn,
     handleShowView,
     handleThreadOpen,

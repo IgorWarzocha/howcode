@@ -23,6 +23,7 @@ export function ensureThreadStateSchema(database: Database) {
       cwd TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       custom_name TEXT,
+      order_index INTEGER,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -63,6 +64,10 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "projects", "custom_name")) {
     database.exec("ALTER TABLE projects ADD COLUMN custom_name TEXT");
+  }
+
+  if (!hasColumn(database, "projects", "order_index")) {
+    database.exec("ALTER TABLE projects ADD COLUMN order_index INTEGER");
   }
 
   if (!hasColumn(database, "projects", "hidden")) {
