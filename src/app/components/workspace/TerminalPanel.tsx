@@ -1,10 +1,9 @@
 import { AtSign, SquareTerminal, X } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass } from "../../features/feature-status";
-import { terminalOutputClass } from "../../ui/classes";
+import { panelChromeClass, terminalOutputClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
-import { SurfacePanel } from "../common/SurfacePanel";
 
 type TerminalPanelProps = {
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
@@ -12,8 +11,13 @@ type TerminalPanelProps = {
 
 export function TerminalPanel({ onAction }: TerminalPanelProps) {
   return (
-    <SurfacePanel
-      className={cn("grid gap-2.5 p-3", getFeatureStatusButtonClass("feature:terminal.panel"))}
+    <section
+      aria-label="Terminal panel"
+      className={cn(
+        panelChromeClass,
+        "grid gap-2.5 p-3",
+        getFeatureStatusButtonClass("feature:terminal.panel"),
+      )}
       data-feature-id="feature:terminal.panel"
       data-feature-status="mock"
     >
@@ -56,6 +60,6 @@ export function TerminalPanel({ onAction }: TerminalPanelProps) {
           className="flex-1 border-0 bg-transparent text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
         />
       </div>
-    </SurfacePanel>
+    </section>
   );
 }

@@ -1,19 +1,25 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { iconButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
-type IconButtonProps = {
+type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   label: string;
   icon: ReactNode;
-  onClick: () => void;
   active?: boolean;
-  className?: string;
 };
 
-export function IconButton({ label, icon, onClick, active, className }: IconButtonProps) {
+export function IconButton({
+  label,
+  icon,
+  onClick,
+  active,
+  className,
+  type = "button",
+  ...buttonProps
+}: IconButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       className={cn(
         iconButtonClass,
         active &&
@@ -22,7 +28,9 @@ export function IconButton({ label, icon, onClick, active, className }: IconButt
       )}
       onClick={onClick}
       aria-label={label}
+      aria-pressed={active || undefined}
       title={label}
+      {...buttonProps}
     >
       {icon}
     </button>

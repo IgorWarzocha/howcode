@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import {
   type FeatureStatusId,
   getFeatureStatusButtonClass,
@@ -9,14 +9,13 @@ import { hoverSurfaceClass, transitionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "./FeatureStatusBadge";
 
-type MenuItemProps = {
+type MenuItemProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   icon: ReactNode;
   title: ReactNode;
   subtitle?: string;
   detail?: string;
   caret?: boolean;
   active?: boolean;
-  onClick?: () => void;
   statusId?: FeatureStatusId;
 };
 
@@ -29,10 +28,12 @@ export function MenuItem({
   active,
   onClick,
   statusId,
+  type = "button",
+  ...buttonProps
 }: MenuItemProps) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       className={cn(
         "flex items-center gap-2.5 rounded-[12px] border border-transparent px-2.5 py-2 text-left text-[14px]",
@@ -43,6 +44,7 @@ export function MenuItem({
       )}
       data-feature-id={statusId}
       data-feature-status={statusId ? getFeatureStatusMeta(statusId).status : undefined}
+      {...buttonProps}
     >
       <span className="text-[color:var(--muted)]">{icon}</span>
       <div className="min-w-0 flex-1">

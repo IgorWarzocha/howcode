@@ -1,4 +1,5 @@
 import { Archive, FolderOpen, GitBranchPlus, Pencil, X } from "lucide-react";
+import type { RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass, getFeatureStatusMeta } from "../../features/feature-status";
 import { cn } from "../../utils/cn";
@@ -6,19 +7,33 @@ import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
 
 type ProjectActionMenuProps = {
+  menuId: string;
   projectId: string;
+  panelRef?: RefObject<HTMLDivElement | null>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onClose: () => void;
 };
 
-export function ProjectActionMenu({ projectId, onAction, onClose }: ProjectActionMenuProps) {
+export function ProjectActionMenu({
+  menuId,
+  projectId,
+  panelRef,
+  onAction,
+  onClose,
+}: ProjectActionMenuProps) {
   const handleClick = (menuAction: string) => {
     onAction("project.actions", { projectId, menuAction });
     onClose();
   };
 
   return (
-    <SurfacePanel className="absolute top-[calc(100%+6px)] left-4 z-40 grid w-[206px] gap-0.5 rounded-[14px] border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+    <SurfacePanel
+      ref={panelRef}
+      id={menuId}
+      role="menu"
+      aria-label="Project actions"
+      className="absolute top-[calc(100%+6px)] left-4 z-40 grid w-[206px] gap-0.5 rounded-[14px] border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+    >
       {[
         {
           icon: <FolderOpen size={14} />,
@@ -61,6 +76,7 @@ export function ProjectActionMenu({ projectId, onAction, onClose }: ProjectActio
           onClick={() => handleClick(item.menuAction)}
           data-feature-id={item.statusId}
           data-feature-status={getFeatureStatusMeta(item.statusId).status}
+          role="menuitem"
         >
           <span className="text-[color:var(--muted)]">{item.icon}</span>
           <span className="truncate">{item.title}</span>

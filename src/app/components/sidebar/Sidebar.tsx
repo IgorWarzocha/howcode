@@ -11,8 +11,10 @@ import {
   Sparkles,
   Workflow,
 } from "lucide-react";
+import { useCallback, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass } from "../../features/feature-status";
+import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
 import { sidebarSectionLabelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
@@ -59,9 +61,26 @@ export function Sidebar({
   onThreadOpen,
   onToggleProjectCollapse,
 }: SidebarProps) {
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const threadsHeadingId = "sidebar-threads-heading";
+  const settingsMenuId = "sidebar-settings-menu";
+  const closeSettings = useCallback(() => {
+    if (settingsOpen) {
+      onToggleSettings();
+    }
+  }, [onToggleSettings, settingsOpen]);
+
+  useDismissibleLayer({
+    open: settingsOpen,
+    onDismiss: closeSettings,
+    refs: [settingsButtonRef, settingsMenuRef],
+  });
+
   return (
     <>
       <aside
+        aria-label="Workspace sidebar"
         className={
           sidebarVisible
             ? "relative flex min-h-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
@@ -86,7 +105,7 @@ export function Sidebar({
           />
         </div>
 
-        <nav className="grid gap-0.5">
+        <nav className="grid gap-0.5" aria-label="Primary navigation">
           <NavButton
             icon={<Sparkles size={16} />}
             label="New thread"
@@ -133,9 +152,12 @@ export function Sidebar({
           />
         </nav>
 
-        <section className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden">
+        <section
+          className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden"
+          aria-labelledby={threadsHeadingId}
+        >
           <div className={sidebarSectionLabelClass}>
-            <span>Threads</span>
+            <span id={threadsHeadingId}>Threads</span>
             <div className="flex items-center gap-1.5">
               <IconButton
                 label="Collapse all"
@@ -171,18 +193,28 @@ export function Sidebar({
         </section>
 
         <button
+          ref={settingsButtonRef}
           type="button"
           className={cn(
             "mt-auto flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[14px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
             settingsOpen && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
           )}
           onClick={onToggleSettings}
+          aria-haspopup="menu"
+          aria-expanded={settingsOpen}
+          aria-controls={settingsMenuId}
         >
           <Settings size={16} />
           <span>Settings</span>
         </button>
 
-        {settingsOpen ? <SettingsMenu onOpenArchivedThreads={onOpenArchivedThreads} /> : null}
+        {settingsOpen ? (
+          <SettingsMenu
+            menuId={settingsMenuId}
+            panelRef={settingsMenuRef}
+            onOpenArchivedThreads={onOpenArchivedThreads}
+          />
+        ) : null}
       </aside>
 
       {!sidebarVisible ? (

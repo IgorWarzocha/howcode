@@ -1,8 +1,10 @@
 import { ArchiveRestore, Trash2, X } from "lucide-react";
+import { useEffect, useId, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { ArchivedThread } from "../../desktop/types";
+import { panelChromeClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
-import { SurfacePanel } from "../common/SurfacePanel";
 import { TextButton } from "../common/TextButton";
 
 type ArchivedThreadsPanelProps = {
@@ -18,22 +20,73 @@ export function ArchivedThreadsPanel({
   onClose,
   onAction,
 }: ArchivedThreadsPanelProps) {
+  const titleId = useId();
+  const panelRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    lastFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      lastFocusedElementRef.current?.focus();
+    };
+  }, [onClose, open]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,10,18,0.52)] px-6 py-8 backdrop-blur-sm">
-      <SurfacePanel className="flex h-full max-h-[720px] w-full max-w-[880px] flex-col overflow-hidden rounded-[24px] border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,10,18,0.52)] px-6 py-8 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <dialog
+        ref={panelRef}
+        open
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={cn(
+          panelChromeClass,
+          "flex h-full max-h-[720px] w-full max-w-[880px] flex-col overflow-hidden rounded-[24px] border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] shadow-[0_24px_80px_rgba(0,0,0,0.34)]",
+        )}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border)] px-6 py-5">
           <div>
-            <div className="text-[18px] font-medium text-[color:var(--text)]">Archived threads</div>
+            <div id={titleId} className="text-[18px] font-medium text-[color:var(--text)]">
+              Archived threads
+            </div>
             <p className="mt-1 text-[13px] text-[color:var(--muted)]">
               Restore archived threads back into the sidebar or delete them permanently from the app
               and disk.
             </p>
           </div>
-          <TextButton className="p-1" onClick={onClose}>
+          <TextButton
+            ref={closeButtonRef}
+            className="p-1"
+            onClick={onClose}
+            aria-label="Close archived threads dialog"
+          >
             <X size={16} />
           </TextButton>
         </div>
@@ -98,7 +151,7 @@ export function ArchivedThreadsPanel({
             </div>
           )}
         </div>
-      </SurfacePanel>
+      </dialog>
     </div>
   );
 }

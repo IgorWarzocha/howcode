@@ -1,11 +1,20 @@
-import type { PropsWithChildren } from "react";
+import { type HTMLAttributes, type PropsWithChildren, forwardRef } from "react";
 import { panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
-type SurfacePanelProps = PropsWithChildren<{
-  className?: string;
-}>;
+type SurfacePanelProps = PropsWithChildren<
+  HTMLAttributes<HTMLDivElement> & {
+    className?: string;
+  }
+>;
 
-export function SurfacePanel({ className, children }: SurfacePanelProps) {
-  return <div className={cn(panelChromeClass, className)}>{children}</div>;
-}
+export const SurfacePanel = forwardRef<HTMLDivElement, SurfacePanelProps>(function SurfacePanel(
+  { className, children, ...props },
+  ref,
+) {
+  return (
+    <div ref={ref} className={cn(panelChromeClass, className)} {...props}>
+      {children}
+    </div>
+  );
+});

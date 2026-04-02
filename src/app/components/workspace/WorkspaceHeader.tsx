@@ -86,6 +86,8 @@ export function WorkspaceHeader({
         )}
         onClick={() => onAction("product.menu")}
         data-feature-id="feature:header.product-menu"
+        aria-haspopup="menu"
+        aria-expanded={false}
       >
         <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[11px] font-bold text-[#171821]">
           P
