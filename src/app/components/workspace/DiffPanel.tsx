@@ -10,6 +10,7 @@ type DiffPanelProps = {
   selectedTurnCount: number | null;
   selectedFilePath: string | null;
   onSelectTurn: (checkpointTurnCount: number | null) => void;
+  onClose: () => void;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
 
@@ -20,6 +21,7 @@ export function DiffPanel({
   selectedTurnCount,
   selectedFilePath,
   onSelectTurn,
+  onClose,
   onAction,
 }: DiffPanelProps) {
   return (
@@ -31,6 +33,7 @@ export function DiffPanel({
         selectedTurnCount={selectedTurnCount}
         selectedFilePath={selectedFilePath}
         onSelectTurn={onSelectTurn}
+        onClose={onClose}
         onAction={onAction}
       />
     </DiffWorkerPoolProvider>

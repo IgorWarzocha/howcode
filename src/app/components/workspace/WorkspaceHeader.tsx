@@ -70,8 +70,8 @@ export function WorkspaceHeader({
   onToggleTerminal,
   onToggleDiff,
 }: WorkspaceHeaderProps) {
+  void currentTitle;
   const isThreadView = activeView === "thread";
-  const title = isThreadView ? currentTitle : "New thread";
   const projectName = currentProjectName || "Project";
   const isGitRepo = projectGitState?.isGitRepo ?? false;
   const hasGitChanges = Boolean(
@@ -86,8 +86,6 @@ export function WorkspaceHeader({
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="truncate text-[13px] font-medium text-[color:var(--text)]">{title}</span>
-
         {isThreadView ? (
           <>
             <button
