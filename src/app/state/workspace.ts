@@ -6,7 +6,7 @@ export type WorkspaceState = {
   selectedThreadId: string | null;
   selectedSessionPath: string | null;
   sidebarVisible: boolean;
-  terminalVisible: boolean;
+  terminalMode: "docked" | "fullscreen" | null;
   diffVisible: boolean;
   settingsOpen: boolean;
   archivedThreadsOpen: boolean;
@@ -20,6 +20,8 @@ export type WorkspaceAction =
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | { type: "toggle-sidebar" }
   | { type: "toggle-terminal" }
+  | { type: "show-full-terminal" }
+  | { type: "hide-terminal" }
   | { type: "toggle-diff" }
   | { type: "toggle-settings" }
   | { type: "set-archived-threads-open"; open: boolean }
@@ -37,7 +39,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     sidebarVisible: true,
-    terminalVisible: false,
+    terminalMode: null,
     diffVisible: false,
     settingsOpen: false,
     archivedThreadsOpen: false,
@@ -108,7 +110,19 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "toggle-sidebar":
       return { ...state, sidebarVisible: !state.sidebarVisible };
     case "toggle-terminal":
-      return { ...state, terminalVisible: !state.terminalVisible };
+      return {
+        ...state,
+        terminalMode:
+          state.terminalMode === "docked"
+            ? null
+            : state.terminalMode === "fullscreen"
+              ? null
+              : "docked",
+      };
+    case "show-full-terminal":
+      return { ...state, terminalMode: "fullscreen" };
+    case "hide-terminal":
+      return { ...state, terminalMode: null };
     case "toggle-diff":
       return { ...state, diffVisible: !state.diffVisible };
     case "toggle-settings":

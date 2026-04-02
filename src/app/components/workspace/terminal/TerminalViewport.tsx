@@ -13,6 +13,7 @@ import {
 type TerminalViewportProps = {
   projectId: string;
   sessionPath: string | null;
+  preserveSessionOnUnmount?: boolean;
 };
 
 function writeSystemMessage(terminal: Terminal, message: string) {
@@ -57,7 +58,11 @@ function extractTerminalLinks(line: string) {
   }));
 }
 
-export function TerminalViewport({ projectId, sessionPath }: TerminalViewportProps) {
+export function TerminalViewport({
+  projectId,
+  sessionPath,
+  preserveSessionOnUnmount = false,
+}: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -245,11 +250,11 @@ export function TerminalViewport({ projectId, sessionPath }: TerminalViewportPro
       linkDisposable.dispose();
       terminal.dispose();
 
-      if (sessionId) {
+      if (sessionId && !preserveSessionOnUnmount) {
         void closeDesktopTerminal({ sessionId });
       }
     };
-  }, [projectId, sessionPath]);
+  }, [preserveSessionOnUnmount, projectId, sessionPath]);
 
   return <div ref={containerRef} className="h-full min-h-[220px] overflow-hidden rounded-[12px]" />;
 }

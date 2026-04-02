@@ -390,6 +390,8 @@ export function useAppShellController() {
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleShowView,
     handleThreadOpen,
+    handleShowFullscreenTerminal: () => dispatch({ type: "show-full-terminal" }),
+    handleHideTerminal: () => dispatch({ type: "hide-terminal" }),
     handleToggleDiff: () => dispatch({ type: "toggle-diff" }),
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),

@@ -29,6 +29,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleCollapseAll,
     handleOpenArchivedThreads,
     handleProjectSelect,
+    handleHideTerminal,
+    handleShowFullscreenTerminal,
     handleShowView,
     handleThreadOpen,
     handleToggleDiff,
@@ -43,6 +45,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     shellState,
     state,
   } = controller;
+
+  const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
+  const fullscreenTerminalVisible = state.terminalMode === "fullscreen";
+  const dockedTerminalVisible = state.terminalMode === "docked";
 
   return (
     <>
@@ -78,7 +84,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             currentTitle={currentTitle}
             currentProjectName={currentProjectName}
             sidebarVisible={state.sidebarVisible}
-            terminalVisible={state.terminalVisible}
+            terminalVisible={state.terminalMode !== null}
             diffVisible={state.diffVisible}
             projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
@@ -88,52 +94,67 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
           <div
             className={
-              state.diffVisible
+              state.diffVisible && !fullscreenTerminalVisible
                 ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
                 : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
             }
           >
-            <main className={mainPanelClass}>
-              <MainView
-                activeView={state.activeView}
-                currentProjectName={currentProjectName}
-                threadData={activeThreadData}
-                onAction={(action, payload) => void handleAction(action, payload)}
-              />
-            </main>
-            {state.diffVisible ? (
+            {fullscreenTerminalVisible ? (
+              <div className="min-h-0 overflow-hidden pt-1.5 pb-4">
+                <TerminalPanel
+                  projectId={composerProjectId}
+                  sessionPath={terminalSessionPath}
+                  onClose={handleHideTerminal}
+                  mode="workspace"
+                />
+              </div>
+            ) : (
+              <main className={mainPanelClass}>
+                <MainView
+                  activeView={state.activeView}
+                  currentProjectName={currentProjectName}
+                  threadData={activeThreadData}
+                  onAction={(action, payload) => void handleAction(action, payload)}
+                />
+              </main>
+            )}
+            {state.diffVisible && !fullscreenTerminalVisible ? (
               <div className="max-xl:hidden">
                 <DiffPanel onAction={(action, payload) => void handleAction(action, payload)} />
               </div>
             ) : null}
           </div>
 
-          <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
-            <div className="mx-auto w-full max-w-[744px]">
-              <Composer
-                activeView={state.activeView}
-                hostLabel={shellState?.availableHosts[0] ?? "Local"}
-                profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
-                model={activeComposerState?.currentModel ?? null}
-                availableModels={activeComposerState?.availableModels ?? []}
-                thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
-                projectId={composerProjectId}
-                sessionPath={state.activeView === "thread" ? state.selectedSessionPath : null}
-                onPickAttachments={pickComposerAttachments}
-                onAction={handleAction}
-              />
-            </div>
-            {state.terminalVisible ? (
+          {fullscreenTerminalVisible ? null : (
+            <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
               <div className="mx-auto w-full max-w-[744px]">
-                <TerminalPanel
+                <Composer
+                  activeView={state.activeView}
+                  hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                  profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                  model={activeComposerState?.currentModel ?? null}
+                  availableModels={activeComposerState?.availableModels ?? []}
+                  thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                  availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                   projectId={composerProjectId}
-                  sessionPath={state.activeView === "thread" ? state.selectedSessionPath : null}
-                  onClose={handleToggleTerminal}
+                  sessionPath={terminalSessionPath}
+                  onOpenFullscreenTerminal={handleShowFullscreenTerminal}
+                  onPickAttachments={pickComposerAttachments}
+                  onAction={handleAction}
                 />
               </div>
-            ) : null}
-          </footer>
+              {dockedTerminalVisible ? (
+                <div className="mx-auto w-full max-w-[744px]">
+                  <TerminalPanel
+                    projectId={composerProjectId}
+                    sessionPath={terminalSessionPath}
+                    onClose={handleToggleTerminal}
+                    mode="docked"
+                  />
+                </div>
+              ) : null}
+            </footer>
+          )}
         </section>
       </div>
 

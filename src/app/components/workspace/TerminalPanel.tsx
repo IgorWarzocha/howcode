@@ -9,15 +9,22 @@ type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
+  mode?: "docked" | "workspace";
 };
 
-export function TerminalPanel({ projectId, sessionPath, onClose }: TerminalPanelProps) {
+export function TerminalPanel({
+  projectId,
+  sessionPath,
+  onClose,
+  mode = "docked",
+}: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
+  const closeLabel = mode === "workspace" ? "Return to chat" : "Close terminal";
 
   return (
     <section
       aria-label="Terminal panel"
-      className={cn(panelChromeClass, "grid gap-2.5 p-3")}
+      className={cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3")}
       data-feature-id="feature:terminal.panel"
       data-feature-status="partial"
     >
@@ -30,15 +37,19 @@ export function TerminalPanel({ projectId, sessionPath, onClose }: TerminalPanel
         <button
           type="button"
           className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-[color:var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[color:var(--text)]"
-          aria-label="Close terminal"
-          title="Close terminal"
+          aria-label={closeLabel}
+          title={closeLabel}
           onClick={onClose}
         >
           <X size={14} />
         </button>
       </div>
-      <div className="overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.92)] p-1.5">
-        <TerminalViewport projectId={projectId} sessionPath={sessionPath} />
+      <div className="flex min-h-0 flex-1 overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.92)] p-1.5">
+        <TerminalViewport
+          projectId={projectId}
+          sessionPath={sessionPath}
+          preserveSessionOnUnmount
+        />
       </div>
     </section>
   );

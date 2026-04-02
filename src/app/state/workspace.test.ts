@@ -68,6 +68,26 @@ describe("workspace state", () => {
     expect(nextState.collapsedProjectIds["claw-phone"]).toBe(false);
   });
 
+  it("can switch into fullscreen terminal mode", () => {
+    const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "show-full-terminal",
+    });
+
+    expect(nextState.terminalMode).toBe("fullscreen");
+  });
+
+  it("closes terminal mode when toggled from fullscreen", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        terminalMode: "fullscreen",
+      },
+      { type: "toggle-terminal" },
+    );
+
+    expect(nextState.terminalMode).toBeNull();
+  });
+
   it("resolves fallback project and thread titles safely", () => {
     const project = selectProject(mockProjects, "missing-project");
     const thread = selectThread(project, "missing-thread");
