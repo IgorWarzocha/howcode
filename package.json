@@ -8,7 +8,7 @@
     "dev": "concurrently -k \"bun run dev:web\" \"bun run dev:desktop:build\" \"bun run dev:desktop\"",
     "dev:web": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "dev:desktop:build": "bun --watch ./scripts/build-desktop-backend.ts",
-    "dev:desktop": "sh -c 'until [ -f build/electron/pi-threads.mjs ] && [ -f build/electron/terminal-manager.mjs ]; do sleep 0.2; done; electrobun dev --watch'",
+    "dev:desktop": "sh -c 'until [ -f build/electron/pi-threads.mjs ] && [ -f build/electron/terminal-manager.mjs ]; do sleep 0.2; done; WEBKIT_DISABLE_DMABUF_RENDERER=1 electrobun dev --watch'",
     "build": "vite build && bun run build:desktop && electrobun build",
     "build:desktop": "bun run ./scripts/build-desktop-backend.ts",
     "preview": "vite preview",

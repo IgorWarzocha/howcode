@@ -15,6 +15,10 @@ import type {
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
 import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
 
+if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
+  process.env.WEBKIT_DISABLE_DMABUF_RENDERER = "1";
+}
+
 type PiThreadsModule = {
   handleDesktopAction: (action: DesktopAction, payload: DesktopActionPayload) => Promise<void>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
