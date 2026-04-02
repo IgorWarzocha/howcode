@@ -87,9 +87,22 @@ code {
   padding: 8px 10px;
 }
 
+.terminal-viewport--flush .xterm {
+  padding: 0;
+}
+
 .terminal-viewport .xterm-viewport,
 .terminal-viewport .xterm-screen {
   border-radius: 10px;
+}
+
+.terminal-viewport .xterm-viewport {
+  overflow-y: scroll !important;
+}
+
+.terminal-viewport--flush .xterm-viewport,
+.terminal-viewport--flush .xterm-screen {
+  border-radius: 16px 16px 0 0;
 }
 
 .xterm-viewport {

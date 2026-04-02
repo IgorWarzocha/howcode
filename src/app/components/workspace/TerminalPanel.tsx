@@ -1,8 +1,11 @@
 import { SquareTerminal, X } from "lucide-react";
+import type { DesktopAction } from "../../desktop/actions";
 import type { FeatureStatusId } from "../../features/feature-status";
 import { panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
+import { SurfacePanel } from "../common/SurfacePanel";
+import { ToolbarButton } from "../common/ToolbarButton";
 import { TerminalViewport } from "./terminal/TerminalViewport";
 
 type TerminalPanelProps = {
@@ -10,6 +13,9 @@ type TerminalPanelProps = {
   sessionPath: string | null;
   onClose: () => void;
   mode?: "docked" | "takeover";
+  hostLabel?: string;
+  profileLabel?: string;
+  onAction?: (action: DesktopAction, payload?: Record<string, unknown>) => void | Promise<void>;
 };
 
 export function TerminalPanel({
@@ -17,13 +23,61 @@ export function TerminalPanel({
   sessionPath,
   onClose,
   mode = "docked",
+  hostLabel = "Local",
+  profileLabel = "Pi session",
+  onAction,
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
-  const closeLabel = mode === "takeover" ? "Return to chat" : "Close terminal";
-  const panelClass =
-    mode === "takeover"
-      ? "flex h-full min-h-0 flex-col gap-1.5 rounded-[18px] border border-[rgba(169,178,215,0.06)] bg-[rgba(33,36,49,0.88)] p-2.5 shadow-[var(--shadow)]"
-      : cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3");
+
+  if (mode === "takeover") {
+    return (
+      <SurfacePanel
+        aria-label="Pi terminal panel"
+        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-[20px] border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        data-feature-id="feature:terminal.panel"
+        data-feature-status="partial"
+      >
+        <div className="flex min-h-0 min-w-0 overflow-hidden px-2.5 pt-2.5">
+          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-t-[16px] rounded-b-none bg-[color:var(--terminal-bg)]">
+            <TerminalViewport
+              projectId={projectId}
+              sessionPath={sessionPath}
+              launchMode="pi-session"
+              className="terminal-viewport--flush min-h-0 rounded-none border-0 bg-transparent"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+          <div className="flex items-center gap-1.5 max-md:flex-wrap text-[color:var(--muted)]">
+            <ToolbarButton
+              label={
+                <span className="inline-flex items-center gap-2">
+                  <span>Pi desktop</span>
+                  <FeatureStatusBadge statusId={statusId} />
+                </span>
+              }
+              icon={<SquareTerminal size={14} />}
+              onClick={onClose}
+            />
+            <ToolbarButton
+              label={hostLabel}
+              icon={<SquareTerminal size={14} />}
+              onClick={() => void onAction?.("composer.host")}
+              trailing
+            />
+            <ToolbarButton
+              label={profileLabel}
+              icon={<SquareTerminal size={14} />}
+              onClick={() => void onAction?.("composer.profile")}
+              trailing
+            />
+          </div>
+        </div>
+      </SurfacePanel>
+    );
+  }
+
+  const panelClass = cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3");
 
   return (
     <section
@@ -35,16 +89,14 @@ export function TerminalPanel({
       <div className="flex items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-2 text-[12px] text-[color:var(--muted)]">
           <SquareTerminal size={14} />
-          <span className="font-medium text-[color:var(--text)]/90">
-            {mode === "takeover" ? "Pi terminal" : "Terminal"}
-          </span>
+          <span className="font-medium text-[color:var(--text)]/90">Terminal</span>
           <FeatureStatusBadge statusId={statusId} />
         </div>
         <button
           type="button"
           className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-          aria-label={closeLabel}
-          title={closeLabel}
+          aria-label="Close terminal"
+          title="Close terminal"
           onClick={onClose}
         >
           <X size={14} />
@@ -54,8 +106,8 @@ export function TerminalPanel({
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
-          launchMode={mode === "takeover" ? "pi-session" : "shell"}
-          preserveSessionOnUnmount={mode === "docked"}
+          launchMode="shell"
+          preserveSessionOnUnmount
         />
       </div>
     </section>

@@ -214,7 +214,7 @@ export function Composer({
             <ToolbarButton
               label={
                 <span className="inline-flex items-center gap-2">
-                  <span>Open in Pi terminal</span>
+                  <span>Pi terminal</span>
                   <FeatureStatusBadge statusId="feature:composer.terminal-takeover" />
                 </span>
               }

@@ -100,12 +100,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             }
           >
             {takeoverVisible ? (
-              <div className="min-h-0 overflow-hidden pt-1.5 pb-4">
+              <div className="mx-auto min-h-0 w-full max-w-[744px] overflow-hidden pt-1.5 pb-4">
                 <TerminalPanel
                   projectId={composerProjectId}
                   sessionPath={terminalSessionPath}
                   onClose={handleCloseTakeoverTerminal}
                   mode="takeover"
+                  hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                  profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                  onAction={(action, payload) => void handleAction(action, payload)}
                 />
               </div>
             ) : (
@@ -150,6 +153,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                     sessionPath={terminalSessionPath}
                     onClose={handleToggleTerminal}
                     mode="docked"
+                    onAction={(action, payload) => void handleAction(action, payload)}
                   />
                 </div>
               ) : null}

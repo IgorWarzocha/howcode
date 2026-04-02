@@ -9,12 +9,14 @@ import {
   subscribeDesktopTerminal,
   writeDesktopTerminal,
 } from "../../../hooks/useDesktopTerminal";
+import { cn } from "../../../utils/cn";
 
 type TerminalViewportProps = {
   projectId: string;
   sessionPath: string | null;
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
+  className?: string;
 };
 
 function writeSystemMessage(terminal: Terminal, message: string) {
@@ -65,6 +67,7 @@ export function TerminalViewport({
   sessionPath,
   launchMode = "shell",
   preserveSessionOnUnmount = false,
+  className,
 }: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -316,7 +319,10 @@ export function TerminalViewport({
   return (
     <div
       ref={containerRef}
-      className="terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] border border-[rgba(169,178,215,0.04)] bg-[color:var(--terminal-bg)]"
+      className={cn(
+        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] border border-[rgba(169,178,215,0.04)] bg-[color:var(--terminal-bg)]",
+        className,
+      )}
     />
   );
 }
