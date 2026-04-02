@@ -132,30 +132,6 @@ code {
   transform: translateY(0);
 }
 
-.motion-sidebar-shell {
-  opacity: 0;
-  transform: translateX(-14px);
-  transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
-}
-
-.motion-sidebar-shell[data-open="true"] {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.motion-sidebar-toggle {
-  opacity: 0;
-  transform: translateX(-8px);
-  pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.motion-sidebar-toggle[data-open="true"] {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-}
-
 .motion-desktop-workspace,
 .motion-takeover-panel {
   transition: opacity 190ms ease, transform 190ms ease;
@@ -185,8 +161,6 @@ code {
   .motion-collapse-panel,
   .motion-popover,
   .motion-overlay-panel,
-  .motion-sidebar-shell,
-  .motion-sidebar-toggle,
   .motion-desktop-workspace,
   .motion-takeover-panel {
     transition: none;

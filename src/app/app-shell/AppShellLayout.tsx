@@ -120,8 +120,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   return (
     <>
       <div
-        style={{ "--sidebar-width": state.sidebarVisible ? "300px" : "0px" } as CSSProperties}
-        className="grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)] transition-[grid-template-columns] duration-200 ease-out md:[grid-template-columns:var(--sidebar-width)_minmax(0,1fr)]"
+        className={
+          state.sidebarVisible
+            ? "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)] md:grid-cols-[300px_minmax(0,1fr)]"
+            : "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
+        }
       >
         <Sidebar
           projects={projects}

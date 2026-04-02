@@ -17,7 +17,7 @@ import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
-import { sidebarSectionLabelClass } from "../../ui/classes";
+import { iconButtonClass, sidebarSectionLabelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { IconButton } from "../common/IconButton";
@@ -66,9 +66,7 @@ export function Sidebar({
   const settingsMenuRef = useRef<HTMLDivElement>(null);
   const threadsHeadingId = "sidebar-threads-heading";
   const settingsMenuId = "sidebar-settings-menu";
-  const sidebarPresent = useAnimatedPresence(sidebarVisible);
   const settingsMenuPresent = useAnimatedPresence(settingsOpen);
-  const showSidebarButtonPresent = useAnimatedPresence(!sidebarVisible);
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -83,15 +81,10 @@ export function Sidebar({
 
   return (
     <>
-      {sidebarPresent ? (
+      {sidebarVisible ? (
         <aside
           aria-label="Workspace sidebar"
-          aria-hidden={!sidebarVisible}
-          data-open={sidebarVisible ? "true" : "false"}
-          className={cn(
-            "motion-sidebar-shell fixed inset-y-0 left-0 z-30 flex w-[300px] min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5 md:relative md:z-auto md:w-auto",
-            !sidebarVisible && "pointer-events-none",
-          )}
+          className="relative flex min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
         >
           <div className="flex items-center gap-1.5">
             <IconButton
@@ -225,11 +218,13 @@ export function Sidebar({
         </aside>
       ) : null}
 
-      {showSidebarButtonPresent ? (
+      {!sidebarVisible ? (
         <button
           type="button"
-          data-open={!sidebarVisible ? "true" : "false"}
-          className="motion-sidebar-toggle fixed top-4 left-4 z-20 inline-flex h-[34px] w-[34px] items-center justify-center rounded-xl border border-[color:var(--border-strong)] bg-[rgba(35,38,51,0.95)]"
+          className={cn(
+            "fixed top-3 left-2.5 z-20 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
+            iconButtonClass,
+          )}
           onClick={onToggleSidebar}
           aria-label="Show sidebar"
         >
