@@ -21,7 +21,7 @@ type ProjectTreeProps = {
   collapsedProjectIds: Record<string, boolean>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onProjectSelect: (projectId: string) => void;
-  onThreadOpen: (projectId: string, threadId: string) => void;
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
 };
 
@@ -183,7 +183,11 @@ export function ProjectTree({
                           type="button"
                           className="flex min-w-0 items-center py-1 text-left"
                           onClick={() => {
-                            onThreadOpen(project.id, thread.id);
+                            if (!thread.sessionPath) {
+                              return;
+                            }
+
+                            onThreadOpen(project.id, thread.id, thread.sessionPath);
                             setOpenProjectMenuId(null);
                           }}
                         >

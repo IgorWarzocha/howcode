@@ -26,7 +26,9 @@ type ComposerProps = {
   availableModels: ComposerModel[];
   thinkingLevel: ComposerThinkingLevel;
   availableThinkingLevels: ComposerThinkingLevel[];
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  projectId: string;
+  sessionPath: string | null;
+  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => Promise<void>;
 };
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
@@ -54,10 +56,36 @@ export function Composer({
   availableModels,
   thinkingLevel,
   availableThinkingLevels,
+  projectId,
+  sessionPath,
   onAction,
 }: ComposerProps) {
+  const [draft, setDraft] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [thinkingMenuOpen, setThinkingMenuOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  const canSend = draft.trim().length > 0 && !isSending;
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || isSending) {
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      await onAction("composer.send", {
+        text,
+        projectId,
+        sessionPath,
+      });
+      setDraft("");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <>
@@ -92,6 +120,14 @@ export function Composer({
       <SurfacePanel className="grid gap-0 overflow-hidden shadow-none">
         <textarea
           className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void send();
+            }
+          }}
           placeholder={
             activeView === "thread"
               ? "Ask for follow-up changes"
@@ -128,9 +164,11 @@ export function Composer({
                         className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
                         onClick={() => {
                           setModelMenuOpen(false);
-                          onAction("composer.model", {
+                          void onAction("composer.model", {
                             provider: availableModel.provider,
                             modelId: availableModel.id,
+                            projectId,
+                            sessionPath,
                           });
                         }}
                       >
@@ -171,7 +209,11 @@ export function Composer({
                         className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-[12px] px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]"
                         onClick={() => {
                           setThinkingMenuOpen(false);
-                          onAction("composer.thinking", { level });
+                          void onAction("composer.thinking", {
+                            level,
+                            projectId,
+                            sessionPath,
+                          });
                         }}
                       >
                         <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
@@ -193,8 +235,9 @@ export function Composer({
 
           <button
             type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)]"
-            onClick={() => onAction("composer.send")}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => void send()}
+            disabled={!canSend}
             aria-label="Send"
           >
             <Send size={16} />

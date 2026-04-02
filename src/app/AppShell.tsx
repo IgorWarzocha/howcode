@@ -6,13 +6,12 @@ import { DiffPanel } from "./components/workspace/DiffPanel";
 import { TerminalPanel } from "./components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "./components/workspace/WorkspaceHeader";
 import type { DesktopAction } from "./desktop/actions";
-import type { ArchivedThread } from "./desktop/types";
+import type { ArchivedThread, ComposerState, DesktopEvent, ThreadData } from "./desktop/types";
 import { useDesktopBridge } from "./hooks/useDesktopBridge";
 import { useDesktopShell } from "./hooks/useDesktopShell";
 import { useDesktopThread } from "./hooks/useDesktopThread";
 import {
   createInitialWorkspaceState,
-  getCurrentTitle,
   getProjectName,
   selectProject,
   selectThread,
@@ -25,8 +24,15 @@ import { MainView } from "./views/MainView";
 export function AppShell() {
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
-  const { shellState, loadArchivedThreads, loadProjectThreads, refreshShellState } =
-    useDesktopShell();
+  const [composerState, setComposerState] = useState<ComposerState | null>(null);
+  const [liveThreads, setLiveThreads] = useState<Record<string, ThreadData>>({});
+  const {
+    shellState,
+    loadArchivedThreads,
+    loadComposerState,
+    loadProjectThreads,
+    refreshShellState,
+  } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
   const collapsedProjectIds = useMemo(
@@ -48,17 +54,25 @@ export function AppShell() {
     () => selectThread(selectedProject, state.selectedThreadId),
     [selectedProject, state.selectedThreadId],
   );
-  const threadData = useDesktopThread(selectedThread?.sessionPath);
-  const activeThreadData = selectedThread?.sessionPath
-    ? (threadData ?? {
-        sessionPath: selectedThread.sessionPath,
-        title: selectedThread.title,
+  const threadData = useDesktopThread(state.selectedSessionPath);
+  const liveThreadData = state.selectedSessionPath ? liveThreads[state.selectedSessionPath] : null;
+  const activeThreadData = state.selectedSessionPath
+    ? (liveThreadData ??
+      threadData ?? {
+        sessionPath: state.selectedSessionPath,
+        title: selectedThread?.title ?? "New thread",
         messages: [],
         previousMessageCount: 0,
+        isStreaming: false,
       })
     : null;
-  const currentTitle = getCurrentTitle(state.activeView, selectedThread);
+  const currentTitle =
+    state.activeView === "thread"
+      ? (activeThreadData?.title ?? selectedThread?.title ?? "New thread")
+      : "New thread";
   const currentProjectName = getProjectName(selectedProject);
+  const composerProjectId = selectedProject?.id ?? shellState?.cwd ?? "";
+  const activeComposerState = composerState ?? shellState?.composer ?? null;
 
   useEffect(() => {
     if (!projects.length) {
@@ -99,11 +113,93 @@ export function AppShell() {
     };
   }, [loadArchivedThreads, state.archivedThreadsOpen]);
 
+  useEffect(() => {
+    if (!shellState?.composer) {
+      return;
+    }
+
+    setComposerState((current) => current ?? shellState.composer);
+  }, [shellState?.composer]);
+
+  useEffect(() => {
+    if (!composerProjectId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncComposerState = async () => {
+      const nextComposerState = await loadComposerState({
+        projectId: composerProjectId,
+        sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
+      });
+
+      if (!cancelled && nextComposerState) {
+        setComposerState(nextComposerState);
+      }
+    };
+
+    void syncComposerState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [composerProjectId, loadComposerState, state.activeView, state.selectedSessionPath]);
+
+  useEffect(() => {
+    if (!window.piDesktop?.subscribe) {
+      return;
+    }
+
+    const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
+      if (event.type === "composer-update") {
+        setComposerState(event.composer);
+        return;
+      }
+
+      setLiveThreads((current) => ({
+        ...current,
+        [event.sessionPath]: event.thread,
+      }));
+      setComposerState(event.composer);
+
+      if (event.reason === "start") {
+        dispatch({
+          type: "open-thread",
+          projectId: event.projectId,
+          threadId: event.threadId,
+          sessionPath: event.sessionPath,
+        });
+        void refreshShellState();
+      }
+
+      if (event.reason === "start" || event.reason === "end") {
+        void loadProjectThreads(event.projectId);
+      }
+
+      if (event.reason === "end") {
+        void refreshShellState();
+      }
+    });
+
+    return unsubscribe;
+  }, [loadProjectThreads, refreshShellState]);
+
   const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
-    await invokeDesktopAction(action, payload);
+    const contextualPayload =
+      action === "composer.model" || action === "composer.send" || action === "composer.thinking"
+        ? {
+            projectId: composerProjectId,
+            sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
+            ...payload,
+          }
+        : payload;
+
+    await invokeDesktopAction(action, contextualPayload);
 
     if (action === "thread.pin" || action === "thread.archive") {
-      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
+      const projectId =
+        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
       if (projectId) {
         await loadProjectThreads(projectId);
       }
@@ -112,25 +208,33 @@ export function AppShell() {
         setArchivedThreads(await loadArchivedThreads());
       }
 
-      if (action === "thread.archive" && payload.threadId === state.selectedThreadId) {
+      if (action === "thread.archive" && contextualPayload.threadId === state.selectedThreadId) {
         dispatch({ type: "show-view", view: "home" });
       }
     }
 
     if (action === "thread.restore" || action === "thread.delete") {
       setArchivedThreads(await loadArchivedThreads());
-      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
+      const projectId =
+        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
       if (projectId) {
         await loadProjectThreads(projectId);
       }
 
-      if (action === "thread.delete" && payload.threadId === state.selectedThreadId) {
+      if (action === "thread.delete" && contextualPayload.threadId === state.selectedThreadId) {
         dispatch({ type: "show-view", view: "home" });
       }
     }
 
     if (action === "composer.model" || action === "composer.thinking") {
-      await refreshShellState();
+      const nextComposerState = await loadComposerState({
+        projectId: composerProjectId,
+        sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
+      });
+
+      if (nextComposerState) {
+        setComposerState(nextComposerState);
+      }
     }
   };
 
@@ -149,9 +253,9 @@ export function AppShell() {
     void handleAction(nextCollapsed ? "project.collapse" : "project.expand", { projectId });
   };
 
-  const handleThreadOpen = (projectId: string, threadId: string) => {
-    dispatch({ type: "open-thread", projectId, threadId });
-    void handleAction("thread.open", { projectId, threadId });
+  const handleThreadOpen = (projectId: string, threadId: string, sessionPath: string) => {
+    dispatch({ type: "open-thread", projectId, threadId, sessionPath });
+    void handleAction("thread.open", { projectId, threadId, sessionPath });
   };
 
   const handleOpenArchivedThreads = () => {
@@ -231,11 +335,13 @@ export function AppShell() {
                 activeView={state.activeView}
                 hostLabel={shellState?.availableHosts[0] ?? "Local"}
                 profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
-                model={shellState?.composer.currentModel ?? null}
-                availableModels={shellState?.composer.availableModels ?? []}
-                thinkingLevel={shellState?.composer.currentThinkingLevel ?? "off"}
-                availableThinkingLevels={shellState?.composer.availableThinkingLevels ?? ["off"]}
-                onAction={(action, payload) => void handleAction(action, payload)}
+                model={activeComposerState?.currentModel ?? null}
+                availableModels={activeComposerState?.availableModels ?? []}
+                thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
+                projectId={composerProjectId}
+                sessionPath={state.activeView === "thread" ? state.selectedSessionPath : null}
+                onAction={handleAction}
               />
             </div>
             {state.terminalVisible ? (

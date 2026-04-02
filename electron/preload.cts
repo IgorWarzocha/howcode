@@ -2,7 +2,10 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { DesktopAction } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerState,
+  ComposerStateRequest,
   DesktopActionResult,
+  DesktopEvent,
   ShellState,
   Thread,
   ThreadData,
@@ -11,9 +14,11 @@ import { type DesktopActionPayload, IPC_CHANNELS, isDesktopAction } from "./cont
 
 type PiDesktopApi = {
   getShellState: () => Promise<ShellState>;
+  getComposerState: (request?: ComposerStateRequest) => Promise<ComposerState>;
   getProjectThreads: (projectId: string) => Promise<Thread[]>;
   getArchivedThreads: () => Promise<ArchivedThread[]>;
   getThread: (sessionPath: string) => Promise<ThreadData | null>;
+  subscribe: (listener: (event: DesktopEvent) => void) => () => void;
   invokeAction: (
     action: DesktopAction,
     payload?: DesktopActionPayload,
@@ -22,10 +27,22 @@ type PiDesktopApi = {
 
 const api: PiDesktopApi = {
   getShellState: () => ipcRenderer.invoke(IPC_CHANNELS.getShellState),
+  getComposerState: (request = {}) => ipcRenderer.invoke(IPC_CHANNELS.getComposerState, request),
   getProjectThreads: (projectId) =>
     ipcRenderer.invoke(IPC_CHANNELS.getProjectThreads, { projectId }),
   getArchivedThreads: () => ipcRenderer.invoke(IPC_CHANNELS.getArchivedThreads),
   getThread: (sessionPath) => ipcRenderer.invoke(IPC_CHANNELS.getThread, { sessionPath }),
+  subscribe: (listener) => {
+    const handleEvent = (_event: Electron.IpcRendererEvent, desktopEvent: DesktopEvent) => {
+      listener(desktopEvent);
+    };
+
+    ipcRenderer.on(IPC_CHANNELS.desktopEvent, handleEvent);
+
+    return () => {
+      ipcRenderer.off(IPC_CHANNELS.desktopEvent, handleEvent);
+    };
+  },
   invokeAction: (action, payload = {}) => {
     if (!isDesktopAction(action)) {
       throw new Error(`Unsupported renderer desktop action: ${String(action)}`);

@@ -2,6 +2,8 @@ import { stat, unlink } from "node:fs/promises";
 import type { DesktopAction } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerState,
+  ComposerStateRequest,
   DesktopActionPayload,
   Message,
   ShellState,
@@ -10,8 +12,11 @@ import type {
 } from "../shared/desktop-contracts.js";
 import {
   getComposerState,
+  getLiveThread,
+  sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "./pi-desktop-runtime.cjs";
 import {
   archiveThread,
@@ -177,12 +182,19 @@ async function syncShellIndex(cwd: string) {
   );
 }
 
+function getComposerRequest(payload: DesktopActionPayload): ComposerStateRequest {
+  return {
+    projectId: typeof payload.projectId === "string" ? payload.projectId : null,
+    sessionPath: typeof payload.sessionPath === "string" ? payload.sessionPath : null,
+  };
+}
+
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
 
   await syncShellIndex(cwd);
-  const composer = await getComposerState(cwd);
+  const composer = await getComposerState({ projectId: cwd });
 
   return {
     platform: process.platform,
@@ -198,6 +210,14 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
   };
 }
 
+export async function loadComposerState(
+  request: ComposerStateRequest = {},
+): Promise<ComposerState> {
+  return getComposerState(request);
+}
+
+export const subscribeDesktopEvents = subscribeRuntimeEvents;
+
 export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
   ensureProject(projectId);
   return listProjectThreads(projectId);
@@ -208,6 +228,11 @@ export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {
 }
 
 export async function loadThread(sessionPath: string): Promise<ThreadData> {
+  const liveThread = getLiveThread(sessionPath);
+  if (liveThread) {
+    return liveThread;
+  }
+
   const cachedThread = getCachedThread(sessionPath);
   const fileStats = await stat(sessionPath);
   const currentModifiedMs = Math.floor(fileStats.mtimeMs);
@@ -222,6 +247,7 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
       title: cachedThread.title,
       messages: cachedThread.messages,
       previousMessageCount: 0,
+      isStreaming: false,
     };
   }
 
@@ -241,6 +267,7 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
     title,
     messages,
     previousMessageCount: 0,
+    isStreaming: false,
   };
 }
 
@@ -323,7 +350,7 @@ export async function handleDesktopAction(
       const modelId = typeof payload.modelId === "string" ? payload.modelId : null;
 
       if (provider && modelId) {
-        await setComposerModel(process.cwd(), provider, modelId);
+        await setComposerModel(getComposerRequest(payload), provider, modelId);
       }
       return;
     }
@@ -339,8 +366,19 @@ export async function handleDesktopAction(
         level === "high" ||
         level === "xhigh"
       ) {
-        await setComposerThinkingLevel(process.cwd(), level);
+        await setComposerThinkingLevel(getComposerRequest(payload), level);
       }
+      return;
+    }
+
+    case "composer.send": {
+      const text = typeof payload.text === "string" ? payload.text.trim() : "";
+
+      if (!text) {
+        return;
+      }
+
+      await sendComposerPrompt({ ...getComposerRequest(payload), text });
       return;
     }
 

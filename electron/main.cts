@@ -2,7 +2,10 @@ import path from "node:path";
 import { BrowserWindow, app, ipcMain } from "electron";
 import {
   type ArchivedThread,
+  type ComposerState,
   DEFAULT_SHELL_STATE,
+  type DesktopEvent,
+  type GetComposerStateRequest,
   type GetProjectThreadsRequest,
   type GetThreadRequest,
   IPC_CHANNELS,
@@ -15,9 +18,11 @@ import {
 import {
   handleDesktopAction,
   loadArchivedThreadList,
+  loadComposerState,
   loadProjectThreads,
   loadShellState,
   loadThread,
+  subscribeDesktopEvents,
 } from "./pi-threads.cjs";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -49,6 +54,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  subscribeDesktopEvents((event: DesktopEvent) => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      window.webContents.send(IPC_CHANNELS.desktopEvent, event);
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.getShellState, async (): Promise<ShellState> => {
     try {
       return await loadShellState(process.cwd());
@@ -56,6 +67,13 @@ app.whenReady().then(() => {
       return DEFAULT_SHELL_STATE;
     }
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.getComposerState,
+    async (_event, request: GetComposerStateRequest | null | undefined): Promise<ComposerState> => {
+      return loadComposerState(request ?? {});
+    },
+  );
 
   ipcMain.handle(
     IPC_CHANNELS.getProjectThreads,

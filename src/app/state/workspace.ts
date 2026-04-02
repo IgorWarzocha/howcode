@@ -4,6 +4,7 @@ export type WorkspaceState = {
   activeView: View;
   selectedProjectId: string;
   selectedThreadId: string | null;
+  selectedSessionPath: string | null;
   sidebarVisible: boolean;
   terminalVisible: boolean;
   diffVisible: boolean;
@@ -16,7 +17,7 @@ export type WorkspaceAction =
   | { type: "sync-projects"; projects: Project[] }
   | { type: "show-view"; view: View }
   | { type: "select-project"; projectId: string }
-  | { type: "open-thread"; projectId: string; threadId: string }
+  | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | { type: "toggle-sidebar" }
   | { type: "toggle-terminal" }
   | { type: "toggle-diff" }
@@ -34,6 +35,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     activeView: "home",
     selectedProjectId: firstProject?.id ?? "",
     selectedThreadId: null,
+    selectedSessionPath: null,
     sidebarVisible: true,
     terminalVisible: false,
     diffVisible: false,
@@ -62,15 +64,27 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       };
     }
     case "show-view":
-      return { ...state, activeView: action.view };
+      return {
+        ...state,
+        activeView: action.view,
+        selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
+        selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
+      };
     case "select-project":
-      return { ...state, selectedProjectId: action.projectId };
+      return {
+        ...state,
+        activeView: "home",
+        selectedProjectId: action.projectId,
+        selectedThreadId: null,
+        selectedSessionPath: null,
+      };
     case "open-thread":
       return {
         ...state,
         activeView: "thread",
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
+        selectedSessionPath: action.sessionPath,
         collapsedProjectIds: {
           ...state.collapsedProjectIds,
           [action.projectId]: false,

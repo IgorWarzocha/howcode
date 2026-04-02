@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ArchivedThread, ShellState, Thread } from "../desktop/types";
+import type {
+  ArchivedThread,
+  ComposerState,
+  ComposerStateRequest,
+  ShellState,
+  Thread,
+} from "../desktop/types";
 
 export function useDesktopShell() {
   const [shellState, setShellState] = useState<ShellState | null>(null);
@@ -47,6 +53,14 @@ export function useDesktopShell() {
     return window.piDesktop.getArchivedThreads();
   }, []);
 
+  const loadComposerState = useCallback(async (request: ComposerStateRequest = {}) => {
+    if (!window.piDesktop?.getComposerState) {
+      return null as ComposerState | null;
+    }
+
+    return window.piDesktop.getComposerState(request);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -75,5 +89,6 @@ export function useDesktopShell() {
     refreshShellState,
     loadProjectThreads,
     loadArchivedThreads,
+    loadComposerState,
   };
 }

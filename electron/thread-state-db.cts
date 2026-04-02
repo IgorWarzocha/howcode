@@ -207,6 +207,23 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
   }
 }
 
+export function upsertThreadSummary(session: SessionSummaryRecord) {
+  const db = getDatabase();
+  ensureProject(session.cwd);
+
+  db.prepare(
+    `
+      INSERT INTO threads (id, cwd, session_path, title, last_modified_ms)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(session_path) DO UPDATE SET
+        id = excluded.id,
+        cwd = excluded.cwd,
+        last_modified_ms = excluded.last_modified_ms,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+  ).run(session.id, session.cwd, session.sessionPath, session.title, session.lastModifiedMs);
+}
+
 export function listProjects(cwd: string): Project[] {
   const db = getDatabase();
   ensureProject(cwd);

@@ -38,10 +38,12 @@ describe("workspace state", () => {
       type: "open-thread",
       projectId: "claw-phone",
       threadId: "missing-thread",
+      sessionPath: "/tmp/missing-thread.jsonl",
     });
 
     expect(nextState.activeView).toBe("thread");
     expect(nextState.selectedProjectId).toBe("claw-phone");
+    expect(nextState.selectedSessionPath).toBe("/tmp/missing-thread.jsonl");
     expect(nextState.collapsedProjectIds["claw-phone"]).toBe(false);
   });
 

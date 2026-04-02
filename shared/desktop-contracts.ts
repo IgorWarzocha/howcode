@@ -51,6 +51,11 @@ export type ComposerState = {
   availableThinkingLevels: ComposerThinkingLevel[];
 };
 
+export type ComposerStateRequest = {
+  projectId?: string | null;
+  sessionPath?: string | null;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;
@@ -69,7 +74,23 @@ export type ThreadData = {
   title: string;
   messages: Message[];
   previousMessageCount: number;
+  isStreaming: boolean;
 };
+
+export type DesktopEvent =
+  | {
+      type: "thread-update";
+      reason: "start" | "update" | "end";
+      projectId: string;
+      threadId: string;
+      sessionPath: string;
+      thread: ThreadData;
+      composer: ComposerState;
+    }
+  | {
+      type: "composer-update";
+      composer: ComposerState;
+    };
 
 export type DesktopActionPayload = Record<string, unknown>;
 

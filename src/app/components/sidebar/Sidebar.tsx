@@ -35,7 +35,7 @@ type SidebarProps = {
   onOpenArchivedThreads: () => void;
   onCollapseAll: () => void;
   onProjectSelect: (projectId: string) => void;
-  onThreadOpen: (projectId: string, threadId: string) => void;
+  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
 };
 

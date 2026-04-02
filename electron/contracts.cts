@@ -1,8 +1,11 @@
 import { type DesktopAction, desktopActions } from "../shared/desktop-actions.js";
 import type {
   ArchivedThread,
+  ComposerState,
+  ComposerStateRequest,
   DesktopActionPayload,
   DesktopActionResult,
+  DesktopEvent,
   ShellState,
   Thread,
   ThreadData,
@@ -10,10 +13,12 @@ import type {
 
 export const IPC_CHANNELS = {
   getShellState: "pi:get-shell-state",
+  getComposerState: "pi:get-composer-state",
   getProjectThreads: "pi:get-project-threads",
   getArchivedThreads: "pi:get-archived-threads",
   getThread: "pi:get-thread",
   invokeAction: "pi:invoke-action",
+  desktopEvent: "pi:desktop-event",
 } as const;
 
 export const DEFAULT_SHELL_STATE: Readonly<ShellState> = Object.freeze({
@@ -29,14 +34,16 @@ export const DEFAULT_SHELL_STATE: Readonly<ShellState> = Object.freeze({
   composer: {
     currentModel: null,
     availableModels: [],
-    currentThinkingLevel: "off",
-    availableThinkingLevels: ["off"],
+    currentThinkingLevel: "off" as const,
+    availableThinkingLevels: ["off" as const],
   },
 });
 
 export type GetThreadRequest = {
   sessionPath: string;
 };
+
+export type GetComposerStateRequest = ComposerStateRequest;
 
 export type GetProjectThreadsRequest = {
   projectId: string;
@@ -53,6 +60,8 @@ export function isDesktopAction(action: unknown): action is DesktopAction {
 
 export type {
   ArchivedThread,
+  ComposerState,
+  DesktopEvent,
   DesktopAction,
   DesktopActionPayload,
   DesktopActionResult,
