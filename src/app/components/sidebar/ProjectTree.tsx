@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
+import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import type { Project, View } from "../../types";
 import { cn } from "../../utils/cn";
 import { ProjectActionMenu } from "./ProjectActionMenu";
@@ -120,6 +121,7 @@ export function ProjectTree({
                   className={cn(
                     "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]",
                     projectMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+                    getFeatureStatusButtonClass("feature:sidebar.project.actions"),
                   )}
                   onClick={() =>
                     setOpenProjectMenuId((current) => (current === project.id ? null : project.id))
@@ -130,7 +132,10 @@ export function ProjectTree({
                 </button>
                 <button
                   type="button"
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]"
+                  className={cn(
+                    "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]",
+                    getFeatureStatusButtonClass("feature:sidebar.project.rename"),
+                  )}
                   onClick={() =>
                     onAction("project.actions", { projectId: project.id, menuAction: "edit-name" })
                   }

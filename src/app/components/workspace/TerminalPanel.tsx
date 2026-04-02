@@ -1,6 +1,9 @@
 import { AtSign, SquareTerminal, X } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
+import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import { terminalOutputClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
+import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
 
 type TerminalPanelProps = {
@@ -9,11 +12,16 @@ type TerminalPanelProps = {
 
 export function TerminalPanel({ onAction }: TerminalPanelProps) {
   return (
-    <SurfacePanel className="grid gap-2.5 p-3">
+    <SurfacePanel
+      className={cn("grid gap-2.5 p-3", getFeatureStatusButtonClass("feature:terminal.panel"))}
+      data-feature-id="feature:terminal.panel"
+      data-feature-status="mock"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-mono text-xs">
           <SquareTerminal size={14} />
           <span>Terminal</span>
+          <FeatureStatusBadge statusId="feature:terminal.panel" />
           <span className="text-[color:var(--muted)]">fish</span>
         </div>
         <button

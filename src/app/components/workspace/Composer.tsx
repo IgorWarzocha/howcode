@@ -12,7 +12,9 @@ import {
 import { useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { ComposerAttachment, ComposerModel, ComposerThinkingLevel } from "../../desktop/types";
+import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import type { View } from "../../types";
+import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { IconButton } from "../common/IconButton";
 import { PrimaryButton } from "../common/PrimaryButton";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -114,8 +116,9 @@ export function Composer({
               <Globe size={16} />
             </div>
             <div>
-              <div className="mb-1 text-[15px] text-[color:var(--text)]">
+              <div className="mb-1 inline-flex items-center gap-2 text-[15px] text-[color:var(--text)]">
                 Let Pi work while you’re away
+                <FeatureStatusBadge statusId="feature:composer.remote-connections" />
               </div>
               <div className="text-[color:var(--muted)]">
                 Run your threads on a remote machine and pick back up when you return.
@@ -123,13 +126,21 @@ export function Composer({
             </div>
           </div>
           <div className="flex items-center gap-2 max-md:flex-wrap">
-            <PrimaryButton onClick={() => onAction("connections.add")}>
+            <PrimaryButton
+              className={getFeatureStatusButtonClass("feature:composer.connections.add")}
+              onClick={() => onAction("connections.add")}
+            >
               Add Connections
+              <FeatureStatusBadge
+                statusId="feature:composer.connections.add"
+                className="ml-2 align-middle"
+              />
             </PrimaryButton>
             <IconButton
               label="Dismiss remote connections banner"
               onClick={() => onAction("connections.dismiss-banner")}
               icon={<X size={16} />}
+              className={getFeatureStatusButtonClass("feature:composer.connections.dismiss")}
             />
           </div>
         </SurfacePanel>
@@ -302,9 +313,15 @@ export function Composer({
               ) : null}
             </div>
             <ToolbarButton
-              label="Dictate"
+              label={
+                <span className="inline-flex items-center gap-2">
+                  <span>Dictate</span>
+                  <FeatureStatusBadge statusId="feature:composer.dictate" />
+                </span>
+              }
               icon={<Mic size={15} />}
               onClick={() => onAction("composer.dictate")}
+              className={getFeatureStatusButtonClass("feature:composer.dictate")}
             />
           </div>
 
@@ -327,16 +344,28 @@ export function Composer({
 
         <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
           <ToolbarButton
-            label={hostLabel}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>{hostLabel}</span>
+                <FeatureStatusBadge statusId="feature:composer.host" />
+              </span>
+            }
             icon={<SquareTerminal size={14} />}
             onClick={() => onAction("composer.host")}
             trailing
+            className={getFeatureStatusButtonClass("feature:composer.host")}
           />
           <ToolbarButton
-            label={profileLabel}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>{profileLabel}</span>
+                <FeatureStatusBadge statusId="feature:composer.profile" />
+              </span>
+            }
             icon={<Settings size={14} />}
             onClick={() => onAction("composer.profile")}
             trailing
+            className={getFeatureStatusButtonClass("feature:composer.profile")}
           />
         </div>
       </SurfacePanel>

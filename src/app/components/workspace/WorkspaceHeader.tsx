@@ -8,7 +8,10 @@ import {
   Play,
 } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
+import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import type { View } from "../../types";
+import { cn } from "../../utils/cn";
+import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { IconButton } from "../common/IconButton";
 import { TextButton } from "../common/TextButton";
 
@@ -49,20 +52,26 @@ export function WorkspaceHeader({
           {activeView === "thread" ? (
             <>
               <TextButton
-                className="px-0.5 py-0 text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+                className={cn(
+                  "inline-flex items-center gap-2 px-0.5 py-0 text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+                  getFeatureStatusButtonClass("feature:header.project-switch"),
+                )}
                 onClick={() => onAction("project.switch")}
               >
                 {currentProjectName}
+                <FeatureStatusBadge statusId="feature:header.project-switch" />
               </TextButton>
               <IconButton
                 label="Thread actions"
                 onClick={() => onAction("thread.actions")}
                 icon={<MoreHorizontal size={16} />}
+                className={getFeatureStatusButtonClass("feature:header.thread-actions")}
               />
               <IconButton
                 label="Set up a run action"
                 onClick={() => onAction("thread.run-action")}
                 icon={<Play size={16} />}
+                className={getFeatureStatusButtonClass("feature:header.thread-run-action")}
               />
             </>
           ) : null}
@@ -71,12 +80,17 @@ export function WorkspaceHeader({
 
       <button
         type="button"
-        className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+        className={cn(
+          "inline-flex min-h-9 items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(39,43,57,0.72)] px-2.5 text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+          getFeatureStatusButtonClass("feature:header.product-menu"),
+        )}
         onClick={() => onAction("product.menu")}
+        data-feature-id="feature:header.product-menu"
       >
         <div className="inline-flex h-5 w-5 items-center justify-center rounded-[6px] bg-[linear-gradient(135deg,#f6eb82,#7ab0ff)] text-[11px] font-bold text-[#171821]">
           P
         </div>
+        <FeatureStatusBadge statusId="feature:header.product-menu" />
         <ChevronDown size={14} className="text-[color:var(--muted)]" />
       </button>
 
@@ -87,22 +101,26 @@ export function WorkspaceHeader({
           active={terminalVisible}
           onClick={onToggleTerminal}
           icon={<PanelBottom size={16} />}
+          className={getFeatureStatusButtonClass("feature:header.terminal-toggle")}
         />
         <IconButton
           label="Toggle diff panel"
           active={diffVisible}
           onClick={onToggleDiff}
           icon={<PanelRight size={16} />}
+          className={getFeatureStatusButtonClass("feature:header.diff-toggle")}
         />
         <IconButton
           label="Open in Popout Window"
           onClick={() => onAction("workspace.popout")}
           icon={<Grip size={16} />}
+          className={getFeatureStatusButtonClass("feature:header.workspace-popout")}
         />
         <IconButton
           label="Duplicate workspace"
           onClick={() => onAction("workspace.secondary")}
           icon={<CopyPlus size={16} />}
+          className={getFeatureStatusButtonClass("feature:header.workspace-secondary")}
         />
       </div>
     </header>

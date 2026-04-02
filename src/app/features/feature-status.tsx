@@ -1,0 +1,68 @@
+import { cn } from "../utils/cn";
+
+export type FeatureStatus = "mock" | "partial";
+
+export const featureStatusById = {
+  "feature:landing.project-switcher": { status: "mock", label: "Mock" },
+  "feature:sidebar.plugins": { status: "mock", label: "Mock" },
+  "feature:sidebar.automations": { status: "mock", label: "Mock" },
+  "feature:sidebar.debug": { status: "mock", label: "Mock" },
+  "feature:sidebar.threads.filter": { status: "mock", label: "Mock" },
+  "feature:sidebar.project.add": { status: "mock", label: "Mock" },
+  "feature:sidebar.project.actions": { status: "mock", label: "Mock" },
+  "feature:sidebar.project.rename": { status: "mock", label: "Mock" },
+  "feature:header.project-switch": { status: "mock", label: "Mock" },
+  "feature:header.thread-actions": { status: "mock", label: "Mock" },
+  "feature:header.thread-run-action": { status: "mock", label: "Mock" },
+  "feature:header.product-menu": { status: "mock", label: "Mock" },
+  "feature:header.terminal-toggle": { status: "partial", label: "Partial" },
+  "feature:header.diff-toggle": { status: "partial", label: "Partial" },
+  "feature:header.workspace-popout": { status: "mock", label: "Mock" },
+  "feature:header.workspace-secondary": { status: "mock", label: "Mock" },
+  "feature:composer.remote-connections": { status: "mock", label: "Mock" },
+  "feature:composer.connections.add": { status: "mock", label: "Mock" },
+  "feature:composer.connections.dismiss": { status: "mock", label: "Mock" },
+  "feature:composer.dictate": { status: "mock", label: "Mock" },
+  "feature:composer.host": { status: "mock", label: "Mock" },
+  "feature:composer.profile": { status: "mock", label: "Mock" },
+  "feature:views.plugins": { status: "mock", label: "Mock" },
+  "feature:views.automations": { status: "mock", label: "Mock" },
+  "feature:views.debug": { status: "mock", label: "Mock" },
+  "feature:diff.panel": { status: "mock", label: "Mock" },
+  "feature:diff.review": { status: "mock", label: "Mock" },
+  "feature:terminal.panel": { status: "mock", label: "Mock" },
+  "feature:settings.menu.settings": { status: "mock", label: "Mock" },
+  "feature:settings.menu.language": { status: "mock", label: "Mock" },
+  "feature:settings.menu.rate-limits": { status: "mock", label: "Mock" },
+  "feature:settings.menu.logout": { status: "mock", label: "Mock" },
+  "feature:project.action.open-file-manager": { status: "mock", label: "Mock" },
+  "feature:project.action.create-worktree": { status: "mock", label: "Mock" },
+  "feature:project.action.edit-name": { status: "mock", label: "Mock" },
+  "feature:project.action.archive-threads": { status: "mock", label: "Mock" },
+  "feature:project.action.remove-project": { status: "mock", label: "Mock" },
+} as const satisfies Record<string, { status: FeatureStatus; label: string }>;
+
+export type FeatureStatusId = keyof typeof featureStatusById;
+
+const featureStatusBadgeBaseClass =
+  "inline-flex items-center rounded-full border px-1.5 py-[1px] text-[10px] font-medium uppercase tracking-[0.08em]";
+
+export function getFeatureStatusMeta(statusId: FeatureStatusId) {
+  return featureStatusById[statusId];
+}
+
+export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
+  return getFeatureStatusMeta(statusId).status === "mock"
+    ? "border-[rgba(255,110,110,0.42)] bg-[rgba(255,94,94,0.14)] text-[#ff9c9c]"
+    : "border-[rgba(255,214,102,0.4)] bg-[rgba(255,204,102,0.14)] text-[#ffd36a]";
+}
+
+export function getFeatureStatusButtonClass(statusId: FeatureStatusId) {
+  return getFeatureStatusMeta(statusId).status === "mock"
+    ? "border-[rgba(255,110,110,0.22)] text-[#ff9c9c] hover:border-[rgba(255,110,110,0.36)] hover:bg-[rgba(255,94,94,0.08)] hover:text-[#ffd1d1]"
+    : "border-[rgba(255,214,102,0.22)] text-[#ffd36a] hover:border-[rgba(255,214,102,0.34)] hover:bg-[rgba(255,204,102,0.08)] hover:text-[#ffe297]";
+}
+
+export function getFeatureStatusBadgeClass(statusId: FeatureStatusId) {
+  return cn(featureStatusBadgeBaseClass, getFeatureStatusAccentClass(statusId));
+}

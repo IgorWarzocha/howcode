@@ -19,15 +19,34 @@ export function SettingsMenu({ onOpenArchivedThreads }: SettingsMenuProps) {
         </div>
       </div>
       <div className="mx-2 my-1 h-px bg-[color:var(--border)]" />
-      <MenuItem icon={<Settings size={15} />} title="Settings" active />
+      <MenuItem
+        icon={<Settings size={15} />}
+        title="Settings"
+        active
+        statusId="feature:settings.menu.settings"
+      />
       <MenuItem
         icon={<Archive size={15} />}
         title="Archived threads"
         onClick={onOpenArchivedThreads}
       />
-      <MenuItem icon={<Globe size={15} />} title="Language" caret />
-      <MenuItem icon={<Clock3 size={15} />} title="Rate limits remaining" caret />
-      <MenuItem icon={<LogOut size={15} />} title="Log out" />
+      <MenuItem
+        icon={<Globe size={15} />}
+        title="Language"
+        caret
+        statusId="feature:settings.menu.language"
+      />
+      <MenuItem
+        icon={<Clock3 size={15} />}
+        title="Rate limits remaining"
+        caret
+        statusId="feature:settings.menu.rate-limits"
+      />
+      <MenuItem
+        icon={<LogOut size={15} />}
+        title="Log out"
+        statusId="feature:settings.menu.logout"
+      />
     </SurfacePanel>
   );
 }

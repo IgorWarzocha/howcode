@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 type PageIntroProps = {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   description: string;
 };
 

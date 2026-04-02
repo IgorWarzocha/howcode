@@ -4,7 +4,7 @@ import { cn } from "../../utils/cn";
 
 type NavButtonProps = {
   icon: ReactNode;
-  label: string;
+  label: ReactNode;
   active?: boolean;
   onClick: () => void;
 };

@@ -12,9 +12,11 @@ import {
   Workflow,
 } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
+import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import type { Project, View } from "../../types";
 import { sidebarSectionLabelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { IconButton } from "../common/IconButton";
 import { NavButton } from "../common/NavButton";
 import { ProjectTree } from "./ProjectTree";
@@ -98,19 +100,34 @@ export function Sidebar({
           />
           <NavButton
             icon={<LayoutGrid size={16} />}
-            label="Plugins"
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Plugins</span>
+                <FeatureStatusBadge statusId="feature:sidebar.plugins" />
+              </span>
+            }
             active={activeView === "plugins"}
             onClick={() => onShowView("plugins")}
           />
           <NavButton
             icon={<Workflow size={16} />}
-            label="Automations"
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Automations</span>
+                <FeatureStatusBadge statusId="feature:sidebar.automations" />
+              </span>
+            }
             active={activeView === "automations"}
             onClick={() => onShowView("automations")}
           />
           <NavButton
             icon={<Clock3 size={16} />}
-            label="Debug"
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Debug</span>
+                <FeatureStatusBadge statusId="feature:sidebar.debug" />
+              </span>
+            }
             active={activeView === "debug"}
             onClick={() => onShowView("debug")}
           />
@@ -129,11 +146,13 @@ export function Sidebar({
                 label="Filter sidebar threads"
                 onClick={() => onAction("threads.filter")}
                 icon={<ListFilter size={15} />}
+                className={getFeatureStatusButtonClass("feature:sidebar.threads.filter")}
               />
               <IconButton
                 label="Add new project"
                 onClick={() => onAction("project.add")}
                 icon={<FolderPlus size={15} />}
+                className={getFeatureStatusButtonClass("feature:sidebar.project.add")}
               />
             </div>
           </div>

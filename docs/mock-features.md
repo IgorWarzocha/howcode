@@ -13,6 +13,13 @@ Execution backlog lives in: `docs/implementation-todo.md`
   - Backend handler with the real implemented subset: `electron/pi-threads.cts`
   - Anything not explicitly handled in `handleDesktopAction()` currently falls through the `default` case.
 
+## UI status markers
+
+- Mock and partial UI affordances are now tagged through `src/app/features/feature-status.tsx`.
+- `mock` renders as red.
+- `partial` renders as yellow.
+- Grep `feature:` or `FeatureStatusBadge` to find these surfaces quickly.
+
 ## Already real / partially real
 
 These are **not** mock anymore, or at least have real persistence behind them:

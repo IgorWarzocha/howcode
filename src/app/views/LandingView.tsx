@@ -1,6 +1,8 @@
 import { ChevronDown, Cloud } from "lucide-react";
+import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { TextButton } from "../components/common/TextButton";
 import type { DesktopAction } from "../desktop/actions";
+import { getFeatureStatusButtonClass } from "../features/feature-status";
 
 type LandingViewProps = {
   projectName: string;
@@ -17,10 +19,12 @@ export function LandingView({ projectName, onAction }: LandingViewProps) {
         Let’s build
       </h1>
       <TextButton
-        className="inline-flex items-center gap-1 px-2 py-1 text-[18px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+        className={`inline-flex items-center gap-2 px-2 py-1 text-[18px] text-[color:var(--muted)] hover:text-[color:var(--text)] ${getFeatureStatusButtonClass("feature:landing.project-switcher")}`}
         onClick={() => onAction("landing.project-switcher")}
       >
-        {projectName} <ChevronDown size={16} />
+        {projectName}
+        <FeatureStatusBadge statusId="feature:landing.project-switcher" />
+        <ChevronDown size={16} />
       </TextButton>
     </section>
   );

@@ -32,6 +32,7 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
           description="Visual parity first: every major Codex-style action is represented as a desktop stub."
           cards={pluginCards}
           action="plugins.open-card"
+          statusId="feature:views.plugins"
           onAction={onAction}
         />
       </div>
@@ -47,6 +48,7 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
           description="These tiles are placeholder flows for eventual Pi feature parity."
           cards={automationCards}
           action="automations.open-card"
+          statusId="feature:views.automations"
           onAction={onAction}
         />
       </div>
@@ -62,6 +64,7 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
           description="Everything here is wired as mock UI so we can swap in Pi SDK data later."
           cards={debugCards}
           action="debug.open-card"
+          statusId="feature:views.debug"
           onAction={onAction}
         />
       </div>

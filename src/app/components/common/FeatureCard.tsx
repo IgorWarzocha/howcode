@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { featureCardClass } from "../../ui/classes";
 
 type FeatureCardProps = {
   icon: LucideIcon;
-  title: string;
+  title: ReactNode;
   description: string;
   onClick: () => void;
 };
