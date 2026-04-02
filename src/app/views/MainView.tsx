@@ -6,6 +6,7 @@ import {
   threadPreviousMessageCount,
 } from "../data/mock-data";
 import type { DesktopAction } from "../desktop/actions";
+import type { ThreadData } from "../desktop/types";
 import type { View } from "../types";
 import { CardGridView } from "./CardGridView";
 import { LandingView } from "./LandingView";
@@ -14,13 +15,19 @@ import { ThreadView } from "./ThreadView";
 type MainViewProps = {
   activeView: View;
   currentProjectName: string;
+  threadData: ThreadData | null;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
 
-export function MainView({ activeView, currentProjectName, onAction }: MainViewProps) {
+export function MainView({ activeView, currentProjectName, threadData, onAction }: MainViewProps) {
   if (activeView === "thread") {
     return (
-      <ThreadView messages={threadMessages} previousMessageCount={threadPreviousMessageCount} />
+      <ThreadView
+        messages={threadData ? threadData.messages : threadMessages}
+        previousMessageCount={
+          threadData ? threadData.previousMessageCount : threadPreviousMessageCount
+        }
+      />
     );
   }
 
@@ -70,7 +77,7 @@ export function MainView({ activeView, currentProjectName, onAction }: MainViewP
   }
 
   return (
-    <div className="grid min-h-full place-items-center px-4">
+    <div className="grid h-full place-items-center px-4 pb-6">
       <LandingView projectName={currentProjectName} onAction={onAction} />
     </div>
   );

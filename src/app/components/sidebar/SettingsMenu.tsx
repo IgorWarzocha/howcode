@@ -4,7 +4,7 @@ import { SurfacePanel } from "../common/SurfacePanel";
 
 export function SettingsMenu() {
   return (
-    <SurfacePanel className="absolute right-2.5 bottom-12 left-2.5 z-10 grid gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
+    <SurfacePanel className="fixed bottom-12 left-2.5 z-40 grid w-[280px] gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
       <div className="flex items-center gap-3 rounded-[14px] px-2.5 py-2 text-left">
         <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--accent)]">
           <UserRound size={16} />

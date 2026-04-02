@@ -44,17 +44,17 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
         </SurfacePanel>
       ) : null}
 
-      <SurfacePanel className="grid gap-2.5 p-2.5">
+      <SurfacePanel className="grid gap-0 overflow-hidden shadow-none">
         <textarea
-          className="min-h-[98px] w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
           placeholder={
             activeView === "thread"
               ? "Ask for follow-up changes"
               : "Ask Pi anything, @ to add files, / for commands, $ for skills"
           }
         />
-        <div className="flex items-center justify-between gap-2 px-1 max-md:flex-wrap">
-          <div className="flex items-center gap-2 max-md:flex-wrap">
+        <div className="flex items-center justify-between gap-2 px-3.5 pb-2.5 max-md:flex-wrap">
+          <div className="flex items-center gap-1.5 max-md:flex-wrap">
             <ToolbarButton
               label="Add files and more"
               icon={<Plus size={16} />}
@@ -81,7 +81,7 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
 
           <button
             type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.42)] text-[color:var(--workspace)]"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)]"
             onClick={() => onAction("composer.send")}
             aria-label="Send"
           >
@@ -89,9 +89,9 @@ export function Composer({ activeView, hostLabel, profileLabel, onAction }: Comp
           </button>
         </div>
 
-        <div className="h-px bg-[color:var(--border)]" />
+        <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
-        <div className="flex items-center gap-2 px-1 text-[color:var(--muted)] max-md:flex-wrap">
+        <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
           <ToolbarButton
             label={hostLabel}
             icon={<SquareTerminal size={14} />}

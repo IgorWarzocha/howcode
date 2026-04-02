@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
 const { DEFAULT_SHELL_STATE, isDesktopAction } = require("./contracts.cjs");
+const { loadShellState, loadThread } = require("./pi-threads.cjs");
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 
@@ -30,7 +31,25 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle("pi:get-shell-state", async () => DEFAULT_SHELL_STATE);
+  ipcMain.handle("pi:get-shell-state", async () => {
+    try {
+      return await loadShellState(process.cwd());
+    } catch {
+      return DEFAULT_SHELL_STATE;
+    }
+  });
+
+  ipcMain.handle("pi:get-thread", async (_event, request) => {
+    if (!request?.sessionPath || typeof request.sessionPath !== "string") {
+      return null;
+    }
+
+    try {
+      return await loadThread(request.sessionPath, process.cwd());
+    } catch {
+      return null;
+    }
+  });
 
   ipcMain.handle("pi:invoke-action", async (_event, request) => {
     if (!request || !isDesktopAction(request.action)) {

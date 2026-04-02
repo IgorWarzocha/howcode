@@ -9,7 +9,6 @@ import {
   PanelLeft,
   Settings,
   Sparkles,
-  Square,
   Workflow,
 } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
@@ -61,12 +60,16 @@ export function Sidebar({
       <aside
         className={
           sidebarVisible
-            ? "relative flex flex-col gap-4 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3.5 pb-2.5"
+            ? "relative flex min-h-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
             : "hidden"
         }
       >
         <div className="flex items-center gap-1.5">
-          <IconButton label="Hide sidebar" onClick={onToggleSidebar} icon={<Square size={13} />} />
+          <IconButton
+            label="Hide sidebar"
+            onClick={onToggleSidebar}
+            icon={<PanelLeft size={15} />}
+          />
           <IconButton
             label="Back"
             onClick={() => onAction("nav.back")}
@@ -79,7 +82,7 @@ export function Sidebar({
           />
         </div>
 
-        <nav className="grid gap-1">
+        <nav className="grid gap-0.5">
           <NavButton
             icon={<Sparkles size={16} />}
             label="New thread"
@@ -106,7 +109,7 @@ export function Sidebar({
           />
         </nav>
 
-        <section className="flex min-h-0 flex-col gap-2.5">
+        <section className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden">
           <div className={sidebarSectionLabelClass}>
             <span>Threads</span>
             <div className="flex items-center gap-1.5">

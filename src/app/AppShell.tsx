@@ -1,15 +1,13 @@
-import { useMemo, useReducer } from "react";
-import { SurfacePanel } from "./components/common/SurfacePanel";
+import { useEffect, useMemo, useReducer } from "react";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { Composer } from "./components/workspace/Composer";
 import { DiffPanel } from "./components/workspace/DiffPanel";
 import { TerminalPanel } from "./components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "./components/workspace/WorkspaceHeader";
-import { mockProjects } from "./data/mock-data";
 import type { DesktopAction } from "./desktop/actions";
 import { useDesktopBridge } from "./hooks/useDesktopBridge";
 import { useDesktopShell } from "./hooks/useDesktopShell";
-import { useToast } from "./hooks/useToast";
+import { useDesktopThread } from "./hooks/useDesktopThread";
 import {
   createInitialWorkspaceState,
   getCurrentTitle,
@@ -23,24 +21,40 @@ import { mainPanelClass } from "./ui/classes";
 import { MainView } from "./views/MainView";
 
 export function AppShell() {
-  const [state, dispatch] = useReducer(workspaceReducer, mockProjects, createInitialWorkspaceState);
+  const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const shellState = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
-  const { toast, showToast } = useToast();
+  const projects = shellState?.projects ?? [];
 
   const selectedProject = useMemo(
-    () => selectProject(mockProjects, state.selectedProjectId),
-    [state.selectedProjectId],
+    () => selectProject(projects, state.selectedProjectId),
+    [projects, state.selectedProjectId],
   );
   const selectedThread = useMemo(
     () => selectThread(selectedProject, state.selectedThreadId),
     [selectedProject, state.selectedThreadId],
   );
+  const threadData = useDesktopThread(selectedThread?.sessionPath);
+  const activeThreadData = selectedThread?.sessionPath
+    ? (threadData ?? {
+        sessionPath: selectedThread.sessionPath,
+        title: selectedThread.title,
+        messages: [],
+        previousMessageCount: 0,
+      })
+    : null;
   const currentTitle = getCurrentTitle(state.activeView, selectedThread);
   const currentProjectName = getProjectName(selectedProject);
 
+  useEffect(() => {
+    if (!projects.length || state.selectedProjectId) {
+      return;
+    }
+
+    dispatch({ type: "select-project", projectId: projects[0].id });
+  }, [projects, state.selectedProjectId]);
+
   const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
-    showToast(`${action} — stubbed for now`);
     await invokeDesktopAction(action, payload);
   };
 
@@ -54,9 +68,15 @@ export function AppShell() {
   };
 
   return (
-    <div className="grid h-screen grid-cols-[300px_minmax(0,1fr)] bg-[color:var(--workspace)] text-[color:var(--text)] max-md:grid-cols-1 max-xl:grid-cols-[300px_minmax(0,1fr)]">
+    <div
+      className={
+        state.sidebarVisible
+          ? "grid h-screen grid-cols-[300px_minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)] max-md:grid-cols-1 max-xl:grid-cols-[300px_minmax(0,1fr)]"
+          : "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
+      }
+    >
       <Sidebar
-        projects={mockProjects}
+        projects={projects}
         activeView={state.activeView}
         selectedProjectId={state.selectedProjectId}
         selectedThreadId={state.selectedThreadId}
@@ -75,11 +95,12 @@ export function AppShell() {
         }
       />
 
-      <section className="flex min-w-0 flex-col bg-[color:var(--workspace)]">
+      <section className="flex min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]">
         <WorkspaceHeader
           activeView={state.activeView}
           currentTitle={currentTitle}
           currentProjectName={currentProjectName}
+          sidebarVisible={state.sidebarVisible}
           terminalVisible={state.terminalVisible}
           diffVisible={state.diffVisible}
           onAction={(action, payload) => void handleAction(action, payload)}
@@ -90,14 +111,15 @@ export function AppShell() {
         <div
           className={
             state.diffVisible
-              ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 px-5 max-xl:grid-cols-1"
-              : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 px-5"
+              ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
+              : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
           }
         >
           <main className={mainPanelClass}>
             <MainView
               activeView={state.activeView}
               currentProjectName={currentProjectName}
+              threadData={activeThreadData}
               onAction={(action, payload) => void handleAction(action, payload)}
             />
           </main>
@@ -108,24 +130,22 @@ export function AppShell() {
           ) : null}
         </div>
 
-        <footer className="grid gap-2.5 px-5 pt-3 pb-[18px]">
-          <Composer
-            activeView={state.activeView}
-            hostLabel={shellState?.availableHosts[0] ?? "Local"}
-            profileLabel={shellState?.composerProfiles[0] ?? "Custom (config.toml)"}
-            onAction={(action, payload) => void handleAction(action, payload)}
-          />
+        <footer className="shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
+          <div className="mx-auto w-full max-w-[744px]">
+            <Composer
+              activeView={state.activeView}
+              hostLabel={shellState?.availableHosts[0] ?? "Local"}
+              profileLabel={shellState?.composerProfiles[0] ?? "Custom (config.toml)"}
+              onAction={(action, payload) => void handleAction(action, payload)}
+            />
+          </div>
           {state.terminalVisible ? (
-            <TerminalPanel onAction={(action, payload) => void handleAction(action, payload)} />
+            <div className="mx-auto w-full max-w-[744px]">
+              <TerminalPanel onAction={(action, payload) => void handleAction(action, payload)} />
+            </div>
           ) : null}
         </footer>
       </section>
-
-      {toast ? (
-        <SurfacePanel className="fixed right-[18px] bottom-[18px] border-[color:var(--border-strong)] bg-[rgba(35,39,52,0.95)] px-3.5 py-2.5">
-          {toast}
-        </SurfacePanel>
-      ) : null}
     </div>
   );
 }

@@ -6,6 +6,7 @@ export type Thread = {
   id: string;
   title: string;
   age: string;
+  sessionPath?: string;
   summary?: string;
   pinned?: boolean;
 };

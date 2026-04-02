@@ -28,7 +28,7 @@ function renderInline(text: string) {
 export function ThreadMessage({ role, format = "prose", content }: ThreadMessageProps) {
   if (role === "user") {
     return (
-      <div className="ml-auto max-w-[450px] rounded-[18px] bg-[rgba(44,47,62,0.82)] px-4 py-3 text-[15px] leading-7 text-[color:var(--text)]">
+      <div className="ml-auto max-w-[438px] rounded-[18px] bg-[rgba(47,50,66,0.8)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         {content.map((paragraph) => (
           <p key={paragraph} className="m-0 whitespace-pre-wrap">
             {renderInline(paragraph)}
@@ -40,7 +40,7 @@ export function ThreadMessage({ role, format = "prose", content }: ThreadMessage
 
   if (format === "list") {
     return (
-      <ul className="m-0 grid list-disc gap-2 pl-5 text-[15px] leading-7 text-[color:var(--text)] marker:text-[color:var(--muted)]">
+      <ul className="m-0 grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.62] text-[color:var(--text)] marker:text-[color:var(--muted)]">
         {content.map((item) => (
           <li key={item}>{renderInline(item)}</li>
         ))}
@@ -49,7 +49,7 @@ export function ThreadMessage({ role, format = "prose", content }: ThreadMessage
   }
 
   return (
-    <div className="grid gap-3 text-[15px] leading-8 text-[color:var(--text)]">
+    <div className="grid gap-3 text-[14px] leading-[1.68] text-[color:var(--text)]">
       {content.map((paragraph) => (
         <p key={paragraph} className="m-0 whitespace-pre-wrap text-[color:var(--text)]/92">
           {renderInline(paragraph)}

@@ -22,6 +22,8 @@
     "*.{js,jsx,ts,tsx,cjs,mjs,json,css,md}": ["biome check --write --no-errors-on-unmatched"]
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@mariozechner/pi-coding-agent": "^0.64.0",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

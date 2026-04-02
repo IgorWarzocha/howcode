@@ -16,6 +16,7 @@ type WorkspaceHeaderProps = {
   activeView: View;
   currentTitle: string;
   currentProjectName: string;
+  sidebarVisible: boolean;
   terminalVisible: boolean;
   diffVisible: boolean;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
@@ -27,6 +28,7 @@ export function WorkspaceHeader({
   activeView,
   currentTitle,
   currentProjectName,
+  sidebarVisible,
   terminalVisible,
   diffVisible,
   onAction,
@@ -34,13 +36,22 @@ export function WorkspaceHeader({
   onToggleDiff,
 }: WorkspaceHeaderProps) {
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 pt-3 pb-2 max-md:grid-cols-1">
+    <header
+      className={
+        sidebarVisible
+          ? "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 pt-2.5 pb-2 max-md:grid-cols-1"
+          : "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 pt-2.5 pb-2 pl-16 max-md:grid-cols-1"
+      }
+    >
       <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-2 truncate text-sm text-[color:var(--muted)]">
-          <span className="truncate text-[15px] text-[color:var(--text)]">{currentTitle}</span>
+        <div className="flex min-w-0 items-center gap-2 truncate text-[12.5px] leading-5 text-[color:var(--muted)]">
+          <span className="truncate text-[13.5px] text-[color:var(--text)]">{currentTitle}</span>
           {activeView === "thread" ? (
             <>
-              <TextButton className="px-0.5 py-0" onClick={() => onAction("project.switch")}>
+              <TextButton
+                className="px-0.5 py-0 text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+                onClick={() => onAction("project.switch")}
+              >
                 {currentProjectName}
               </TextButton>
               <IconButton

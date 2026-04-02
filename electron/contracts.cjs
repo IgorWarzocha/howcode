@@ -42,8 +42,12 @@ const DEFAULT_SHELL_STATE = Object.freeze({
   platform: process.platform,
   mockMode: true,
   productName: "Pi Desktop Mock",
-  availableHosts: ["Local", "Remote (stub)", "Worktree (stub)"],
-  composerProfiles: ["Custom (config.toml)", "Fast mode (stub)", "Review mode (stub)"],
+  cwd: process.cwd(),
+  agentDir: "",
+  sessionDir: "",
+  projects: [],
+  availableHosts: ["Local"],
+  composerProfiles: ["Pi session"],
 });
 
 function isDesktopAction(action) {

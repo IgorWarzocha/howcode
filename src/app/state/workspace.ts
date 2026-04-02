@@ -33,7 +33,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedProjectId: firstProject?.id ?? "",
     selectedThreadId: firstThread?.id ?? null,
     sidebarVisible: true,
-    terminalVisible: true,
+    terminalVisible: false,
     diffVisible: false,
     settingsOpen: false,
     collapsedProjectIds: Object.fromEntries(
