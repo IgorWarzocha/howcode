@@ -22,7 +22,7 @@ export function TerminalPanel({
   const closeLabel = mode === "takeover" ? "Return to chat" : "Close terminal";
   const panelClass =
     mode === "takeover"
-      ? "flex h-full min-h-0 flex-col gap-2 rounded-[20px] border border-[rgba(169,178,215,0.07)] bg-[rgba(33,36,49,0.92)] p-3 shadow-[var(--shadow)]"
+      ? "flex h-full min-h-0 flex-col gap-1.5 rounded-[18px] border border-[rgba(169,178,215,0.06)] bg-[rgba(33,36,49,0.88)] p-2.5 shadow-[var(--shadow)]"
       : cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3");
 
   return (
@@ -32,10 +32,12 @@ export function TerminalPanel({
       data-feature-id="feature:terminal.panel"
       data-feature-status="partial"
     >
-      <div className="flex items-center justify-between gap-2 px-0.5">
-        <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[color:var(--muted)]">
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2 text-[12px] text-[color:var(--muted)]">
           <SquareTerminal size={14} />
-          <span>{mode === "takeover" ? "Pi terminal" : "Terminal"}</span>
+          <span className="font-medium text-[color:var(--text)]/90">
+            {mode === "takeover" ? "Pi terminal" : "Terminal"}
+          </span>
           <FeatureStatusBadge statusId={statusId} />
         </div>
         <button
@@ -48,7 +50,7 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[16px] border border-[rgba(137,146,183,0.08)] bg-[rgba(23,25,35,0.96)] p-2">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.06)] bg-[rgba(23,25,35,0.98)] p-1">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}

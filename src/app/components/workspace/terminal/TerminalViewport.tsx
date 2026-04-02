@@ -25,10 +25,10 @@ function terminalThemeFromApp(): ITheme {
   const rootStyles = getComputedStyle(document.documentElement);
   return {
     background: rootStyles.getPropertyValue("--terminal-bg").trim() || "#171923",
-    foreground: rootStyles.getPropertyValue("--text").trim() || "#d5daed",
+    foreground: "#e2e7f8",
     cursor: rootStyles.getPropertyValue("--accent").trim() || "#b9bff3",
     cursorAccent: rootStyles.getPropertyValue("--terminal-bg").trim() || "#171923",
-    selectionBackground: "rgba(185, 191, 243, 0.16)",
+    selectionBackground: "rgba(185, 191, 243, 0.18)",
     scrollbarSliderBackground: "rgba(255, 255, 255, 0.08)",
     scrollbarSliderHoverBackground: "rgba(255, 255, 255, 0.14)",
     scrollbarSliderActiveBackground: "rgba(255, 255, 255, 0.2)",
@@ -39,7 +39,7 @@ function terminalThemeFromApp(): ITheme {
     blue: "#96b8ff",
     magenta: "#c7a8ff",
     cyan: "#88dee4",
-    white: "#d5daed",
+    white: "#e2e7f8",
     brightBlack: "#7c839f",
     brightRed: "#ec979d",
     brightGreen: "#a5e7bb",
@@ -47,7 +47,7 @@ function terminalThemeFromApp(): ITheme {
     brightBlue: "#afc8ff",
     brightMagenta: "#d7bfff",
     brightCyan: "#a2e9ef",
-    brightWhite: "#f4f7ff",
+    brightWhite: "#f7f9ff",
   };
 }
 
@@ -85,11 +85,10 @@ export function TerminalViewport({
     const fitAddon = new FitAddon();
     const terminal = new Terminal({
       cursorBlink: true,
-      lineHeight: 1.32,
-      fontSize: 13,
+      lineHeight: 1.2,
+      fontSize: 12,
       scrollback: 5_000,
-      fontFamily:
-        'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+      fontFamily: '"Liberation Mono", Consolas, Menlo, monospace',
       fontWeight: "400",
       fontWeightBold: "600",
       letterSpacing: 0,
