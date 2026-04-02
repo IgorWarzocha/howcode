@@ -16,9 +16,9 @@ Your mission is to execute the hardening and UI traversability plan in this repo
 
 Also inspect the current relevant implementation files before changing anything:
 
-- `electron/pi-desktop-runtime.cts`
-- `electron/pi-threads.cts`
-- `electron/thread-state-db.cts`
+- `desktop/pi-desktop-runtime.cts`
+- `desktop/pi-threads.cts`
+- `desktop/thread-state-db.cts`
 - `src/app/AppShell.tsx`
 - `src/app/components/workspace/Composer.tsx`
 - `src/app/components/sidebar/ProjectTree.tsx`
@@ -77,7 +77,7 @@ You have two top-level objectives:
 Goal:
 
 - extract shared pure helpers for title normalization and message mapping
-- make both `electron/pi-desktop-runtime.cts` and `electron/pi-threads.cts` consume them
+- make both `desktop/pi-desktop-runtime.cts` and `desktop/pi-threads.cts` consume them
 
 Expected outputs:
 
@@ -89,7 +89,7 @@ Expected outputs:
 
 Goal:
 
-- split `electron/thread-state-db.cts` by responsibility without breaking callers
+- split `desktop/thread-state-db.cts` by responsibility without breaking callers
 
 Expected outputs:
 
@@ -100,7 +100,7 @@ Expected outputs:
 
 Goal:
 
-- split `electron/pi-desktop-runtime.cts` into focused modules
+- split `desktop/pi-desktop-runtime.cts` into focused modules
 
 Expected outputs:
 

@@ -1,16 +1,16 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-const outputDir = path.join(process.cwd(), "build", "electron");
+const outputDir = path.join(process.cwd(), "build", "desktop");
 mkdirSync(outputDir, { recursive: true });
 
 const builds = [
   {
-    entrypoint: path.join(process.cwd(), "electron", "pi-threads.cts"),
+    entrypoint: path.join(process.cwd(), "desktop", "pi-threads.cts"),
     outfile: path.join(outputDir, "pi-threads.mjs"),
   },
   {
-    entrypoint: path.join(process.cwd(), "electron", "terminal", "manager.cts"),
+    entrypoint: path.join(process.cwd(), "desktop", "terminal", "manager.cts"),
     outfile: path.join(outputDir, "terminal-manager.mjs"),
   },
 ];

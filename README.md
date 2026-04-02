@@ -10,7 +10,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - modular UI shell with typed desktop action contracts and explicit mock/no-op coverage
 - split desktop runtime / thread / SQLite lanes
 - Bun-native main process with Electrobun RPC bridge into the renderer
-- real xterm.js terminal panel backed by Bun PTY on POSIX with `node-pty` Windows fallback
+- real xterm.js terminal panel backed by Bun PTY first, with `node-pty` kept only as the Windows compatibility fallback
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting
 - Husky + lint-staged pre-commit scaffolding
@@ -58,11 +58,11 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/data/` — mock fixtures
 - `src/app/ui/` — shared Tailwind class primitives
 - `src/bun/index.ts` — Electrobun main-process entry and RPC request handlers
-- `electron/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
-- `electron/pi-threads/*` — shell loading, thread hydration, action routing
-- `electron/project-git.cts` — selected-project git/branch/diff-stat probing for header chrome
-- `electron/terminal/*` — PTY adapters and terminal session manager
-- `electron/thread-state-db/*` — SQLite schema/query/write/mapping lanes
+- `desktop/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
+- `desktop/pi-threads/*` — shell loading, thread hydration, action routing
+- `desktop/project-git.cts` — selected-project git/branch/diff-stat probing for header chrome
+- `desktop/terminal/*` — PTY adapters and terminal session manager
+- `desktop/thread-state-db/*` — SQLite schema/query/write/mapping lanes
 - `shared/` — shared contracts, mapping helpers, action coverage metadata
 - `docs/lane-map.md` — concise ownership map
 - `docs/mock-features.md` — current real vs mock inventory

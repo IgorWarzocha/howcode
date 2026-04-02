@@ -35,17 +35,17 @@ This repo is intentionally split around future Pi desktop integration seams.
   - renderer-side Electrobun bridge that preserves the `window.piDesktop` shape
 - `shared/electrobun-rpc.ts`
   - typed Bun <-> webview RPC contract
-- `electron/pi-module.cts`
+- `desktop/pi-module.cts`
   - single dynamic-import boundary for the Pi package
-- `electron/project-git.cts`
+- `desktop/project-git.cts`
   - selected-project git/branch/diff-stat probing used by header chrome
-- `electron/terminal/*`
+- `desktop/terminal/*`
   - PTY abstraction, Bun/node-pty adapter selection, transcript persistence, terminal event fanout
-- `electron/runtime/*`
+- `desktop/runtime/*`
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
-- `electron/pi-threads/*`
+- `desktop/pi-threads/*`
   - shell loading, thread hydration, action routing, and payload parsing
-- `electron/thread-state-db/*`
+- `desktop/thread-state-db/*`
   - SQLite bootstrap/schema/query/write/mapping split
 - `shared/pi-message-mapper.ts`
   - shared Pi session -> desktop message/title mapping ownership boundary

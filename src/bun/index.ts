@@ -39,10 +39,10 @@ type TerminalManagerModule = {
 };
 
 const piThreads = (await import(
-  new URL("../build/electron/pi-threads.mjs", import.meta.url).pathname
+  new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
 )) as PiThreadsModule;
 const terminalManager = (await import(
-  new URL("../build/electron/terminal-manager.mjs", import.meta.url).pathname
+  new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
 )) as TerminalManagerModule;
 
 const DEV_SERVER_PORT = 5173;

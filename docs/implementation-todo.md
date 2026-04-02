@@ -12,44 +12,44 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Add desktop bridge contract(s) for creating a thread and sending a prompt
   - files: `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`, `src/types.d.ts`
 - [x] Implement desktop-runtime handlers that create/continue Pi sessions
-  - files: `src/bun/index.ts`, `electron/pi-threads.cts`
+  - files: `src/bun/index.ts`, `desktop/pi-threads.cts`
 - [x] Use `createAgentSession()` or equivalent Pi session continuation path
-  - files: `electron/pi-threads.cts`
+  - files: `desktop/pi-threads.cts`
 - [x] Persist thread/session metadata into SQLite on send
-  - files: `electron/thread-state-db.cts`
+  - files: `desktop/thread-state-db.cts`
 - [x] Refresh shell state + opened thread after send
   - files: `src/app/hooks/useDesktopShell.ts`, `src/app/hooks/useDesktopThread.ts`, `src/app/AppShell.tsx`
 - [x] Support streaming assistant output instead of waiting for full completion
   - files: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/*`
 - [x] Add attachment picking + file/image send support
-  - files: `src/bun/index.ts`, `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+  - files: `src/bun/index.ts`, `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 - [x] Surface basic composer send/model errors inline
-  - files: `electron/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+  - files: `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 
 #### 2. New thread creation
 - [x] Implement `thread.new` as a real action
-  - files: `shared/desktop-actions.ts`, `electron/pi-threads/action-router.cts`, `electron/runtime/composer-service.cts`, `src/app/components/sidebar/Sidebar.tsx`
+  - files: `shared/desktop-actions.ts`, `desktop/pi-threads/action-router.cts`, `desktop/runtime/composer-service.cts`, `src/app/components/sidebar/Sidebar.tsx`
 - [ ] Decide whether sessions are created immediately or on first send
 - [ ] Ensure new threads appear in SQLite before/when first message is sent
-  - files: `electron/thread-state-db/*`
+  - files: `desktop/thread-state-db/*`
 
 ### P1 — Replace remaining fake workspace surfaces
 
 #### 3. Project actions menu
 - [x] Replace generic project menu stubs with explicit project actions for current supported items
-  - files: `shared/desktop-actions.ts`, `electron/pi-threads/action-router.cts`, `shared/desktop-action-coverage.ts`
+  - files: `shared/desktop-actions.ts`, `desktop/pi-threads/action-router.cts`, `shared/desktop-action-coverage.ts`
 - [ ] Implement:
   - [x] open in file manager
   - [x] edit name
   - [x] archive all threads
   - [x] remove project from app index
   - [ ] create permanent worktree
-  - files: `electron/pi-threads/action-router.cts`, `electron/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`, `src/app/components/sidebar/ProjectActionDialog.tsx`
+  - files: `desktop/pi-threads/action-router.cts`, `desktop/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`, `src/app/components/sidebar/ProjectActionDialog.tsx`
 
 #### 4. Thread action menu / run action
 - [ ] Implement `thread.actions`
 - [ ] Implement `thread.run-action`
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
 
 #### 4b. Header open / commit controls
 - [ ] Implement `workspace.open`
@@ -57,24 +57,24 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Implement `workspace.handoff`
 - [ ] Implement `workspace.commit`
 - [ ] Implement `workspace.commit-options`
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
 
 #### 5. Terminal panel
 - [x] Replace static terminal transcript with a real PTY-backed xterm.js viewport
-  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `electron/terminal/*`, `src/bun/index.ts`
+  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `desktop/terminal/*`, `src/bun/index.ts`
 - [ ] Decide if terminal should remain:
   - [ ] a real shell
   - [ ] a Pi run log
   - [ ] a hybrid
 - [x] Implement open/write/resize/close event flow with Bun PTY + Windows `node-pty` fallback
-  - files: `shared/terminal-contracts.ts`, `shared/electrobun-rpc.ts`, `electron/terminal/*`, `src/app/hooks/useDesktopTerminal.ts`
+  - files: `shared/terminal-contracts.ts`, `shared/electrobun-rpc.ts`, `desktop/terminal/*`, `src/app/hooks/useDesktopTerminal.ts`
 - [ ] Add multi-terminal/split terminal UI if Codex parity requires it
 
 #### 6. Diff panel
 - [ ] Replace hardcoded diff cards with real data
   - files: `src/app/components/workspace/DiffPanel.tsx`
 - [ ] Implement `diff.review`
-  - files: `electron/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
+  - files: `desktop/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
 
 ### P2 — Improve fidelity and non-core navigation
 
@@ -83,18 +83,18 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
 - [x] Replace `previousMessageCount: 0` with real history metadata
-  - files: `shared/pi-message-mapper.ts`, `electron/pi-threads/thread-loader.cts`, `electron/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
+  - files: `shared/pi-message-mapper.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/views/ThreadView.tsx`
 
 #### 8. Sidebar utility controls
 - [ ] Implement thread filtering/search
 - [ ] Implement add/import project flow
 - [ ] Decide whether nav back/forward are renderer history or app history
-  - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `electron/pi-threads/action-router.cts`
+  - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `desktop/pi-threads/action-router.cts`
 
 #### 9. Landing project switcher
 - [ ] Implement `landing.project-switcher`
 - [ ] Implement `project.switch`
-  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `electron/pi-threads/action-router.cts`
+  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
 
@@ -129,10 +129,10 @@ Key files:
 - `src/bun/index.ts`
 - `shared/electrobun-rpc.ts`
 - `src/app/desktop/electrobun-api.ts`
-- `electron/pi-threads/*`
-- `electron/terminal/*`
-- `electron/runtime/*`
-- `electron/thread-state-db/*`
+- `desktop/pi-threads/*`
+- `desktop/terminal/*`
+- `desktop/runtime/*`
+- `desktop/thread-state-db/*`
 
 ### Renderer / app-state checklist
 
@@ -180,8 +180,8 @@ Key files:
 - [ ] Add indexes only after real usage patterns are confirmed
 
 Key files:
-- `electron/thread-state-db/*`
-- `electron/pi-threads/*`
+- `desktop/thread-state-db/*`
+- `desktop/pi-threads/*`
 
 ---
 
@@ -202,9 +202,9 @@ This milestone is now in place. Next, finish the remaining non-chat composer act
 ## Hardening progress snapshot
 
 - [x] Shared Pi message/title mapping extracted to `shared/pi-message-mapper.ts`
-- [x] SQLite layer split into `electron/thread-state-db/*`
-- [x] Pi runtime split into `electron/runtime/*`
-- [x] Pi thread loader/router split into `electron/pi-threads/*`
+- [x] SQLite layer split into `desktop/thread-state-db/*`
+- [x] Pi runtime split into `desktop/runtime/*`
+- [x] Pi thread loader/router split into `desktop/pi-threads/*`
 - [x] App shell split into `src/app/app-shell/*`
 - [x] Composer split into `src/app/components/workspace/composer/*`
 - [x] Project tree split into `src/app/components/sidebar/project-tree/*`

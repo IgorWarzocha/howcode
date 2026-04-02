@@ -11,9 +11,9 @@ Execution backlog lives in: `docs/implementation-todo.md`
   - Explicit implemented vs no-op partition: `shared/desktop-action-coverage.ts`
   - Action bridge: `src/app/hooks/useDesktopBridge.ts`
   - Bun RPC dispatch: `src/bun/index.ts`, `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`
-  - Backend action router: `electron/pi-threads/action-router.cts`
-  - Shell loading lane: `electron/pi-threads/shell-loader.cts`
-  - Thread hydration lane: `electron/pi-threads/thread-loader.cts`
+  - Backend action router: `desktop/pi-threads/action-router.cts`
+  - Shell loading lane: `desktop/pi-threads/shell-loader.cts`
+  - Thread hydration lane: `desktop/pi-threads/thread-loader.cts`
 
 ## UI status markers
 
@@ -26,14 +26,14 @@ Execution backlog lives in: `docs/implementation-todo.md`
 
 These are **not** mock anymore, or at least have real persistence behind them:
 
-- Shell/project index backed by SQLite: `electron/thread-state-db/*`, `electron/pi-threads/shell-loader.cts`
-- Project collapsed state persistence: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/state/workspace.ts`
-- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`, `electron/pi-threads/thread-loader.cts`
-- Lazy loading + caching of opened thread content: `src/app/hooks/useDesktopThread.ts`, `electron/pi-threads/thread-loader.cts`, `electron/thread-state-db/*`
-- Thread pin persistence: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
-- Thread archive / restore / permanent delete: `electron/thread-state-db/*`, `electron/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
+- Shell/project index backed by SQLite: `desktop/thread-state-db/*`, `desktop/pi-threads/shell-loader.cts`
+- Project collapsed state persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/state/workspace.ts`
+- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`, `desktop/pi-threads/thread-loader.cts`
+- Lazy loading + caching of opened thread content: `src/app/hooks/useDesktopThread.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/thread-state-db/*`
+- Thread pin persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
+- Thread archive / restore / permanent delete: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - Archived threads settings view: `src/app/components/settings/ArchivedThreadsPanel.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
-- Shared Pi thread/message mapping is real and deduplicated: `shared/pi-message-mapper.ts`, `electron/runtime/thread-publisher.cts`, `electron/pi-threads/thread-loader.cts`
+- Shared Pi thread/message mapping is real and deduplicated: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`
 - Desktop action coverage is explicit and test-backed: `shared/desktop-action-coverage.ts`, `src/test/desktop-action-coverage.test.ts`
 
 ---
@@ -45,17 +45,17 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Status:** Partially real.
 
 - Controlled composer state exists in renderer: `src/app/components/workspace/Composer.tsx`
-- Send is wired through real Pi sessions with per-cwd runtimes: `electron/runtime/*`, `electron/pi-threads/action-router.cts`
-- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/bun/index.ts`, `electron/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
-- Existing thread continuation is real via runtime session activation: `electron/runtime/runtime-registry.cts`
+- Send is wired through real Pi sessions with per-cwd runtimes: `desktop/runtime/*`, `desktop/pi-threads/action-router.cts`
+- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/bun/index.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
+- Existing thread continuation is real via runtime session activation: `desktop/runtime/runtime-registry.cts`
 - Streaming thread updates are pushed over Electrobun RPC messages and rendered live: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/app-shell/useAppShellController.ts`
-- Real model + thinking selectors are wired to Pi session state: `electron/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
-- Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `electron/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
+- Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
+- Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `desktop/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
 - Still stubbed in this area:
   - `composer.dictate`
   - `composer.host`
   - `composer.profile`
-  - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `electron/pi-threads/action-router.cts`
+  - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
 **Expansion direction:**
 - Add attachment/image flows.
@@ -67,7 +67,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Status:** Partially real.
 
-- “New thread” now creates a fresh Pi session context for the selected project and returns the UI to home: `src/app/components/sidebar/Sidebar.tsx`, `electron/runtime/composer-service.cts`, `electron/pi-threads/action-router.cts`
+- “New thread” now creates a fresh Pi session context for the selected project and returns the UI to home: `src/app/components/sidebar/Sidebar.tsx`, `desktop/runtime/composer-service.cts`, `desktop/pi-threads/action-router.cts`
 - Session persistence still happens on first assistant-backed send, matching Pi session behavior.
 
 **Expansion direction:**
@@ -87,8 +87,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `src/app/components/sidebar/ProjectActionMenu.tsx`
   - `src/app/components/sidebar/ProjectActionDialog.tsx`
   - `src/app/app-shell/useAppShellController.ts`
-  - `electron/pi-threads/action-router.cts`
-  - `electron/thread-state-db/*`
+  - `desktop/pi-threads/action-router.cts`
+  - `desktop/thread-state-db/*`
 - Still stubbed:
   - `project.create-worktree`
 
@@ -118,7 +118,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Status:** Layout now matches Codex more closely, but most controls are still stubbed except local pane toggles.
 
 - Header UI: `src/app/components/workspace/WorkspaceHeader.tsx`
-- Selected-project git detection is real and drives which header variant renders: `electron/project-git.cts`, `src/app/app-shell/useAppShellController.ts`
+- Selected-project git detection is real and drives which header variant renders: `desktop/project-git.cts`, `src/app/app-shell/useAppShellController.ts`
 - Codex-style structure now differs by view:
   - non-git: run action, open split button, terminal, diff, popout
   - git-backed projects: run action, open split button, handoff, commit split button, terminal, diff, inline diff stats, popout
@@ -150,7 +150,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - UI: `src/app/views/LandingView.tsx`
 - Emits `landing.project-switcher`
-- No implementation beyond explicit no-op routing: `electron/pi-threads/action-router.cts`
+- No implementation beyond explicit no-op routing: `desktop/pi-threads/action-router.cts`
 
 **Expansion direction:**
 - Connect this to a real project picker / recent project switcher.
@@ -190,9 +190,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - UI: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`
 - Renderer now uses real `xterm.js` + fit addon and streams keystrokes/output over the desktop bridge.
 - Backend PTY/session manager exists in:
-  - `electron/terminal/manager.cts`
-  - `electron/terminal/bun-pty.cts`
-  - `electron/terminal/node-pty.cts`
+  - `desktop/terminal/manager.cts`
+  - `desktop/terminal/bun-pty.cts`
+  - `desktop/terminal/node-pty.cts`
   - `shared/terminal-contracts.ts`
   - `src/bun/index.ts`
 - Bun PTY is used on POSIX Electrobun runs; `node-pty` remains as the Windows fallback.
@@ -246,12 +246,12 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - custom messages
   - branch summaries
   - compaction summaries
-  - files: `shared/pi-message-mapper.ts`, `electron/runtime/thread-publisher.cts`, `electron/pi-threads/thread-loader.cts`, `src/app/components/common/ThreadMessage.tsx`
+  - files: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`, `src/app/components/common/ThreadMessage.tsx`
 - Still simplified:
   - tool calls are not rendered as their own in-progress blocks
   - assistant thinking content is not rendered explicitly
   - image attachments are shown as text placeholders, not inline previews
-- `previousMessageCount` is now derived from Pi compaction metadata on the active branch: `shared/pi-message-mapper.ts`, `electron/pi-threads/thread-loader.cts`, `electron/runtime/thread-publisher.cts`
+- `previousMessageCount` is now derived from Pi compaction metadata on the active branch: `shared/pi-message-mapper.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`
 
 **Expansion direction:**
 - Add explicit live tool-call state blocks during streaming.
@@ -273,8 +273,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Key files:**
 - `src/app/components/workspace/Composer.tsx`
 - `src/app/hooks/useDesktopThread.ts`
-- `electron/pi-threads/thread-loader.cts`
-- `electron/pi-threads/action-router.cts`
+- `desktop/pi-threads/thread-loader.cts`
+- `desktop/pi-threads/action-router.cts`
 
 ### 14. Unused or contract-only actions
 

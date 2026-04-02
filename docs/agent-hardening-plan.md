@@ -7,9 +7,9 @@ This plan captures the next hardening pass for the repo using the `agent-native-
 Completed from this plan:
 
 - shared Pi message/title mapping now lives in `shared/pi-message-mapper.ts`
-- `electron/thread-state-db.cts` has been split into `electron/thread-state-db/*`
-- `electron/pi-desktop-runtime.cts` is now a thin facade over `electron/runtime/*`
-- `electron/pi-threads.cts` is now a thin facade over `electron/pi-threads/*`
+- `desktop/thread-state-db.cts` has been split into `desktop/thread-state-db/*`
+- `desktop/pi-desktop-runtime.cts` is now a thin facade over `desktop/runtime/*`
+- `desktop/pi-threads.cts` is now a thin facade over `desktop/pi-threads/*`
 - `src/app/AppShell.tsx` is now a thin composition wrapper over `src/app/app-shell/*`
 - `Composer.tsx` and `ProjectTree.tsx` have been split into focused subcomponents/controllers
 - primary ARIA/traversability fixes landed for dialogs, menus, landmarks, and expanded/current state
@@ -27,7 +27,7 @@ Primary goals:
 | Category | Score | Evidence |
 | --- | ---: | --- |
 | `agent_native` | 5/10 | good shared contracts and lane map, but several orchestration hubs own too many behaviors |
-| `fully_typed` | 7/10 | strict TS is enabled in renderer and electron configs |
+| `fully_typed` | 7/10 | strict TS is enabled in renderer and Bun desktop configs |
 | `traversable` | 4/10 | large mixed-responsibility files and duplicated message-mapping logic increase reread cost |
 | `test_coverage` | 3/10 | deterministic reducer tests exist, but extracted pure helpers are not broadly covered |
 | `feedback_loops` | 8/10 | `check`, lint, typecheck, test, build, and pre-commit hooks are already wired |
@@ -37,7 +37,7 @@ Primary goals:
 
 ### P0: split first
 
-#### 1. `electron/pi-desktop-runtime.cts`
+#### 1. `desktop/pi-desktop-runtime.cts`
 
 Current mixed responsibilities:
 
@@ -50,19 +50,19 @@ Current mixed responsibilities:
 
 Evidence:
 
-- `electron/pi-desktop-runtime.cts:43-55`
-- `electron/pi-desktop-runtime.cts:182-218`
-- `electron/pi-desktop-runtime.cts:220-316`
-- `electron/pi-desktop-runtime.cts:340-407`
-- `electron/pi-desktop-runtime.cts:430-513`
+- `desktop/pi-desktop-runtime.cts:43-55`
+- `desktop/pi-desktop-runtime.cts:182-218`
+- `desktop/pi-desktop-runtime.cts:220-316`
+- `desktop/pi-desktop-runtime.cts:340-407`
+- `desktop/pi-desktop-runtime.cts:430-513`
 
 Target split:
 
-- `electron/runtime/runtime-registry.cts`
-- `electron/runtime/message-mappers.cts`
-- `electron/runtime/attachments.cts`
-- `electron/runtime/thread-publisher.cts`
-- `electron/runtime/composer-service.cts`
+- `desktop/runtime/runtime-registry.cts`
+- `desktop/runtime/message-mappers.cts`
+- `desktop/runtime/attachments.cts`
+- `desktop/runtime/thread-publisher.cts`
+- `desktop/runtime/composer-service.cts`
 
 Definition of done:
 
@@ -103,7 +103,7 @@ Definition of done:
 - async effect clusters are moved into focused hooks
 - action routing is readable without scanning render markup
 
-#### 3. `electron/thread-state-db.cts`
+#### 3. `desktop/thread-state-db.cts`
 
 Current mixed responsibilities:
 
@@ -115,19 +115,19 @@ Current mixed responsibilities:
 
 Evidence:
 
-- `electron/thread-state-db.cts:62-92`
-- `electron/thread-state-db.cts:94-138`
-- `electron/thread-state-db.cts:140-148`
-- `electron/thread-state-db.cts:150-310`
-- `electron/thread-state-db.cts:312-440`
+- `desktop/thread-state-db.cts:62-92`
+- `desktop/thread-state-db.cts:94-138`
+- `desktop/thread-state-db.cts:140-148`
+- `desktop/thread-state-db.cts:150-310`
+- `desktop/thread-state-db.cts:312-440`
 
 Target split:
 
-- `electron/thread-state-db/db.cts`
-- `electron/thread-state-db/schema.cts`
-- `electron/thread-state-db/queries.cts`
-- `electron/thread-state-db/writes.cts`
-- `electron/thread-state-db/mappers.cts`
+- `desktop/thread-state-db/db.cts`
+- `desktop/thread-state-db/schema.cts`
+- `desktop/thread-state-db/queries.cts`
+- `desktop/thread-state-db/writes.cts`
+- `desktop/thread-state-db/mappers.cts`
 
 Definition of done:
 
@@ -137,7 +137,7 @@ Definition of done:
 
 ### P1: split next
 
-#### 4. `electron/pi-threads.cts`
+#### 4. `desktop/pi-threads.cts`
 
 Current mixed responsibilities:
 
@@ -148,19 +148,19 @@ Current mixed responsibilities:
 
 Evidence:
 
-- `electron/pi-threads.cts:168-223`
-- `electron/pi-threads.cts:234-276`
-- `electron/pi-threads.cts:278-417`
+- `desktop/pi-threads.cts:168-223`
+- `desktop/pi-threads.cts:234-276`
+- `desktop/pi-threads.cts:278-417`
 
 Important follow-up:
 
-- deduplicate message/title mapping shared with `electron/pi-desktop-runtime.cts`
+- deduplicate message/title mapping shared with `desktop/pi-desktop-runtime.cts`
 
 Target split:
 
-- `electron/pi-threads/shell-loader.cts`
-- `electron/pi-threads/thread-loader.cts`
-- `electron/pi-threads/action-router.cts`
+- `desktop/pi-threads/shell-loader.cts`
+- `desktop/pi-threads/thread-loader.cts`
+- `desktop/pi-threads/action-router.cts`
 
 #### 5. `src/app/components/workspace/Composer.tsx`
 

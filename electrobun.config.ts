@@ -10,7 +10,7 @@ export default {
     copy: {
       "dist/index.html": "views/mainview/index.html",
       "dist/assets": "views/mainview/assets",
-      "build/electron": "build/electron",
+      "build/desktop": "build/desktop",
     },
     watchIgnore: ["dist/**"],
     mac: {
