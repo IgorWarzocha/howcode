@@ -5,7 +5,6 @@ export const mockProjects: Project[] = [
   {
     id: "pi-plugin-codex",
     name: "pi-plugin-codex",
-    subtitle: "pi desktop",
     threads: [
       { id: "inspect-current-repo", title: "Inspect current repo", age: "1d", pinned: true },
     ],

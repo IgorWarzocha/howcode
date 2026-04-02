@@ -1,15 +1,24 @@
 import path from "node:path";
 import { BrowserWindow, app, ipcMain } from "electron";
 import {
+  type ArchivedThread,
   DEFAULT_SHELL_STATE,
+  type GetProjectThreadsRequest,
   type GetThreadRequest,
   IPC_CHANNELS,
   type InvokeActionRequest,
   type ShellState,
+  type Thread,
   type ThreadData,
   isDesktopAction,
 } from "./contracts.cjs";
-import { loadShellState, loadThread } from "./pi-threads.cjs";
+import {
+  handleDesktopAction,
+  loadArchivedThreadList,
+  loadProjectThreads,
+  loadShellState,
+  loadThread,
+} from "./pi-threads.cjs";
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
@@ -49,6 +58,29 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle(
+    IPC_CHANNELS.getProjectThreads,
+    async (_event, request: GetProjectThreadsRequest | null | undefined): Promise<Thread[]> => {
+      if (!request?.projectId || typeof request.projectId !== "string") {
+        return [];
+      }
+
+      try {
+        return await loadProjectThreads(request.projectId);
+      } catch {
+        return [];
+      }
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.getArchivedThreads, async (): Promise<ArchivedThread[]> => {
+    try {
+      return await loadArchivedThreadList();
+    } catch {
+      return [];
+    }
+  });
+
+  ipcMain.handle(
     IPC_CHANNELS.getThread,
     async (_event, request: GetThreadRequest | null | undefined): Promise<ThreadData | null> => {
       if (!request?.sessionPath || typeof request.sessionPath !== "string") {
@@ -67,6 +99,8 @@ app.whenReady().then(() => {
     if (!request || !isDesktopAction(request.action)) {
       throw new Error(`Unsupported desktop action: ${request?.action ?? "unknown"}`);
     }
+
+    await handleDesktopAction(request.action, request.payload ?? {});
 
     return {
       ok: true,

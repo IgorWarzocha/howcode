@@ -32,6 +32,7 @@ type SidebarProps = {
   onShowView: (view: View) => void;
   onToggleSidebar: () => void;
   onToggleSettings: () => void;
+  onOpenArchivedThreads: () => void;
   onCollapseAll: () => void;
   onProjectSelect: (projectId: string) => void;
   onThreadOpen: (projectId: string, threadId: string) => void;
@@ -50,6 +51,7 @@ export function Sidebar({
   onShowView,
   onToggleSidebar,
   onToggleSettings,
+  onOpenArchivedThreads,
   onCollapseAll,
   onProjectSelect,
   onThreadOpen,
@@ -115,10 +117,7 @@ export function Sidebar({
             <div className="flex items-center gap-1.5">
               <IconButton
                 label="Collapse all"
-                onClick={() => {
-                  onCollapseAll();
-                  onAction("threads.collapse-all");
-                }}
+                onClick={onCollapseAll}
                 icon={<ChevronsUpDown size={15} />}
               />
               <IconButton
@@ -159,7 +158,7 @@ export function Sidebar({
           <span>Settings</span>
         </button>
 
-        {settingsOpen ? <SettingsMenu /> : null}
+        {settingsOpen ? <SettingsMenu onOpenArchivedThreads={onOpenArchivedThreads} /> : null}
       </aside>
 
       {!sidebarVisible ? (

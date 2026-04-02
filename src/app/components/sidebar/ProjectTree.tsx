@@ -54,7 +54,9 @@ export function ProjectTree({
     <div ref={containerRef} className="min-h-0 overflow-auto pr-1">
       {projects.map((project) => {
         const isExpanded = !collapsedProjectIds[project.id];
-        const hasThreads = project.threads.length > 0;
+        const hasThreads = project.threadsLoaded
+          ? project.threads.length > 0
+          : (project.threadCount ?? 0) > 0;
         const projectIsActive = selectedProjectId === project.id;
         const projectMenuOpen = openProjectMenuId === project.id;
 
@@ -69,12 +71,7 @@ export function ProjectTree({
               <button
                 type="button"
                 className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
-                onClick={() => {
-                  onToggleProjectCollapse(project.id);
-                  onAction(isExpanded ? "project.collapse" : "project.expand", {
-                    projectId: project.id,
-                  });
-                }}
+                onClick={() => onToggleProjectCollapse(project.id)}
                 aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
               >
                 <Folder
@@ -175,7 +172,7 @@ export function ProjectTree({
                           )}
                           onClick={(event) => {
                             event.stopPropagation();
-                            onAction("thread.pin", { threadId: thread.id });
+                            onAction("thread.pin", { projectId: project.id, threadId: thread.id });
                           }}
                           aria-label="Pin thread"
                         >
@@ -210,7 +207,10 @@ export function ProjectTree({
                             )}
                             onClick={(event) => {
                               event.stopPropagation();
-                              onAction("thread.archive", { threadId: thread.id });
+                              onAction("thread.archive", {
+                                projectId: project.id,
+                                threadId: thread.id,
+                              });
                             }}
                             aria-label="Archive thread"
                           >
@@ -220,11 +220,11 @@ export function ProjectTree({
                       </div>
                     );
                   })
-                ) : (
+                ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
                   <div className="px-2.5 py-2 text-[13px] text-[color:var(--muted-2)]">
                     No threads
                   </div>
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>

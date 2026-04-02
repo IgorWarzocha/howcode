@@ -1,8 +1,12 @@
-import { Clock3, Globe, LogOut, Settings, UserRound } from "lucide-react";
+import { Archive, Clock3, Globe, LogOut, Settings, UserRound } from "lucide-react";
 import { MenuItem } from "../common/MenuItem";
 import { SurfacePanel } from "../common/SurfacePanel";
 
-export function SettingsMenu() {
+type SettingsMenuProps = {
+  onOpenArchivedThreads: () => void;
+};
+
+export function SettingsMenu({ onOpenArchivedThreads }: SettingsMenuProps) {
   return (
     <SurfacePanel className="fixed bottom-12 left-2.5 z-40 grid w-[280px] gap-1 border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
       <div className="flex items-center gap-3 rounded-[14px] px-2.5 py-2 text-left">
@@ -16,6 +20,11 @@ export function SettingsMenu() {
       </div>
       <div className="mx-2 my-1 h-px bg-[color:var(--border)]" />
       <MenuItem icon={<Settings size={15} />} title="Settings" active />
+      <MenuItem
+        icon={<Archive size={15} />}
+        title="Archived threads"
+        onClick={onOpenArchivedThreads}
+      />
       <MenuItem icon={<Globe size={15} />} title="Language" caret />
       <MenuItem icon={<Clock3 size={15} />} title="Rate limits remaining" caret />
       <MenuItem icon={<LogOut size={15} />} title="Log out" />

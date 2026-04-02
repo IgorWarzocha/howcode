@@ -1,6 +1,29 @@
-import os from "node:os";
-import path from "node:path";
-import type { Message, Project, ShellState, ThreadData } from "../shared/desktop-contracts.js";
+import { stat, unlink } from "node:fs/promises";
+import type { DesktopAction } from "../shared/desktop-actions.js";
+import type {
+  ArchivedThread,
+  DesktopActionPayload,
+  Message,
+  ShellState,
+  Thread,
+  ThreadData,
+} from "../shared/desktop-contracts.js";
+import {
+  archiveThread,
+  collapseAllProjects,
+  deleteThreadRecord,
+  ensureProject,
+  getCachedThread,
+  getThreadSessionPath,
+  listArchivedThreads,
+  listProjectThreads,
+  listProjects,
+  restoreThread,
+  saveThreadCache,
+  setProjectCollapsed,
+  syncSessionSummaries,
+  toggleThreadPinned,
+} from "./thread-state-db.cjs";
 
 type PiModule = typeof import("@mariozechner/pi-coding-agent");
 
@@ -42,38 +65,6 @@ function getPiModule() {
   }
 
   return piModulePromise;
-}
-
-function formatRelativeAge(date: Date) {
-  const elapsedMs = Math.max(0, Date.now() - date.getTime());
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  const week = 7 * day;
-  const month = 30 * day;
-  const year = 365 * day;
-
-  if (elapsedMs < hour) {
-    return `${Math.max(1, Math.floor(elapsedMs / minute))}m`;
-  }
-
-  if (elapsedMs < day) {
-    return `${Math.floor(elapsedMs / hour)}h`;
-  }
-
-  if (elapsedMs < week) {
-    return `${Math.floor(elapsedMs / day)}d`;
-  }
-
-  if (elapsedMs < month) {
-    return `${Math.floor(elapsedMs / week)}w`;
-  }
-
-  if (elapsedMs < year) {
-    return `${Math.floor(elapsedMs / month)}mo`;
-  }
-
-  return `${Math.floor(elapsedMs / year)}y`;
 }
 
 function normalizeThreadTitle(value: unknown) {
@@ -145,6 +136,21 @@ function mapAgentMessageToUiMessage(entry: AgentMessageEntry, index: number): Me
   return null;
 }
 
+function getFirstUserTurnTitle(messages: Message[]) {
+  const firstUserMessage = messages.find((message) => message.role === "user");
+  return normalizeThreadTitle(firstUserMessage?.content[0]);
+}
+
+function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
+  return {
+    id: session.id,
+    cwd: session.cwd || cwd,
+    sessionPath: session.path,
+    title: normalizeThreadTitle(session.firstMessage || session.name),
+    lastModifiedMs: session.modified.getTime(),
+  };
+}
+
 async function getSessionStorage(cwd: string): Promise<SessionStorage> {
   const { SettingsManager, getAgentDir } = await getPiModule();
   const agentDir = getAgentDir();
@@ -157,60 +163,20 @@ async function getSessionStorage(cwd: string): Promise<SessionStorage> {
   };
 }
 
-function createProjectFromSessions(cwd: string, sessions: SessionSummary[]): Project {
-  return {
-    id: cwd,
-    name: path.basename(cwd) || cwd,
-    threads: sessions.map((session) => ({
-      id: session.id,
-      title: normalizeThreadTitle(session.name || session.firstMessage),
-      age: formatRelativeAge(session.modified),
-      sessionPath: session.path,
-    })),
-  };
-}
-
-function groupSessionsByCwd(cwd: string, sessions: SessionSummary[]) {
-  const projectsByCwd = new Map<string, SessionSummary[]>();
-
-  for (const session of sessions) {
-    const sessionCwd = session.cwd || cwd;
-    const existing = projectsByCwd.get(sessionCwd) || [];
-    existing.push(session);
-    projectsByCwd.set(sessionCwd, existing);
-  }
-
-  if (!projectsByCwd.has(cwd)) {
-    projectsByCwd.set(cwd, []);
-  }
-
-  return Array.from(projectsByCwd.entries())
-    .map(([projectCwd, projectSessions]) => ({
-      project: createProjectFromSessions(
-        projectCwd,
-        [...projectSessions].sort((a, b) => b.modified.getTime() - a.modified.getTime()),
-      ),
-      latestModified: projectSessions[0]?.modified?.getTime() ?? 0,
-      isCurrent: projectCwd === cwd,
-    }))
-    .sort((a, b) => {
-      if (a.isCurrent && !b.isCurrent) {
-        return -1;
-      }
-
-      if (!a.isCurrent && b.isCurrent) {
-        return 1;
-      }
-
-      return b.latestModified - a.latestModified;
-    })
-    .map((entry) => entry.project);
+async function syncShellIndex(cwd: string) {
+  const { SessionManager } = await getPiModule();
+  const sessions = (await SessionManager.listAll()) as SessionSummary[];
+  syncSessionSummaries(
+    cwd,
+    sessions.map((session) => mapSessionSummaryToRecord(cwd, session)),
+  );
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
-  const sessions = (await SessionManager.listAll()) as SessionSummary[];
+
+  await syncShellIndex(cwd);
 
   return {
     platform: process.platform,
@@ -221,11 +187,37 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
     availableHosts: ["Local"],
     composerProfiles: ["Pi session"],
-    projects: groupSessionsByCwd(cwd, sessions),
+    projects: listProjects(cwd),
   };
 }
 
+export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
+  ensureProject(projectId);
+  return listProjectThreads(projectId);
+}
+
+export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {
+  return listArchivedThreads();
+}
+
 export async function loadThread(sessionPath: string): Promise<ThreadData> {
+  const cachedThread = getCachedThread(sessionPath);
+  const fileStats = await stat(sessionPath);
+  const currentModifiedMs = Math.floor(fileStats.mtimeMs);
+
+  if (
+    cachedThread?.messages &&
+    cachedThread.hydratedModifiedMs !== null &&
+    cachedThread.hydratedModifiedMs >= currentModifiedMs
+  ) {
+    return {
+      sessionPath,
+      title: cachedThread.title,
+      messages: cachedThread.messages,
+      previousMessageCount: 0,
+    };
+  }
+
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
   const branchEntries = manager.getBranch() as BranchEntry[];
@@ -234,10 +226,92 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
     .map((entry, index) => mapAgentMessageToUiMessage(entry.message, index))
     .filter((entry): entry is Message => entry !== null);
 
+  const title = cachedThread?.title || getFirstUserTurnTitle(messages);
+  saveThreadCache(sessionPath, title, messages, currentModifiedMs);
+
   return {
     sessionPath,
-    title: normalizeThreadTitle(manager.getSessionName() || messages[0]?.content?.[0]),
+    title,
     messages,
     previousMessageCount: 0,
   };
+}
+
+export async function handleDesktopAction(
+  action: DesktopAction,
+  payload: DesktopActionPayload,
+): Promise<void> {
+  switch (action) {
+    case "project.expand": {
+      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
+      if (projectId) {
+        setProjectCollapsed(projectId, false);
+      }
+      return;
+    }
+
+    case "project.collapse": {
+      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
+      if (projectId) {
+        setProjectCollapsed(projectId, true);
+      }
+      return;
+    }
+
+    case "threads.collapse-all":
+      collapseAllProjects();
+      return;
+
+    case "thread.pin": {
+      const threadId = typeof payload.threadId === "string" ? payload.threadId : null;
+      if (threadId) {
+        toggleThreadPinned(threadId);
+      }
+      return;
+    }
+
+    case "thread.archive": {
+      const threadId = typeof payload.threadId === "string" ? payload.threadId : null;
+      if (threadId) {
+        archiveThread(threadId);
+      }
+      return;
+    }
+
+    case "thread.restore": {
+      const threadId = typeof payload.threadId === "string" ? payload.threadId : null;
+      if (threadId) {
+        restoreThread(threadId);
+      }
+      return;
+    }
+
+    case "thread.delete": {
+      const threadId = typeof payload.threadId === "string" ? payload.threadId : null;
+      if (!threadId) {
+        return;
+      }
+
+      const sessionPath = getThreadSessionPath(threadId);
+      if (sessionPath) {
+        try {
+          await unlink(sessionPath);
+        } catch (error) {
+          if (
+            typeof error !== "object" ||
+            error === null ||
+            !("code" in error) ||
+            error.code !== "ENOENT"
+          ) {
+            throw error;
+          }
+        }
+      }
+      deleteThreadRecord(threadId);
+      return;
+    }
+
+    default:
+      return;
+  }
 }

@@ -14,8 +14,22 @@ describe("workspace state", () => {
     const state = createInitialWorkspaceState(mockProjects);
 
     expect(state.selectedProjectId).toBe("pi-plugin-codex");
-    expect(state.selectedThreadId).toBe("inspect-current-repo");
+    expect(state.selectedThreadId).toBeNull();
     expect(state.collapsedProjectIds["claw-phone"]).toBe(true);
+  });
+
+  it("hydrates persisted project collapse state from shell projects", () => {
+    const state = workspaceReducer(createInitialWorkspaceState([]), {
+      type: "sync-projects",
+      projects: [
+        { id: "alpha", name: "alpha", collapsed: false, threads: [] },
+        { id: "beta", name: "beta", collapsed: true, threads: [] },
+      ],
+    });
+
+    expect(state.selectedProjectId).toBe("alpha");
+    expect(state.collapsedProjectIds.alpha).toBe(false);
+    expect(state.collapsedProjectIds.beta).toBe(true);
   });
 
   it("opens a thread and forces its project expanded", () => {
@@ -36,7 +50,8 @@ describe("workspace state", () => {
     const thread = selectThread(project, "missing-thread");
 
     expect(getProjectName(project)).toBe("pi-plugin-codex");
-    expect(getCurrentTitle("thread", thread)).toBe("Inspect current repo");
+    expect(thread).toBeUndefined();
+    expect(getCurrentTitle("thread", thread)).toBe("New thread");
     expect(getCurrentTitle("home", thread)).toBe("New thread");
   });
 });

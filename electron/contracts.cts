@@ -1,13 +1,17 @@
 import { type DesktopAction, desktopActions } from "../shared/desktop-actions.js";
 import type {
+  ArchivedThread,
   DesktopActionPayload,
   DesktopActionResult,
   ShellState,
+  Thread,
   ThreadData,
 } from "../shared/desktop-contracts.js";
 
 export const IPC_CHANNELS = {
   getShellState: "pi:get-shell-state",
+  getProjectThreads: "pi:get-project-threads",
+  getArchivedThreads: "pi:get-archived-threads",
   getThread: "pi:get-thread",
   invokeAction: "pi:invoke-action",
 } as const;
@@ -28,6 +32,10 @@ export type GetThreadRequest = {
   sessionPath: string;
 };
 
+export type GetProjectThreadsRequest = {
+  projectId: string;
+};
+
 export type InvokeActionRequest = {
   action: DesktopAction;
   payload?: DesktopActionPayload;
@@ -37,4 +45,12 @@ export function isDesktopAction(action: unknown): action is DesktopAction {
   return typeof action === "string" && desktopActions.includes(action as DesktopAction);
 }
 
-export type { DesktopAction, DesktopActionPayload, DesktopActionResult, ShellState, ThreadData };
+export type {
+  ArchivedThread,
+  DesktopAction,
+  DesktopActionPayload,
+  DesktopActionResult,
+  ShellState,
+  Thread,
+  ThreadData,
+};

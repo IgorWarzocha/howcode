@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type { Message, Project, Thread } from "../../shared/desktop-contracts.js";
+export type { ArchivedThread, Message, Project, Thread } from "../../shared/desktop-contracts.js";
 
 export type View = "home" | "thread" | "plugins" | "automations" | "debug";
 

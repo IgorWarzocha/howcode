@@ -9,12 +9,14 @@ type MenuItemProps = {
   detail?: string;
   caret?: boolean;
   active?: boolean;
+  onClick?: () => void;
 };
 
-export function MenuItem({ icon, title, subtitle, detail, caret, active }: MenuItemProps) {
+export function MenuItem({ icon, title, subtitle, detail, caret, active, onClick }: MenuItemProps) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className={`flex items-center gap-2.5 rounded-[12px] border border-transparent px-2.5 py-2 text-left text-[14px] ${transitionClass} ${hoverSurfaceClass} ${active ? "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]" : ""}`}
     >
       <span className="text-[color:var(--muted)]">{icon}</span>

@@ -8,10 +8,12 @@ export type WorkspaceState = {
   terminalVisible: boolean;
   diffVisible: boolean;
   settingsOpen: boolean;
+  archivedThreadsOpen: boolean;
   collapsedProjectIds: Record<string, boolean>;
 };
 
 export type WorkspaceAction =
+  | { type: "sync-projects"; projects: Project[] }
   | { type: "show-view"; view: View }
   | { type: "select-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string }
@@ -19,6 +21,7 @@ export type WorkspaceAction =
   | { type: "toggle-terminal" }
   | { type: "toggle-diff" }
   | { type: "toggle-settings" }
+  | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
   | { type: "collapse-all-projects" };
 
@@ -26,24 +29,38 @@ export type WorkspaceAction =
 // stays deterministic even before we add persisted desktop state.
 export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
   const [firstProject] = projects;
-  const firstThread = firstProject?.threads[0];
 
   return {
     activeView: "home",
     selectedProjectId: firstProject?.id ?? "",
-    selectedThreadId: firstThread?.id ?? null,
+    selectedThreadId: null,
     sidebarVisible: true,
     terminalVisible: false,
     diffVisible: false,
     settingsOpen: false,
+    archivedThreadsOpen: false,
     collapsedProjectIds: Object.fromEntries(
-      projects.map((project) => [project.id, Boolean(project.collapsed)]),
+      projects.map((project) => [project.id, project.collapsed ?? true]),
     ),
   };
 }
 
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {
   switch (action.type) {
+    case "sync-projects": {
+      const collapsedProjectIds = Object.fromEntries(
+        action.projects.map((project) => [
+          project.id,
+          state.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
+        ]),
+      );
+
+      return {
+        ...state,
+        selectedProjectId: state.selectedProjectId || action.projects[0]?.id || "",
+        collapsedProjectIds,
+      };
+    }
     case "show-view":
       return { ...state, activeView: action.view };
     case "select-project":
@@ -67,6 +84,12 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, diffVisible: !state.diffVisible };
     case "toggle-settings":
       return { ...state, settingsOpen: !state.settingsOpen };
+    case "set-archived-threads-open":
+      return {
+        ...state,
+        archivedThreadsOpen: action.open,
+        settingsOpen: action.open ? false : state.settingsOpen,
+      };
     case "toggle-project-collapse":
       return {
         ...state,
@@ -95,15 +118,11 @@ export function selectThread(
   project: Project | undefined,
   selectedThreadId: string | null,
 ): Thread | undefined {
-  if (!project) {
+  if (!project || !selectedThreadId) {
     return undefined;
   }
 
-  if (!selectedThreadId) {
-    return project.threads[0];
-  }
-
-  return project.threads.find((thread) => thread.id === selectedThreadId) ?? project.threads[0];
+  return project.threads.find((thread) => thread.id === selectedThreadId);
 }
 
 export function getCurrentTitle(activeView: View, selectedThread: Thread | undefined): string {

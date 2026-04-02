@@ -12,9 +12,19 @@ export type Thread = {
 export type Project = {
   id: string;
   name: string;
-  subtitle?: string;
   threads: Thread[];
   collapsed?: boolean;
+  threadsLoaded?: boolean;
+  threadCount?: number;
+};
+
+export type ArchivedThread = {
+  id: string;
+  title: string;
+  age: string;
+  projectId: string;
+  projectName: string;
+  sessionPath: string;
 };
 
 export type Message = {

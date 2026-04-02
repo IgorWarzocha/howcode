@@ -1,10 +1,4 @@
-import {
-  automationCards,
-  debugCards,
-  pluginCards,
-  threadMessages,
-  threadPreviousMessageCount,
-} from "../data/mock-data";
+import { automationCards, debugCards, pluginCards } from "../data/mock-data";
 import type { DesktopAction } from "../desktop/actions";
 import type { ThreadData } from "../desktop/types";
 import type { View } from "../types";
@@ -23,10 +17,8 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
   if (activeView === "thread") {
     return (
       <ThreadView
-        messages={threadData ? threadData.messages : threadMessages}
-        previousMessageCount={
-          threadData ? threadData.previousMessageCount : threadPreviousMessageCount
-        }
+        messages={threadData?.messages ?? []}
+        previousMessageCount={threadData?.previousMessageCount ?? 0}
       />
     );
   }
