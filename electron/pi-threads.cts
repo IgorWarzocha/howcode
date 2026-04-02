@@ -44,8 +44,6 @@ import {
   toggleThreadPinned,
 } from "./thread-state-db.cjs";
 
-type PiModule = typeof import("@mariozechner/pi-coding-agent");
-
 type SessionSummary = {
   id: string;
   name?: string;
@@ -60,15 +58,7 @@ type SessionStorage = {
   sessionDir: string | null;
 };
 
-let piModulePromise: Promise<PiModule> | undefined;
-
-function getPiModule() {
-  if (!piModulePromise) {
-    piModulePromise = import("@mariozechner/pi-coding-agent");
-  }
-
-  return piModulePromise;
-}
+import { getPiModule } from "./pi-module.cjs";
 
 function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
   return {
