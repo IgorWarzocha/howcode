@@ -12,6 +12,7 @@ import type {
   ShellState,
   Thread,
   ThreadData,
+  TurnDiffResult,
 } from "./desktop-contracts";
 import type {
   TerminalCloseRequest,
@@ -35,6 +36,14 @@ export type PiDesktopRpc = {
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
       getThread: { params: { sessionPath: string }; response: ThreadData | null };
+      getTurnDiff: {
+        params: { sessionPath: string; checkpointTurnCount: number };
+        response: TurnDiffResult | null;
+      };
+      getFullThreadDiff: {
+        params: { sessionPath: string };
+        response: TurnDiffResult | null;
+      };
       invokeAction: {
         params: { action: DesktopAction; payload?: DesktopActionPayload };
         response: DesktopActionResult;
@@ -44,6 +53,7 @@ export type PiDesktopRpc = {
       terminalResize: { params: TerminalResizeRequest; response: { ok: boolean } };
       terminalClose: { params: TerminalCloseRequest; response: { ok: boolean } };
       openExternal: { params: { url: string }; response: { ok: boolean } };
+      openPath: { params: { path: string }; response: { ok: boolean } };
     };
     messages: Record<string, never>;
   }>;

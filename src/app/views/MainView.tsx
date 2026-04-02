@@ -11,9 +11,16 @@ type MainViewProps = {
   currentProjectName: string;
   threadData: ThreadData | null;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
 };
 
-export function MainView({ activeView, currentProjectName, threadData, onAction }: MainViewProps) {
+export function MainView({
+  activeView,
+  currentProjectName,
+  threadData,
+  onAction,
+  onOpenTurnDiff,
+}: MainViewProps) {
   if (activeView === "thread") {
     return (
       <ThreadView
@@ -21,6 +28,8 @@ export function MainView({ activeView, currentProjectName, threadData, onAction 
         messages={threadData?.messages ?? []}
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
+        turnDiffSummaries={threadData?.turnDiffSummaries ?? []}
+        onOpenTurnDiff={onOpenTurnDiff}
       />
     );
   }

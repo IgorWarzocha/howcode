@@ -108,6 +108,31 @@ export type ProjectGitState = {
   deletions: number;
 };
 
+export type TurnDiffStatus = "ready" | "missing" | "error";
+
+export type TurnDiffFile = {
+  path: string;
+  kind: string;
+  additions: number;
+  deletions: number;
+};
+
+export type TurnDiffSummary = {
+  checkpointTurnCount: number;
+  checkpointRef: string;
+  status: TurnDiffStatus;
+  files: TurnDiffFile[];
+  assistantMessageId?: string;
+  completedAt: string;
+};
+
+export type TurnDiffResult = {
+  sessionPath: string;
+  fromTurnCount: number;
+  toTurnCount: number;
+  diff: string;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;
@@ -127,6 +152,7 @@ export type ThreadData = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
+  turnDiffSummaries: TurnDiffSummary[];
 };
 
 export type DesktopEvent =

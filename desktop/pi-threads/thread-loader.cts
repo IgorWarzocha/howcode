@@ -12,6 +12,7 @@ import {
   getCachedThread,
   listArchivedThreads,
   listProjectThreads,
+  listTurnDiffSummaries,
   saveThreadCache,
 } from "../thread-state-db";
 
@@ -48,6 +49,7 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
       messages: cachedThread.messages,
       previousMessageCount,
       isStreaming: false,
+      turnDiffSummaries: listTurnDiffSummaries(sessionPath),
     };
   }
 
@@ -63,5 +65,6 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
     messages,
     previousMessageCount,
     isStreaming: false,
+    turnDiffSummaries: listTurnDiffSummaries(sessionPath),
   };
 }

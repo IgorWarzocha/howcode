@@ -51,6 +51,7 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("alpha");
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
+    expect(nextState.selectedDiffTurnCount).toBeNull();
   });
 
   it("opens a thread and forces its project expanded", () => {
@@ -66,6 +67,19 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
     expect(nextState.selectedSessionPath).toBe("/tmp/missing-thread.jsonl");
     expect(nextState.collapsedProjectIds["claw-phone"]).toBe(false);
+    expect(nextState.selectedDiffTurnCount).toBeNull();
+  });
+
+  it("can open the diff panel with a selected turn and file", () => {
+    const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "open-diff",
+      checkpointTurnCount: 3,
+      filePath: "src/app/AppShell.tsx",
+    });
+
+    expect(nextState.diffVisible).toBe(true);
+    expect(nextState.selectedDiffTurnCount).toBe(3);
+    expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
 
   it("can switch into takeover terminal mode", () => {

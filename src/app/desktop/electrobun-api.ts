@@ -18,6 +18,7 @@ import type {
   TerminalSessionSnapshot,
   Thread,
   ThreadData,
+  TurnDiffResult,
 } from "./types";
 
 const desktopListeners = new Set<(event: DesktopEvent) => void>();
@@ -98,6 +99,13 @@ export const piDesktopApi = {
     (await getRpc()).request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
   getThread: async (sessionPath: string) =>
     (await getRpc()).request.getThread({ sessionPath }) as Promise<ThreadData | null>,
+  getTurnDiff: async (sessionPath: string, checkpointTurnCount: number) =>
+    (await getRpc()).request.getTurnDiff({
+      sessionPath,
+      checkpointTurnCount,
+    }) as Promise<TurnDiffResult | null>,
+  getFullThreadDiff: async (sessionPath: string) =>
+    (await getRpc()).request.getFullThreadDiff({ sessionPath }) as Promise<TurnDiffResult | null>,
   openTerminal: async (request: TerminalOpenRequest) =>
     (await getRpc()).request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
   writeTerminal: async (sessionId: string, data: string) => {
@@ -111,6 +119,10 @@ export const piDesktopApi = {
   },
   openExternal: async (url: string) => {
     const response = await (await getRpc()).request.openExternal({ url });
+    return response.ok;
+  },
+  openPath: async (path: string) => {
+    const response = await (await getRpc()).request.openPath({ path });
     return response.ok;
   },
   subscribe: (listener: (event: DesktopEvent) => void) => {

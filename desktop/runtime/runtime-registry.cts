@@ -1,4 +1,5 @@
 import type { ComposerStateRequest } from "../../shared/desktop-contracts";
+import { captureCompletedTurnDiff } from "../diff/query";
 import { getPiModule } from "../pi-module";
 import { getMappedCwd, rememberSessionPath } from "./session-path-index";
 import { publishThreadUpdate } from "./thread-publisher";
@@ -32,6 +33,7 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
   const runtime = {
     cwd,
     session,
+    pendingTurnCount: null,
   };
 
   rememberSessionPath(session.sessionFile, cwd);
@@ -42,7 +44,15 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
         void publishThreadUpdate(runtime, "start");
       }
       if (event.message.role === "assistant") {
-        void publishThreadUpdate(runtime, "end");
+        void (async () => {
+          try {
+            await captureCompletedTurnDiff(runtime);
+          } catch (error) {
+            console.warn("Failed to capture turn diff.", error);
+          }
+
+          await publishThreadUpdate(runtime, "end");
+        })();
       }
       return;
     }

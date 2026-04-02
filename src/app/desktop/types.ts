@@ -12,6 +12,10 @@ export type {
   ShellState,
   Thread,
   ThreadData,
+  TurnDiffFile,
+  TurnDiffResult,
+  TurnDiffSummary,
+  TurnDiffStatus,
 } from "../../../shared/desktop-contracts.js";
 
 export type {

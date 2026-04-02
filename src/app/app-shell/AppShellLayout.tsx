@@ -29,7 +29,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleCollapseAll,
     handleCloseTakeoverTerminal,
     handleOpenArchivedThreads,
+    handleOpenDiffSelection,
     handleProjectSelect,
+    handleSelectDiffTurn,
     handleShowTakeoverTerminal,
     handleShowView,
     handleThreadOpen,
@@ -95,7 +97,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           <div
             className={
               state.diffVisible && !takeoverVisible
-                ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
+                ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(360px,560px)] gap-3 overflow-hidden px-5 max-xl:grid-cols-1"
                 : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
             }
           >
@@ -124,12 +126,21 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   currentProjectName={currentProjectName}
                   threadData={activeThreadData}
                   onAction={(action, payload) => void handleAction(action, payload)}
+                  onOpenTurnDiff={handleOpenDiffSelection}
                 />
               </main>
             )}
             {state.diffVisible && !takeoverVisible ? (
-              <div className="max-xl:hidden">
-                <DiffPanel onAction={(action, payload) => void handleAction(action, payload)} />
+              <div className="min-h-0 max-xl:hidden">
+                <DiffPanel
+                  projectId={composerProjectId}
+                  threadData={activeThreadData}
+                  isGitRepo={projectGitState?.isGitRepo ?? false}
+                  selectedTurnCount={state.selectedDiffTurnCount}
+                  selectedFilePath={state.selectedDiffFilePath}
+                  onSelectTurn={handleSelectDiffTurn}
+                  onAction={(action, payload) => void handleAction(action, payload)}
+                />
               </div>
             ) : null}
           </div>

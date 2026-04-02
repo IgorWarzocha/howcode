@@ -224,6 +224,33 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Move from fixed-size client paging to explicit branch/page hydration if very large Pi sessions require it.
 
+### 9b. Diff panel
+
+**Status:** Partially real.
+
+- UI: `/home/igorw/Work/howcode/src/app/components/workspace/DiffPanel.tsx`
+- Diff renderer stack now ports the main t3code pattern:
+  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/DiffWorkerPoolProvider.tsx`
+  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/DiffPanelContent.tsx`
+  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/diff-rendering.ts`
+- Backend checkpoint/diff pipeline now exists in:
+  - `/home/igorw/Work/howcode/desktop/diff/checkpoint-store.cts`
+  - `/home/igorw/Work/howcode/desktop/diff/query.cts`
+  - `/home/igorw/Work/howcode/desktop/diff/summary-parser.cts`
+- The thread lane now surfaces per-assistant changed-file summaries and can open the diff panel for a selected turn/file.
+
+**Still partial because:**
+
+- checkpoint capture currently runs for completed composer turns only, not every possible Pi session mutation path
+- no placeholder/retry checkpoint lifecycle like t3code’s full orchestration stack
+- no sheet/mobile diff layout yet
+- `diff.review` remains a shell action
+
+**Expansion direction:**
+
+- extend checkpoint capture to additional turn-completion paths such as takeover session reconciliation if needed
+- add richer diff review actions once a review/run-log model exists
+
 ### 10. Remote connections banner on home
 
 **Status:** Visual only.

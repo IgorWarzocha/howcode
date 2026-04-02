@@ -16,6 +16,7 @@ import type {
   TerminalSessionSnapshot,
   Thread,
   ThreadData,
+  TurnDiffResult,
 } from "./app/desktop/types";
 
 declare global {
@@ -28,12 +29,18 @@ declare global {
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string) => Promise<ThreadData | null>;
+      getTurnDiff?: (
+        sessionPath: string,
+        checkpointTurnCount: number,
+      ) => Promise<TurnDiffResult | null>;
+      getFullThreadDiff?: (sessionPath: string) => Promise<TurnDiffResult | null>;
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
       writeTerminal?: (sessionId: string, data: string) => Promise<void>;
       resizeTerminal?: (request: TerminalResizeRequest) => Promise<void>;
       closeTerminal?: (request: TerminalCloseRequest) => Promise<void>;
       subscribeTerminal?: (listener: (event: TerminalEvent) => void) => () => void;
       openExternal?: (url: string) => Promise<boolean>;
+      openPath?: (path: string) => Promise<boolean>;
       subscribe?: (listener: (event: DesktopEvent) => void) => () => void;
       invokeAction: (
         action: DesktopAction,

@@ -4,6 +4,7 @@ export {
   loadProjectThreads,
   loadThread,
 } from "./pi-threads/thread-loader";
+export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader";
 export {
   loadComposerState,
   loadProjectGitState,

@@ -9,6 +9,8 @@ export type WorkspaceState = {
   terminalVisible: boolean;
   takeoverVisible: boolean;
   diffVisible: boolean;
+  selectedDiffTurnCount: number | null;
+  selectedDiffFilePath: string | null;
   settingsOpen: boolean;
   archivedThreadsOpen: boolean;
   collapsedProjectIds: Record<string, boolean>;
@@ -24,6 +26,8 @@ export type WorkspaceAction =
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
   | { type: "toggle-diff" }
+  | { type: "open-diff"; checkpointTurnCount: number | null; filePath?: string | null }
+  | { type: "set-diff-turn"; checkpointTurnCount: number | null }
   | { type: "toggle-settings" }
   | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
@@ -43,6 +47,8 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     terminalVisible: false,
     takeoverVisible: false,
     diffVisible: false,
+    selectedDiffTurnCount: null,
+    selectedDiffFilePath: null,
     settingsOpen: false,
     archivedThreadsOpen: false,
     collapsedProjectIds: Object.fromEntries(
@@ -79,6 +85,10 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
         selectedSessionPath:
           hasSelectedProject || !state.selectedProjectId ? state.selectedSessionPath : null,
+        selectedDiffTurnCount:
+          hasSelectedProject || !state.selectedProjectId ? state.selectedDiffTurnCount : null,
+        selectedDiffFilePath:
+          hasSelectedProject || !state.selectedProjectId ? state.selectedDiffFilePath : null,
         collapsedProjectIds,
       };
     }
@@ -88,6 +98,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: action.view,
         selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
+        selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
+        selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
       };
     case "select-project":
       return {
@@ -96,6 +108,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedProjectId: action.projectId,
         selectedThreadId: null,
         selectedSessionPath: null,
+        selectedDiffTurnCount: null,
+        selectedDiffFilePath: null,
       };
     case "open-thread":
       return {
@@ -104,6 +118,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
+        selectedDiffTurnCount: null,
+        selectedDiffFilePath: null,
         collapsedProjectIds: {
           ...state.collapsedProjectIds,
           [action.projectId]: false,
@@ -119,6 +135,19 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, takeoverVisible: false };
     case "toggle-diff":
       return { ...state, diffVisible: !state.diffVisible };
+    case "open-diff":
+      return {
+        ...state,
+        diffVisible: true,
+        selectedDiffTurnCount: action.checkpointTurnCount,
+        selectedDiffFilePath: action.filePath ?? null,
+      };
+    case "set-diff-turn":
+      return {
+        ...state,
+        selectedDiffTurnCount: action.checkpointTurnCount,
+        selectedDiffFilePath: null,
+      };
     case "toggle-settings":
       return { ...state, settingsOpen: !state.settingsOpen };
     case "set-archived-threads-open":

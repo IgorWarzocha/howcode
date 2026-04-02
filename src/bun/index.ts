@@ -11,6 +11,7 @@ import type {
   ShellState,
   Thread,
   ThreadData,
+  TurnDiffResult,
 } from "../../shared/desktop-contracts";
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
 import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
@@ -27,6 +28,11 @@ type PiThreadsModule = {
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (sessionPath: string) => Promise<ThreadData | null>;
+  loadTurnDiff: (
+    sessionPath: string,
+    checkpointTurnCount: number,
+  ) => Promise<TurnDiffResult | null>;
+  loadFullThreadDiff: (sessionPath: string) => Promise<TurnDiffResult | null>;
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void;
 };
 
@@ -93,6 +99,10 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         piThreads.loadArchivedThreadList() as Promise<ArchivedThread[]>,
       getThread: async ({ sessionPath }) =>
         piThreads.loadThread(sessionPath) as Promise<ThreadData | null>,
+      getTurnDiff: async ({ sessionPath, checkpointTurnCount }) =>
+        piThreads.loadTurnDiff(sessionPath, checkpointTurnCount) as Promise<TurnDiffResult | null>,
+      getFullThreadDiff: async ({ sessionPath }) =>
+        piThreads.loadFullThreadDiff(sessionPath) as Promise<TurnDiffResult | null>,
       invokeAction: async ({ action, payload = {} }) => {
         await piThreads.handleDesktopAction(action, payload);
         return {
@@ -116,6 +126,7 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         return { ok: true };
       },
       openExternal: async ({ url }) => ({ ok: Utils.openExternal(url) }),
+      openPath: async ({ path }) => ({ ok: Utils.openPath(path) }),
     },
     messages: {},
   },

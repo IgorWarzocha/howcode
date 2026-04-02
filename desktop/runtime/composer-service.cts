@@ -4,6 +4,7 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts";
+import { prepareTurnDiffCapture } from "../diff/query";
 import { processComposerAttachments } from "./attachments";
 import { buildComposerState } from "./composer-state";
 import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry";
@@ -80,9 +81,21 @@ export async function sendComposerPrompt(
 
   const message = `${request.text}${processedAttachments.text ? `\n\n${processedAttachments.text.trimEnd()}` : ""}`;
 
-  await runtime.session.prompt(message, {
-    images: processedAttachments.images,
-  });
+  try {
+    await prepareTurnDiffCapture(runtime);
+  } catch (error) {
+    runtime.pendingTurnCount = null;
+    console.warn("Failed to prepare turn diff capture.", error);
+  }
+
+  try {
+    await runtime.session.prompt(message, {
+      images: processedAttachments.images,
+    });
+  } catch (error) {
+    runtime.pendingTurnCount = null;
+    throw error;
+  }
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}): Promise<ComposerState> {

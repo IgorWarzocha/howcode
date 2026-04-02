@@ -6,6 +6,7 @@ import {
   getPreviousMessageCount,
   mapAgentMessagesToUiMessages,
 } from "../../shared/pi-message-mapper";
+import { getTurnDiffSummaries } from "../diff/query";
 import { saveThreadCache, upsertThreadSummary } from "../thread-state-db";
 import { buildComposerState } from "./composer-state";
 import { rememberSessionPath } from "./session-path-index";
@@ -37,6 +38,7 @@ function buildLiveThreadData(runtime: PiRuntime): ThreadData | null {
     messages,
     previousMessageCount,
     isStreaming: runtime.session.isStreaming,
+    turnDiffSummaries: getTurnDiffSummaries(sessionPath),
   };
 }
 

@@ -70,6 +70,7 @@ export function useAppShellController() {
         messages: [],
         previousMessageCount: 0,
         isStreaming: false,
+        turnDiffSummaries: [],
       })
     : null;
   const currentTitle =
@@ -374,6 +375,18 @@ export function useAppShellController() {
     void handleAction("thread.open", { projectId, threadId, sessionPath });
   };
 
+  const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
+    dispatch({
+      type: "open-diff",
+      checkpointTurnCount,
+      filePath: filePath ?? null,
+    });
+  };
+
+  const handleSelectDiffTurn = (checkpointTurnCount: number | null) => {
+    dispatch({ type: "set-diff-turn", checkpointTurnCount });
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -393,7 +406,9 @@ export function useAppShellController() {
       setThreadRefreshKey((current) => current + 1);
       void refreshShellState();
     },
+    handleOpenDiffSelection,
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleSelectDiffTurn,
     handleShowView,
     handleThreadOpen,
     handleShowTakeoverTerminal: () => dispatch({ type: "show-takeover" }),

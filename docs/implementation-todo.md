@@ -73,8 +73,8 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Add multi-terminal/split terminal UI if Codex parity requires it
 
 #### 6. Diff panel
-- [ ] Replace hardcoded diff cards with real data
-  - files: `src/app/components/workspace/DiffPanel.tsx`
+- [x] Replace hardcoded diff cards with a real checkpoint-backed `@pierre/diffs` viewer
+  - files: `src/app/components/workspace/DiffPanel.tsx`, `src/app/components/workspace/diff/*`, `desktop/diff/*`, `shared/desktop-contracts.ts`
 - [ ] Implement `diff.review`
   - files: `desktop/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
 

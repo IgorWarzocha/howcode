@@ -1,5 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ThreadMessage } from "../components/common/ThreadMessage";
+import { ChangedFilesTree } from "../components/workspace/diff/ChangedFilesTree";
+import type { TurnDiffSummary } from "../desktop/types";
 import type { Message } from "../types";
 
 const MESSAGE_PAGE_SIZE = 80;
@@ -10,13 +12,23 @@ type ThreadViewProps = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
+  turnDiffSummaries: TurnDiffSummary[];
+  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
 };
 
-export function ThreadView({ messages, previousMessageCount, isStreaming }: ThreadViewProps) {
+export function ThreadView({
+  messages,
+  previousMessageCount,
+  isStreaming,
+  turnDiffSummaries,
+  onOpenTurnDiff,
+}: ThreadViewProps) {
+  void isStreaming;
   const containerRef = useRef<HTMLDivElement>(null);
   const pendingPrependHeightRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const [visibleCount, setVisibleCount] = useState(MESSAGE_PAGE_SIZE);
+  const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
 
   const visibleStartIndex = Math.max(0, messages.length - visibleCount);
   const visibleMessages = useMemo(
@@ -26,6 +38,16 @@ export function ThreadView({ messages, previousMessageCount, isStreaming }: Thre
   const [firstMessage, ...remainingMessages] = visibleMessages;
   const hiddenRenderedCount = Math.max(0, messages.length - visibleMessages.length);
   const hiddenCount = previousMessageCount + hiddenRenderedCount;
+  const turnDiffSummaryByAssistantMessageId = useMemo(
+    () =>
+      new Map(
+        turnDiffSummaries
+          .filter((summary) => summary.assistantMessageId)
+          .map((summary) => [summary.assistantMessageId as string, summary]),
+      ),
+    [turnDiffSummaries],
+  );
+
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) {
@@ -62,6 +84,62 @@ export function ThreadView({ messages, previousMessageCount, isStreaming }: Thre
       pendingPrependHeightRef.current = container.scrollHeight;
       setVisibleCount((current) => Math.min(messages.length, current + MESSAGE_PAGE_SIZE));
     }
+  };
+
+  const renderMessageRow = (message: Message) => {
+    const turnSummary =
+      message.role === "assistant"
+        ? turnDiffSummaryByAssistantMessageId.get(message.id)
+        : undefined;
+    const allDirectoriesExpanded =
+      turnSummary && expandedDiffTrees[turnSummary.checkpointTurnCount] !== false;
+
+    return (
+      <Fragment key={message.id}>
+        <ThreadMessage message={message} />
+        {turnSummary && turnSummary.files.length > 0 ? (
+          <div className="px-4">
+            <div className="rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+                  Changed files ({turnSummary.files.length}) · turn{" "}
+                  {turnSummary.checkpointTurnCount}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="rounded-[9px] border border-[color:var(--border)] px-2 py-1 text-[11px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+                    onClick={() =>
+                      setExpandedDiffTrees((current) => ({
+                        ...current,
+                        [turnSummary.checkpointTurnCount]: !allDirectoriesExpanded,
+                      }))
+                    }
+                  >
+                    {allDirectoriesExpanded ? "Collapse all" : "Expand all"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-[9px] border border-[color:var(--border)] px-2 py-1 text-[11px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+                    onClick={() =>
+                      onOpenTurnDiff(turnSummary.checkpointTurnCount, turnSummary.files[0]?.path)
+                    }
+                  >
+                    View diff
+                  </button>
+                </div>
+              </div>
+              <ChangedFilesTree
+                checkpointTurnCount={turnSummary.checkpointTurnCount}
+                files={turnSummary.files}
+                allDirectoriesExpanded={Boolean(allDirectoriesExpanded)}
+                onOpenTurnDiff={onOpenTurnDiff}
+              />
+            </div>
+          </div>
+        ) : null}
+      </Fragment>
+    );
   };
 
   if (messages.length === 0) {
@@ -102,11 +180,9 @@ export function ThreadView({ messages, previousMessageCount, isStreaming }: Thre
             </button>
           ) : null}
 
-          {firstMessage ? <ThreadMessage message={firstMessage} /> : null}
+          {firstMessage ? renderMessageRow(firstMessage) : null}
 
-          {remainingMessages.map((message) => (
-            <ThreadMessage key={message.id} message={message} />
-          ))}
+          {remainingMessages.map((message) => renderMessageRow(message))}
         </div>
       </div>
     </div>

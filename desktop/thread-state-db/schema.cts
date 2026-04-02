@@ -46,6 +46,19 @@ export function ensureThreadStateSchema(database: Database) {
 
     CREATE INDEX IF NOT EXISTS threads_by_cwd_idx ON threads(cwd, pinned DESC, last_modified_ms DESC);
     CREATE INDEX IF NOT EXISTS threads_by_path_idx ON threads(session_path);
+
+    CREATE TABLE IF NOT EXISTS thread_turn_diffs (
+      session_path TEXT NOT NULL,
+      checkpoint_turn_count INTEGER NOT NULL,
+      checkpoint_ref TEXT NOT NULL,
+      status TEXT NOT NULL,
+      assistant_message_id TEXT,
+      files_json TEXT NOT NULL,
+      completed_at TEXT NOT NULL,
+      PRIMARY KEY (session_path, checkpoint_turn_count)
+    );
+
+    CREATE INDEX IF NOT EXISTS thread_turn_diffs_by_path_idx ON thread_turn_diffs(session_path, checkpoint_turn_count DESC);
   `);
 
   if (!hasColumn(database, "projects", "custom_name")) {

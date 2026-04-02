@@ -1,13 +1,26 @@
-import type { ArchivedThread, Project, Thread } from "../../shared/desktop-contracts";
+import type {
+  ArchivedThread,
+  Project,
+  Thread,
+  TurnDiffSummary,
+} from "../../shared/desktop-contracts";
 import { getThreadStateDatabase } from "./db";
-import { mapArchivedThreadRow, mapCachedThreadRow, mapProjectRow, mapThreadRow } from "./mappers";
+import {
+  mapArchivedThreadRow,
+  mapCachedThreadRow,
+  mapProjectRow,
+  mapThreadRow,
+  mapTurnDiffRow,
+} from "./mappers";
 import type {
   ArchivedThreadRow,
   CachedThread,
   CachedThreadRow,
   ProjectRow,
+  ThreadCwdRow,
   ThreadPathRow,
   ThreadRow,
+  TurnDiffRow,
 } from "./types";
 import { ensureProject } from "./writes";
 
@@ -116,4 +129,66 @@ export function getThreadSessionPath(threadId: string) {
     .get(threadId) as ThreadPathRow | undefined;
 
   return row?.sessionPath ?? null;
+}
+
+export function getThreadCwd(sessionPath: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT cwd
+        FROM threads
+        WHERE session_path = ?
+      `,
+    )
+    .get(sessionPath) as ThreadCwdRow | undefined;
+
+  return row?.cwd ?? null;
+}
+
+export function listTurnDiffSummaries(sessionPath: string): TurnDiffSummary[] {
+  const db = getThreadStateDatabase();
+  const rows = db
+    .prepare(
+      `
+        SELECT
+          session_path AS sessionPath,
+          checkpoint_turn_count AS checkpointTurnCount,
+          checkpoint_ref AS checkpointRef,
+          status,
+          assistant_message_id AS assistantMessageId,
+          files_json AS filesJson,
+          completed_at AS completedAt
+        FROM thread_turn_diffs
+        WHERE session_path = ?
+        ORDER BY checkpoint_turn_count ASC
+      `,
+    )
+    .all(sessionPath) as TurnDiffRow[];
+
+  return rows.map(mapTurnDiffRow);
+}
+
+export function getLatestTurnDiffSummary(sessionPath: string): TurnDiffSummary | null {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT
+          session_path AS sessionPath,
+          checkpoint_turn_count AS checkpointTurnCount,
+          checkpoint_ref AS checkpointRef,
+          status,
+          assistant_message_id AS assistantMessageId,
+          files_json AS filesJson,
+          completed_at AS completedAt
+        FROM thread_turn_diffs
+        WHERE session_path = ?
+        ORDER BY checkpoint_turn_count DESC
+        LIMIT 1
+      `,
+    )
+    .get(sessionPath) as TurnDiffRow | undefined;
+
+  return row ? mapTurnDiffRow(row) : null;
 }

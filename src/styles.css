@@ -78,6 +78,15 @@ code {
   background-clip: padding-box;
 }
 
+.diff-turn-strip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.diff-turn-strip::-webkit-scrollbar {
+  display: none;
+}
+
 .xterm {
   height: 100%;
 }

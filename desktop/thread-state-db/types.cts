@@ -1,4 +1,5 @@
 import type { Message } from "../../shared/desktop-contracts";
+import type { TurnDiffFile, TurnDiffStatus, TurnDiffSummary } from "../../shared/desktop-contracts";
 
 export type SessionSummaryRecord = {
   id: string;
@@ -51,4 +52,28 @@ export type CachedThread = {
   lastModifiedMs: number;
   hydratedModifiedMs: number | null;
   messages: Message[] | null;
+};
+
+export type TurnDiffRow = {
+  sessionPath: string;
+  checkpointTurnCount: number;
+  checkpointRef: string;
+  status: TurnDiffStatus;
+  assistantMessageId: string | null;
+  filesJson: string;
+  completedAt: string;
+};
+
+export type TurnDiffSummaryRecord = {
+  sessionPath: string;
+  checkpointTurnCount: number;
+  checkpointRef: string;
+  status: TurnDiffStatus;
+  assistantMessageId?: string;
+  files: TurnDiffFile[];
+  completedAt: string;
+};
+
+export type ThreadCwdRow = {
+  cwd: string;
 };
