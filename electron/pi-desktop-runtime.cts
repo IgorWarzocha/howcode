@@ -418,3 +418,21 @@ export async function startNewThread(request: ComposerStateRequest = {}): Promis
     composer: await buildComposerState(runtime),
   });
 }
+
+export async function selectProjectRuntime(
+  request: ComposerStateRequest = {},
+): Promise<ComposerState> {
+  const runtime = await getRuntimeForRequest({ ...request, sessionPath: null });
+  const composer = await buildComposerState(runtime);
+
+  emitDesktopEvent({ type: "composer-update", composer });
+  return composer;
+}
+
+export async function openThreadRuntime(request: ComposerStateRequest): Promise<ComposerState> {
+  const runtime = await getRuntimeForRequest(request);
+  const composer = await buildComposerState(runtime);
+
+  emitDesktopEvent({ type: "composer-update", composer });
+  return composer;
+}

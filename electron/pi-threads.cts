@@ -13,6 +13,8 @@ import type {
 import {
   getComposerState,
   getLiveThread,
+  openThreadRuntime,
+  selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
@@ -277,6 +279,11 @@ export async function handleDesktopAction(
   payload: DesktopActionPayload,
 ): Promise<void> {
   switch (action) {
+    case "project.select": {
+      await selectProjectRuntime(getComposerRequest(payload));
+      return;
+    }
+
     case "project.expand": {
       const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
       if (projectId) {
@@ -302,6 +309,11 @@ export async function handleDesktopAction(
       if (threadId) {
         toggleThreadPinned(threadId);
       }
+      return;
+    }
+
+    case "thread.open": {
+      await openThreadRuntime(getComposerRequest(payload));
       return;
     }
 
