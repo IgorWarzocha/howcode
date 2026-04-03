@@ -238,17 +238,21 @@ export function ComposerPromptSurface({
         />
         <div className="ml-auto flex items-center gap-2">
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
-          {gitOpsMockMode === "dirty" ? (
-            <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[color:var(--muted)]">
-                {formatGitCount(gitOpsMeta.files)} files
-              </span>
-              <span className="text-[#7ee0bb]">+{formatGitCount(gitOpsMeta.additions)}</span>
-              <span className="text-[#ff9c9c]">-{formatGitCount(gitOpsMeta.deletions)}</span>
-            </div>
-          ) : gitOpsMockMode === "clean" ? (
-            <span className="text-[12px] text-[color:var(--muted)]">0 files</span>
-          ) : null}
+          <div className="flex items-center gap-2 text-[12px]">
+            <span className="text-[color:var(--muted)]">
+              {formatGitCount(gitOpsMeta.files)} files
+            </span>
+            <span
+              className={gitOpsMeta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}
+            >
+              +{formatGitCount(gitOpsMeta.additions)}
+            </span>
+            <span
+              className={gitOpsMeta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}
+            >
+              -{formatGitCount(gitOpsMeta.deletions)}
+            </span>
+          </div>
           <button
             type="button"
             className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitOpsMockMode))}
