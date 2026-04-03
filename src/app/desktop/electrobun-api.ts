@@ -97,8 +97,11 @@ export const piDesktopApi = {
     (await getRpc()).request.getProjectThreads({ projectId }) as Promise<Thread[]>,
   getArchivedThreads: async () =>
     (await getRpc()).request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
-  getThread: async (sessionPath: string) =>
-    (await getRpc()).request.getThread({ sessionPath }) as Promise<ThreadData | null>,
+  getThread: async (sessionPath: string, includeHistory = false) =>
+    (await getRpc()).request.getThread({
+      sessionPath,
+      includeHistory,
+    }) as Promise<ThreadData | null>,
   watchSession: async (sessionPath: string | null) => {
     await (await getRpc()).request.watchSession({ sessionPath });
   },

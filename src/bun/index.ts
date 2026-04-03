@@ -27,7 +27,10 @@ type PiThreadsModule = {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
   loadShellState: (cwd: string) => Promise<ShellState>;
-  loadThread: (sessionPath: string) => Promise<ThreadData | null>;
+  loadThread: (
+    sessionPath: string,
+    options?: { includeHistory?: boolean },
+  ) => Promise<ThreadData | null>;
   setWatchedSessionPath: (sessionPath: string | null) => Promise<void>;
   loadTurnDiff: (
     sessionPath: string,
@@ -98,8 +101,8 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         piThreads.loadProjectThreads(projectId) as Promise<Thread[]>,
       getArchivedThreads: async () =>
         piThreads.loadArchivedThreadList() as Promise<ArchivedThread[]>,
-      getThread: async ({ sessionPath }) =>
-        piThreads.loadThread(sessionPath) as Promise<ThreadData | null>,
+      getThread: async ({ sessionPath, includeHistory = false }) =>
+        piThreads.loadThread(sessionPath, { includeHistory }) as Promise<ThreadData | null>,
       watchSession: async ({ sessionPath }) => {
         await piThreads.setWatchedSessionPath(sessionPath);
         return { ok: true };

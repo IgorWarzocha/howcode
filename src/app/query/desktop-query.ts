@@ -18,7 +18,9 @@ export const desktopQueryKeys = {
     ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
   thread: (sessionPath: string, refreshKey = 0) =>
-    ["desktop", "thread", sessionPath, refreshKey] as const,
+    ["desktop", "thread", sessionPath, refreshKey, false] as const,
+  threadWithHistory: (sessionPath: string, refreshKey = 0, includeHistory = false) =>
+    ["desktop", "thread", sessionPath, refreshKey, includeHistory] as const,
   diff: (sessionPath: string, checkpointTurnCount: number | null) =>
     ["desktop", "diff", sessionPath, checkpointTurnCount] as const,
 };
@@ -51,8 +53,11 @@ export async function pickComposerAttachmentsQuery(
   return (await window.piDesktop?.pickComposerAttachments?.(projectId ?? null)) ?? [];
 }
 
-export async function getThreadQuery(sessionPath: string): Promise<ThreadData | null> {
-  return (await window.piDesktop?.getThread?.(sessionPath)) ?? null;
+export async function getThreadQuery(
+  sessionPath: string,
+  includeHistory = false,
+): Promise<ThreadData | null> {
+  return (await window.piDesktop?.getThread?.(sessionPath, includeHistory)) ?? null;
 }
 
 export async function getThreadDiffQuery(

@@ -25,6 +25,7 @@ export function useAppShellController() {
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
+  const [includeThreadHistory, setIncludeThreadHistory] = useState(false);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
   );
@@ -41,7 +42,11 @@ export function useAppShellController() {
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
-  const threadData = useDesktopThread(state.selectedSessionPath, threadRefreshKey);
+  const threadData = useDesktopThread(
+    state.selectedSessionPath,
+    threadRefreshKey,
+    includeThreadHistory,
+  );
 
   const {
     activeComposerState,
@@ -233,8 +238,13 @@ export function useAppShellController() {
   };
 
   const handleThreadOpen = (projectId: string, threadId: string, sessionPath: string) => {
+    setIncludeThreadHistory(false);
     dispatch({ type: "open-thread", projectId, threadId, sessionPath });
     void handleAction("thread.open", { projectId, threadId, sessionPath });
+  };
+
+  const handleLoadEarlierMessages = () => {
+    setIncludeThreadHistory(true);
   };
 
   const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
@@ -288,6 +298,7 @@ export function useAppShellController() {
       void refreshShellState();
     },
     handleOpenDiffSelection,
+    handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleProjectReorder,
     handleSelectDiffTurn,

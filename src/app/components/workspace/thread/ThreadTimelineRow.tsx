@@ -204,6 +204,19 @@ export function ThreadTimelineRow({
   if (row.kind === "summary") {
     const summaryLabel =
       row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
+    const showCompactionDivider = row.message.role === "compactionSummary";
+    const summaryContent = (
+      <>
+        {showCompactionDivider ? <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" /> : null}
+        <div className="min-w-0">
+          {collapsed ? (
+            <FoldedTimelineRow label={summaryLabel} onToggle={() => onToggleRowCollapse(row.id)} />
+          ) : (
+            <ThreadMessage message={row.message} />
+          )}
+        </div>
+      </>
+    );
 
     if (collapsed) {
       return (
@@ -212,7 +225,7 @@ export function ThreadTimelineRow({
           ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
           onToggle={() => onToggleRowCollapse(row.id)}
         >
-          <FoldedTimelineRow label={summaryLabel} onToggle={() => onToggleRowCollapse(row.id)} />
+          <div className="grid min-w-0 gap-3">{summaryContent}</div>
         </TimelineRowShell>
       );
     }
@@ -223,9 +236,7 @@ export function ThreadTimelineRow({
         ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
         onToggle={() => onToggleRowCollapse(row.id)}
       >
-        <div className="min-w-0">
-          <ThreadMessage message={row.message} />
-        </div>
+        <div className="grid min-w-0 gap-3">{summaryContent}</div>
       </TimelineRowShell>
     );
   }

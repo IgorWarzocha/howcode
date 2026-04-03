@@ -35,6 +35,7 @@ export function AppShellWorkspace({
 }: AppShellWorkspaceProps) {
   const {
     handleAction,
+    handleLoadEarlierMessages,
     handleOpenDiffSelection,
     handleSelectDiffTurn,
     handleShowTakeoverTerminal,
@@ -66,6 +67,7 @@ export function AppShellWorkspace({
             currentProjectName={currentProjectName}
             threadData={activeThreadData}
             onAction={(action, payload) => void handleAction(action, payload)}
+            onLoadEarlierMessages={handleLoadEarlierMessages}
             onOpenTurnDiff={handleOpenDiffSelection}
           />
         </main>

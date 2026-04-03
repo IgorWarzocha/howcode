@@ -24,6 +24,7 @@ type VirtualizedThreadTimelineProps = {
   isStreaming: boolean;
   turnDiffSummaries: TurnDiffSummary[];
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
+  onLoadEarlierMessages: () => void;
 };
 
 export function VirtualizedThreadTimeline({
@@ -32,6 +33,7 @@ export function VirtualizedThreadTimeline({
   isStreaming,
   turnDiffSummaries,
   onOpenTurnDiff,
+  onLoadEarlierMessages,
 }: VirtualizedThreadTimelineProps) {
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
@@ -199,13 +201,9 @@ export function VirtualizedThreadTimeline({
   );
 
   const handleJumpToEarlierMessages = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
-    container.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+    suppressAutoScrollTemporarily();
+    onLoadEarlierMessages();
+  }, [onLoadEarlierMessages, suppressAutoScrollTemporarily]);
 
   const handleToggleDiffTree = useCallback(
     (checkpointTurnCount: number) => {

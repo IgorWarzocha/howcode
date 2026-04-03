@@ -28,7 +28,7 @@ declare global {
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
-      getThread?: (sessionPath: string) => Promise<ThreadData | null>;
+      getThread?: (sessionPath: string, includeHistory?: boolean) => Promise<ThreadData | null>;
       watchSession?: (sessionPath: string | null) => Promise<void>;
       getTurnDiff?: (
         sessionPath: string,
