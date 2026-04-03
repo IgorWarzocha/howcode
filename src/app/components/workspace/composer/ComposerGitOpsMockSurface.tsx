@@ -179,7 +179,7 @@ export function ComposerGitOpsMockSurface({
             type="button"
             className={cn(
               primaryButtonClass,
-              "inline-flex h-8 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
+              "inline-flex h-7 min-h-7 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
             )}
             onClick={() =>
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
