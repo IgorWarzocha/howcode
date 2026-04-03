@@ -11,7 +11,6 @@ import type { DesktopAction } from "../../../desktop/actions";
 import { ghostButtonClass, primaryButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
-import { SurfacePanel } from "../../common/SurfacePanel";
 import {
   type GitOpsMockMode,
   formatGitCount,
@@ -40,22 +39,15 @@ export function ComposerGitOpsMockSurface({
   const meta = gitOpsMockMeta[gitOpsMockMode];
   const hasChanges = gitOpsMockMode === "dirty";
   const canOpenDiff = gitOpsMockMode !== "not-git";
-  const changesSummary = useMemo(() => {
-    if (gitOpsMockMode === "not-git") {
-      return "Initialize git to review and commit workspace changes here.";
-    }
-
-    if (!hasChanges) {
-      return "No local changes right now.";
-    }
-
-    return `${formatGitCount(meta.files)} files  +${formatGitCount(meta.additions)}  -${formatGitCount(meta.deletions)}`;
-  }, [gitOpsMockMode, hasChanges, meta.additions, meta.deletions, meta.files]);
+  const changesSummary = useMemo(
+    () =>
+      `${formatGitCount(meta.files)} files  +${formatGitCount(meta.additions)}  -${formatGitCount(meta.deletions)}`,
+    [meta.additions, meta.deletions, meta.files],
+  );
 
   return (
-    <SurfacePanel
-      className="grid gap-0 overflow-hidden border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
-      aria-label="Git operations panel"
+    <div
+      className="grid gap-0"
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
@@ -69,12 +61,9 @@ export function ComposerGitOpsMockSurface({
             <ArrowLeft size={14} />
             Back
           </button>
-          <div>
-            <div className="flex items-center gap-2 text-[14px] font-medium text-[color:var(--text)]">
-              <span>Git ops</span>
-              <FeatureStatusBadge statusId="feature:composer.git-ops" />
-            </div>
-            <p className="text-[12px] text-[color:var(--muted)]">{meta.description}</p>
+          <div className="flex items-center gap-2 text-[14px] font-medium text-[color:var(--text)]">
+            <span>Git ops</span>
+            <FeatureStatusBadge statusId="feature:composer.git-ops" />
           </div>
         </div>
 
@@ -99,35 +88,30 @@ export function ComposerGitOpsMockSurface({
 
       <div className="grid gap-3 px-4 pb-4">
         <div className="grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(18,20,28,0.32)] p-3">
-          <div className="flex items-start justify-between gap-3 max-md:flex-col">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-                {meta.title}
-              </p>
-              <div className="mt-1 flex items-center gap-2 text-[13px] text-[color:var(--text)]">
-                <GitBranch size={14} />
-                <span>{meta.branch ?? "No repository detected"}</span>
+          {gitOpsMockMode === "not-git" ? (
+            <div className="rounded-xl border border-[rgba(255,110,110,0.2)] bg-[rgba(255,94,94,0.08)] px-3 py-2 text-[13px] font-medium text-[#ffd1d1]">
+              <div className="flex items-center gap-2">
+                <TriangleAlert size={14} />
+                Not a git repository
               </div>
             </div>
+          ) : (
+            <div className="flex items-start justify-between gap-3 max-md:flex-col">
+              <div className="mt-1 flex items-center gap-2 text-[13px] text-[color:var(--text)]">
+                <GitBranch size={14} />
+                <span>{meta.branch}</span>
+              </div>
 
-            <div className="text-right max-md:text-left">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-                Changes
-              </p>
               <p
                 className={cn(
-                  "mt-1 text-[13px]",
-                  gitOpsMockMode === "not-git"
-                    ? "text-[#ff9c9c]"
-                    : hasChanges
-                      ? "text-[#7ee0bb]"
-                      : "text-[color:var(--muted)]",
+                  "text-[13px]",
+                  hasChanges ? "text-[#7ee0bb]" : "text-[color:var(--muted)]",
                 )}
               >
                 {changesSummary}
               </p>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-[color:var(--text)]">
             <span>Include unstaged</span>
@@ -150,18 +134,7 @@ export function ComposerGitOpsMockSurface({
             </button>
           </div>
 
-          {gitOpsMockMode === "not-git" ? (
-            <div className="rounded-xl border border-[rgba(255,110,110,0.2)] bg-[rgba(255,94,94,0.08)] px-3 py-2 text-[13px] text-[#ffd1d1]">
-              <div className="flex items-center gap-2 font-medium">
-                <TriangleAlert size={14} />
-                Initialize git
-              </div>
-              <p className="mt-1 text-[12px] text-[#ffb8b8]">
-                We can keep this lightweight: just show the red entrypoint here until the repo is
-                initialized.
-              </p>
-            </div>
-          ) : hasChanges ? (
+          {gitOpsMockMode === "not-git" ? null : hasChanges ? (
             <div className="rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-3">
               <div className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
                 Commit message
@@ -178,11 +151,8 @@ export function ComposerGitOpsMockSurface({
             <div className="rounded-xl border border-[rgba(92,201,165,0.2)] bg-[rgba(92,201,165,0.08)] px-3 py-2 text-[13px] text-[#bdf7dd]">
               <div className="flex items-center gap-2 font-medium">
                 <CheckCircle2 size={14} />
-                No local changes
+                Working tree clean
               </div>
-              <p className="mt-1 text-[12px] text-[#99e8c6]">
-                This state should stay quiet and only expose secondary git actions later.
-              </p>
             </div>
           )}
         </div>
@@ -234,6 +204,6 @@ export function ComposerGitOpsMockSurface({
           </div>
         </div>
       </div>
-    </SurfacePanel>
+    </div>
   );
 }

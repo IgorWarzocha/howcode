@@ -1,7 +1,6 @@
 import { ChevronDown, GitBranch, Mic, Plus, Send, Settings, SquareTerminal } from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
-import { SurfacePanel } from "../../common/SurfacePanel";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
@@ -62,10 +61,7 @@ export function ComposerPromptSurface({
   const thinkingMenuId = "composer-thinking-menu";
 
   return (
-    <SurfacePanel
-      className="grid gap-0 overflow-hidden border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
-      aria-label="Composer panel"
-    >
+    <>
       <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
       <textarea
         className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
@@ -246,6 +242,6 @@ export function ComposerPromptSurface({
           className={getGitOpsEntryButtonClass(gitOpsMockMode)}
         />
       </div>
-    </SurfacePanel>
+    </>
   );
 }

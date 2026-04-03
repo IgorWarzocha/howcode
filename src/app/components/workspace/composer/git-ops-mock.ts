@@ -9,8 +9,6 @@ export const gitOpsMockMeta: Record<
     files: number;
     additions: number;
     deletions: number;
-    title: string;
-    description: string;
   }
 > = {
   dirty: {
@@ -18,27 +16,18 @@ export const gitOpsMockMeta: Record<
     files: 49,
     additions: 1541,
     deletions: 348,
-    title: "Current workspace changes",
-    description:
-      "Review changes since the last commit, include unstaged edits by default, then commit or open the diff.",
   },
   clean: {
     branch: "master",
     files: 0,
     additions: 0,
     deletions: 0,
-    title: "Working tree is clean",
-    description:
-      "No local changes right now. This surface can still expose commit history and branch-aware actions later.",
   },
   "not-git": {
     branch: null,
     files: 0,
     additions: 0,
     deletions: 0,
-    title: "Git repository required",
-    description:
-      "When this project is not a git repository, the composer entrypoint should turn red and invite the user to initialize git.",
   },
 };
 
