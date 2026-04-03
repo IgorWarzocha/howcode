@@ -1,38 +1,102 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
+import type { Message } from "../../../types";
 import { ThreadMessage } from "../../common/ThreadMessage";
 import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
 import { ToolCallsCard } from "./ToolCallsCard";
 import { chatRowShellClass } from "./thread-layout";
 import { type TimelineRow, type TimelineTurnItem, isTurnRowCollapsible } from "./timeline-row";
 
+const clampOneLineClass =
+  "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]";
+const clampTwoLinesClass =
+  "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]";
+const clampThreeLinesClass =
+  "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]";
+
+function getMessagePreview(message: Message) {
+  switch (message.role) {
+    case "user":
+    case "assistant":
+    case "custom":
+    case "branchSummary":
+    case "compactionSummary":
+      return message.content.join(" ").trim();
+    case "toolResult":
+      return [message.toolName, message.content.join(" ")].filter(Boolean).join(" — ");
+    case "bashExecution":
+      return `$ ${message.command}`.trim();
+    default:
+      return "";
+  }
+}
+
+function getToolGroupPreview(item: Extract<TimelineTurnItem, { kind: "tool-group" }>) {
+  const firstMessage = item.messages[0];
+  if (!firstMessage) {
+    return "Tool call";
+  }
+
+  if (firstMessage.role === "toolResult") {
+    return [firstMessage.toolName, firstMessage.content.join(" ")].filter(Boolean).join(" — ");
+  }
+
+  return `$ ${firstMessage.command}`.trim();
+}
+
+function getCollapsedTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
+  if (row.userMessage) {
+    const primary = getMessagePreview(row.userMessage);
+    const firstAssistantMessage = row.items.find(
+      (item) => item.kind === "message" && item.message.role === "assistant",
+    ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
+
+    return {
+      label: primary,
+      secondary: firstAssistantMessage ? getMessagePreview(firstAssistantMessage.message) : null,
+    };
+  }
+
+  const firstItem = row.items[0];
+  if (!firstItem) {
+    return { label: "Continued turn", secondary: null };
+  }
+
+  if (firstItem.kind === "tool-group") {
+    return { label: getToolGroupPreview(firstItem), secondary: null };
+  }
+
+  return { label: getMessagePreview(firstItem.message), secondary: null };
+}
+
 function FoldedTimelineRow({
   label,
   secondary,
+  singleLine = false,
   onToggle,
 }: {
   label: string;
   secondary?: string | null;
+  singleLine?: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
-      className="flex min-w-0 items-center gap-1.5 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="grid min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div className="min-w-0 flex-1 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--text)]/92">
+      <div
+        className={`min-w-0 text-[13px] font-medium leading-[1.4] text-[color:var(--text)]/92 ${singleLine || secondary ? clampOneLineClass : clampThreeLinesClass}`}
+      >
         {label}
       </div>
       {secondary ? (
-        <>
-          <span className="shrink-0 text-[11px] leading-[1.2] text-[color:var(--muted-2)]/80">
-            —
-          </span>
-          <div className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/90">
-            {secondary}
-          </div>
-        </>
+        <div
+          className={`min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampTwoLinesClass}`}
+        >
+          {secondary}
+        </div>
       ) : null}
     </button>
   );
@@ -129,26 +193,6 @@ export function ThreadTimelineRow({
     );
   };
 
-  const renderCollapsedTurnLead = (row: Extract<TimelineRow, { kind: "turn" }>) => {
-    if (row.userMessage) {
-      return <ThreadMessage message={row.userMessage} />;
-    }
-
-    const firstItem = row.items[0];
-    if (firstItem) {
-      if (firstItem.kind === "tool-group") {
-        const firstToolCall = firstItem.messages[0];
-        return firstToolCall ? <ToolCallsCard messages={[firstToolCall]} disableExpansion /> : null;
-      }
-
-      return <ThreadMessage message={firstItem.message} firstCardOnly disableInnerExpansion />;
-    }
-
-    return (
-      <FoldedTimelineRow label="Continued turn" onToggle={() => onToggleRowCollapse(row.id)} />
-    );
-  };
-
   if (row.kind === "history-divider") {
     return (
       <TimelineRowShell>
@@ -176,6 +220,8 @@ export function ThreadTimelineRow({
     const chevronOffsetClass = "mt-2";
 
     if (isCollapsed) {
+      const preview = getCollapsedTurnPreview(row);
+
       return (
         <TimelineRowShell
           expanded={false}
@@ -183,7 +229,11 @@ export function ThreadTimelineRow({
           onToggle={onToggleTurnCollapse}
           toggleClassName={chevronOffsetClass}
         >
-          <div className="grid min-w-0 gap-3">{renderCollapsedTurnLead(row)}</div>
+          <FoldedTimelineRow
+            label={preview.label}
+            secondary={preview.secondary}
+            onToggle={() => onToggleTurnCollapse?.()}
+          />
         </TimelineRowShell>
       );
     }
@@ -206,20 +256,7 @@ export function ThreadTimelineRow({
   if (row.kind === "summary") {
     const summaryLabel =
       row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
-    const showCompactionDivider = row.message.role === "compactionSummary";
-    const chevronOffsetClass = showCompactionDivider ? "mt-4" : "mt-1";
-    const summaryContent = (
-      <>
-        {showCompactionDivider ? <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" /> : null}
-        <div className="min-w-0">
-          {collapsed ? (
-            <FoldedTimelineRow label={summaryLabel} onToggle={() => onToggleRowCollapse(row.id)} />
-          ) : (
-            <ThreadMessage message={row.message} />
-          )}
-        </div>
-      </>
-    );
+    const chevronOffsetClass = "mt-2";
 
     if (collapsed) {
       return (
@@ -229,7 +266,11 @@ export function ThreadTimelineRow({
           onToggle={() => onToggleRowCollapse(row.id)}
           toggleClassName={chevronOffsetClass}
         >
-          <div className="grid min-w-0 gap-3">{summaryContent}</div>
+          <FoldedTimelineRow
+            label={summaryLabel}
+            singleLine
+            onToggle={() => onToggleRowCollapse(row.id)}
+          />
         </TimelineRowShell>
       );
     }
@@ -241,7 +282,7 @@ export function ThreadTimelineRow({
         onToggle={() => onToggleRowCollapse(row.id)}
         toggleClassName={chevronOffsetClass}
       >
-        <div className="grid min-w-0 gap-3">{summaryContent}</div>
+        <ThreadMessage message={row.message} />
       </TimelineRowShell>
     );
   }
