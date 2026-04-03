@@ -150,7 +150,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
-      <div className="w-full min-w-0 rounded-2xl bg-[rgba(47,50,66,0.58)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+      <div className="w-full min-w-0 rounded-2xl bg-[rgba(47,50,66,0.58)] px-3 py-2 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
           {message.content.map((paragraph) => (
             <MarkdownContent
