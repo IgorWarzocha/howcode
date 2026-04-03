@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type MouseEvent, type ReactNode } from "react";
 import type { Message } from "../../../types";
 import { ThreadMessage } from "../../common/ThreadMessage";
 import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
@@ -83,7 +83,7 @@ function FoldedTimelineRow({
   return (
     <button
       type="button"
-      className="grid min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="grid w-full min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
       <div
@@ -98,6 +98,46 @@ function FoldedTimelineRow({
           {secondary}
         </div>
       ) : null}
+    </button>
+  );
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      'button, a, input, textarea, select, summary, [role="button"], [data-no-row-toggle="true"]',
+    ),
+  );
+}
+
+function RowLeadToggleSurface({
+  onToggle,
+  children,
+}: {
+  onToggle?: () => void;
+  children: ReactNode;
+}) {
+  if (!onToggle) {
+    return <>{children}</>;
+  }
+
+  return (
+    <button
+      type="button"
+      className="min-w-0 cursor-pointer"
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        if (isInteractiveTarget(event.target)) {
+          return;
+        }
+
+        onToggle();
+      }}
+    >
+      {children}
     </button>
   );
 }
@@ -198,12 +238,12 @@ export function ThreadTimelineRow({
       <TimelineRowShell>
         <button
           type="button"
-          className="flex w-full items-center gap-4 py-1 text-[13px] text-[color:var(--muted-2)]"
+          className="group flex w-full items-center justify-center py-1 text-[13px] text-[color:var(--muted-2)]"
           onClick={onJumpToEarlierMessages}
         >
-          <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
-          <span>{row.hiddenCount} earlier messages</span>
-          <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
+          <span className="rounded-[12px] px-3 py-1 transition-colors group-hover:bg-[rgba(255,255,255,0.03)] group-focus-visible:bg-[rgba(255,255,255,0.03)]">
+            {row.hiddenCount} earlier messages
+          </span>
         </button>
       </TimelineRowShell>
     );
@@ -246,8 +286,24 @@ export function ThreadTimelineRow({
         toggleClassName={chevronOffsetClass}
       >
         <div className="grid min-w-0 gap-3">
-          {row.userMessage ? <ThreadMessage message={row.userMessage} /> : null}
-          {row.items.map(renderTurnItem)}
+          {row.userMessage ? (
+            <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
+              <ThreadMessage message={row.userMessage} />
+            </RowLeadToggleSurface>
+          ) : null}
+          {row.items.map((item, index) => {
+            const itemNode = renderTurnItem(item);
+
+            if (row.userMessage || index > 0) {
+              return itemNode;
+            }
+
+            return (
+              <RowLeadToggleSurface key={`lead:${item.id}`} onToggle={onToggleTurnCollapse}>
+                {itemNode}
+              </RowLeadToggleSurface>
+            );
+          })}
         </div>
       </TimelineRowShell>
     );
@@ -256,7 +312,8 @@ export function ThreadTimelineRow({
   if (row.kind === "summary") {
     const summaryLabel =
       row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
-    const chevronOffsetClass = "mt-2";
+    const showCompactionDivider = row.message.role === "compactionSummary";
+    const chevronOffsetClass = showCompactionDivider ? "mt-[22px]" : "mt-2";
 
     if (collapsed) {
       return (
@@ -266,11 +323,16 @@ export function ThreadTimelineRow({
           onToggle={() => onToggleRowCollapse(row.id)}
           toggleClassName={chevronOffsetClass}
         >
-          <FoldedTimelineRow
-            label={summaryLabel}
-            singleLine
-            onToggle={() => onToggleRowCollapse(row.id)}
-          />
+          <div className="grid min-w-0 gap-3">
+            {showCompactionDivider ? (
+              <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+            ) : null}
+            <FoldedTimelineRow
+              label={summaryLabel}
+              singleLine
+              onToggle={() => onToggleRowCollapse(row.id)}
+            />
+          </div>
         </TimelineRowShell>
       );
     }
@@ -282,7 +344,14 @@ export function ThreadTimelineRow({
         onToggle={() => onToggleRowCollapse(row.id)}
         toggleClassName={chevronOffsetClass}
       >
-        <ThreadMessage message={row.message} />
+        <div className="grid min-w-0 gap-3">
+          {showCompactionDivider ? (
+            <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+          ) : null}
+          <RowLeadToggleSurface onToggle={() => onToggleRowCollapse(row.id)}>
+            <ThreadMessage message={row.message} />
+          </RowLeadToggleSurface>
+        </div>
       </TimelineRowShell>
     );
   }
