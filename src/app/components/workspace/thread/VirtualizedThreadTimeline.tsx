@@ -1,24 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
+import { reconcileCollapsedRowIds } from "./reconcileCollapsedRowIds";
 import {
-  CHAT_TOP_PADDING_PX,
+  CHAT_STICKY_BOTTOM_THRESHOLD_PX,
   chatScrollableAreaClass,
   chatStreamingTimelineClass,
-  chatTimelinePaddingClass,
   chatViewportClass,
 } from "./thread-layout";
 import {
-  getCollapsibleRowKey,
   getFoldableRows,
   getMessageRenderSignature,
   getRowStructureSignature,
   getStreamingAssistantMessageId,
 } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
-import { useThreadTimelineVirtualizer } from "./useThreadTimelineVirtualizer";
 
 type VirtualizedThreadTimelineProps = {
   messages: Message[];
@@ -37,6 +35,9 @@ export function VirtualizedThreadTimeline({
 }: VirtualizedThreadTimelineProps) {
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const scrollFrameRef = useRef<number | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
@@ -51,41 +52,19 @@ export function VirtualizedThreadTimeline({
     () => getStreamingAssistantMessageId(messages, isStreaming),
     [isStreaming, messages],
   );
-  const rowStructureSignature = useMemo(
-    () => getRowStructureSignature(rows, collapsedRowIds),
-    [collapsedRowIds, rows],
-  );
   const foldableRows = useMemo(() => getFoldableRows(rows), [rows]);
-  const lastFoldableRowId = foldableRows[foldableRows.length - 1]?.id ?? null;
-
-  const {
-    containerRef,
-    timelineRootRef,
-    rowVirtualizer,
-    virtualRows,
-    totalHeightPx,
-    handleScroll,
-    suppressScrollAdjustTemporarily,
-  } = useThreadTimelineVirtualizer({
-    rows,
-    collapsedRowIds,
-    rowStructureSignature,
-    bottomAnchorKey,
-    isStreaming,
-  });
+  const effectiveCollapsedRowIds = useMemo(
+    () => reconcileCollapsedRowIds(foldableRows, collapsedRowIds),
+    [collapsedRowIds, foldableRows],
+  );
+  const rowStructureSignature = useMemo(
+    () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
+    [effectiveCollapsedRowIds, rows],
+  );
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
-      const next: Record<string, boolean> = {};
-
-      for (const row of foldableRows) {
-        if (row.id === lastFoldableRowId) {
-          next[row.id] = false;
-          continue;
-        }
-
-        next[row.id] = current[row.id] ?? true;
-      }
+      const next = reconcileCollapsedRowIds(foldableRows, current);
 
       const currentKeys = Object.keys(current);
       const nextKeys = Object.keys(next);
@@ -98,26 +77,72 @@ export function VirtualizedThreadTimeline({
 
       return next;
     });
-  }, [foldableRows, lastFoldableRowId]);
+  }, [foldableRows]);
+
+  const scrollToBottom = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.scrollTo({ top: container.scrollHeight });
+  }, []);
+
+  const scheduleScrollToBottom = useCallback(() => {
+    if (!shouldStickToBottomRef.current) {
+      return;
+    }
+
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+    }
+
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollToBottom();
+      scrollFrameRef.current = null;
+    });
+  }, [scrollToBottom]);
+
+  useLayoutEffect(() => {
+    void bottomAnchorKey;
+    void rowStructureSignature;
+
+    if (!rows.length) {
+      return;
+    }
+
+    scheduleScrollToBottom();
+  }, [bottomAnchorKey, rowStructureSignature, rows.length, scheduleScrollToBottom]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    shouldStickToBottomRef.current = distanceFromBottom <= CHAT_STICKY_BOTTOM_THRESHOLD_PX;
+  }, []);
 
   const handleToggleToolCallExpansion = useCallback(() => {
-    suppressScrollAdjustTemporarily();
-  }, [suppressScrollAdjustTemporarily]);
+    scheduleScrollToBottom();
+  }, [scheduleScrollToBottom]);
 
-  const handleToggleRowCollapse = useCallback(
-    (rowId: string) => {
-      suppressScrollAdjustTemporarily();
-      setCollapsedRowIds((current) => ({
-        ...current,
-        [rowId]: !current[rowId],
-      }));
-
-      window.requestAnimationFrame(() => {
-        rowVirtualizer.measure();
-      });
-    },
-    [rowVirtualizer, suppressScrollAdjustTemporarily],
-  );
+  const handleToggleRowCollapse = useCallback((rowId: string) => {
+    setCollapsedRowIds((current) => ({
+      ...current,
+      [rowId]: !current[rowId],
+    }));
+  }, []);
 
   const handleJumpToEarlierMessages = useCallback(() => {
     const container = containerRef.current;
@@ -126,20 +151,24 @@ export function VirtualizedThreadTimeline({
     }
 
     container.scrollTo({ top: 0, behavior: "smooth" });
-  }, [containerRef]);
-
-  const handleToggleDiffTree = useCallback((checkpointTurnCount: number) => {
-    setExpandedDiffTrees((current) => ({
-      ...current,
-      [checkpointTurnCount]: current[checkpointTurnCount] === false,
-    }));
   }, []);
+
+  const handleToggleDiffTree = useCallback(
+    (checkpointTurnCount: number) => {
+      setExpandedDiffTrees((current) => ({
+        ...current,
+        [checkpointTurnCount]: current[checkpointTurnCount] === false,
+      }));
+      scheduleScrollToBottom();
+    },
+    [scheduleScrollToBottom],
+  );
 
   const renderRow = useCallback(
     (row: TimelineRow) => (
       <ThreadTimelineRow
         row={row}
-        collapsed={Boolean(collapsedRowIds[row.id])}
+        collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
         streamingAssistantMessageId={streamingAssistantMessageId}
         expandedDiffTrees={expandedDiffTrees}
         onToggleRowCollapse={handleToggleRowCollapse}
@@ -150,7 +179,7 @@ export function VirtualizedThreadTimeline({
       />
     ),
     [
-      collapsedRowIds,
+      effectiveCollapsedRowIds,
       expandedDiffTrees,
       handleJumpToEarlierMessages,
       handleToggleDiffTree,
@@ -161,51 +190,20 @@ export function VirtualizedThreadTimeline({
     ],
   );
 
-  if (isStreaming) {
-    return (
-      <div className={chatViewportClass}>
-        <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-          <div ref={timelineRootRef} className={chatStreamingTimelineClass}>
-            {rows.map((row) => (
-              <div key={getCollapsibleRowKey(row, collapsedRowIds)} className="min-w-0">
-                {renderRow(row)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div
-          ref={timelineRootRef}
-          className={`relative w-full ${chatTimelinePaddingClass} [&>*]:min-w-0`}
-        >
-          <div className="relative w-full" style={{ height: `${totalHeightPx}px` }}>
-            {virtualRows.map((virtualRow) => {
-              const row = rows[virtualRow.index];
-              if (!row) {
-                return null;
-              }
-
-              return (
-                <div
-                  key={virtualRow.key}
-                  ref={rowVirtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full min-w-0"
-                  data-index={virtualRow.index}
-                  style={{
-                    transform: `translateY(${virtualRow.start + CHAT_TOP_PADDING_PX}px)`,
-                  }}
-                >
-                  {renderRow(row)}
-                </div>
-              );
-            })}
-          </div>
+        {/*
+          The thread lane renders in natural document flow on purpose.
+          Rich markdown, reasoning panels, tool-call accordions, and inline diffs were too dynamic
+          for heuristic row-height prediction to stay reliable under virtualization.
+        */}
+        <div className={chatStreamingTimelineClass}>
+          {rows.map((row) => (
+            <div key={row.id} className="min-w-0">
+              {renderRow(row)}
+            </div>
+          ))}
         </div>
       </div>
     </div>

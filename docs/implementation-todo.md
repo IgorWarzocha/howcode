@@ -85,7 +85,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Render bash execution messages
 - [x] Render custom / branch / compaction markers
 - [x] Replace `previousMessageCount: 0` with real history metadata
-- [x] Keep the centered thread scrollbar inside the chat lane and virtualize the visible thread timeline instead of rendering the full DOM at once
+- [x] Keep the centered thread scrollbar inside the chat lane and render the visible thread timeline in natural flow instead of relying on heuristic row-height prediction
 - [x] Watch only the selected session file for external Pi TUI writes and push watcher-driven thread refreshes
   - files: `desktop/pi-threads/session-watch.cts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`
 
