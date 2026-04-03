@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import type { Message } from "../../types";
 import { inlineCodeClass } from "../../ui/classes";
 
@@ -57,7 +57,7 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
 
 function renderThinking(content: string[]) {
   return (
-    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/92 italic [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/88 italic [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
         <p key={paragraph} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {renderInline(paragraph)}
@@ -65,6 +65,14 @@ function renderThinking(content: string[]) {
       ))}
     </div>
   );
+}
+
+function getThinkingPreview(thinkingContent: string[], thinkingRedacted?: boolean) {
+  if (thinkingContent.length > 0) {
+    return thinkingContent[0];
+  }
+
+  return thinkingRedacted ? "Reasoning unavailable" : "No reasoning captured";
 }
 
 function AssistantThinkingBlock({
@@ -80,6 +88,7 @@ function AssistantThinkingBlock({
 }) {
   const [expanded, setExpanded] = useState(autoExpandThinking);
   const previousAutoExpandRef = useRef(autoExpandThinking);
+  const panelId = useId();
 
   useEffect(() => {
     if (autoExpandThinking) {
@@ -93,28 +102,40 @@ function AssistantThinkingBlock({
 
   const label =
     thinkingRedacted && thinkingContent.length === 0 ? "Thinking unavailable" : "Thinking";
+  const preview = getThinkingPreview(thinkingContent, thinkingRedacted);
 
   return (
-    <div className="mb-3 grid min-w-0 gap-2">
+    <div className="mb-3 overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]">
       <button
         type="button"
-        className="inline-flex w-fit items-center gap-1.5 rounded-md text-[12px] italic text-[color:var(--muted-2)] transition-colors hover:text-[color:var(--muted)]"
+        className="flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.025)]"
         onClick={() => {
           onToggleExpanded?.();
           setExpanded((current) => !current);
         }}
         aria-expanded={expanded}
+        aria-controls={panelId}
       >
-        {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span>{label}</span>
+        <span className="shrink-0 text-[color:var(--muted)]">
+          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+        </span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+          <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/92">
+            {label}
+          </span>
+          <span className="shrink-0 text-[11px] text-[color:var(--muted-2)]/80">—</span>
+          <span className="min-w-0 flex-1 truncate text-[11.5px] italic text-[color:var(--muted-2)]/90">
+            {preview}
+          </span>
+        </span>
       </button>
 
       {expanded ? (
-        <div className="min-w-0 border-l border-[rgba(169,178,215,0.12)] pl-4">
+        <div id={panelId} className="border-t border-[rgba(169,178,215,0.08)] px-3 py-3">
           {thinkingContent.length > 0 ? (
             renderThinking(thinkingContent)
           ) : (
-            <div className="text-[12px] italic text-[color:var(--muted-2)]/85">
+            <div className="text-[12px] italic text-[color:var(--muted-2)]/82">
               This provider redacted the reasoning trace.
             </div>
           )}
@@ -146,7 +167,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "assistant") {
     return (
-      <div className="min-w-0 px-4">
+      <div className="min-w-0">
         {message.thinkingContent && message.thinkingContent.length > 0 ? (
           <AssistantThinkingBlock
             thinkingContent={message.thinkingContent}
@@ -155,7 +176,9 @@ export const ThreadMessage = memo(function ThreadMessage({
             onToggleExpanded={onToggleExpanded}
           />
         ) : null}
-        {message.content.length > 0 ? renderProse(message.content, message.format) : null}
+        {message.content.length > 0 ? (
+          <div className="px-4">{renderProse(message.content, message.format)}</div>
+        ) : null}
       </div>
     );
   }

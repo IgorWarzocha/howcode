@@ -30,6 +30,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Project collapsed state persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/state/workspace.ts`
 - Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`, `desktop/pi-threads/thread-loader.cts`
 - Opened thread content now hydrates directly from Pi session files; SQLite is only project/thread metadata and diff-summary index state: `src/app/hooks/useDesktopThread.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/thread-state-db/*`
+- The actively displayed session is now watched for external Pi JSONL writes so the open thread refreshes from disk without polling every session: `desktop/pi-threads/session-watch.cts`, `desktop/runtime/thread-publisher.cts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`
 - Thread pin persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
 - Thread archive / restore / permanent delete: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - Archived threads settings view: `src/app/components/settings/ArchivedThreadsPanel.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`

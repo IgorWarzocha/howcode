@@ -13,6 +13,12 @@ import {
   listTurnDiffSummaries,
 } from "../thread-state-db";
 
+export type LoadedThreadSnapshot = {
+  projectId: string;
+  threadId: string;
+  thread: ThreadData;
+};
+
 export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
   ensureProject(projectId);
   return listProjectThreads(projectId);
@@ -22,12 +28,7 @@ export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {
   return listArchivedThreads();
 }
 
-export async function loadThread(sessionPath: string): Promise<ThreadData> {
-  const liveThread = getLiveThread(sessionPath);
-  if (liveThread) {
-    return liveThread;
-  }
-
+export async function loadThreadSnapshot(sessionPath: string): Promise<LoadedThreadSnapshot> {
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
@@ -37,11 +38,24 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
   const title = getFirstUserTurnTitle(messages);
 
   return {
-    sessionPath,
-    title,
-    messages,
-    previousMessageCount,
-    isStreaming: false,
-    turnDiffSummaries: listTurnDiffSummaries(sessionPath),
+    projectId: manager.getCwd(),
+    threadId: manager.getSessionId(),
+    thread: {
+      sessionPath,
+      title,
+      messages,
+      previousMessageCount,
+      isStreaming: false,
+      turnDiffSummaries: listTurnDiffSummaries(sessionPath),
+    },
   };
+}
+
+export async function loadThread(sessionPath: string): Promise<ThreadData> {
+  const liveThread = getLiveThread(sessionPath);
+  if (liveThread?.isStreaming) {
+    return liveThread;
+  }
+
+  return (await loadThreadSnapshot(sessionPath)).thread;
 }

@@ -13,6 +13,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - real xterm.js terminal panel backed by Bun PTY first, with `node-pty` kept only as the Windows compatibility fallback
 - Pi takeover terminal view that replaces the thread pane with an embedded native Pi TUI lane
 - centered thread scroller with TanStack virtualization, bottom-stick behavior during live updates, and preserved in-lane scrolling
+- selected-session Pi JSONL watching so the open thread refreshes when the same session changes externally in Pi TUI
 - visible assistant reasoning blocks that auto-expand while streaming and collapse when the turn settles
 - grouped, folded-by-default tool-call cards in the thread timeline, with per-tool expand/collapse controls
 - real checkpoint-backed diff panel using `@pierre/diffs`, with whole-thread and per-turn patch rendering for completed composer turns in git repos

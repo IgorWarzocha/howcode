@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
@@ -6,7 +7,6 @@ import type {
   ComposerState,
   DesktopEvent,
   ProjectGitState,
-  ThreadData,
 } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
@@ -21,11 +21,11 @@ import {
 import type { View } from "../types";
 
 export function useAppShellController() {
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
-  const [liveThreads, setLiveThreads] = useState<Record<string, ThreadData>>({});
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
@@ -63,10 +63,8 @@ export function useAppShellController() {
     [selectedProject, state.selectedThreadId],
   );
   const threadData = useDesktopThread(state.selectedSessionPath, threadRefreshKey);
-  const liveThreadData = state.selectedSessionPath ? liveThreads[state.selectedSessionPath] : null;
   const activeThreadData = state.selectedSessionPath
-    ? (liveThreadData ??
-      threadData ?? {
+    ? (threadData ?? {
         sessionPath: state.selectedSessionPath,
         title: selectedThread?.title ?? "New thread",
         messages: [],
@@ -180,6 +178,19 @@ export function useAppShellController() {
   }, [composerProjectId, loadProjectGitState]);
 
   useEffect(() => {
+    if (!window.piDesktop?.watchSession) {
+      return;
+    }
+
+    const watchedSessionPath =
+      state.activeView === "thread" ? (state.selectedSessionPath ?? null) : null;
+
+    void window.piDesktop.watchSession(watchedSessionPath).catch((error) => {
+      console.warn("Failed to update watched Pi session.", error);
+    });
+  }, [state.activeView, state.selectedSessionPath]);
+
+  useEffect(() => {
     if (!window.piDesktop?.subscribe) {
       return;
     }
@@ -190,11 +201,14 @@ export function useAppShellController() {
         return;
       }
 
-      setLiveThreads((current) => ({
-        ...current,
-        [event.sessionPath]: event.thread,
-      }));
-      setComposerState(event.composer);
+      queryClient.setQueriesData(
+        { queryKey: ["desktop", "thread", event.sessionPath] },
+        event.thread,
+      );
+
+      if (event.composer) {
+        setComposerState(event.composer);
+      }
 
       if (event.reason === "start") {
         dispatch({
@@ -205,14 +219,14 @@ export function useAppShellController() {
         });
       }
 
-      if (event.reason === "end") {
+      if (event.reason === "end" || event.reason === "external") {
         void loadProjectThreads(event.projectId);
         scheduleShellStateRefresh();
       }
     });
 
     return unsubscribe;
-  }, [loadProjectThreads, scheduleShellStateRefresh]);
+  }, [loadProjectThreads, queryClient, scheduleShellStateRefresh]);
 
   const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
     const contextualPayload =

@@ -99,6 +99,9 @@ export const piDesktopApi = {
     (await getRpc()).request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
   getThread: async (sessionPath: string) =>
     (await getRpc()).request.getThread({ sessionPath }) as Promise<ThreadData | null>,
+  watchSession: async (sessionPath: string | null) => {
+    await (await getRpc()).request.watchSession({ sessionPath });
+  },
   getTurnDiff: async (sessionPath: string, checkpointTurnCount: number) =>
     (await getRpc()).request.getTurnDiff({
       sessionPath,

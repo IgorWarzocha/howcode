@@ -14,6 +14,9 @@ import type { PiRuntime, RuntimeThreadReason } from "./types";
 
 const liveThreads = new Map<string, ThreadData>();
 const desktopListeners = new Set<(event: DesktopEvent) => void>();
+const recentInternalThreadUpdateAt = new Map<string, number>();
+
+const EXTERNAL_UPDATE_SUPPRESSION_MS = 500;
 
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
@@ -47,6 +50,8 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
   if (!sessionPath) {
     return;
   }
+
+  recentInternalThreadUpdateAt.set(sessionPath, Date.now());
 
   const thread = buildLiveThreadData(runtime);
   if (!thread) {
@@ -86,6 +91,53 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     sessionPath,
     thread,
     composer: await buildComposerState(runtime),
+  });
+}
+
+export function shouldSuppressExternalThreadUpdate(sessionPath: string, now = Date.now()) {
+  if (liveThreads.get(sessionPath)?.isStreaming) {
+    return true;
+  }
+
+  const lastInternalUpdateAt = recentInternalThreadUpdateAt.get(sessionPath);
+  if (!lastInternalUpdateAt) {
+    return false;
+  }
+
+  return now - lastInternalUpdateAt < EXTERNAL_UPDATE_SUPPRESSION_MS;
+}
+
+export async function publishExternalThreadUpdate({
+  lastModifiedMs,
+  projectId,
+  sessionPath,
+  thread,
+  threadId,
+}: {
+  lastModifiedMs: number;
+  projectId: string;
+  sessionPath: string;
+  thread: ThreadData;
+  threadId: string;
+}) {
+  liveThreads.set(sessionPath, thread);
+  rememberSessionPath(sessionPath, projectId);
+  upsertThreadSummary({
+    id: threadId,
+    cwd: projectId,
+    sessionPath,
+    title: thread.title,
+    lastModifiedMs,
+  });
+
+  emitDesktopEvent({
+    type: "thread-update",
+    reason: "external",
+    projectId,
+    threadId,
+    sessionPath,
+    thread,
+    composer: null,
   });
 }
 

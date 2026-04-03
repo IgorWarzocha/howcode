@@ -29,6 +29,7 @@ declare global {
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string) => Promise<ThreadData | null>;
+      watchSession?: (sessionPath: string | null) => Promise<void>;
       getTurnDiff?: (
         sessionPath: string,
         checkpointTurnCount: number,

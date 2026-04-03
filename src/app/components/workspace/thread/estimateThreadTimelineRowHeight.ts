@@ -31,7 +31,7 @@ function estimateMessageBodyHeight(message: Message) {
         28 +
         estimateTextHeight(message.content.join(" ").length, 68, 24) +
         (message.thinkingContent && message.thinkingContent.length > 0
-          ? 34 + estimateTextHeight(message.thinkingContent.join(" ").length, 72, 20)
+          ? 48 + estimateTextHeight(message.thinkingContent.join(" ").length, 72, 20)
           : 0)
       );
     case "toolResult":

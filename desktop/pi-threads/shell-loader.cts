@@ -11,6 +11,7 @@ import {
 import { getPiModule } from "../pi-module";
 import { loadProjectGitState } from "../project-git";
 import { listProjects, syncSessionSummaries } from "../thread-state-db";
+import { setWatchedSessionPath } from "./session-watch";
 
 type SessionSummary = {
   id: string;
@@ -86,5 +87,6 @@ export async function loadComposerState(
 }
 
 export { loadProjectGitState };
+export { setWatchedSessionPath };
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents;

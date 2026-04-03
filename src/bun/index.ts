@@ -28,6 +28,7 @@ type PiThreadsModule = {
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (sessionPath: string) => Promise<ThreadData | null>;
+  setWatchedSessionPath: (sessionPath: string | null) => Promise<void>;
   loadTurnDiff: (
     sessionPath: string,
     checkpointTurnCount: number,
@@ -99,6 +100,10 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         piThreads.loadArchivedThreadList() as Promise<ArchivedThread[]>,
       getThread: async ({ sessionPath }) =>
         piThreads.loadThread(sessionPath) as Promise<ThreadData | null>,
+      watchSession: async ({ sessionPath }) => {
+        await piThreads.setWatchedSessionPath(sessionPath);
+        return { ok: true };
+      },
       getTurnDiff: async ({ sessionPath, checkpointTurnCount }) =>
         piThreads.loadTurnDiff(sessionPath, checkpointTurnCount) as Promise<TurnDiffResult | null>,
       getFullThreadDiff: async ({ sessionPath }) =>

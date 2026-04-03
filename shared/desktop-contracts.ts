@@ -160,12 +160,12 @@ export type ThreadData = {
 export type DesktopEvent =
   | {
       type: "thread-update";
-      reason: "start" | "update" | "end";
+      reason: "start" | "update" | "end" | "external";
       projectId: string;
       threadId: string;
       sessionPath: string;
       thread: ThreadData;
-      composer: ComposerState;
+      composer: ComposerState | null;
     }
   | {
       type: "composer-update";

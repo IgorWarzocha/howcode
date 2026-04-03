@@ -9,5 +9,6 @@ export {
   loadComposerState,
   loadProjectGitState,
   loadShellState,
+  setWatchedSessionPath,
   subscribeDesktopEvents,
 } from "./pi-threads/shell-loader";

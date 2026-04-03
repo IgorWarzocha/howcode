@@ -36,6 +36,7 @@ export type PiDesktopRpc = {
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
       getThread: { params: { sessionPath: string }; response: ThreadData | null };
+      watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } };
       getTurnDiff: {
         params: { sessionPath: string; checkpointTurnCount: number };
         response: TurnDiffResult | null;
