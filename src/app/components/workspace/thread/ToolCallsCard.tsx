@@ -8,6 +8,7 @@ type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }
 type ToolCallsCardProps = {
   messages: ToolCallMessage[];
   onToggleExpanded?: () => void;
+  disableExpansion?: boolean;
 };
 
 function renderToolCallBody(message: ToolCallMessage) {
@@ -57,7 +58,11 @@ function renderToolCallBody(message: ToolCallMessage) {
   );
 }
 
-export function ToolCallsCard({ messages, onToggleExpanded }: ToolCallsCardProps) {
+export function ToolCallsCard({
+  messages,
+  onToggleExpanded,
+  disableExpansion = false,
+}: ToolCallsCardProps) {
   const [expandedToolCallIds, setExpandedToolCallIds] = useState<Record<string, boolean>>({});
 
   return (
@@ -73,6 +78,10 @@ export function ToolCallsCard({ messages, onToggleExpanded }: ToolCallsCardProps
             key={message.id}
             expanded={expanded}
             onToggle={() => {
+              if (disableExpansion) {
+                return;
+              }
+
               onToggleExpanded?.();
               setExpandedToolCallIds((current) => ({
                 ...current,
@@ -83,6 +92,8 @@ export function ToolCallsCard({ messages, onToggleExpanded }: ToolCallsCardProps
             className="border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
             triggerClassName="hover:bg-[rgba(255,255,255,0.025)]"
             bodyClassName="border-[rgba(169,178,215,0.08)]"
+            interactive={!disableExpansion}
+            showChevron={!disableExpansion}
             header={
               <>
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">

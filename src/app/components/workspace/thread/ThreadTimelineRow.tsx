@@ -134,7 +134,12 @@ export function ThreadTimelineRow({
 
     const firstItem = row.items[0];
     if (firstItem) {
-      return renderTurnItem(firstItem);
+      if (firstItem.kind === "tool-group") {
+        const firstToolCall = firstItem.messages[0];
+        return firstToolCall ? <ToolCallsCard messages={[firstToolCall]} disableExpansion /> : null;
+      }
+
+      return <ThreadMessage message={firstItem.message} firstCardOnly disableInnerExpansion />;
     }
 
     return (

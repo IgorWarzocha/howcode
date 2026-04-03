@@ -8,6 +8,8 @@ type ThreadMessageProps = {
   message: Message;
   autoExpandThinking?: boolean;
   onToggleExpanded?: () => void;
+  firstCardOnly?: boolean;
+  disableInnerExpansion?: boolean;
 };
 
 function renderProse(content: string[], format: "prose" | "list" = "prose") {
@@ -50,12 +52,14 @@ function AssistantThinkingBlock({
   thinkingRedacted,
   autoExpandThinking = false,
   onToggleExpanded,
+  interactive = true,
 }: {
   thinkingContent: string[];
   thinkingHeaders?: string[];
   thinkingRedacted?: boolean;
   autoExpandThinking?: boolean;
   onToggleExpanded?: () => void;
+  interactive?: boolean;
 }) {
   const [expanded, setExpanded] = useState(autoExpandThinking);
   const previousAutoExpandRef = useRef(autoExpandThinking);
@@ -82,6 +86,10 @@ function AssistantThinkingBlock({
     <ExpandablePanel
       expanded={expanded}
       onToggle={() => {
+        if (!interactive) {
+          return;
+        }
+
         onToggleExpanded?.();
         setExpanded((current) => !current);
       }}
@@ -89,6 +97,8 @@ function AssistantThinkingBlock({
       className="mb-3 border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.012)]"
       triggerClassName="hover:bg-[rgba(255,255,255,0.015)]"
       bodyClassName="border-[rgba(169,178,215,0.05)]"
+      interactive={interactive}
+      showChevron={interactive}
       header={
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
           <span className="shrink-0 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--text)]/92">
@@ -135,6 +145,8 @@ export const ThreadMessage = memo(function ThreadMessage({
   message,
   autoExpandThinking,
   onToggleExpanded,
+  firstCardOnly,
+  disableInnerExpansion,
 }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
@@ -154,18 +166,21 @@ export const ThreadMessage = memo(function ThreadMessage({
   }
 
   if (message.role === "assistant") {
+    const hasThinking = Boolean(message.thinkingContent && message.thinkingContent.length > 0);
+
     return (
       <div className="min-w-0">
-        {message.thinkingContent && message.thinkingContent.length > 0 ? (
+        {hasThinking ? (
           <AssistantThinkingBlock
-            thinkingContent={message.thinkingContent}
+            thinkingContent={message.thinkingContent ?? []}
             thinkingHeaders={message.thinkingHeaders}
             thinkingRedacted={message.thinkingRedacted}
             autoExpandThinking={autoExpandThinking}
             onToggleExpanded={onToggleExpanded}
+            interactive={!disableInnerExpansion}
           />
         ) : null}
-        {message.content.length > 0 ? (
+        {!firstCardOnly && message.content.length > 0 ? (
           <div className="px-4">{renderProse(message.content, message.format)}</div>
         ) : null}
       </div>
