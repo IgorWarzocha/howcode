@@ -1,0 +1,222 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
+import { getAssistantPreview } from "../../../utils/thread-previews";
+import { ThreadMessage } from "../../common/ThreadMessage";
+import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
+import { ToolCallsCard } from "./ToolCallsCard";
+import { chatRowShellClass } from "./thread-layout";
+import type { TimelineRow, TimelineTurnItem } from "./timeline-row";
+
+function getTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
+  const userPreview = row.userMessage.content[0] ?? "New turn";
+  const assistantMessage = row.items.find(
+    (item) => item.kind === "message" && item.message.role === "assistant",
+  ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
+
+  return {
+    userPreview,
+    assistantPreview:
+      assistantMessage?.message.role === "assistant"
+        ? getAssistantPreview(assistantMessage.message)
+        : null,
+  };
+}
+
+function FoldedTimelineRow({
+  label,
+  secondary,
+  onToggle,
+}: {
+  label: string;
+  secondary?: string | null;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="grid min-w-0 gap-1 rounded-2xl border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)] px-4 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      onClick={onToggle}
+    >
+      <div className="truncate text-[14px] leading-[1.58] text-[color:var(--text)]/92">{label}</div>
+      {secondary ? (
+        <div className="truncate text-[14px] leading-[1.58] text-[color:var(--muted-2)]/78">
+          {secondary}
+        </div>
+      ) : null}
+    </button>
+  );
+}
+
+function TimelineRowShell({
+  expanded,
+  ariaLabel,
+  onToggle,
+  children,
+}: {
+  expanded?: boolean;
+  ariaLabel?: string;
+  onToggle?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={chatRowShellClass}>
+      {onToggle ? (
+        <button
+          type="button"
+          className="mt-3 inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={ariaLabel}
+        >
+          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+      ) : (
+        <div />
+      )}
+      <div className="min-w-0">{children}</div>
+      <div />
+    </div>
+  );
+}
+
+type ThreadTimelineRowProps = {
+  row: TimelineRow;
+  collapsed: boolean;
+  streamingAssistantMessageId: string | null;
+  expandedDiffTrees: Record<number, boolean>;
+  onToggleRowCollapse: (rowId: string) => void;
+  onToggleToolCallExpansion: () => void;
+  onToggleDiffTree: (checkpointTurnCount: number) => void;
+  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
+  onJumpToEarlierMessages: () => void;
+};
+
+export function ThreadTimelineRow({
+  row,
+  collapsed,
+  streamingAssistantMessageId,
+  expandedDiffTrees,
+  onToggleRowCollapse,
+  onToggleToolCallExpansion,
+  onToggleDiffTree,
+  onOpenTurnDiff,
+  onJumpToEarlierMessages,
+}: ThreadTimelineRowProps) {
+  const renderTurnItem = (item: TimelineTurnItem) => {
+    if (item.kind === "tool-group") {
+      return (
+        <ToolCallsCard
+          key={item.id}
+          messages={item.messages}
+          onToggleExpanded={onToggleToolCallExpansion}
+        />
+      );
+    }
+
+    const { message, turnSummary } = item;
+    const allDirectoriesExpanded =
+      turnSummary && expandedDiffTrees[turnSummary.checkpointTurnCount] !== false;
+
+    return (
+      <Fragment key={item.id}>
+        <ThreadMessage
+          message={message}
+          autoExpandThinking={message.id === streamingAssistantMessageId}
+          onToggleExpanded={onToggleToolCallExpansion}
+        />
+        {turnSummary && turnSummary.files.length > 0 ? (
+          <ThreadInlineDiffCard
+            turnSummary={turnSummary}
+            allDirectoriesExpanded={Boolean(allDirectoriesExpanded)}
+            onToggleExpanded={() => onToggleDiffTree(turnSummary.checkpointTurnCount)}
+            onOpenTurnDiff={onOpenTurnDiff}
+          />
+        ) : null}
+      </Fragment>
+    );
+  };
+
+  if (row.kind === "history-divider") {
+    return (
+      <TimelineRowShell>
+        <button
+          type="button"
+          className="flex w-full items-center gap-4 py-1 text-[13px] text-[color:var(--muted-2)]"
+          onClick={onJumpToEarlierMessages}
+        >
+          <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
+          <span>{row.hiddenCount} earlier messages</span>
+          <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
+        </button>
+      </TimelineRowShell>
+    );
+  }
+
+  if (row.kind === "turn") {
+    const isStreamingTurn = row.items.some(
+      (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
+    );
+    const isCollapsed = collapsed && !isStreamingTurn;
+    const preview = getTurnPreview(row);
+
+    if (isCollapsed) {
+      return (
+        <TimelineRowShell
+          expanded={false}
+          ariaLabel="Expand turn"
+          onToggle={() => onToggleRowCollapse(row.id)}
+        >
+          <FoldedTimelineRow
+            label={preview.userPreview}
+            secondary={preview.assistantPreview}
+            onToggle={() => onToggleRowCollapse(row.id)}
+          />
+        </TimelineRowShell>
+      );
+    }
+
+    return (
+      <TimelineRowShell
+        expanded
+        ariaLabel="Collapse turn"
+        onToggle={() => onToggleRowCollapse(row.id)}
+      >
+        <div className="grid min-w-0 gap-3">
+          <ThreadMessage message={row.userMessage} />
+          {row.items.map(renderTurnItem)}
+        </div>
+      </TimelineRowShell>
+    );
+  }
+
+  if (row.kind === "summary") {
+    const summaryLabel =
+      row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
+
+    if (collapsed) {
+      return (
+        <TimelineRowShell
+          expanded={false}
+          ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
+          onToggle={() => onToggleRowCollapse(row.id)}
+        >
+          <FoldedTimelineRow label={summaryLabel} onToggle={() => onToggleRowCollapse(row.id)} />
+        </TimelineRowShell>
+      );
+    }
+
+    return (
+      <TimelineRowShell
+        expanded
+        ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
+        onToggle={() => onToggleRowCollapse(row.id)}
+      >
+        <div className="min-w-0">
+          <ThreadMessage message={row.message} />
+        </div>
+      </TimelineRowShell>
+    );
+  }
+
+  return <TimelineRowShell>{renderTurnItem(row)}</TimelineRowShell>;
+}

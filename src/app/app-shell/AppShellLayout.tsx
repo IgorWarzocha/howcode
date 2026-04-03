@@ -8,10 +8,15 @@ import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { mainPanelClass } from "../ui/classes";
+import {
+  DIFF_OVERLAY_BREAKPOINT_PX,
+  DIFF_PANEL_DEFAULT_WIDTH_PX,
+  DIFF_PANEL_MAX_WIDTH_PX,
+  DIFF_PANEL_MIN_WIDTH_PX,
+  WORKSPACE_CONTENT_MAX_WIDTH_CLASS,
+} from "../ui/layout";
 import { MainView } from "../views/MainView";
 import type { AppShellController } from "./useAppShellController";
-
-const DIFF_OVERLAY_BREAKPOINT = 1180;
 
 type AppShellLayoutProps = {
   controller: AppShellController;
@@ -57,13 +62,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const takeoverVisible = state.takeoverVisible;
   const dockedTerminalVisible = state.terminalVisible;
   const diffVisible = state.diffVisible && !takeoverVisible;
-  const [diffPanelWidth, setDiffPanelWidth] = useState(540);
+  const [diffPanelWidth, setDiffPanelWidth] = useState(DIFF_PANEL_DEFAULT_WIDTH_PX);
   const [mainSectionWidth, setMainSectionWidth] = useState<number | null>(null);
   const resizeStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const mainSectionRef = useRef<HTMLElement>(null);
 
   const overlayDiffVisible =
-    diffVisible && mainSectionWidth !== null && mainSectionWidth < DIFF_OVERLAY_BREAKPOINT;
+    diffVisible && mainSectionWidth !== null && mainSectionWidth < DIFF_OVERLAY_BREAKPOINT_PX;
   const splitDiffVisible = diffVisible && !overlayDiffVisible;
   const overlayDiffPresent = useAnimatedPresence(overlayDiffVisible);
   const takeoverPresent = useAnimatedPresence(takeoverVisible);
@@ -98,7 +103,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       }
 
       const nextWidth = resizeStart.width - (event.clientX - resizeStart.pointerX);
-      setDiffPanelWidth(Math.max(380, Math.min(860, nextWidth)));
+      setDiffPanelWidth(
+        Math.max(DIFF_PANEL_MIN_WIDTH_PX, Math.min(DIFF_PANEL_MAX_WIDTH_PX, nextWidth)),
+      );
     };
 
     const handlePointerUp = () => {
@@ -117,6 +124,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const diffLayoutStyle = splitDiffVisible
     ? ({ "--diff-panel-width": `${diffPanelWidth}px` } as CSSProperties)
     : undefined;
+  const workspaceContentClass = `mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS}`;
 
   return (
     <>
@@ -228,7 +236,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   }
                 >
                   <div className="grid gap-2.5">
-                    <div className="mx-auto w-full max-w-[744px]">
+                    <div className={workspaceContentClass}>
                       <Composer
                         activeView={state.activeView}
                         hostLabel={shellState?.availableHosts[0] ?? "Local"}
@@ -247,7 +255,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                       />
                     </div>
                     {dockedTerminalVisible ? (
-                      <div className="mx-auto w-full max-w-[744px]">
+                      <div className={workspaceContentClass}>
                         <TerminalPanel
                           projectId={composerProjectId}
                           sessionPath={terminalSessionPath}
@@ -268,7 +276,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 data-open={takeoverVisible ? "true" : "false"}
                 className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)]"
               >
-                <div className="mx-auto min-h-0 h-full w-full max-w-[744px] overflow-hidden px-5 pt-1.5 pb-4">
+                <div
+                  className={`mx-auto min-h-0 h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-hidden px-5 pt-1.5 pb-4`}
+                >
                   <TerminalPanel
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}

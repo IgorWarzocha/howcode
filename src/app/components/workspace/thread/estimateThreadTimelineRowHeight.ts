@@ -1,5 +1,10 @@
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
+import {
+  CHAT_COLLAPSED_ROW_HEIGHT_PX,
+  CHAT_HISTORY_DIVIDER_HEIGHT_PX,
+  CHAT_ROW_GAP_PX,
+} from "./thread-layout";
 import type { TimelineRow, TimelineTurnItem } from "./timeline-row";
 
 function estimateTextHeight(characters: number, charsPerLine: number, lineHeight: number) {
@@ -49,7 +54,11 @@ function estimateTimelineItemHeight(item: TimelineTurnItem) {
     return item.messages.length * 40 + Math.max(0, item.messages.length - 1) * 8;
   }
 
-  return estimateMessageBodyHeight(item.message) + estimateTurnSummaryHeight(item.turnSummary) + 18;
+  return (
+    estimateMessageBodyHeight(item.message) +
+    estimateTurnSummaryHeight(item.turnSummary) +
+    CHAT_ROW_GAP_PX
+  );
 }
 
 function estimateCollapsedTurnHeight(row: Extract<TimelineRow, { kind: "turn" }>) {
@@ -67,11 +76,11 @@ function estimateCollapsedTurnHeight(row: Extract<TimelineRow, { kind: "turn" }>
     .join(" ")
     .trim().length;
 
-  return 56 + estimateTextHeight(combinedPreviewLength, 68, 20);
+  return CHAT_COLLAPSED_ROW_HEIGHT_PX + estimateTextHeight(combinedPreviewLength, 68, 20);
 }
 
 function estimateCollapsedSummaryHeight() {
-  return 52;
+  return CHAT_COLLAPSED_ROW_HEIGHT_PX;
 }
 
 export function estimateThreadTimelineRowHeight(
@@ -79,7 +88,7 @@ export function estimateThreadTimelineRowHeight(
   options?: { collapsed?: boolean },
 ) {
   if (row.kind === "history-divider") {
-    return 42;
+    return CHAT_HISTORY_DIVIDER_HEIGHT_PX;
   }
 
   if (row.kind === "turn") {
@@ -90,7 +99,7 @@ export function estimateThreadTimelineRowHeight(
     return (
       estimateMessageBodyHeight(row.userMessage) +
       row.items.reduce((total, item) => total + estimateTimelineItemHeight(item), 0) +
-      Math.max(0, row.items.length) * 18 +
+      Math.max(0, row.items.length) * CHAT_ROW_GAP_PX +
       24
     );
   }

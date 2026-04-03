@@ -81,7 +81,7 @@ export function Composer({
       >
         <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
         <textarea
-          className="min-h-[86px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onInput={() => {
@@ -102,7 +102,7 @@ export function Composer({
               : "Ask Pi anything, @ to add files, / for commands, $ for skills"
           }
         />
-        <div className="flex items-center justify-between gap-2 px-3.5 pb-2.5 max-md:flex-wrap">
+        <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
           <div className="flex items-center gap-1.5 max-md:flex-wrap">
             <ToolbarButton
               label="Add files and more"
@@ -140,7 +140,7 @@ export function Composer({
                       sessionPath,
                     });
                   }}
-                  widthClassName="max-h-[280px] w-[280px] overflow-y-auto"
+                  widthClassName="max-h-72 w-72 overflow-y-auto"
                 />
               ) : null}
             </div>
@@ -173,7 +173,7 @@ export function Composer({
                       sessionPath,
                     });
                   }}
-                  widthClassName="w-[180px]"
+                  widthClassName="w-48"
                 />
               ) : null}
             </div>
@@ -202,14 +202,14 @@ export function Composer({
         </div>
 
         {errorMessage ? (
-          <output className="px-3.5 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
+          <output className="px-4 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
             {errorMessage}
           </output>
         ) : null}
 
         <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
-        <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+        <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
           {sessionPath ? (
             <ToolbarButton
               label={

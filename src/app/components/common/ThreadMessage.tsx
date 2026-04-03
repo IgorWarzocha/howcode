@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { memo, useEffect, useId, useRef, useState } from "react";
 import type { Message } from "../../types";
+import { getThinkingPreview } from "../../utils/thread-previews";
+import { ExpandablePanel } from "./ExpandablePanel";
 import { MarkdownContent } from "./MarkdownContent";
 
 type ThreadMessageProps = {
@@ -43,14 +44,6 @@ function renderThinking(content: string[]) {
   );
 }
 
-function getThinkingPreview(thinkingContent: string[], thinkingRedacted?: boolean) {
-  if (thinkingContent.length > 0) {
-    return thinkingContent[0];
-  }
-
-  return thinkingRedacted ? "Reasoning unavailable" : "No reasoning captured";
-}
-
 function AssistantThinkingBlock({
   thinkingContent,
   thinkingHeaders,
@@ -86,20 +79,17 @@ function AssistantThinkingBlock({
       : getThinkingPreview(thinkingContent, thinkingRedacted);
 
   return (
-    <div className="mb-3 overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.012)]">
-      <button
-        type="button"
-        className="flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.015)]"
-        onClick={() => {
-          onToggleExpanded?.();
-          setExpanded((current) => !current);
-        }}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-      >
-        <span className="shrink-0 text-[color:var(--muted)]">
-          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-        </span>
+    <ExpandablePanel
+      expanded={expanded}
+      onToggle={() => {
+        onToggleExpanded?.();
+        setExpanded((current) => !current);
+      }}
+      panelId={panelId}
+      className="mb-3 border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.012)]"
+      triggerClassName="hover:bg-[rgba(255,255,255,0.015)]"
+      bodyClassName="border-[rgba(169,178,215,0.05)]"
+      header={
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
           <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/82">
             {label}
@@ -109,20 +99,16 @@ function AssistantThinkingBlock({
             {preview}
           </span>
         </span>
-      </button>
-
-      {expanded ? (
-        <div id={panelId} className="border-t border-[rgba(169,178,215,0.05)] px-3 py-3">
-          {thinkingContent.length > 0 ? (
-            renderThinking(thinkingContent)
-          ) : (
-            <div className="text-[12px] italic text-[color:var(--muted-2)]/82">
-              This provider redacted the reasoning trace.
-            </div>
-          )}
+      }
+    >
+      {thinkingContent.length > 0 ? (
+        renderThinking(thinkingContent)
+      ) : (
+        <div className="text-[12px] italic text-[color:var(--muted-2)]/82">
+          This provider redacted the reasoning trace.
         </div>
-      ) : null}
-    </div>
+      )}
+    </ExpandablePanel>
   );
 }
 
@@ -134,8 +120,8 @@ function SummaryBlock({
   content: string[];
 }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)]">
-      <div className="border-b border-[rgba(169,178,215,0.05)] px-2.5 py-2 text-[12.5px] font-medium text-[color:var(--text)]/82">
+    <div className="overflow-hidden rounded-xl border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)]">
+      <div className="border-b border-[rgba(169,178,215,0.05)] px-3 py-2 text-[12.5px] font-medium text-[color:var(--text)]/82">
         {label}
       </div>
       <div className="px-3 py-3">{renderThinking(content)}</div>
@@ -150,7 +136,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
-      <div className="w-full min-w-0 rounded-[18px] bg-[rgba(47,50,66,0.58)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+      <div className="w-full min-w-0 rounded-2xl bg-[rgba(47,50,66,0.58)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
           {message.content.map((paragraph) => (
             <MarkdownContent
@@ -186,7 +172,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "toolResult") {
     return (
-      <div className="grid min-w-0 gap-2 rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] px-4 py-3">
+      <div className="grid min-w-0 gap-2 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] px-4 py-3">
         <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
           Tool · {message.toolName}
         </div>
@@ -205,7 +191,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "bashExecution") {
     return (
-      <div className="grid min-w-0 gap-2 rounded-[16px] border border-[color:var(--border)] bg-[rgba(17,19,27,0.7)] px-4 py-3 font-mono text-[12px] text-[color:var(--text)]/86">
+      <div className="grid min-w-0 gap-2 rounded-2xl border border-[color:var(--border)] bg-[rgba(17,19,27,0.7)] px-4 py-3 font-mono text-[12px] text-[color:var(--text)]/86">
         <div className="whitespace-pre-wrap break-all text-[color:var(--muted)]">
           $ {message.command}
         </div>
@@ -231,7 +217,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "custom") {
     return (
-      <div className="grid min-w-0 gap-2 rounded-[16px] border border-dashed border-[color:var(--border)] px-4 py-3 text-[13px] text-[color:var(--text)]/84">
+      <div className="grid min-w-0 gap-2 rounded-2xl border border-dashed border-[color:var(--border)] px-4 py-3 text-[13px] text-[color:var(--text)]/84">
         <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
           {message.customType}
         </div>

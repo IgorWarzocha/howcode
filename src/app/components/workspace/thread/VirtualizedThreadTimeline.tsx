@@ -1,31 +1,21 @@
 import { measureElement as measureVirtualElement, useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
-import { ThreadMessage } from "../../common/ThreadMessage";
-import { ChangedFilesTree } from "../diff/ChangedFilesTree";
-import { ToolCallsCard } from "./ToolCallsCard";
+import { ThreadTimelineRow } from "./ThreadTimelineRow";
+import { buildTimelineRows } from "./buildTimelineRows";
 import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
 import {
-  type TimelineRow,
-  type TimelineTurnItem,
-  type ToolCallMessage,
-  isToolCallMessage,
-} from "./timeline-row";
-
-const STICKY_BOTTOM_THRESHOLD = 24;
-const ROW_GAP_PX = 18;
-const TIMELINE_TOP_PADDING_PX = 16;
-const TIMELINE_BOTTOM_PADDING_PX = 32;
+  CHAT_BOTTOM_PADDING_PX,
+  CHAT_ROW_GAP_PX,
+  CHAT_STICKY_BOTTOM_THRESHOLD_PX,
+  CHAT_TOP_PADDING_PX,
+  chatScrollableAreaClass,
+  chatStreamingTimelineClass,
+  chatTimelinePaddingClass,
+  chatViewportClass,
+} from "./thread-layout";
+import type { TimelineRow } from "./timeline-row";
 
 type VirtualizedThreadTimelineProps = {
   messages: Message[];
@@ -56,86 +46,6 @@ function getMessageRenderSignature(message: Message | undefined) {
   }
 }
 
-function getTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
-  const userPreview = row.userMessage.content[0] ?? "New turn";
-  const assistantMessage = row.items.find(
-    (item) => item.kind === "message" && item.message.role === "assistant",
-  ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
-
-  const assistantPreview =
-    assistantMessage?.message.role === "assistant"
-      ? (assistantMessage.message.thinkingHeaders?.join(", ") ??
-        assistantMessage.message.content[0] ??
-        null)
-      : null;
-
-  return {
-    userPreview,
-    assistantPreview,
-  };
-}
-
-function FoldedTimelineRow({
-  label,
-  secondary,
-  expanded,
-  ariaLabel,
-  onToggle,
-}: {
-  label: string;
-  secondary?: string | null;
-  expanded: boolean;
-  ariaLabel: string;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="grid min-w-0 gap-1 rounded-[16px] border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)] px-4 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
-      onClick={onToggle}
-    >
-      <div className="truncate text-[14px] leading-[1.58] text-[color:var(--text)]/92">{label}</div>
-      {secondary ? (
-        <div className="truncate text-[14px] leading-[1.58] text-[color:var(--muted-2)]/78">
-          {secondary}
-        </div>
-      ) : null}
-    </button>
-  );
-}
-
-function TimelineRowShell({
-  expanded,
-  ariaLabel,
-  onToggle,
-  children,
-}: {
-  expanded?: boolean;
-  ariaLabel?: string;
-  onToggle?: () => void;
-  children: import("react").ReactNode;
-}) {
-  return (
-    <div className="mx-auto grid w-full max-w-[792px] min-w-0 grid-cols-[24px_minmax(0,1fr)_24px] items-start gap-0 overflow-visible">
-      {onToggle ? (
-        <button
-          type="button"
-          className="mt-3 inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={ariaLabel}
-        >
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </button>
-      ) : (
-        <div />
-      )}
-      <div className="min-w-0">{children}</div>
-      <div />
-    </div>
-  );
-}
-
 export function VirtualizedThreadTimeline({
   messages,
   previousMessageCount,
@@ -152,111 +62,11 @@ export function VirtualizedThreadTimeline({
   const [timelineWidthPx, setTimelineWidthPx] = useState<number | null>(null);
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
-  const turnDiffSummaryByAssistantMessageId = useMemo(
-    () =>
-      new Map(
-        turnDiffSummaries
-          .filter((summary) => summary.assistantMessageId)
-          .map((summary) => [summary.assistantMessageId as string, summary]),
-      ),
-    [turnDiffSummaries],
+
+  const rows = useMemo<TimelineRow[]>(
+    () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
+    [messages, previousMessageCount, turnDiffSummaries],
   );
-
-  const rows = useMemo<TimelineRow[]>(() => {
-    const nextRows: TimelineRow[] = [];
-    let pendingToolMessages: ToolCallMessage[] = [];
-    let currentTurn: Extract<TimelineRow, { kind: "turn" }> | null = null;
-
-    const flushPendingToolMessages = () => {
-      if (pendingToolMessages.length === 0) {
-        return;
-      }
-
-      const firstMessage = pendingToolMessages[0];
-      const lastMessage = pendingToolMessages[pendingToolMessages.length - 1];
-      const toolGroup: Extract<TimelineTurnItem, { kind: "tool-group" }> = {
-        kind: "tool-group",
-        id: `tool-group:${firstMessage?.id ?? "start"}:${lastMessage?.id ?? "end"}:${pendingToolMessages.length}`,
-        messages: pendingToolMessages,
-      };
-
-      if (currentTurn) {
-        currentTurn.items.push(toolGroup);
-      } else {
-        nextRows.push(toolGroup);
-      }
-
-      pendingToolMessages = [];
-    };
-
-    const flushCurrentTurn = () => {
-      if (!currentTurn) {
-        return;
-      }
-
-      nextRows.push(currentTurn);
-      currentTurn = null;
-    };
-
-    if (previousMessageCount > 0) {
-      nextRows.push({
-        kind: "history-divider",
-        id: `history-divider:${previousMessageCount}`,
-        hiddenCount: previousMessageCount,
-      });
-    }
-
-    for (const message of messages) {
-      if (isToolCallMessage(message)) {
-        pendingToolMessages.push(message);
-        continue;
-      }
-
-      flushPendingToolMessages();
-
-      const timelineMessage: Extract<TimelineTurnItem, { kind: "message" }> = {
-        kind: "message",
-        id: message.id,
-        message,
-        turnSummary:
-          message.role === "assistant"
-            ? turnDiffSummaryByAssistantMessageId.get(message.id)
-            : undefined,
-      };
-
-      if (message.role === "user") {
-        flushCurrentTurn();
-        currentTurn = {
-          kind: "turn",
-          id: `turn:${message.id}`,
-          userMessage: message,
-          items: [],
-        };
-        continue;
-      }
-
-      if (message.role === "branchSummary" || message.role === "compactionSummary") {
-        flushCurrentTurn();
-        nextRows.push({
-          kind: "summary",
-          id: `summary:${message.id}`,
-          message,
-        });
-        continue;
-      }
-
-      if (currentTurn) {
-        currentTurn.items.push(timelineMessage);
-      } else {
-        nextRows.push(timelineMessage);
-      }
-    }
-
-    flushPendingToolMessages();
-    flushCurrentTurn();
-
-    return nextRows;
-  }, [messages, previousMessageCount, turnDiffSummaryByAssistantMessageId]);
 
   const bottomAnchorKey = useMemo(
     () =>
@@ -365,7 +175,7 @@ export function VirtualizedThreadTimeline({
     measureElement: measureVirtualElement,
     useAnimationFrameWithResizeObserver: true,
     overscan: 8,
-    gap: ROW_GAP_PX,
+    gap: CHAT_ROW_GAP_PX,
   });
 
   useEffect(() => {
@@ -420,7 +230,7 @@ export function VirtualizedThreadTimeline({
       const viewportHeight = instance.scrollRect?.height ?? 0;
       const scrollOffset = instance.scrollOffset ?? 0;
       const remainingDistance = instance.getTotalSize() - (scrollOffset + viewportHeight);
-      return remainingDistance > STICKY_BOTTOM_THRESHOLD;
+      return remainingDistance > CHAT_STICKY_BOTTOM_THRESHOLD_PX;
     };
 
     return () => {
@@ -520,191 +330,58 @@ export function VirtualizedThreadTimeline({
 
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight;
-    shouldStickToBottomRef.current = distanceFromBottom <= STICKY_BOTTOM_THRESHOLD;
+    shouldStickToBottomRef.current = distanceFromBottom <= CHAT_STICKY_BOTTOM_THRESHOLD_PX;
   }, []);
 
-  const renderTurnItem = (item: TimelineTurnItem) => {
-    if (item.kind === "tool-group") {
-      return (
-        <ToolCallsCard
-          key={item.id}
-          messages={item.messages}
-          onToggleExpanded={handleToggleToolCallExpansion}
-        />
-      );
+  const handleJumpToEarlierMessages = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
     }
 
-    const { message, turnSummary } = item;
-    const allDirectoriesExpanded =
-      turnSummary && expandedDiffTrees[turnSummary.checkpointTurnCount] !== false;
+    container.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
-    return (
-      <Fragment key={item.id}>
-        <ThreadMessage
-          message={message}
-          autoExpandThinking={message.id === streamingAssistantMessageId}
-          onToggleExpanded={handleToggleToolCallExpansion}
-        />
-        {turnSummary && turnSummary.files.length > 0 ? (
-          <div className="px-4">
-            <div className="rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-                  Changed files ({turnSummary.files.length}) · turn{" "}
-                  {turnSummary.checkpointTurnCount}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    className="rounded-[9px] border border-[color:var(--border)] px-2 py-1 text-[11px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
-                    onClick={() =>
-                      setExpandedDiffTrees((current) => ({
-                        ...current,
-                        [turnSummary.checkpointTurnCount]: !allDirectoriesExpanded,
-                      }))
-                    }
-                  >
-                    {allDirectoriesExpanded ? "Collapse all" : "Expand all"}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-[9px] border border-[color:var(--border)] px-2 py-1 text-[11px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
-                    onClick={() =>
-                      onOpenTurnDiff(turnSummary.checkpointTurnCount, turnSummary.files[0]?.path)
-                    }
-                  >
-                    View diff
-                  </button>
-                </div>
-              </div>
-              <ChangedFilesTree
-                checkpointTurnCount={turnSummary.checkpointTurnCount}
-                files={turnSummary.files}
-                allDirectoriesExpanded={Boolean(allDirectoriesExpanded)}
-                onOpenTurnDiff={onOpenTurnDiff}
-              />
-            </div>
-          </div>
-        ) : null}
-      </Fragment>
-    );
-  };
+  const handleToggleDiffTree = useCallback((checkpointTurnCount: number) => {
+    setExpandedDiffTrees((current) => ({
+      ...current,
+      [checkpointTurnCount]: current[checkpointTurnCount] === false,
+    }));
+  }, []);
 
-  const renderTimelineRow = (row: TimelineRow) => {
-    if (row.kind === "history-divider") {
-      return (
-        <TimelineRowShell>
-          <button
-            type="button"
-            className="flex w-full items-center gap-4 py-1 text-[13px] text-[color:var(--muted-2)]"
-            onClick={() => {
-              const container = containerRef.current;
-              if (!container) {
-                return;
-              }
-
-              container.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
-            <span>{row.hiddenCount} earlier messages</span>
-            <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
-          </button>
-        </TimelineRowShell>
-      );
-    }
-
-    if (row.kind === "turn") {
-      const isStreamingTurn = row.items.some(
-        (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
-      );
-      const collapsed = !isStreamingTurn && Boolean(collapsedRowIds[row.id]);
-      const preview = getTurnPreview(row);
-
-      if (collapsed) {
-        return (
-          <TimelineRowShell
-            expanded={false}
-            ariaLabel="Expand turn"
-            onToggle={() => handleToggleRowCollapse(row.id)}
-          >
-            <FoldedTimelineRow
-              label={preview.userPreview}
-              secondary={preview.assistantPreview}
-              expanded={false}
-              ariaLabel="Expand turn"
-              onToggle={() => handleToggleRowCollapse(row.id)}
-            />
-          </TimelineRowShell>
-        );
-      }
-
-      return (
-        <TimelineRowShell
-          expanded
-          ariaLabel="Collapse turn"
-          onToggle={() => handleToggleRowCollapse(row.id)}
-        >
-          <div className="grid min-w-0 gap-3">
-            <ThreadMessage message={row.userMessage} />
-            {row.items.map(renderTurnItem)}
-          </div>
-        </TimelineRowShell>
-      );
-    }
-
-    if (row.kind === "summary") {
-      const collapsed = Boolean(collapsedRowIds[row.id]);
-      const summaryLabel =
-        row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
-
-      if (collapsed) {
-        return (
-          <TimelineRowShell
-            expanded={false}
-            ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
-            onToggle={() => handleToggleRowCollapse(row.id)}
-          >
-            <FoldedTimelineRow
-              label={summaryLabel}
-              expanded={false}
-              ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
-              onToggle={() => handleToggleRowCollapse(row.id)}
-            />
-          </TimelineRowShell>
-        );
-      }
-
-      return (
-        <TimelineRowShell
-          expanded
-          ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
-          onToggle={() => handleToggleRowCollapse(row.id)}
-        >
-          <div className="min-w-0">
-            <ThreadMessage message={row.message} />
-          </div>
-        </TimelineRowShell>
-      );
-    }
-
-    return <TimelineRowShell>{renderTurnItem(row)}</TimelineRowShell>;
-  };
+  const renderRow = useCallback(
+    (row: TimelineRow) => (
+      <ThreadTimelineRow
+        row={row}
+        collapsed={Boolean(collapsedRowIds[row.id])}
+        streamingAssistantMessageId={streamingAssistantMessageId}
+        expandedDiffTrees={expandedDiffTrees}
+        onToggleRowCollapse={handleToggleRowCollapse}
+        onToggleToolCallExpansion={handleToggleToolCallExpansion}
+        onToggleDiffTree={handleToggleDiffTree}
+        onOpenTurnDiff={onOpenTurnDiff}
+        onJumpToEarlierMessages={handleJumpToEarlierMessages}
+      />
+    ),
+    [
+      collapsedRowIds,
+      expandedDiffTrees,
+      handleJumpToEarlierMessages,
+      handleToggleDiffTree,
+      handleToggleRowCollapse,
+      handleToggleToolCallExpansion,
+      onOpenTurnDiff,
+      streamingAssistantMessageId,
+    ],
+  );
 
   const virtualRows = rowVirtualizer.getVirtualItems();
 
   if (isStreaming) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-[744px] overflow-visible">
-        <div
-          ref={containerRef}
-          className="min-h-0 w-full overflow-y-scroll overflow-x-visible [scrollbar-gutter:stable]"
-          onScroll={handleScroll}
-        >
-          <div
-            ref={timelineRootRef}
-            className="grid min-w-0 gap-[18px] px-4 pt-4 pb-8 [&>*]:min-w-0"
-          >
+      <div className={chatViewportClass}>
+        <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
+          <div ref={timelineRootRef} className={chatStreamingTimelineClass}>
             {rows.map((row) => (
               <div
                 key={
@@ -714,7 +391,7 @@ export function VirtualizedThreadTimeline({
                 }
                 className="min-w-0"
               >
-                {renderTimelineRow(row)}
+                {renderRow(row)}
               </div>
             ))}
           </div>
@@ -724,17 +401,16 @@ export function VirtualizedThreadTimeline({
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[744px] overflow-visible">
-      <div
-        ref={containerRef}
-        className="min-h-0 w-full overflow-y-scroll overflow-x-visible [scrollbar-gutter:stable]"
-        onScroll={handleScroll}
-      >
-        <div ref={timelineRootRef} className="relative w-full px-4 pt-4 pb-8 [&>*]:min-w-0">
+    <div className={chatViewportClass}>
+      <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
+        <div
+          ref={timelineRootRef}
+          className={`relative w-full ${chatTimelinePaddingClass} [&>*]:min-w-0`}
+        >
           <div
             className="relative w-full"
             style={{
-              height: `${rowVirtualizer.getTotalSize() + TIMELINE_TOP_PADDING_PX + TIMELINE_BOTTOM_PADDING_PX}px`,
+              height: `${rowVirtualizer.getTotalSize() + CHAT_TOP_PADDING_PX + CHAT_BOTTOM_PADDING_PX}px`,
             }}
           >
             {virtualRows.map((virtualRow) => {
@@ -750,10 +426,10 @@ export function VirtualizedThreadTimeline({
                   className="absolute top-0 left-0 w-full min-w-0"
                   data-index={virtualRow.index}
                   style={{
-                    transform: `translateY(${virtualRow.start + TIMELINE_TOP_PADDING_PX}px)`,
+                    transform: `translateY(${virtualRow.start + CHAT_TOP_PADDING_PX}px)`,
                   }}
                 >
-                  {renderTimelineRow(row)}
+                  {renderRow(row)}
                 </div>
               );
             })}

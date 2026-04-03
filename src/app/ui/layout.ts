@@ -1,0 +1,6 @@
+export const WORKSPACE_CONTENT_MAX_WIDTH_CLASS = "max-w-[800px]";
+
+export const DIFF_OVERLAY_BREAKPOINT_PX = 1200;
+export const DIFF_PANEL_DEFAULT_WIDTH_PX = 560;
+export const DIFF_PANEL_MIN_WIDTH_PX = 400;
+export const DIFF_PANEL_MAX_WIDTH_PX = 800;

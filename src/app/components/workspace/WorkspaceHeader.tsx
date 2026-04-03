@@ -29,15 +29,15 @@ type WorkspaceHeaderProps = {
 };
 
 const headerSurfaceButtonClass =
-  "relative inline-flex h-7 items-center justify-center rounded-[10px] border border-[rgba(107,115,150,0.18)] bg-[rgba(39,43,57,0.72)] text-[color:var(--muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)] hover:text-[color:var(--text)]";
+  "relative inline-flex h-7 items-center justify-center rounded-lg border border-[rgba(107,115,150,0.18)] bg-[rgba(39,43,57,0.72)] text-[color:var(--muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 ease-out hover:bg-[rgba(46,50,66,0.84)] hover:text-[color:var(--text)]";
 
-const headerSplitIconButtonClass = `${headerSurfaceButtonClass} w-[31px]`;
-const headerChevronButtonClass = `${headerSurfaceButtonClass} w-[23px]`;
+const headerSplitIconButtonClass = `${headerSurfaceButtonClass} w-8`;
+const headerChevronButtonClass = `${headerSurfaceButtonClass} w-6`;
 const headerTextButtonClass = `${headerSurfaceButtonClass} gap-1.5 px-2.5 text-[12.5px] leading-none`;
 const headerQuietIconButtonClass =
-  "relative inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+  "relative inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 const headerDividerClass = "mx-1 h-5 w-px bg-[rgba(121,128,160,0.18)]";
-const headerOptionalControlClass = "max-[1180px]:hidden";
+const headerOptionalControlClass = "max-[1200px]:hidden";
 
 type HeaderStatusDotProps = {
   statusId: FeatureStatusId;

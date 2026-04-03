@@ -2,6 +2,10 @@ import { ChevronRight, FileText, FolderClosed, FolderOpen } from "lucide-react";
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { TurnDiffFile } from "../../../desktop/types";
 import { cn } from "../../../utils/cn";
+import {
+  CHAT_DIFF_TREE_INDENT_BASE_PX,
+  CHAT_DIFF_TREE_INDENT_STEP_PX,
+} from "../thread/thread-layout";
 import { type TurnDiffTreeNode, buildTurnDiffTree } from "./turn-diff-tree";
 
 export const ChangedFilesTree = memo(function ChangedFilesTree(props: {
@@ -40,7 +44,7 @@ export const ChangedFilesTree = memo(function ChangedFilesTree(props: {
   }, []);
 
   const renderTreeNode = (node: TurnDiffTreeNode, depth: number): ReactNode => {
-    const leftPadding = 8 + depth * 14;
+    const leftPadding = CHAT_DIFF_TREE_INDENT_BASE_PX + depth * CHAT_DIFF_TREE_INDENT_STEP_PX;
     if (node.kind === "directory") {
       const isExpanded = expandedDirectories[node.path] ?? depth === 0;
       return (
