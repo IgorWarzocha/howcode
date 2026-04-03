@@ -167,6 +167,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "assistant") {
     const hasThinking = Boolean(message.thinkingContent && message.thinkingContent.length > 0);
+    const showAssistantContent = message.content.length > 0 && (!firstCardOnly || !hasThinking);
 
     return (
       <div className="min-w-0">
@@ -180,7 +181,7 @@ export const ThreadMessage = memo(function ThreadMessage({
             interactive={!disableInnerExpansion}
           />
         ) : null}
-        {!firstCardOnly && message.content.length > 0 ? (
+        {showAssistantContent ? (
           <div className="px-4">{renderProse(message.content, message.format)}</div>
         ) : null}
       </div>

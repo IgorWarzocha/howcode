@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ThreadData } from "../desktop/types";
 import { desktopQueryKeys, getThreadQuery } from "../query/desktop-query";
 
@@ -15,6 +15,7 @@ export function useDesktopThread(
       sessionPath ? getThreadQuery(sessionPath, historyCompactions) : Promise.resolve(null),
     enabled: Boolean(sessionPath),
     staleTime: Number.POSITIVE_INFINITY,
+    placeholderData: keepPreviousData,
   });
 
   return query.data ?? null;
