@@ -21,7 +21,7 @@ function renderToolCallBody(message: ToolCallMessage) {
         className={
           message.isError
             ? "grid min-w-0 gap-2 text-[13px] text-[#f2a7a7]"
-            : "grid min-w-0 gap-2 text-[13px] text-[color:var(--text)]/88"
+            : "grid min-w-0 gap-2 text-[13px] text-[color:var(--muted-2)]/88"
         }
       >
         {message.content.map((paragraph) => (
@@ -37,8 +37,8 @@ function renderToolCallBody(message: ToolCallMessage) {
   }
 
   return (
-    <div className="grid min-w-0 gap-2 font-mono text-[12px] text-[color:var(--text)]/86">
-      <div className="whitespace-pre-wrap break-all text-[color:var(--muted)]">
+    <div className="grid min-w-0 gap-2 font-mono text-[12px] text-[color:var(--muted-2)]/84">
+      <div className="whitespace-pre-wrap break-all text-[color:var(--muted-2)]/88">
         $ {message.command}
       </div>
       {message.output.length > 0 ? (
@@ -50,9 +50,9 @@ function renderToolCallBody(message: ToolCallMessage) {
           ))}
         </div>
       ) : (
-        <div className="text-[color:var(--muted)]">No output</div>
+        <div className="text-[color:var(--muted-2)]/80">No output</div>
       )}
-      <div className="text-[color:var(--muted)]">
+      <div className="text-[color:var(--muted-2)]/80">
         exit {message.exitCode ?? "?"}
         {message.cancelled ? " · cancelled" : ""}
         {message.truncated ? " · truncated" : ""}
@@ -87,7 +87,7 @@ export function ToolCallsCard({
       bodyClassName="border-[rgba(169,178,215,0.08)] px-2 py-2"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
-          <span className="truncate text-[11px] font-medium tracking-[0.12em] text-[color:var(--muted-2)]/88 uppercase">
+          <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
             Tool calls ({messages.length})
           </span>
         </span>
