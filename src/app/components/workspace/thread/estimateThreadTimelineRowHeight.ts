@@ -1,9 +1,15 @@
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 
+type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
+
 type TimelineRow =
   | {
       kind: "history-divider";
+    }
+  | {
+      kind: "tool-group";
+      messages: ToolCallMessage[];
     }
   | {
       kind: "message";
@@ -48,6 +54,10 @@ function estimateTurnSummaryHeight(turnSummary?: TurnDiffSummary) {
 export function estimateThreadTimelineRowHeight(row: TimelineRow) {
   if (row.kind === "history-divider") {
     return 42;
+  }
+
+  if (row.kind === "tool-group") {
+    return 56 + row.messages.length * 44;
   }
 
   return estimateMessageBodyHeight(row.message) + estimateTurnSummaryHeight(row.turnSummary) + 18;

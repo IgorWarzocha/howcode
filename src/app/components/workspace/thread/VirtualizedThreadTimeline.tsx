@@ -12,6 +12,7 @@ import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadMessage } from "../../common/ThreadMessage";
 import { ChangedFilesTree } from "../diff/ChangedFilesTree";
+import { ToolCallsCard } from "./ToolCallsCard";
 import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
 
 const STICKY_BOTTOM_THRESHOLD = 24;
@@ -27,6 +28,8 @@ type VirtualizedThreadTimelineProps = {
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
 };
 
+type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
+
 type TimelineRow =
   | {
       kind: "history-divider";
@@ -34,11 +37,20 @@ type TimelineRow =
       hiddenCount: number;
     }
   | {
+      kind: "tool-group";
+      id: string;
+      messages: ToolCallMessage[];
+    }
+  | {
       kind: "message";
       id: string;
       message: Message;
       turnSummary?: TurnDiffSummary;
     };
+
+function isToolCallMessage(message: Message): message is ToolCallMessage {
+  return message.role === "toolResult" || message.role === "bashExecution";
+}
 
 function getMessageRenderSignature(message: Message | undefined) {
   if (!message) {
@@ -85,6 +97,22 @@ export function VirtualizedThreadTimeline({
 
   const rows = useMemo<TimelineRow[]>(() => {
     const nextRows: TimelineRow[] = [];
+    let pendingToolMessages: ToolCallMessage[] = [];
+
+    const flushPendingToolMessages = () => {
+      if (pendingToolMessages.length === 0) {
+        return;
+      }
+
+      const firstMessage = pendingToolMessages[0];
+      const lastMessage = pendingToolMessages[pendingToolMessages.length - 1];
+      nextRows.push({
+        kind: "tool-group",
+        id: `tool-group:${firstMessage?.id ?? "start"}:${lastMessage?.id ?? "end"}:${pendingToolMessages.length}`,
+        messages: pendingToolMessages,
+      });
+      pendingToolMessages = [];
+    };
 
     if (previousMessageCount > 0) {
       nextRows.push({
@@ -95,6 +123,13 @@ export function VirtualizedThreadTimeline({
     }
 
     for (const message of messages) {
+      if (isToolCallMessage(message)) {
+        pendingToolMessages.push(message);
+        continue;
+      }
+
+      flushPendingToolMessages();
+
       nextRows.push({
         kind: "message",
         id: message.id,
@@ -105,6 +140,8 @@ export function VirtualizedThreadTimeline({
             : undefined,
       });
     }
+
+    flushPendingToolMessages();
 
     return nextRows;
   }, [messages, previousMessageCount, turnDiffSummaryByAssistantMessageId]);
@@ -233,6 +270,10 @@ export function VirtualizedThreadTimeline({
           <div className="h-px flex-1 bg-[rgba(161,173,221,0.12)]" />
         </button>
       );
+    }
+
+    if (row.kind === "tool-group") {
+      return <ToolCallsCard messages={row.messages} />;
     }
 
     const { message, turnSummary } = row;
