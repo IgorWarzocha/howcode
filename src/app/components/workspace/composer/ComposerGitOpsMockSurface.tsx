@@ -76,14 +76,6 @@ export function ComposerGitOpsMockSurface({
         </div>
 
         <div className="ml-auto flex items-center gap-2 max-md:w-full max-md:justify-end">
-          <ToolbarButton
-            label="Open diff"
-            icon={<GitCompareArrows size={14} />}
-            onClick={onOpenDiffPanel}
-            className={!isGitRepo ? "opacity-50" : undefined}
-            disabled={!isGitRepo}
-          />
-
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
             {gitOpsMockModes.map((mode) => (
               <button
@@ -101,6 +93,14 @@ export function ComposerGitOpsMockSurface({
               </button>
             ))}
           </div>
+
+          <ToolbarButton
+            label="Open diff"
+            icon={<GitCompareArrows size={14} />}
+            onClick={onOpenDiffPanel}
+            className={!isGitRepo ? "opacity-50" : undefined}
+            disabled={!isGitRepo}
+          />
         </div>
       </div>
 
