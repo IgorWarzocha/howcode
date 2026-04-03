@@ -1,15 +1,13 @@
 import {
   ArrowLeft,
-  CheckCircle2,
   GitBranch,
   GitCommitHorizontal,
   GitCompareArrows,
-  GitPullRequestArrow,
   TriangleAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
-import { compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { ToolbarButton } from "../../common/ToolbarButton";
@@ -37,17 +35,20 @@ export function ComposerGitOpsMockSurface({
   onSetGitOpsMockMode,
 }: ComposerGitOpsMockSurfaceProps) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
-  const [commitAndPush, setCommitAndPush] = useState(false);
-  const [draft, setDraft] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
   const meta = gitOpsMockMeta[gitOpsMockMode];
-  const hasChanges = gitOpsMockMode === "dirty";
   const isGitRepo = gitOpsMockMode !== "not-git";
-  const changesSummary = useMemo(
-    () =>
-      `${formatGitCount(meta.files)} files  +${formatGitCount(meta.additions)}  -${formatGitCount(meta.deletions)}`,
-    [meta.additions, meta.deletions, meta.files],
-  );
+  const isClean = gitOpsMockMode === "clean";
+  const canCommit = gitOpsMockMode === "dirty";
+
+  const commitLabel = !isGitRepo
+    ? "Init git"
+    : isClean
+      ? "Clean"
+      : pushEnabled
+        ? "Commit & push"
+        : "Ready to commit";
 
   return (
     <div
@@ -74,18 +75,7 @@ export function ComposerGitOpsMockSurface({
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
 
-        <div className="flex items-center gap-2">
-          {isGitRepo ? (
-            <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
-              <span className={hasChanges ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
-                +{formatGitCount(meta.additions)}
-              </span>
-              <span className={hasChanges ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
-                -{formatGitCount(meta.deletions)}
-              </span>
-            </div>
-          ) : null}
+        <div className="flex items-center gap-2 max-md:ml-auto">
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
             {gitOpsMockModes.map((mode) => (
               <button
@@ -103,16 +93,28 @@ export function ComposerGitOpsMockSurface({
               </button>
             ))}
           </div>
+
+          <ToolbarButton
+            label="Open diff"
+            icon={<GitCompareArrows size={14} />}
+            onClick={onOpenDiffPanel}
+            className={!isGitRepo ? "opacity-50" : undefined}
+            disabled={!isGitRepo}
+          />
+
           <button
             type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
+            className={cn(
+              primaryButtonClass,
+              "inline-flex h-8 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
+            )}
             onClick={() =>
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
             }
-            disabled={!hasChanges && isGitRepo}
-            aria-label={isGitRepo ? "Commit" : "Git setup"}
+            disabled={!canCommit}
+            aria-label={commitLabel}
           >
-            {isGitRepo ? <GitCommitHorizontal size={16} /> : <TriangleAlert size={16} />}
+            {commitLabel}
           </button>
         </div>
       </div>
@@ -130,41 +132,64 @@ export function ComposerGitOpsMockSurface({
           <ArrowLeft size={14} />
         </button>
 
-        {gitOpsMockMode === "clean" ? (
-          <div className="flex items-center gap-2 text-[13px] text-[#bdf7dd]">
-            <CheckCircle2 size={14} />
-            <span>Working tree clean</span>
+        <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+          <div className="flex items-center gap-2 text-[12px]">
+            <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
+            <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
+              +{formatGitCount(meta.additions)}
+            </span>
+            <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
+              -{formatGitCount(meta.deletions)}
+            </span>
           </div>
-        ) : null}
 
-        <div className="ml-auto flex items-center gap-1.5 max-md:flex-wrap">
-          <ToolbarButton
-            label={includeUnstaged ? "Include unstaged" : "Staged only"}
-            icon={<GitCompareArrows size={14} />}
+          <ToggleButton
+            label="Include unstaged"
+            checked={includeUnstaged}
             onClick={() => setIncludeUnstaged((current) => !current)}
-            className={includeUnstaged ? "text-[color:var(--text)]" : undefined}
           />
-          <ToolbarButton
-            label="Open diff"
-            icon={<GitCompareArrows size={14} />}
-            onClick={onOpenDiffPanel}
-            className={!isGitRepo ? "opacity-50" : undefined}
-            disabled={!isGitRepo}
-          />
-          <ToolbarButton
-            label={commitAndPush ? "Commit & push" : "Commit only"}
-            icon={<GitPullRequestArrow size={14} />}
-            onClick={() => setCommitAndPush((current) => !current)}
-            className={commitAndPush ? "text-[color:var(--text)]" : undefined}
-          />
-          <ToolbarButton
-            label={draft ? "Draft" : "Ready"}
-            icon={<GitCommitHorizontal size={14} />}
-            onClick={() => setDraft((current) => !current)}
-            className={draft ? "text-[color:var(--text)]" : undefined}
+
+          <ToggleButton
+            label="Push"
+            checked={pushEnabled}
+            onClick={() => setPushEnabled((current) => !current)}
           />
         </div>
       </div>
     </div>
+  );
+}
+
+function ToggleButton({
+  checked,
+  label,
+  onClick,
+}: {
+  checked: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] px-2.5 py-1.5 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+      onClick={onClick}
+      aria-pressed={checked}
+    >
+      <span>{label}</span>
+      <span
+        className={cn(
+          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+          checked ? "bg-[color:var(--accent)]" : "bg-[rgba(255,255,255,0.14)]",
+        )}
+      >
+        <span
+          className={cn(
+            "inline-block h-3 w-3 rounded-full bg-[#1a1c26] transition-transform",
+            checked ? "translate-x-5" : "translate-x-1",
+          )}
+        />
+      </span>
+    </button>
   );
 }
