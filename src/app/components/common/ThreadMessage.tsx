@@ -57,7 +57,7 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
 
 function renderThinking(content: string[]) {
   return (
-    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/88 italic [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/78 italic [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
         <p key={paragraph} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {renderInline(paragraph)}
@@ -105,10 +105,10 @@ function AssistantThinkingBlock({
   const preview = getThinkingPreview(thinkingContent, thinkingRedacted);
 
   return (
-    <div className="mb-3 overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]">
+    <div className="mb-3 overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.012)]">
       <button
         type="button"
-        className="flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.025)]"
+        className="flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.015)]"
         onClick={() => {
           onToggleExpanded?.();
           setExpanded((current) => !current);
@@ -120,18 +120,18 @@ function AssistantThinkingBlock({
           {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-          <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/92">
+          <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/82">
             {label}
           </span>
           <span className="shrink-0 text-[11px] text-[color:var(--muted-2)]/80">—</span>
-          <span className="min-w-0 flex-1 truncate text-[11.5px] italic text-[color:var(--muted-2)]/90">
+          <span className="min-w-0 flex-1 truncate text-[11.5px] italic text-[color:var(--muted-2)]/76">
             {preview}
           </span>
         </span>
       </button>
 
       {expanded ? (
-        <div id={panelId} className="border-t border-[rgba(169,178,215,0.08)] px-3 py-3">
+        <div id={panelId} className="border-t border-[rgba(169,178,215,0.05)] px-3 py-3">
           {thinkingContent.length > 0 ? (
             renderThinking(thinkingContent)
           ) : (
@@ -152,7 +152,7 @@ export const ThreadMessage = memo(function ThreadMessage({
 }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
-      <div className="ml-auto min-w-0 max-w-[438px] rounded-[18px] bg-[rgba(47,50,66,0.8)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+      <div className="w-full min-w-0 rounded-[18px] bg-[rgba(47,50,66,0.58)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         {message.content.map((paragraph) => (
           <p
             key={paragraph}

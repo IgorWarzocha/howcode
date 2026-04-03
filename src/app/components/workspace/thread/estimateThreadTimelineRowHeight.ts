@@ -25,7 +25,7 @@ function estimateTextHeight(characters: number, charsPerLine: number, lineHeight
 function estimateMessageBodyHeight(message: Message) {
   switch (message.role) {
     case "user":
-      return 44 + estimateTextHeight(message.content.join(" ").length, 56, 22);
+      return 44 + estimateTextHeight(message.content.join(" ").length, 84, 22);
     case "assistant":
       return (
         28 +
