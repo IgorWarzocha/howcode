@@ -170,7 +170,7 @@ export function normalizeThreadTitle(value: unknown) {
 
 export function mapAgentMessageToUiMessage(message: AgentMessage, index: number): Message | null {
   const runtimeMessage = message as RuntimeMessage;
-  const id = `${runtimeMessage.timestamp ?? index}-${runtimeMessage.role ?? "message"}-${index}`;
+  const id = `${runtimeMessage.timestamp ?? index}-${runtimeMessage.role ?? "message"}`;
 
   switch (runtimeMessage.role) {
     case "user": {

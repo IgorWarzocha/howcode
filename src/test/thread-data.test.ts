@@ -10,7 +10,7 @@ describe("buildThreadData", () => {
         checkpointRef: "checkpoint-3",
         status: "ready",
         files: [{ path: "src/app/thread.tsx", kind: "modified", additions: 2, deletions: 1 }],
-        assistantMessageId: "2-assistant-1",
+        assistantMessageId: "2-assistant",
         completedAt: new Date(0).toISOString(),
       },
     ];
@@ -35,12 +35,12 @@ describe("buildThreadData", () => {
       title: "Fix the timeline",
       messages: [
         {
-          id: "1-user-0",
+          id: "1-user",
           role: "user",
           content: ["Fix the timeline"],
         },
         {
-          id: "2-assistant-1",
+          id: "2-assistant",
           role: "assistant",
           content: ["Split the timeline into smaller modules."],
         },

@@ -54,25 +54,25 @@ describe("pi message mapper", () => {
 
     expect(messages).toEqual([
       {
-        id: "1-user-0",
+        id: "1-user",
         role: "user",
         content: ["Investigate this bug", "Attached image 1"],
       },
       {
-        id: "2-assistant-1",
+        id: "2-assistant",
         role: "assistant",
         content: ["First paragraph", "Second paragraph"],
         thinkingContent: ["Need to inspect the state flow first"],
       },
       {
-        id: "3-toolResult-2",
+        id: "3-toolResult",
         role: "toolResult",
         toolName: "grep",
         content: ["Found 2 matches"],
         isError: false,
       },
       {
-        id: "4-bashExecution-3",
+        id: "4-bashExecution",
         role: "bashExecution",
         command: "npm test",
         output: ["line1", "line2"],
@@ -81,7 +81,7 @@ describe("pi message mapper", () => {
         truncated: false,
       },
       {
-        id: "5-branchSummary-4",
+        id: "5-branchSummary",
         role: "branchSummary",
         content: ["Kept the main branch summary"],
       },
@@ -108,7 +108,7 @@ describe("pi message mapper", () => {
 
     expect(messages).toEqual([
       {
-        id: "1-assistant-0",
+        id: "1-assistant",
         role: "assistant",
         content: [],
         thinkingContent: ["Working through the repo structure"],
@@ -133,7 +133,7 @@ describe("pi message mapper", () => {
 
     expect(messages).toEqual([
       {
-        id: "1-assistant-0",
+        id: "1-assistant",
         role: "assistant",
         content: [],
         thinkingContent: [

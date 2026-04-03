@@ -39,6 +39,7 @@ export function VirtualizedThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
+  const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoScrollTimerRef = useRef<number | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
@@ -150,6 +151,16 @@ export function VirtualizedThreadTimeline({
     void bottomAnchorKey;
     void rowStructureSignature;
 
+    const container = containerRef.current;
+    const pendingHistoryPrepend = pendingHistoryPrependRef.current;
+
+    if (container && pendingHistoryPrepend) {
+      const delta = container.scrollHeight - pendingHistoryPrepend.scrollHeight;
+      container.scrollTop = pendingHistoryPrepend.scrollTop + Math.max(0, delta);
+      pendingHistoryPrependRef.current = null;
+      return;
+    }
+
     if (!rows.length) {
       return;
     }
@@ -201,6 +212,15 @@ export function VirtualizedThreadTimeline({
   );
 
   const handleJumpToEarlierMessages = useCallback(() => {
+    const container = containerRef.current;
+    if (container) {
+      pendingHistoryPrependRef.current = {
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      };
+    }
+
+    shouldStickToBottomRef.current = false;
     suppressAutoScrollTemporarily();
     onLoadEarlierMessages();
   }, [onLoadEarlierMessages, suppressAutoScrollTemporarily]);
