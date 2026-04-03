@@ -1,48 +1,41 @@
 import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ComposerState, DesktopEvent, ThreadData } from "../../shared/desktop-contracts";
-import {
-  getFirstUserTurnTitle,
-  getPreviousMessageCount,
-  mapAgentMessagesToUiMessages,
-} from "../../shared/pi-message-mapper";
+import type { ComposerState, ThreadData } from "../../shared/desktop-contracts";
+import { getPreviousMessageCount } from "../../shared/pi-message-mapper";
+import { buildThreadData } from "../../shared/thread-data";
 import { getTurnDiffSummaries } from "../diff/query";
 import { upsertThreadSummary } from "../thread-state-db";
 import { buildComposerState } from "./composer-state";
+import { emitDesktopEvent, subscribeDesktopEvents } from "./desktop-events";
+import {
+  getLiveThread,
+  markInternalThreadUpdate,
+  rememberLiveThread,
+  shouldSuppressExternalThreadUpdate,
+} from "./live-thread-store";
 import { rememberSessionPath } from "./session-path-index";
 import type { PiRuntime, RuntimeThreadReason } from "./types";
 
-const liveThreads = new Map<string, ThreadData>();
-const desktopListeners = new Set<(event: DesktopEvent) => void>();
-const recentInternalThreadUpdateAt = new Map<string, number>();
-
-const EXTERNAL_UPDATE_SUPPRESSION_MS = 500;
-
-function emitDesktopEvent(event: DesktopEvent) {
-  for (const listener of desktopListeners) {
-    listener(event);
-  }
-}
-
-function buildLiveThreadData(runtime: PiRuntime): ThreadData | null {
+function buildLiveThreadData(runtime: PiRuntime) {
   const sessionPath = runtime.session.sessionFile;
   if (!sessionPath) {
     return null;
   }
 
   const streamMessage = runtime.session.state.streamMessage;
-  const sourceMessages = [...runtime.session.messages, ...(streamMessage ? [streamMessage] : [])];
-  const messages = mapAgentMessagesToUiMessages(sourceMessages as AgentMessage[]);
+  const sourceMessages = [
+    ...runtime.session.messages,
+    ...(streamMessage ? [streamMessage] : []),
+  ] as AgentMessage[];
   const previousMessageCount = getPreviousMessageCount(runtime.session.sessionManager.getBranch());
 
-  return {
+  return buildThreadData({
     sessionPath,
-    title: getFirstUserTurnTitle(messages),
-    messages,
+    sourceMessages,
     previousMessageCount,
     isStreaming: runtime.session.isStreaming,
     turnDiffSummaries: getTurnDiffSummaries(sessionPath),
-  };
+  });
 }
 
 export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReason) {
@@ -51,7 +44,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     return;
   }
 
-  recentInternalThreadUpdateAt.set(sessionPath, Date.now());
+  markInternalThreadUpdate(sessionPath);
 
   const thread = buildLiveThreadData(runtime);
   if (!thread) {
@@ -70,7 +63,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     hasPersistedSessionFile = false;
   }
 
-  liveThreads.set(sessionPath, thread);
+  rememberLiveThread(sessionPath, thread);
   rememberSessionPath(sessionPath, projectId);
 
   if (hasPersistedSessionFile) {
@@ -94,19 +87,6 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
   });
 }
 
-export function shouldSuppressExternalThreadUpdate(sessionPath: string, now = Date.now()) {
-  if (liveThreads.get(sessionPath)?.isStreaming) {
-    return true;
-  }
-
-  const lastInternalUpdateAt = recentInternalThreadUpdateAt.get(sessionPath);
-  if (!lastInternalUpdateAt) {
-    return false;
-  }
-
-  return now - lastInternalUpdateAt < EXTERNAL_UPDATE_SUPPRESSION_MS;
-}
-
 export async function publishExternalThreadUpdate({
   lastModifiedMs,
   projectId,
@@ -120,7 +100,7 @@ export async function publishExternalThreadUpdate({
   thread: ThreadData;
   threadId: string;
 }) {
-  liveThreads.set(sessionPath, thread);
+  rememberLiveThread(sessionPath, thread);
   rememberSessionPath(sessionPath, projectId);
   upsertThreadSummary({
     id: threadId,
@@ -141,18 +121,8 @@ export async function publishExternalThreadUpdate({
   });
 }
 
-export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
-  desktopListeners.add(listener);
-
-  return () => {
-    desktopListeners.delete(listener);
-  };
-}
-
-export function getLiveThread(sessionPath: string) {
-  return liveThreads.get(sessionPath) ?? null;
-}
-
 export function publishComposerUpdate(composer: ComposerState) {
   emitDesktopEvent({ type: "composer-update", composer });
 }
+
+export { getLiveThread, shouldSuppressExternalThreadUpdate, subscribeDesktopEvents };

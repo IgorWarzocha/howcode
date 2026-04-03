@@ -10,8 +10,8 @@ export function getThinkingPreview(thinkingContent: string[], thinkingRedacted?:
   return thinkingRedacted ? "Reasoning unavailable" : "No reasoning captured";
 }
 
-export function getAssistantPreview(message: Extract<Message, { role: "assistant" }> | null) {
-  if (!message) {
+export function getAssistantPreview(message: Message | null | undefined) {
+  if (!message || message.role !== "assistant") {
     return null;
   }
 

@@ -1,9 +1,7 @@
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts";
-import {
-  getFirstUserTurnTitle,
-  getPreviousMessageCount,
-  mapAgentMessagesToUiMessages,
-} from "../../shared/pi-message-mapper";
+import { getPreviousMessageCount } from "../../shared/pi-message-mapper";
+import { buildThreadData } from "../../shared/thread-data";
 import { getLiveThread } from "../pi-desktop-runtime";
 import { getPiModule } from "../pi-module";
 import {
@@ -32,22 +30,18 @@ export async function loadThreadSnapshot(sessionPath: string): Promise<LoadedThr
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
-
   const sessionContext = manager.buildSessionContext();
-  const messages = mapAgentMessagesToUiMessages(sessionContext.messages);
-  const title = getFirstUserTurnTitle(messages);
 
   return {
     projectId: manager.getCwd(),
     threadId: manager.getSessionId(),
-    thread: {
+    thread: buildThreadData({
       sessionPath,
-      title,
-      messages,
+      sourceMessages: sessionContext.messages as AgentMessage[],
       previousMessageCount,
       isStreaming: false,
       turnDiffSummaries: listTurnDiffSummaries(sessionPath),
-    },
+    }),
   };
 }
 
