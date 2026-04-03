@@ -8,14 +8,9 @@ import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { mainPanelClass } from "../ui/classes";
-import {
-  DIFF_OVERLAY_BREAKPOINT_PX,
-  DIFF_PANEL_DEFAULT_WIDTH_PX,
-  DIFF_PANEL_MAX_WIDTH_PX,
-  DIFF_PANEL_MIN_WIDTH_PX,
-  WORKSPACE_CONTENT_MAX_WIDTH_CLASS,
-} from "../ui/layout";
+import { DIFF_PANEL_DEFAULT_WIDTH_PX, WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
 import { MainView } from "../views/MainView";
+import { clampDiffPanelWidth, getDiffLayoutState } from "./layout-state";
 import type { AppShellController } from "./useAppShellController";
 
 type AppShellLayoutProps = {
@@ -61,15 +56,16 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
   const takeoverVisible = state.takeoverVisible;
   const dockedTerminalVisible = state.terminalVisible;
-  const diffVisible = state.diffVisible && !takeoverVisible;
   const [diffPanelWidth, setDiffPanelWidth] = useState(DIFF_PANEL_DEFAULT_WIDTH_PX);
   const [mainSectionWidth, setMainSectionWidth] = useState<number | null>(null);
   const resizeStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const mainSectionRef = useRef<HTMLElement>(null);
 
-  const overlayDiffVisible =
-    diffVisible && mainSectionWidth !== null && mainSectionWidth < DIFF_OVERLAY_BREAKPOINT_PX;
-  const splitDiffVisible = diffVisible && !overlayDiffVisible;
+  const { diffPanelVisible, overlayDiffVisible, splitDiffVisible } = getDiffLayoutState({
+    diffVisible: state.diffVisible,
+    takeoverVisible,
+    mainSectionWidth,
+  });
   const overlayDiffPresent = useAnimatedPresence(overlayDiffVisible);
   const takeoverPresent = useAnimatedPresence(takeoverVisible);
   const desktopWorkspacePresent = useAnimatedPresence(!takeoverVisible);
@@ -103,9 +99,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       }
 
       const nextWidth = resizeStart.width - (event.clientX - resizeStart.pointerX);
-      setDiffPanelWidth(
-        Math.max(DIFF_PANEL_MIN_WIDTH_PX, Math.min(DIFF_PANEL_MAX_WIDTH_PX, nextWidth)),
-      );
+      setDiffPanelWidth(clampDiffPanelWidth(nextWidth));
     };
 
     const handlePointerUp = () => {
@@ -165,7 +159,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             currentProjectName={currentProjectName}
             sidebarVisible={state.sidebarVisible}
             terminalVisible={state.terminalVisible}
-            diffVisible={diffVisible}
+            diffVisible={diffPanelVisible}
             projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
             onToggleTerminal={handleToggleTerminal}

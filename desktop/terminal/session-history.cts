@@ -4,9 +4,12 @@ import { Utils } from "electrobun/bun";
 import type { TerminalSessionRecord } from "./session-record";
 
 const MAX_HISTORY_CHARS = 200_000;
-const TRANSCRIPT_DIR = path.join(Utils.paths.userData, "state", "terminals");
 
-mkdirSync(TRANSCRIPT_DIR, { recursive: true });
+function getTranscriptDirectory() {
+  const transcriptDirectory = path.join(Utils.paths.userData, "state", "terminals");
+  mkdirSync(transcriptDirectory, { recursive: true });
+  return transcriptDirectory;
+}
 
 export function nowIso() {
   return new Date().toISOString();
@@ -17,7 +20,7 @@ export function clampHistory(history: string) {
 }
 
 export function getTranscriptPath(sessionId: string) {
-  return path.join(TRANSCRIPT_DIR, `${sessionId}.log`);
+  return path.join(getTranscriptDirectory(), `${sessionId}.log`);
 }
 
 export function readTranscript(transcriptPath: string) {
