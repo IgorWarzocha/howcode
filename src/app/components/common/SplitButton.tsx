@@ -15,7 +15,7 @@ export function SplitButton({
     <div className="flex">
       <button
         type="button"
-        className="min-h-8 rounded-l-[11px] border border-r-0 border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)] px-3"
+        className="min-h-8 rounded-l-xl border border-r-0 border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)] px-3"
         aria-label={primaryLabel}
         onClick={onPrimary}
       >
@@ -23,7 +23,7 @@ export function SplitButton({
       </button>
       <button
         type="button"
-        className="inline-flex h-8 w-[34px] items-center justify-center rounded-r-[11px] border border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)]"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-r-xl border border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)]"
         aria-label={secondaryLabel}
         onClick={onSecondary}
       >

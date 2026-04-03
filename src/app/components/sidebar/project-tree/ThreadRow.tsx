@@ -1,4 +1,5 @@
 import { Archive, Pin } from "lucide-react";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
 type ThreadRowProps = {
@@ -14,7 +15,7 @@ export function ThreadRow({ age, isSelected, title, onArchive, onOpen, onPin }: 
   return (
     <div
       className={cn(
-        "group grid min-h-[31px] w-full grid-cols-[16px_minmax(0,1fr)_24px] items-center gap-2 rounded-[10px] px-2 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
+        "group grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)_24px] items-center gap-2 rounded-xl px-2 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
         isSelected &&
           "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
       )}
@@ -22,7 +23,8 @@ export function ThreadRow({ age, isSelected, title, onArchive, onOpen, onPin }: 
       <button
         type="button"
         className={cn(
-          "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] opacity-0 transition-all duration-150 ease-out hover:text-[color:var(--text)] group-hover:opacity-100 group-focus-within:opacity-100",
+          compactIconButtonClass,
+          "h-4 w-4 shrink-0 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
           isSelected && "opacity-100",
         )}
         onClick={onPin}
@@ -53,7 +55,8 @@ export function ThreadRow({ age, isSelected, title, onArchive, onOpen, onPin }: 
         <button
           type="button"
           className={cn(
-            "absolute inline-flex h-4 w-4 items-center justify-center rounded-md text-[color:var(--muted)] opacity-0 transition-all duration-150 ease-out hover:text-[color:var(--text)] group-hover:opacity-100 group-focus-within:opacity-100",
+            compactIconButtonClass,
+            "absolute h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
             isSelected && "opacity-100",
           )}
           onClick={onArchive}

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { panelChromeClass } from "../../ui/classes";
+import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
 import { TextButton } from "../common/TextButton";
@@ -101,7 +101,8 @@ export function ProjectActionDialog({
         aria-modal="true"
         className={cn(
           panelChromeClass,
-          "flex w-full max-w-[520px] flex-col gap-4 rounded-[24px] border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)]",
+          modalPanelClass,
+          "flex w-full max-w-[520px] flex-col gap-4 rounded-3xl p-6",
         )}
       >
         <div className="grid gap-1.5">

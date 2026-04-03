@@ -9,7 +9,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        "rounded-[20px] border border-[color:var(--border)] px-[18px] py-4 shadow-[var(--shadow)]",
+        "rounded-2xl border border-[color:var(--border)] px-4 py-4 shadow-[var(--shadow)]",
         role === "user"
           ? "ml-auto max-w-[72%] bg-[rgba(43,47,62,0.92)]"
           : "max-w-[92%] bg-[rgba(33,36,48,0.78)]",

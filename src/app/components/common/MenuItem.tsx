@@ -5,7 +5,7 @@ import {
   getFeatureStatusButtonClass,
   getFeatureStatusMeta,
 } from "../../features/feature-status";
-import { hoverSurfaceClass, transitionClass } from "../../ui/classes";
+import { hoverSurfaceClass, menuItemClass, transitionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "./FeatureStatusBadge";
 
@@ -36,7 +36,7 @@ export function MenuItem({
       type={type}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 rounded-[12px] border border-transparent px-2.5 py-2 text-left text-[14px]",
+        menuItemClass,
         transitionClass,
         hoverSurfaceClass,
         active && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",

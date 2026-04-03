@@ -8,6 +8,7 @@ import {
   SquarePen,
 } from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
+import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
 type ProjectRowProps = {
@@ -45,7 +46,8 @@ export function ProjectRow({
   return (
     <div
       className={cn(
-        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] px-2 py-0.5 transition-colors duration-150 ease-out hover:bg-[rgba(183,186,245,0.08)] focus-within:bg-[rgba(183,186,245,0.08)]",
+        sidebarRowClass,
+        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2 py-0.5",
         (isActive || actionMenuOpen) && "bg-[rgba(183,186,245,0.08)]",
         isDragging && "ring-1 ring-[rgba(183,186,245,0.24)]",
       )}
@@ -78,7 +80,7 @@ export function ProjectRow({
       <button
         type="button"
         className={cn(
-          "flex min-h-[32px] min-w-0 items-center rounded-[10px] py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
+          "flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
           isActive && "text-[color:var(--text)]",
         )}
         onClick={onSelect}
@@ -98,7 +100,7 @@ export function ProjectRow({
       >
         <button
           type="button"
-          className="inline-flex h-6 w-6 cursor-grab items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)] active:cursor-grabbing"
+          className={cn(compactIconButtonClass, "cursor-grab active:cursor-grabbing")}
           aria-label="Reorder project"
           title="Reorder project"
           {...dragHandleProps.attributes}
@@ -109,7 +111,7 @@ export function ProjectRow({
         <button
           type="button"
           className={cn(
-            "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]",
+            compactIconButtonClass,
             actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
             getFeatureStatusButtonClass("feature:sidebar.project.actions"),
           )}
@@ -123,9 +125,7 @@ export function ProjectRow({
         </button>
         <button
           type="button"
-          className={cn(
-            "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]",
-          )}
+          className={compactIconButtonClass}
           onClick={onEdit}
           aria-label="Edit project"
         >

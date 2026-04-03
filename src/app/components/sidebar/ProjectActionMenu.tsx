@@ -2,6 +2,7 @@ import { Archive, FolderOpen, GitBranchPlus, Pencil, X } from "lucide-react";
 import type { RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { getFeatureStatusButtonClass, getFeatureStatusMeta } from "../../features/feature-status";
+import { menuItemClass, popoverPanelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -34,7 +35,10 @@ export function ProjectActionMenu({
       id={menuId}
       role="menu"
       aria-label="Project actions"
-      className="absolute top-[calc(100%+6px)] left-4 z-40 grid w-[206px] gap-0.5 rounded-[14px] border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+      className={cn(
+        popoverPanelClass,
+        "absolute top-[calc(100%+6px)] left-4 z-40 grid w-52 gap-0.5 rounded-2xl p-1.5",
+      )}
     >
       {[
         {
@@ -68,7 +72,8 @@ export function ProjectActionMenu({
           key={item.action}
           type="button"
           className={cn(
-            "flex items-center gap-2.5 rounded-[11px] border border-transparent px-2.5 py-2 text-left text-[13px] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)]",
+            menuItemClass,
+            "text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]",
             item.statusId ? getFeatureStatusButtonClass(item.statusId) : undefined,
           )}
           onClick={() => handleClick(item.action)}

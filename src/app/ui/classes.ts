@@ -5,11 +5,20 @@ export const hoverSurfaceClass = "hover:bg-[var(--surface-hover)] hover:text-[co
 export const panelChromeClass =
   "rounded-[20px] border border-[color:var(--border)] bg-[rgba(39,42,57,0.82)] shadow-[var(--shadow)] backdrop-blur-[18px]";
 
+export const modalPanelClass =
+  "border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] shadow-[0_24px_80px_rgba(0,0,0,0.34)]";
+
+export const popoverPanelClass =
+  "border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] shadow-[0_18px_40px_rgba(0,0,0,0.28)]";
+
 export const mainPanelClass =
   "min-h-0 overflow-y-scroll overflow-x-hidden pt-1.5 [scrollbar-gutter:stable_both-edges]";
 
 export const iconButtonClass =
   "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+
+export const compactIconButtonClass =
+  "inline-flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]";
 
 export const navButtonClass =
   "flex min-h-8 w-full items-center gap-2 rounded-[10px] border border-transparent px-2.5 text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
@@ -32,6 +41,15 @@ export const sectionShellClass = "grid w-full max-w-[980px] content-start gap-[1
 
 export const sidebarSectionLabelClass =
   "flex items-center justify-between px-1.5 pt-1.5 text-[12px] leading-5 text-[color:var(--muted)]";
+
+export const menuItemClass =
+  "flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left text-[14px]";
+
+export const menuOptionClass =
+  "grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] hover:bg-[rgba(255,255,255,0.04)]";
+
+export const sidebarRowClass =
+  "rounded-xl transition-colors duration-150 ease-out hover:bg-[rgba(183,186,245,0.08)] focus-within:bg-[rgba(183,186,245,0.08)]";
 
 export const terminalOutputClass =
   "grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs";

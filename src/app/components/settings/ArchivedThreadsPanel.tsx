@@ -2,7 +2,7 @@ import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { ArchivedThread } from "../../desktop/types";
-import { panelChromeClass } from "../../ui/classes";
+import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
 import { TextButton } from "../common/TextButton";
@@ -68,7 +68,8 @@ export function ArchivedThreadsPanel({
         aria-labelledby={titleId}
         className={cn(
           panelChromeClass,
-          "flex h-full max-h-[720px] w-full max-w-[880px] flex-col overflow-hidden rounded-[24px] border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] shadow-[0_24px_80px_rgba(0,0,0,0.34)]",
+          modalPanelClass,
+          "flex h-full max-h-[720px] w-full max-w-[880px] flex-col overflow-hidden rounded-3xl",
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border)] px-6 py-5">
@@ -97,7 +98,7 @@ export function ArchivedThreadsPanel({
               {threads.map((thread) => (
                 <div
                   key={thread.id}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[14px] text-[color:var(--text)]">
@@ -143,7 +144,7 @@ export function ArchivedThreadsPanel({
             <div className="grid h-full place-items-center px-6 text-center text-[13px] text-[color:var(--muted)]">
               <div className="grid gap-2">
                 <div className="text-[15px] text-[color:var(--text)]">No archived threads</div>
-                <p className="m-0 max-w-[420px]">
+                <p className="m-0 max-w-[448px]">
                   Archive a thread from the sidebar and it will show up here for restore or
                   permanent deletion.
                 </p>
