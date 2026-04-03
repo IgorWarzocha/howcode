@@ -1,4 +1,4 @@
-import { ArrowLeft, GitBranch, GitCompareArrows, TriangleAlert } from "lucide-react";
+import { ArrowLeft, GitCompareArrows, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
@@ -36,33 +36,40 @@ export function ComposerGitOpsMockSurface({
   const meta = gitOpsMockMeta[gitOpsMockMode];
   const isGitRepo = gitOpsMockMode !== "not-git";
   const canCommit = gitOpsMockMode === "dirty";
-  const commitLabel = pushEnabled ? "Commit & push" : "Commit";
+  const commitLabel = canCommit
+    ? pushEnabled
+      ? "Commit & push"
+      : "Commit"
+    : isGitRepo
+      ? "Clean"
+      : "Init git";
 
   return (
     <div
-      className="grid min-h-[189px] gap-0"
+      className="grid gap-0"
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
       <div className="relative">
         <textarea
-          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
           value={commitMessage}
           onChange={(event) => setCommitMessage(event.target.value)}
           aria-label="Commit message"
           placeholder=""
         />
-
-        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] leading-5 text-[color:var(--muted)]">
+        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] text-[color:var(--muted-2)]">
           Leave blank to autogenerate a commit message
         </div>
+      </div>
 
-        <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
+      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
+        <div className="flex items-center gap-1.5 max-md:flex-wrap">
           {isGitRepo ? (
             originKnown ? (
               <button
                 type="button"
-                className="rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
+                className="rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12.5px] leading-5 text-[color:var(--text)]"
                 onClick={() => setOriginKnown(false)}
                 title="Mock: click to preview missing origin"
               >
@@ -73,17 +80,15 @@ export function ComposerGitOpsMockSurface({
                 value={repoUrl}
                 onChange={(event) => setRepoUrl(event.target.value)}
                 onBlur={() => {
-                  if (repoUrl.trim().length > 0) {
-                    setOriginKnown(true);
-                  }
+                  if (repoUrl.trim().length > 0) setOriginKnown(true);
                 }}
-                className="w-64 rounded-lg border border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                className="w-64 rounded-lg border border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[12.5px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
                 placeholder="Paste repository URL"
                 aria-label="Repository URL"
               />
             )
           ) : (
-            <div className="flex items-center gap-2 text-[12px] text-[#ff9c9c]">
+            <div className="flex items-center gap-2 rounded-lg border border-[rgba(255,110,110,0.22)] px-2.5 py-1 text-[12.5px] leading-5 text-[#ff9c9c]">
               <TriangleAlert size={14} />
               <span>Not a git repository</span>
             </div>
@@ -91,7 +96,7 @@ export function ComposerGitOpsMockSurface({
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
 
-        <div className="absolute top-4 right-4 flex items-center gap-2">
+        <div className="flex items-center gap-2 max-md:ml-auto">
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
             {gitOpsMockModes.map((mode) => (
               <button
@@ -109,7 +114,6 @@ export function ComposerGitOpsMockSurface({
               </button>
             ))}
           </div>
-
           <ToolbarButton
             label="Open diff"
             icon={<GitCompareArrows size={14} />}
@@ -118,21 +122,6 @@ export function ComposerGitOpsMockSurface({
             disabled={!isGitRepo}
           />
         </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="invisible flex items-center gap-1.5 max-md:flex-wrap">
-          <ToolbarButton label="Placeholder" icon={<GitCompareArrows size={16} />} />
-        </div>
-
-        <button
-          type="button"
-          className="invisible inline-flex h-8 w-8 items-center justify-center rounded-full"
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          <GitCompareArrows size={16} />
-        </button>
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
@@ -185,9 +174,9 @@ export function ComposerGitOpsMockSurface({
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
             }
             disabled={!canCommit}
-            aria-label={canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
+            aria-label={commitLabel}
           >
-            {canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
+            {commitLabel}
           </button>
         </div>
       </div>
