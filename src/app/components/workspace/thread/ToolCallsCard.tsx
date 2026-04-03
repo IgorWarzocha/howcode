@@ -86,17 +86,17 @@ export function ToolCallsCard({ messages, onToggleExpanded }: ToolCallsCardProps
             header={
               <>
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                  <span className="shrink-0 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
+                  <span className="shrink-0 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--text)]/92">
                     {title}
                   </span>
-                  <span className="shrink-0 text-[11px] leading-none text-[color:var(--muted-2)]/80">
+                  <span className="shrink-0 text-[11px] leading-[1.2] text-[color:var(--muted-2)]/80">
                     —
                   </span>
                   <span
                     className={
                       message.role === "bashExecution"
-                        ? "min-w-0 flex-1 truncate font-mono text-[11.5px] leading-none text-[color:var(--muted-2)]/90"
-                        : "min-w-0 flex-1 truncate text-[11.5px] leading-none text-[color:var(--muted-2)]/90"
+                        ? "min-w-0 flex-1 truncate font-mono text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/90"
+                        : "min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/90"
                     }
                   >
                     {preview}

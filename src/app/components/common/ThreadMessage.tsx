@@ -91,13 +91,13 @@ function AssistantThinkingBlock({
       bodyClassName="border-[rgba(169,178,215,0.05)]"
       header={
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-          <span className="shrink-0 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
+          <span className="shrink-0 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--text)]/92">
             {label}
           </span>
-          <span className="shrink-0 text-[11px] leading-none text-[color:var(--muted-2)]/80">
+          <span className="shrink-0 text-[11px] leading-[1.2] text-[color:var(--muted-2)]/80">
             —
           </span>
-          <span className="min-w-0 flex-1 truncate text-[11.5px] leading-none italic text-[color:var(--muted-2)]/90">
+          <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] italic text-[color:var(--muted-2)]/90">
             {preview}
           </span>
         </span>
