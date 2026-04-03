@@ -1,5 +1,5 @@
 import type { Message } from "../../../types";
-import type { TimelineRow } from "./timeline-row";
+import { type TimelineRow, isTurnRowCollapsible } from "./timeline-row";
 
 export function getMessageRenderSignature(message: Message | undefined) {
   if (!message) {
@@ -63,7 +63,7 @@ export function getRowStructureSignature(
 export function getFoldableRows(rows: TimelineRow[]) {
   return rows.filter(
     (row): row is Extract<TimelineRow, { kind: "turn" | "summary" }> =>
-      row.kind === "turn" || row.kind === "summary",
+      row.kind === "summary" || (row.kind === "turn" && isTurnRowCollapsible(row)),
   );
 }
 

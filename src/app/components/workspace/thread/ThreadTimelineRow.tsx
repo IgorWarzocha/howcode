@@ -4,7 +4,7 @@ import { ThreadMessage } from "../../common/ThreadMessage";
 import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
 import { ToolCallsCard } from "./ToolCallsCard";
 import { chatRowShellClass } from "./thread-layout";
-import type { TimelineRow, TimelineTurnItem } from "./timeline-row";
+import { type TimelineRow, type TimelineTurnItem, isTurnRowCollapsible } from "./timeline-row";
 
 function FoldedTimelineRow({
   label,
@@ -166,12 +166,14 @@ export function ThreadTimelineRow({
   }
 
   if (row.kind === "turn") {
+    const canCollapseTurn = isTurnRowCollapsible(row);
     const isStreamingTurn = row.items.some(
       (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
     );
     const isCollapsed = collapsed && !isStreamingTurn;
-    const onToggleTurnCollapse = isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
-    const chevronOffsetClass = row.userMessage ? "mt-2" : "mt-1";
+    const onToggleTurnCollapse =
+      !canCollapseTurn || isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
+    const chevronOffsetClass = "mt-2";
 
     if (isCollapsed) {
       return (

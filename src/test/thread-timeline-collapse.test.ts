@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reconcileCollapsedRowIds } from "../app/components/workspace/thread/reconcileCollapsedRowIds";
+import { isTurnRowCollapsible } from "../app/components/workspace/thread/timeline-row";
 
 describe("reconcileCollapsedRowIds", () => {
   it("keeps only the latest turn expanded by default", () => {
@@ -97,5 +98,51 @@ describe("reconcileCollapsedRowIds", () => {
       "turn:1": true,
       "turn:2": false,
     });
+  });
+
+  it("only marks turns foldable when collapsing would actually hide content", () => {
+    expect(
+      isTurnRowCollapsible({
+        kind: "turn",
+        id: "turn:user",
+        userMessage: { id: "u1", role: "user", content: [""] },
+        items: [],
+      }),
+    ).toBe(false);
+
+    expect(
+      isTurnRowCollapsible({
+        kind: "turn",
+        id: "turn:assistant-only",
+        userMessage: null,
+        items: [
+          {
+            kind: "message",
+            id: "a1",
+            message: { id: "a1", role: "assistant", content: ["Only prose"] },
+          },
+        ],
+      }),
+    ).toBe(false);
+
+    expect(
+      isTurnRowCollapsible({
+        kind: "turn",
+        id: "turn:assistant-thinking",
+        userMessage: null,
+        items: [
+          {
+            kind: "message",
+            id: "a2",
+            message: {
+              id: "a2",
+              role: "assistant",
+              content: ["Visible reply"],
+              thinkingContent: ["Hidden thinking"],
+            },
+          },
+        ],
+      }),
+    ).toBe(true);
   });
 });
