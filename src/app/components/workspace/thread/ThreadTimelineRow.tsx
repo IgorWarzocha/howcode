@@ -42,11 +42,13 @@ function TimelineRowShell({
   expanded,
   ariaLabel,
   onToggle,
+  toggleClassName,
   children,
 }: {
   expanded?: boolean;
   ariaLabel?: string;
   onToggle?: () => void;
+  toggleClassName?: string;
   children: ReactNode;
 }) {
   return (
@@ -54,7 +56,7 @@ function TimelineRowShell({
       {onToggle ? (
         <button
           type="button"
-          className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className={`${toggleClassName ?? "mt-1"} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]`}
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={ariaLabel}
@@ -169,17 +171,28 @@ export function ThreadTimelineRow({
     );
     const isCollapsed = collapsed && !isStreamingTurn;
     const onToggleTurnCollapse = isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
+    const chevronOffsetClass = row.userMessage ? "mt-2" : "mt-1";
 
     if (isCollapsed) {
       return (
-        <TimelineRowShell expanded={false} ariaLabel="Expand turn" onToggle={onToggleTurnCollapse}>
+        <TimelineRowShell
+          expanded={false}
+          ariaLabel="Expand turn"
+          onToggle={onToggleTurnCollapse}
+          toggleClassName={chevronOffsetClass}
+        >
           <div className="grid min-w-0 gap-3">{renderCollapsedTurnLead(row)}</div>
         </TimelineRowShell>
       );
     }
 
     return (
-      <TimelineRowShell expanded ariaLabel="Collapse turn" onToggle={onToggleTurnCollapse}>
+      <TimelineRowShell
+        expanded
+        ariaLabel="Collapse turn"
+        onToggle={onToggleTurnCollapse}
+        toggleClassName={chevronOffsetClass}
+      >
         <div className="grid min-w-0 gap-3">
           {row.userMessage ? <ThreadMessage message={row.userMessage} /> : null}
           {row.items.map(renderTurnItem)}
