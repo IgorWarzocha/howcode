@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
-import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { ToolbarButton } from "../../common/ToolbarButton";
@@ -86,12 +86,26 @@ export function ComposerGitOpsMockSurface({
               </span>
             </div>
           ) : null}
+          <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
+            {gitOpsMockModes.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] transition-colors",
+                  mode === gitOpsMockMode
+                    ? "bg-[rgba(255,255,255,0.08)] text-[color:var(--text)]"
+                    : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
+                )}
+                onClick={() => onSetGitOpsMockMode(mode)}
+              >
+                {getGitOpsModeLabel(mode)}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
-            className={cn(
-              primaryButtonClass,
-              "inline-flex h-8 w-8 items-center justify-center rounded-full px-0 disabled:cursor-not-allowed disabled:opacity-50",
-            )}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() =>
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
             }
@@ -149,23 +163,6 @@ export function ComposerGitOpsMockSurface({
             onClick={() => setDraft((current) => !current)}
             className={draft ? "text-[color:var(--text)]" : undefined}
           />
-          <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
-            {gitOpsMockModes.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] transition-colors",
-                  mode === gitOpsMockMode
-                    ? "bg-[rgba(255,255,255,0.08)] text-[color:var(--text)]"
-                    : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
-                )}
-                onClick={() => onSetGitOpsMockMode(mode)}
-              >
-                {getGitOpsModeLabel(mode)}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>

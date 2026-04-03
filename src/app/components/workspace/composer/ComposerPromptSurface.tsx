@@ -179,15 +179,38 @@ export function ComposerPromptSurface({
           />
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
-          onClick={() => void send()}
-          disabled={!canSend}
-          aria-label="Send"
-        >
-          <Send size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <FeatureStatusBadge statusId="feature:composer.git-ops" />
+          {gitOpsMockMode === "dirty" ? (
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[color:var(--muted)]">
+                {formatGitCount(gitOpsMeta.files)} files
+              </span>
+              <span className="text-[#7ee0bb]">+{formatGitCount(gitOpsMeta.additions)}</span>
+              <span className="text-[#ff9c9c]">-{formatGitCount(gitOpsMeta.deletions)}</span>
+            </div>
+          ) : gitOpsMockMode === "clean" ? (
+            <span className="text-[12px] text-[color:var(--muted)]">0 files</span>
+          ) : null}
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitOpsMockMode))}
+            onClick={onOpenGitOps}
+            aria-label="Open git ops"
+            title="Open git ops"
+          >
+            <GitBranch size={14} />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => void send()}
+            disabled={!canSend}
+            aria-label="Send"
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </div>
 
       {errorMessage ? (
@@ -236,29 +259,6 @@ export function ComposerPromptSurface({
           trailing
           className={getFeatureStatusButtonClass("feature:composer.profile")}
         />
-        <div className="ml-auto flex items-center gap-2">
-          <FeatureStatusBadge statusId="feature:composer.git-ops" />
-          {gitOpsMockMode === "dirty" ? (
-            <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[color:var(--muted)]">
-                {formatGitCount(gitOpsMeta.files)} files
-              </span>
-              <span className="text-[#7ee0bb]">+{formatGitCount(gitOpsMeta.additions)}</span>
-              <span className="text-[#ff9c9c]">-{formatGitCount(gitOpsMeta.deletions)}</span>
-            </div>
-          ) : gitOpsMockMode === "clean" ? (
-            <span className="text-[12px] text-[color:var(--muted)]">0 files</span>
-          ) : null}
-          <button
-            type="button"
-            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitOpsMockMode))}
-            onClick={onOpenGitOps}
-            aria-label="Open git ops"
-            title="Open git ops"
-          >
-            <GitBranch size={14} />
-          </button>
-        </div>
       </div>
     </>
   );
