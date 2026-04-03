@@ -84,7 +84,7 @@ export function ToolCallsCard({
       panelId={`tool-call-group-${id}`}
       className="border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
       triggerClassName="hover:bg-[rgba(255,255,255,0.025)]"
-      bodyClassName="border-[rgba(169,178,215,0.08)] px-2 py-2"
+      bodyClassName="border-0 px-2 py-2"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
           <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
