@@ -46,7 +46,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Status:** Partially real.
 
-- Controlled composer state exists in renderer: `src/app/components/workspace/Composer.tsx`
+- Controlled composer state exists in renderer and the surface is now split into prompt-vs-git-ops mock states for easier iteration: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
 - Send is wired through real Pi sessions with per-cwd runtimes: `desktop/runtime/*`, `desktop/pi-threads/action-router.cts`
 - File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/bun/index.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
 - Existing thread continuation is real via runtime session activation: `desktop/runtime/runtime-registry.cts`
@@ -57,6 +57,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `composer.dictate`
   - `composer.host`
   - `composer.profile`
+  - composer-adjacent git ops surface is mock-only and intentionally unwired for now
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
 **Expansion direction:**
@@ -64,6 +65,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Improve attachment handling to match Pi CLI file processing more closely (auto-resize, binary rejection, richer previews).
 - Expand failure UX beyond inline composer text (retry affordances, auth-specific actions).
 - Continue tightening live-turn fidelity beyond the current prose + reasoning + tool rendering.
+- Replace the current mock git ops surface with a git-native worktree/project diff + commit flow instead of extending the current per-turn checkpoint model.
 
 ### 2. New thread creation
 
@@ -253,6 +255,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - extend checkpoint capture to additional turn-completion paths such as takeover session reconciliation if needed
 - add richer diff review actions once a review/run-log model exists
+- current product direction is under review: we are mocking a simpler composer-adjacent git ops flow that would treat diffs as project/worktree state since the last commit instead of leaning harder into per-turn checkpoint history
 
 ### 10. Remote connections banner on home
 

@@ -75,6 +75,12 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 6. Diff panel
 - [x] Replace hardcoded diff cards with a real checkpoint-backed `@pierre/diffs` viewer
   - files: `src/app/components/workspace/DiffPanel.tsx`, `src/app/components/workspace/diff/*`, `desktop/diff/*`, `shared/desktop-contracts.ts`
+- [x] Split the composer surface into smaller prompt-vs-git-ops mock states before reworking git UX
+  - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
+- [ ] Mock a composer-adjacent git ops replacement surface before backend wiring
+  - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
+- [ ] Replace per-turn checkpoint diff ownership with a git-native project/worktree diff model if the mock lands well
+  - files: `desktop/diff/*`, `desktop/project-git.cts`, `src/app/components/workspace/diff/*`, `src/app/components/workspace/composer/*`, `shared/desktop-contracts.ts`
 - [ ] Implement `diff.review`
   - files: `desktop/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
 
@@ -210,7 +216,7 @@ Definition of done:
 - [x] Sidebar updates recency/title/thread presence correctly
 - [ ] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
 
-This milestone is now in place. Next, finish the remaining non-chat composer actions and then move to project actions / terminal / diff parity.
+This milestone is now in place. Next, finish the remaining non-chat composer actions, mock the composer-adjacent git ops flow, and then move to project actions / terminal / diff parity.
 
 ## Hardening progress snapshot
 

@@ -112,6 +112,11 @@ export function AppShellWorkspace({
               availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
               projectId={composerProjectId}
               sessionPath={terminalSessionPath}
+              onOpenDiffPanel={() => {
+                if (!state.diffVisible) {
+                  handleToggleDiff();
+                }
+              }}
               onOpenTakeoverTerminal={handleShowTakeoverTerminal}
               onPickAttachments={pickComposerAttachments}
               onAction={handleAction}

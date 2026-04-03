@@ -12,6 +12,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - Bun-native main process with Electrobun RPC bridge into the renderer
 - real xterm.js terminal panel backed by Bun PTY first, with `node-pty` kept only as the Windows compatibility fallback
 - Pi takeover terminal view that replaces the thread pane with an embedded native Pi TUI lane
+- composer surface split into prompt and mock git-ops modes so we can iterate on each state independently
 - centered thread scroller with natural-flow row rendering, reliable folding, bottom-stick behavior during live updates, and preserved in-lane scrolling
 - selected-session Pi JSONL watching so the open thread refreshes when the same session changes externally in Pi TUI
 - visible assistant reasoning blocks that auto-expand while streaming and collapse when the turn settles
@@ -79,7 +80,7 @@ The `prepare` script will then activate Husky automatically.
 
 ## Next integration step
 
-Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, diff backing data, terminal multi-session polish) while keeping the new lane boundaries intact.
+Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, composer-adjacent git ops, terminal multi-session polish) while keeping the new lane boundaries intact.
 
 ## Routing note for later
 
