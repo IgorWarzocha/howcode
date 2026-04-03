@@ -46,14 +46,21 @@ function FoldedTimelineRow({
   return (
     <button
       type="button"
-      className="grid min-w-0 gap-1 rounded-2xl border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)] px-4 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="flex min-w-0 items-center gap-1.5 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div className="truncate text-[14px] leading-[1.58] text-[color:var(--text)]/92">{label}</div>
+      <div className="shrink-0 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
+        {label}
+      </div>
       {secondary ? (
-        <div className="truncate text-[14px] leading-[1.58] text-[color:var(--muted-2)]/78">
-          {secondary}
-        </div>
+        <>
+          <span className="shrink-0 text-[11px] leading-none text-[color:var(--muted-2)]/80">
+            —
+          </span>
+          <div className="min-w-0 flex-1 truncate text-[11.5px] leading-none text-[color:var(--muted-2)]/90">
+            {secondary}
+          </div>
+        </>
       ) : null}
     </button>
   );

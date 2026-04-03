@@ -91,11 +91,13 @@ function AssistantThinkingBlock({
       bodyClassName="border-[rgba(169,178,215,0.05)]"
       header={
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-          <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/82">
+          <span className="shrink-0 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
             {label}
           </span>
-          <span className="shrink-0 text-[11px] text-[color:var(--muted-2)]/80">—</span>
-          <span className="min-w-0 flex-1 truncate text-[11.5px] italic text-[color:var(--muted-2)]/76">
+          <span className="shrink-0 text-[11px] leading-none text-[color:var(--muted-2)]/80">
+            —
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[11.5px] leading-none italic text-[color:var(--muted-2)]/90">
             {preview}
           </span>
         </span>
@@ -120,7 +122,7 @@ function SummaryBlock({
   content: string[];
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)]">
+    <div className="w-full overflow-hidden rounded-xl border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)]">
       <div className="border-b border-[rgba(169,178,215,0.05)] px-3 py-2 text-[12.5px] font-medium text-[color:var(--text)]/82">
         {label}
       </div>
@@ -229,11 +231,7 @@ export const ThreadMessage = memo(function ThreadMessage({
   if (message.role === "branchSummary" || message.role === "compactionSummary") {
     const label = message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
 
-    return (
-      <div className="px-4">
-        <SummaryBlock label={label} content={message.content} />
-      </div>
-    );
+    return <SummaryBlock label={label} content={message.content} />;
   }
 
   return null;
