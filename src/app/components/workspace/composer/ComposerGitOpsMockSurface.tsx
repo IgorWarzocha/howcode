@@ -48,7 +48,7 @@ export function ComposerGitOpsMockSurface({
       ? "Clean"
       : pushEnabled
         ? "Commit & push"
-        : "Ready to commit";
+        : "Commit";
 
   return (
     <div
@@ -101,21 +101,6 @@ export function ComposerGitOpsMockSurface({
             className={!isGitRepo ? "opacity-50" : undefined}
             disabled={!isGitRepo}
           />
-
-          <button
-            type="button"
-            className={cn(
-              primaryButtonClass,
-              "inline-flex h-8 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
-            )}
-            onClick={() =>
-              void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
-            }
-            disabled={!canCommit}
-            aria-label={commitLabel}
-          >
-            {commitLabel}
-          </button>
         </div>
       </div>
 
@@ -133,16 +118,6 @@ export function ComposerGitOpsMockSurface({
         </button>
 
         <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
-          <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
-            <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
-              +{formatGitCount(meta.additions)}
-            </span>
-            <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
-              -{formatGitCount(meta.deletions)}
-            </span>
-          </div>
-
           <ToggleButton
             label="Include unstaged"
             checked={includeUnstaged}
@@ -154,6 +129,31 @@ export function ComposerGitOpsMockSurface({
             checked={pushEnabled}
             onClick={() => setPushEnabled((current) => !current)}
           />
+
+          <div className="flex items-center gap-2 text-[12px]">
+            <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
+            <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
+              +{formatGitCount(meta.additions)}
+            </span>
+            <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
+              -{formatGitCount(meta.deletions)}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className={cn(
+              primaryButtonClass,
+              "inline-flex h-8 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
+            )}
+            onClick={() =>
+              void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
+            }
+            disabled={!canCommit}
+            aria-label={commitLabel}
+          >
+            {commitLabel}
+          </button>
         </div>
       </div>
     </div>
