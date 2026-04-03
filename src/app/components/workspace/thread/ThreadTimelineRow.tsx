@@ -169,30 +169,23 @@ export function ThreadTimelineRow({
       (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
     );
     const isCollapsed = collapsed && !isStreamingTurn;
+    const onToggleTurnCollapse = isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
     const preview = getTurnPreview(row);
 
     if (isCollapsed) {
       return (
-        <TimelineRowShell
-          expanded={false}
-          ariaLabel="Expand turn"
-          onToggle={() => onToggleRowCollapse(row.id)}
-        >
+        <TimelineRowShell expanded={false} ariaLabel="Expand turn" onToggle={onToggleTurnCollapse}>
           <FoldedTimelineRow
             label={preview.userPreview}
             secondary={preview.assistantPreview}
-            onToggle={() => onToggleRowCollapse(row.id)}
+            onToggle={onToggleTurnCollapse ?? (() => undefined)}
           />
         </TimelineRowShell>
       );
     }
 
     return (
-      <TimelineRowShell
-        expanded
-        ariaLabel="Collapse turn"
-        onToggle={() => onToggleRowCollapse(row.id)}
-      >
+      <TimelineRowShell expanded ariaLabel="Collapse turn" onToggle={onToggleTurnCollapse}>
         <div className="grid min-w-0 gap-3">
           {row.userMessage ? <ThreadMessage message={row.userMessage} /> : null}
           {row.items.map(renderTurnItem)}

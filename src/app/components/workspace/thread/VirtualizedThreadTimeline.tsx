@@ -53,9 +53,32 @@ export function VirtualizedThreadTimeline({
     [isStreaming, messages],
   );
   const foldableRows = useMemo(() => getFoldableRows(rows), [rows]);
+  const latestTurnRowId = useMemo(
+    () => [...rows].reverse().find((row) => row.kind === "turn")?.id ?? null,
+    [rows],
+  );
+  const streamingTurnRowId = useMemo(() => {
+    if (!isStreaming) {
+      return null;
+    }
+
+    return (
+      rows.find(
+        (row) =>
+          row.kind === "turn" &&
+          row.items.some(
+            (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
+          ),
+      )?.id ?? latestTurnRowId
+    );
+  }, [isStreaming, latestTurnRowId, rows, streamingAssistantMessageId]);
   const effectiveCollapsedRowIds = useMemo(
-    () => reconcileCollapsedRowIds(foldableRows, collapsedRowIds),
-    [collapsedRowIds, foldableRows],
+    () =>
+      reconcileCollapsedRowIds(foldableRows, collapsedRowIds, {
+        defaultExpandedRowId: latestTurnRowId,
+        forcedExpandedRowId: streamingTurnRowId,
+      }),
+    [collapsedRowIds, foldableRows, latestTurnRowId, streamingTurnRowId],
   );
   const rowStructureSignature = useMemo(
     () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
@@ -64,7 +87,10 @@ export function VirtualizedThreadTimeline({
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
-      const next = reconcileCollapsedRowIds(foldableRows, current);
+      const next = reconcileCollapsedRowIds(foldableRows, current, {
+        defaultExpandedRowId: latestTurnRowId,
+        forcedExpandedRowId: streamingTurnRowId,
+      });
 
       const currentKeys = Object.keys(current);
       const nextKeys = Object.keys(next);
@@ -77,7 +103,7 @@ export function VirtualizedThreadTimeline({
 
       return next;
     });
-  }, [foldableRows]);
+  }, [foldableRows, latestTurnRowId, streamingTurnRowId]);
 
   const scrollToBottom = useCallback(() => {
     const container = containerRef.current;
@@ -137,12 +163,19 @@ export function VirtualizedThreadTimeline({
     scheduleScrollToBottom();
   }, [scheduleScrollToBottom]);
 
-  const handleToggleRowCollapse = useCallback((rowId: string) => {
-    setCollapsedRowIds((current) => ({
-      ...current,
-      [rowId]: !current[rowId],
-    }));
-  }, []);
+  const handleToggleRowCollapse = useCallback(
+    (rowId: string) => {
+      if (rowId === streamingTurnRowId) {
+        return;
+      }
+
+      setCollapsedRowIds((current) => ({
+        ...current,
+        [rowId]: !current[rowId],
+      }));
+    },
+    [streamingTurnRowId],
+  );
 
   const handleJumpToEarlierMessages = useCallback(() => {
     const container = containerRef.current;
