@@ -46,12 +46,16 @@ export function ComposerGitOpsMockSurface({
     >
       <div className="relative">
         <textarea
-          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-8 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
           value={commitMessage}
           onChange={(event) => setCommitMessage(event.target.value)}
           aria-label="Commit message"
-          placeholder="Leave blank to autogenerate a commit message"
+          placeholder=""
         />
+
+        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] text-[color:var(--muted)]">
+          Leave blank to autogenerate a commit message
+        </div>
 
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
@@ -116,18 +120,7 @@ export function ComposerGitOpsMockSurface({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="flex items-center gap-2 text-[13px] text-[color:var(--muted)]">
-          {isGitRepo ? (
-            <GitBranch size={14} />
-          ) : (
-            <TriangleAlert size={14} className="text-[#ff9c9c]" />
-          )}
-          <span>
-            {isGitRepo ? (originKnown ? "origin linked" : "origin missing") : "Git required"}
-          </span>
-        </div>
-      </div>
+      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap" />
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
