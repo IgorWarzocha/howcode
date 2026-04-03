@@ -53,6 +53,30 @@ function splitParagraphs(text: string) {
     .filter(Boolean);
 }
 
+function normalizeThinkingHeader(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const markdownHeading = trimmed.match(/^#{1,6}\s+(.+)$/);
+  if (markdownHeading?.[1]) {
+    return markdownHeading[1].trim();
+  }
+
+  const boldOnly = trimmed.match(/^\*\*(.+?)\*\*$/);
+  if (boldOnly?.[1]) {
+    return boldOnly[1].trim();
+  }
+
+  const underscoreBoldOnly = trimmed.match(/^__(.+?)__$/);
+  if (underscoreBoldOnly?.[1]) {
+    return underscoreBoldOnly[1].trim();
+  }
+
+  return null;
+}
+
 function getTextParts(content: RuntimeMessage["content"]) {
   if (!Array.isArray(content)) {
     return [] as string[];
@@ -121,9 +145,14 @@ function extractAssistantThinking(message: RuntimeMessage) {
   const thinkingContent = thinkingParts
     .flatMap((part) => splitParagraphs(part.thinking ?? ""))
     .filter(Boolean);
+  const thinkingHeaders = thinkingParts
+    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
+    .map(normalizeThinkingHeader)
+    .filter((value): value is string => Boolean(value));
 
   return {
     thinkingContent,
+    thinkingHeaders,
     thinkingRedacted: thinkingParts.some((part) => Boolean(part.redacted)),
   };
 }
@@ -159,7 +188,8 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
 
     case "assistant": {
       const content = extractAssistantContent(runtimeMessage);
-      const { thinkingContent, thinkingRedacted } = extractAssistantThinking(runtimeMessage);
+      const { thinkingContent, thinkingHeaders, thinkingRedacted } =
+        extractAssistantThinking(runtimeMessage);
 
       if (content.length === 0 && thinkingContent.length === 0) {
         return null;
@@ -170,6 +200,7 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
         role: "assistant",
         content,
         thinkingContent: thinkingContent.length > 0 ? thinkingContent : undefined,
+        thinkingHeaders: thinkingHeaders.length > 0 ? [...new Set(thinkingHeaders)] : undefined,
         thinkingRedacted: thinkingRedacted || undefined,
       };
     }

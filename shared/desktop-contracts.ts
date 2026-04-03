@@ -33,6 +33,7 @@ export type ProseMessage = {
   format?: "prose" | "list";
   content: string[];
   thinkingContent?: string[];
+  thinkingHeaders?: string[];
   thinkingRedacted?: boolean;
 };
 

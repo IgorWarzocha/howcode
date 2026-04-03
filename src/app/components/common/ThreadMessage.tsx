@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { memo, useEffect, useId, useRef, useState } from "react";
 import type { Message } from "../../types";
-import { inlineCodeClass } from "../../ui/classes";
+import { MarkdownContent } from "./MarkdownContent";
 
 type ThreadMessageProps = {
   message: Message;
@@ -9,47 +9,20 @@ type ThreadMessageProps = {
   onToggleExpanded?: () => void;
 };
 
-function renderInline(text: string) {
-  let cursor = 0;
-
-  return text.split(/(`[^`]+`)/g).map((part) => {
-    const key = `${cursor}-${part}`;
-    cursor += part.length;
-
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return (
-        <code key={key} className={inlineCodeClass}>
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-
-    return <span key={key}>{part}</span>;
-  });
-}
-
 function renderProse(content: string[], format: "prose" | "list" = "prose") {
   if (format === "list") {
     return (
-      <ul className="m-0 grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.62] text-[color:var(--text)] marker:text-[color:var(--muted)] [overflow-wrap:anywhere]">
-        {content.map((item) => (
-          <li key={item} className="min-w-0 break-words">
-            {renderInline(item)}
-          </li>
-        ))}
-      </ul>
+      <MarkdownContent
+        markdown={content.map((item) => `- ${item}`).join("\n")}
+        className="gap-1.5"
+      />
     );
   }
 
   return (
-    <div className="grid min-w-0 gap-3 text-[14px] leading-[1.68] text-[color:var(--text)] [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
-        <p
-          key={paragraph}
-          className="m-0 whitespace-pre-wrap break-words text-[color:var(--text)]/92 [overflow-wrap:anywhere]"
-        >
-          {renderInline(paragraph)}
-        </p>
+        <MarkdownContent key={paragraph} markdown={paragraph} />
       ))}
     </div>
   );
@@ -57,11 +30,14 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
 
 function renderThinking(content: string[]) {
   return (
-    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/78 italic [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-2 [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
-        <p key={paragraph} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-          {renderInline(paragraph)}
-        </p>
+        <MarkdownContent
+          key={paragraph}
+          markdown={paragraph}
+          tone="thinking"
+          className="gap-1 text-[13px] leading-[1.62]"
+        />
       ))}
     </div>
   );
@@ -77,11 +53,13 @@ function getThinkingPreview(thinkingContent: string[], thinkingRedacted?: boolea
 
 function AssistantThinkingBlock({
   thinkingContent,
+  thinkingHeaders,
   thinkingRedacted,
   autoExpandThinking = false,
   onToggleExpanded,
 }: {
   thinkingContent: string[];
+  thinkingHeaders?: string[];
   thinkingRedacted?: boolean;
   autoExpandThinking?: boolean;
   onToggleExpanded?: () => void;
@@ -102,7 +80,10 @@ function AssistantThinkingBlock({
 
   const label =
     thinkingRedacted && thinkingContent.length === 0 ? "Thinking unavailable" : "Thinking";
-  const preview = getThinkingPreview(thinkingContent, thinkingRedacted);
+  const preview =
+    thinkingHeaders && thinkingHeaders.length > 0
+      ? thinkingHeaders.join(", ")
+      : getThinkingPreview(thinkingContent, thinkingRedacted);
 
   return (
     <div className="mb-3 overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.012)]">
@@ -153,14 +134,16 @@ export const ThreadMessage = memo(function ThreadMessage({
   if (message.role === "user") {
     return (
       <div className="w-full min-w-0 rounded-[18px] bg-[rgba(47,50,66,0.58)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-        {message.content.map((paragraph) => (
-          <p
-            key={paragraph}
-            className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-          >
-            {renderInline(paragraph)}
-          </p>
-        ))}
+        <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
+          {message.content.map((paragraph) => (
+            <MarkdownContent
+              key={paragraph}
+              markdown={paragraph}
+              tone="user"
+              className="text-[14px] leading-[1.58]"
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -171,6 +154,7 @@ export const ThreadMessage = memo(function ThreadMessage({
         {message.thinkingContent && message.thinkingContent.length > 0 ? (
           <AssistantThinkingBlock
             thinkingContent={message.thinkingContent}
+            thinkingHeaders={message.thinkingHeaders}
             thinkingRedacted={message.thinkingRedacted}
             autoExpandThinking={autoExpandThinking}
             onToggleExpanded={onToggleExpanded}

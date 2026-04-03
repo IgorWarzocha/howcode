@@ -116,6 +116,43 @@ describe("pi message mapper", () => {
     ]);
   });
 
+  it("extracts thinking section headers for the desktop header row", () => {
+    const messages = mapAgentMessagesToUiMessages([
+      {
+        role: "assistant",
+        timestamp: 1,
+        content: [
+          {
+            type: "thinking",
+            thinking:
+              "**Optimizing Markdown Formatting**\n\nBody\n\n## Formatting thoughts and styles\n\nMore body\n\n__Considering markdown in thinking blocks__\n\nLast body",
+          },
+        ],
+      },
+    ] as never[]);
+
+    expect(messages).toEqual([
+      {
+        id: "1-assistant-0",
+        role: "assistant",
+        content: [],
+        thinkingContent: [
+          "**Optimizing Markdown Formatting**",
+          "Body",
+          "## Formatting thoughts and styles",
+          "More body",
+          "__Considering markdown in thinking blocks__",
+          "Last body",
+        ],
+        thinkingHeaders: [
+          "Optimizing Markdown Formatting",
+          "Formatting thoughts and styles",
+          "Considering markdown in thinking blocks",
+        ],
+      },
+    ]);
+  });
+
   it("counts previous messages from the latest compaction boundary", () => {
     expect(
       getPreviousMessageCount([
