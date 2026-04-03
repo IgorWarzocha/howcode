@@ -1,11 +1,18 @@
 import { ChevronDown, GitBranch, Mic, Plus, Send, Settings, SquareTerminal } from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
+import { compactIconButtonClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
 import { ComposerMenu } from "./ComposerMenu";
-import { type GitOpsMockMode, getGitOpsEntryButtonClass, getGitOpsModeLabel } from "./git-ops-mock";
+import {
+  type GitOpsMockMode,
+  formatGitCount,
+  getGitOpsEntryButtonClass,
+  gitOpsMockMeta,
+} from "./git-ops-mock";
 import { useComposerController } from "./useComposerController";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -29,6 +36,7 @@ export function ComposerPromptSurface({
   gitOpsMockMode,
   onOpenGitOps,
 }: ComposerPromptSurfaceProps) {
+  const gitOpsMeta = gitOpsMockMeta[gitOpsMockMode];
   const {
     attachments,
     canSend,
@@ -228,19 +236,29 @@ export function ComposerPromptSurface({
           trailing
           className={getFeatureStatusButtonClass("feature:composer.profile")}
         />
-        <ToolbarButton
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Git ops</span>
-              <span className="text-[11px] opacity-70">{getGitOpsModeLabel(gitOpsMockMode)}</span>
-              <FeatureStatusBadge statusId="feature:composer.git-ops" />
-            </span>
-          }
-          icon={<GitBranch size={14} />}
-          onClick={onOpenGitOps}
-          trailing
-          className={getGitOpsEntryButtonClass(gitOpsMockMode)}
-        />
+        <div className="ml-auto flex items-center gap-2">
+          <FeatureStatusBadge statusId="feature:composer.git-ops" />
+          {gitOpsMockMode === "dirty" ? (
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[color:var(--muted)]">
+                {formatGitCount(gitOpsMeta.files)} files
+              </span>
+              <span className="text-[#7ee0bb]">+{formatGitCount(gitOpsMeta.additions)}</span>
+              <span className="text-[#ff9c9c]">-{formatGitCount(gitOpsMeta.deletions)}</span>
+            </div>
+          ) : gitOpsMockMode === "clean" ? (
+            <span className="text-[12px] text-[color:var(--muted)]">0 files</span>
+          ) : null}
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitOpsMockMode))}
+            onClick={onOpenGitOps}
+            aria-label="Open git ops"
+            title="Open git ops"
+          >
+            <GitBranch size={14} />
+          </button>
+        </div>
       </div>
     </>
   );
