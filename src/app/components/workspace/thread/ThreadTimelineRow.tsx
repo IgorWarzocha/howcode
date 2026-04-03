@@ -82,7 +82,7 @@ function TimelineRowShell({
       {onToggle ? (
         <button
           type="button"
-          className="mt-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={ariaLabel}
