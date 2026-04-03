@@ -1,4 +1,3 @@
-import { stat } from "node:fs/promises";
 import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts";
 import {
   getFirstUserTurnTitle,
@@ -9,11 +8,9 @@ import { getLiveThread } from "../pi-desktop-runtime";
 import { getPiModule } from "../pi-module";
 import {
   ensureProject,
-  getCachedThread,
   listArchivedThreads,
   listProjectThreads,
   listTurnDiffSummaries,
-  saveThreadCache,
 } from "../thread-state-db";
 
 export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
@@ -31,33 +28,13 @@ export async function loadThread(sessionPath: string): Promise<ThreadData> {
     return liveThread;
   }
 
-  const cachedThread = getCachedThread(sessionPath);
-  const fileStats = await stat(sessionPath);
-  const currentModifiedMs = Math.floor(fileStats.mtimeMs);
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
 
-  if (
-    cachedThread?.messages &&
-    cachedThread.hydratedModifiedMs !== null &&
-    cachedThread.hydratedModifiedMs >= currentModifiedMs
-  ) {
-    return {
-      sessionPath,
-      title: cachedThread.title,
-      messages: cachedThread.messages,
-      previousMessageCount,
-      isStreaming: false,
-      turnDiffSummaries: listTurnDiffSummaries(sessionPath),
-    };
-  }
-
   const sessionContext = manager.buildSessionContext();
   const messages = mapAgentMessagesToUiMessages(sessionContext.messages);
-  const title = cachedThread?.title || getFirstUserTurnTitle(messages);
-
-  saveThreadCache(sessionPath, title, messages, currentModifiedMs);
+  const title = getFirstUserTurnTitle(messages);
 
   return {
     sessionPath,

@@ -1,6 +1,5 @@
-export type { CachedThread, SessionSummaryRecord } from "./thread-state-db/types";
+export type { SessionSummaryRecord } from "./thread-state-db/types";
 export {
-  getCachedThread,
   getLatestTurnDiffSummary,
   getThreadCwd,
   getThreadSessionPath,
@@ -19,7 +18,6 @@ export {
   reorderProjects,
   renameProject,
   restoreThread,
-  saveThreadCache,
   setProjectCollapsed,
   syncSessionSummaries,
   toggleThreadPinned,

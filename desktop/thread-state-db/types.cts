@@ -1,4 +1,3 @@
-import type { Message } from "../../shared/desktop-contracts";
 import type { TurnDiffFile, TurnDiffStatus, TurnDiffSummary } from "../../shared/desktop-contracts";
 
 export type SessionSummaryRecord = {
@@ -26,14 +25,6 @@ export type ThreadRow = {
   lastModifiedMs: number;
 };
 
-export type CachedThreadRow = {
-  sessionPath: string;
-  title: string;
-  lastModifiedMs: number;
-  hydratedModifiedMs: number | null;
-  messagesJson: string | null;
-};
-
 export type ArchivedThreadRow = {
   id: string;
   title: string;
@@ -45,14 +36,6 @@ export type ArchivedThreadRow = {
 
 export type ThreadPathRow = {
   sessionPath: string;
-};
-
-export type CachedThread = {
-  sessionPath: string;
-  title: string;
-  lastModifiedMs: number;
-  hydratedModifiedMs: number | null;
-  messages: Message[] | null;
 };
 
 export type TurnDiffRow = {

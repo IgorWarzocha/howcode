@@ -5,17 +5,9 @@ import type {
   TurnDiffSummary,
 } from "../../shared/desktop-contracts";
 import { getThreadStateDatabase } from "./db";
-import {
-  mapArchivedThreadRow,
-  mapCachedThreadRow,
-  mapProjectRow,
-  mapThreadRow,
-  mapTurnDiffRow,
-} from "./mappers";
+import { mapArchivedThreadRow, mapProjectRow, mapThreadRow, mapTurnDiffRow } from "./mappers";
 import type {
   ArchivedThreadRow,
-  CachedThread,
-  CachedThreadRow,
   ProjectRow,
   ThreadCwdRow,
   ThreadPathRow,
@@ -78,26 +70,6 @@ export function listProjectThreads(projectId: string): Thread[] {
     .all(projectId) as ThreadRow[];
 
   return rows.map(mapThreadRow);
-}
-
-export function getCachedThread(sessionPath: string): CachedThread | null {
-  const db = getThreadStateDatabase();
-  const row = db
-    .prepare(
-      `
-        SELECT
-          session_path AS sessionPath,
-          title,
-          last_modified_ms AS lastModifiedMs,
-          hydrated_modified_ms AS hydratedModifiedMs,
-          messages_json AS messagesJson
-        FROM threads
-        WHERE session_path = ?
-      `,
-    )
-    .get(sessionPath) as CachedThreadRow | undefined;
-
-  return row ? mapCachedThreadRow(row) : null;
 }
 
 export function listArchivedThreads(): ArchivedThread[] {

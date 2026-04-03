@@ -4,14 +4,7 @@ import type {
   Thread,
   TurnDiffSummary,
 } from "../../shared/desktop-contracts";
-import type {
-  ArchivedThreadRow,
-  CachedThread,
-  CachedThreadRow,
-  ProjectRow,
-  ThreadRow,
-  TurnDiffRow,
-} from "./types";
+import type { ArchivedThreadRow, ProjectRow, ThreadRow, TurnDiffRow } from "./types";
 
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);
@@ -63,16 +56,6 @@ export function mapThreadRow(row: ThreadRow): Thread {
     age: formatRelativeAge(row.lastModifiedMs),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
-  };
-}
-
-export function mapCachedThreadRow(row: CachedThreadRow): CachedThread {
-  return {
-    sessionPath: row.sessionPath,
-    title: row.title,
-    lastModifiedMs: row.lastModifiedMs,
-    hydratedModifiedMs: row.hydratedModifiedMs,
-    messages: row.messagesJson ? JSON.parse(row.messagesJson) : null,
   };
 }
 

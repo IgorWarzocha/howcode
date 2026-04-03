@@ -38,8 +38,6 @@ export function ensureThreadStateSchema(database: Database) {
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
       last_modified_ms INTEGER NOT NULL,
-      hydrated_modified_ms INTEGER,
-      messages_json TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (cwd) REFERENCES projects(cwd) ON DELETE CASCADE

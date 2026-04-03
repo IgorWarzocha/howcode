@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { Message } from "../../shared/desktop-contracts";
 import { getThreadStateDatabase } from "./db";
 import type { SessionSummaryRecord, TurnDiffSummaryRecord } from "./types";
 
@@ -79,27 +78,6 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
         updated_at = CURRENT_TIMESTAMP
     `,
   ).run(session.id, session.cwd, session.sessionPath, session.title, session.lastModifiedMs);
-}
-
-export function saveThreadCache(
-  sessionPath: string,
-  title: string,
-  messages: Message[],
-  hydratedModifiedMs: number,
-) {
-  const db = getThreadStateDatabase();
-  db.prepare(
-    `
-      UPDATE threads
-      SET
-        messages_json = ?,
-        last_modified_ms = ?,
-        hydrated_modified_ms = ?,
-        updated_at = CURRENT_TIMESTAMP,
-        title = CASE WHEN title = '' THEN ? ELSE title END
-      WHERE session_path = ?
-    `,
-  ).run(JSON.stringify(messages), hydratedModifiedMs, hydratedModifiedMs, title, sessionPath);
 }
 
 export function setProjectCollapsed(projectId: string, collapsed: boolean) {

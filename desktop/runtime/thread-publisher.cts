@@ -7,7 +7,7 @@ import {
   mapAgentMessagesToUiMessages,
 } from "../../shared/pi-message-mapper";
 import { getTurnDiffSummaries } from "../diff/query";
-import { saveThreadCache, upsertThreadSummary } from "../thread-state-db";
+import { upsertThreadSummary } from "../thread-state-db";
 import { buildComposerState } from "./composer-state";
 import { rememberSessionPath } from "./session-path-index";
 import type { PiRuntime, RuntimeThreadReason } from "./types";
@@ -76,7 +76,6 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
       title: thread.title,
       lastModifiedMs: timestamp,
     });
-    saveThreadCache(sessionPath, thread.title, thread.messages, timestamp);
   }
 
   emitDesktopEvent({
