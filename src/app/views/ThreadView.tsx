@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { VirtualizedThreadTimeline } from "../components/workspace/thread/VirtualizedThreadTimeline";
 import {
   chatEmptyStateClass,
@@ -24,8 +23,6 @@ export function ThreadView({
   onOpenTurnDiff,
   onLoadEarlierMessages,
 }: ThreadViewProps) {
-  const [requestedEarlierMessages, setRequestedEarlierMessages] = useState(false);
-
   if (messages.length === 0) {
     return (
       <div className={chatHiddenViewportClass}>
@@ -44,11 +41,10 @@ export function ThreadView({
       turnDiffSummaries={turnDiffSummaries}
       onOpenTurnDiff={onOpenTurnDiff}
       onLoadEarlierMessages={() => {
-        if (requestedEarlierMessages || previousMessageCount === 0) {
+        if (previousMessageCount === 0) {
           return;
         }
 
-        setRequestedEarlierMessages(true);
         onLoadEarlierMessages();
       }}
     />

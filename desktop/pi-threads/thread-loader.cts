@@ -97,7 +97,7 @@ export async function loadThreadSnapshot(
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
   const includeHistory = options?.includeHistory ?? false;
   const sourceMessages = includeHistory
-    ? buildFullHistorySourceMessages(manager.getPath() as SessionPathEntry[])
+    ? buildFullHistorySourceMessages([...(manager.getBranch() as SessionPathEntry[])].reverse())
     : (manager.buildSessionContext().messages as AgentMessage[]);
 
   return {

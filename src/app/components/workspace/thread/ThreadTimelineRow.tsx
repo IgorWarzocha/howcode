@@ -205,6 +205,7 @@ export function ThreadTimelineRow({
     const summaryLabel =
       row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
     const showCompactionDivider = row.message.role === "compactionSummary";
+    const chevronOffsetClass = showCompactionDivider ? "mt-4" : "mt-1";
     const summaryContent = (
       <>
         {showCompactionDivider ? <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" /> : null}
@@ -224,6 +225,7 @@ export function ThreadTimelineRow({
           expanded={false}
           ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
           onToggle={() => onToggleRowCollapse(row.id)}
+          toggleClassName={chevronOffsetClass}
         >
           <div className="grid min-w-0 gap-3">{summaryContent}</div>
         </TimelineRowShell>
@@ -235,6 +237,7 @@ export function ThreadTimelineRow({
         expanded
         ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
         onToggle={() => onToggleRowCollapse(row.id)}
+        toggleClassName={chevronOffsetClass}
       >
         <div className="grid min-w-0 gap-3">{summaryContent}</div>
       </TimelineRowShell>
