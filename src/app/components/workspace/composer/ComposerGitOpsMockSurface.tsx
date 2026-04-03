@@ -1,4 +1,4 @@
-import { ArrowLeft, GitCompareArrows, TriangleAlert } from "lucide-react";
+import { ArrowLeft, GitBranch, GitCompareArrows, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
@@ -36,13 +36,7 @@ export function ComposerGitOpsMockSurface({
   const meta = gitOpsMockMeta[gitOpsMockMode];
   const isGitRepo = gitOpsMockMode !== "not-git";
   const canCommit = gitOpsMockMode === "dirty";
-  const commitLabel = canCommit
-    ? pushEnabled
-      ? "Commit & push"
-      : "Commit"
-    : isGitRepo
-      ? "Clean"
-      : "Init git";
+  const commitLabel = pushEnabled ? "Commit & push" : "Commit";
 
   return (
     <div
@@ -50,16 +44,20 @@ export function ComposerGitOpsMockSurface({
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
-      <textarea
-        className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-        value={commitMessage}
-        onChange={(event) => setCommitMessage(event.target.value)}
-        aria-label="Commit message"
-        placeholder="Leave blank to autogenerate a commit message"
-      />
+      <div className="relative">
+        <textarea
+          className="min-h-[140px] w-full resize-none bg-transparent px-4 pt-4 pb-8 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
+          value={commitMessage}
+          onChange={(event) => setCommitMessage(event.target.value)}
+          aria-label="Commit message"
+          placeholder=""
+        />
 
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="flex items-center gap-2 max-md:w-full">
+        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] text-[color:var(--muted)]">
+          Leave blank to autogenerate a commit message
+        </div>
+
+        <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
             originKnown ? (
               <button
@@ -93,7 +91,7 @@ export function ComposerGitOpsMockSurface({
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
 
-        <div className="ml-auto flex items-center gap-2 max-md:w-full max-md:justify-end">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
             {gitOpsMockModes.map((mode) => (
               <button
@@ -172,9 +170,9 @@ export function ComposerGitOpsMockSurface({
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
             }
             disabled={!canCommit}
-            aria-label={commitLabel}
+            aria-label={canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
           >
-            {commitLabel}
+            {canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
           </button>
         </div>
       </div>
