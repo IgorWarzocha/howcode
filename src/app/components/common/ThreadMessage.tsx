@@ -1,9 +1,12 @@
-import { memo } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { Message } from "../../types";
 import { inlineCodeClass } from "../../ui/classes";
 
 type ThreadMessageProps = {
   message: Message;
+  autoExpandThinking?: boolean;
+  onToggleExpanded?: () => void;
 };
 
 function renderInline(text: string) {
@@ -52,7 +55,80 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
   );
 }
 
-export const ThreadMessage = memo(function ThreadMessage({ message }: ThreadMessageProps) {
+function renderThinking(content: string[]) {
+  return (
+    <div className="grid min-w-0 gap-2 text-[13px] leading-[1.62] text-[color:var(--muted-2)]/92 italic [overflow-wrap:anywhere]">
+      {content.map((paragraph) => (
+        <p key={paragraph} className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+          {renderInline(paragraph)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function AssistantThinkingBlock({
+  thinkingContent,
+  thinkingRedacted,
+  autoExpandThinking = false,
+  onToggleExpanded,
+}: {
+  thinkingContent: string[];
+  thinkingRedacted?: boolean;
+  autoExpandThinking?: boolean;
+  onToggleExpanded?: () => void;
+}) {
+  const [expanded, setExpanded] = useState(autoExpandThinking);
+  const previousAutoExpandRef = useRef(autoExpandThinking);
+
+  useEffect(() => {
+    if (autoExpandThinking) {
+      setExpanded(true);
+    } else if (previousAutoExpandRef.current && !autoExpandThinking) {
+      setExpanded(false);
+    }
+
+    previousAutoExpandRef.current = autoExpandThinking;
+  }, [autoExpandThinking]);
+
+  const label =
+    thinkingRedacted && thinkingContent.length === 0 ? "Thinking unavailable" : "Thinking";
+
+  return (
+    <div className="mb-3 grid min-w-0 gap-2">
+      <button
+        type="button"
+        className="inline-flex w-fit items-center gap-1.5 rounded-md text-[12px] italic text-[color:var(--muted-2)] transition-colors hover:text-[color:var(--muted)]"
+        onClick={() => {
+          onToggleExpanded?.();
+          setExpanded((current) => !current);
+        }}
+        aria-expanded={expanded}
+      >
+        {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span>{label}</span>
+      </button>
+
+      {expanded ? (
+        <div className="min-w-0 border-l border-[rgba(169,178,215,0.12)] pl-4">
+          {thinkingContent.length > 0 ? (
+            renderThinking(thinkingContent)
+          ) : (
+            <div className="text-[12px] italic text-[color:var(--muted-2)]/85">
+              This provider redacted the reasoning trace.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export const ThreadMessage = memo(function ThreadMessage({
+  message,
+  autoExpandThinking,
+  onToggleExpanded,
+}: ThreadMessageProps) {
   if (message.role === "user") {
     return (
       <div className="ml-auto min-w-0 max-w-[438px] rounded-[18px] bg-[rgba(47,50,66,0.8)] px-4 py-3 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
@@ -69,7 +145,19 @@ export const ThreadMessage = memo(function ThreadMessage({ message }: ThreadMess
   }
 
   if (message.role === "assistant") {
-    return <div className="min-w-0 px-4">{renderProse(message.content, message.format)}</div>;
+    return (
+      <div className="min-w-0 px-4">
+        {message.thinkingContent && message.thinkingContent.length > 0 ? (
+          <AssistantThinkingBlock
+            thinkingContent={message.thinkingContent}
+            thinkingRedacted={message.thinkingRedacted}
+            autoExpandThinking={autoExpandThinking}
+            onToggleExpanded={onToggleExpanded}
+          />
+        ) : null}
+        {message.content.length > 0 ? renderProse(message.content, message.format) : null}
+      </div>
+    );
   }
 
   if (message.role === "toolResult") {

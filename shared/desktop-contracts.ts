@@ -32,6 +32,8 @@ export type ProseMessage = {
   role: "assistant" | "user";
   format?: "prose" | "list";
   content: string[];
+  thinkingContent?: string[];
+  thinkingRedacted?: boolean;
 };
 
 export type ToolResultMessage = {

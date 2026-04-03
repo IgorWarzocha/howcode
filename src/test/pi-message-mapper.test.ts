@@ -26,7 +26,10 @@ describe("pi message mapper", () => {
       {
         role: "assistant",
         timestamp: 2,
-        content: [{ type: "text", text: "First paragraph\n\nSecond paragraph" }],
+        content: [
+          { type: "thinking", thinking: "Need to inspect the state flow first" },
+          { type: "text", text: "First paragraph\n\nSecond paragraph" },
+        ],
       },
       {
         role: "toolResult",
@@ -59,6 +62,7 @@ describe("pi message mapper", () => {
         id: "2-assistant-1",
         role: "assistant",
         content: ["First paragraph", "Second paragraph"],
+        thinkingContent: ["Need to inspect the state flow first"],
       },
       {
         id: "3-toolResult-2",
@@ -91,6 +95,25 @@ describe("pi message mapper", () => {
     ] as never[]);
 
     expect(getFirstUserTurnTitle(messages)).toBe("Fix the sidebar");
+  });
+
+  it("keeps thinking-only assistant messages visible", () => {
+    const messages = mapAgentMessagesToUiMessages([
+      {
+        role: "assistant",
+        timestamp: 1,
+        content: [{ type: "thinking", thinking: "Working through the repo structure" }],
+      },
+    ] as never[]);
+
+    expect(messages).toEqual([
+      {
+        id: "1-assistant-0",
+        role: "assistant",
+        content: [],
+        thinkingContent: ["Working through the repo structure"],
+      },
+    ]);
   });
 
   it("counts previous messages from the latest compaction boundary", () => {

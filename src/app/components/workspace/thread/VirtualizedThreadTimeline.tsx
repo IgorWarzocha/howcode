@@ -59,12 +59,13 @@ function getMessageRenderSignature(message: Message | undefined) {
 
   switch (message.role) {
     case "user":
-    case "assistant":
     case "toolResult":
     case "custom":
     case "branchSummary":
     case "compactionSummary":
       return `${message.id}:${message.role}:${message.content.join("\n").length}`;
+    case "assistant":
+      return `${message.id}:${message.role}:${message.content.join("\n").length}:${message.thinkingContent?.join("\n").length ?? 0}`;
     case "bashExecution":
       return `${message.id}:${message.role}:${message.command.length}:${message.output.join("\n").length}`;
     default:
@@ -152,6 +153,16 @@ export function VirtualizedThreadTimeline({
       `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? "streaming" : "idle"}`,
     [isStreaming, messages],
   );
+  const streamingAssistantMessageId = useMemo(() => {
+    if (!isStreaming) {
+      return null;
+    }
+
+    const latestAssistantMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "assistant");
+    return latestAssistantMessage?.id ?? null;
+  }, [isStreaming, messages]);
 
   useLayoutEffect(() => {
     const timelineRoot = timelineRootRef.current;
@@ -306,7 +317,11 @@ export function VirtualizedThreadTimeline({
 
     return (
       <Fragment>
-        <ThreadMessage message={message} />
+        <ThreadMessage
+          message={message}
+          autoExpandThinking={message.id === streamingAssistantMessageId}
+          onToggleExpanded={handleToggleToolCallExpansion}
+        />
         {turnSummary && turnSummary.files.length > 0 ? (
           <div className="px-4">
             <div className="rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3">

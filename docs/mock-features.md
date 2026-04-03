@@ -34,6 +34,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Thread archive / restore / permanent delete: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - Archived threads settings view: `src/app/components/settings/ArchivedThreadsPanel.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
 - Shared Pi thread/message mapping is real and deduplicated: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`
+- Assistant thinking/reasoning traces are now rendered from Pi assistant content blocks, auto-expanded while streaming and collapsed after the turn completes: `shared/pi-message-mapper.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/components/workspace/thread/VirtualizedThreadTimeline.tsx`
 - Desktop action coverage is explicit and test-backed: `shared/desktop-action-coverage.ts`, `src/test/desktop-action-coverage.test.ts`
 
 ---
@@ -61,7 +62,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Add attachment/image flows.
 - Improve attachment handling to match Pi CLI file processing more closely (auto-resize, binary rejection, richer previews).
 - Expand failure UX beyond inline composer text (retry affordances, auth-specific actions).
-- Render richer live turn data than plain user/assistant prose.
+- Continue tightening live-turn fidelity beyond the current prose + reasoning + tool rendering.
 
 ### 2. New thread creation
 
@@ -294,7 +295,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - files: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`, `src/app/components/common/ThreadMessage.tsx`
 - Still simplified:
   - tool calls are not rendered as their own in-progress blocks
-  - assistant thinking content is not rendered explicitly
+  - assistant thinking is rendered, but still uses a minimal desktop block instead of Pi TUI parity
   - image attachments are shown as text placeholders, not inline previews
 - `previousMessageCount` is now derived from Pi compaction metadata on the active branch: `shared/pi-message-mapper.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`
 

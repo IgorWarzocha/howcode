@@ -6,6 +6,12 @@ type TextPart = {
   text?: string;
 };
 
+type ThinkingPart = {
+  type?: string;
+  thinking?: string;
+  redacted?: boolean;
+};
+
 type RuntimeMessage = {
   role?: string;
   content?:
@@ -57,6 +63,16 @@ function getTextParts(content: RuntimeMessage["content"]) {
     .map((part) => (part as TextPart).text ?? "");
 }
 
+function getThinkingParts(content: RuntimeMessage["content"]) {
+  if (!Array.isArray(content)) {
+    return [] as ThinkingPart[];
+  }
+
+  return content.filter(
+    (part) => part?.type === "thinking" && typeof (part as ThinkingPart).thinking === "string",
+  ) as ThinkingPart[];
+}
+
 function getImageCount(content: RuntimeMessage["content"]) {
   if (!Array.isArray(content)) {
     return 0;
@@ -100,6 +116,18 @@ function extractAssistantContent(message: RuntimeMessage) {
   return [] as string[];
 }
 
+function extractAssistantThinking(message: RuntimeMessage) {
+  const thinkingParts = getThinkingParts(message.content);
+  const thinkingContent = thinkingParts
+    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
+    .filter(Boolean);
+
+  return {
+    thinkingContent,
+    thinkingRedacted: thinkingParts.some((part) => Boolean(part.redacted)),
+  };
+}
+
 export function normalizeThreadTitle(value: unknown) {
   const text = String(value || "")
     .replace(/\s+/g, " ")
@@ -131,7 +159,9 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
 
     case "assistant": {
       const content = extractAssistantContent(runtimeMessage);
-      if (content.length === 0) {
+      const { thinkingContent, thinkingRedacted } = extractAssistantThinking(runtimeMessage);
+
+      if (content.length === 0 && thinkingContent.length === 0) {
         return null;
       }
 
@@ -139,6 +169,8 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
         id,
         role: "assistant",
         content,
+        thinkingContent: thinkingContent.length > 0 ? thinkingContent : undefined,
+        thinkingRedacted: thinkingRedacted || undefined,
       };
     }
 

@@ -27,7 +27,13 @@ function estimateMessageBodyHeight(message: Message) {
     case "user":
       return 44 + estimateTextHeight(message.content.join(" ").length, 56, 22);
     case "assistant":
-      return 28 + estimateTextHeight(message.content.join(" ").length, 68, 24);
+      return (
+        28 +
+        estimateTextHeight(message.content.join(" ").length, 68, 24) +
+        (message.thinkingContent && message.thinkingContent.length > 0
+          ? 34 + estimateTextHeight(message.thinkingContent.join(" ").length, 72, 20)
+          : 0)
+      );
     case "toolResult":
       return 72 + estimateTextHeight(message.content.join(" ").length, 64, 20);
     case "bashExecution":
