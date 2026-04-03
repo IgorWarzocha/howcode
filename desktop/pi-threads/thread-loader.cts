@@ -177,7 +177,7 @@ export async function loadThreadSnapshot(
   const manager = SessionManager.open(sessionPath);
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
   const historyCompactions = options?.historyCompactions ?? 0;
-  const pathEntries = [...(manager.getBranch() as SessionPathEntry[])].reverse();
+  const pathEntries = [...(manager.getBranch() as SessionPathEntry[])];
   const historySlice = buildHistorySliceForCompactionDepth(pathEntries, historyCompactions);
   const sourceMessages = historySlice
     ? historySlice.sourceMessages
