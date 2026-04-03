@@ -94,42 +94,36 @@ export function ToolCallsCard({
       }
     >
       <div className="grid min-w-0 gap-1">
-        {messages.map((message) => {
-          const toolCallExpanded = expandedToolCallIds[message.id] ?? false;
+        {messages.map((message, index) => {
+          const messageKey = `${message.id}:${index}`;
+          const toolCallExpanded = expandedToolCallIds[messageKey] ?? false;
           const title = getToolCallTitle(message);
           const preview = getToolCallPreview(message);
           const isError = message.role === "toolResult" && message.isError;
 
           return (
             <ExpandablePanel
-              key={message.id}
+              key={messageKey}
               expanded={toolCallExpanded}
               onToggle={() => {
                 onToggleToolCallExpanded?.();
                 setExpandedToolCallIds((current) => ({
                   ...current,
-                  [message.id]: !toolCallExpanded,
+                  [messageKey]: !toolCallExpanded,
                 }));
               }}
-              panelId={`tool-call-panel-${message.id}`}
+              panelId={`tool-call-panel-${messageKey}`}
               className="bg-transparent"
               triggerClassName="rounded-lg px-2 py-2 hover:bg-[rgba(255,255,255,0.025)]"
               bodyClassName="border-0 px-2 pt-0 pb-2"
               showChevron={false}
               header={
                 <>
-                  <span className="shrink-0 text-[12px] text-[color:var(--text)]/72">›</span>
                   <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
                     <span className="shrink-0 truncate text-[12px] leading-[1.2] text-[color:var(--muted)]/92">
                       {title}
                     </span>
-                    <span
-                      className={
-                        message.role === "bashExecution"
-                          ? "min-w-0 flex-1 truncate font-mono text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82"
-                          : "min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82"
-                      }
-                    >
+                    <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82">
                       {preview}
                     </span>
                   </span>
