@@ -3,6 +3,7 @@ import {
   getCollapsibleRowKey,
   getRowStructureSignature,
   getStreamingAssistantMessageId,
+  getStreamingToolGroupId,
 } from "../app/components/workspace/thread/thread-timeline-signatures";
 import type { TimelineRow } from "../app/components/workspace/thread/timeline-row";
 
@@ -35,5 +36,76 @@ describe("thread timeline signatures", () => {
 
     expect(getCollapsibleRowKey(turnRow, collapsedRowIds)).toBe("turn-1:collapsed");
     expect(getRowStructureSignature(rows, collapsedRowIds)).toBe("history:3||turn-1:collapsed:0");
+  });
+
+  it("finds the latest streaming tool-group id", () => {
+    const rows: TimelineRow[] = [
+      {
+        kind: "turn",
+        id: "turn-1",
+        userMessage: { id: "user-1", role: "user", content: ["hi"] },
+        items: [
+          {
+            kind: "tool-group",
+            id: "tool-group-1",
+            messages: [
+              {
+                id: "tool-1",
+                role: "bashExecution",
+                command: "rg foo",
+                output: [],
+                exitCode: 0,
+                cancelled: false,
+                truncated: false,
+              },
+              {
+                id: "tool-2",
+                role: "toolResult",
+                toolName: "rg",
+                content: ["match"],
+                isError: false,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    expect(
+      getStreamingToolGroupId(
+        rows,
+        [
+          { id: "user-1", role: "user", content: ["hi"] },
+          {
+            id: "tool-1",
+            role: "bashExecution",
+            command: "rg foo",
+            output: [],
+            exitCode: 0,
+            cancelled: false,
+            truncated: false,
+          },
+          {
+            id: "tool-2",
+            role: "toolResult",
+            toolName: "rg",
+            content: ["match"],
+            isError: false,
+          },
+        ],
+        true,
+      ),
+    ).toBe("tool-group-1");
+
+    expect(
+      getStreamingToolGroupId(
+        rows,
+        [
+          { id: "user-1", role: "user", content: ["hi"] },
+          { id: "assistant-1", role: "assistant", content: ["done"] },
+        ],
+        true,
+      ),
+    ).toBeNull();
   });
 });

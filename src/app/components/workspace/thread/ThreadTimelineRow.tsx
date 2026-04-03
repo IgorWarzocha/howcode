@@ -180,9 +180,12 @@ type ThreadTimelineRowProps = {
   row: TimelineRow;
   collapsed: boolean;
   streamingAssistantMessageId: string | null;
+  streamingToolGroupId: string | null;
+  expandedToolGroupIds: Record<string, boolean>;
   expandedDiffTrees: Record<number, boolean>;
   onToggleRowCollapse: (rowId: string) => void;
   onToggleToolCallExpansion: () => void;
+  onToggleToolGroupExpansion: (groupId: string) => void;
   onToggleDiffTree: (checkpointTurnCount: number) => void;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onJumpToEarlierMessages: () => void;
@@ -192,9 +195,12 @@ export function ThreadTimelineRow({
   row,
   collapsed,
   streamingAssistantMessageId,
+  streamingToolGroupId,
+  expandedToolGroupIds,
   expandedDiffTrees,
   onToggleRowCollapse,
   onToggleToolCallExpansion,
+  onToggleToolGroupExpansion,
   onToggleDiffTree,
   onOpenTurnDiff,
   onJumpToEarlierMessages,
@@ -204,8 +210,12 @@ export function ThreadTimelineRow({
       return (
         <ToolCallsCard
           key={item.id}
+          id={item.id}
           messages={item.messages}
-          onToggleExpanded={onToggleToolCallExpansion}
+          expanded={item.id === streamingToolGroupId || Boolean(expandedToolGroupIds[item.id])}
+          forceExpanded={item.id === streamingToolGroupId}
+          onToggleGroupExpanded={() => onToggleToolGroupExpansion(item.id)}
+          onToggleToolCallExpanded={onToggleToolCallExpansion}
         />
       );
     }
@@ -292,15 +302,17 @@ export function ThreadTimelineRow({
             </RowLeadToggleSurface>
           ) : null}
           {row.items.map((item, index) => {
-            const itemNode = renderTurnItem(item);
-
             if (row.userMessage || index > 0) {
-              return itemNode;
+              return renderTurnItem(item);
+            }
+
+            if (item.kind === "tool-group") {
+              return renderTurnItem(item);
             }
 
             return (
               <RowLeadToggleSurface key={`lead:${item.id}`} onToggle={onToggleTurnCollapse}>
-                {itemNode}
+                {renderTurnItem(item)}
               </RowLeadToggleSurface>
             );
           })}

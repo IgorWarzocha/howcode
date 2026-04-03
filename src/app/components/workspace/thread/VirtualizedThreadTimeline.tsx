@@ -15,6 +15,7 @@ import {
   getMessageRenderSignature,
   getRowStructureSignature,
   getStreamingAssistantMessageId,
+  getStreamingToolGroupId,
 } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
 
@@ -37,6 +38,7 @@ export function VirtualizedThreadTimeline({
 }: VirtualizedThreadTimelineProps) {
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
+  const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
@@ -56,6 +58,10 @@ export function VirtualizedThreadTimeline({
   const streamingAssistantMessageId = useMemo(
     () => getStreamingAssistantMessageId(messages, isStreaming),
     [isStreaming, messages],
+  );
+  const streamingToolGroupId = useMemo(
+    () => getStreamingToolGroupId(rows, messages, isStreaming),
+    [isStreaming, messages, rows],
   );
   const foldableRows = useMemo(() => getFoldableRows(rows), [rows]);
   const latestTurnRowId = useMemo(
@@ -195,6 +201,21 @@ export function VirtualizedThreadTimeline({
     suppressAutoScrollTemporarily();
   }, [suppressAutoScrollTemporarily]);
 
+  const handleToggleToolGroupExpansion = useCallback(
+    (groupId: string) => {
+      if (groupId === streamingToolGroupId) {
+        return;
+      }
+
+      suppressAutoScrollTemporarily();
+      setExpandedToolGroupIds((current) => ({
+        ...current,
+        [groupId]: !current[groupId],
+      }));
+    },
+    [streamingToolGroupId, suppressAutoScrollTemporarily],
+  );
+
   const handleToggleRowCollapse = useCallback(
     (rowId: string) => {
       if (rowId === streamingTurnRowId) {
@@ -242,9 +263,12 @@ export function VirtualizedThreadTimeline({
         row={row}
         collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
         streamingAssistantMessageId={streamingAssistantMessageId}
+        streamingToolGroupId={streamingToolGroupId}
+        expandedToolGroupIds={expandedToolGroupIds}
         expandedDiffTrees={expandedDiffTrees}
         onToggleRowCollapse={handleToggleRowCollapse}
         onToggleToolCallExpansion={handleToggleToolCallExpansion}
+        onToggleToolGroupExpansion={handleToggleToolGroupExpansion}
         onToggleDiffTree={handleToggleDiffTree}
         onOpenTurnDiff={onOpenTurnDiff}
         onJumpToEarlierMessages={handleJumpToEarlierMessages}
@@ -253,11 +277,14 @@ export function VirtualizedThreadTimeline({
     [
       effectiveCollapsedRowIds,
       expandedDiffTrees,
+      expandedToolGroupIds,
       handleJumpToEarlierMessages,
       handleToggleDiffTree,
       handleToggleRowCollapse,
       handleToggleToolCallExpansion,
+      handleToggleToolGroupExpansion,
       onOpenTurnDiff,
+      streamingToolGroupId,
       streamingAssistantMessageId,
     ],
   );

@@ -6,9 +6,12 @@ import { ExpandablePanel } from "../../common/ExpandablePanel";
 type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
 
 type ToolCallsCardProps = {
+  id: string;
   messages: ToolCallMessage[];
-  onToggleExpanded?: () => void;
-  disableExpansion?: boolean;
+  expanded: boolean;
+  forceExpanded?: boolean;
+  onToggleGroupExpanded?: () => void;
+  onToggleToolCallExpanded?: () => void;
 };
 
 function renderToolCallBody(message: ToolCallMessage) {
@@ -59,70 +62,88 @@ function renderToolCallBody(message: ToolCallMessage) {
 }
 
 export function ToolCallsCard({
+  id,
   messages,
-  onToggleExpanded,
-  disableExpansion = false,
+  expanded,
+  forceExpanded = false,
+  onToggleGroupExpanded,
+  onToggleToolCallExpanded,
 }: ToolCallsCardProps) {
   const [expandedToolCallIds, setExpandedToolCallIds] = useState<Record<string, boolean>>({});
 
   return (
-    <div className="grid min-w-0 gap-2">
-      {messages.map((message) => {
-        const expanded = expandedToolCallIds[message.id] ?? false;
-        const title = getToolCallTitle(message);
-        const preview = getToolCallPreview(message);
-        const isError = message.role === "toolResult" && message.isError;
+    <ExpandablePanel
+      expanded={expanded}
+      onToggle={() => {
+        if (forceExpanded) {
+          return;
+        }
 
-        return (
-          <ExpandablePanel
-            key={message.id}
-            expanded={expanded}
-            onToggle={() => {
-              if (disableExpansion) {
-                return;
+        onToggleGroupExpanded?.();
+      }}
+      panelId={`tool-call-group-${id}`}
+      className="border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
+      triggerClassName="hover:bg-[rgba(255,255,255,0.025)]"
+      bodyClassName="border-[rgba(169,178,215,0.08)] px-2 py-2"
+      header={
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
+          <span className="truncate text-[11px] font-medium tracking-[0.12em] text-[color:var(--muted-2)]/88 uppercase">
+            Tool calls ({messages.length})
+          </span>
+        </span>
+      }
+    >
+      <div className="grid min-w-0 gap-1">
+        {messages.map((message) => {
+          const toolCallExpanded = expandedToolCallIds[message.id] ?? false;
+          const title = getToolCallTitle(message);
+          const preview = getToolCallPreview(message);
+          const isError = message.role === "toolResult" && message.isError;
+
+          return (
+            <ExpandablePanel
+              key={message.id}
+              expanded={toolCallExpanded}
+              onToggle={() => {
+                onToggleToolCallExpanded?.();
+                setExpandedToolCallIds((current) => ({
+                  ...current,
+                  [message.id]: !toolCallExpanded,
+                }));
+              }}
+              panelId={`tool-call-panel-${message.id}`}
+              className="bg-transparent"
+              triggerClassName="rounded-lg px-2 py-2 hover:bg-[rgba(255,255,255,0.025)]"
+              bodyClassName="border-0 px-2 pt-0 pb-2"
+              showChevron={false}
+              header={
+                <>
+                  <span className="shrink-0 text-[12px] text-[color:var(--text)]/72">›</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                    <span className="shrink-0 truncate text-[12px] leading-[1.2] text-[color:var(--muted)]/92">
+                      {title}
+                    </span>
+                    <span
+                      className={
+                        message.role === "bashExecution"
+                          ? "min-w-0 flex-1 truncate font-mono text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82"
+                          : "min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82"
+                      }
+                    >
+                      {preview}
+                    </span>
+                  </span>
+                  {isError ? (
+                    <span className="shrink-0 text-[10.5px] font-medium text-[#f2a7a7]">Error</span>
+                  ) : null}
+                </>
               }
-
-              onToggleExpanded?.();
-              setExpandedToolCallIds((current) => ({
-                ...current,
-                [message.id]: !expanded,
-              }));
-            }}
-            panelId={`tool-call-panel-${message.id}`}
-            className="border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
-            triggerClassName="hover:bg-[rgba(255,255,255,0.025)]"
-            bodyClassName="border-[rgba(169,178,215,0.08)]"
-            interactive={!disableExpansion}
-            showChevron={!disableExpansion}
-            header={
-              <>
-                <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                  <span className="shrink-0 truncate text-[12.5px] leading-[1.2] font-medium text-[color:var(--text)]/92">
-                    {title}
-                  </span>
-                  <span className="shrink-0 text-[11px] leading-[1.2] text-[color:var(--muted-2)]/80">
-                    —
-                  </span>
-                  <span
-                    className={
-                      message.role === "bashExecution"
-                        ? "min-w-0 flex-1 truncate font-mono text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/90"
-                        : "min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/90"
-                    }
-                  >
-                    {preview}
-                  </span>
-                </span>
-                {isError ? (
-                  <span className="shrink-0 text-[10.5px] font-medium text-[#f2a7a7]">Error</span>
-                ) : null}
-              </>
-            }
-          >
-            {renderToolCallBody(message)}
-          </ExpandablePanel>
-        );
-      })}
-    </div>
+            >
+              {renderToolCallBody(message)}
+            </ExpandablePanel>
+          );
+        })}
+      </div>
+    </ExpandablePanel>
   );
 }

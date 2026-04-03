@@ -1,6 +1,10 @@
 import type { Message } from "../../../types";
 import { type TimelineRow, isTurnRowCollapsible } from "./timeline-row";
 
+function isToolCallRole(message: Message | undefined) {
+  return message?.role === "toolResult" || message?.role === "bashExecution";
+}
+
 export function getMessageRenderSignature(message: Message | undefined) {
   if (!message) {
     return "empty";
@@ -31,6 +35,47 @@ export function getStreamingAssistantMessageId(messages: Message[], isStreaming:
     .reverse()
     .find((message) => message.role === "assistant");
   return latestAssistantMessage?.id ?? null;
+}
+
+export function getStreamingToolGroupId(
+  rows: TimelineRow[],
+  messages: Message[],
+  isStreaming: boolean,
+) {
+  if (!isStreaming) {
+    return null;
+  }
+
+  const latestMessage = messages[messages.length - 1];
+  if (!isToolCallRole(latestMessage)) {
+    return null;
+  }
+
+  for (const row of [...rows].reverse()) {
+    if (row.kind === "tool-group") {
+      if (row.messages.some((message) => message.id === latestMessage.id)) {
+        return row.id;
+      }
+
+      continue;
+    }
+
+    if (row.kind !== "turn") {
+      continue;
+    }
+
+    for (const item of [...row.items].reverse()) {
+      if (item.kind !== "tool-group") {
+        continue;
+      }
+
+      if (item.messages.some((message) => message.id === latestMessage.id)) {
+        return item.id;
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getRowStructureSignature(
