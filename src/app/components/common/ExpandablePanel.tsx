@@ -31,17 +31,11 @@ export function ExpandablePanel({
 }: ExpandablePanelProps) {
   const triggerContent = (
     <>
-      <span className="shrink-0 text-[color:var(--muted)]">
-        {showChevron ? (
-          expanded ? (
-            <ChevronDown size={15} />
-          ) : (
-            <ChevronRight size={15} />
-          )
-        ) : (
-          <span aria-hidden="true" className="block h-[15px] w-[15px]" />
-        )}
-      </span>
+      {showChevron ? (
+        <span className="shrink-0 text-[color:var(--muted)]">
+          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+        </span>
+      ) : null}
       {header}
     </>
   );
