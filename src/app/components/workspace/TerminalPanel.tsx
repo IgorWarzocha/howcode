@@ -1,7 +1,7 @@
 import { SquareTerminal, X } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { FeatureStatusId } from "../../features/feature-status";
-import { panelChromeClass } from "../../ui/classes";
+import { iconButtonClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -33,12 +33,12 @@ export function TerminalPanel({
     return (
       <SurfacePanel
         aria-label="Pi terminal panel"
-        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-[20px] border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
         data-feature-id="feature:terminal.panel"
         data-feature-status="partial"
       >
         <div className="flex min-h-0 min-w-0 overflow-hidden px-2.5 pt-2.5">
-          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-t-[16px] rounded-b-none bg-[color:var(--terminal-bg)]">
+          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-t-2xl rounded-b-none bg-[color:var(--terminal-bg)]">
             <TerminalViewport
               projectId={projectId}
               sessionPath={sessionPath}
@@ -47,8 +47,8 @@ export function TerminalPanel({
             />
           </div>
         </div>
-        <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
-          <div className="flex items-center gap-1.5 max-md:flex-wrap text-[color:var(--muted)]">
+        <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+          <div className="flex items-center gap-1.5 text-[color:var(--muted)] max-md:flex-wrap">
             <ToolbarButton
               label={
                 <span className="inline-flex items-center gap-2">
@@ -94,7 +94,7 @@ export function TerminalPanel({
         </div>
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className={iconButtonClass}
           aria-label="Close terminal"
           title="Close terminal"
           onClick={onClose}
@@ -102,7 +102,7 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[14px] border border-[rgba(137,146,183,0.06)] bg-[rgba(23,25,35,0.98)] p-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-[rgba(137,146,183,0.06)] bg-[rgba(23,25,35,0.98)] p-1">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}

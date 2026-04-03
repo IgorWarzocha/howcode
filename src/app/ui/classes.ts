@@ -9,7 +9,7 @@ export const mainPanelClass =
   "min-h-0 overflow-y-scroll overflow-x-hidden pt-1.5 [scrollbar-gutter:stable_both-edges]";
 
 export const iconButtonClass =
-  "inline-flex h-7 w-7 items-center justify-center rounded-[9px] border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+  "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
 export const navButtonClass =
   "flex min-h-8 w-full items-center gap-2 rounded-[10px] border border-transparent px-2.5 text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
@@ -35,6 +35,21 @@ export const sidebarSectionLabelClass =
 
 export const terminalOutputClass =
   "grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs";
+
+export const diffPanelEmptyStateClass =
+  "flex min-h-60 items-center justify-center px-5 text-center text-xs text-[color:var(--muted)]";
+
+export const diffPanelTurnChipBaseClass =
+  "shrink-0 rounded-lg border px-2 py-1 text-left transition-colors";
+
+export const diffPanelTurnChipSelectedClass =
+  "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]";
+
+export const diffPanelTurnChipUnselectedClass =
+  "border-[color:var(--border)] bg-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]";
+
+export const diffPanelIconButtonClass =
+  "inline-flex h-7 w-7 items-center justify-center rounded-lg border text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
 export const inlineCodeClass =
   "rounded-md bg-[rgba(114,120,152,0.18)] px-1.5 py-0.5 font-mono text-[11.5px] break-all text-[color:var(--text)]";

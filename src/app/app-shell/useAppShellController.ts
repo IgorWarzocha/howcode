@@ -1,24 +1,22 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type {
-  ArchivedThread,
-  ComposerState,
-  DesktopEvent,
-  ProjectGitState,
-} from "../desktop/types";
+import type { ArchivedThread, ComposerState, ProjectGitState } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
-import {
-  createInitialWorkspaceState,
-  getProjectName,
-  selectProject,
-  selectThread,
-  workspaceReducer,
-} from "../state/workspace";
+import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
+import {
+  buildContextualActionPayload,
+  buildPendingProjectAction,
+  refreshArchivedThreadsIfOpen,
+  refreshComposerState,
+  shouldConfirmProjectAction,
+} from "./controller-action-helpers";
+import { deriveControllerViewModel } from "./controller-view-model";
+import { useAppShellEffects } from "./useAppShellEffects";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
@@ -43,200 +41,54 @@ export function useAppShellController() {
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
-  const collapsedProjectIds = useMemo(
-    () =>
-      Object.fromEntries(
-        projects.map((project) => [
-          project.id,
-          state.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
-        ]),
-      ),
-    [projects, state.collapsedProjectIds],
-  );
-
-  const selectedProject = useMemo(
-    () => selectProject(projects, state.selectedProjectId),
-    [projects, state.selectedProjectId],
-  );
-  const selectedThread = useMemo(
-    () => selectThread(selectedProject, state.selectedThreadId),
-    [selectedProject, state.selectedThreadId],
-  );
   const threadData = useDesktopThread(state.selectedSessionPath, threadRefreshKey);
-  const activeThreadData = state.selectedSessionPath
-    ? (threadData ?? {
-        sessionPath: state.selectedSessionPath,
-        title: selectedThread?.title ?? "New thread",
-        messages: [],
-        previousMessageCount: 0,
-        isStreaming: false,
-        turnDiffSummaries: [],
-      })
-    : null;
-  const currentTitle =
-    state.activeView === "thread"
-      ? (activeThreadData?.title ?? selectedThread?.title ?? "New thread")
-      : "New thread";
-  const currentProjectName = getProjectName(selectedProject);
-  const composerProjectId = selectedProject?.id ?? shellState?.cwd ?? "";
-  const activeComposerState = composerState ?? shellState?.composer ?? null;
 
-  useEffect(() => {
-    if (!projects.length) {
-      return;
-    }
+  const {
+    activeComposerState,
+    activeThreadData,
+    collapsedProjectIds,
+    composerProjectId,
+    currentProjectName,
+    currentTitle,
+  } = useMemo(
+    () =>
+      deriveControllerViewModel({
+        projects,
+        workspaceState: state,
+        threadData,
+        shellCwd: shellState?.cwd,
+        composerState,
+        shellComposerState: shellState?.composer,
+      }),
+    [composerState, projects, shellState?.composer, shellState?.cwd, state, threadData],
+  );
 
-    dispatch({ type: "sync-projects", projects });
-  }, [projects]);
-
-  useEffect(() => {
-    const expandedProjects = projects.filter(
-      (project) => !collapsedProjectIds[project.id] && !project.threadsLoaded,
-    );
-
-    for (const project of expandedProjects) {
-      void loadProjectThreads(project.id);
-    }
-  }, [collapsedProjectIds, loadProjectThreads, projects]);
-
-  useEffect(() => {
-    if (!state.archivedThreadsOpen) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadArchived = async () => {
-      const nextArchivedThreads = await loadArchivedThreads();
-      if (!cancelled) {
-        setArchivedThreads(nextArchivedThreads);
-      }
-    };
-
-    void loadArchived();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadArchivedThreads, state.archivedThreadsOpen]);
-
-  useEffect(() => {
-    if (!shellState?.composer) {
-      return;
-    }
-
-    setComposerState((current) => current ?? shellState.composer);
-  }, [shellState?.composer]);
-
-  useEffect(() => {
-    if (!composerProjectId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const syncComposerState = async () => {
-      const nextComposerState = await loadComposerState({
-        projectId: composerProjectId,
-        sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
-      });
-
-      if (!cancelled && nextComposerState) {
-        setComposerState(nextComposerState);
-      }
-    };
-
-    void syncComposerState();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [composerProjectId, loadComposerState, state.activeView, state.selectedSessionPath]);
-
-  useEffect(() => {
-    if (!composerProjectId) {
-      setProjectGitState(null);
-      return;
-    }
-
-    setProjectGitState(null);
-
-    let cancelled = false;
-
-    const syncProjectGitState = async () => {
-      const nextProjectGitState = await loadProjectGitState(composerProjectId);
-      if (!cancelled) {
-        setProjectGitState(nextProjectGitState);
-      }
-    };
-
-    void syncProjectGitState();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [composerProjectId, loadProjectGitState]);
-
-  useEffect(() => {
-    if (!window.piDesktop?.watchSession) {
-      return;
-    }
-
-    const watchedSessionPath =
-      state.activeView === "thread" ? (state.selectedSessionPath ?? null) : null;
-
-    void window.piDesktop.watchSession(watchedSessionPath).catch((error) => {
-      console.warn("Failed to update watched Pi session.", error);
-    });
-  }, [state.activeView, state.selectedSessionPath]);
-
-  useEffect(() => {
-    if (!window.piDesktop?.subscribe) {
-      return;
-    }
-
-    const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
-      if (event.type === "composer-update") {
-        setComposerState(event.composer);
-        return;
-      }
-
-      queryClient.setQueriesData(
-        { queryKey: ["desktop", "thread", event.sessionPath] },
-        event.thread,
-      );
-
-      if (event.composer) {
-        setComposerState(event.composer);
-      }
-
-      if (event.reason === "start") {
-        dispatch({
-          type: "open-thread",
-          projectId: event.projectId,
-          threadId: event.threadId,
-          sessionPath: event.sessionPath,
-        });
-      }
-
-      if (event.reason === "end" || event.reason === "external") {
-        void loadProjectThreads(event.projectId);
-        scheduleShellStateRefresh();
-      }
-    });
-
-    return unsubscribe;
-  }, [loadProjectThreads, queryClient, scheduleShellStateRefresh]);
+  useAppShellEffects({
+    projects,
+    collapsedProjectIds,
+    workspaceState: state,
+    composerProjectId,
+    shellComposerState: shellState?.composer,
+    loadProjectThreads,
+    loadArchivedThreads,
+    loadComposerState,
+    loadProjectGitState,
+    scheduleShellStateRefresh,
+    queryClient,
+    dispatch,
+    setArchivedThreads,
+    setComposerState,
+    setProjectGitState,
+  });
 
   const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
-    const contextualPayload =
-      action === "composer.model" || action === "composer.send" || action === "composer.thinking"
-        ? {
-            projectId: composerProjectId,
-            sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
-            ...payload,
-          }
-        : payload;
+    const contextualPayload = buildContextualActionPayload({
+      action,
+      payload,
+      composerProjectId,
+      activeView: state.activeView,
+      selectedSessionPath: state.selectedSessionPath,
+    });
 
     await invokeDesktopAction(action, contextualPayload);
 
@@ -247,8 +99,12 @@ export function useAppShellController() {
         await loadProjectThreads(projectId);
       }
 
-      if (action === "thread.archive" && state.archivedThreadsOpen) {
-        setArchivedThreads(await loadArchivedThreads());
+      if (action === "thread.archive") {
+        await refreshArchivedThreadsIfOpen({
+          archivedThreadsOpen: state.archivedThreadsOpen,
+          loadArchivedThreads,
+          setArchivedThreads,
+        });
       }
 
       if (action === "thread.archive" && contextualPayload.threadId === state.selectedThreadId) {
@@ -258,6 +114,7 @@ export function useAppShellController() {
 
     if (action === "thread.restore" || action === "thread.delete") {
       setArchivedThreads(await loadArchivedThreads());
+
       const projectId =
         typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
       if (projectId) {
@@ -271,9 +128,11 @@ export function useAppShellController() {
 
     if (action === "project.edit-name") {
       await refreshShellState();
-      if (state.archivedThreadsOpen) {
-        setArchivedThreads(await loadArchivedThreads());
-      }
+      await refreshArchivedThreadsIfOpen({
+        archivedThreadsOpen: state.archivedThreadsOpen,
+        loadArchivedThreads,
+        setArchivedThreads,
+      });
     }
 
     if (action === "project.archive-threads") {
@@ -285,10 +144,11 @@ export function useAppShellController() {
       }
 
       await refreshShellState();
-
-      if (state.archivedThreadsOpen) {
-        setArchivedThreads(await loadArchivedThreads());
-      }
+      await refreshArchivedThreadsIfOpen({
+        archivedThreadsOpen: state.archivedThreadsOpen,
+        loadArchivedThreads,
+        setArchivedThreads,
+      });
 
       if (contextualPayload.projectId === state.selectedProjectId) {
         dispatch({ type: "show-view", view: "home" });
@@ -301,21 +161,21 @@ export function useAppShellController() {
       }
 
       await refreshShellState();
-
-      if (state.archivedThreadsOpen) {
-        setArchivedThreads(await loadArchivedThreads());
-      }
+      await refreshArchivedThreadsIfOpen({
+        archivedThreadsOpen: state.archivedThreadsOpen,
+        loadArchivedThreads,
+        setArchivedThreads,
+      });
     }
 
     if (action === "composer.model" || action === "composer.thinking") {
-      const nextComposerState = await loadComposerState({
-        projectId: composerProjectId,
-        sessionPath: state.activeView === "thread" ? state.selectedSessionPath : null,
+      await refreshComposerState({
+        composerProjectId,
+        activeView: state.activeView,
+        selectedSessionPath: state.selectedSessionPath,
+        loadComposerState,
+        setComposerState,
       });
-
-      if (nextComposerState) {
-        setComposerState(nextComposerState);
-      }
     }
 
     if (action === "thread.new") {
@@ -329,27 +189,13 @@ export function useAppShellController() {
   };
 
   const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
-    if (
-      action === "project.edit-name" ||
-      action === "project.archive-threads" ||
-      action === "project.remove-project"
-    ) {
-      const projectId = typeof payload.projectId === "string" ? payload.projectId : null;
-      if (!projectId) {
+    if (shouldConfirmProjectAction(action)) {
+      const pendingAction = buildPendingProjectAction(action, payload, projects);
+      if (!pendingAction) {
         return;
       }
 
-      const resolvedProject = projects.find((project) => project.id === projectId);
-      const projectName =
-        typeof payload.projectName === "string" && payload.projectName.trim().length > 0
-          ? payload.projectName.trim()
-          : (resolvedProject?.name ?? projectId);
-
-      setPendingProjectAction({
-        action,
-        projectId,
-        projectName,
-      });
+      setPendingProjectAction(pendingAction);
       return;
     }
 
