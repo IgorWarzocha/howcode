@@ -1,10 +1,4 @@
-import {
-  ArrowLeft,
-  GitBranch,
-  GitCommitHorizontal,
-  GitCompareArrows,
-  TriangleAlert,
-} from "lucide-react";
+import { ArrowLeft, GitBranch, GitCompareArrows, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
@@ -37,18 +31,12 @@ export function ComposerGitOpsMockSurface({
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
+  const [repoUrl, setRepoUrl] = useState("");
+  const [originKnown, setOriginKnown] = useState(true);
   const meta = gitOpsMockMeta[gitOpsMockMode];
   const isGitRepo = gitOpsMockMode !== "not-git";
-  const isClean = gitOpsMockMode === "clean";
   const canCommit = gitOpsMockMode === "dirty";
-
-  const commitLabel = !isGitRepo
-    ? "Init git"
-    : isClean
-      ? "Clean"
-      : pushEnabled
-        ? "Commit & push"
-        : "Commit";
+  const commitLabel = pushEnabled ? "Commit & push" : "Commit";
 
   return (
     <div
@@ -64,6 +52,40 @@ export function ComposerGitOpsMockSurface({
           aria-label="Commit message"
           placeholder="Leave blank to autogenerate a commit message"
         />
+
+        <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
+          {isGitRepo ? (
+            originKnown ? (
+              <button
+                type="button"
+                className="rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
+                onClick={() => setOriginKnown(false)}
+                title="Mock: click to preview missing origin"
+              >
+                howcode
+              </button>
+            ) : (
+              <input
+                value={repoUrl}
+                onChange={(event) => setRepoUrl(event.target.value)}
+                onBlur={() => {
+                  if (repoUrl.trim().length > 0) {
+                    setOriginKnown(true);
+                  }
+                }}
+                className="w-64 rounded-lg border border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                placeholder="Paste repository URL"
+                aria-label="Repository URL"
+              />
+            )
+          ) : (
+            <div className="flex items-center gap-2 text-[12px] text-[#ff9c9c]">
+              <TriangleAlert size={14} />
+              <span>Not a git repository</span>
+            </div>
+          )}
+          <FeatureStatusBadge statusId="feature:composer.git-ops" />
+        </div>
 
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
@@ -101,8 +123,9 @@ export function ComposerGitOpsMockSurface({
           ) : (
             <TriangleAlert size={14} className="text-[#ff9c9c]" />
           )}
-          <span>{isGitRepo ? meta.branch : "Not a git repository"}</span>
-          <FeatureStatusBadge statusId="feature:composer.git-ops" />
+          <span>
+            {isGitRepo ? (originKnown ? "origin linked" : "origin missing") : "Git required"}
+          </span>
         </div>
       </div>
 
@@ -119,28 +142,32 @@ export function ComposerGitOpsMockSurface({
           <ArrowLeft size={14} />
         </button>
 
-        <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
-          <ToggleButton
+        <div className="flex items-center gap-3">
+          <PlainToggle
             label="Include unstaged"
             checked={includeUnstaged}
             onClick={() => setIncludeUnstaged((current) => !current)}
           />
-
-          <ToggleButton
+          <PlainToggle
             label="Push"
             checked={pushEnabled}
             onClick={() => setPushEnabled((current) => !current)}
           />
+        </div>
 
-          <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
-            <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
-              +{formatGitCount(meta.additions)}
-            </span>
-            <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
-              -{formatGitCount(meta.deletions)}
-            </span>
-          </div>
+        <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+          {isGitRepo ? (
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[color:var(--muted)]">{meta.branch}</span>
+              <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
+              <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
+                +{formatGitCount(meta.additions)}
+              </span>
+              <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
+                -{formatGitCount(meta.deletions)}
+              </span>
+            </div>
+          ) : null}
 
           <button
             type="button"
@@ -152,9 +179,9 @@ export function ComposerGitOpsMockSurface({
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
             }
             disabled={!canCommit}
-            aria-label={commitLabel}
+            aria-label={canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
           >
-            {commitLabel}
+            {canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
           </button>
         </div>
       </div>
@@ -162,7 +189,7 @@ export function ComposerGitOpsMockSurface({
   );
 }
 
-function ToggleButton({
+function PlainToggle({
   checked,
   label,
   onClick,
@@ -174,7 +201,7 @@ function ToggleButton({
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] px-2.5 py-1.5 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+      className="inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
       onClick={onClick}
       aria-pressed={checked}
     >
