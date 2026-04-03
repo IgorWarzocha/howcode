@@ -46,14 +46,14 @@ export function ComposerGitOpsMockSurface({
     >
       <div className="relative">
         <textarea
-          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-8 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
           value={commitMessage}
           onChange={(event) => setCommitMessage(event.target.value)}
           aria-label="Commit message"
           placeholder=""
         />
 
-        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] text-[color:var(--muted)]">
+        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] leading-5 text-[color:var(--muted)]">
           Leave blank to autogenerate a commit message
         </div>
 
@@ -120,9 +120,19 @@ export function ComposerGitOpsMockSurface({
         </div>
       </div>
 
-      <div className="flex min-h-8 items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div />
-        <div />
+      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
+        <div className="invisible flex items-center gap-1.5 max-md:flex-wrap">
+          <ToolbarButton label="Placeholder" icon={<GitCompareArrows size={16} />} />
+        </div>
+
+        <button
+          type="button"
+          className="invisible inline-flex h-8 w-8 items-center justify-center rounded-full"
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          <GitCompareArrows size={16} />
+        </button>
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
