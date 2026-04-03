@@ -37,6 +37,8 @@ export function VirtualizedThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
+  const suppressAutoScrollRef = useRef(false);
+  const suppressAutoScrollTimerRef = useRef<number | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
@@ -115,7 +117,7 @@ export function VirtualizedThreadTimeline({
   }, []);
 
   const scheduleScrollToBottom = useCallback(() => {
-    if (!shouldStickToBottomRef.current) {
+    if (!shouldStickToBottomRef.current || suppressAutoScrollRef.current) {
       return;
     }
 
@@ -128,6 +130,19 @@ export function VirtualizedThreadTimeline({
       scrollFrameRef.current = null;
     });
   }, [scrollToBottom]);
+
+  const suppressAutoScrollTemporarily = useCallback(() => {
+    suppressAutoScrollRef.current = true;
+
+    if (suppressAutoScrollTimerRef.current !== null) {
+      window.clearTimeout(suppressAutoScrollTimerRef.current);
+    }
+
+    suppressAutoScrollTimerRef.current = window.setTimeout(() => {
+      suppressAutoScrollRef.current = false;
+      suppressAutoScrollTimerRef.current = null;
+    }, 180);
+  }, []);
 
   useLayoutEffect(() => {
     void bottomAnchorKey;
@@ -142,6 +157,10 @@ export function VirtualizedThreadTimeline({
 
   useEffect(() => {
     return () => {
+      if (suppressAutoScrollTimerRef.current !== null) {
+        window.clearTimeout(suppressAutoScrollTimerRef.current);
+      }
+
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
       }
@@ -160,8 +179,8 @@ export function VirtualizedThreadTimeline({
   }, []);
 
   const handleToggleToolCallExpansion = useCallback(() => {
-    scheduleScrollToBottom();
-  }, [scheduleScrollToBottom]);
+    suppressAutoScrollTemporarily();
+  }, [suppressAutoScrollTemporarily]);
 
   const handleToggleRowCollapse = useCallback(
     (rowId: string) => {
@@ -169,12 +188,14 @@ export function VirtualizedThreadTimeline({
         return;
       }
 
+      suppressAutoScrollTemporarily();
+
       setCollapsedRowIds((current) => ({
         ...current,
         [rowId]: !current[rowId],
       }));
     },
-    [streamingTurnRowId],
+    [streamingTurnRowId, suppressAutoScrollTemporarily],
   );
 
   const handleJumpToEarlierMessages = useCallback(() => {
@@ -188,13 +209,13 @@ export function VirtualizedThreadTimeline({
 
   const handleToggleDiffTree = useCallback(
     (checkpointTurnCount: number) => {
+      suppressAutoScrollTemporarily();
       setExpandedDiffTrees((current) => ({
         ...current,
         [checkpointTurnCount]: current[checkpointTurnCount] === false,
       }));
-      scheduleScrollToBottom();
     },
-    [scheduleScrollToBottom],
+    [suppressAutoScrollTemporarily],
   );
 
   const renderRow = useCallback(
