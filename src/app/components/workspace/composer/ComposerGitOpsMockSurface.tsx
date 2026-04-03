@@ -40,7 +40,7 @@ export function ComposerGitOpsMockSurface({
 
   return (
     <div
-      className="grid gap-0"
+      className="grid min-h-[189px] gap-0"
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
