@@ -1,21 +1,6 @@
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
-
-type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
-
-type TimelineRow =
-  | {
-      kind: "history-divider";
-    }
-  | {
-      kind: "tool-group";
-      messages: ToolCallMessage[];
-    }
-  | {
-      kind: "message";
-      message: Message;
-      turnSummary?: TurnDiffSummary;
-    };
+import type { TimelineRow, TimelineTurnItem } from "./timeline-row";
 
 function estimateTextHeight(characters: number, charsPerLine: number, lineHeight: number) {
   const estimatedLines = Math.max(1, Math.ceil(characters / charsPerLine));
@@ -25,24 +10,26 @@ function estimateTextHeight(characters: number, charsPerLine: number, lineHeight
 function estimateMessageBodyHeight(message: Message) {
   switch (message.role) {
     case "user":
-      return 44 + estimateTextHeight(message.content.join(" ").length, 84, 22);
+      return 72 + estimateTextHeight(message.content.join(" ").length, 56, 24);
     case "assistant":
       return (
-        28 +
-        estimateTextHeight(message.content.join(" ").length, 68, 24) +
+        64 +
+        estimateTextHeight(message.content.join(" ").length, 54, 24) +
         (message.thinkingContent && message.thinkingContent.length > 0
-          ? 48 + estimateTextHeight(message.thinkingContent.join(" ").length, 72, 20)
+          ? 96 + estimateTextHeight(message.thinkingContent.join(" ").length, 54, 22)
           : 0)
       );
     case "toolResult":
-      return 72 + estimateTextHeight(message.content.join(" ").length, 64, 20);
+      return 96 + estimateTextHeight(message.content.join(" ").length, 54, 22);
     case "bashExecution":
-      return 84 + estimateTextHeight([message.command, ...message.output].join(" ").length, 70, 18);
+      return (
+        104 + estimateTextHeight([message.command, ...message.output].join(" ").length, 58, 18)
+      );
     case "custom":
-      return 72 + estimateTextHeight(message.content.join(" ").length, 66, 20);
+      return 88 + estimateTextHeight(message.content.join(" ").length, 56, 20);
     case "branchSummary":
     case "compactionSummary":
-      return 72 + estimateTextHeight(message.content.join(" ").length, 66, 20);
+      return 88 + estimateTextHeight(message.content.join(" ").length, 56, 20);
     default:
       return 96;
   }
@@ -57,14 +44,64 @@ function estimateTurnSummaryHeight(turnSummary?: TurnDiffSummary) {
   return 96 + visibleFileRows * 20;
 }
 
-export function estimateThreadTimelineRowHeight(row: TimelineRow) {
+function estimateTimelineItemHeight(item: TimelineTurnItem) {
+  if (item.kind === "tool-group") {
+    return item.messages.length * 40 + Math.max(0, item.messages.length - 1) * 8;
+  }
+
+  return estimateMessageBodyHeight(item.message) + estimateTurnSummaryHeight(item.turnSummary) + 18;
+}
+
+function estimateCollapsedTurnHeight(row: Extract<TimelineRow, { kind: "turn" }>) {
+  const assistantPreview = row.items.find(
+    (item) => item.kind === "message" && item.message.role === "assistant",
+  ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
+  const combinedPreviewLength = [
+    row.userMessage.content[0] ?? "",
+    assistantPreview?.message.role === "assistant"
+      ? (assistantPreview.message.thinkingHeaders?.join(", ") ??
+        assistantPreview.message.content[0] ??
+        "")
+      : "",
+  ]
+    .join(" ")
+    .trim().length;
+
+  return 56 + estimateTextHeight(combinedPreviewLength, 68, 20);
+}
+
+function estimateCollapsedSummaryHeight() {
+  return 52;
+}
+
+export function estimateThreadTimelineRowHeight(
+  row: TimelineRow,
+  options?: { collapsed?: boolean },
+) {
   if (row.kind === "history-divider") {
     return 42;
   }
 
-  if (row.kind === "tool-group") {
-    return row.messages.length * 40 + Math.max(0, row.messages.length - 1) * 8;
+  if (row.kind === "turn") {
+    if (options?.collapsed) {
+      return estimateCollapsedTurnHeight(row);
+    }
+
+    return (
+      estimateMessageBodyHeight(row.userMessage) +
+      row.items.reduce((total, item) => total + estimateTimelineItemHeight(item), 0) +
+      Math.max(0, row.items.length) * 18 +
+      24
+    );
   }
 
-  return estimateMessageBodyHeight(row.message) + estimateTurnSummaryHeight(row.turnSummary) + 18;
+  if (row.kind === "summary") {
+    if (options?.collapsed) {
+      return estimateCollapsedSummaryHeight();
+    }
+
+    return estimateMessageBodyHeight(row.message) + 24;
+  }
+
+  return estimateTimelineItemHeight(row);
 }

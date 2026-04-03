@@ -126,6 +126,23 @@ function AssistantThinkingBlock({
   );
 }
 
+function SummaryBlock({
+  label,
+  content,
+}: {
+  label: string;
+  content: string[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.06)] bg-[rgba(255,255,255,0.018)]">
+      <div className="border-b border-[rgba(169,178,215,0.05)] px-2.5 py-2 text-[12.5px] font-medium text-[color:var(--text)]/82">
+        {label}
+      </div>
+      <div className="px-3 py-3">{renderThinking(content)}</div>
+    </div>
+  );
+}
+
 export const ThreadMessage = memo(function ThreadMessage({
   message,
   autoExpandThinking,
@@ -224,12 +241,11 @@ export const ThreadMessage = memo(function ThreadMessage({
   }
 
   if (message.role === "branchSummary" || message.role === "compactionSummary") {
+    const label = message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
+
     return (
-      <div className="grid min-w-0 gap-2 rounded-[16px] border border-[rgba(183,186,245,0.12)] bg-[rgba(183,186,245,0.05)] px-4 py-3 text-[13px] text-[color:var(--text)]/84">
-        <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
-          {message.role === "branchSummary" ? "Branch summary" : "Compaction summary"}
-        </div>
-        {renderProse(message.content)}
+      <div className="px-4">
+        <SummaryBlock label={label} content={message.content} />
       </div>
     );
   }
