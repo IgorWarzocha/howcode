@@ -46,7 +46,7 @@ export function ComposerGitOpsMockSurface({
     >
       <div className="relative">
         <textarea
-          className="min-h-[140px] w-full resize-none bg-transparent px-4 pt-4 pb-8 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-8 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
           value={commitMessage}
           onChange={(event) => setCommitMessage(event.target.value)}
           aria-label="Commit message"
@@ -118,6 +118,11 @@ export function ComposerGitOpsMockSurface({
             disabled={!isGitRepo}
           />
         </div>
+      </div>
+
+      <div className="flex min-h-8 items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
+        <div />
+        <div />
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
