@@ -36,7 +36,7 @@ export type PiDesktopRpc = {
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
       getThread: {
-        params: { sessionPath: string; includeHistory?: boolean };
+        params: { sessionPath: string; historyCompactions?: number };
         response: ThreadData | null;
       };
       watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } };

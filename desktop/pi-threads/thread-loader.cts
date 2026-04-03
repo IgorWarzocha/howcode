@@ -19,6 +19,7 @@ export type LoadedThreadSnapshot = {
 
 type SessionPathEntry = {
   type: string;
+  id: string;
   timestamp?: string | number;
   message?: AgentMessage;
   customType?: string;
@@ -26,7 +27,87 @@ type SessionPathEntry = {
   display?: boolean;
   summary?: string;
   tokensBefore?: number;
+  firstKeptEntryId?: string;
 };
+
+function countHiddenMessagesBeforeCompaction(
+  pathEntries: SessionPathEntry[],
+  compactionIndex: number,
+) {
+  const firstKeptEntryId = pathEntries[compactionIndex]?.firstKeptEntryId;
+  if (!firstKeptEntryId) {
+    return 0;
+  }
+
+  let count = 0;
+  for (let index = 0; index < compactionIndex; index += 1) {
+    const entry = pathEntries[index];
+    if (entry?.id === firstKeptEntryId) {
+      break;
+    }
+
+    if (
+      entry?.type === "message" ||
+      entry?.type === "custom_message" ||
+      entry?.type === "branch_summary"
+    ) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function buildHistorySliceForCompactionDepth(
+  pathEntries: SessionPathEntry[],
+  historyCompactions: number,
+) {
+  if (historyCompactions <= 0) {
+    return null;
+  }
+
+  const compactionIndexes = pathEntries.flatMap((entry, index) =>
+    entry.type === "compaction" ? [index] : [],
+  );
+
+  if (compactionIndexes.length === 0) {
+    return {
+      sourceMessages: buildFullHistorySourceMessages(pathEntries),
+      previousMessageCount: 0,
+    };
+  }
+
+  if (historyCompactions >= compactionIndexes.length) {
+    return {
+      sourceMessages: buildFullHistorySourceMessages(pathEntries),
+      previousMessageCount: 0,
+    };
+  }
+
+  const selectedCompactionIndex =
+    compactionIndexes[compactionIndexes.length - 1 - historyCompactions];
+  const selectedCompactionEntry = pathEntries[selectedCompactionIndex];
+  const firstKeptIndex = selectedCompactionEntry?.firstKeptEntryId
+    ? pathEntries.findIndex((entry) => entry.id === selectedCompactionEntry.firstKeptEntryId)
+    : -1;
+
+  if (!selectedCompactionEntry || firstKeptIndex === -1) {
+    return {
+      sourceMessages: buildFullHistorySourceMessages(pathEntries),
+      previousMessageCount: 0,
+    };
+  }
+
+  return {
+    sourceMessages: buildFullHistorySourceMessages([
+      selectedCompactionEntry,
+      ...pathEntries.filter(
+        (_, index) => index >= firstKeptIndex && index !== selectedCompactionIndex,
+      ),
+    ]),
+    previousMessageCount: countHiddenMessagesBeforeCompaction(pathEntries, selectedCompactionIndex),
+  };
+}
 
 function buildFullHistorySourceMessages(pathEntries: SessionPathEntry[]): AgentMessage[] {
   const messages: AgentMessage[] = [];
@@ -90,14 +171,16 @@ export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {
 
 export async function loadThreadSnapshot(
   sessionPath: string,
-  options?: { includeHistory?: boolean },
+  options?: { historyCompactions?: number },
 ): Promise<LoadedThreadSnapshot> {
   const { SessionManager } = await getPiModule();
   const manager = SessionManager.open(sessionPath);
   const previousMessageCount = getPreviousMessageCount(manager.getBranch());
-  const includeHistory = options?.includeHistory ?? false;
-  const sourceMessages = includeHistory
-    ? buildFullHistorySourceMessages([...(manager.getBranch() as SessionPathEntry[])].reverse())
+  const historyCompactions = options?.historyCompactions ?? 0;
+  const pathEntries = [...(manager.getBranch() as SessionPathEntry[])].reverse();
+  const historySlice = buildHistorySliceForCompactionDepth(pathEntries, historyCompactions);
+  const sourceMessages = historySlice
+    ? historySlice.sourceMessages
     : (manager.buildSessionContext().messages as AgentMessage[]);
 
   return {
@@ -106,7 +189,7 @@ export async function loadThreadSnapshot(
     thread: buildThreadData({
       sessionPath,
       sourceMessages,
-      previousMessageCount: includeHistory ? 0 : previousMessageCount,
+      previousMessageCount: historySlice ? historySlice.previousMessageCount : previousMessageCount,
       isStreaming: false,
       turnDiffSummaries: listTurnDiffSummaries(sessionPath),
     }),
@@ -115,10 +198,10 @@ export async function loadThreadSnapshot(
 
 export async function loadThread(
   sessionPath: string,
-  options?: { includeHistory?: boolean },
+  options?: { historyCompactions?: number },
 ): Promise<ThreadData> {
   const liveThread = getLiveThread(sessionPath);
-  if (liveThread?.isStreaming && !options?.includeHistory) {
+  if (liveThread?.isStreaming && (options?.historyCompactions ?? 0) === 0) {
     return liveThread;
   }
 

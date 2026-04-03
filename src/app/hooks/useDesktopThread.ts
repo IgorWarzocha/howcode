@@ -5,14 +5,14 @@ import { desktopQueryKeys, getThreadQuery } from "../query/desktop-query";
 export function useDesktopThread(
   sessionPath: string | null | undefined,
   refreshKey = 0,
-  includeHistory = false,
+  historyCompactions = 0,
 ) {
   const query = useQuery<ThreadData | null>({
     queryKey: sessionPath
-      ? desktopQueryKeys.threadWithHistory(sessionPath, refreshKey, includeHistory)
-      : ["desktop", "thread", null, refreshKey, includeHistory],
+      ? desktopQueryKeys.thread(sessionPath, refreshKey, historyCompactions)
+      : ["desktop", "thread", null, refreshKey, historyCompactions],
     queryFn: () =>
-      sessionPath ? getThreadQuery(sessionPath, includeHistory) : Promise.resolve(null),
+      sessionPath ? getThreadQuery(sessionPath, historyCompactions) : Promise.resolve(null),
     enabled: Boolean(sessionPath),
     staleTime: Number.POSITIVE_INFINITY,
   });
