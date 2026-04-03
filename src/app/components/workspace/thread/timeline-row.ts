@@ -25,7 +25,7 @@ export type TimelineRow =
   | {
       kind: "turn";
       id: string;
-      userMessage: Extract<Message, { role: "assistant" | "user" }>;
+      userMessage: Extract<Message, { role: "assistant" | "user" }> | null;
       items: TimelineTurnItem[];
     }
   | {

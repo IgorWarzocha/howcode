@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
-import { getAssistantPreview } from "../../../utils/thread-previews";
+import { getAssistantPreview, getToolCallPreview } from "../../../utils/thread-previews";
 import { ThreadMessage } from "../../common/ThreadMessage";
 import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
 import { ToolCallsCard } from "./ToolCallsCard";
@@ -8,7 +8,19 @@ import { chatRowShellClass } from "./thread-layout";
 import type { TimelineRow, TimelineTurnItem } from "./timeline-row";
 
 function getTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
-  const userPreview = row.userMessage.content[0] ?? "New turn";
+  const leadingAssistantMessage = row.items.find(
+    (item) => item.kind === "message" && item.message.role === "assistant",
+  ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
+  const leadingToolGroup = row.items.find((item) => item.kind === "tool-group") as
+    | Extract<TimelineTurnItem, { kind: "tool-group" }>
+    | undefined;
+  const userPreview =
+    row.userMessage?.content[0] ??
+    (leadingAssistantMessage?.message.role === "assistant"
+      ? getAssistantPreview(leadingAssistantMessage.message)
+      : null) ??
+    (leadingToolGroup ? getToolCallPreview(leadingToolGroup.messages[0]) : null) ??
+    "Continued turn";
   const assistantMessage = row.items.find(
     (item) => item.kind === "message" && item.message.role === "assistant",
   ) as Extract<TimelineTurnItem, { kind: "message" }> | undefined;
@@ -16,7 +28,7 @@ function getTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
   return {
     userPreview,
     assistantPreview:
-      assistantMessage?.message.role === "assistant"
+      row.userMessage && assistantMessage?.message.role === "assistant"
         ? getAssistantPreview(assistantMessage.message)
         : null,
   };
@@ -182,7 +194,7 @@ export function ThreadTimelineRow({
         onToggle={() => onToggleRowCollapse(row.id)}
       >
         <div className="grid min-w-0 gap-3">
-          <ThreadMessage message={row.userMessage} />
+          {row.userMessage ? <ThreadMessage message={row.userMessage} /> : null}
           {row.items.map(renderTurnItem)}
         </div>
       </TimelineRowShell>

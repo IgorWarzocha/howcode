@@ -26,6 +26,23 @@ export function buildTimelineRows({
   );
   let pendingToolMessages: ToolCallMessage[] = [];
   let currentTurn: Extract<TimelineRow, { kind: "turn" }> | null = null;
+  let postSummaryTurnBoundaryId: string | null = null;
+
+  const ensurePostSummaryTurn = () => {
+    if (currentTurn || !postSummaryTurnBoundaryId) {
+      return currentTurn;
+    }
+
+    currentTurn = {
+      kind: "turn",
+      id: `turn:post-summary:${postSummaryTurnBoundaryId}`,
+      userMessage: null,
+      items: [],
+    };
+    postSummaryTurnBoundaryId = null;
+
+    return currentTurn;
+  };
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {
@@ -43,7 +60,12 @@ export function buildTimelineRows({
     if (currentTurn) {
       currentTurn.items.push(toolGroup);
     } else {
-      nextRows.push(toolGroup);
+      const postSummaryTurn = ensurePostSummaryTurn();
+      if (postSummaryTurn) {
+        postSummaryTurn.items.push(toolGroup);
+      } else {
+        nextRows.push(toolGroup);
+      }
     }
 
     pendingToolMessages = [];
@@ -86,6 +108,7 @@ export function buildTimelineRows({
 
     if (message.role === "user") {
       flushCurrentTurn();
+      postSummaryTurnBoundaryId = null;
       currentTurn = {
         kind: "turn",
         id: `turn:${message.id}`,
@@ -102,13 +125,19 @@ export function buildTimelineRows({
         id: `summary:${message.id}`,
         message,
       });
+      postSummaryTurnBoundaryId = message.id;
       continue;
     }
 
     if (currentTurn) {
       currentTurn.items.push(timelineMessage);
     } else {
-      nextRows.push(timelineMessage);
+      const postSummaryTurn = ensurePostSummaryTurn();
+      if (postSummaryTurn) {
+        postSummaryTurn.items.push(timelineMessage);
+      } else {
+        nextRows.push(timelineMessage);
+      }
     }
   }
 
