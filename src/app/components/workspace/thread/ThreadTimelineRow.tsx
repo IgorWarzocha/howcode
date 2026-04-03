@@ -28,9 +28,9 @@ function getTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
   return {
     userPreview,
     assistantPreview:
-      row.userMessage && assistantMessage?.message.role === "assistant"
-        ? getAssistantPreview(assistantMessage.message)
-        : null,
+      row.userMessage || assistantMessage?.message.role !== "assistant"
+        ? null
+        : getAssistantPreview(assistantMessage.message),
   };
 }
 
@@ -49,7 +49,7 @@ function FoldedTimelineRow({
       className="flex min-w-0 items-center gap-1.5 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div className="shrink-0 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
+      <div className="min-w-0 flex-1 truncate text-[12.5px] leading-none font-medium text-[color:var(--text)]/92">
         {label}
       </div>
       {secondary ? (
