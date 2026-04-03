@@ -120,8 +120,6 @@ export function ComposerGitOpsMockSurface({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap" />
-
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
       <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
