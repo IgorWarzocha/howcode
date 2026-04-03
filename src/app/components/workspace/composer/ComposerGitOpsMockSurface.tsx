@@ -56,26 +56,16 @@ export function ComposerGitOpsMockSurface({
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
-      <textarea
-        className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-        value={commitMessage}
-        onChange={(event) => setCommitMessage(event.target.value)}
-        aria-label="Commit message"
-        placeholder="Leave blank to autogenerate a commit message"
-      />
+      <div className="relative">
+        <textarea
+          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+          value={commitMessage}
+          onChange={(event) => setCommitMessage(event.target.value)}
+          aria-label="Commit message"
+          placeholder="Leave blank to autogenerate a commit message"
+        />
 
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="flex items-center gap-2 text-[13px] text-[color:var(--muted)]">
-          {isGitRepo ? (
-            <GitBranch size={14} />
-          ) : (
-            <TriangleAlert size={14} className="text-[#ff9c9c]" />
-          )}
-          <span>{isGitRepo ? meta.branch : "Not a git repository"}</span>
-          <FeatureStatusBadge statusId="feature:composer.git-ops" />
-        </div>
-
-        <div className="ml-auto flex items-center gap-2 max-md:w-full max-md:justify-end">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
             {gitOpsMockModes.map((mode) => (
               <button
@@ -101,6 +91,18 @@ export function ComposerGitOpsMockSurface({
             className={!isGitRepo ? "opacity-50" : undefined}
             disabled={!isGitRepo}
           />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
+        <div className="flex items-center gap-2 text-[13px] text-[color:var(--muted)]">
+          {isGitRepo ? (
+            <GitBranch size={14} />
+          ) : (
+            <TriangleAlert size={14} className="text-[#ff9c9c]" />
+          )}
+          <span>{isGitRepo ? meta.branch : "Not a git repository"}</span>
+          <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
       </div>
 
