@@ -57,7 +57,7 @@ export function estimateThreadTimelineRowHeight(row: TimelineRow) {
   }
 
   if (row.kind === "tool-group") {
-    return 56 + row.messages.length * 44;
+    return row.messages.length * 40 + Math.max(0, row.messages.length - 1) * 8;
   }
 
   return estimateMessageBodyHeight(row.message) + estimateTurnSummaryHeight(row.turnSummary) + 18;

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, SquareTerminal, Wrench } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Message } from "../../../types";
 
@@ -6,6 +6,7 @@ type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }
 
 type ToolCallsCardProps = {
   messages: ToolCallMessage[];
+  onToggleExpanded?: () => void;
 };
 
 function getToolCallTitle(message: ToolCallMessage) {
@@ -71,81 +72,70 @@ function renderToolCallBody(message: ToolCallMessage) {
   );
 }
 
-export function ToolCallsCard({ messages }: ToolCallsCardProps) {
+export function ToolCallsCard({ messages, onToggleExpanded }: ToolCallsCardProps) {
   const [expandedToolCallIds, setExpandedToolCallIds] = useState<Record<string, boolean>>({});
   const orderedMessages = useMemo(() => messages, [messages]);
 
   return (
-    <div className="grid min-w-0 gap-2 rounded-[16px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] px-3 py-3">
-      <div className="px-1 text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-        Tool calls · {orderedMessages.length}
-      </div>
+    <div className="grid min-w-0 gap-2">
+      {orderedMessages.map((message) => {
+        const expanded = expandedToolCallIds[message.id] ?? false;
+        const title = getToolCallTitle(message);
+        const preview = getToolCallPreview(message);
+        const isError = message.role === "toolResult" && message.isError;
 
-      <div className="grid min-w-0 gap-2">
-        {orderedMessages.map((message) => {
-          const expanded = expandedToolCallIds[message.id] ?? false;
-          const title = getToolCallTitle(message);
-          const preview = getToolCallPreview(message);
-          const isError = message.role === "toolResult" && message.isError;
-
-          return (
-            <div
-              key={message.id}
-              className="overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
+        return (
+          <div
+            key={message.id}
+            className="overflow-hidden rounded-[14px] border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
+          >
+            <button
+              type="button"
+              className="flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.025)]"
+              onClick={() => {
+                onToggleExpanded?.();
+                setExpandedToolCallIds((current) => ({
+                  ...current,
+                  [message.id]: !expanded,
+                }));
+              }}
+              aria-expanded={expanded}
+              aria-controls={`tool-call-panel-${message.id}`}
             >
-              <button
-                type="button"
-                className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.025)]"
-                onClick={() =>
-                  setExpandedToolCallIds((current) => ({
-                    ...current,
-                    [message.id]: !expanded,
-                  }))
-                }
-                aria-expanded={expanded}
-                aria-controls={`tool-call-panel-${message.id}`}
-              >
-                <span className="shrink-0 text-[color:var(--muted)]">
-                  {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              <span className="shrink-0 text-[color:var(--muted)]">
+                {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </span>
+              <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                <span className="shrink-0 truncate text-[12.5px] font-medium text-[color:var(--text)]/92">
+                  {title}
                 </span>
-                <span className="shrink-0 text-[color:var(--muted)]">
-                  {message.role === "toolResult" ? (
-                    <Wrench size={14} />
-                  ) : (
-                    <SquareTerminal size={14} />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium text-[color:var(--text)]">
-                    {title}
-                  </span>
-                  <span className="block truncate text-[12px] text-[color:var(--muted)]">
-                    {preview}
-                  </span>
-                </span>
+                <span className="shrink-0 text-[11px] text-[color:var(--muted-2)]/80">—</span>
                 <span
                   className={
-                    isError
-                      ? "shrink-0 text-[11px] font-medium text-[#f2a7a7]"
-                      : "shrink-0 text-[11px] text-[color:var(--muted)]"
+                    message.role === "bashExecution"
+                      ? "min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--muted-2)]/90"
+                      : "min-w-0 flex-1 truncate text-[11.5px] text-[color:var(--muted-2)]/90"
                   }
                 >
-                  {isError ? "Error" : "Done"}
+                  {preview}
                 </span>
-              </button>
-
-              {expanded ? (
-                <div
-                  id={`tool-call-panel-${message.id}`}
-                  className="border-t border-[rgba(169,178,215,0.08)] px-3 py-3"
-                >
-                  {renderToolCallBody(message)}
-                </div>
+              </span>
+              {isError ? (
+                <span className="shrink-0 text-[10.5px] font-medium text-[#f2a7a7]">Error</span>
               ) : null}
-            </div>
-          );
-        })}
-      </div>
+            </button>
+
+            {expanded ? (
+              <div
+                id={`tool-call-panel-${message.id}`}
+                className="border-t border-[rgba(169,178,215,0.08)] px-3 py-3"
+              >
+                {renderToolCallBody(message)}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -82,6 +82,8 @@ export function VirtualizedThreadTimeline({
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRootRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  const suppressScrollAdjustRef = useRef(false);
+  const suppressScrollAdjustTimerRef = useRef<number | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const [timelineWidthPx, setTimelineWidthPx] = useState<number | null>(null);
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
@@ -203,6 +205,10 @@ export function VirtualizedThreadTimeline({
 
   useEffect(() => {
     rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
+      if (suppressScrollAdjustRef.current) {
+        return false;
+      }
+
       const viewportHeight = instance.scrollRect?.height ?? 0;
       const scrollOffset = instance.scrollOffset ?? 0;
       const remainingDistance = instance.getTotalSize() - (scrollOffset + viewportHeight);
@@ -233,10 +239,26 @@ export function VirtualizedThreadTimeline({
 
   useEffect(() => {
     return () => {
+      if (suppressScrollAdjustTimerRef.current !== null) {
+        window.clearTimeout(suppressScrollAdjustTimerRef.current);
+      }
+
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
       }
     };
+  }, []);
+
+  const handleToggleToolCallExpansion = useCallback(() => {
+    suppressScrollAdjustRef.current = true;
+    if (suppressScrollAdjustTimerRef.current !== null) {
+      window.clearTimeout(suppressScrollAdjustTimerRef.current);
+    }
+
+    suppressScrollAdjustTimerRef.current = window.setTimeout(() => {
+      suppressScrollAdjustRef.current = false;
+      suppressScrollAdjustTimerRef.current = null;
+    }, 180);
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -273,7 +295,9 @@ export function VirtualizedThreadTimeline({
     }
 
     if (row.kind === "tool-group") {
-      return <ToolCallsCard messages={row.messages} />;
+      return (
+        <ToolCallsCard messages={row.messages} onToggleExpanded={handleToggleToolCallExpansion} />
+      );
     }
 
     const { message, turnSummary } = row;

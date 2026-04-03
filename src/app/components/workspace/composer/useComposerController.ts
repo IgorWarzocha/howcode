@@ -73,19 +73,25 @@ export function useComposerController({
       return;
     }
 
+    const submittedAttachments = attachments;
+
     setIsSending(true);
     setErrorMessage(null);
+    setDraft("");
+    setAttachments([]);
 
     try {
       await onAction("composer.send", {
         text,
-        attachments,
+        attachments: submittedAttachments,
         projectId,
         sessionPath,
       });
-      setDraft("");
-      setAttachments([]);
     } catch (error) {
+      setDraft((currentDraft) => (currentDraft.length === 0 ? text : currentDraft));
+      setAttachments((currentAttachments) =>
+        currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
+      );
       setErrorMessage(error instanceof Error ? error.message : "Could not send prompt.");
     } finally {
       setIsSending(false);
