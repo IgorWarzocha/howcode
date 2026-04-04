@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -26,6 +27,7 @@ export function AppShellWorkspace({
   terminalSessionPath,
   workspaceContentClass,
 }: AppShellWorkspaceProps) {
+  const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const {
     handleAction,
     handleLoadEarlierMessages,
@@ -61,6 +63,10 @@ export function AppShellWorkspace({
               selectedFilePath={state.selectedDiffFilePath}
               onSelectTurn={handleSelectDiffTurn}
               layoutMode="main"
+              onSendCommentsToAgent={async (prompt) => {
+                await handleAction("composer.send", { text: prompt });
+                setComposerPromptResetKey((current) => current + 1);
+              }}
               onClose={handleToggleDiff}
               onAction={(action, payload) => void handleAction(action, payload)}
             />
@@ -101,6 +107,7 @@ export function AppShellWorkspace({
 
                   handleToggleDiff();
                 }}
+                promptResetKey={composerPromptResetKey}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                 onToggleTerminal={handleToggleTerminal}
                 terminalVisible={state.terminalVisible}

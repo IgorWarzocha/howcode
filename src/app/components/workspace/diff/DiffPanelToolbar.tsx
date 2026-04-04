@@ -1,4 +1,4 @@
-import { Columns2, PanelRightClose, Rows3, SlidersHorizontal } from "lucide-react";
+import { Columns2, PanelRightClose, Rows3, Send, SlidersHorizontal } from "lucide-react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type { ThreadData } from "../../../desktop/types";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
@@ -17,8 +17,11 @@ type DiffPanelToolbarProps = {
   diffRenderMode: DiffRenderMode;
   orderedTurnDiffSummaries: ThreadData["turnDiffSummaries"];
   selectedTurnCount: number | null;
+  commentCount: number;
+  commentsSending: boolean;
   onClose: () => void;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onSendCommentsToAgent: () => void;
   onSelectTurn: (checkpointTurnCount: number | null) => void;
   onSetDiffRenderMode: (mode: DiffRenderMode) => void;
 };
@@ -27,8 +30,11 @@ export function DiffPanelToolbar({
   diffRenderMode,
   orderedTurnDiffSummaries,
   selectedTurnCount,
+  commentCount,
+  commentsSending,
   onClose,
   onAction,
+  onSendCommentsToAgent,
   onSelectTurn,
   onSetDiffRenderMode,
 }: DiffPanelToolbarProps) {
@@ -72,6 +78,25 @@ export function DiffPanelToolbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          className={cn(
+            diffPanelIconButtonClass,
+            "w-auto gap-1.5 border-[color:var(--border)] bg-transparent px-2",
+            commentCount === 0 && "cursor-not-allowed opacity-45",
+          )}
+          onClick={onSendCommentsToAgent}
+          disabled={commentCount === 0 || commentsSending}
+          aria-label="Send review comments to agent"
+          title="Send review comments to agent"
+        >
+          <Send size={13} />
+          <span className="text-[11px] font-medium">
+            {commentsSending
+              ? "Sending…"
+              : `Send to agent${commentCount > 0 ? ` (${commentCount})` : ""}`}
+          </span>
+        </button>
         <button
           type="button"
           className={cn(

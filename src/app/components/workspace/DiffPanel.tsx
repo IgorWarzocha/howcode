@@ -11,6 +11,7 @@ type DiffPanelProps = {
   selectedFilePath: string | null;
   onSelectTurn: (checkpointTurnCount: number | null) => void;
   layoutMode?: "split" | "overlay" | "main";
+  onSendCommentsToAgent: (prompt: string) => Promise<void>;
   onClose: () => void;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
@@ -23,6 +24,7 @@ export function DiffPanel({
   selectedFilePath,
   onSelectTurn,
   layoutMode = "split",
+  onSendCommentsToAgent,
   onClose,
   onAction,
 }: DiffPanelProps) {
@@ -36,6 +38,7 @@ export function DiffPanel({
         selectedFilePath={selectedFilePath}
         onSelectTurn={onSelectTurn}
         layoutMode={layoutMode}
+        onSendCommentsToAgent={onSendCommentsToAgent}
         onClose={onClose}
         onAction={onAction}
       />

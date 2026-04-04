@@ -56,6 +56,14 @@ export const DIFF_PANEL_UNSAFE_CSS = `
 [data-title] {
   cursor: pointer;
 }
+
+[data-line-annotation] {
+  --diffs-line-bg: color-mix(in srgb, var(--workspace) 96%, var(--text));
+}
+
+[data-annotation-content] {
+  padding-block: 4px 0;
+}
 `;
 
 export function getRenderablePatch(

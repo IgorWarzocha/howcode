@@ -24,6 +24,7 @@ export type ComposerProps = {
   projectGitState: ProjectGitState | null;
   sessionPath: string | null;
   onSetDiffPanelVisible: (visible: boolean) => void;
+  promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
@@ -36,6 +37,14 @@ export type ComposerProps = {
 
 export function Composer(props: ComposerProps) {
   const [surface, setSurface] = useState<"prompt" | "git-ops">("prompt");
+
+  useEffect(() => {
+    if (props.promptResetKey < 0) {
+      return;
+    }
+
+    setSurface("prompt");
+  }, [props.promptResetKey]);
 
   useEffect(() => {
     props.onSetDiffPanelVisible(surface === "git-ops");
