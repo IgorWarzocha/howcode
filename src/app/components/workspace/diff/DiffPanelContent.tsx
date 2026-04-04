@@ -6,7 +6,7 @@ import {
   type GetHoveredLineResult,
   type SelectedLineRange,
 } from "@pierre/diffs/react";
-import { Check, MessageSquarePlus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, MessageSquarePlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
@@ -99,6 +99,27 @@ function describeCommentTarget({
 
   const endSideLabel = resolvedEndSide === "deletions" ? "Old" : "New";
   return `${sideLabel} line ${lineNumber} → ${endSideLabel} line ${resolvedEndLineNumber}`;
+}
+
+function describeCollapsedLines(count: number) {
+  return `${count} unmodified line${count === 1 ? "" : "s"}`;
+}
+
+function getFileHeaderContextLabel(fileDiff: FileDiffMetadata) {
+  const collapsedBefore = fileDiff.hunks[0]?.collapsedBefore ?? 0;
+  return collapsedBefore > 0 ? describeCollapsedLines(collapsedBefore) : null;
+}
+
+function getFileChangeCounts(fileDiff: FileDiffMetadata) {
+  let additions = 0;
+  let deletions = 0;
+
+  for (const hunk of fileDiff.hunks) {
+    additions += hunk.additionLines;
+    deletions += hunk.deletionLines;
+  }
+
+  return { additions, deletions };
 }
 
 function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
@@ -194,6 +215,7 @@ export function DiffPanelContent({
   const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
   const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
+  const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const patchViewportRef = useRef<HTMLDivElement>(null);
   const dragSelectionRef = useRef<{
     pointerId: number;
@@ -468,6 +490,13 @@ export function DiffPanelContent({
     setSavedComments((current) => current.filter((comment) => comment.id !== commentId));
   };
 
+  const toggleFileCollapsed = useCallback((fileKey: string) => {
+    setCollapsedFiles((current) => ({
+      ...current,
+      [fileKey]: !current[fileKey],
+    }));
+  }, []);
+
   const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => {
     const metadata = annotation.metadata;
 
@@ -565,7 +594,7 @@ export function DiffPanelContent({
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]",
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] bg-[color:var(--workspace)]",
         layoutMode === "split" && "border-l border-[color:var(--border)] xl:w-full",
       )}
       data-feature-id="feature:diff.panel"
@@ -597,6 +626,7 @@ export function DiffPanelContent({
                 {renderableFiles.map((fileDiff: FileDiffMetadata) => {
                   const filePath = resolveFileDiffPath(fileDiff);
                   const fileKey = buildFileDiffRenderKey(fileDiff);
+                  const isCollapsed = collapsedFiles[fileKey] === true;
                   const selectedLines: SelectedLineRange | null =
                     dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
                       ? dragSelectionRange
@@ -654,6 +684,54 @@ export function DiffPanelContent({
                         fileDiff={fileDiff}
                         lineAnnotations={commentAnnotationsByFile.get(fileKey)}
                         selectedLines={selectedLines}
+                        renderCustomHeader={(currentFileDiff) => {
+                          const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
+                          const { additions, deletions } = getFileChangeCounts(currentFileDiff);
+
+                          return (
+                            <button
+                              type="button"
+                              className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
+                              style={{
+                                fontFamily:
+                                  'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
+                              }}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                toggleFileCollapsed(fileKey);
+                              }}
+                              aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
+                              aria-expanded={!isCollapsed}
+                            >
+                              <span className="flex min-w-0 items-center gap-2.5">
+                                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
+                                  {isCollapsed ? (
+                                    <ChevronRight size={14} />
+                                  ) : (
+                                    <ChevronDown size={14} />
+                                  )}
+                                </span>
+                                <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
+                                  {filePath}
+                                </span>
+                                {headerContextLabel ? (
+                                  <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
+                                    {headerContextLabel}
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="flex shrink-0 items-center gap-2 text-[12px]">
+                                {deletions > 0 || additions === 0 ? (
+                                  <span className="text-[#d06b72]">-{deletions}</span>
+                                ) : null}
+                                {additions > 0 || deletions === 0 ? (
+                                  <span className="text-[color:var(--green)]">+{additions}</span>
+                                ) : null}
+                              </span>
+                            </button>
+                          );
+                        }}
                         renderAnnotation={renderCommentAnnotation}
                         renderGutterUtility={(() => {
                           return (
@@ -692,6 +770,7 @@ export function DiffPanelContent({
                           theme: resolveDiffThemeName("dark"),
                           themeType: "dark" as DiffThemeType,
                           unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+                          collapsed: isCollapsed,
                           enableGutterUtility: true,
                           lineHoverHighlight: "both",
                           onLineClick: ({ lineNumber, annotationSide, event }) => {
