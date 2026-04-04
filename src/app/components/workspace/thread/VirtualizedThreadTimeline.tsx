@@ -185,6 +185,10 @@ export function VirtualizedThreadTimeline({
   }, [scrollToBottom]);
 
   const suppressAutoScrollTemporarily = useCallback(() => {
+    if (shouldStickToBottomRef.current) {
+      return;
+    }
+
     suppressAutoScrollRef.current = true;
 
     if (suppressAutoScrollTimerRef.current !== null) {
