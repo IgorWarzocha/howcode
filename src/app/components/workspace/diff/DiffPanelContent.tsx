@@ -189,13 +189,13 @@ export function DiffPanelContent({
 
     if (metadata.kind === "draft") {
       return (
-        <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[rgba(31,34,46,0.96)] p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.22)]">
+        <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-2.5 shadow-[var(--shadow)]">
           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--muted)]">
             Add comment · {annotation.side === "deletions" ? "Old" : "New"} line{" "}
             {annotation.lineNumber}
           </div>
           <textarea
-            className="min-h-20 w-full resize-y rounded-lg border border-[rgba(169,178,215,0.08)] bg-[rgba(19,21,30,0.92)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
             value={draftComment?.body ?? ""}
             onChange={(event) =>
               setDraftComment((current) =>
@@ -232,7 +232,7 @@ export function DiffPanelContent({
     }
 
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[rgba(31,34,46,0.9)] px-3 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.16)]">
+      <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2.5 shadow-[var(--shadow)]">
         <div className="mb-1 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.12em] text-[color:var(--muted)]">
           <span>
             Comment · {annotation.side === "deletions" ? "Old" : "New"} line {annotation.lineNumber}
