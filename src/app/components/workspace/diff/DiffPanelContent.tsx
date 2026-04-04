@@ -5,6 +5,7 @@ import {
   FileDiff,
   type FileDiffMetadata,
 } from "@pierre/diffs/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, ChevronDown, ChevronRight, MessageSquarePlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
@@ -120,7 +121,6 @@ function getFileChangeCounts(fileDiff: FileDiffMetadata) {
   return { additions, deletions };
 }
 
-const DIFF_FILE_OVERSCAN_PX = 900;
 const DIFF_FILE_ESTIMATED_LINE_HEIGHT = 20;
 const DIFF_FILE_ESTIMATED_HEADER_HEIGHT = 36;
 const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
@@ -166,30 +166,6 @@ function estimateFileDiffHeight({
   }
 
   return Math.max(height, DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
-}
-
-function findVirtualRangeIndex(offsets: number[], heights: number[], targetOffset: number) {
-  let low = 0;
-  let high = offsets.length - 1;
-  let answer = offsets.length;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const itemEnd = offsets[mid] + heights[mid];
-
-    if (itemEnd > targetOffset) {
-      answer = mid;
-      high = mid - 1;
-    } else {
-      low = mid + 1;
-    }
-  }
-
-  return answer;
-}
-
-function getOffsetAtIndex(offsets: number[], totalHeight: number, index: number) {
-  return index >= offsets.length ? totalHeight : (offsets[index] ?? 0);
 }
 
 function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
@@ -286,11 +262,7 @@ export function DiffPanelContent({
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
   const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
-  const [measuredFileHeights, setMeasuredFileHeights] = useState<Record<string, number>>({});
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const [scrollContainerNode, setScrollContainerNode] = useState<HTMLDivElement | null>(null);
-  const fileResizeObserversRef = useRef(new Map<string, ResizeObserver>());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInteractionHandlersRef = useRef(
     new Map<
       string,
@@ -406,58 +378,6 @@ export function DiffPanelContent({
     });
   }, [diffCommentContextId, draftComment, savedComments]);
 
-  useEffect(() => {
-    if (!scrollContainerNode) {
-      return;
-    }
-
-    const updateViewportHeight = () => {
-      const nextHeight = scrollContainerNode.clientHeight;
-      setViewportHeight((current) => (current === nextHeight ? current : nextHeight));
-    };
-
-    updateViewportHeight();
-
-    if (typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      updateViewportHeight();
-    });
-
-    observer.observe(scrollContainerNode);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [scrollContainerNode]);
-
-  useEffect(() => {
-    return () => {
-      for (const observer of fileResizeObserversRef.current.values()) {
-        observer.disconnect();
-      }
-
-      fileResizeObserversRef.current.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    const validFileKeys = new Set(
-      renderableFiles.map((fileDiff) => buildFileDiffRenderKey(fileDiff)),
-    );
-
-    for (const [fileKey, observer] of fileResizeObserversRef.current.entries()) {
-      if (validFileKeys.has(fileKey)) {
-        continue;
-      }
-
-      observer.disconnect();
-      fileResizeObserversRef.current.delete(fileKey);
-    }
-  }, [renderableFiles]);
-
   const commentAnnotationsByFile = useMemo(() => {
     const next = new Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>();
 
@@ -510,69 +430,35 @@ export function DiffPanelContent({
     return next;
   }, [commentAnnotationsByFile]);
 
-  const fileHeights = useMemo(
+  const estimatedFileHeights = useMemo(
     () =>
       renderableFiles.map((fileDiff) => {
         const fileKey = buildFileDiffRenderKey(fileDiff);
-        return (
-          measuredFileHeights[fileKey] ??
-          estimateFileDiffHeight({
-            fileDiff,
-            collapsed: collapsedFiles[fileKey] === true,
-            diffRenderMode,
-            annotationCount: annotationCountByFile.get(fileKey) ?? 0,
-          })
-        );
+        return estimateFileDiffHeight({
+          fileDiff,
+          collapsed: collapsedFiles[fileKey] === true,
+          diffRenderMode,
+          annotationCount: annotationCountByFile.get(fileKey) ?? 0,
+        });
       }),
-    [annotationCountByFile, collapsedFiles, diffRenderMode, measuredFileHeights, renderableFiles],
+    [annotationCountByFile, collapsedFiles, diffRenderMode, renderableFiles],
   );
 
-  const { virtualOffsets, totalVirtualHeight } = useMemo(() => {
-    const offsets: number[] = [];
-    let runningHeight = 0;
-
-    for (const height of fileHeights) {
-      offsets.push(runningHeight);
-      runningHeight += height;
-    }
-
-    return {
-      virtualOffsets: offsets,
-      totalVirtualHeight: runningHeight,
-    };
-  }, [fileHeights]);
-
-  const { visibleStartIndex, visibleEndIndex } = useMemo(() => {
-    if (renderableFiles.length === 0) {
-      return {
-        visibleStartIndex: 0,
-        visibleEndIndex: 0,
-      };
-    }
-
-    const effectiveViewportHeight = viewportHeight || 900;
-    const startOffset = Math.max(0, scrollTop - DIFF_FILE_OVERSCAN_PX);
-    const endOffset = scrollTop + effectiveViewportHeight + DIFF_FILE_OVERSCAN_PX;
-    const startIndex = Math.min(
-      findVirtualRangeIndex(virtualOffsets, fileHeights, startOffset),
-      renderableFiles.length - 1,
-    );
-    const endIndex = Math.min(
-      findVirtualRangeIndex(virtualOffsets, fileHeights, endOffset) + 1,
-      renderableFiles.length,
-    );
-
-    return {
-      visibleStartIndex: startIndex,
-      visibleEndIndex: Math.max(startIndex + 1, endIndex),
-    };
-  }, [fileHeights, renderableFiles.length, scrollTop, viewportHeight, virtualOffsets]);
-
-  const topSpacerHeight = getOffsetAtIndex(virtualOffsets, totalVirtualHeight, visibleStartIndex);
-  const bottomSpacerHeight = Math.max(
-    0,
-    totalVirtualHeight - getOffsetAtIndex(virtualOffsets, totalVirtualHeight, visibleEndIndex),
+  const getVirtualItemKey = useCallback(
+    (index: number) => buildFileDiffRenderKey(renderableFiles[index] as FileDiffMetadata),
+    [renderableFiles],
   );
+
+  const fileListVirtualizer = useVirtualizer({
+    count: renderableFiles.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (index) =>
+      estimatedFileHeights[index] ??
+      DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP,
+    getItemKey: getVirtualItemKey,
+    overscan: 3,
+    useAnimationFrameWithResizeObserver: true,
+  });
 
   const disableDocumentSelection = useCallback(() => {
     if (typeof document === "undefined") {
@@ -920,200 +806,178 @@ export function DiffPanelContent({
               </div>
             ) : renderablePatch.kind === "files" ? (
               <div
-                ref={setScrollContainerNode}
+                ref={scrollContainerRef}
                 className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
-                onScroll={(event) => {
-                  const nextScrollTop = event.currentTarget.scrollTop;
-                  setScrollTop((current) => (current === nextScrollTop ? current : nextScrollTop));
-                }}
               >
-                {topSpacerHeight > 0 ? <div style={{ height: topSpacerHeight }} /> : null}
-                {renderableFiles
-                  .slice(visibleStartIndex, visibleEndIndex)
-                  .map((fileDiff: FileDiffMetadata) => {
-                    const filePath = resolveFileDiffPath(fileDiff);
-                    const fileKey = buildFileDiffRenderKey(fileDiff);
-                    const isCollapsed = collapsedFiles[fileKey] === true;
-                    const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath);
-                    const selectedLines: SelectedLineRange | null =
-                      dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
-                        ? dragSelectionRange
-                        : draftComment?.fileKey === fileKey
-                          ? draftSelectedLines
-                          : null;
-                    return (
-                      <div
-                        key={`${fileKey}:dark`}
-                        data-diff-file-path={filePath}
-                        className="first:mt-0"
-                        ref={(node) => {
-                          const existingObserver = fileResizeObserversRef.current.get(fileKey);
-                          existingObserver?.disconnect();
+                <div
+                  className="relative w-full"
+                  style={{ height: fileListVirtualizer.getTotalSize() }}
+                >
+                  <div
+                    style={{
+                      transform: `translateY(${fileListVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
+                    }}
+                  >
+                    {fileListVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const fileDiff = renderableFiles[virtualRow.index] as FileDiffMetadata;
+                      const filePath = resolveFileDiffPath(fileDiff);
+                      const fileKey = buildFileDiffRenderKey(fileDiff);
+                      const isCollapsed = collapsedFiles[fileKey] === true;
+                      const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath);
+                      const selectedLines: SelectedLineRange | null =
+                        dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
+                          ? dragSelectionRange
+                          : draftComment?.fileKey === fileKey
+                            ? draftSelectedLines
+                            : null;
+                      return (
+                        <div
+                          key={virtualRow.key}
+                          data-index={virtualRow.index}
+                          data-diff-file-path={filePath}
+                          className="first:mt-0"
+                          ref={fileListVirtualizer.measureElement}
+                          onPointerDownCapture={(event) => {
+                            if (event.button !== 0) {
+                              return;
+                            }
 
-                          if (!node || typeof ResizeObserver === "undefined") {
-                            fileResizeObserversRef.current.delete(fileKey);
-                            return;
-                          }
+                            const target = resolvePointerLineTarget(event.nativeEvent);
+                            if (!target) {
+                              return;
+                            }
 
-                          const updateMeasuredHeight = () => {
-                            const nextHeight = Math.ceil(node.getBoundingClientRect().height);
-                            setMeasuredFileHeights((current) =>
-                              current[fileKey] === nextHeight
-                                ? current
-                                : {
-                                    ...current,
-                                    [fileKey]: nextHeight,
-                                  },
-                            );
-                          };
-
-                          updateMeasuredHeight();
-
-                          const observer = new ResizeObserver(() => {
-                            updateMeasuredHeight();
-                          });
-
-                          observer.observe(node);
-                          fileResizeObserversRef.current.set(fileKey, observer);
-                        }}
-                        onPointerDownCapture={(event) => {
-                          if (event.button !== 0) {
-                            return;
-                          }
-
-                          const target = resolvePointerLineTarget(event.nativeEvent);
-                          if (!target) {
-                            return;
-                          }
-
-                          event.preventDefault();
-                          dragSelectionRef.current = {
-                            pointerId: event.pointerId,
-                            fileKey,
-                            filePath,
-                            anchor: target,
-                            current: target,
-                            didDrag: false,
-                          };
-                          updateDragSelectionRange(target.side, target.lineNumber);
-                          disableDocumentSelection();
-                        }}
-                        onClickCapture={(event) => {
-                          const nativeEvent = event.nativeEvent as MouseEvent;
-                          const composedPath = nativeEvent.composedPath?.() ?? [];
-                          const clickedHeader = composedPath.some((node) => {
-                            if (!(node instanceof Element)) return false;
-                            return node.hasAttribute("data-title");
-                          });
-                          if (!clickedHeader) return;
-
-                          const openPathPromise = window.piDesktop?.openPath?.(
-                            joinProjectFilePath(projectId, filePath),
-                          );
-                          void openPathPromise?.catch(() => undefined);
-                        }}
-                      >
-                        <FileDiff<DiffCommentMetadata>
-                          fileDiff={fileDiff}
-                          lineAnnotations={commentAnnotationsByFile.get(fileKey)}
-                          selectedLines={selectedLines}
-                          renderCustomHeader={(currentFileDiff) => {
-                            const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
-                            const { additions, deletions } = getFileChangeCounts(currentFileDiff);
-
-                            return (
-                              <button
-                                type="button"
-                                className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
-                                style={{
-                                  fontFamily:
-                                    'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-                                }}
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  toggleFileCollapsed(fileKey);
-                                }}
-                                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
-                                aria-expanded={!isCollapsed}
-                              >
-                                <span className="flex min-w-0 items-center gap-2.5">
-                                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
-                                    {isCollapsed ? (
-                                      <ChevronRight size={14} />
-                                    ) : (
-                                      <ChevronDown size={14} />
-                                    )}
-                                  </span>
-                                  <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
-                                    {filePath}
-                                  </span>
-                                  {headerContextLabel ? (
-                                    <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
-                                      {headerContextLabel}
-                                    </span>
-                                  ) : null}
-                                </span>
-                                <span className="flex shrink-0 items-center gap-2 text-[12px]">
-                                  {deletions > 0 || additions === 0 ? (
-                                    <span className="text-[#d06b72]">-{deletions}</span>
-                                  ) : null}
-                                  {additions > 0 || deletions === 0 ? (
-                                    <span className="text-[color:var(--green)]">+{additions}</span>
-                                  ) : null}
-                                </span>
-                              </button>
-                            );
+                            event.preventDefault();
+                            dragSelectionRef.current = {
+                              pointerId: event.pointerId,
+                              fileKey,
+                              filePath,
+                              anchor: target,
+                              current: target,
+                              didDrag: false,
+                            };
+                            updateDragSelectionRange(target.side, target.lineNumber);
+                            disableDocumentSelection();
                           }}
-                          renderAnnotation={renderCommentAnnotation}
-                          renderGutterUtility={(() => {
-                            return (
-                              getHoveredLine: () => GetHoveredLineResult<"diff"> | undefined,
-                            ) => {
-                              const hoveredLine = getHoveredLine();
-                              if (!hoveredLine) {
-                                return null;
-                              }
+                          onClickCapture={(event) => {
+                            const nativeEvent = event.nativeEvent as MouseEvent;
+                            const composedPath = nativeEvent.composedPath?.() ?? [];
+                            const clickedHeader = composedPath.some((node) => {
+                              if (!(node instanceof Element)) return false;
+                              return node.hasAttribute("data-title");
+                            });
+                            if (!clickedHeader) return;
+
+                            const openPathPromise = window.piDesktop?.openPath?.(
+                              joinProjectFilePath(projectId, filePath),
+                            );
+                            void openPathPromise?.catch(() => undefined);
+                          }}
+                        >
+                          <FileDiff<DiffCommentMetadata>
+                            fileDiff={fileDiff}
+                            lineAnnotations={commentAnnotationsByFile.get(fileKey)}
+                            selectedLines={selectedLines}
+                            renderCustomHeader={(currentFileDiff) => {
+                              const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
+                              const { additions, deletions } = getFileChangeCounts(currentFileDiff);
 
                               return (
                                 <button
                                   type="button"
-                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+                                  className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
+                                  style={{
+                                    fontFamily:
+                                      'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
+                                  }}
                                   onClick={(event) => {
                                     event.preventDefault();
                                     event.stopPropagation();
-                                    openDraftComment(
-                                      fileKey,
-                                      filePath,
-                                      hoveredLine.side,
-                                      hoveredLine.lineNumber,
-                                    );
+                                    toggleFileCollapsed(fileKey);
                                   }}
-                                  aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-                                  title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                  aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
+                                  aria-expanded={!isCollapsed}
                                 >
-                                  <MessageSquarePlus size={12} />
+                                  <span className="flex min-w-0 items-center gap-2.5">
+                                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
+                                      {isCollapsed ? (
+                                        <ChevronRight size={14} />
+                                      ) : (
+                                        <ChevronDown size={14} />
+                                      )}
+                                    </span>
+                                    <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
+                                      {filePath}
+                                    </span>
+                                    {headerContextLabel ? (
+                                      <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
+                                        {headerContextLabel}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                  <span className="flex shrink-0 items-center gap-2 text-[12px]">
+                                    {deletions > 0 || additions === 0 ? (
+                                      <span className="text-[#d06b72]">-{deletions}</span>
+                                    ) : null}
+                                    {additions > 0 || deletions === 0 ? (
+                                      <span className="text-[color:var(--green)]">
+                                        +{additions}
+                                      </span>
+                                    ) : null}
+                                  </span>
                                 </button>
                               );
-                            };
-                          })()}
-                          options={{
-                            diffStyle: diffRenderMode === "split" ? "split" : "unified",
-                            lineDiffType: "none",
-                            theme: resolveDiffThemeName("dark"),
-                            themeType: "dark" as DiffThemeType,
-                            unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-                            collapsed: isCollapsed,
-                            enableGutterUtility: true,
-                            lineHoverHighlight: "both",
-                            onLineClick: fileInteractionHandlers.onLineClick,
-                            onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                {bottomSpacerHeight > 0 ? <div style={{ height: bottomSpacerHeight }} /> : null}
+                            }}
+                            renderAnnotation={renderCommentAnnotation}
+                            renderGutterUtility={(() => {
+                              return (
+                                getHoveredLine: () => GetHoveredLineResult<"diff"> | undefined,
+                              ) => {
+                                const hoveredLine = getHoveredLine();
+                                if (!hoveredLine) {
+                                  return null;
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      openDraftComment(
+                                        fileKey,
+                                        filePath,
+                                        hoveredLine.side,
+                                        hoveredLine.lineNumber,
+                                      );
+                                    }}
+                                    aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                    title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                  >
+                                    <MessageSquarePlus size={12} />
+                                  </button>
+                                );
+                              };
+                            })()}
+                            options={{
+                              diffStyle: diffRenderMode === "split" ? "split" : "unified",
+                              lineDiffType: "none",
+                              theme: resolveDiffThemeName("dark"),
+                              themeType: "dark" as DiffThemeType,
+                              unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+                              collapsed: isCollapsed,
+                              enableGutterUtility: true,
+                              lineHoverHighlight: "both",
+                              onLineClick: fileInteractionHandlers.onLineClick,
+                              onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="h-full overflow-auto p-3">
