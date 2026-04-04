@@ -8,7 +8,7 @@ import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
 import { ComposerMenu } from "./ComposerMenu";
-import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops-mock";
+import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops";
 import { useComposerController } from "./useComposerController";
 
 type ComposerPromptSurfaceProps = ComposerProps & { onOpenGitOps: () => void };

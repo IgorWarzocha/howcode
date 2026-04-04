@@ -92,14 +92,14 @@ export function AppShellWorkspace({
 
     setDiffCommentsSending(true);
     setDiffCommentError(null);
+    setSelectedDiffCommentId(null);
+    setComposerPromptResetKey((current) => current + 1);
 
     try {
       await handleAction("composer.send", {
         text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
       });
       diffCommentStore.clearContext(diffCommentContextId);
-      setSelectedDiffCommentId(null);
-      setComposerPromptResetKey((current) => current + 1);
     } catch (error) {
       setDiffCommentError(
         error instanceof Error ? error.message : "Could not send comments to the agent.",

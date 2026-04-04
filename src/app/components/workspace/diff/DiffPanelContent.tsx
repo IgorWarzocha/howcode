@@ -134,16 +134,34 @@ function alignElementInScrollViewport({
 }: {
   scrollContainer: HTMLDivElement;
   targetElement: HTMLElement;
-  mode: "center" | "draft-peek";
+  mode: "center" | "draft-fit";
 }) {
   const containerRect = scrollContainer.getBoundingClientRect();
   const targetRect = targetElement.getBoundingClientRect();
 
-  if (mode === "draft-peek") {
+  if (mode === "draft-fit") {
+    const viewportPadding = 8;
+    const availableHeight = containerRect.height - viewportPadding * 2;
+
+    if (targetRect.height <= availableHeight) {
+      const bottomOverflow = targetRect.bottom - (containerRect.bottom - viewportPadding);
+      const topOverflow = containerRect.top + viewportPadding - targetRect.top;
+
+      if (bottomOverflow > 0) {
+        scrollContainer.scrollTop += bottomOverflow;
+        return;
+      }
+
+      if (topOverflow > 0) {
+        scrollContainer.scrollTop -= topOverflow;
+      }
+      return;
+    }
+
     const desiredVisibleDraftHeight = Math.min(120, targetRect.height);
     const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
     const bottomOverflow = targetRect.top - desiredDraftTop;
-    const topOverflow = containerRect.top - targetRect.top;
+    const topOverflow = containerRect.top + viewportPadding - targetRect.top;
 
     if (bottomOverflow > 0) {
       scrollContainer.scrollTop += bottomOverflow + 6;
@@ -151,7 +169,7 @@ function alignElementInScrollViewport({
     }
 
     if (topOverflow > 0) {
-      scrollContainer.scrollTop -= topOverflow + 6;
+      scrollContainer.scrollTop -= topOverflow;
     }
     return;
   }
@@ -837,7 +855,7 @@ export function DiffPanelContent({
       alignElementInScrollViewport({
         scrollContainer,
         targetElement: draftCard,
-        mode: "draft-peek",
+        mode: "draft-fit",
       });
     });
 

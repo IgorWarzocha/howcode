@@ -10,7 +10,7 @@ import type {
 import type { View } from "../../types";
 import { SurfacePanel } from "../common/SurfacePanel";
 import { ComposerBanner } from "./composer/ComposerBanner";
-import { ComposerGitOpsMockSurface } from "./composer/ComposerGitOpsMockSurface";
+import { ComposerGitOpsSurface } from "./composer/ComposerGitOpsSurface";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
@@ -68,7 +68,7 @@ export function Composer(props: ComposerProps) {
         aria-label="Composer panel"
       >
         {surface === "git-ops" ? (
-          <ComposerGitOpsMockSurface
+          <ComposerGitOpsSurface
             projectGitState={props.projectGitState}
             diffRenderMode={props.diffRenderMode}
             diffComments={props.diffComments}

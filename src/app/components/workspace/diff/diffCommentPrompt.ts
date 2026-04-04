@@ -38,5 +38,5 @@ export function buildDiffCommentPrompt({
     })
     .join("\n\n");
 
-  return `${intro}\n\nMake the requested code changes from the current worktree diff. When you're done, briefly summarize what you changed.\n\nComments:\n${bullets}`;
+  return `${intro}\n\n${bullets}`;
 }
