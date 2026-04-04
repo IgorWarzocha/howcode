@@ -1,21 +1,16 @@
-import { measureElement as measureVirtualElement, useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
-import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
 import { reconcileCollapsedRowIds } from "./reconcileCollapsedRowIds";
 import {
-  CHAT_BOTTOM_PADDING_PX,
-  CHAT_ROW_GAP_PX,
   CHAT_STICKY_BOTTOM_THRESHOLD_PX,
-  CHAT_TOP_PADDING_PX,
   chatScrollableAreaClass,
+  chatStreamingTimelineClass,
   chatViewportClass,
 } from "./thread-layout";
 import {
-  getCollapsibleRowKey,
   getFoldableRows,
   getMessageRenderSignature,
   getRowStructureSignature,
@@ -45,13 +40,12 @@ export function VirtualizedThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const timelineRootRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoScrollTimerRef = useRef<number | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
-  const timelineWidthRef = useRef<number | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
@@ -102,44 +96,6 @@ export function VirtualizedThreadTimeline({
     () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
     [effectiveCollapsedRowIds, rows],
   );
-  const getVirtualRowKey = useCallback(
-    (index: number) => {
-      const row = rows[index];
-      if (!row) {
-        return index;
-      }
-
-      return getCollapsibleRowKey(row, effectiveCollapsedRowIds);
-    },
-    [effectiveCollapsedRowIds, rows],
-  );
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => containerRef.current,
-    getItemKey: getVirtualRowKey,
-    estimateSize: (index) => {
-      const row = rows[index];
-      if (!row) {
-        return CHAT_TOP_PADDING_PX + CHAT_BOTTOM_PADDING_PX;
-      }
-
-      return estimateThreadTimelineRowHeight({
-        row,
-        collapsed: Boolean(effectiveCollapsedRowIds[row.id]),
-        expandedToolGroupIds,
-        expandedDiffTrees,
-        streamingAssistantMessageId,
-        streamingToolGroupId,
-      });
-    },
-    measureElement: measureVirtualElement,
-    useAnimationFrameWithResizeObserver: true,
-    overscan: 10,
-    paddingStart: CHAT_TOP_PADDING_PX,
-    paddingEnd: CHAT_BOTTOM_PADDING_PX,
-    gap: CHAT_ROW_GAP_PX,
-  });
-  const virtualRows = rowVirtualizer.getVirtualItems();
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
@@ -162,12 +118,13 @@ export function VirtualizedThreadTimeline({
   }, [foldableRows, latestTurnRowId, streamingTurnRowId]);
 
   const scrollToBottom = useCallback(() => {
-    if (!rows.length) {
+    const container = containerRef.current;
+    if (!container) {
       return;
     }
 
-    rowVirtualizer.scrollToIndex(rows.length - 1, { align: "end" });
-  }, [rowVirtualizer, rows.length]);
+    container.scrollTop = container.scrollHeight;
+  }, []);
 
   const scheduleScrollToBottom = useCallback(() => {
     if (!shouldStickToBottomRef.current || suppressAutoScrollRef.current) {
@@ -185,10 +142,6 @@ export function VirtualizedThreadTimeline({
   }, [scrollToBottom]);
 
   const suppressAutoScrollTemporarily = useCallback(() => {
-    if (shouldStickToBottomRef.current) {
-      return;
-    }
-
     suppressAutoScrollRef.current = true;
 
     if (suppressAutoScrollTimerRef.current !== null) {
@@ -205,8 +158,6 @@ export function VirtualizedThreadTimeline({
     void bottomAnchorKey;
     void rowStructureSignature;
 
-    rowVirtualizer.measure();
-
     const container = containerRef.current;
     const pendingHistoryPrepend = pendingHistoryPrependRef.current;
 
@@ -222,50 +173,29 @@ export function VirtualizedThreadTimeline({
     }
 
     scheduleScrollToBottom();
-  }, [bottomAnchorKey, rowStructureSignature, rowVirtualizer, rows.length, scheduleScrollToBottom]);
-
-  useEffect(() => {
-    rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
-      const viewportHeight = instance.scrollRect?.height ?? 0;
-      const scrollOffset = instance.scrollOffset ?? 0;
-      const remainingDistance = instance.getTotalSize() - (scrollOffset + viewportHeight);
-
-      return remainingDistance > CHAT_STICKY_BOTTOM_THRESHOLD_PX;
-    };
-
-    return () => {
-      rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = undefined;
-    };
-  }, [rowVirtualizer]);
+  }, [bottomAnchorKey, rowStructureSignature, rows.length, scheduleScrollToBottom]);
 
   useEffect(() => {
     const container = containerRef.current;
-    const timelineRoot = timelineRootRef.current;
-    if (!container || !timelineRoot || typeof ResizeObserver === "undefined") {
+    const timeline = timelineRef.current;
+    if (!container || !timeline || typeof ResizeObserver === "undefined") {
       return;
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      const nextWidth = timelineRoot.getBoundingClientRect().width;
-      if (
-        timelineWidthRef.current === null ||
-        Math.abs(timelineWidthRef.current - nextWidth) >= 0.5
-      ) {
-        timelineWidthRef.current = nextWidth;
-        rowVirtualizer.measure();
-      }
-
+      // Streaming updates can change layout after the initial render pass
+      // (for example when markdown, thinking panels, or tool groups reflow).
+      // Re-assert the sticky-bottom position whenever the lane or viewport resizes.
       scheduleScrollToBottom();
     });
 
-    timelineWidthRef.current = timelineRoot.getBoundingClientRect().width;
     resizeObserver.observe(container);
-    resizeObserver.observe(timelineRoot);
+    resizeObserver.observe(timeline);
 
     return () => {
       resizeObserver.disconnect();
     };
-  }, [rowVirtualizer, scheduleScrollToBottom]);
+  }, [scheduleScrollToBottom]);
 
   useEffect(() => {
     return () => {
@@ -385,30 +315,17 @@ export function VirtualizedThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div ref={timelineRootRef} className="relative min-w-0 w-full px-4">
-          <div
-            className="relative min-w-0 w-full"
-            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-          >
-            {virtualRows.map((virtualRow) => {
-              const row = rows[virtualRow.index];
-              if (!row) {
-                return null;
-              }
-
-              return (
-                <div
-                  key={virtualRow.key}
-                  ref={rowVirtualizer.measureElement}
-                  data-index={virtualRow.index}
-                  className="absolute top-0 left-0 w-full min-w-0"
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
-                >
-                  {renderRow(row)}
-                </div>
-              );
-            })}
-          </div>
+        {/*
+          The thread lane renders in natural document flow on purpose.
+          Rich markdown, reasoning panels, tool-call accordions, and inline diffs were too dynamic
+          for heuristic row-height prediction to stay reliable under virtualization.
+        */}
+        <div ref={timelineRef} className={chatStreamingTimelineClass}>
+          {rows.map((row) => (
+            <div key={row.id} className="min-w-0">
+              {renderRow(row)}
+            </div>
+          ))}
         </div>
       </div>
     </div>
