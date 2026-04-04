@@ -53,10 +53,6 @@ export function ComposerGitOpsMockSurface({
           placeholder=""
         />
 
-        <div className="pointer-events-none absolute right-4 bottom-0 left-4 text-[12px] leading-5 text-[color:var(--muted)]">
-          Leave blank to autogenerate a commit message
-        </div>
-
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
             originKnown ? (
@@ -121,8 +117,8 @@ export function ComposerGitOpsMockSurface({
       </div>
 
       <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="invisible flex items-center gap-1.5 max-md:flex-wrap">
-          <ToolbarButton label="Placeholder" icon={<GitCompareArrows size={16} />} />
+        <div className="text-[12px] leading-5 text-[color:var(--muted)]">
+          Leave blank to autogenerate a commit message
         </div>
 
         <button
