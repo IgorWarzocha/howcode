@@ -10,6 +10,17 @@ export function useDesktopBridge() {
       return null;
     }
 
-    return window.piDesktop.invokeAction(action, payload);
+    try {
+      return await window.piDesktop.invokeAction(action, payload);
+    } catch (error) {
+      return {
+        ok: false,
+        at: new Date().toISOString(),
+        payload: { action, payload },
+        result: {
+          error: error instanceof Error ? error.message : "Desktop action request failed.",
+        },
+      };
+    }
   };
 }

@@ -2,7 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useReducer, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type { ArchivedThread, ComposerState, ProjectGitState, ShellState } from "../desktop/types";
+import type {
+  ArchivedThread,
+  ComposerState,
+  DesktopActionResult,
+  ProjectGitState,
+  ShellState,
+} from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
@@ -114,7 +120,10 @@ export function useAppShellController() {
     });
   };
 
-  const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
+  const runDesktopAction = async (
+    action: DesktopAction,
+    payload: Record<string, unknown> = {},
+  ): Promise<DesktopActionResult | null> => {
     const contextualPayload = buildContextualActionPayload({
       action,
       payload,
@@ -123,7 +132,7 @@ export function useAppShellController() {
       selectedSessionPath: state.selectedSessionPath,
     });
 
-    await invokeDesktopAction(action, contextualPayload);
+    const actionResult = await invokeDesktopAction(action, contextualPayload);
 
     if (action === "thread.pin" || action === "thread.archive") {
       const projectId =
@@ -224,7 +233,7 @@ export function useAppShellController() {
       }
     }
 
-    if (action === "workspace.commit" || action === "workspace.commit-options") {
+    if (action === "workspace.commit-options") {
       const projectId =
         typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
 
@@ -232,24 +241,38 @@ export function useAppShellController() {
         setProjectGitState(await loadProjectGitState(projectId));
       }
     }
+
+    if (action === "workspace.commit") {
+      const projectId =
+        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
+
+      if (projectId && actionResult?.result?.committed === true) {
+        setProjectGitState(await loadProjectGitState(projectId));
+      }
+    }
+
+    return actionResult;
   };
 
-  const handleAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
+  const handleAction = async (
+    action: DesktopAction,
+    payload: Record<string, unknown> = {},
+  ): Promise<DesktopActionResult | null> => {
     if (shouldConfirmProjectAction(action)) {
       const pendingAction = buildPendingProjectAction(action, payload, projects);
       if (!pendingAction) {
-        return;
+        return null;
       }
 
       setPendingProjectAction(pendingAction);
-      return;
+      return null;
     }
 
     if (action === "settings.update") {
       applyOptimisticSettingsUpdate(payload);
     }
 
-    await runDesktopAction(action, payload);
+    return await runDesktopAction(action, payload);
   };
 
   const handleConfirmProjectAction = async (payload: Record<string, unknown> = {}) => {

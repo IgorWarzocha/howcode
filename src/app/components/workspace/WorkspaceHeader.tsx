@@ -189,7 +189,7 @@ export function WorkspaceHeader({
               className={cn(headerTextButtonClass, headerOptionalControlClass)}
               onClick={() => onAction("workspace.commit")}
               data-feature-id="feature:header.commit"
-              data-feature-status="mock"
+              data-feature-status="partial"
               aria-label="Commit"
               title="Commit"
             >
@@ -202,7 +202,7 @@ export function WorkspaceHeader({
               className={cn(headerChevronButtonClass, headerOptionalControlClass)}
               onClick={() => onAction("workspace.commit-options")}
               data-feature-id="feature:header.commit-options"
-              data-feature-status="mock"
+              data-feature-status="partial"
               aria-label="Commit options"
               aria-haspopup="menu"
               aria-expanded={false}

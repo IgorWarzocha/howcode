@@ -55,8 +55,10 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Implement `workspace.open`
 - [ ] Implement `workspace.open-options`
 - [ ] Implement `workspace.handoff`
-- [ ] Implement `workspace.commit`
-- [ ] Implement `workspace.commit-options`
+- [x] Implement `workspace.commit`
+- [x] Implement `workspace.commit-options`
+  - branch control in the composer git surface is still display-only for now
+  - [ ] Feed pre-commit hook / formatter / lint errors back into the main Pi agent flow instead of treating them as opaque git failures
   - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
 
 #### 5. Terminal panel

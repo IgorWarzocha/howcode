@@ -10,6 +10,7 @@ import {
   getComposerThinkingLevel,
   getGitCommitMessage,
   getGitIncludeUnstaged,
+  getGitPreview,
   getGitPush,
   getGitRepoUrl,
   getProjectId,
@@ -21,6 +22,7 @@ import {
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
 import { setGitCommitMessageModelSelection } from "../app-settings";
+import { generateGitCommitMessage } from "../git-commit-message";
 import {
   openThreadRuntime,
   selectProjectRuntime,
@@ -67,7 +69,7 @@ async function deletePersistedThread(threadId: string) {
 export async function handleDesktopAction(
   action: DesktopAction,
   payload: DesktopActionPayload,
-): Promise<void> {
+): Promise<Record<string, unknown> | null | undefined> {
   switch (action) {
     case "nav.back":
     case "nav.forward":
@@ -241,12 +243,14 @@ export async function handleDesktopAction(
         return;
       }
 
-      await commitProjectChanges(projectId, {
+      return await commitProjectChanges(projectId, {
         includeUnstaged: getGitIncludeUnstaged(payload),
         message: getGitCommitMessage(payload),
+        preview: getGitPreview(payload),
         push: getGitPush(payload),
+        generateMessage: (context) =>
+          generateGitCommitMessage(getComposerRequest(payload), context),
       });
-      return;
     }
 
     case "workspace.commit-options": {

@@ -21,7 +21,10 @@ if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER)
 }
 
 type PiThreadsModule = {
-  handleDesktopAction: (action: DesktopAction, payload: DesktopActionPayload) => Promise<void>;
+  handleDesktopAction: (
+    action: DesktopAction,
+    payload: DesktopActionPayload,
+  ) => Promise<Record<string, unknown> | null | undefined>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadComposerState: (request: Record<string, unknown>) => Promise<ComposerState>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
@@ -112,12 +115,25 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
       getFullThreadDiff: async ({ sessionPath }) =>
         piThreads.loadFullThreadDiff(sessionPath) as Promise<TurnDiffResult | null>,
       invokeAction: async ({ action, payload = {} }) => {
-        await piThreads.handleDesktopAction(action, payload);
-        return {
-          ok: true,
-          at: new Date().toISOString(),
-          payload: { action, payload },
-        } as DesktopActionResult;
+        try {
+          const result = await piThreads.handleDesktopAction(action, payload);
+          return {
+            ok: true,
+            at: new Date().toISOString(),
+            payload: { action, payload },
+            result: result ?? null,
+          } as DesktopActionResult;
+        } catch (error) {
+          console.error("invokeAction failed", { action, payload, error });
+          return {
+            ok: false,
+            at: new Date().toISOString(),
+            payload: { action, payload },
+            result: {
+              error: error instanceof Error ? error.message : "Desktop action failed unexpectedly.",
+            },
+          } as DesktopActionResult;
+        }
       },
       terminalOpen: async (request) =>
         terminalManager.openTerminal(request) as Promise<TerminalSessionSnapshot>,

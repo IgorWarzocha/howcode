@@ -8,7 +8,7 @@ export type {
   TurnDiffSummary,
 } from "../../shared/desktop-contracts.js";
 
-export type View = "home" | "thread" | "plugins" | "automations" | "debug";
+export type View = "home" | "thread" | "plugins" | "automations" | "debug" | "settings";
 
 export type FeatureCard = {
   title: string;

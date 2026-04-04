@@ -86,6 +86,10 @@ export function getGitPush(payload: DesktopActionPayload) {
   return typeof payload.push === "boolean" ? payload.push : false;
 }
 
+export function getGitPreview(payload: DesktopActionPayload) {
+  return payload.preview === true;
+}
+
 export function getGitRepoUrl(payload: DesktopActionPayload) {
   const repoUrl = typeof payload.repoUrl === "string" ? payload.repoUrl.trim() : "";
   return repoUrl.length > 0 ? repoUrl : null;

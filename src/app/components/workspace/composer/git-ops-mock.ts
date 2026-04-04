@@ -1,41 +1,10 @@
-export type GitOpsMockMode = "dirty" | "clean" | "not-git";
-
-export const gitOpsMockModes: GitOpsMockMode[] = ["dirty", "clean", "not-git"];
-
-export const gitOpsMockMeta: Record<
-  GitOpsMockMode,
-  {
-    branch: string | null;
-    files: number;
-    additions: number;
-    deletions: number;
-  }
-> = {
-  dirty: {
-    branch: "master",
-    files: 49,
-    additions: 1541,
-    deletions: 348,
-  },
-  clean: {
-    branch: "master",
-    files: 0,
-    additions: 0,
-    deletions: 0,
-  },
-  "not-git": {
-    branch: null,
-    files: 0,
-    additions: 0,
-    deletions: 0,
-  },
-};
+export type GitOpsVisualMode = "dirty" | "clean" | "not-git";
 
 export function formatGitCount(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
-export function getGitOpsEntryButtonClass(mode: GitOpsMockMode) {
+export function getGitOpsEntryButtonClass(mode: GitOpsVisualMode) {
   if (mode === "not-git") {
     return "border-[rgba(255,110,110,0.22)] text-[#ff9c9c] hover:border-[rgba(255,110,110,0.36)] hover:bg-[rgba(255,94,94,0.08)] hover:text-[#ffd1d1]";
   }
@@ -45,15 +14,4 @@ export function getGitOpsEntryButtonClass(mode: GitOpsMockMode) {
   }
 
   return "border-[rgba(169,178,215,0.16)] text-[color:var(--muted)] hover:border-[rgba(169,178,215,0.26)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
-}
-
-export function getGitOpsModeLabel(mode: GitOpsMockMode) {
-  switch (mode) {
-    case "dirty":
-      return "Changes";
-    case "clean":
-      return "Clean";
-    case "not-git":
-      return "Not git";
-  }
 }

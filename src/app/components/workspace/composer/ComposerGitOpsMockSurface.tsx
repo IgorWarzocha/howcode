@@ -1,69 +1,206 @@
-import { ArrowLeft, GitBranch, GitCompareArrows, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, GitBranch, GitCompareArrows, Github, TriangleAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
+import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
 import { compactIconButtonClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { ToolbarButton } from "../../common/ToolbarButton";
-import {
-  type GitOpsMockMode,
-  formatGitCount,
-  getGitOpsModeLabel,
-  gitOpsMockMeta,
-  gitOpsMockModes,
-} from "./git-ops-mock";
+import { formatGitCount } from "./git-ops-mock";
 
 type ComposerGitOpsMockSurfaceProps = {
-  gitOpsMockMode: GitOpsMockMode;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => Promise<void>;
+  projectGitState: ProjectGitState | null;
+  onAction: (
+    action: DesktopAction,
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
   onBack: () => void;
   onOpenDiffPanel: () => void;
-  onSetGitOpsMockMode: (mode: GitOpsMockMode) => void;
 };
 
+function getActionResultMessage(result: DesktopActionResult | null) {
+  return typeof result?.result?.message === "string" ? result.result.message : null;
+}
+
+function getActionResultCommitted(result: DesktopActionResult | null) {
+  return result?.result?.committed === true;
+}
+
+function getActionResultPreviewed(result: DesktopActionResult | null) {
+  return result?.result?.previewed === true;
+}
+
+function getActionResultError(result: DesktopActionResult | null) {
+  return typeof result?.result?.error === "string" ? result.result.error : null;
+}
+
 export function ComposerGitOpsMockSurface({
-  gitOpsMockMode,
+  projectGitState,
   onAction,
   onBack,
   onOpenDiffPanel,
-  onSetGitOpsMockMode,
 }: ComposerGitOpsMockSurfaceProps) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
+  const [previewEnabled, setPreviewEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
   const [commitFocused, setCommitFocused] = useState(false);
+  const [previewPendingCommit, setPreviewPendingCommit] = useState(false);
+  const [persistedCleanMessage, setPersistedCleanMessage] = useState<string | null>(null);
+  const [runningPrimaryAction, setRunningPrimaryAction] = useState(false);
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
-  const [originKnown, setOriginKnown] = useState(true);
-  const meta = gitOpsMockMeta[gitOpsMockMode];
-  const isGitRepo = gitOpsMockMode !== "not-git";
-  const canCommit = gitOpsMockMode === "dirty";
+  const previousProjectIdRef = useRef<string | null>(projectGitState?.projectId ?? null);
+  const isGitRepo = projectGitState?.isGitRepo ?? false;
+  const hasOrigin = projectGitState?.hasOrigin ?? false;
+  const isGitHubOrigin = projectGitState?.originUrl?.includes("github.com") ?? false;
+  const isTreeClean = isGitRepo && (projectGitState?.fileCount ?? 0) === 0;
+  const trimmedCommitMessage = commitMessage.trim();
+  const canCommit =
+    isGitRepo &&
+    (includeUnstaged
+      ? (projectGitState?.fileCount ?? 0) > 0
+      : (projectGitState?.stagedFileCount ?? 0) > 0);
   const commitLabel = pushEnabled ? "Commit & push" : "Commit";
+  const primaryActionLabel = !isGitRepo
+    ? "Init git"
+    : canCommit || (projectGitState?.fileCount ?? 0) > 0
+      ? commitLabel
+      : "Clean";
+
+  useEffect(() => {
+    if (!hasOrigin) {
+      setPushEnabled(false);
+    }
+  }, [hasOrigin]);
+
+  useEffect(() => {
+    const nextProjectId = projectGitState?.projectId ?? null;
+    if (previousProjectIdRef.current === nextProjectId) {
+      return;
+    }
+
+    previousProjectIdRef.current = nextProjectId;
+    setCommitMessage("");
+    setCommitFocused(false);
+    setPersistedCleanMessage(null);
+    setPreviewPendingCommit(false);
+  }, [projectGitState]);
+
+  useEffect(() => {
+    if (!isTreeClean && persistedCleanMessage && commitMessage === persistedCleanMessage) {
+      setCommitMessage("");
+      setPersistedCleanMessage(null);
+    }
+  }, [commitMessage, isTreeClean, persistedCleanMessage]);
+
+  const handleSaveOrigin = async () => {
+    const nextRepoUrl = repoUrl.trim();
+    if (!isGitRepo || nextRepoUrl.length === 0) {
+      return;
+    }
+
+    try {
+      await onAction("workspace.commit-options", { repoUrl: nextRepoUrl });
+      setActionErrorMessage(null);
+      setRepoUrl("");
+    } catch (error) {
+      setActionErrorMessage(
+        error instanceof Error ? error.message : "Could not update the repository remote.",
+      );
+    }
+  };
+
+  const handlePrimaryAction = async () => {
+    if (runningPrimaryAction) {
+      return;
+    }
+
+    if (!isGitRepo) {
+      try {
+        await onAction("workspace.commit-options");
+        setActionErrorMessage(null);
+      } catch (error) {
+        setActionErrorMessage(error instanceof Error ? error.message : "Could not initialize git.");
+      }
+      return;
+    }
+
+    if (!canCommit) {
+      return;
+    }
+
+    const shouldPreview =
+      previewEnabled && trimmedCommitMessage.length === 0 && !previewPendingCommit;
+
+    setRunningPrimaryAction(true);
+
+    try {
+      setActionErrorMessage(null);
+      const result = await onAction("workspace.commit", {
+        includeUnstaged,
+        message: trimmedCommitMessage.length > 0 ? trimmedCommitMessage : null,
+        preview: shouldPreview,
+        push: pushEnabled,
+      });
+
+      const nextMessage = getActionResultMessage(result);
+      if (nextMessage) {
+        setCommitMessage(nextMessage);
+        setCommitFocused(false);
+      }
+
+      if (getActionResultPreviewed(result)) {
+        setPreviewPendingCommit(true);
+        return;
+      }
+
+      if (getActionResultCommitted(result)) {
+        setPreviewPendingCommit(false);
+        const finalMessage =
+          nextMessage ?? (trimmedCommitMessage.length > 0 ? trimmedCommitMessage : null);
+        if (finalMessage) {
+          setCommitMessage(finalMessage);
+          setPersistedCleanMessage(finalMessage);
+        }
+      }
+      setActionErrorMessage(getActionResultError(result));
+    } catch (error) {
+      setActionErrorMessage(error instanceof Error ? error.message : "Could not commit changes.");
+    } finally {
+      setRunningPrimaryAction(false);
+    }
+  };
 
   return (
     <div
       className="grid min-h-[189px] gap-0"
       data-feature-id="feature:composer.git-ops"
-      data-feature-status="mock"
+      data-feature-status="partial"
     >
       <div className="relative min-h-24">
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
-            originKnown ? (
+            hasOrigin ? (
               <button
                 type="button"
-                className="rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
-                onClick={() => setOriginKnown(false)}
-                title="Mock: click to preview missing origin"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
+                title={projectGitState?.originUrl ?? "origin"}
               >
-                howcode
+                {isGitHubOrigin ? <Github size={12} /> : null}
+                {projectGitState?.originName ?? "origin"}
               </button>
             ) : (
               <input
                 value={repoUrl}
                 onChange={(event) => setRepoUrl(event.target.value)}
                 onBlur={() => {
-                  if (repoUrl.trim().length > 0) {
-                    setOriginKnown(true);
+                  void handleSaveOrigin();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleSaveOrigin();
                   }
                 }}
                 className="w-64 rounded-lg border border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
@@ -77,28 +214,22 @@ export function ComposerGitOpsMockSurface({
               <span>Not a git repository</span>
             </div>
           )}
+
+          {isGitRepo ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--muted)]"
+              title="Branch switching will wire into this control later."
+            >
+              <GitBranch size={12} />
+              <span>{projectGitState?.branch ?? "Detached"}</span>
+            </button>
+          ) : null}
+
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
 
         <div className="absolute top-4 right-4 flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
-            {gitOpsMockModes.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] transition-colors",
-                  mode === gitOpsMockMode
-                    ? "bg-[rgba(255,255,255,0.08)] text-[color:var(--text)]"
-                    : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
-                )}
-                onClick={() => onSetGitOpsMockMode(mode)}
-              >
-                {getGitOpsModeLabel(mode)}
-              </button>
-            ))}
-          </div>
-
           <ToolbarButton
             label="Open diff"
             icon={<GitCompareArrows size={14} />}
@@ -114,7 +245,19 @@ export function ComposerGitOpsMockSurface({
           <input
             className="w-full bg-transparent text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
             value={commitMessage}
-            onChange={(event) => setCommitMessage(event.target.value)}
+            onChange={(event) => {
+              const nextMessage = event.target.value;
+              setCommitMessage(nextMessage);
+              if (actionErrorMessage) {
+                setActionErrorMessage(null);
+              }
+              if (nextMessage.trim().length === 0) {
+                setPreviewPendingCommit(false);
+              }
+              if (persistedCleanMessage && nextMessage !== persistedCleanMessage) {
+                setPersistedCleanMessage(null);
+              }
+            }}
             onFocus={() => setCommitFocused(true)}
             onBlur={() => setCommitFocused(false)}
             aria-label="Commit message"
@@ -122,14 +265,16 @@ export function ComposerGitOpsMockSurface({
           />
         </div>
 
-        <button
-          type="button"
-          className="invisible inline-flex h-8 w-8 items-center justify-center rounded-full"
-          aria-hidden="true"
-          tabIndex={-1}
+        <div
+          className={cn(
+            "inline-flex h-8 items-center justify-end rounded-full text-right text-[12px] leading-5",
+            actionErrorMessage ? "text-[#f2a7a7]" : "invisible w-8",
+          )}
+          aria-live={actionErrorMessage ? "polite" : undefined}
+          aria-hidden={actionErrorMessage ? undefined : true}
         >
-          <GitCompareArrows size={16} />
-        </button>
+          {actionErrorMessage ?? <GitCompareArrows size={16} />}
+        </div>
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
@@ -147,13 +292,22 @@ export function ComposerGitOpsMockSurface({
 
         <div className="flex items-center gap-3">
           <PlainToggle
-            label="Include unstaged"
+            label="Unstaged"
             checked={includeUnstaged}
             onClick={() => setIncludeUnstaged((current) => !current)}
           />
           <PlainToggle
+            label="Preview"
+            checked={previewEnabled}
+            onClick={() => {
+              setPreviewEnabled((current) => !current);
+              setPreviewPendingCommit(false);
+            }}
+          />
+          <PlainToggle
             label="Push"
             checked={pushEnabled}
+            disabled={!hasOrigin}
             onClick={() => setPushEnabled((current) => !current)}
           />
         </div>
@@ -161,13 +315,29 @@ export function ComposerGitOpsMockSurface({
         <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
           {isGitRepo ? (
             <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[color:var(--muted)]">{meta.branch}</span>
-              <span className="text-[color:var(--muted)]">{formatGitCount(meta.files)} files</span>
-              <span className={meta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}>
-                +{formatGitCount(meta.additions)}
+              <span className="text-[color:var(--muted)]">
+                {projectGitState?.branch ?? "Detached"}
               </span>
-              <span className={meta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}>
-                -{formatGitCount(meta.deletions)}
+              <span className="text-[color:var(--muted)]">
+                {formatGitCount(projectGitState?.fileCount ?? 0)} files
+              </span>
+              <span
+                className={
+                  (projectGitState?.insertions ?? 0) > 0
+                    ? "text-[#7ee0bb]"
+                    : "text-[color:var(--muted)]"
+                }
+              >
+                +{formatGitCount(projectGitState?.insertions ?? 0)}
+              </span>
+              <span
+                className={
+                  (projectGitState?.deletions ?? 0) > 0
+                    ? "text-[#ff9c9c]"
+                    : "text-[color:var(--muted)]"
+                }
+              >
+                -{formatGitCount(projectGitState?.deletions ?? 0)}
               </span>
             </div>
           ) : null}
@@ -178,13 +348,13 @@ export function ComposerGitOpsMockSurface({
               toolbarButtonClass,
               "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
             )}
-            onClick={() =>
-              void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
-            }
-            disabled={!canCommit}
-            aria-label={canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
+            onClick={() => {
+              void handlePrimaryAction();
+            }}
+            disabled={runningPrimaryAction || (isGitRepo ? !canCommit : false)}
+            aria-label={primaryActionLabel}
           >
-            {canCommit ? commitLabel : isGitRepo ? "Clean" : "Init git"}
+            {primaryActionLabel}
           </button>
         </div>
       </div>
@@ -194,18 +364,24 @@ export function ComposerGitOpsMockSurface({
 
 function PlainToggle({
   checked,
+  disabled = false,
   label,
   onClick,
 }: {
   checked: boolean;
+  disabled?: boolean;
   label: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+      className={cn(
+        "inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] transition-colors",
+        disabled ? "cursor-not-allowed opacity-45" : "hover:text-[color:var(--text)]",
+      )}
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={checked}
     >
       <span>{label}</span>

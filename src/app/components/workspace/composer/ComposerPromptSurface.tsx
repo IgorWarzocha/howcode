@@ -7,18 +7,10 @@ import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
 import { ComposerMenu } from "./ComposerMenu";
-import {
-  type GitOpsMockMode,
-  formatGitCount,
-  getGitOpsEntryButtonClass,
-  gitOpsMockMeta,
-} from "./git-ops-mock";
+import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops-mock";
 import { useComposerController } from "./useComposerController";
 
-type ComposerPromptSurfaceProps = ComposerProps & {
-  gitOpsMockMode: GitOpsMockMode;
-  onOpenGitOps: () => void;
-};
+type ComposerPromptSurfaceProps = ComposerProps & { onOpenGitOps: () => void };
 
 export function ComposerPromptSurface({
   activeView,
@@ -29,14 +21,18 @@ export function ComposerPromptSurface({
   thinkingLevel,
   availableThinkingLevels,
   projectId,
+  projectGitState,
   sessionPath,
   onOpenTakeoverTerminal,
   onPickAttachments,
   onAction,
-  gitOpsMockMode,
   onOpenGitOps,
 }: ComposerPromptSurfaceProps) {
-  const gitOpsMeta = gitOpsMockMeta[gitOpsMockMode];
+  const gitVisualMode = !projectGitState?.isGitRepo
+    ? "not-git"
+    : projectGitState.fileCount > 0
+      ? "dirty"
+      : "clean";
   const {
     attachments,
     canSend,
@@ -240,22 +236,30 @@ export function ComposerPromptSurface({
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
           <div className="flex items-center gap-2 text-[12px]">
             <span className="text-[color:var(--muted)]">
-              {formatGitCount(gitOpsMeta.files)} files
+              {formatGitCount(projectGitState?.fileCount ?? 0)} files
             </span>
             <span
-              className={gitOpsMeta.additions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"}
+              className={
+                (projectGitState?.insertions ?? 0) > 0
+                  ? "text-[#7ee0bb]"
+                  : "text-[color:var(--muted)]"
+              }
             >
-              +{formatGitCount(gitOpsMeta.additions)}
+              +{formatGitCount(projectGitState?.insertions ?? 0)}
             </span>
             <span
-              className={gitOpsMeta.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"}
+              className={
+                (projectGitState?.deletions ?? 0) > 0
+                  ? "text-[#ff9c9c]"
+                  : "text-[color:var(--muted)]"
+              }
             >
-              -{formatGitCount(gitOpsMeta.deletions)}
+              -{formatGitCount(projectGitState?.deletions ?? 0)}
             </span>
           </div>
           <button
             type="button"
-            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitOpsMockMode))}
+            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
             onClick={onOpenGitOps}
             aria-label="Open git ops"
             title="Open git ops"

@@ -4,6 +4,7 @@ import type {
   ComposerAttachment,
   ComposerModel,
   ComposerThinkingLevel,
+  DesktopActionResult,
 } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 
@@ -28,7 +29,10 @@ type UseComposerControllerProps = {
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => Promise<void>;
+  onAction: (
+    action: DesktopAction,
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
 };
 

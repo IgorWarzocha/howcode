@@ -138,13 +138,12 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `workspace.open`
   - `workspace.open-options`
   - `workspace.handoff`
-  - `workspace.commit`
-  - `workspace.commit-options`
   - `workspace.popout`
 
 **Expansion direction:**
 - Add real thread action menu.
-- Define open/commit split-button behavior in the Bun desktop bridge.
+- Define open split-button behavior in the Bun desktop bridge.
+- Expand commit controls beyond the current project git surface wiring (branch switching is still display-only, and the diff lane is still on the older turn-based path).
 - Define real handoff behavior.
 - Define project switcher behavior.
 - Replace mock home diff stats with real workspace diff data when the diff lane is implemented.

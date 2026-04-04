@@ -198,4 +198,5 @@ export type DesktopActionResult = {
     action: DesktopAction;
     payload: DesktopActionPayload;
   };
+  result?: Record<string, unknown> | null;
 };

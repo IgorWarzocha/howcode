@@ -17,7 +17,11 @@ export function buildContextualActionPayload({
   activeView: WorkspaceState["activeView"];
   selectedSessionPath: string | null;
 }) {
-  return action === "composer.model" || action === "composer.send" || action === "composer.thinking"
+  return action === "composer.model" ||
+    action === "composer.send" ||
+    action === "composer.thinking" ||
+    action === "workspace.commit" ||
+    action === "workspace.commit-options"
     ? {
         projectId: composerProjectId,
         sessionPath: activeView === "thread" ? selectedSessionPath : null,
