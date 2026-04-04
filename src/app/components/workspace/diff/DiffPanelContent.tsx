@@ -1,10 +1,9 @@
+import type { GetHoveredLineResult, SelectedLineRange } from "@pierre/diffs";
 import {
   type AnnotationSide,
   type DiffLineAnnotation,
   FileDiff,
   type FileDiffMetadata,
-  type GetHoveredLineResult,
-  type SelectedLineRange,
 } from "@pierre/diffs/react";
 import { Check, ChevronDown, ChevronRight, MessageSquarePlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -33,7 +32,6 @@ type DiffCommentMetadata = {
   id: string;
   body: string;
   kind: "comment" | "draft";
-  createdAt?: string;
   side: AnnotationSide;
   lineNumber: number;
   endSide?: AnnotationSide;
@@ -122,6 +120,78 @@ function getFileChangeCounts(fileDiff: FileDiffMetadata) {
   return { additions, deletions };
 }
 
+const DIFF_FILE_OVERSCAN_PX = 900;
+const DIFF_FILE_ESTIMATED_LINE_HEIGHT = 20;
+const DIFF_FILE_ESTIMATED_HEADER_HEIGHT = 36;
+const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
+const DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT = 32;
+const DIFF_FILE_ESTIMATED_COMMENT_HEIGHT = 92;
+
+function estimateFileDiffHeight({
+  fileDiff,
+  collapsed,
+  diffRenderMode,
+  annotationCount,
+}: {
+  fileDiff: FileDiffMetadata;
+  collapsed: boolean;
+  diffRenderMode: "stacked" | "split";
+  annotationCount: number;
+}) {
+  let height = DIFF_FILE_ESTIMATED_HEADER_HEIGHT;
+
+  if (!collapsed) {
+    let lineCount = 0;
+    let separatorCount = 0;
+
+    for (const hunk of fileDiff.hunks) {
+      lineCount += diffRenderMode === "split" ? hunk.splitLineCount : hunk.unifiedLineCount;
+
+      if (hunk.collapsedBefore > 0) {
+        separatorCount += 1;
+      }
+    }
+
+    height += lineCount * DIFF_FILE_ESTIMATED_LINE_HEIGHT;
+    height +=
+      separatorCount * (DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
+
+    if (fileDiff.hunks.length > 0) {
+      height += DIFF_FILE_ESTIMATED_FILE_GAP;
+    }
+  }
+
+  if (annotationCount > 0) {
+    height += annotationCount * DIFF_FILE_ESTIMATED_COMMENT_HEIGHT;
+  }
+
+  return Math.max(height, DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
+}
+
+function findVirtualRangeIndex(offsets: number[], heights: number[], targetOffset: number) {
+  let low = 0;
+  let high = offsets.length - 1;
+  let answer = offsets.length;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const itemEnd = offsets[mid] + heights[mid];
+
+    if (itemEnd > targetOffset) {
+      answer = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  return answer;
+}
+
+function getOffsetAtIndex(offsets: number[], totalHeight: number, index: number) {
+  return index >= offsets.length ? totalHeight : (offsets[index] ?? 0);
+}
+
 function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
   side: AnnotationSide;
   lineNumber: number;
@@ -208,7 +278,7 @@ type DiffPanelContentProps = {
 export function DiffPanelContent({
   projectId,
   isGitRepo,
-  selectedFilePath,
+  selectedFilePath: _selectedFilePath,
   diffRenderMode,
   layoutMode = "split",
 }: DiffPanelContentProps) {
@@ -216,7 +286,36 @@ export function DiffPanelContent({
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
   const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
-  const patchViewportRef = useRef<HTMLDivElement>(null);
+  const [measuredFileHeights, setMeasuredFileHeights] = useState<Record<string, number>>({});
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [scrollContainerNode, setScrollContainerNode] = useState<HTMLDivElement | null>(null);
+  const fileResizeObserversRef = useRef(new Map<string, ResizeObserver>());
+  const fileInteractionHandlersRef = useRef(
+    new Map<
+      string,
+      {
+        onLineClick: ({
+          lineNumber,
+          annotationSide,
+          event,
+        }: {
+          lineNumber: number;
+          annotationSide: AnnotationSide;
+          event: PointerEvent;
+        }) => void;
+        onLineNumberClick: ({
+          lineNumber,
+          annotationSide,
+          event,
+        }: {
+          lineNumber: number;
+          annotationSide: AnnotationSide;
+          event: PointerEvent;
+        }) => void;
+      }
+    >(),
+  );
   const dragSelectionRef = useRef<{
     pointerId: number;
     fileKey: string;
@@ -250,6 +349,38 @@ export function DiffPanelContent({
       }),
     [projectId],
   );
+  const draftFileKey = draftComment?.fileKey ?? null;
+  const draftFilePath = draftComment?.filePath ?? null;
+  const draftSide = draftComment?.side ?? null;
+  const draftLineNumber = draftComment?.lineNumber ?? null;
+  const draftEndSide = draftComment?.endSide;
+  const draftEndLineNumber = draftComment?.endLineNumber;
+  const draftTarget = useMemo(
+    () =>
+      draftFileKey && draftFilePath && draftSide && draftLineNumber !== null
+        ? {
+            fileKey: draftFileKey,
+            filePath: draftFilePath,
+            side: draftSide,
+            lineNumber: draftLineNumber,
+            endSide: draftEndSide,
+            endLineNumber: draftEndLineNumber,
+          }
+        : null,
+    [draftEndLineNumber, draftEndSide, draftFileKey, draftFilePath, draftLineNumber, draftSide],
+  );
+  const draftSelectedLines = useMemo<SelectedLineRange | null>(() => {
+    if (!draftTarget) {
+      return null;
+    }
+
+    return {
+      start: draftTarget.lineNumber,
+      end: draftTarget.endLineNumber ?? draftTarget.lineNumber,
+      side: draftTarget.side,
+      endSide: draftTarget.endSide ?? draftTarget.side,
+    };
+  }, [draftTarget]);
 
   useEffect(() => {
     if (!diffCommentContextId) {
@@ -275,6 +406,58 @@ export function DiffPanelContent({
     });
   }, [diffCommentContextId, draftComment, savedComments]);
 
+  useEffect(() => {
+    if (!scrollContainerNode) {
+      return;
+    }
+
+    const updateViewportHeight = () => {
+      const nextHeight = scrollContainerNode.clientHeight;
+      setViewportHeight((current) => (current === nextHeight ? current : nextHeight));
+    };
+
+    updateViewportHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateViewportHeight();
+    });
+
+    observer.observe(scrollContainerNode);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [scrollContainerNode]);
+
+  useEffect(() => {
+    return () => {
+      for (const observer of fileResizeObserversRef.current.values()) {
+        observer.disconnect();
+      }
+
+      fileResizeObserversRef.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const validFileKeys = new Set(
+      renderableFiles.map((fileDiff) => buildFileDiffRenderKey(fileDiff)),
+    );
+
+    for (const [fileKey, observer] of fileResizeObserversRef.current.entries()) {
+      if (validFileKeys.has(fileKey)) {
+        continue;
+      }
+
+      observer.disconnect();
+      fileResizeObserversRef.current.delete(fileKey);
+    }
+  }, [renderableFiles]);
+
   const commentAnnotationsByFile = useMemo(() => {
     const next = new Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>();
 
@@ -287,7 +470,6 @@ export function DiffPanelContent({
           id: comment.id,
           body: comment.body,
           kind: "comment",
-          createdAt: comment.createdAt,
           side: comment.side,
           lineNumber: comment.lineNumber,
           endSide: comment.endSide,
@@ -297,26 +479,132 @@ export function DiffPanelContent({
       next.set(comment.fileKey, entries);
     }
 
-    if (draftComment) {
-      const entries = next.get(draftComment.fileKey) ?? [];
+    if (draftTarget) {
+      const entries = next.get(draftTarget.fileKey) ?? [];
       entries.push({
-        side: draftComment.side,
-        lineNumber: draftComment.lineNumber,
+        side: draftTarget.side,
+        lineNumber: draftTarget.lineNumber,
         metadata: {
-          id: `draft:${draftComment.fileKey}:${draftComment.side}:${draftComment.lineNumber}`,
-          body: draftComment.body,
+          id: `draft:${draftTarget.fileKey}:${draftTarget.side}:${draftTarget.lineNumber}`,
+          body: "",
           kind: "draft",
-          side: draftComment.side,
-          lineNumber: draftComment.lineNumber,
-          endSide: draftComment.endSide,
-          endLineNumber: draftComment.endLineNumber,
+          side: draftTarget.side,
+          lineNumber: draftTarget.lineNumber,
+          endSide: draftTarget.endSide,
+          endLineNumber: draftTarget.endLineNumber,
         },
       });
-      next.set(draftComment.fileKey, entries);
+      next.set(draftTarget.fileKey, entries);
     }
 
     return next;
-  }, [draftComment, savedComments]);
+  }, [draftTarget, savedComments]);
+
+  const annotationCountByFile = useMemo(() => {
+    const next = new Map<string, number>();
+
+    for (const [fileKey, annotations] of commentAnnotationsByFile) {
+      next.set(fileKey, annotations.length);
+    }
+
+    return next;
+  }, [commentAnnotationsByFile]);
+
+  const fileHeights = useMemo(
+    () =>
+      renderableFiles.map((fileDiff) => {
+        const fileKey = buildFileDiffRenderKey(fileDiff);
+        return (
+          measuredFileHeights[fileKey] ??
+          estimateFileDiffHeight({
+            fileDiff,
+            collapsed: collapsedFiles[fileKey] === true,
+            diffRenderMode,
+            annotationCount: annotationCountByFile.get(fileKey) ?? 0,
+          })
+        );
+      }),
+    [annotationCountByFile, collapsedFiles, diffRenderMode, measuredFileHeights, renderableFiles],
+  );
+
+  const { virtualOffsets, totalVirtualHeight } = useMemo(() => {
+    const offsets: number[] = [];
+    let runningHeight = 0;
+
+    for (const height of fileHeights) {
+      offsets.push(runningHeight);
+      runningHeight += height;
+    }
+
+    return {
+      virtualOffsets: offsets,
+      totalVirtualHeight: runningHeight,
+    };
+  }, [fileHeights]);
+
+  const { visibleStartIndex, visibleEndIndex } = useMemo(() => {
+    if (renderableFiles.length === 0) {
+      return {
+        visibleStartIndex: 0,
+        visibleEndIndex: 0,
+      };
+    }
+
+    const effectiveViewportHeight = viewportHeight || 900;
+    const startOffset = Math.max(0, scrollTop - DIFF_FILE_OVERSCAN_PX);
+    const endOffset = scrollTop + effectiveViewportHeight + DIFF_FILE_OVERSCAN_PX;
+    const startIndex = Math.min(
+      findVirtualRangeIndex(virtualOffsets, fileHeights, startOffset),
+      renderableFiles.length - 1,
+    );
+    const endIndex = Math.min(
+      findVirtualRangeIndex(virtualOffsets, fileHeights, endOffset) + 1,
+      renderableFiles.length,
+    );
+
+    return {
+      visibleStartIndex: startIndex,
+      visibleEndIndex: Math.max(startIndex + 1, endIndex),
+    };
+  }, [fileHeights, renderableFiles.length, scrollTop, viewportHeight, virtualOffsets]);
+
+  const topSpacerHeight = getOffsetAtIndex(virtualOffsets, totalVirtualHeight, visibleStartIndex);
+  const bottomSpacerHeight = Math.max(
+    0,
+    totalVirtualHeight - getOffsetAtIndex(virtualOffsets, totalVirtualHeight, visibleEndIndex),
+  );
+
+  const disableDocumentSelection = useCallback(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    dragUserSelectResetRef.current?.();
+
+    const htmlStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+    const previousHtmlUserSelect = htmlStyle.userSelect;
+    const previousBodyUserSelect = bodyStyle.userSelect;
+    const previousHtmlWebkitUserSelect = htmlStyle.webkitUserSelect;
+    const previousBodyWebkitUserSelect = bodyStyle.webkitUserSelect;
+
+    htmlStyle.userSelect = "none";
+    bodyStyle.userSelect = "none";
+    htmlStyle.webkitUserSelect = "none";
+    bodyStyle.webkitUserSelect = "none";
+
+    dragUserSelectResetRef.current = () => {
+      htmlStyle.userSelect = previousHtmlUserSelect;
+      bodyStyle.userSelect = previousBodyUserSelect;
+      htmlStyle.webkitUserSelect = previousHtmlWebkitUserSelect;
+      bodyStyle.webkitUserSelect = previousBodyWebkitUserSelect;
+      dragUserSelectResetRef.current = null;
+    };
+  }, []);
+
+  const restoreDocumentSelection = useCallback(() => {
+    dragUserSelectResetRef.current?.();
+  }, []);
 
   const openDraftComment = useCallback(
     (
@@ -366,38 +654,6 @@ export function DiffPanelContent({
     },
     [],
   );
-
-  const disableDocumentSelection = useCallback(() => {
-    if (typeof document === "undefined") {
-      return;
-    }
-
-    dragUserSelectResetRef.current?.();
-
-    const htmlStyle = document.documentElement.style;
-    const bodyStyle = document.body.style;
-    const previousHtmlUserSelect = htmlStyle.userSelect;
-    const previousBodyUserSelect = bodyStyle.userSelect;
-    const previousHtmlWebkitUserSelect = htmlStyle.webkitUserSelect;
-    const previousBodyWebkitUserSelect = bodyStyle.webkitUserSelect;
-
-    htmlStyle.userSelect = "none";
-    bodyStyle.userSelect = "none";
-    htmlStyle.webkitUserSelect = "none";
-    bodyStyle.webkitUserSelect = "none";
-
-    dragUserSelectResetRef.current = () => {
-      htmlStyle.userSelect = previousHtmlUserSelect;
-      bodyStyle.userSelect = previousBodyUserSelect;
-      htmlStyle.webkitUserSelect = previousHtmlWebkitUserSelect;
-      bodyStyle.webkitUserSelect = previousBodyWebkitUserSelect;
-      dragUserSelectResetRef.current = null;
-    };
-  }, []);
-
-  const restoreDocumentSelection = useCallback(() => {
-    dragUserSelectResetRef.current?.();
-  }, []);
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -497,6 +753,56 @@ export function DiffPanelContent({
     }));
   }, []);
 
+  const getFileInteractionHandlers = useCallback(
+    (fileKey: string, filePath: string) => {
+      const cached = fileInteractionHandlersRef.current.get(fileKey);
+      if (cached) {
+        return cached;
+      }
+
+      const next = {
+        onLineClick: ({
+          lineNumber,
+          annotationSide,
+          event,
+        }: {
+          lineNumber: number;
+          annotationSide: AnnotationSide;
+          event: PointerEvent;
+        }) => {
+          if (suppressNextLineClickRef.current) {
+            suppressNextLineClickRef.current = false;
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          openDraftComment(fileKey, filePath, annotationSide, lineNumber);
+        },
+        onLineNumberClick: ({
+          lineNumber,
+          annotationSide,
+          event,
+        }: {
+          lineNumber: number;
+          annotationSide: AnnotationSide;
+          event: PointerEvent;
+        }) => {
+          if (suppressNextLineClickRef.current) {
+            suppressNextLineClickRef.current = false;
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          openDraftComment(fileKey, filePath, annotationSide, lineNumber);
+        },
+      };
+
+      fileInteractionHandlersRef.current.set(fileKey, next);
+      return next;
+    },
+    [openDraftComment],
+  );
+
   const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => {
     const metadata = annotation.metadata;
 
@@ -515,7 +821,7 @@ export function DiffPanelContent({
           <textarea
             className="min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
             value={draftComment?.body ?? ""}
-            onChange={(event) =>
+            onChange={(event) => {
               setDraftComment((current) =>
                 current
                   ? {
@@ -523,8 +829,8 @@ export function DiffPanelContent({
                       body: event.target.value,
                     }
                   : current,
-              )
-            }
+              );
+            }}
             placeholder="Leave a note on this diff"
             aria-label={`Comment for line ${annotation.lineNumber}`}
           />
@@ -532,7 +838,9 @@ export function DiffPanelContent({
             <button
               type="button"
               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-              onClick={() => setDraftComment(null)}
+              onClick={() => {
+                setDraftComment(null);
+              }}
               aria-label="Cancel comment"
               title="Cancel comment"
             >
@@ -580,17 +888,6 @@ export function DiffPanelContent({
     );
   };
 
-  useEffect(() => {
-    if (!selectedFilePath || !patchViewportRef.current) {
-      return;
-    }
-
-    const target = Array.from(
-      patchViewportRef.current.querySelectorAll<HTMLElement>("[data-diff-file-path]"),
-    ).find((element) => element.dataset.diffFilePath === selectedFilePath);
-    target?.scrollIntoView({ block: "nearest" });
-  }, [selectedFilePath]);
-
   return (
     <aside
       className={cn(
@@ -604,7 +901,7 @@ export function DiffPanelContent({
         <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
       ) : (
         <>
-          <div ref={patchViewportRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
+          <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
             {error && !renderablePatch ? (
               <div className="px-3 pt-3">
                 <p className="mb-2 text-[11px] text-[#f2a7a7]">{error}</p>
@@ -622,180 +919,201 @@ export function DiffPanelContent({
                 </p>
               </div>
             ) : renderablePatch.kind === "files" ? (
-              <div className="h-full min-h-0 overflow-auto">
-                {renderableFiles.map((fileDiff: FileDiffMetadata) => {
-                  const filePath = resolveFileDiffPath(fileDiff);
-                  const fileKey = buildFileDiffRenderKey(fileDiff);
-                  const isCollapsed = collapsedFiles[fileKey] === true;
-                  const selectedLines: SelectedLineRange | null =
-                    dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
-                      ? dragSelectionRange
-                      : draftComment?.fileKey === fileKey
-                        ? {
-                            start: draftComment.lineNumber,
-                            end: draftComment.endLineNumber ?? draftComment.lineNumber,
-                            side: draftComment.side,
-                            endSide: draftComment.endSide ?? draftComment.side,
+              <div
+                ref={setScrollContainerNode}
+                className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
+                onScroll={(event) => {
+                  const nextScrollTop = event.currentTarget.scrollTop;
+                  setScrollTop((current) => (current === nextScrollTop ? current : nextScrollTop));
+                }}
+              >
+                {topSpacerHeight > 0 ? <div style={{ height: topSpacerHeight }} /> : null}
+                {renderableFiles
+                  .slice(visibleStartIndex, visibleEndIndex)
+                  .map((fileDiff: FileDiffMetadata) => {
+                    const filePath = resolveFileDiffPath(fileDiff);
+                    const fileKey = buildFileDiffRenderKey(fileDiff);
+                    const isCollapsed = collapsedFiles[fileKey] === true;
+                    const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath);
+                    const selectedLines: SelectedLineRange | null =
+                      dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
+                        ? dragSelectionRange
+                        : draftComment?.fileKey === fileKey
+                          ? draftSelectedLines
+                          : null;
+                    return (
+                      <div
+                        key={`${fileKey}:dark`}
+                        data-diff-file-path={filePath}
+                        className="first:mt-0"
+                        ref={(node) => {
+                          const existingObserver = fileResizeObserversRef.current.get(fileKey);
+                          existingObserver?.disconnect();
+
+                          if (!node || typeof ResizeObserver === "undefined") {
+                            fileResizeObserversRef.current.delete(fileKey);
+                            return;
                           }
-                        : null;
-                  return (
-                    <div
-                      key={`${fileKey}:dark`}
-                      data-diff-file-path={filePath}
-                      className="first:mt-0"
-                      onPointerDownCapture={(event) => {
-                        if (event.button !== 0) {
-                          return;
-                        }
 
-                        const target = resolvePointerLineTarget(event.nativeEvent);
-                        if (!target) {
-                          return;
-                        }
+                          const updateMeasuredHeight = () => {
+                            const nextHeight = Math.ceil(node.getBoundingClientRect().height);
+                            setMeasuredFileHeights((current) =>
+                              current[fileKey] === nextHeight
+                                ? current
+                                : {
+                                    ...current,
+                                    [fileKey]: nextHeight,
+                                  },
+                            );
+                          };
 
-                        event.preventDefault();
-                        dragSelectionRef.current = {
-                          pointerId: event.pointerId,
-                          fileKey,
-                          filePath,
-                          anchor: target,
-                          current: target,
-                          didDrag: false,
-                        };
-                        updateDragSelectionRange(target.side, target.lineNumber);
-                        disableDocumentSelection();
-                      }}
-                      onClickCapture={(event) => {
-                        const nativeEvent = event.nativeEvent as MouseEvent;
-                        const composedPath = nativeEvent.composedPath?.() ?? [];
-                        const clickedHeader = composedPath.some((node) => {
-                          if (!(node instanceof Element)) return false;
-                          return node.hasAttribute("data-title");
-                        });
-                        if (!clickedHeader) return;
+                          updateMeasuredHeight();
 
-                        const openPathPromise = window.piDesktop?.openPath?.(
-                          joinProjectFilePath(projectId, filePath),
-                        );
-                        void openPathPromise?.catch(() => undefined);
-                      }}
-                    >
-                      <FileDiff<DiffCommentMetadata>
-                        fileDiff={fileDiff}
-                        lineAnnotations={commentAnnotationsByFile.get(fileKey)}
-                        selectedLines={selectedLines}
-                        renderCustomHeader={(currentFileDiff) => {
-                          const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
-                          const { additions, deletions } = getFileChangeCounts(currentFileDiff);
+                          const observer = new ResizeObserver(() => {
+                            updateMeasuredHeight();
+                          });
 
-                          return (
-                            <button
-                              type="button"
-                              className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
-                              style={{
-                                fontFamily:
-                                  'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-                              }}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                toggleFileCollapsed(fileKey);
-                              }}
-                              aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
-                              aria-expanded={!isCollapsed}
-                            >
-                              <span className="flex min-w-0 items-center gap-2.5">
-                                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
-                                  {isCollapsed ? (
-                                    <ChevronRight size={14} />
-                                  ) : (
-                                    <ChevronDown size={14} />
-                                  )}
-                                </span>
-                                <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
-                                  {filePath}
-                                </span>
-                                {headerContextLabel ? (
-                                  <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
-                                    {headerContextLabel}
-                                  </span>
-                                ) : null}
-                              </span>
-                              <span className="flex shrink-0 items-center gap-2 text-[12px]">
-                                {deletions > 0 || additions === 0 ? (
-                                  <span className="text-[#d06b72]">-{deletions}</span>
-                                ) : null}
-                                {additions > 0 || deletions === 0 ? (
-                                  <span className="text-[color:var(--green)]">+{additions}</span>
-                                ) : null}
-                              </span>
-                            </button>
-                          );
+                          observer.observe(node);
+                          fileResizeObserversRef.current.set(fileKey, observer);
                         }}
-                        renderAnnotation={renderCommentAnnotation}
-                        renderGutterUtility={(() => {
-                          return (
-                            getHoveredLine: () => GetHoveredLineResult<"diff"> | undefined,
-                          ) => {
-                            const hoveredLine = getHoveredLine();
-                            if (!hoveredLine) {
-                              return null;
-                            }
+                        onPointerDownCapture={(event) => {
+                          if (event.button !== 0) {
+                            return;
+                          }
+
+                          const target = resolvePointerLineTarget(event.nativeEvent);
+                          if (!target) {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          dragSelectionRef.current = {
+                            pointerId: event.pointerId,
+                            fileKey,
+                            filePath,
+                            anchor: target,
+                            current: target,
+                            didDrag: false,
+                          };
+                          updateDragSelectionRange(target.side, target.lineNumber);
+                          disableDocumentSelection();
+                        }}
+                        onClickCapture={(event) => {
+                          const nativeEvent = event.nativeEvent as MouseEvent;
+                          const composedPath = nativeEvent.composedPath?.() ?? [];
+                          const clickedHeader = composedPath.some((node) => {
+                            if (!(node instanceof Element)) return false;
+                            return node.hasAttribute("data-title");
+                          });
+                          if (!clickedHeader) return;
+
+                          const openPathPromise = window.piDesktop?.openPath?.(
+                            joinProjectFilePath(projectId, filePath),
+                          );
+                          void openPathPromise?.catch(() => undefined);
+                        }}
+                      >
+                        <FileDiff<DiffCommentMetadata>
+                          fileDiff={fileDiff}
+                          lineAnnotations={commentAnnotationsByFile.get(fileKey)}
+                          selectedLines={selectedLines}
+                          renderCustomHeader={(currentFileDiff) => {
+                            const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
+                            const { additions, deletions } = getFileChangeCounts(currentFileDiff);
 
                             return (
                               <button
                                 type="button"
-                                className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+                                className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
+                                style={{
+                                  fontFamily:
+                                    'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
+                                }}
                                 onClick={(event) => {
                                   event.preventDefault();
                                   event.stopPropagation();
-                                  openDraftComment(
-                                    fileKey,
-                                    filePath,
-                                    hoveredLine.side,
-                                    hoveredLine.lineNumber,
-                                  );
+                                  toggleFileCollapsed(fileKey);
                                 }}
-                                aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-                                title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
+                                aria-expanded={!isCollapsed}
                               >
-                                <MessageSquarePlus size={12} />
+                                <span className="flex min-w-0 items-center gap-2.5">
+                                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
+                                    {isCollapsed ? (
+                                      <ChevronRight size={14} />
+                                    ) : (
+                                      <ChevronDown size={14} />
+                                    )}
+                                  </span>
+                                  <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
+                                    {filePath}
+                                  </span>
+                                  {headerContextLabel ? (
+                                    <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
+                                      {headerContextLabel}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                <span className="flex shrink-0 items-center gap-2 text-[12px]">
+                                  {deletions > 0 || additions === 0 ? (
+                                    <span className="text-[#d06b72]">-{deletions}</span>
+                                  ) : null}
+                                  {additions > 0 || deletions === 0 ? (
+                                    <span className="text-[color:var(--green)]">+{additions}</span>
+                                  ) : null}
+                                </span>
                               </button>
                             );
-                          };
-                        })()}
-                        options={{
-                          diffStyle: diffRenderMode === "split" ? "split" : "unified",
-                          lineDiffType: "none",
-                          theme: resolveDiffThemeName("dark"),
-                          themeType: "dark" as DiffThemeType,
-                          unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-                          collapsed: isCollapsed,
-                          enableGutterUtility: true,
-                          lineHoverHighlight: "both",
-                          onLineClick: ({ lineNumber, annotationSide, event }) => {
-                            if (suppressNextLineClickRef.current) {
-                              suppressNextLineClickRef.current = false;
-                              event.preventDefault();
-                              return;
-                            }
-                            event.preventDefault();
-                            openDraftComment(fileKey, filePath, annotationSide, lineNumber);
-                          },
-                          onLineNumberClick: ({ lineNumber, annotationSide, event }) => {
-                            if (suppressNextLineClickRef.current) {
-                              suppressNextLineClickRef.current = false;
-                              event.preventDefault();
-                              return;
-                            }
-                            event.preventDefault();
-                            openDraftComment(fileKey, filePath, annotationSide, lineNumber);
-                          },
-                        }}
-                      />
-                    </div>
-                  );
-                })}
+                          }}
+                          renderAnnotation={renderCommentAnnotation}
+                          renderGutterUtility={(() => {
+                            return (
+                              getHoveredLine: () => GetHoveredLineResult<"diff"> | undefined,
+                            ) => {
+                              const hoveredLine = getHoveredLine();
+                              if (!hoveredLine) {
+                                return null;
+                              }
+
+                              return (
+                                <button
+                                  type="button"
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    openDraftComment(
+                                      fileKey,
+                                      filePath,
+                                      hoveredLine.side,
+                                      hoveredLine.lineNumber,
+                                    );
+                                  }}
+                                  aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                  title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                                >
+                                  <MessageSquarePlus size={12} />
+                                </button>
+                              );
+                            };
+                          })()}
+                          options={{
+                            diffStyle: diffRenderMode === "split" ? "split" : "unified",
+                            lineDiffType: "none",
+                            theme: resolveDiffThemeName("dark"),
+                            themeType: "dark" as DiffThemeType,
+                            unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
+                            collapsed: isCollapsed,
+                            enableGutterUtility: true,
+                            lineHoverHighlight: "both",
+                            onLineClick: fileInteractionHandlers.onLineClick,
+                            onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                {bottomSpacerHeight > 0 ? <div style={{ height: bottomSpacerHeight }} /> : null}
               </div>
             ) : (
               <div className="h-full overflow-auto p-3">

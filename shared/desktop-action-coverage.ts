@@ -19,6 +19,7 @@ export const implementedDesktopActions = [
   "composer.model",
   "composer.thinking",
   "composer.send",
+  "settings.update",
 ] as const satisfies readonly DesktopAction[];
 
 // These actions are intentionally accepted by the bridge but currently no-op on the

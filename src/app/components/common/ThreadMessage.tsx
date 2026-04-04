@@ -10,6 +10,7 @@ type ThreadMessageProps = {
   onToggleExpanded?: () => void;
   firstCardOnly?: boolean;
   disableInnerExpansion?: boolean;
+  primaryToggleAction?: () => void;
 };
 
 function renderProse(content: string[], format: "prose" | "list" = "prose") {
@@ -53,6 +54,7 @@ function AssistantThinkingBlock({
   autoExpandThinking = false,
   onToggleExpanded,
   interactive = true,
+  primaryToggleAction,
 }: {
   thinkingContent: string[];
   thinkingHeaders?: string[];
@@ -60,6 +62,7 @@ function AssistantThinkingBlock({
   autoExpandThinking?: boolean;
   onToggleExpanded?: () => void;
   interactive?: boolean;
+  primaryToggleAction?: () => void;
 }) {
   const [expanded, setExpanded] = useState(autoExpandThinking);
   const previousAutoExpandRef = useRef(autoExpandThinking);
@@ -86,6 +89,11 @@ function AssistantThinkingBlock({
     <ExpandablePanel
       expanded={expanded}
       onToggle={() => {
+        if (primaryToggleAction) {
+          primaryToggleAction();
+          return;
+        }
+
         if (!interactive) {
           return;
         }
@@ -147,6 +155,7 @@ export const ThreadMessage = memo(function ThreadMessage({
   onToggleExpanded,
   firstCardOnly,
   disableInnerExpansion,
+  primaryToggleAction,
 }: ThreadMessageProps) {
   if (message.role === "user") {
     return (
@@ -179,6 +188,7 @@ export const ThreadMessage = memo(function ThreadMessage({
             autoExpandThinking={autoExpandThinking}
             onToggleExpanded={onToggleExpanded}
             interactive={!disableInnerExpansion}
+            primaryToggleAction={primaryToggleAction}
           />
         ) : null}
         {showAssistantContent ? (

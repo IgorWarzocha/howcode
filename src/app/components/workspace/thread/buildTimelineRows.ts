@@ -26,6 +26,7 @@ export function buildTimelineRows({
   );
   let pendingToolMessages: ToolCallMessage[] = [];
   let currentTurn: Extract<TimelineRow, { kind: "turn" }> | null = null;
+  let pendingImplicitTurnId: string | null = null;
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {
@@ -43,7 +44,13 @@ export function buildTimelineRows({
     if (currentTurn) {
       currentTurn.items.push(toolGroup);
     } else {
-      nextRows.push(toolGroup);
+      currentTurn = {
+        kind: "turn",
+        id: pendingImplicitTurnId ?? `turn:implicit:${firstMessage?.id ?? "tool-group"}`,
+        userMessage: null,
+        items: [toolGroup],
+      };
+      pendingImplicitTurnId = null;
     }
 
     pendingToolMessages = [];
@@ -86,6 +93,7 @@ export function buildTimelineRows({
 
     if (message.role === "user") {
       flushCurrentTurn();
+      pendingImplicitTurnId = null;
       currentTurn = {
         kind: "turn",
         id: `turn:${message.id}`,
@@ -102,6 +110,8 @@ export function buildTimelineRows({
         id: `summary:${message.id}`,
         message,
       });
+      pendingImplicitTurnId =
+        message.role === "compactionSummary" ? `turn:post-summary:${message.id}` : null;
       continue;
     }
 
@@ -110,10 +120,11 @@ export function buildTimelineRows({
     } else {
       currentTurn = {
         kind: "turn",
-        id: `turn:implicit:${message.id}`,
+        id: pendingImplicitTurnId ?? `turn:implicit:${message.id}`,
         userMessage: null,
         items: [timelineMessage],
       };
+      pendingImplicitTurnId = null;
     }
   }
 

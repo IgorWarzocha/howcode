@@ -44,5 +44,26 @@ export function isTurnRowCollapsible(row: Extract<TimelineRow, { kind: "turn" }>
     return row.items.length > 0;
   }
 
-  return row.items.length > 0;
+  if (row.items.length === 0) {
+    return false;
+  }
+
+  if (row.items.length > 1) {
+    return true;
+  }
+
+  const [onlyItem] = row.items;
+  if (!onlyItem) {
+    return false;
+  }
+
+  if (onlyItem.kind === "tool-group") {
+    return true;
+  }
+
+  if (onlyItem.message.role !== "assistant") {
+    return true;
+  }
+
+  return Boolean(onlyItem.message.thinkingContent?.length);
 }

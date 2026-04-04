@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Fragment, type MouseEvent, type ReactNode } from "react";
+import { Fragment, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import type { Message } from "../../../types";
+import { getAssistantPreview } from "../../../utils/thread-previews";
 import { ThreadMessage } from "../../common/ThreadMessage";
 import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
 import { ToolCallsCard } from "./ToolCallsCard";
@@ -17,11 +18,12 @@ const clampThreeLinesClass =
 function getMessagePreview(message: Message) {
   switch (message.role) {
     case "user":
-    case "assistant":
     case "custom":
     case "branchSummary":
     case "compactionSummary":
       return message.content.join(" ").trim();
+    case "assistant":
+      return getAssistantPreview(message) ?? message.content.join(" ").trim();
     case "toolResult":
       return [message.toolName, message.content.join(" ")].filter(Boolean).join(" — ");
     case "bashExecution":
@@ -54,30 +56,39 @@ function getCollapsedTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
     return {
       label: primary,
       secondary: firstAssistantMessage ? getMessagePreview(firstAssistantMessage.message) : null,
+      italicLabel: false,
     };
   }
 
   const firstItem = row.items[0];
   if (!firstItem) {
-    return { label: "Continued turn", secondary: null };
+    return { label: "Continued turn", secondary: null, italicLabel: false };
   }
 
   if (firstItem.kind === "tool-group") {
-    return { label: getToolGroupPreview(firstItem), secondary: null };
+    return { label: getToolGroupPreview(firstItem), secondary: null, italicLabel: false };
   }
 
-  return { label: getMessagePreview(firstItem.message), secondary: null };
+  return {
+    label: getMessagePreview(firstItem.message),
+    secondary: null,
+    italicLabel: firstItem.message.role === "assistant",
+  };
 }
 
 function FoldedTimelineRow({
   label,
   secondary,
   singleLine = false,
+  italicLabel = false,
+  mutedLabel = false,
   onToggle,
 }: {
   label: string;
   secondary?: string | null;
   singleLine?: boolean;
+  italicLabel?: boolean;
+  mutedLabel?: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -87,7 +98,7 @@ function FoldedTimelineRow({
       onClick={onToggle}
     >
       <div
-        className={`min-w-0 text-[13px] font-medium leading-[1.4] text-[color:var(--text)]/92 ${singleLine || secondary ? clampOneLineClass : clampThreeLinesClass}`}
+        className={`min-w-0 text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${singleLine || secondary ? clampOneLineClass : clampThreeLinesClass}`}
       >
         {label}
       </div>
@@ -108,9 +119,7 @@ function isInteractiveTarget(target: EventTarget | null) {
   }
 
   return Boolean(
-    target.closest(
-      'button, a, input, textarea, select, summary, [role="button"], [data-no-row-toggle="true"]',
-    ),
+    target.closest('button, a, input, textarea, select, summary, [data-no-row-toggle="true"]'),
   );
 }
 
@@ -126,10 +135,9 @@ function RowLeadToggleSurface({
   }
 
   return (
-    <button
-      type="button"
-      className="min-w-0 cursor-pointer"
-      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+    <div
+      className="block w-full min-w-0 cursor-pointer text-left"
+      onPointerUp={(event: PointerEvent<HTMLDivElement>) => {
         if (isInteractiveTarget(event.target)) {
           return;
         }
@@ -138,7 +146,7 @@ function RowLeadToggleSurface({
       }}
     >
       {children}
-    </button>
+    </div>
   );
 }
 
@@ -282,6 +290,8 @@ export function ThreadTimelineRow({
           <FoldedTimelineRow
             label={preview.label}
             secondary={preview.secondary}
+            italicLabel={preview.italicLabel}
+            mutedLabel={preview.italicLabel}
             onToggle={() => onToggleTurnCollapse?.()}
           />
         </TimelineRowShell>
@@ -308,6 +318,18 @@ export function ThreadTimelineRow({
 
             if (item.kind === "tool-group") {
               return renderTurnItem(item);
+            }
+
+            if (item.message.role === "assistant") {
+              return (
+                <ThreadMessage
+                  key={`lead:${item.id}`}
+                  message={item.message}
+                  autoExpandThinking={item.message.id === streamingAssistantMessageId}
+                  onToggleExpanded={onToggleTurnCollapse}
+                  primaryToggleAction={onToggleTurnCollapse}
+                />
+              );
             }
 
             return (
