@@ -31,6 +31,7 @@ export function ComposerGitOpsMockSurface({
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
+  const [commitFocused, setCommitFocused] = useState(false);
   const [repoUrl, setRepoUrl] = useState("");
   const [originKnown, setOriginKnown] = useState(true);
   const meta = gitOpsMockMeta[gitOpsMockMode];
@@ -44,15 +45,7 @@ export function ComposerGitOpsMockSurface({
       data-feature-id="feature:composer.git-ops"
       data-feature-status="mock"
     >
-      <div className="relative">
-        <textarea
-          className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 pr-56 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none"
-          value={commitMessage}
-          onChange={(event) => setCommitMessage(event.target.value)}
-          aria-label="Commit message"
-          placeholder=""
-        />
-
+      <div className="relative min-h-24">
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
             originKnown ? (
@@ -117,8 +110,16 @@ export function ComposerGitOpsMockSurface({
       </div>
 
       <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="text-[12px] leading-5 text-[color:var(--muted)]">
-          Leave blank to autogenerate a commit message
+        <div className="min-w-0 flex-1">
+          <input
+            className="w-full bg-transparent text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            value={commitMessage}
+            onChange={(event) => setCommitMessage(event.target.value)}
+            onFocus={() => setCommitFocused(true)}
+            onBlur={() => setCommitFocused(false)}
+            aria-label="Commit message"
+            placeholder={commitFocused ? "" : "Leave blank to autogenerate a commit message"}
+          />
         </div>
 
         <button
