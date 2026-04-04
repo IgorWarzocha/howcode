@@ -40,6 +40,7 @@ export function VirtualizedThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
@@ -122,7 +123,7 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
-    container.scrollTo({ top: container.scrollHeight });
+    container.scrollTop = container.scrollHeight;
   }, []);
 
   const scheduleScrollToBottom = useCallback(() => {
@@ -173,6 +174,28 @@ export function VirtualizedThreadTimeline({
 
     scheduleScrollToBottom();
   }, [bottomAnchorKey, rowStructureSignature, rows.length, scheduleScrollToBottom]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const timeline = timelineRef.current;
+    if (!container || !timeline || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Streaming updates can change layout after the initial render pass
+      // (for example when markdown, thinking panels, or tool groups reflow).
+      // Re-assert the sticky-bottom position whenever the lane or viewport resizes.
+      scheduleScrollToBottom();
+    });
+
+    resizeObserver.observe(container);
+    resizeObserver.observe(timeline);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [scheduleScrollToBottom]);
 
   useEffect(() => {
     return () => {
@@ -297,7 +320,7 @@ export function VirtualizedThreadTimeline({
           Rich markdown, reasoning panels, tool-call accordions, and inline diffs were too dynamic
           for heuristic row-height prediction to stay reliable under virtualization.
         */}
-        <div className={chatStreamingTimelineClass}>
+        <div ref={timelineRef} className={chatStreamingTimelineClass}>
           {rows.map((row) => (
             <div key={row.id} className="min-w-0">
               {renderRow(row)}
