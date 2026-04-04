@@ -263,6 +263,7 @@ export function DiffPanelContent({
   const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const draftCardRef = useRef<HTMLDivElement | null>(null);
   const fileInteractionHandlersRef = useRef(
     new Map<
       string,
@@ -695,6 +696,7 @@ export function DiffPanelContent({
     if (metadata.kind === "draft") {
       return (
         <div
+          ref={draftCardRef}
           className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
           style={{
             fontFamily:
@@ -773,6 +775,42 @@ export function DiffPanelContent({
       </div>
     );
   };
+
+  useEffect(() => {
+    if (!draftTarget) {
+      return;
+    }
+
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const draftCard = draftCardRef.current;
+      if (!draftCard) {
+        return;
+      }
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const draftRect = draftCard.getBoundingClientRect();
+      const bottomOverflow = draftRect.bottom - containerRect.bottom;
+      const topOverflow = containerRect.top - draftRect.top;
+
+      if (bottomOverflow > 0) {
+        scrollContainer.scrollTop += bottomOverflow + 12;
+        return;
+      }
+
+      if (topOverflow > 0) {
+        scrollContainer.scrollTop -= topOverflow + 12;
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [draftTarget]);
 
   return (
     <aside
