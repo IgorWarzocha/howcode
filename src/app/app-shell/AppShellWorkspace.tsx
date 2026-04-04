@@ -37,6 +37,8 @@ export function AppShellWorkspace({
   const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
   const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([]);
   const [diffCommentCount, setDiffCommentCount] = useState(0);
+  const [selectedDiffCommentId, setSelectedDiffCommentId] = useState<string | null>(null);
+  const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
   const {
@@ -72,6 +74,8 @@ export function AppShellWorkspace({
       setDiffCommentCount(nextComments.length);
     };
 
+    setSelectedDiffCommentId(null);
+    setSelectedDiffCommentJumpKey(0);
     syncCommentCount();
     return diffCommentStore.subscribe(syncCommentCount);
   }, [diffCommentContextId]);
@@ -94,6 +98,7 @@ export function AppShellWorkspace({
         text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
       });
       diffCommentStore.clearContext(diffCommentContextId);
+      setSelectedDiffCommentId(null);
       setComposerPromptResetKey((current) => current + 1);
     } catch (error) {
       setDiffCommentError(
@@ -119,6 +124,8 @@ export function AppShellWorkspace({
               projectId={composerProjectId}
               isGitRepo={projectGitState?.isGitRepo ?? false}
               selectedFilePath={state.selectedDiffFilePath}
+              selectedCommentId={selectedDiffCommentId}
+              selectedCommentJumpKey={selectedDiffCommentJumpKey}
               diffRenderMode={diffRenderMode}
               layoutMode="main"
             />
@@ -168,7 +175,11 @@ export function AppShellWorkspace({
                 onSendDiffComments={(message) => {
                   void handleSendDiffComments(message);
                 }}
-                onSelectDiffComment={handleOpenWorktreeDiffFile}
+                onSelectDiffComment={(filePath, commentId) => {
+                  setSelectedDiffCommentId(commentId);
+                  setSelectedDiffCommentJumpKey((current) => current + 1);
+                  handleOpenWorktreeDiffFile(filePath);
+                }}
                 promptResetKey={composerPromptResetKey}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                 onToggleTerminal={handleToggleTerminal}

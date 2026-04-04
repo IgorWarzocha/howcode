@@ -31,7 +31,7 @@ type ComposerGitOpsMockSurfaceProps = {
   diffCommentError: string | null;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
-  onSelectDiffComment: (filePath: string) => void;
+  onSelectDiffComment: (filePath: string, commentId: string) => void;
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,
@@ -321,14 +321,14 @@ export function ComposerGitOpsMockSurface({
                 <button
                   key={comment.id}
                   type="button"
-                  className="inline-flex min-w-0 shrink-0 flex-col items-start gap-0.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--text)]"
-                  onClick={() => onSelectDiffComment(comment.filePath)}
+                  className="inline-flex min-w-0 shrink-0 items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.035)] px-2 py-1 text-[11px] leading-none text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[color:var(--text)]"
+                  onClick={() => onSelectDiffComment(comment.filePath, comment.id)}
                   title={`${comment.filePath} · ${comment.linesLabel}`}
                 >
-                  <span className="max-w-52 truncate text-[12px] text-[color:var(--text)]">
+                  <span className="max-w-40 truncate text-[11px] font-normal text-[color:var(--text)]">
                     {comment.fileName}
                   </span>
-                  <span>{comment.linesLabel}</span>
+                  <span className="shrink-0 text-[11px] font-normal">{comment.linesLabel}</span>
                 </button>
               ))}
             </div>
@@ -472,10 +472,10 @@ function getCommentLinesLabel(comment: SavedDiffComment) {
   if (comment.side === endSide) {
     const start = Math.min(comment.lineNumber, endLineNumber);
     const end = Math.max(comment.lineNumber, endLineNumber);
-    return start === end ? `Line ${start}` : `Lines ${start}-${end}`;
+    return start === end ? `Ln ${start}` : `Ln ${start}:${end}`;
   }
 
-  return `Lines ${comment.lineNumber}-${endLineNumber}`;
+  return `Ln ${comment.lineNumber}:${endLineNumber}`;
 }
 
 function getCommentFileName(filePath: string) {

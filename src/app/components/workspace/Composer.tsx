@@ -32,7 +32,7 @@ export type ComposerProps = {
   diffCommentError: string | null;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
-  onSelectDiffComment: (filePath: string) => void;
+  onSelectDiffComment: (filePath: string, commentId: string) => void;
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onToggleTerminal: () => void;

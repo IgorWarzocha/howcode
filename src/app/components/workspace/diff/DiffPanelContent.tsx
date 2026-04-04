@@ -127,6 +127,43 @@ const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
 const DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT = 32;
 const DIFF_FILE_ESTIMATED_COMMENT_HEIGHT = 92;
 
+function alignElementInScrollViewport({
+  scrollContainer,
+  targetElement,
+  mode,
+}: {
+  scrollContainer: HTMLDivElement;
+  targetElement: HTMLElement;
+  mode: "center" | "draft-peek";
+}) {
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const targetRect = targetElement.getBoundingClientRect();
+
+  if (mode === "draft-peek") {
+    const desiredVisibleDraftHeight = Math.min(120, targetRect.height);
+    const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
+    const bottomOverflow = targetRect.top - desiredDraftTop;
+    const topOverflow = containerRect.top - targetRect.top;
+
+    if (bottomOverflow > 0) {
+      scrollContainer.scrollTop += bottomOverflow + 6;
+      return;
+    }
+
+    if (topOverflow > 0) {
+      scrollContainer.scrollTop -= topOverflow + 6;
+    }
+    return;
+  }
+
+  const desiredTargetTop = containerRect.top + (containerRect.height - targetRect.height) / 2;
+  const offset = targetRect.top - desiredTargetTop;
+
+  if (Math.abs(offset) > 4) {
+    scrollContainer.scrollTop += offset;
+  }
+}
+
 function estimateFileDiffHeight({
   fileDiff,
   collapsed,
@@ -247,6 +284,8 @@ type DiffPanelContentProps = {
   projectId: string;
   isGitRepo: boolean;
   selectedFilePath: string | null;
+  selectedCommentId: string | null;
+  selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
 };
@@ -254,7 +293,9 @@ type DiffPanelContentProps = {
 export function DiffPanelContent({
   projectId,
   isGitRepo,
-  selectedFilePath: _selectedFilePath,
+  selectedFilePath,
+  selectedCommentId,
+  selectedCommentJumpKey,
   diffRenderMode,
   layoutMode = "split",
 }: DiffPanelContentProps) {
@@ -751,6 +792,7 @@ export function DiffPanelContent({
 
     return (
       <div
+        data-saved-diff-comment-id={metadata.id}
         className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
         style={{
           fontFamily:
@@ -792,27 +834,100 @@ export function DiffPanelContent({
         return;
       }
 
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const draftRect = draftCard.getBoundingClientRect();
-      const desiredVisibleDraftHeight = Math.min(120, draftRect.height);
-      const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
-      const bottomOverflow = draftRect.top - desiredDraftTop;
-      const topOverflow = containerRect.top - draftRect.top;
-
-      if (bottomOverflow > 0) {
-        scrollContainer.scrollTop += bottomOverflow + 6;
-        return;
-      }
-
-      if (topOverflow > 0) {
-        scrollContainer.scrollTop -= topOverflow + 6;
-      }
+      alignElementInScrollViewport({
+        scrollContainer,
+        targetElement: draftCard,
+        mode: "draft-peek",
+      });
     });
 
     return () => {
       window.cancelAnimationFrame(frame);
     };
   }, [draftTarget]);
+
+  useEffect(() => {
+    if (!selectedCommentId || selectedCommentJumpKey < 0) {
+      return;
+    }
+
+    const scrollContainer = scrollContainerRef.current;
+    const selectedComment = savedComments.find((comment) => comment.id === selectedCommentId);
+    if (!scrollContainer || !selectedComment) {
+      return;
+    }
+
+    if (collapsedFiles[selectedComment.fileKey] === true) {
+      setCollapsedFiles((current) => ({
+        ...current,
+        [selectedComment.fileKey]: false,
+      }));
+      return;
+    }
+
+    const selectedFileIndex = renderableFiles.findIndex(
+      (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.fileKey,
+    );
+    if (selectedFileIndex >= 0) {
+      fileListVirtualizer.scrollToIndex(selectedFileIndex, { align: "center" });
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    let frame = 0;
+
+    const alignSelectedComment = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const commentElement = Array.from(
+        scrollContainer.querySelectorAll<HTMLElement>("[data-saved-diff-comment-id]"),
+      ).find((element) => element.dataset.savedDiffCommentId === selectedCommentId);
+
+      if (commentElement) {
+        alignElementInScrollViewport({
+          scrollContainer,
+          targetElement: commentElement,
+          mode: "center",
+        });
+        return;
+      }
+
+      if (attempts >= 6) {
+        const fileElement = Array.from(
+          scrollContainer.querySelectorAll<HTMLElement>("[data-diff-file-path]"),
+        ).find((element) => element.dataset.diffFilePath === selectedFilePath);
+
+        if (fileElement) {
+          alignElementInScrollViewport({
+            scrollContainer,
+            targetElement: fileElement,
+            mode: "center",
+          });
+        }
+        return;
+      }
+
+      attempts += 1;
+      frame = window.requestAnimationFrame(alignSelectedComment);
+    };
+
+    frame = window.requestAnimationFrame(alignSelectedComment);
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [
+    collapsedFiles,
+    fileListVirtualizer,
+    renderableFiles,
+    savedComments,
+    selectedCommentId,
+    selectedCommentJumpKey,
+    selectedFilePath,
+  ]);
 
   return (
     <aside
