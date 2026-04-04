@@ -50,6 +50,7 @@ export function VirtualizedThreadTimeline({
   const pendingUserScrollUpIntentRef = useRef(false);
   const pendingInteractionAnchorRef = useRef<{ element: HTMLElement; top: number } | null>(null);
   const pendingExpandedRowRevealRef = useRef<string | null>(null);
+  const pendingExpandedRowRevealFrameRef = useRef<number | null>(null);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoScrollTimerRef = useRef<number | null>(null);
@@ -345,22 +346,47 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
-    const rowElement = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-timeline-row-id]"),
-    ).find((element) => element.dataset.timelineRowId === rowId);
-    if (!rowElement) {
-      return;
+    if (pendingExpandedRowRevealFrameRef.current !== null) {
+      window.cancelAnimationFrame(pendingExpandedRowRevealFrameRef.current);
     }
 
-    const containerRect = container.getBoundingClientRect();
-    const rowRect = rowElement.getBoundingClientRect();
-    const rowTop = rowRect.top - containerRect.top + container.scrollTop;
-    const targetTop = Math.max(0, rowTop - 12);
+    pendingExpandedRowRevealFrameRef.current = window.requestAnimationFrame(() => {
+      pendingExpandedRowRevealFrameRef.current = null;
 
-    container.scrollTop = targetTop;
-    lastKnownScrollTopRef.current = container.scrollTop;
-    shouldStickToBottomRef.current = false;
-    pendingExpandedRowRevealRef.current = null;
+      const activeContainer = containerRef.current;
+      if (!activeContainer) {
+        return;
+      }
+
+      const rowElement = Array.from(
+        activeContainer.querySelectorAll<HTMLElement>("[data-timeline-row-id]"),
+      ).find((element) => element.dataset.timelineRowId === rowId);
+      if (!rowElement) {
+        return;
+      }
+
+      const anchorElement =
+        rowElement.querySelector<HTMLElement>("[data-row-toggle-anchor='true']") ?? rowElement;
+      const containerRect = activeContainer.getBoundingClientRect();
+      const anchorRect = anchorElement.getBoundingClientRect();
+      const desiredTop = containerRect.top + 12;
+      const delta = anchorRect.top - desiredTop;
+
+      if (Math.abs(delta) >= 0.5) {
+        activeContainer.scrollTop += delta;
+      }
+
+      lastKnownScrollTopRef.current = activeContainer.scrollTop;
+      shouldStickToBottomRef.current = false;
+      pendingExpandedRowRevealRef.current = null;
+    });
+
+    return () => {
+      if (pendingExpandedRowRevealFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingExpandedRowRevealFrameRef.current);
+        pendingExpandedRowRevealFrameRef.current = null;
+      }
+    };
   }, [rowStructureSignature]);
 
   useEffect(() => {
@@ -419,6 +445,12 @@ export function VirtualizedThreadTimeline({
 
       if (pendingMeasureFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingMeasureFrameRef.current);
+        pendingMeasureFrameRef.current = null;
+      }
+
+      if (pendingExpandedRowRevealFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingExpandedRowRevealFrameRef.current);
+        pendingExpandedRowRevealFrameRef.current = null;
       }
     };
   }, [cancelPendingInteractionAnchorAdjustment, cancelPendingScrollToBottom]);
@@ -581,8 +613,10 @@ export function VirtualizedThreadTimeline({
       suppressAutoScrollTemporarily();
 
       if (isExpanding) {
+        shouldStickToBottomRef.current = false;
         pendingExpandedRowRevealRef.current = rowId;
         pendingInteractionAnchorRef.current = null;
+        cancelPendingScrollToBottom();
         cancelPendingInteractionAnchorAdjustment();
       }
 
@@ -592,6 +626,7 @@ export function VirtualizedThreadTimeline({
       }));
     },
     [
+      cancelPendingScrollToBottom,
       cancelPendingInteractionAnchorAdjustment,
       effectiveCollapsedRowIds,
       streamingTurnRowId,

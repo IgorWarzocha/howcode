@@ -164,7 +164,7 @@ function TimelineRowShell({
   children: ReactNode;
 }) {
   return (
-    <div className={chatRowShellClass}>
+    <div className={chatRowShellClass} data-row-toggle-anchor={onToggle ? "true" : undefined}>
       {onToggle ? (
         <button
           type="button"
