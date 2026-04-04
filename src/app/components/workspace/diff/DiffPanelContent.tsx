@@ -6,8 +6,8 @@ import {
   type GetHoveredLineResult,
   type SelectedLineRange,
 } from "@pierre/diffs/react";
-import { MessageSquarePlus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, MessageSquarePlus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
@@ -34,7 +34,147 @@ type DiffCommentMetadata = {
   body: string;
   kind: "comment" | "draft";
   createdAt?: string;
+  side: AnnotationSide;
+  lineNumber: number;
+  endSide?: AnnotationSide;
+  endLineNumber?: number;
 };
+
+function isSameDraftTarget(
+  left: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
+  right: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
+) {
+  return (
+    left.fileKey === right.fileKey &&
+    left.side === right.side &&
+    left.lineNumber === right.lineNumber &&
+    (left.endSide ?? left.side) === (right.endSide ?? right.side) &&
+    (left.endLineNumber ?? left.lineNumber) === (right.endLineNumber ?? right.lineNumber)
+  );
+}
+
+function buildDraftTarget({
+  fileKey,
+  filePath,
+  side,
+  lineNumber,
+  endSide,
+  endLineNumber,
+}: {
+  fileKey: string;
+  filePath: string;
+  side: AnnotationSide;
+  lineNumber: number;
+  endSide?: AnnotationSide;
+  endLineNumber?: number;
+}): Omit<DiffCommentDraft, "body"> {
+  const resolvedEndSide = endSide ?? side;
+  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
+
+  return {
+    fileKey,
+    filePath,
+    side,
+    lineNumber,
+    ...(resolvedEndSide !== side ? { endSide: resolvedEndSide } : {}),
+    ...(resolvedEndLineNumber !== lineNumber ? { endLineNumber: resolvedEndLineNumber } : {}),
+  };
+}
+
+function describeCommentTarget({
+  side,
+  lineNumber,
+  endSide,
+  endLineNumber,
+}: Pick<DiffCommentDraft, "side" | "lineNumber" | "endSide" | "endLineNumber">) {
+  const resolvedEndSide = endSide ?? side;
+  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
+  const sideLabel = side === "deletions" ? "Old" : "New";
+
+  if (side === resolvedEndSide) {
+    const start = Math.min(lineNumber, resolvedEndLineNumber);
+    const end = Math.max(lineNumber, resolvedEndLineNumber);
+    return start === end ? `${sideLabel} line ${start}` : `${sideLabel} lines ${start}-${end}`;
+  }
+
+  const endSideLabel = resolvedEndSide === "deletions" ? "Old" : "New";
+  return `${sideLabel} line ${lineNumber} → ${endSideLabel} line ${resolvedEndLineNumber}`;
+}
+
+function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
+  side: AnnotationSide;
+  lineNumber: number;
+} | null {
+  const path = event.composedPath?.() ?? [];
+  let numberElement: HTMLElement | null = null;
+  let codeElement: HTMLElement | null = null;
+  let lineType: string | null = null;
+  let lineNumber: number | null = null;
+
+  for (const node of path) {
+    if (!(node instanceof HTMLElement)) {
+      continue;
+    }
+
+    if (
+      node instanceof HTMLButtonElement ||
+      node instanceof HTMLTextAreaElement ||
+      node instanceof HTMLInputElement ||
+      node instanceof HTMLSelectElement
+    ) {
+      return null;
+    }
+
+    if (node.hasAttribute("data-title") || node.hasAttribute("data-file-info")) {
+      return null;
+    }
+
+    if (!numberElement) {
+      const columnNumber = node.getAttribute("data-column-number");
+      if (columnNumber) {
+        const parsedLineNumber = Number.parseInt(columnNumber, 10);
+        if (!Number.isNaN(parsedLineNumber)) {
+          numberElement = node;
+          lineNumber = parsedLineNumber;
+          lineType = node.getAttribute("data-line-type");
+          continue;
+        }
+      }
+    }
+
+    if (lineNumber == null) {
+      const lineAttribute = node.getAttribute("data-line");
+      if (lineAttribute) {
+        const parsedLineNumber = Number.parseInt(lineAttribute, 10);
+        if (!Number.isNaN(parsedLineNumber)) {
+          lineNumber = parsedLineNumber;
+          lineType = node.getAttribute("data-line-type");
+          continue;
+        }
+      }
+    }
+
+    if (!codeElement && node.hasAttribute("data-code")) {
+      codeElement = node;
+      break;
+    }
+  }
+
+  if (!codeElement || lineNumber == null) {
+    return null;
+  }
+
+  const side: AnnotationSide =
+    lineType === "change-deletion"
+      ? "deletions"
+      : lineType === "change-addition"
+        ? "additions"
+        : codeElement.hasAttribute("data-deletions")
+          ? "deletions"
+          : "additions";
+
+  return { side, lineNumber };
+}
 
 type DiffPanelContentProps = {
   projectId: string;
@@ -53,7 +193,18 @@ export function DiffPanelContent({
 }: DiffPanelContentProps) {
   const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
+  const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
   const patchViewportRef = useRef<HTMLDivElement>(null);
+  const dragSelectionRef = useRef<{
+    pointerId: number;
+    fileKey: string;
+    filePath: string;
+    anchor: { side: AnnotationSide; lineNumber: number };
+    current: { side: AnnotationSide; lineNumber: number };
+    didDrag: boolean;
+  } | null>(null);
+  const dragUserSelectResetRef = useRef<(() => void) | null>(null);
+  const suppressNextLineClickRef = useRef(false);
   const { diff, isLoading, error } = useDesktopDiff(projectId, isGitRepo);
 
   const selectedPatch = diff?.diff;
@@ -82,6 +233,7 @@ export function DiffPanelContent({
     if (!diffCommentContextId) {
       setSavedComments([]);
       setDraftComment(null);
+      setDragSelectionRange(null);
       return;
     }
 
@@ -114,6 +266,10 @@ export function DiffPanelContent({
           body: comment.body,
           kind: "comment",
           createdAt: comment.createdAt,
+          side: comment.side,
+          lineNumber: comment.lineNumber,
+          endSide: comment.endSide,
+          endLineNumber: comment.endLineNumber,
         },
       });
       next.set(comment.fileKey, entries);
@@ -128,6 +284,10 @@ export function DiffPanelContent({
           id: `draft:${draftComment.fileKey}:${draftComment.side}:${draftComment.lineNumber}`,
           body: draftComment.body,
           kind: "draft",
+          side: draftComment.side,
+          lineNumber: draftComment.lineNumber,
+          endSide: draftComment.endSide,
+          endLineNumber: draftComment.endLineNumber,
         },
       });
       next.set(draftComment.fileKey, entries);
@@ -136,31 +296,155 @@ export function DiffPanelContent({
     return next;
   }, [draftComment, savedComments]);
 
-  const openDraftComment = (
-    fileKey: string,
-    filePath: string,
-    side: AnnotationSide,
-    lineNumber: number,
-  ) => {
-    setDraftComment((current) => {
-      if (
-        current &&
-        current.fileKey === fileKey &&
-        current.side === side &&
-        current.lineNumber === lineNumber
-      ) {
-        return current;
-      }
-
-      return {
+  const openDraftComment = useCallback(
+    (
+      fileKey: string,
+      filePath: string,
+      side: AnnotationSide,
+      lineNumber: number,
+      endSide?: AnnotationSide,
+      endLineNumber?: number,
+    ) => {
+      const nextTarget = buildDraftTarget({
         fileKey,
         filePath,
         side,
         lineNumber,
-        body: "",
-      };
-    });
-  };
+        endSide,
+        endLineNumber,
+      });
+
+      setDraftComment((current) => {
+        if (current && isSameDraftTarget(current, nextTarget)) {
+          return current;
+        }
+
+        return {
+          ...nextTarget,
+          body: "",
+        };
+      });
+    },
+    [],
+  );
+
+  const updateDragSelectionRange = useCallback(
+    (
+      side: AnnotationSide,
+      lineNumber: number,
+      endSide?: AnnotationSide,
+      endLineNumber?: number,
+    ) => {
+      setDragSelectionRange({
+        start: lineNumber,
+        end: endLineNumber ?? lineNumber,
+        side,
+        endSide: endSide ?? side,
+      });
+    },
+    [],
+  );
+
+  const disableDocumentSelection = useCallback(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    dragUserSelectResetRef.current?.();
+
+    const htmlStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+    const previousHtmlUserSelect = htmlStyle.userSelect;
+    const previousBodyUserSelect = bodyStyle.userSelect;
+    const previousHtmlWebkitUserSelect = htmlStyle.webkitUserSelect;
+    const previousBodyWebkitUserSelect = bodyStyle.webkitUserSelect;
+
+    htmlStyle.userSelect = "none";
+    bodyStyle.userSelect = "none";
+    htmlStyle.webkitUserSelect = "none";
+    bodyStyle.webkitUserSelect = "none";
+
+    dragUserSelectResetRef.current = () => {
+      htmlStyle.userSelect = previousHtmlUserSelect;
+      bodyStyle.userSelect = previousBodyUserSelect;
+      htmlStyle.webkitUserSelect = previousHtmlWebkitUserSelect;
+      bodyStyle.webkitUserSelect = previousBodyWebkitUserSelect;
+      dragUserSelectResetRef.current = null;
+    };
+  }, []);
+
+  const restoreDocumentSelection = useCallback(() => {
+    dragUserSelectResetRef.current?.();
+  }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragSelection = dragSelectionRef.current;
+      if (!dragSelection || dragSelection.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const target = resolvePointerLineTarget(event);
+      if (!target) {
+        return;
+      }
+
+      dragSelection.current = target;
+      dragSelection.didDrag ||=
+        target.side !== dragSelection.anchor.side ||
+        target.lineNumber !== dragSelection.anchor.lineNumber;
+      updateDragSelectionRange(
+        dragSelection.anchor.side,
+        dragSelection.anchor.lineNumber,
+        target.side,
+        target.lineNumber,
+      );
+    };
+
+    const handlePointerEnd = (event: PointerEvent) => {
+      const dragSelection = dragSelectionRef.current;
+      if (!dragSelection || dragSelection.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const target = resolvePointerLineTarget(event) ?? dragSelection.current;
+      if (target) {
+        suppressNextLineClickRef.current = true;
+        if (dragSelection.didDrag) {
+          openDraftComment(
+            dragSelection.fileKey,
+            dragSelection.filePath,
+            target.side,
+            target.lineNumber,
+            dragSelection.anchor.side,
+            dragSelection.anchor.lineNumber,
+          );
+        } else {
+          openDraftComment(
+            dragSelection.fileKey,
+            dragSelection.filePath,
+            target.side,
+            target.lineNumber,
+          );
+        }
+      }
+
+      dragSelectionRef.current = null;
+      setDragSelectionRange(null);
+      restoreDocumentSelection();
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, true);
+    window.addEventListener("pointerup", handlePointerEnd, true);
+    window.addEventListener("pointercancel", handlePointerEnd, true);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove, true);
+      window.removeEventListener("pointerup", handlePointerEnd, true);
+      window.removeEventListener("pointercancel", handlePointerEnd, true);
+      restoreDocumentSelection();
+    };
+  }, [openDraftComment, restoreDocumentSelection, updateDragSelectionRange]);
 
   const persistDraftComment = () => {
     const nextBody = draftComment?.body.trim() ?? "";
@@ -189,10 +473,15 @@ export function DiffPanelContent({
 
     if (metadata.kind === "draft") {
       return (
-        <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-2.5 shadow-[var(--shadow)]">
-          <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--muted)]">
-            Add comment · {annotation.side === "deletions" ? "Old" : "New"} line{" "}
-            {annotation.lineNumber}
+        <div
+          className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
+          style={{
+            fontFamily:
+              'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
+          }}
+        >
+          <div className="mb-2 text-[11px] font-medium text-[color:var(--muted)]">
+            Add comment · {draftComment ? describeCommentTarget(draftComment) : "Line comment"}
           </div>
           <textarea
             className="min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
@@ -213,18 +502,22 @@ export function DiffPanelContent({
           <div className="mt-2 flex items-center justify-end gap-2">
             <button
               type="button"
-              className="rounded-lg px-2 py-1 text-[11px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
               onClick={() => setDraftComment(null)}
+              aria-label="Cancel comment"
+              title="Cancel comment"
             >
-              Cancel
+              <X size={14} />
             </button>
             <button
               type="button"
-              className="rounded-lg bg-[color:var(--accent)] px-2.5 py-1 text-[11px] font-medium text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--accent)] text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={persistDraftComment}
               disabled={(draftComment?.body.trim().length ?? 0) === 0}
+              aria-label="Save comment"
+              title="Save comment"
             >
-              Save comment
+              <Check size={14} />
             </button>
           </div>
         </div>
@@ -232,11 +525,15 @@ export function DiffPanelContent({
     }
 
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2.5 shadow-[var(--shadow)]">
-        <div className="mb-1 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.12em] text-[color:var(--muted)]">
-          <span>
-            Comment · {annotation.side === "deletions" ? "Old" : "New"} line {annotation.lineNumber}
-          </span>
+      <div
+        className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
+        style={{
+          fontFamily:
+            'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
+        }}
+      >
+        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-[color:var(--muted)]">
+          <span>Comment · {describeCommentTarget(metadata)}</span>
           <button
             type="button"
             className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
@@ -250,16 +547,6 @@ export function DiffPanelContent({
         <p className="m-0 whitespace-pre-wrap text-[12px] leading-5 text-[color:var(--text)]">
           {metadata.body}
         </p>
-        {metadata.createdAt ? (
-          <div className="mt-2 text-[10px] text-[color:var(--muted)]">
-            {new Intl.DateTimeFormat(undefined, {
-              hour: "numeric",
-              minute: "2-digit",
-              month: "short",
-              day: "numeric",
-            }).format(new Date(metadata.createdAt))}
-          </div>
-        ) : null}
       </div>
     );
   };
@@ -311,19 +598,43 @@ export function DiffPanelContent({
                   const filePath = resolveFileDiffPath(fileDiff);
                   const fileKey = buildFileDiffRenderKey(fileDiff);
                   const selectedLines: SelectedLineRange | null =
-                    draftComment?.fileKey === fileKey
-                      ? {
-                          start: draftComment.lineNumber,
-                          end: draftComment.lineNumber,
-                          side: draftComment.side,
-                          endSide: draftComment.side,
-                        }
-                      : null;
+                    dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
+                      ? dragSelectionRange
+                      : draftComment?.fileKey === fileKey
+                        ? {
+                            start: draftComment.lineNumber,
+                            end: draftComment.endLineNumber ?? draftComment.lineNumber,
+                            side: draftComment.side,
+                            endSide: draftComment.endSide ?? draftComment.side,
+                          }
+                        : null;
                   return (
                     <div
                       key={`${fileKey}:dark`}
                       data-diff-file-path={filePath}
                       className="first:mt-0"
+                      onPointerDownCapture={(event) => {
+                        if (event.button !== 0) {
+                          return;
+                        }
+
+                        const target = resolvePointerLineTarget(event.nativeEvent);
+                        if (!target) {
+                          return;
+                        }
+
+                        event.preventDefault();
+                        dragSelectionRef.current = {
+                          pointerId: event.pointerId,
+                          fileKey,
+                          filePath,
+                          anchor: target,
+                          current: target,
+                          didDrag: false,
+                        };
+                        updateDragSelectionRange(target.side, target.lineNumber);
+                        disableDocumentSelection();
+                      }}
                       onClickCapture={(event) => {
                         const nativeEvent = event.nativeEvent as MouseEvent;
                         const composedPath = nativeEvent.composedPath?.() ?? [];
@@ -383,9 +694,23 @@ export function DiffPanelContent({
                           unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
                           enableGutterUtility: true,
                           lineHoverHighlight: "both",
-                          onLineNumberClick: ({ lineNumber, side, event }) => {
+                          onLineClick: ({ lineNumber, annotationSide, event }) => {
+                            if (suppressNextLineClickRef.current) {
+                              suppressNextLineClickRef.current = false;
+                              event.preventDefault();
+                              return;
+                            }
                             event.preventDefault();
-                            openDraftComment(fileKey, filePath, side, lineNumber);
+                            openDraftComment(fileKey, filePath, annotationSide, lineNumber);
+                          },
+                          onLineNumberClick: ({ lineNumber, annotationSide, event }) => {
+                            if (suppressNextLineClickRef.current) {
+                              suppressNextLineClickRef.current = false;
+                              event.preventDefault();
+                              return;
+                            }
+                            event.preventDefault();
+                            openDraftComment(fileKey, filePath, annotationSide, lineNumber);
                           },
                         }}
                       />

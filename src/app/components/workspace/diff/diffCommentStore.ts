@@ -5,6 +5,8 @@ export type DiffCommentDraft = {
   filePath: string;
   side: AnnotationSide;
   lineNumber: number;
+  endSide?: AnnotationSide;
+  endLineNumber?: number;
   body: string;
 };
 
@@ -68,6 +70,10 @@ function isAnnotationSide(value: unknown): value is AnnotationSide {
   return value === "deletions" || value === "additions";
 }
 
+function isValidOptionalLineNumber(value: unknown): value is number | undefined {
+  return value === undefined || (typeof value === "number" && Number.isFinite(value));
+}
+
 function toDraft(value: unknown): DiffCommentDraft | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -79,6 +85,8 @@ function toDraft(value: unknown): DiffCommentDraft | null {
     typeof candidate.filePath !== "string" ||
     !isAnnotationSide(candidate.side) ||
     typeof candidate.lineNumber !== "number" ||
+    !isValidOptionalLineNumber(candidate.endLineNumber) ||
+    (candidate.endSide !== undefined && !isAnnotationSide(candidate.endSide)) ||
     typeof candidate.body !== "string"
   ) {
     return null;
@@ -89,6 +97,8 @@ function toDraft(value: unknown): DiffCommentDraft | null {
     filePath: candidate.filePath,
     side: candidate.side,
     lineNumber: candidate.lineNumber,
+    ...(candidate.endSide ? { endSide: candidate.endSide } : {}),
+    ...(candidate.endLineNumber !== undefined ? { endLineNumber: candidate.endLineNumber } : {}),
     body: candidate.body,
   };
 }

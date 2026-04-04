@@ -16,6 +16,8 @@ export type RenderablePatch =
 export const DIFF_PANEL_UNSAFE_CSS = `
 :host {
   color-scheme: dark;
+  --diffs-header-font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif) !important;
+  --diffs-font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
   --diffs-light-bg: var(--workspace) !important;
   --diffs-dark-bg: var(--workspace) !important;
   --diffs-bg: var(--workspace) !important;
