@@ -30,11 +30,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleProjectSelect,
     handleShowView,
     handleThreadOpen,
-    handleToggleDiff,
     handleToggleProjectCollapse,
     handleToggleSettings,
     handleToggleSidebar,
-    handleToggleTerminal,
     pendingProjectAction,
     projects,
     projectGitState,
@@ -44,21 +42,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
   const takeoverVisible = state.takeoverVisible;
   const dockedTerminalVisible = state.terminalVisible;
-  const {
-    mainSectionRef,
-    diffPanelVisible,
-    overlayDiffVisible,
-    splitDiffVisible,
-    overlayDiffPresent,
-    takeoverPresent,
-    desktopWorkspacePresent,
-    diffLayoutStyle,
-    workspaceContentClass,
-    handleDiffResizeStart,
-  } = useAppShellLayoutState({
-    diffVisible: state.diffVisible,
-    takeoverVisible,
-  });
+  const { mainSectionRef, takeoverPresent, desktopWorkspacePresent, workspaceContentClass } =
+    useAppShellLayoutState({
+      takeoverVisible,
+    });
 
   return (
     <>
@@ -102,12 +89,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             currentTitle={currentTitle}
             currentProjectName={currentProjectName}
             sidebarVisible={state.sidebarVisible}
-            terminalVisible={state.terminalVisible}
-            diffVisible={diffPanelVisible}
             projectGitState={projectGitState}
             onAction={(action, payload) => void handleAction(action, payload)}
-            onToggleTerminal={handleToggleTerminal}
-            onToggleDiff={handleToggleDiff}
           />
 
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -122,10 +105,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   activeThreadData={activeThreadData}
                   composerProjectId={composerProjectId}
                   currentProjectName={currentProjectName}
-                  diffLayoutStyle={diffLayoutStyle}
                   dockedTerminalVisible={dockedTerminalVisible}
-                  handleDiffResizeStart={handleDiffResizeStart}
-                  splitDiffVisible={splitDiffVisible}
                   terminalSessionPath={terminalSessionPath}
                   workspaceContentClass={workspaceContentClass}
                 />
@@ -134,10 +114,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
             <AppShellOverlays
               controller={controller}
-              activeThreadData={activeThreadData}
               composerProjectId={composerProjectId}
-              overlayDiffPresent={overlayDiffPresent}
-              overlayDiffVisible={overlayDiffVisible}
               takeoverPresent={takeoverPresent}
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}

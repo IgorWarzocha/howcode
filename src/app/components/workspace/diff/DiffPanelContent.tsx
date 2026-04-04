@@ -27,7 +27,7 @@ type DiffPanelContentProps = {
   selectedTurnCount: number | null;
   selectedFilePath: string | null;
   onSelectTurn: (checkpointTurnCount: number | null) => void;
-  layoutMode?: "split" | "overlay";
+  layoutMode?: "split" | "overlay" | "main";
   onClose: () => void;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };

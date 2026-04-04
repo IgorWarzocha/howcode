@@ -37,7 +37,6 @@ export const desktopActions = [
   "composer.dictate",
   "composer.send",
   "composer.host",
-  "composer.profile",
   "plugins.open-card",
   "automations.open-card",
   "debug.open-card",

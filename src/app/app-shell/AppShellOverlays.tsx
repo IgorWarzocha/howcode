@@ -1,14 +1,10 @@
-import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
 import type { AppShellController } from "./useAppShellController";
 
 type AppShellOverlaysProps = {
   controller: AppShellController;
-  activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
-  overlayDiffPresent: boolean;
-  overlayDiffVisible: boolean;
   takeoverPresent: boolean;
   takeoverVisible: boolean;
   terminalSessionPath: string | null;
@@ -16,23 +12,12 @@ type AppShellOverlaysProps = {
 
 export function AppShellOverlays({
   controller,
-  activeThreadData,
   composerProjectId,
-  overlayDiffPresent,
-  overlayDiffVisible,
   takeoverPresent,
   takeoverVisible,
   terminalSessionPath,
 }: AppShellOverlaysProps) {
-  const {
-    handleAction,
-    handleCloseTakeoverTerminal,
-    handleSelectDiffTurn,
-    handleToggleDiff,
-    projectGitState,
-    shellState,
-    state,
-  } = controller;
+  const { handleAction, handleCloseTakeoverTerminal, shellState } = controller;
 
   return (
     <>
@@ -50,29 +35,9 @@ export function AppShellOverlays({
               onClose={handleCloseTakeoverTerminal}
               mode="takeover"
               hostLabel={shellState?.availableHosts[0] ?? "Local"}
-              profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
               onAction={(action, payload) => void handleAction(action, payload)}
             />
           </div>
-        </div>
-      ) : null}
-
-      {overlayDiffPresent ? (
-        <div
-          data-open={overlayDiffVisible ? "true" : "false"}
-          className="motion-overlay-panel absolute inset-0 z-20 bg-[color:var(--workspace)]"
-        >
-          <DiffPanel
-            projectId={composerProjectId}
-            threadData={activeThreadData}
-            isGitRepo={projectGitState?.isGitRepo ?? false}
-            selectedTurnCount={state.selectedDiffTurnCount}
-            selectedFilePath={state.selectedDiffFilePath}
-            onSelectTurn={handleSelectDiffTurn}
-            layoutMode="overlay"
-            onClose={handleToggleDiff}
-            onAction={(action, payload) => void handleAction(action, payload)}
-          />
         </div>
       ) : null}
     </>

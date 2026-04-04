@@ -14,7 +14,6 @@ type TerminalPanelProps = {
   onClose: () => void;
   mode?: "docked" | "takeover";
   hostLabel?: string;
-  profileLabel?: string;
   onAction?: (action: DesktopAction, payload?: Record<string, unknown>) => void | Promise<void>;
 };
 
@@ -24,7 +23,6 @@ export function TerminalPanel({
   onClose,
   mode = "docked",
   hostLabel = "Local",
-  profileLabel = "Pi session",
   onAction,
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
@@ -63,12 +61,6 @@ export function TerminalPanel({
               label={hostLabel}
               icon={<SquareTerminal size={14} />}
               onClick={() => void onAction?.("composer.host")}
-              trailing
-            />
-            <ToolbarButton
-              label={profileLabel}
-              icon={<SquareTerminal size={14} />}
-              onClick={() => void onAction?.("composer.profile")}
               trailing
             />
           </div>

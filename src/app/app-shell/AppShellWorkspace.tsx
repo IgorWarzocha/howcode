@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -12,10 +11,7 @@ type AppShellWorkspaceProps = {
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
   currentProjectName: string;
-  diffLayoutStyle?: CSSProperties;
   dockedTerminalVisible: boolean;
-  handleDiffResizeStart: (pointerX: number) => void;
-  splitDiffVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
 };
@@ -26,10 +22,7 @@ export function AppShellWorkspace({
   activeThreadData,
   composerProjectId,
   currentProjectName,
-  diffLayoutStyle,
   dockedTerminalVisible,
-  handleDiffResizeStart,
-  splitDiffVisible,
   terminalSessionPath,
   workspaceContentClass,
 }: AppShellWorkspaceProps) {
@@ -47,40 +40,19 @@ export function AppShellWorkspace({
     state,
   } = controller;
   const showWorkspaceFooter = state.activeView !== "settings";
+  const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
 
   return (
     <>
-      <div
-        style={diffLayoutStyle}
-        className={
-          splitDiffVisible
-            ? "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] overflow-hidden pl-5 pr-0"
-            : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
-        }
-      >
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5">
         <main
           className={
-            state.activeView === "thread" ? "mb-5 min-h-0 overflow-hidden pt-1.5" : mainPanelClass
+            state.activeView === "thread" || showDiffInMainView
+              ? "mb-5 min-h-0 overflow-hidden pt-1.5"
+              : mainPanelClass
           }
         >
-          <MainView
-            activeView={state.activeView}
-            appSettings={shellState?.appSettings ?? { gitCommitMessageModel: null }}
-            availableModels={activeComposerState?.availableModels ?? []}
-            currentModel={activeComposerState?.currentModel ?? null}
-            currentProjectName={currentProjectName}
-            threadData={activeThreadData}
-            onAction={(action, payload) => void handleAction(action, payload)}
-            onLoadEarlierMessages={handleLoadEarlierMessages}
-            onOpenTurnDiff={handleOpenDiffSelection}
-          />
-        </main>
-        {splitDiffVisible ? (
-          <div className="relative min-h-0">
-            <div
-              className="absolute top-0 bottom-0 left-0 z-20 w-2 -translate-x-1/2 cursor-col-resize"
-              onPointerDown={(event) => handleDiffResizeStart(event.clientX)}
-            />
+          {showDiffInMainView ? (
             <DiffPanel
               projectId={composerProjectId}
               threadData={activeThreadData}
@@ -88,29 +60,33 @@ export function AppShellWorkspace({
               selectedTurnCount={state.selectedDiffTurnCount}
               selectedFilePath={state.selectedDiffFilePath}
               onSelectTurn={handleSelectDiffTurn}
-              layoutMode="split"
+              layoutMode="main"
               onClose={handleToggleDiff}
               onAction={(action, payload) => void handleAction(action, payload)}
             />
-          </div>
-        ) : null}
+          ) : (
+            <MainView
+              activeView={state.activeView}
+              appSettings={shellState?.appSettings ?? { gitCommitMessageModel: null }}
+              availableModels={activeComposerState?.availableModels ?? []}
+              currentModel={activeComposerState?.currentModel ?? null}
+              currentProjectName={currentProjectName}
+              threadData={activeThreadData}
+              onAction={(action, payload) => void handleAction(action, payload)}
+              onLoadEarlierMessages={handleLoadEarlierMessages}
+              onOpenTurnDiff={handleOpenDiffSelection}
+            />
+          )}
+        </main>
       </div>
 
       {showWorkspaceFooter ? (
-        <footer
-          style={diffLayoutStyle}
-          className={
-            splitDiffVisible
-              ? "relative z-10 -mt-5 shrink-0 grid grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] pl-5 pr-0 pt-0 pb-4"
-              : "relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4"
-          }
-        >
+        <footer className="relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
           <div className="grid gap-2.5">
             <div className={workspaceContentClass}>
               <Composer
                 activeView={state.activeView}
                 hostLabel={shellState?.availableHosts[0] ?? "Local"}
-                profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
                 model={activeComposerState?.currentModel ?? null}
                 availableModels={activeComposerState?.availableModels ?? []}
                 thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
@@ -118,12 +94,16 @@ export function AppShellWorkspace({
                 projectId={composerProjectId}
                 projectGitState={projectGitState}
                 sessionPath={terminalSessionPath}
-                onOpenDiffPanel={() => {
-                  if (!state.diffVisible) {
-                    handleToggleDiff();
+                onSetDiffPanelVisible={(visible) => {
+                  if (visible === state.diffVisible) {
+                    return;
                   }
+
+                  handleToggleDiff();
                 }}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                onToggleTerminal={handleToggleTerminal}
+                terminalVisible={state.terminalVisible}
                 onPickAttachments={pickComposerAttachments}
                 onAction={handleAction}
               />
@@ -140,7 +120,6 @@ export function AppShellWorkspace({
               </div>
             ) : null}
           </div>
-          {splitDiffVisible ? <div /> : null}
         </footer>
       ) : null}
     </>

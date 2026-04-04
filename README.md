@@ -80,7 +80,7 @@ The `prepare` script will then activate Husky automatically.
 
 ## Next integration step
 
-Finish the remaining mock desktop controls (`project.actions`, header action menus, host/profile/dictate, composer-adjacent git ops, terminal multi-session polish) while keeping the new lane boundaries intact.
+Finish the remaining mock desktop controls (`project.actions`, header action menus, host/dictate, composer-adjacent git ops, terminal multi-session polish) while keeping the new lane boundaries intact.
 
 ## Routing note for later
 

@@ -56,7 +56,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Still stubbed in this area:
   - `composer.dictate`
   - `composer.host`
-  - `composer.profile`
   - composer-adjacent git ops surface is mock-only and intentionally unwired for now
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
@@ -346,7 +345,7 @@ This is fine for tests, but the card/view content is still placeholder product s
 
 ## Good next expansion order
 
-1. Finish the remaining non-chat parts of the composer flow (host/profile/dictate)
+1. Finish the remaining non-chat parts of the composer flow (host/dictate)
 2. Header/project-switch/product-menu implementation
 3. Replace terminal + diff mock panels with real backing data
 4. Replace plugin/automation/debug mock cards with real registries or remove until ready

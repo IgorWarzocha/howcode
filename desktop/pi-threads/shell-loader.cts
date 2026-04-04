@@ -77,7 +77,6 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
     appSettings,
     availableHosts: ["Local"],
-    composerProfiles: ["Pi session"],
     composer,
     projects: listProjects(cwd),
   };

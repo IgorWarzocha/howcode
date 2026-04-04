@@ -161,7 +161,6 @@ export type ShellState = {
   projects: Project[];
   appSettings: AppSettings;
   availableHosts: string[];
-  composerProfiles: string[];
   composer: ComposerState;
 };
 

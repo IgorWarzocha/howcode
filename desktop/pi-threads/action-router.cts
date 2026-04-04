@@ -89,7 +89,6 @@ export async function handleDesktopAction(
     case "composer.attach-menu":
     case "composer.dictate":
     case "composer.host":
-    case "composer.profile":
     case "plugins.open-card":
     case "automations.open-card":
     case "debug.open-card":

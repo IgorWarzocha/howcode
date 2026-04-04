@@ -44,7 +44,6 @@ export const unimplementedDesktopActions = [
   "composer.attach-menu",
   "composer.dictate",
   "composer.host",
-  "composer.profile",
   "plugins.open-card",
   "automations.open-card",
   "debug.open-card",

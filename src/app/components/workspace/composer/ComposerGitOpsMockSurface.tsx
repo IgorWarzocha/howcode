@@ -5,7 +5,6 @@ import type { DesktopActionResult, ProjectGitState } from "../../../desktop/type
 import { compactIconButtonClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
-import { ToolbarButton } from "../../common/ToolbarButton";
 import { formatGitCount } from "./git-ops-mock";
 
 type ComposerGitOpsMockSurfaceProps = {
@@ -15,7 +14,6 @@ type ComposerGitOpsMockSurfaceProps = {
     payload?: Record<string, unknown>,
   ) => Promise<DesktopActionResult | null>;
   onBack: () => void;
-  onOpenDiffPanel: () => void;
 };
 
 function getActionResultMessage(result: DesktopActionResult | null) {
@@ -38,7 +36,6 @@ export function ComposerGitOpsMockSurface({
   projectGitState,
   onAction,
   onBack,
-  onOpenDiffPanel,
 }: ComposerGitOpsMockSurfaceProps) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
   const [previewEnabled, setPreviewEnabled] = useState(true);
@@ -228,16 +225,6 @@ export function ComposerGitOpsMockSurface({
 
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
-
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          <ToolbarButton
-            label="Open diff"
-            icon={<GitCompareArrows size={14} />}
-            onClick={onOpenDiffPanel}
-            className={!isGitRepo ? "opacity-50" : undefined}
-            disabled={!isGitRepo}
-          />
-        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
@@ -315,9 +302,6 @@ export function ComposerGitOpsMockSurface({
         <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
           {isGitRepo ? (
             <div className="flex items-center gap-2 text-[12px]">
-              <span className="text-[color:var(--muted)]">
-                {projectGitState?.branch ?? "Detached"}
-              </span>
               <span className="text-[color:var(--muted)]">
                 {formatGitCount(projectGitState?.fileCount ?? 0)} files
               </span>

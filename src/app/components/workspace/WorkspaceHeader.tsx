@@ -2,10 +2,7 @@ import {
   ArrowLeftRight,
   ChevronDown,
   FolderOpen,
-  GitCommitHorizontal,
-  GitCompareArrows,
   MoreHorizontal,
-  PanelBottom,
   Play,
   SquareArrowOutUpRight,
 } from "lucide-react";
@@ -20,12 +17,8 @@ type WorkspaceHeaderProps = {
   currentTitle: string;
   currentProjectName: string;
   sidebarVisible: boolean;
-  terminalVisible: boolean;
-  diffVisible: boolean;
   projectGitState: ProjectGitState | null;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
-  onToggleTerminal: () => void;
-  onToggleDiff: () => void;
 };
 
 const headerSurfaceButtonClass =
@@ -55,29 +48,18 @@ function HeaderStatusDot({ statusId }: HeaderStatusDotProps) {
   );
 }
 
-function formatDiffCount(value: number) {
-  return value.toLocaleString("en-US");
-}
-
 export function WorkspaceHeader({
   activeView,
   currentTitle,
   currentProjectName,
   sidebarVisible,
-  terminalVisible,
-  diffVisible,
   projectGitState,
   onAction,
-  onToggleTerminal,
-  onToggleDiff,
 }: WorkspaceHeaderProps) {
   void currentTitle;
   const isThreadView = activeView === "thread";
   const projectName = currentProjectName || "Project";
   const isGitRepo = projectGitState?.isGitRepo ?? false;
-  const hasGitChanges = Boolean(
-    projectGitState && (projectGitState.insertions || projectGitState.deletions),
-  );
 
   return (
     <header
@@ -183,83 +165,10 @@ export function WorkspaceHeader({
               <span>Handoff</span>
               <HeaderStatusDot statusId="feature:header.handoff" />
             </button>
-
-            <button
-              type="button"
-              className={cn(headerTextButtonClass, headerOptionalControlClass)}
-              onClick={() => onAction("workspace.commit")}
-              data-feature-id="feature:header.commit"
-              data-feature-status="partial"
-              aria-label="Commit"
-              title="Commit"
-            >
-              <GitCommitHorizontal size={14} />
-              <span>Commit</span>
-              <HeaderStatusDot statusId="feature:header.commit" />
-            </button>
-            <button
-              type="button"
-              className={cn(headerChevronButtonClass, headerOptionalControlClass)}
-              onClick={() => onAction("workspace.commit-options")}
-              data-feature-id="feature:header.commit-options"
-              data-feature-status="partial"
-              aria-label="Commit options"
-              aria-haspopup="menu"
-              aria-expanded={false}
-              title="Commit options"
-            >
-              <ChevronDown size={13} />
-              <HeaderStatusDot statusId="feature:header.commit-options" />
-            </button>
           </>
         ) : null}
 
         <div className={cn(headerDividerClass, headerOptionalControlClass)} />
-
-        <button
-          type="button"
-          className={cn(
-            headerQuietIconButtonClass,
-            terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-          )}
-          onClick={onToggleTerminal}
-          data-feature-id="feature:header.terminal-toggle"
-          data-feature-status="partial"
-          aria-label="Toggle terminal"
-          title="Toggle terminal"
-          aria-pressed={terminalVisible}
-        >
-          <PanelBottom size={14} />
-          <HeaderStatusDot statusId="feature:header.terminal-toggle" />
-        </button>
-
-        <button
-          type="button"
-          className={cn(
-            headerQuietIconButtonClass,
-            diffVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-          )}
-          onClick={onToggleDiff}
-          data-feature-id="feature:header.diff-toggle"
-          data-feature-status="partial"
-          aria-label="Toggle diff panel"
-          title="Toggle diff panel"
-          aria-pressed={diffVisible}
-        >
-          <GitCompareArrows size={14} />
-          <HeaderStatusDot statusId="feature:header.diff-toggle" />
-        </button>
-
-        {isGitRepo && hasGitChanges ? (
-          <div className="ml-1 hidden items-center gap-1 text-[12px] leading-none min-[1181px]:flex">
-            <span className="text-[#5cc9a5]">
-              +{formatDiffCount(projectGitState?.insertions ?? 0)}
-            </span>
-            <span className="text-[#d06b72]">
-              -{formatDiffCount(projectGitState?.deletions ?? 0)}
-            </span>
-          </div>
-        ) : null}
 
         <button
           type="button"

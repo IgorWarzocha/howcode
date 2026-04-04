@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type {
   ComposerAttachment,
@@ -16,7 +16,6 @@ import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 export type ComposerProps = {
   activeView: View;
   hostLabel: string;
-  profileLabel: string;
   model: ComposerModel | null;
   availableModels: ComposerModel[];
   thinkingLevel: ComposerThinkingLevel;
@@ -24,8 +23,10 @@ export type ComposerProps = {
   projectId: string;
   projectGitState: ProjectGitState | null;
   sessionPath: string | null;
-  onOpenDiffPanel: () => void;
+  onSetDiffPanelVisible: (visible: boolean) => void;
   onOpenTakeoverTerminal: () => void;
+  onToggleTerminal: () => void;
+  terminalVisible: boolean;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onAction: (
     action: DesktopAction,
@@ -35,6 +36,10 @@ export type ComposerProps = {
 
 export function Composer(props: ComposerProps) {
   const [surface, setSurface] = useState<"prompt" | "git-ops">("prompt");
+
+  useEffect(() => {
+    props.onSetDiffPanelVisible(surface === "git-ops");
+  }, [props.onSetDiffPanelVisible, surface]);
 
   return (
     <>
@@ -49,7 +54,6 @@ export function Composer(props: ComposerProps) {
             projectGitState={props.projectGitState}
             onAction={props.onAction}
             onBack={() => setSurface("prompt")}
-            onOpenDiffPanel={props.onOpenDiffPanel}
           />
         ) : (
           <ComposerPromptSurface {...props} onOpenGitOps={() => setSurface("git-ops")} />

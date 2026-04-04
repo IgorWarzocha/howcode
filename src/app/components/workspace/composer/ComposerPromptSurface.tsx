@@ -1,8 +1,9 @@
-import { ChevronDown, GitBranch, Mic, Plus, Send, Settings, SquareTerminal } from "lucide-react";
+import { ChevronDown, GitBranch, Mic, Plus, Send, SquareTerminal, Terminal } from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
+import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
@@ -15,7 +16,6 @@ type ComposerPromptSurfaceProps = ComposerProps & { onOpenGitOps: () => void };
 export function ComposerPromptSurface({
   activeView,
   hostLabel,
-  profileLabel,
   model,
   availableModels,
   thinkingLevel,
@@ -24,8 +24,10 @@ export function ComposerPromptSurface({
   projectGitState,
   sessionPath,
   onOpenTakeoverTerminal,
+  onToggleTerminal,
   onPickAttachments,
   onAction,
+  terminalVisible,
   onOpenGitOps,
 }: ComposerPromptSurfaceProps) {
   const gitVisualMode = !projectGitState?.isGitRepo
@@ -197,17 +199,25 @@ export function ComposerPromptSurface({
       <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
         {sessionPath ? (
           <ToolbarButton
-            label={
-              <span className="inline-flex items-center gap-2">
-                <span>Pi terminal</span>
-                <FeatureStatusBadge statusId="feature:composer.terminal-takeover" />
-              </span>
-            }
-            icon={<SquareTerminal size={14} />}
+            label="TUI"
+            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
             onClick={onOpenTakeoverTerminal}
-            className={getFeatureStatusButtonClass("feature:composer.terminal-takeover")}
           />
         ) : null}
+        <ToolbarButton
+          label={
+            <span className="inline-flex items-center gap-2">
+              <span>Terminal</span>
+              <FeatureStatusBadge statusId="feature:composer.terminal-toggle" />
+            </span>
+          }
+          icon={<Terminal size={14} />}
+          onClick={onToggleTerminal}
+          className={cn(
+            getFeatureStatusButtonClass("feature:composer.terminal-toggle"),
+            terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+          )}
+        />
         <ToolbarButton
           label={
             <span className="inline-flex items-center gap-2">
@@ -219,18 +229,6 @@ export function ComposerPromptSurface({
           onClick={() => onAction("composer.host")}
           trailing
           className={getFeatureStatusButtonClass("feature:composer.host")}
-        />
-        <ToolbarButton
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>{profileLabel}</span>
-              <FeatureStatusBadge statusId="feature:composer.profile" />
-            </span>
-          }
-          icon={<Settings size={14} />}
-          onClick={() => onAction("composer.profile")}
-          trailing
-          className={getFeatureStatusButtonClass("feature:composer.profile")}
         />
         <div className="ml-auto flex items-center gap-2">
           <FeatureStatusBadge statusId="feature:composer.git-ops" />

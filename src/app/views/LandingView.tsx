@@ -1,5 +1,6 @@
-import { ChevronDown, Cloud } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
+import { PiLogoMark } from "../components/common/PiLogoMark";
 import { TextButton } from "../components/common/TextButton";
 import type { DesktopAction } from "../desktop/actions";
 import { getFeatureStatusButtonClass } from "../features/feature-status";
@@ -13,7 +14,7 @@ export function LandingView({ projectName, onAction }: LandingViewProps) {
   return (
     <section className="grid w-full max-w-[700px] place-items-center gap-1 text-center text-[color:var(--muted)]">
       <div className="grid h-16 w-16 place-items-center rounded-full text-[color:var(--accent)]">
-        <Cloud size={42} strokeWidth={1.75} />
+        <PiLogoMark className="h-[42px] w-[42px]" />
       </div>
       <h1 className="m-0 text-[clamp(36px,6vw,54px)] font-medium tracking-[-0.04em] text-[color:var(--accent)]">
         Let’s build
