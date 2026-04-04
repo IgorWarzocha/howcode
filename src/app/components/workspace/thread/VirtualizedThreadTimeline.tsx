@@ -15,6 +15,7 @@ import {
   chatViewportClass,
 } from "./thread-layout";
 import {
+  getCollapsibleRowKey,
   getFoldableRows,
   getMessageRenderSignature,
   getRowStructureSignature,
@@ -101,10 +102,21 @@ export function VirtualizedThreadTimeline({
     () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
     [effectiveCollapsedRowIds, rows],
   );
+  const getVirtualRowKey = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      if (!row) {
+        return index;
+      }
+
+      return getCollapsibleRowKey(row, effectiveCollapsedRowIds);
+    },
+    [effectiveCollapsedRowIds, rows],
+  );
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => containerRef.current,
-    getItemKey: (index) => rows[index]?.id ?? index,
+    getItemKey: getVirtualRowKey,
     estimateSize: (index) => {
       const row = rows[index];
       if (!row) {
