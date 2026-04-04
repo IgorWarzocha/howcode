@@ -82,8 +82,7 @@ export function useComposerController({
       return;
     }
 
-    composerDraftStore.setPrompt(draftThreadId, draft);
-    composerDraftStore.setAttachments(draftThreadId, attachments);
+    composerDraftStore.setDraft(draftThreadId, { prompt: draft, attachments });
   }, [attachments, draft, draftThreadId]);
 
   useDismissibleLayer({
@@ -126,7 +125,7 @@ export function useComposerController({
       projectId,
       sessionPath,
       onAction,
-      clearStoredDraft: (threadId) => composerDraftStore.clearComposerContent(threadId),
+      clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
     });
 
     if (result.status === "error" && activeDraftThreadIdRef.current === submittedDraftThreadId) {

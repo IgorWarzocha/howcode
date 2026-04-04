@@ -38,11 +38,14 @@ describe("composerDraftStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setPrompt("session:/repo/one.json", "fix the timeline");
-    store.setPrompt("session:/repo/two.json", "rename the header");
-    store.setAttachments("session:/repo/two.json", [
-      { path: "/repo/file.ts", name: "file.ts", kind: "text" },
-    ]);
+    store.setDraft("session:/repo/one.json", {
+      prompt: "fix the timeline",
+      attachments: [],
+    });
+    store.setDraft("session:/repo/two.json", {
+      prompt: "rename the header",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+    });
     store.flush();
 
     expect(store.getDraft("session:/repo/one.json")).toEqual({
@@ -98,8 +101,8 @@ describe("composerDraftStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setPrompt("session:/repo/one.json", "draft 1");
-    store.setPrompt("session:/repo/one.json", "draft 2");
+    store.setDraft("session:/repo/one.json", { prompt: "draft 1", attachments: [] });
+    store.setDraft("session:/repo/one.json", { prompt: "draft 2", attachments: [] });
 
     expect(storage.getItem(composerDraftStorageKey)).toBeNull();
 
@@ -127,7 +130,7 @@ describe("composerDraftStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setPrompt("session:/repo/one.json", "keep this");
+    store.setDraft("session:/repo/one.json", { prompt: "keep this", attachments: [] });
     store.flush();
 
     store.clearComposerContent("session:/repo/one.json");

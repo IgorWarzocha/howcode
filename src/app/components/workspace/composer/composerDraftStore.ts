@@ -246,6 +246,9 @@ export function createComposerDraftStore({
       const draft = draftsByThreadId[threadId];
       return draft ? cloneDraft(draft) : null;
     },
+    setDraft(threadId: string, draft: ComposerDraft) {
+      writeDraft(threadId, draft);
+    },
     setPrompt(threadId: string, prompt: string) {
       updateDraft(threadId, (currentDraft) => ({
         ...currentDraft,
