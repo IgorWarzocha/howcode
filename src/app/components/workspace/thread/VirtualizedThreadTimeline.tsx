@@ -1,16 +1,15 @@
+import { measureElement as measureVirtualElement, useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
+import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
+import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
 import { reconcileCollapsedRowIds } from "./reconcileCollapsedRowIds";
+import { chatScrollableAreaClass, chatViewportClass } from "./thread-layout";
 import {
-  CHAT_STICKY_BOTTOM_THRESHOLD_PX,
-  chatScrollableAreaClass,
-  chatStreamingTimelineClass,
-  chatViewportClass,
-} from "./thread-layout";
-import {
+  getCollapsibleRowKey,
   getFoldableRows,
   getMessageRenderSignature,
   getRowStructureSignature,
@@ -18,6 +17,8 @@ import {
   getStreamingToolGroupId,
 } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
+
+const ALWAYS_UNVIRTUALIZED_TAIL_ROWS = 8;
 
 type VirtualizedThreadTimelineProps = {
   messages: Message[];
@@ -39,13 +40,21 @@ export function VirtualizedThreadTimeline({
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
+  const [timelineWidthPx, setTimelineWidthPx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const timelineRootRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
+  const lastKnownScrollTopRef = useRef(0);
+  const isPointerScrollActiveRef = useRef(false);
+  const lastTouchClientYRef = useRef<number | null>(null);
+  const pendingUserScrollUpIntentRef = useRef(false);
+  const pendingInteractionAnchorRef = useRef<{ element: HTMLElement; top: number } | null>(null);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoScrollTimerRef = useRef<number | null>(null);
-  const scrollFrameRef = useRef<number | null>(null);
+  const pendingAutoScrollFrameRef = useRef<number | null>(null);
+  const pendingInteractionAnchorFrameRef = useRef<number | null>(null);
+  const pendingMeasureFrameRef = useRef<number | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
@@ -96,6 +105,91 @@ export function VirtualizedThreadTimeline({
     () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
     [effectiveCollapsedRowIds, rows],
   );
+  const expandedToolGroupSignature = useMemo(
+    () =>
+      Object.keys(expandedToolGroupIds)
+        .sort()
+        .map((key) => `${key}:${expandedToolGroupIds[key] ? "1" : "0"}`)
+        .join("||"),
+    [expandedToolGroupIds],
+  );
+  const expandedDiffTreeSignature = useMemo(
+    () =>
+      Object.keys(expandedDiffTrees)
+        .sort((left, right) => Number(left) - Number(right))
+        .map((key) => `${key}:${expandedDiffTrees[Number(key)] ? "1" : "0"}`)
+        .join("||"),
+    [expandedDiffTrees],
+  );
+  const firstUnvirtualizedRowIndex = useMemo(() => {
+    const firstTailRowIndex = Math.max(rows.length - ALWAYS_UNVIRTUALIZED_TAIL_ROWS, 0);
+    if (!isStreaming || !streamingTurnRowId) {
+      return firstTailRowIndex;
+    }
+
+    const streamingTurnIndex = rows.findIndex((row) => row.id === streamingTurnRowId);
+    if (streamingTurnIndex < 0) {
+      return firstTailRowIndex;
+    }
+
+    return Math.min(streamingTurnIndex, firstTailRowIndex);
+  }, [isStreaming, rows, streamingTurnRowId]);
+  const virtualizedRowCount = Math.max(0, Math.min(firstUnvirtualizedRowIndex, rows.length));
+  const virtualMeasureSignature = useMemo(
+    () =>
+      [
+        expandedDiffTreeSignature,
+        expandedToolGroupSignature,
+        rowStructureSignature,
+        timelineWidthPx ?? "auto",
+        virtualizedRowCount,
+      ].join("@@"),
+    [
+      expandedDiffTreeSignature,
+      expandedToolGroupSignature,
+      rowStructureSignature,
+      timelineWidthPx,
+      virtualizedRowCount,
+    ],
+  );
+  const getVirtualRowKey = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      if (!row) {
+        return index;
+      }
+
+      return getCollapsibleRowKey(row, effectiveCollapsedRowIds);
+    },
+    [effectiveCollapsedRowIds, rows],
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: virtualizedRowCount,
+    getScrollElement: () => containerRef.current,
+    getItemKey: getVirtualRowKey,
+    estimateSize: (index) => {
+      const row = rows[index];
+      if (!row) {
+        return 96;
+      }
+
+      return estimateThreadTimelineRowHeight({
+        row,
+        collapsed: Boolean(effectiveCollapsedRowIds[row.id]),
+        expandedToolGroupIds,
+        expandedDiffTrees,
+        streamingAssistantMessageId,
+        streamingToolGroupId,
+        timelineWidthPx,
+      });
+    },
+    measureElement: measureVirtualElement,
+    useAnimationFrameWithResizeObserver: true,
+    overscan: 8,
+  });
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const nonVirtualizedRows = rows.slice(virtualizedRowCount);
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
@@ -117,13 +211,24 @@ export function VirtualizedThreadTimeline({
     });
   }, [foldableRows, latestTurnRowId, streamingTurnRowId]);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
 
-    container.scrollTop = container.scrollHeight;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+    lastKnownScrollTopRef.current = container.scrollTop;
+    shouldStickToBottomRef.current = true;
+  }, []);
+
+  const cancelPendingScrollToBottom = useCallback(() => {
+    if (pendingAutoScrollFrameRef.current === null) {
+      return;
+    }
+
+    window.cancelAnimationFrame(pendingAutoScrollFrameRef.current);
+    pendingAutoScrollFrameRef.current = null;
   }, []);
 
   const scheduleScrollToBottom = useCallback(() => {
@@ -131,17 +236,30 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
-    if (scrollFrameRef.current !== null) {
-      window.cancelAnimationFrame(scrollFrameRef.current);
+    if (pendingAutoScrollFrameRef.current !== null) {
+      return;
     }
 
-    scrollFrameRef.current = window.requestAnimationFrame(() => {
+    pendingAutoScrollFrameRef.current = window.requestAnimationFrame(() => {
+      pendingAutoScrollFrameRef.current = null;
       scrollToBottom();
-      scrollFrameRef.current = null;
     });
   }, [scrollToBottom]);
 
+  const cancelPendingInteractionAnchorAdjustment = useCallback(() => {
+    if (pendingInteractionAnchorFrameRef.current === null) {
+      return;
+    }
+
+    window.cancelAnimationFrame(pendingInteractionAnchorFrameRef.current);
+    pendingInteractionAnchorFrameRef.current = null;
+  }, []);
+
   const suppressAutoScrollTemporarily = useCallback(() => {
+    if (shouldStickToBottomRef.current) {
+      return;
+    }
+
     suppressAutoScrollRef.current = true;
 
     if (suppressAutoScrollTimerRef.current !== null) {
@@ -155,6 +273,38 @@ export function VirtualizedThreadTimeline({
   }, []);
 
   useLayoutEffect(() => {
+    const timelineRoot = timelineRootRef.current;
+    if (!timelineRoot) {
+      return;
+    }
+
+    const updateWidth = (nextWidth: number) => {
+      setTimelineWidthPx((current) => {
+        if (current !== null && Math.abs(current - nextWidth) < 0.5) {
+          return current;
+        }
+
+        return nextWidth;
+      });
+    };
+
+    updateWidth(timelineRoot.getBoundingClientRect().width);
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateWidth(timelineRoot.getBoundingClientRect().width);
+    });
+    observer.observe(timelineRoot);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
     void bottomAnchorKey;
     void rowStructureSignature;
 
@@ -165,6 +315,7 @@ export function VirtualizedThreadTimeline({
       const delta = container.scrollHeight - pendingHistoryPrepend.scrollHeight;
       container.scrollTop = pendingHistoryPrepend.scrollTop + Math.max(0, delta);
       pendingHistoryPrependRef.current = null;
+      lastKnownScrollTopRef.current = container.scrollTop;
       return;
     }
 
@@ -175,39 +326,70 @@ export function VirtualizedThreadTimeline({
     scheduleScrollToBottom();
   }, [bottomAnchorKey, rowStructureSignature, rows.length, scheduleScrollToBottom]);
 
+  useLayoutEffect(() => {
+    void virtualMeasureSignature;
+    rowVirtualizer.measure();
+  }, [rowVirtualizer, virtualMeasureSignature]);
+
+  useEffect(() => {
+    rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
+      const viewportHeight = instance.scrollRect?.height ?? 0;
+      const scrollOffset = instance.scrollOffset ?? 0;
+      const remainingDistance = instance.getTotalSize() - (scrollOffset + viewportHeight);
+
+      return remainingDistance > CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX;
+    };
+
+    return () => {
+      rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = undefined;
+    };
+  }, [rowVirtualizer]);
+
   useEffect(() => {
     const container = containerRef.current;
-    const timeline = timelineRef.current;
-    if (!container || !timeline || typeof ResizeObserver === "undefined") {
+    const timelineRoot = timelineRootRef.current;
+    if (!container || !timelineRoot || typeof ResizeObserver === "undefined") {
       return;
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      // Streaming updates can change layout after the initial render pass
-      // (for example when markdown, thinking panels, or tool groups reflow).
-      // Re-assert the sticky-bottom position whenever the lane or viewport resizes.
-      scheduleScrollToBottom();
+    const observer = new ResizeObserver(() => {
+      if (pendingMeasureFrameRef.current !== null) {
+        return;
+      }
+
+      pendingMeasureFrameRef.current = window.requestAnimationFrame(() => {
+        pendingMeasureFrameRef.current = null;
+        rowVirtualizer.measure();
+        scheduleScrollToBottom();
+      });
     });
 
-    resizeObserver.observe(container);
-    resizeObserver.observe(timeline);
+    observer.observe(container);
+    observer.observe(timelineRoot);
 
     return () => {
-      resizeObserver.disconnect();
+      observer.disconnect();
+      if (pendingMeasureFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingMeasureFrameRef.current);
+        pendingMeasureFrameRef.current = null;
+      }
     };
-  }, [scheduleScrollToBottom]);
+  }, [rowVirtualizer, scheduleScrollToBottom]);
 
   useEffect(() => {
     return () => {
+      cancelPendingInteractionAnchorAdjustment();
+      cancelPendingScrollToBottom();
+
       if (suppressAutoScrollTimerRef.current !== null) {
         window.clearTimeout(suppressAutoScrollTimerRef.current);
       }
 
-      if (scrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(scrollFrameRef.current);
+      if (pendingMeasureFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingMeasureFrameRef.current);
       }
     };
-  }, []);
+  }, [cancelPendingInteractionAnchorAdjustment, cancelPendingScrollToBottom]);
 
   const handleScroll = useCallback(() => {
     const container = containerRef.current;
@@ -215,9 +397,127 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    shouldStickToBottomRef.current = distanceFromBottom <= CHAT_STICKY_BOTTOM_THRESHOLD_PX;
+    const currentScrollTop = container.scrollTop;
+    const isNearBottom = isScrollContainerNearBottom(
+      container,
+      CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX,
+    );
+
+    if (!shouldStickToBottomRef.current && isNearBottom) {
+      shouldStickToBottomRef.current = true;
+      pendingUserScrollUpIntentRef.current = false;
+    } else if (shouldStickToBottomRef.current && pendingUserScrollUpIntentRef.current) {
+      if (currentScrollTop < lastKnownScrollTopRef.current - 1) {
+        shouldStickToBottomRef.current = false;
+      }
+      pendingUserScrollUpIntentRef.current = false;
+    } else if (shouldStickToBottomRef.current && isPointerScrollActiveRef.current) {
+      if (currentScrollTop < lastKnownScrollTopRef.current - 1) {
+        shouldStickToBottomRef.current = false;
+      }
+    } else if (shouldStickToBottomRef.current && !isNearBottom) {
+      if (currentScrollTop < lastKnownScrollTopRef.current - 1) {
+        shouldStickToBottomRef.current = false;
+      }
+    }
+
+    lastKnownScrollTopRef.current = currentScrollTop;
+  }, []);
+
+  const handleScrollClickCapture = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const container = containerRef.current;
+      if (!container || !(event.target instanceof Element)) {
+        return;
+      }
+
+      const trigger = event.target.closest<HTMLElement>(
+        "button, summary, [role='button'], [data-scroll-anchor-target]",
+      );
+      if (!trigger || !container.contains(trigger)) {
+        return;
+      }
+
+      if (trigger.closest("[data-scroll-anchor-ignore]")) {
+        return;
+      }
+
+      pendingInteractionAnchorRef.current = {
+        element: trigger,
+        top: trigger.getBoundingClientRect().top,
+      };
+
+      cancelPendingInteractionAnchorAdjustment();
+      pendingInteractionAnchorFrameRef.current = window.requestAnimationFrame(() => {
+        pendingInteractionAnchorFrameRef.current = null;
+
+        const anchor = pendingInteractionAnchorRef.current;
+        pendingInteractionAnchorRef.current = null;
+        const activeContainer = containerRef.current;
+        if (!anchor || !activeContainer) {
+          return;
+        }
+
+        if (!anchor.element.isConnected || !activeContainer.contains(anchor.element)) {
+          return;
+        }
+
+        const nextTop = anchor.element.getBoundingClientRect().top;
+        const delta = nextTop - anchor.top;
+        if (Math.abs(delta) < 0.5) {
+          return;
+        }
+
+        activeContainer.scrollTop += delta;
+        lastKnownScrollTopRef.current = activeContainer.scrollTop;
+      });
+    },
+    [cancelPendingInteractionAnchorAdjustment],
+  );
+
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (event.deltaY < 0) {
+      pendingUserScrollUpIntentRef.current = true;
+    }
+  }, []);
+
+  const handlePointerDown = useCallback(() => {
+    isPointerScrollActiveRef.current = true;
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    isPointerScrollActiveRef.current = false;
+  }, []);
+
+  const handlePointerCancel = useCallback(() => {
+    isPointerScrollActiveRef.current = false;
+  }, []);
+
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+
+    lastTouchClientYRef.current = touch.clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+
+    const previousTouchY = lastTouchClientYRef.current;
+    if (previousTouchY !== null && touch.clientY > previousTouchY + 1) {
+      pendingUserScrollUpIntentRef.current = true;
+    }
+
+    lastTouchClientYRef.current = touch.clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    lastTouchClientYRef.current = null;
   }, []);
 
   const handleToggleToolCallExpansion = useCallback(() => {
@@ -246,7 +546,6 @@ export function VirtualizedThreadTimeline({
       }
 
       suppressAutoScrollTemporarily();
-
       setCollapsedRowIds((current) => ({
         ...current,
         [rowId]: !current[rowId],
@@ -282,20 +581,22 @@ export function VirtualizedThreadTimeline({
 
   const renderRow = useCallback(
     (row: TimelineRow) => (
-      <ThreadTimelineRow
-        row={row}
-        collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
-        streamingAssistantMessageId={streamingAssistantMessageId}
-        streamingToolGroupId={streamingToolGroupId}
-        expandedToolGroupIds={expandedToolGroupIds}
-        expandedDiffTrees={expandedDiffTrees}
-        onToggleRowCollapse={handleToggleRowCollapse}
-        onToggleToolCallExpansion={handleToggleToolCallExpansion}
-        onToggleToolGroupExpansion={handleToggleToolGroupExpansion}
-        onToggleDiffTree={handleToggleDiffTree}
-        onOpenTurnDiff={onOpenTurnDiff}
-        onJumpToEarlierMessages={handleJumpToEarlierMessages}
-      />
+      <div className="min-w-0 pb-4">
+        <ThreadTimelineRow
+          row={row}
+          collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
+          streamingAssistantMessageId={streamingAssistantMessageId}
+          streamingToolGroupId={streamingToolGroupId}
+          expandedToolGroupIds={expandedToolGroupIds}
+          expandedDiffTrees={expandedDiffTrees}
+          onToggleRowCollapse={handleToggleRowCollapse}
+          onToggleToolCallExpansion={handleToggleToolCallExpansion}
+          onToggleToolGroupExpansion={handleToggleToolGroupExpansion}
+          onToggleDiffTree={handleToggleDiffTree}
+          onOpenTurnDiff={onOpenTurnDiff}
+          onJumpToEarlierMessages={handleJumpToEarlierMessages}
+        />
+      </div>
     ),
     [
       effectiveCollapsedRowIds,
@@ -314,15 +615,52 @@ export function VirtualizedThreadTimeline({
 
   return (
     <div className={chatViewportClass}>
-      <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        {/*
-          The thread lane renders in natural document flow on purpose.
-          Rich markdown, reasoning panels, tool-call accordions, and inline diffs were too dynamic
-          for heuristic row-height prediction to stay reliable under virtualization.
-        */}
-        <div ref={timelineRef} className={chatStreamingTimelineClass}>
-          {rows.map((row) => (
-            <div key={row.id} className="min-w-0">
+      <div
+        ref={containerRef}
+        className={chatScrollableAreaClass}
+        onScroll={handleScroll}
+        onClickCapture={handleScrollClickCapture}
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
+        <div
+          ref={timelineRootRef}
+          className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8"
+        >
+          {virtualizedRowCount > 0 ? (
+            <div
+              className="relative min-w-0"
+              style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+            >
+              {virtualRows.map((virtualRow) => {
+                const row = rows[virtualRow.index];
+                if (!row) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={`virtual-row:${virtualRow.key}`}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    className="absolute left-0 top-0 w-full min-w-0"
+                    style={{ transform: `translateY(${virtualRow.start}px)` }}
+                  >
+                    {renderRow(row)}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {nonVirtualizedRows.map((row) => (
+            <div key={`tail-row:${row.id}`} className="min-w-0">
               {renderRow(row)}
             </div>
           ))}
