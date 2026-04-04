@@ -1,7 +1,7 @@
 import { ArrowLeft, GitBranch, GitCompareArrows, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
-import { compactIconButtonClass, primaryButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { ToolbarButton } from "../../common/ToolbarButton";
@@ -178,8 +178,8 @@ export function ComposerGitOpsMockSurface({
           <button
             type="button"
             className={cn(
-              primaryButtonClass,
-              "inline-flex h-7 min-h-7 items-center justify-center rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45",
+              toolbarButtonClass,
+              "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
             )}
             onClick={() =>
               void onAction(isGitRepo ? "workspace.commit" : "workspace.commit-options")
