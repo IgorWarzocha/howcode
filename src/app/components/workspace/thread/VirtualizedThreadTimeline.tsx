@@ -49,6 +49,7 @@ export function VirtualizedThreadTimeline({
   const lastTouchClientYRef = useRef<number | null>(null);
   const pendingUserScrollUpIntentRef = useRef(false);
   const pendingInteractionAnchorRef = useRef<{ element: HTMLElement; top: number } | null>(null);
+  const pendingExpandedRowRevealRef = useRef<string | null>(null);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
   const suppressAutoScrollRef = useRef(false);
   const suppressAutoScrollTimerRef = useRef<number | null>(null);
@@ -331,6 +332,37 @@ export function VirtualizedThreadTimeline({
     rowVirtualizer.measure();
   }, [rowVirtualizer, virtualMeasureSignature]);
 
+  useLayoutEffect(() => {
+    void rowStructureSignature;
+
+    const rowId = pendingExpandedRowRevealRef.current;
+    if (!rowId) {
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const rowElement = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-timeline-row-id]"),
+    ).find((element) => element.dataset.timelineRowId === rowId);
+    if (!rowElement) {
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const rowRect = rowElement.getBoundingClientRect();
+    const rowTop = rowRect.top - containerRect.top + container.scrollTop;
+    const targetTop = Math.max(0, rowTop - 12);
+
+    container.scrollTop = targetTop;
+    lastKnownScrollTopRef.current = container.scrollTop;
+    shouldStickToBottomRef.current = false;
+    pendingExpandedRowRevealRef.current = null;
+  }, [rowStructureSignature]);
+
   useEffect(() => {
     rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
       const viewportHeight = instance.scrollRect?.height ?? 0;
@@ -545,13 +577,26 @@ export function VirtualizedThreadTimeline({
         return;
       }
 
+      const isExpanding = Boolean(effectiveCollapsedRowIds[rowId]);
       suppressAutoScrollTemporarily();
+
+      if (isExpanding) {
+        pendingExpandedRowRevealRef.current = rowId;
+        pendingInteractionAnchorRef.current = null;
+        cancelPendingInteractionAnchorAdjustment();
+      }
+
       setCollapsedRowIds((current) => ({
         ...current,
         [rowId]: !current[rowId],
       }));
     },
-    [streamingTurnRowId, suppressAutoScrollTemporarily],
+    [
+      cancelPendingInteractionAnchorAdjustment,
+      effectiveCollapsedRowIds,
+      streamingTurnRowId,
+      suppressAutoScrollTemporarily,
+    ],
   );
 
   const handleJumpToEarlierMessages = useCallback(() => {
@@ -581,7 +626,7 @@ export function VirtualizedThreadTimeline({
 
   const renderRow = useCallback(
     (row: TimelineRow) => (
-      <div className="min-w-0 pb-4">
+      <div className="min-w-0 pb-4" data-timeline-row-id={row.id}>
         <ThreadTimelineRow
           row={row}
           collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
