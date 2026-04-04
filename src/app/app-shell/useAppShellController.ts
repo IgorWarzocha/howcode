@@ -323,6 +323,14 @@ export function useAppShellController() {
     });
   };
 
+  const handleOpenWorktreeDiffFile = (filePath: string) => {
+    dispatch({
+      type: "open-diff",
+      checkpointTurnCount: null,
+      filePath,
+    });
+  };
+
   const handleSelectDiffTurn = (checkpointTurnCount: number | null) => {
     dispatch({ type: "set-diff-turn", checkpointTurnCount });
   };
@@ -368,6 +376,7 @@ export function useAppShellController() {
       void refreshShellState();
     },
     handleOpenDiffSelection,
+    handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleProjectReorder,

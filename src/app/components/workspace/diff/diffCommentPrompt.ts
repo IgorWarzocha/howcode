@@ -21,10 +21,15 @@ function formatCommentLocation(comment: SavedDiffComment) {
 
 export function buildDiffCommentPrompt({
   comments,
+  instruction,
 }: {
   comments: SavedDiffComment[];
+  instruction?: string | null;
 }) {
-  const intro = "Address these review comments from the current worktree diff.";
+  const intro =
+    typeof instruction === "string" && instruction.trim().length > 0
+      ? instruction.trim()
+      : "Address & fix these comments:";
 
   const bullets = comments
     .map((comment, index) => {
@@ -33,5 +38,5 @@ export function buildDiffCommentPrompt({
     })
     .join("\n\n");
 
-  return `${intro}\n\nMake the requested code changes. When you're done, briefly summarize what you changed.\n\nComments:\n${bullets}`;
+  return `${intro}\n\nMake the requested code changes from the current worktree diff. When you're done, briefly summarize what you changed.\n\nComments:\n${bullets}`;
 }

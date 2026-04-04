@@ -12,6 +12,7 @@ import { SurfacePanel } from "../common/SurfacePanel";
 import { ComposerBanner } from "./composer/ComposerBanner";
 import { ComposerGitOpsMockSurface } from "./composer/ComposerGitOpsMockSurface";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
+import type { SavedDiffComment } from "./diff/diffCommentStore";
 
 export type ComposerProps = {
   activeView: View;
@@ -25,11 +26,13 @@ export type ComposerProps = {
   sessionPath: string | null;
   onSetDiffPanelVisible: (visible: boolean) => void;
   diffRenderMode: "stacked" | "split";
+  diffComments: SavedDiffComment[];
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
-  onSendDiffComments: () => void;
+  onSendDiffComments: (message?: string | null) => void;
+  onSelectDiffComment: (filePath: string) => void;
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onToggleTerminal: () => void;
@@ -68,11 +71,13 @@ export function Composer(props: ComposerProps) {
           <ComposerGitOpsMockSurface
             projectGitState={props.projectGitState}
             diffRenderMode={props.diffRenderMode}
+            diffComments={props.diffComments}
             diffCommentCount={props.diffCommentCount}
             diffCommentsSending={props.diffCommentsSending}
             diffCommentError={props.diffCommentError}
             onSetDiffRenderMode={props.onSetDiffRenderMode}
             onSendDiffComments={props.onSendDiffComments}
+            onSelectDiffComment={props.onSelectDiffComment}
             onAction={props.onAction}
             onBack={() => setSurface("prompt")}
           />

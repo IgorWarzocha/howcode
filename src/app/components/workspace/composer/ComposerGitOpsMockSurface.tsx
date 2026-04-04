@@ -5,7 +5,6 @@ import {
   GitCompareArrows,
   Github,
   Rows3,
-  Send,
   SlidersHorizontal,
   TriangleAlert,
 } from "lucide-react";
@@ -20,16 +19,19 @@ import {
 } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
+import type { SavedDiffComment } from "../diff/diffCommentStore";
 import { formatGitCount } from "./git-ops-mock";
 
 type ComposerGitOpsMockSurfaceProps = {
   projectGitState: ProjectGitState | null;
   diffRenderMode: "stacked" | "split";
+  diffComments: SavedDiffComment[];
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
-  onSendDiffComments: () => void;
+  onSendDiffComments: (message?: string | null) => void;
+  onSelectDiffComment: (filePath: string) => void;
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,
@@ -56,11 +58,13 @@ function getActionResultError(result: DesktopActionResult | null) {
 export function ComposerGitOpsMockSurface({
   projectGitState,
   diffRenderMode,
+  diffComments,
   diffCommentCount,
   diffCommentsSending,
   diffCommentError,
   onSetDiffRenderMode,
   onSendDiffComments,
+  onSelectDiffComment,
   onAction,
   onBack,
 }: ComposerGitOpsMockSurfaceProps) {
@@ -79,6 +83,7 @@ export function ComposerGitOpsMockSurface({
   const hasOrigin = projectGitState?.hasOrigin ?? false;
   const isGitHubOrigin = projectGitState?.originUrl?.includes("github.com") ?? false;
   const isTreeClean = isGitRepo && (projectGitState?.fileCount ?? 0) === 0;
+  const hasDiffComments = diffComments.length > 0;
   const trimmedCommitMessage = commitMessage.trim();
   const canCommit =
     isGitRepo &&
@@ -86,11 +91,15 @@ export function ComposerGitOpsMockSurface({
       ? (projectGitState?.fileCount ?? 0) > 0
       : (projectGitState?.stagedFileCount ?? 0) > 0);
   const commitLabel = pushEnabled ? "Commit & push" : "Commit";
-  const primaryActionLabel = !isGitRepo
-    ? "Init git"
-    : canCommit || (projectGitState?.fileCount ?? 0) > 0
-      ? commitLabel
-      : "Clean";
+  const primaryActionLabel = hasDiffComments
+    ? diffCommentsSending
+      ? "Sending comments…"
+      : "Send comments"
+    : !isGitRepo
+      ? "Init git"
+      : canCommit || (projectGitState?.fileCount ?? 0) > 0
+        ? commitLabel
+        : "Clean";
 
   useEffect(() => {
     if (!hasOrigin) {
@@ -136,6 +145,11 @@ export function ComposerGitOpsMockSurface({
   };
 
   const handlePrimaryAction = async () => {
+    if (hasDiffComments) {
+      onSendDiffComments(trimmedCommitMessage);
+      return;
+    }
+
     if (runningPrimaryAction) {
       return;
     }
@@ -195,6 +209,13 @@ export function ComposerGitOpsMockSurface({
       setRunningPrimaryAction(false);
     }
   };
+
+  const commentCards = diffComments.map((comment) => ({
+    id: comment.id,
+    filePath: comment.filePath,
+    fileName: getCommentFileName(comment.filePath),
+    linesLabel: getCommentLinesLabel(comment),
+  }));
 
   return (
     <div
@@ -292,6 +313,27 @@ export function ComposerGitOpsMockSurface({
             <SlidersHorizontal size={14} />
           </button>
         </div>
+
+        {hasDiffComments ? (
+          <div className="absolute right-4 bottom-3 left-4 overflow-x-auto pb-1">
+            <div className="flex min-w-max items-center gap-2">
+              {commentCards.map((comment) => (
+                <button
+                  key={comment.id}
+                  type="button"
+                  className="inline-flex min-w-0 shrink-0 flex-col items-start gap-0.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-2 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--text)]"
+                  onClick={() => onSelectDiffComment(comment.filePath)}
+                  title={`${comment.filePath} · ${comment.linesLabel}`}
+                >
+                  <span className="max-w-52 truncate text-[12px] text-[color:var(--text)]">
+                    {comment.fileName}
+                  </span>
+                  <span>{comment.linesLabel}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
@@ -314,8 +356,14 @@ export function ComposerGitOpsMockSurface({
             }}
             onFocus={() => setCommitFocused(true)}
             onBlur={() => setCommitFocused(false)}
-            aria-label="Commit message"
-            placeholder={commitFocused ? "" : "Leave blank to autogenerate a commit message"}
+            aria-label={hasDiffComments ? "Comment instructions" : "Commit message"}
+            placeholder={
+              commitFocused
+                ? ""
+                : hasDiffComments
+                  ? "Address & fix these comments: "
+                  : "Leave blank to autogenerate a commit message"
+            }
           />
         </div>
 
@@ -329,24 +377,6 @@ export function ComposerGitOpsMockSurface({
         >
           {actionErrorMessage ?? diffCommentError ?? <GitCompareArrows size={16} />}
         </div>
-
-        <button
-          type="button"
-          className={cn(
-            toolbarButtonClass,
-            "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
-          )}
-          onClick={onSendDiffComments}
-          disabled={diffCommentCount === 0 || diffCommentsSending}
-          aria-label="Send to agent"
-        >
-          <Send size={14} />
-          <span>
-            {diffCommentsSending
-              ? "Sending…"
-              : `Send to agent${diffCommentCount > 0 ? ` (${diffCommentCount})` : ""}`}
-          </span>
-        </button>
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
@@ -420,7 +450,11 @@ export function ComposerGitOpsMockSurface({
             onClick={() => {
               void handlePrimaryAction();
             }}
-            disabled={runningPrimaryAction || (isGitRepo ? !canCommit : false)}
+            disabled={
+              hasDiffComments
+                ? diffCommentsSending
+                : runningPrimaryAction || (isGitRepo ? !canCommit : false)
+            }
             aria-label={primaryActionLabel}
           >
             {primaryActionLabel}
@@ -429,6 +463,24 @@ export function ComposerGitOpsMockSurface({
       </div>
     </div>
   );
+}
+
+function getCommentLinesLabel(comment: SavedDiffComment) {
+  const endLineNumber = comment.endLineNumber ?? comment.lineNumber;
+  const endSide = comment.endSide ?? comment.side;
+
+  if (comment.side === endSide) {
+    const start = Math.min(comment.lineNumber, endLineNumber);
+    const end = Math.max(comment.lineNumber, endLineNumber);
+    return start === end ? `Line ${start}` : `Lines ${start}-${end}`;
+  }
+
+  return `Lines ${comment.lineNumber}-${endLineNumber}`;
+}
+
+function getCommentFileName(filePath: string) {
+  const segments = filePath.split("/");
+  return segments[segments.length - 1] || filePath;
 }
 
 function PlainToggle({

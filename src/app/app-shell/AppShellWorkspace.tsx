@@ -4,6 +4,7 @@ import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { buildDiffCommentPrompt } from "../components/workspace/diff/diffCommentPrompt";
 import {
+  type SavedDiffComment,
   diffCommentStore,
   getDiffCommentContextId,
 } from "../components/workspace/diff/diffCommentStore";
@@ -34,6 +35,7 @@ export function AppShellWorkspace({
 }: AppShellWorkspaceProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
+  const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([]);
   const [diffCommentCount, setDiffCommentCount] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export function AppShellWorkspace({
     handleAction,
     handleLoadEarlierMessages,
     handleOpenDiffSelection,
+    handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
     handleToggleDiff,
     handleToggleTerminal,
@@ -59,18 +62,21 @@ export function AppShellWorkspace({
   useEffect(() => {
     const syncCommentCount = () => {
       if (!diffCommentContextId) {
+        setDiffComments([]);
         setDiffCommentCount(0);
         return;
       }
 
-      setDiffCommentCount(diffCommentStore.getContext(diffCommentContextId)?.comments.length ?? 0);
+      const nextComments = diffCommentStore.getContext(diffCommentContextId)?.comments ?? [];
+      setDiffComments(nextComments);
+      setDiffCommentCount(nextComments.length);
     };
 
     syncCommentCount();
     return diffCommentStore.subscribe(syncCommentCount);
   }, [diffCommentContextId]);
 
-  const handleSendDiffComments = async () => {
+  const handleSendDiffComments = async (message?: string | null) => {
     if (!diffCommentContextId || diffCommentsSending) {
       return;
     }
@@ -85,7 +91,7 @@ export function AppShellWorkspace({
 
     try {
       await handleAction("composer.send", {
-        text: buildDiffCommentPrompt({ comments: context.comments }),
+        text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
       });
       diffCommentStore.clearContext(diffCommentContextId);
       setComposerPromptResetKey((current) => current + 1);
@@ -154,13 +160,15 @@ export function AppShellWorkspace({
                   handleToggleDiff();
                 }}
                 diffRenderMode={diffRenderMode}
+                diffComments={diffComments}
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
                 onSetDiffRenderMode={setDiffRenderMode}
-                onSendDiffComments={() => {
-                  void handleSendDiffComments();
+                onSendDiffComments={(message) => {
+                  void handleSendDiffComments(message);
                 }}
+                onSelectDiffComment={handleOpenWorktreeDiffFile}
                 promptResetKey={composerPromptResetKey}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                 onToggleTerminal={handleToggleTerminal}
