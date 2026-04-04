@@ -2,15 +2,10 @@ import type { SavedDiffComment } from "./diffCommentStore";
 
 export function buildDiffCommentPrompt({
   comments,
-  selectedTurnCount,
 }: {
   comments: SavedDiffComment[];
-  selectedTurnCount: number | null;
 }) {
-  const intro =
-    selectedTurnCount === null
-      ? "Address these review comments from the current diff."
-      : `Address these review comments from diff turn ${selectedTurnCount}.`;
+  const intro = "Address these review comments from the current worktree diff.";
 
   const bullets = comments
     .map((comment, index) => {

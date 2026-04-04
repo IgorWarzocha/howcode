@@ -1,25 +1,20 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { TurnDiffResult } from "../desktop/types";
-import { desktopQueryKeys, getThreadDiffQuery } from "../query/desktop-query";
+import type { ProjectDiffResult } from "../desktop/types";
+import { desktopQueryKeys, getProjectDiffQuery } from "../query/desktop-query";
 
 type DiffState = {
-  diff: TurnDiffResult | null;
+  diff: ProjectDiffResult | null;
   isLoading: boolean;
   error: string | null;
 };
 
-export function useDesktopDiff(
-  sessionPath: string | null,
-  checkpointTurnCount: number | null,
-  enabled = true,
-) {
-  const query = useQuery<TurnDiffResult | null, Error>({
-    queryKey: sessionPath
-      ? desktopQueryKeys.diff(sessionPath, checkpointTurnCount)
-      : ["desktop", "diff", null, checkpointTurnCount],
-    queryFn: () =>
-      sessionPath ? getThreadDiffQuery(sessionPath, checkpointTurnCount) : Promise.resolve(null),
-    enabled: enabled && Boolean(sessionPath),
+export function useDesktopDiff(projectId: string | null, enabled = true) {
+  const query = useQuery<ProjectDiffResult | null, Error>({
+    queryKey: projectId
+      ? desktopQueryKeys.projectDiff(projectId)
+      : ["desktop", "projectDiff", null],
+    queryFn: () => (projectId ? getProjectDiffQuery(projectId) : Promise.resolve(null)),
+    enabled: enabled && Boolean(projectId),
     placeholderData: keepPreviousData,
   });
 

@@ -8,6 +8,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   Thread,
@@ -28,6 +29,7 @@ export type PiDesktopRpc = {
     requests: {
       getShellState: { params: Record<string, never>; response: ShellState };
       getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null };
+      getProjectDiff: { params: { projectId: string }; response: ProjectDiffResult | null };
       pickComposerAttachments: {
         params: { projectId?: string | null };
         response: ComposerAttachment[];

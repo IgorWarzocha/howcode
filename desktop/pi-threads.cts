@@ -7,6 +7,7 @@ export {
 export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader";
 export {
   loadComposerState,
+  loadProjectDiff,
   loadProjectGitState,
   loadShellState,
   setWatchedSessionPath,

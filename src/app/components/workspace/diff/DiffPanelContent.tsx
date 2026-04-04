@@ -5,27 +5,21 @@ import {
   type FileDiffMetadata,
   type GetHoveredLineResult,
   type SelectedLineRange,
-  Virtualizer,
 } from "@pierre/diffs/react";
 import { MessageSquarePlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DesktopAction } from "../../../desktop/actions";
-import type { ThreadData } from "../../../desktop/types";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
-import { DiffPanelToolbar } from "./DiffPanelToolbar";
 import {
   DIFF_PANEL_UNSAFE_CSS,
   buildFileDiffRenderKey,
   getRenderablePatch,
   joinProjectFilePath,
   orderRenderableFiles,
-  orderTurnDiffSummaries,
   resolveFileDiffPath,
 } from "./diff-panel-content.helpers";
 import { resolveDiffThemeName } from "./diff-rendering";
-import { buildDiffCommentPrompt } from "./diffCommentPrompt";
 import {
   type DiffCommentDraft,
   type SavedDiffComment,
@@ -33,7 +27,6 @@ import {
   getDiffCommentContextId,
 } from "./diffCommentStore";
 
-type DiffRenderMode = "stacked" | "split";
 type DiffThemeType = "light" | "dark";
 
 type DiffCommentMetadata = {
@@ -45,44 +38,23 @@ type DiffCommentMetadata = {
 
 type DiffPanelContentProps = {
   projectId: string;
-  threadData: ThreadData | null;
   isGitRepo: boolean;
-  selectedTurnCount: number | null;
   selectedFilePath: string | null;
-  onSelectTurn: (checkpointTurnCount: number | null) => void;
+  diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
-  onSendCommentsToAgent: (prompt: string) => Promise<void>;
-  onClose: () => void;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
 };
 
 export function DiffPanelContent({
   projectId,
-  threadData,
   isGitRepo,
-  selectedTurnCount,
   selectedFilePath,
-  onSelectTurn,
+  diffRenderMode,
   layoutMode = "split",
-  onSendCommentsToAgent,
-  onClose,
-  onAction,
 }: DiffPanelContentProps) {
-  const [diffRenderMode, setDiffRenderMode] = useState<DiffRenderMode>("stacked");
   const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
-  const [commentsSending, setCommentsSending] = useState(false);
-  const [commentActionError, setCommentActionError] = useState<string | null>(null);
   const patchViewportRef = useRef<HTMLDivElement>(null);
-  const orderedTurnDiffSummaries = useMemo(
-    () => orderTurnDiffSummaries(threadData?.turnDiffSummaries ?? []),
-    [threadData?.turnDiffSummaries],
-  );
-  const { diff, isLoading, error } = useDesktopDiff(
-    threadData?.sessionPath ?? null,
-    selectedTurnCount,
-    Boolean(threadData && isGitRepo && orderedTurnDiffSummaries.length > 0),
-  );
+  const { diff, isLoading, error } = useDesktopDiff(projectId, isGitRepo);
 
   const selectedPatch = diff?.diff;
   const hasResolvedPatch = typeof selectedPatch === "string";
@@ -101,24 +73,21 @@ export function DiffPanelContent({
   const diffCommentContextId = useMemo(
     () =>
       getDiffCommentContextId({
-        sessionPath: threadData?.sessionPath ?? null,
-        selectedTurnCount,
+        projectId,
       }),
-    [selectedTurnCount, threadData?.sessionPath],
+    [projectId],
   );
 
   useEffect(() => {
     if (!diffCommentContextId) {
       setSavedComments([]);
       setDraftComment(null);
-      setCommentActionError(null);
       return;
     }
 
     const persistedContext = diffCommentStore.getContext(diffCommentContextId);
     setSavedComments(persistedContext?.comments ?? []);
     setDraftComment(persistedContext?.draft ?? null);
-    setCommentActionError(null);
   }, [diffCommentContextId]);
 
   useEffect(() => {
@@ -191,7 +160,6 @@ export function DiffPanelContent({
         body: "",
       };
     });
-    setCommentActionError(null);
   };
 
   const persistDraftComment = () => {
@@ -210,40 +178,10 @@ export function DiffPanelContent({
       },
     ]);
     setDraftComment(null);
-    setCommentActionError(null);
   };
 
   const removeComment = (commentId: string) => {
     setSavedComments((current) => current.filter((comment) => comment.id !== commentId));
-  };
-
-  const handleSendCommentsToAgent = async () => {
-    if (savedComments.length === 0 || commentsSending) {
-      return;
-    }
-
-    setCommentsSending(true);
-    setCommentActionError(null);
-
-    try {
-      await onSendCommentsToAgent(
-        buildDiffCommentPrompt({
-          comments: savedComments,
-          selectedTurnCount,
-        }),
-      );
-      setSavedComments([]);
-      setDraftComment(null);
-      if (diffCommentContextId) {
-        diffCommentStore.clearContext(diffCommentContextId);
-      }
-    } catch (error) {
-      setCommentActionError(
-        error instanceof Error ? error.message : "Could not send comments to the agent.",
-      );
-    } finally {
-      setCommentsSending(false);
-    }
   };
 
   const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => {
@@ -327,8 +265,6 @@ export function DiffPanelContent({
   };
 
   useEffect(() => {
-    void diff?.toTurnCount;
-
     if (!selectedFilePath || !patchViewportRef.current) {
       return;
     }
@@ -337,44 +273,22 @@ export function DiffPanelContent({
       patchViewportRef.current.querySelectorAll<HTMLElement>("[data-diff-file-path]"),
     ).find((element) => element.dataset.diffFilePath === selectedFilePath);
     target?.scrollIntoView({ block: "nearest" });
-  }, [diff?.toTurnCount, selectedFilePath]);
+  }, [selectedFilePath]);
 
   return (
     <aside
       className={cn(
-        "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)]",
+        "flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]",
         layoutMode === "split" && "border-l border-[color:var(--border)] xl:w-full",
       )}
       data-feature-id="feature:diff.panel"
       data-feature-status="partial"
     >
-      {!threadData ? (
-        <DiffPanelEmptyState message="Select a thread to inspect turn diffs." />
-      ) : !isGitRepo ? (
-        <DiffPanelEmptyState message="Turn diffs are unavailable because this project is not a git repository." />
-      ) : orderedTurnDiffSummaries.length === 0 ? (
-        <DiffPanelEmptyState message="No completed turns yet." />
+      {!isGitRepo ? (
+        <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
       ) : (
         <>
-          <DiffPanelToolbar
-            diffRenderMode={diffRenderMode}
-            orderedTurnDiffSummaries={orderedTurnDiffSummaries}
-            selectedTurnCount={selectedTurnCount}
-            commentCount={savedComments.length}
-            commentsSending={commentsSending}
-            onClose={onClose}
-            onAction={onAction}
-            onSendCommentsToAgent={handleSendCommentsToAgent}
-            onSelectTurn={onSelectTurn}
-            onSetDiffRenderMode={setDiffRenderMode}
-          />
-
           <div ref={patchViewportRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            {commentActionError ? (
-              <div className="px-3 pt-3">
-                <p className="mb-0 text-[11px] text-[#f2a7a7]">{commentActionError}</p>
-              </div>
-            ) : null}
             {error && !renderablePatch ? (
               <div className="px-3 pt-3">
                 <p className="mb-2 text-[11px] text-[#f2a7a7]">{error}</p>
@@ -385,20 +299,14 @@ export function DiffPanelContent({
               <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-[color:var(--muted)]">
                 <p>
                   {isLoading
-                    ? "Loading checkpoint diff..."
+                    ? "Loading diff..."
                     : hasNoNetChanges
-                      ? "No net changes in this selection."
-                      : "No patch available for this selection."}
+                      ? "No net changes in this worktree."
+                      : "No patch available for this worktree."}
                 </p>
               </div>
             ) : renderablePatch.kind === "files" ? (
-              <Virtualizer
-                className="h-full min-h-0 overflow-auto"
-                config={{
-                  overscrollSize: 600,
-                  intersectionObserverMargin: 1200,
-                }}
-              >
+              <div className="h-full min-h-0 overflow-auto">
                 {renderableFiles.map((fileDiff: FileDiffMetadata) => {
                   const filePath = resolveFileDiffPath(fileDiff);
                   const fileKey = buildFileDiffRenderKey(fileDiff);
@@ -484,7 +392,7 @@ export function DiffPanelContent({
                     </div>
                   );
                 })}
-              </Virtualizer>
+              </div>
             ) : (
               <div className="h-full overflow-auto p-3">
                 <div className="space-y-2">

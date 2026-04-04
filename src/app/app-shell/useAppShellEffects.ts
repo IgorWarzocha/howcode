@@ -12,6 +12,7 @@ import type { Project } from "../types";
 
 type QueryClientLike = {
   setQueriesData: (filters: { queryKey: readonly unknown[] }, updater: unknown) => void;
+  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown;
 };
 
 export function useAppShellEffects({
@@ -197,10 +198,29 @@ export function useAppShellEffects({
 
       if (event.reason === "end" || event.reason === "external") {
         void loadProjectThreads(event.projectId);
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectDiff(event.projectId),
+        });
+
+        if (event.projectId === composerProjectId) {
+          void loadProjectGitState(event.projectId).then((nextProjectGitState) => {
+            setProjectGitState(nextProjectGitState);
+          });
+        }
+
         scheduleShellStateRefresh();
       }
     });
 
     return unsubscribe;
-  }, [dispatch, loadProjectThreads, queryClient, scheduleShellStateRefresh, setComposerState]);
+  }, [
+    composerProjectId,
+    dispatch,
+    loadProjectGitState,
+    loadProjectThreads,
+    queryClient,
+    scheduleShellStateRefresh,
+    setComposerState,
+    setProjectGitState,
+  ]);
 }

@@ -7,6 +7,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   Thread,
@@ -28,6 +29,7 @@ type PiThreadsModule = {
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadComposerState: (request: Record<string, unknown>) => Promise<ComposerState>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
+  loadProjectDiff: (projectId: string) => Promise<ProjectDiffResult | null>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (
@@ -82,6 +84,8 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
       getShellState: async () => piThreads.loadShellState(process.cwd()) as Promise<ShellState>,
       getProjectGitState: async ({ projectId }) =>
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
+      getProjectDiff: async ({ projectId }) =>
+        (await piThreads.loadProjectDiff(projectId)) as ProjectDiffResult | null,
       pickComposerAttachments: async ({ projectId }) => {
         const filePaths = await Utils.openFileDialog({
           startingFolder: projectId ?? process.cwd(),

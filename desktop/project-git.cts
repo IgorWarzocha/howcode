@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import type { ProjectGitState } from "../shared/desktop-contracts";
+import type { ProjectDiffResult, ProjectGitState } from "../shared/desktop-contracts";
 
 const execFile = promisify(execFileCallback);
 
@@ -404,6 +404,18 @@ export async function prepareCommitMessageContext(
     diffStat: diffStatOutput,
     numStat: numStatOutput,
     patch: patchOutput,
+  };
+}
+
+export async function loadProjectDiff(projectId: string): Promise<ProjectDiffResult | null> {
+  const context = await prepareCommitMessageContext(projectId, true);
+  if (!context) {
+    return null;
+  }
+
+  return {
+    projectId,
+    diff: context.patch,
   };
 }
 

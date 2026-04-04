@@ -1,14 +1,35 @@
-import { ArrowLeft, GitBranch, GitCompareArrows, Github, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Columns2,
+  GitBranch,
+  GitCompareArrows,
+  Github,
+  Rows3,
+  Send,
+  SlidersHorizontal,
+  TriangleAlert,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
-import { compactIconButtonClass, toolbarButtonClass } from "../../../ui/classes";
+import {
+  compactIconButtonClass,
+  diffPanelIconButtonClass,
+  diffPanelTurnChipSelectedClass,
+  toolbarButtonClass,
+} from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { formatGitCount } from "./git-ops-mock";
 
 type ComposerGitOpsMockSurfaceProps = {
   projectGitState: ProjectGitState | null;
+  diffRenderMode: "stacked" | "split";
+  diffCommentCount: number;
+  diffCommentsSending: boolean;
+  diffCommentError: string | null;
+  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSendDiffComments: () => void;
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,
@@ -34,6 +55,12 @@ function getActionResultError(result: DesktopActionResult | null) {
 
 export function ComposerGitOpsMockSurface({
   projectGitState,
+  diffRenderMode,
+  diffCommentCount,
+  diffCommentsSending,
+  diffCommentError,
+  onSetDiffRenderMode,
+  onSendDiffComments,
   onAction,
   onBack,
 }: ComposerGitOpsMockSurfaceProps) {
@@ -225,6 +252,46 @@ export function ComposerGitOpsMockSurface({
 
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
         </div>
+
+        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+          <button
+            type="button"
+            className={cn(
+              diffPanelIconButtonClass,
+              diffRenderMode === "stacked"
+                ? diffPanelTurnChipSelectedClass
+                : "border-[color:var(--border)] bg-transparent",
+            )}
+            onClick={() => onSetDiffRenderMode("stacked")}
+            aria-label="Unified diff view"
+            title="Unified diff view"
+          >
+            <Rows3 size={14} />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              diffPanelIconButtonClass,
+              diffRenderMode === "split"
+                ? diffPanelTurnChipSelectedClass
+                : "border-[color:var(--border)] bg-transparent",
+            )}
+            onClick={() => onSetDiffRenderMode("split")}
+            aria-label="Split diff view"
+            title="Split diff view"
+          >
+            <Columns2 size={14} />
+          </button>
+          <button
+            type="button"
+            className={cn(diffPanelIconButtonClass, "border-[color:var(--border)] bg-transparent")}
+            onClick={() => onAction("diff.review")}
+            aria-label="Diff panel actions"
+            title="Diff panel actions"
+          >
+            <SlidersHorizontal size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
@@ -255,13 +322,31 @@ export function ComposerGitOpsMockSurface({
         <div
           className={cn(
             "inline-flex h-8 items-center justify-end rounded-full text-right text-[12px] leading-5",
-            actionErrorMessage ? "text-[#f2a7a7]" : "invisible w-8",
+            actionErrorMessage || diffCommentError ? "text-[#f2a7a7]" : "invisible w-8",
           )}
-          aria-live={actionErrorMessage ? "polite" : undefined}
-          aria-hidden={actionErrorMessage ? undefined : true}
+          aria-live={actionErrorMessage || diffCommentError ? "polite" : undefined}
+          aria-hidden={actionErrorMessage || diffCommentError ? undefined : true}
         >
-          {actionErrorMessage ?? <GitCompareArrows size={16} />}
+          {actionErrorMessage ?? diffCommentError ?? <GitCompareArrows size={16} />}
         </div>
+
+        <button
+          type="button"
+          className={cn(
+            toolbarButtonClass,
+            "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
+          )}
+          onClick={onSendDiffComments}
+          disabled={diffCommentCount === 0 || diffCommentsSending}
+          aria-label="Send to agent"
+        >
+          <Send size={14} />
+          <span>
+            {diffCommentsSending
+              ? "Sending…"
+              : `Send to agent${diffCommentCount > 0 ? ` (${diffCommentCount})` : ""}`}
+          </span>
+        </button>
       </div>
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />

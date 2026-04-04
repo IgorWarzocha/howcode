@@ -10,7 +10,7 @@ import {
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "../pi-desktop-runtime";
 import { getPiModule } from "../pi-module";
-import { loadProjectGitState } from "../project-git";
+import { loadProjectDiff, loadProjectGitState } from "../project-git";
 import { listProjects, syncSessionSummaries } from "../thread-state-db";
 import { setWatchedSessionPath } from "./session-watch";
 
@@ -89,6 +89,7 @@ export async function loadComposerState(
 }
 
 export { loadProjectGitState };
+export { loadProjectDiff };
 export { setWatchedSessionPath };
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents;

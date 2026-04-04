@@ -39,6 +39,8 @@ type DiffCommentStoreOptions = {
   beforeUnloadTarget?: BeforeUnloadTarget | null;
 };
 
+type DiffCommentStoreListener = () => void;
+
 const DEFAULT_STORAGE_KEY = "howcode:diff-comments:v1";
 const DEFAULT_DEBOUNCE_MS = 320;
 
@@ -191,17 +193,15 @@ function serializeContexts(
 }
 
 export function getDiffCommentContextId({
-  sessionPath,
-  selectedTurnCount,
+  projectId,
 }: {
-  sessionPath: string | null;
-  selectedTurnCount: number | null;
+  projectId: string;
 }) {
-  if (!sessionPath) {
+  if (projectId.length === 0) {
     return null;
   }
 
-  return `session:${sessionPath}:turn:${selectedTurnCount ?? "all"}`;
+  return `project:${projectId}:worktree-diff`;
 }
 
 export function createDiffCommentStore({
@@ -212,6 +212,13 @@ export function createDiffCommentStore({
 }: DiffCommentStoreOptions = {}) {
   let contextsById = hydrateContexts(storage, storageKey);
   let persistTimeout: ReturnType<typeof setTimeout> | null = null;
+  const listeners = new Set<DiffCommentStoreListener>();
+
+  const notifyListeners = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
 
   const clearPersistTimeout = () => {
     if (persistTimeout === null) {
@@ -262,6 +269,7 @@ export function createDiffCommentStore({
       };
     }
 
+    notifyListeners();
     schedulePersist();
   };
 
@@ -286,7 +294,15 @@ export function createDiffCommentStore({
       }
 
       delete contextsById[contextId];
+      notifyListeners();
       schedulePersist();
+    },
+    subscribe(listener: DiffCommentStoreListener) {
+      listeners.add(listener);
+
+      return () => {
+        listeners.delete(listener);
+      };
     },
     flush,
     destroy() {

@@ -3,11 +3,11 @@ import type {
   ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "../desktop/types";
 
 export const desktopQueryKeys = {
@@ -17,10 +17,9 @@ export const desktopQueryKeys = {
   composerState: (request: ComposerStateRequest) =>
     ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
+  projectDiff: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ["desktop", "thread", sessionPath, refreshKey, historyCompactions] as const,
-  diff: (sessionPath: string, checkpointTurnCount: number | null) =>
-    ["desktop", "diff", sessionPath, checkpointTurnCount] as const,
 };
 
 export async function getShellStateQuery(): Promise<ShellState | null> {
@@ -45,6 +44,10 @@ export async function getProjectGitStateQuery(projectId: string): Promise<Projec
   return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null;
 }
 
+export async function getProjectDiffQuery(projectId: string): Promise<ProjectDiffResult | null> {
+  return (await window.piDesktop?.getProjectDiff?.(projectId)) ?? null;
+}
+
 export async function pickComposerAttachmentsQuery(
   projectId?: string | null,
 ): Promise<ComposerAttachment[]> {
@@ -56,13 +59,4 @@ export async function getThreadQuery(
   historyCompactions = 0,
 ): Promise<ThreadData | null> {
   return (await window.piDesktop?.getThread?.(sessionPath, historyCompactions)) ?? null;
-}
-
-export async function getThreadDiffQuery(
-  sessionPath: string,
-  checkpointTurnCount: number | null,
-): Promise<TurnDiffResult | null> {
-  return checkpointTurnCount === null
-    ? ((await window.piDesktop?.getFullThreadDiff?.(sessionPath)) ?? null)
-    : ((await window.piDesktop?.getTurnDiff?.(sessionPath, checkpointTurnCount)) ?? null);
 }

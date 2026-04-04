@@ -7,6 +7,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   TerminalCloseRequest,
@@ -24,6 +25,7 @@ declare global {
     piDesktop?: {
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
+      getProjectDiff?: (projectId: string) => Promise<ProjectDiffResult | null>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;

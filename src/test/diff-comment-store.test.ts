@@ -38,7 +38,7 @@ describe("diffCommentStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setContext("session:/repo/thread.json:turn:all", {
+    store.setContext("project:/repo:worktree-diff", {
       comments: [
         {
           id: "comment-1",
@@ -60,7 +60,7 @@ describe("diffCommentStore", () => {
     });
     store.flush();
 
-    expect(store.getContext("session:/repo/thread.json:turn:all")).toEqual({
+    expect(store.getContext("project:/repo:worktree-diff")).toEqual({
       comments: [
         {
           id: "comment-1",
@@ -91,7 +91,7 @@ describe("diffCommentStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setContext("session:/repo/thread.json:turn:all", {
+    store.setContext("project:/repo:worktree-diff", {
       comments: [
         {
           id: "comment-1",
@@ -107,10 +107,10 @@ describe("diffCommentStore", () => {
     });
     store.flush();
 
-    store.clearContext("session:/repo/thread.json:turn:all");
+    store.clearContext("project:/repo:worktree-diff");
     store.flush();
 
-    expect(store.getContext("session:/repo/thread.json:turn:all")).toBeNull();
+    expect(store.getContext("project:/repo:worktree-diff")).toBeNull();
     expect(storage.getItem(diffCommentStorageKey)).toBeNull();
   });
 });

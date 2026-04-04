@@ -151,6 +151,11 @@ export type TurnDiffResult = {
   diff: string;
 };
 
+export type ProjectDiffResult = {
+  projectId: string;
+  diff: string;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;

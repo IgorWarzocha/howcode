@@ -10,6 +10,7 @@ export type {
   DesktopActionPayload,
   DesktopActionResult,
   ModelSelection,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   Thread,

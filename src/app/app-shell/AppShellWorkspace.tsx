@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
+import { buildDiffCommentPrompt } from "../components/workspace/diff/diffCommentPrompt";
+import {
+  diffCommentStore,
+  getDiffCommentContextId,
+} from "../components/workspace/diff/diffCommentStore";
 import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
 import type { AppShellController } from "./useAppShellController";
@@ -28,11 +33,14 @@ export function AppShellWorkspace({
   workspaceContentClass,
 }: AppShellWorkspaceProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
+  const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
+  const [diffCommentCount, setDiffCommentCount] = useState(0);
+  const [diffCommentsSending, setDiffCommentsSending] = useState(false);
+  const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
     handleOpenDiffSelection,
-    handleSelectDiffTurn,
     handleShowTakeoverTerminal,
     handleToggleDiff,
     handleToggleTerminal,
@@ -43,6 +51,52 @@ export function AppShellWorkspace({
   } = controller;
   const showWorkspaceFooter = state.activeView !== "settings";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
+  const diffCommentContextId = useMemo(
+    () => getDiffCommentContextId({ projectId: composerProjectId }),
+    [composerProjectId],
+  );
+
+  useEffect(() => {
+    const syncCommentCount = () => {
+      if (!diffCommentContextId) {
+        setDiffCommentCount(0);
+        return;
+      }
+
+      setDiffCommentCount(diffCommentStore.getContext(diffCommentContextId)?.comments.length ?? 0);
+    };
+
+    syncCommentCount();
+    return diffCommentStore.subscribe(syncCommentCount);
+  }, [diffCommentContextId]);
+
+  const handleSendDiffComments = async () => {
+    if (!diffCommentContextId || diffCommentsSending) {
+      return;
+    }
+
+    const context = diffCommentStore.getContext(diffCommentContextId);
+    if (!context || context.comments.length === 0) {
+      return;
+    }
+
+    setDiffCommentsSending(true);
+    setDiffCommentError(null);
+
+    try {
+      await handleAction("composer.send", {
+        text: buildDiffCommentPrompt({ comments: context.comments }),
+      });
+      diffCommentStore.clearContext(diffCommentContextId);
+      setComposerPromptResetKey((current) => current + 1);
+    } catch (error) {
+      setDiffCommentError(
+        error instanceof Error ? error.message : "Could not send comments to the agent.",
+      );
+    } finally {
+      setDiffCommentsSending(false);
+    }
+  };
 
   return (
     <>
@@ -57,18 +111,10 @@ export function AppShellWorkspace({
           {showDiffInMainView ? (
             <DiffPanel
               projectId={composerProjectId}
-              threadData={activeThreadData}
               isGitRepo={projectGitState?.isGitRepo ?? false}
-              selectedTurnCount={state.selectedDiffTurnCount}
               selectedFilePath={state.selectedDiffFilePath}
-              onSelectTurn={handleSelectDiffTurn}
+              diffRenderMode={diffRenderMode}
               layoutMode="main"
-              onSendCommentsToAgent={async (prompt) => {
-                await handleAction("composer.send", { text: prompt });
-                setComposerPromptResetKey((current) => current + 1);
-              }}
-              onClose={handleToggleDiff}
-              onAction={(action, payload) => void handleAction(action, payload)}
             />
           ) : (
             <MainView
@@ -106,6 +152,14 @@ export function AppShellWorkspace({
                   }
 
                   handleToggleDiff();
+                }}
+                diffRenderMode={diffRenderMode}
+                diffCommentCount={diffCommentCount}
+                diffCommentsSending={diffCommentsSending}
+                diffCommentError={diffCommentError}
+                onSetDiffRenderMode={setDiffRenderMode}
+                onSendDiffComments={() => {
+                  void handleSendDiffComments();
                 }}
                 promptResetKey={composerPromptResetKey}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}

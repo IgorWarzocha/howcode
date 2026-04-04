@@ -9,6 +9,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  ProjectDiffResult,
   ProjectGitState,
   ShellState,
   TerminalCloseRequest,
@@ -87,6 +88,8 @@ export const piDesktopApi = {
   getShellState: async () => (await getRpc()).request.getShellState({}) as Promise<ShellState>,
   getProjectGitState: async (projectId: string) =>
     (await getRpc()).request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
+  getProjectDiff: async (projectId: string) =>
+    (await getRpc()).request.getProjectDiff({ projectId }) as Promise<ProjectDiffResult | null>,
   pickComposerAttachments: async (projectId: string | null = null) =>
     (await getRpc()).request.pickComposerAttachments({
       projectId,

@@ -24,6 +24,12 @@ export type ComposerProps = {
   projectGitState: ProjectGitState | null;
   sessionPath: string | null;
   onSetDiffPanelVisible: (visible: boolean) => void;
+  diffRenderMode: "stacked" | "split";
+  diffCommentCount: number;
+  diffCommentsSending: boolean;
+  diffCommentError: string | null;
+  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSendDiffComments: () => void;
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onToggleTerminal: () => void;
@@ -61,6 +67,12 @@ export function Composer(props: ComposerProps) {
         {surface === "git-ops" ? (
           <ComposerGitOpsMockSurface
             projectGitState={props.projectGitState}
+            diffRenderMode={props.diffRenderMode}
+            diffCommentCount={props.diffCommentCount}
+            diffCommentsSending={props.diffCommentsSending}
+            diffCommentError={props.diffCommentError}
+            onSetDiffRenderMode={props.onSetDiffRenderMode}
+            onSendDiffComments={props.onSendDiffComments}
             onAction={props.onAction}
             onBack={() => setSurface("prompt")}
           />
