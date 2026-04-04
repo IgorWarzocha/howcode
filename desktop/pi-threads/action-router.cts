@@ -8,11 +8,19 @@ import {
   getComposerRequest,
   getComposerText,
   getComposerThinkingLevel,
+  getGitCommitMessage,
+  getGitIncludeUnstaged,
+  getGitPush,
+  getGitRepoUrl,
   getProjectId,
   getProjectIds,
   getProjectName,
+  getSettingsKey,
+  getSettingsModelSelection,
+  getSettingsReset,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
+import { setGitCommitMessageModelSelection } from "../app-settings";
 import {
   openThreadRuntime,
   selectProjectRuntime,
@@ -21,6 +29,7 @@ import {
   setComposerThinkingLevel,
   startNewThread,
 } from "../pi-desktop-runtime";
+import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git";
 import {
   archiveProjectThreads,
   archiveThread,
@@ -72,8 +81,6 @@ export async function handleDesktopAction(
     case "workspace.open":
     case "workspace.open-options":
     case "workspace.handoff":
-    case "workspace.commit":
-    case "workspace.commit-options":
     case "workspace.popout":
     case "connections.add":
     case "connections.dismiss-banner":
@@ -225,6 +232,55 @@ export async function handleDesktopAction(
         text,
         attachments: getComposerAttachments(payload),
       });
+      return;
+    }
+
+    case "workspace.commit": {
+      const projectId = getProjectId(payload);
+      if (!projectId) {
+        return;
+      }
+
+      await commitProjectChanges(projectId, {
+        includeUnstaged: getGitIncludeUnstaged(payload),
+        message: getGitCommitMessage(payload),
+        push: getGitPush(payload),
+      });
+      return;
+    }
+
+    case "workspace.commit-options": {
+      const projectId = getProjectId(payload);
+      if (!projectId) {
+        return;
+      }
+
+      const repoUrl = getGitRepoUrl(payload);
+
+      if (repoUrl) {
+        await setProjectOrigin(projectId, repoUrl);
+        return;
+      }
+
+      await initializeProjectGit(projectId);
+      return;
+    }
+
+    case "settings.update": {
+      const key = getSettingsKey(payload);
+      if (key !== "gitCommitMessageModel") {
+        return;
+      }
+
+      if (getSettingsReset(payload)) {
+        setGitCommitMessageModelSelection(null);
+        return;
+      }
+
+      const selection = getSettingsModelSelection(payload);
+      if (selection) {
+        setGitCommitMessageModelSelection(selection);
+      }
       return;
     }
   }

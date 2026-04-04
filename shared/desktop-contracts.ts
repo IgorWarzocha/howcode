@@ -98,6 +98,15 @@ export type ComposerAttachment = {
   kind: "text" | "image";
 };
 
+export type ModelSelection = {
+  provider: string;
+  id: string;
+};
+
+export type AppSettings = {
+  gitCommitMessageModel: ModelSelection | null;
+};
+
 export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;
@@ -107,8 +116,14 @@ export type ProjectGitState = {
   projectId: string;
   isGitRepo: boolean;
   branch: string | null;
+  fileCount: number;
+  stagedFileCount: number;
+  unstagedFileCount: number;
   insertions: number;
   deletions: number;
+  hasOrigin: boolean;
+  originName: string | null;
+  originUrl: string | null;
 };
 
 export type TurnDiffStatus = "ready" | "missing" | "error";
@@ -144,6 +159,7 @@ export type ShellState = {
   agentDir: string;
   sessionDir: string;
   projects: Project[];
+  appSettings: AppSettings;
   availableHosts: string[];
   composerProfiles: string[];
   composer: ComposerState;

@@ -1,8 +1,10 @@
 import type {
+  AppSettings,
   ComposerAttachment,
   ComposerStateRequest,
   ComposerThinkingLevel,
   DesktopActionPayload,
+  ModelSelection,
 } from "./desktop-contracts";
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
@@ -69,4 +71,37 @@ export function getComposerThinkingLevel(payload: DesktopActionPayload) {
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
     ? (level as ComposerThinkingLevel)
     : null;
+}
+
+export function getGitCommitMessage(payload: DesktopActionPayload) {
+  const message = typeof payload.message === "string" ? payload.message.trim() : "";
+  return message.length > 0 ? message : null;
+}
+
+export function getGitIncludeUnstaged(payload: DesktopActionPayload) {
+  return typeof payload.includeUnstaged === "boolean" ? payload.includeUnstaged : true;
+}
+
+export function getGitPush(payload: DesktopActionPayload) {
+  return typeof payload.push === "boolean" ? payload.push : false;
+}
+
+export function getGitRepoUrl(payload: DesktopActionPayload) {
+  const repoUrl = typeof payload.repoUrl === "string" ? payload.repoUrl.trim() : "";
+  return repoUrl.length > 0 ? repoUrl : null;
+}
+
+export function getSettingsKey(payload: DesktopActionPayload) {
+  return payload.key === "gitCommitMessageModel" ? (payload.key as keyof AppSettings) : null;
+}
+
+export function getSettingsReset(payload: DesktopActionPayload) {
+  return payload.reset === true;
+}
+
+export function getSettingsModelSelection(payload: DesktopActionPayload): ModelSelection | null {
+  const provider = typeof payload.provider === "string" ? payload.provider : null;
+  const id = typeof payload.modelId === "string" ? payload.modelId : null;
+
+  return provider && id ? { provider, id } : null;
 }

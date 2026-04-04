@@ -4,6 +4,7 @@ import type {
   ShellState,
 } from "../../shared/desktop-contracts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper";
+import { loadAppSettings } from "../app-settings";
 import {
   getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
@@ -65,6 +66,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
 
   await syncShellIndex(cwd);
   const composer = await getComposerState({ projectId: cwd });
+  const appSettings = loadAppSettings();
 
   return {
     platform: process.platform,
@@ -73,6 +75,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     cwd,
     agentDir,
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
+    appSettings,
     availableHosts: ["Local"],
     composerProfiles: ["Pi session"],
     composer,

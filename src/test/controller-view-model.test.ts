@@ -33,6 +33,7 @@ describe("deriveControllerViewModel", () => {
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         settingsOpen: false,
+        settingsPanelOpen: false,
         archivedThreadsOpen: false,
         collapsedProjectIds: {},
       },

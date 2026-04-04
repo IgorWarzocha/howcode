@@ -58,6 +58,12 @@ export function ensureThreadStateSchema(database: Database) {
     );
 
     CREATE INDEX IF NOT EXISTS thread_turn_diffs_by_path_idx ON thread_turn_diffs(session_path, checkpoint_turn_count DESC);
+
+    CREATE TABLE IF NOT EXISTS app_preferences (
+      key TEXT PRIMARY KEY,
+      value_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   if (!hasColumn(database, "projects", "custom_name")) {

@@ -81,6 +81,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           onShowView={handleShowView}
           onToggleSidebar={handleToggleSidebar}
           onToggleSettings={handleToggleSettings}
+          onOpenSettingsPanel={() => {
+            handleShowView("settings");
+            handleToggleSettings();
+          }}
           onOpenArchivedThreads={handleOpenArchivedThreads}
           onCollapseAll={handleCollapseAll}
           onProjectSelect={handleProjectSelect}
@@ -148,7 +152,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         onClose={handleCloseArchivedThreads}
         onAction={(action, payload) => void handleAction(action, payload)}
       />
-
       <ProjectActionDialog
         pendingAction={pendingProjectAction}
         onClose={handleCloseProjectActionDialog}

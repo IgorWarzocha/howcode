@@ -42,6 +42,7 @@ export const desktopActions = [
   "automations.open-card",
   "debug.open-card",
   "landing.project-switcher",
+  "settings.update",
   "diff.review",
   "terminal.close",
 ] as const;

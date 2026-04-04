@@ -2,10 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useReducer, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type { ArchivedThread, ComposerState, ProjectGitState } from "../desktop/types";
+import type { ArchivedThread, ComposerState, ProjectGitState, ShellState } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
+import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
 import {
@@ -85,6 +86,33 @@ export function useAppShellController() {
     setComposerState,
     setProjectGitState,
   });
+
+  const applyOptimisticSettingsUpdate = (payload: Record<string, unknown>) => {
+    if (payload.key !== "gitCommitMessageModel") {
+      return;
+    }
+
+    queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
+      if (!currentState) {
+        return currentState ?? null;
+      }
+
+      const nextSelection =
+        payload.reset === true
+          ? null
+          : typeof payload.provider === "string" && typeof payload.modelId === "string"
+            ? { provider: payload.provider, id: payload.modelId }
+            : currentState.appSettings.gitCommitMessageModel;
+
+      return {
+        ...currentState,
+        appSettings: {
+          ...currentState.appSettings,
+          gitCommitMessageModel: nextSelection,
+        },
+      };
+    });
+  };
 
   const runDesktopAction = async (action: DesktopAction, payload: Record<string, unknown> = {}) => {
     const contextualPayload = buildContextualActionPayload({
@@ -183,12 +211,25 @@ export function useAppShellController() {
       });
     }
 
+    if (action === "settings.update") {
+      await refreshShellState();
+    }
+
     if (action === "thread.new") {
       dispatch({ type: "show-view", view: "home" });
 
       const nextComposerState = await loadComposerState({ projectId: composerProjectId });
       if (nextComposerState) {
         setComposerState(nextComposerState);
+      }
+    }
+
+    if (action === "workspace.commit" || action === "workspace.commit-options") {
+      const projectId =
+        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
+
+      if (projectId) {
+        setProjectGitState(await loadProjectGitState(projectId));
       }
     }
   };
@@ -202,6 +243,10 @@ export function useAppShellController() {
 
       setPendingProjectAction(pendingAction);
       return;
+    }
+
+    if (action === "settings.update") {
+      applyOptimisticSettingsUpdate(payload);
     }
 
     await runDesktopAction(action, payload);
@@ -290,8 +335,10 @@ export function useAppShellController() {
     handleCloseArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: false }),
     handleCollapseAll,
     handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
+    handleOpenSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: true }),
     handleConfirmProjectAction,
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
+    handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: () => {
       dispatch({ type: "hide-takeover" });
       setThreadRefreshKey((current) => current + 1);

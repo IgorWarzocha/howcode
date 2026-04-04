@@ -1,13 +1,17 @@
 import { automationCards, debugCards, pluginCards } from "../data/mock-data";
 import type { DesktopAction } from "../desktop/actions";
-import type { ThreadData } from "../desktop/types";
+import type { AppSettings, ComposerModel, ThreadData } from "../desktop/types";
 import type { View } from "../types";
 import { CardGridView } from "./CardGridView";
 import { LandingView } from "./LandingView";
+import { SettingsView } from "./SettingsView";
 import { ThreadView } from "./ThreadView";
 
 type MainViewProps = {
   activeView: View;
+  appSettings: AppSettings;
+  availableModels: ComposerModel[];
+  currentModel: ComposerModel | null;
   currentProjectName: string;
   threadData: ThreadData | null;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
@@ -17,6 +21,9 @@ type MainViewProps = {
 
 export function MainView({
   activeView,
+  appSettings,
+  availableModels,
+  currentModel,
   currentProjectName,
   threadData,
   onAction,
@@ -82,6 +89,17 @@ export function MainView({
           onAction={onAction}
         />
       </div>
+    );
+  }
+
+  if (activeView === "settings") {
+    return (
+      <SettingsView
+        appSettings={appSettings}
+        availableModels={availableModels}
+        currentModel={currentModel}
+        onAction={onAction}
+      />
     );
   }
 

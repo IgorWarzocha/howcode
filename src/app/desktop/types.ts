@@ -1,4 +1,5 @@
 export type {
+  AppSettings,
   ArchivedThread,
   ComposerAttachment,
   ComposerModel,
@@ -8,6 +9,7 @@ export type {
   DesktopEvent,
   DesktopActionPayload,
   DesktopActionResult,
+  ModelSelection,
   ProjectGitState,
   ShellState,
   Thread,

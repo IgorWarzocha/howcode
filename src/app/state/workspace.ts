@@ -12,6 +12,7 @@ export type WorkspaceState = {
   selectedDiffTurnCount: number | null;
   selectedDiffFilePath: string | null;
   settingsOpen: boolean;
+  settingsPanelOpen: boolean;
   archivedThreadsOpen: boolean;
   collapsedProjectIds: Record<string, boolean>;
 };
@@ -29,6 +30,7 @@ export type WorkspaceAction =
   | { type: "open-diff"; checkpointTurnCount: number | null; filePath?: string | null }
   | { type: "set-diff-turn"; checkpointTurnCount: number | null }
   | { type: "toggle-settings" }
+  | { type: "set-settings-panel-open"; open: boolean }
   | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
   | { type: "collapse-all-projects" };
@@ -50,6 +52,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedDiffTurnCount: null,
     selectedDiffFilePath: null,
     settingsOpen: false,
+    settingsPanelOpen: false,
     archivedThreadsOpen: false,
     collapsedProjectIds: Object.fromEntries(
       projects.map((project) => [project.id, project.collapsed ?? true]),
@@ -150,11 +153,19 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       };
     case "toggle-settings":
       return { ...state, settingsOpen: !state.settingsOpen };
+    case "set-settings-panel-open":
+      return {
+        ...state,
+        settingsPanelOpen: action.open,
+        settingsOpen: action.open ? false : state.settingsOpen,
+        archivedThreadsOpen: action.open ? false : state.archivedThreadsOpen,
+      };
     case "set-archived-threads-open":
       return {
         ...state,
         archivedThreadsOpen: action.open,
         settingsOpen: action.open ? false : state.settingsOpen,
+        settingsPanelOpen: action.open ? false : state.settingsPanelOpen,
       };
     case "toggle-project-collapse":
       return {

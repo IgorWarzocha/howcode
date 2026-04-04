@@ -46,6 +46,7 @@ export function AppShellWorkspace({
     shellState,
     state,
   } = controller;
+  const showWorkspaceFooter = state.activeView !== "settings";
 
   return (
     <>
@@ -64,6 +65,9 @@ export function AppShellWorkspace({
         >
           <MainView
             activeView={state.activeView}
+            appSettings={shellState?.appSettings ?? { gitCommitMessageModel: null }}
+            availableModels={activeComposerState?.availableModels ?? []}
+            currentModel={activeComposerState?.currentModel ?? null}
             currentProjectName={currentProjectName}
             threadData={activeThreadData}
             onAction={(action, payload) => void handleAction(action, payload)}
@@ -92,50 +96,53 @@ export function AppShellWorkspace({
         ) : null}
       </div>
 
-      <footer
-        style={diffLayoutStyle}
-        className={
-          splitDiffVisible
-            ? "relative z-10 -mt-5 shrink-0 grid grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] pl-5 pr-0 pt-0 pb-4"
-            : "relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4"
-        }
-      >
-        <div className="grid gap-2.5">
-          <div className={workspaceContentClass}>
-            <Composer
-              activeView={state.activeView}
-              hostLabel={shellState?.availableHosts[0] ?? "Local"}
-              profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
-              model={activeComposerState?.currentModel ?? null}
-              availableModels={activeComposerState?.availableModels ?? []}
-              thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-              availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
-              projectId={composerProjectId}
-              sessionPath={terminalSessionPath}
-              onOpenDiffPanel={() => {
-                if (!state.diffVisible) {
-                  handleToggleDiff();
-                }
-              }}
-              onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-              onPickAttachments={pickComposerAttachments}
-              onAction={handleAction}
-            />
-          </div>
-          {dockedTerminalVisible ? (
+      {showWorkspaceFooter ? (
+        <footer
+          style={diffLayoutStyle}
+          className={
+            splitDiffVisible
+              ? "relative z-10 -mt-5 shrink-0 grid grid-cols-[minmax(0,1fr)_var(--diff-panel-width)] pl-5 pr-0 pt-0 pb-4"
+              : "relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4"
+          }
+        >
+          <div className="grid gap-2.5">
             <div className={workspaceContentClass}>
-              <TerminalPanel
+              <Composer
+                activeView={state.activeView}
+                hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                profileLabel={shellState?.composerProfiles[0] ?? "Pi session"}
+                model={activeComposerState?.currentModel ?? null}
+                availableModels={activeComposerState?.availableModels ?? []}
+                thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 projectId={composerProjectId}
+                projectGitState={projectGitState}
                 sessionPath={terminalSessionPath}
-                onClose={handleToggleTerminal}
-                mode="docked"
-                onAction={(action, payload) => void handleAction(action, payload)}
+                onOpenDiffPanel={() => {
+                  if (!state.diffVisible) {
+                    handleToggleDiff();
+                  }
+                }}
+                onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                onPickAttachments={pickComposerAttachments}
+                onAction={handleAction}
               />
             </div>
-          ) : null}
-        </div>
-        {splitDiffVisible ? <div /> : null}
-      </footer>
+            {dockedTerminalVisible ? (
+              <div className={workspaceContentClass}>
+                <TerminalPanel
+                  projectId={composerProjectId}
+                  sessionPath={terminalSessionPath}
+                  onClose={handleToggleTerminal}
+                  mode="docked"
+                  onAction={(action, payload) => void handleAction(action, payload)}
+                />
+              </div>
+            ) : null}
+          </div>
+          {splitDiffVisible ? <div /> : null}
+        </footer>
+      ) : null}
     </>
   );
 }
