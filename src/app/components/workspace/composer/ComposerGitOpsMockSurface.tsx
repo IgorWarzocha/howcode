@@ -53,7 +53,7 @@ export function ComposerGitOpsMockSurface({
           placeholder=""
         />
 
-        <div className="pointer-events-none absolute bottom-2 left-4 text-[12px] leading-5 text-[color:var(--muted)]">
+        <div className="pointer-events-none absolute right-4 bottom-0 left-4 text-[12px] leading-5 text-[color:var(--muted)]">
           Leave blank to autogenerate a commit message
         </div>
 
