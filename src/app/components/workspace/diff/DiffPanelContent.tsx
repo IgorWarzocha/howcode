@@ -794,16 +794,18 @@ export function DiffPanelContent({
 
       const containerRect = scrollContainer.getBoundingClientRect();
       const draftRect = draftCard.getBoundingClientRect();
-      const bottomOverflow = draftRect.bottom - containerRect.bottom;
+      const desiredVisibleDraftHeight = Math.min(120, draftRect.height);
+      const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
+      const bottomOverflow = draftRect.top - desiredDraftTop;
       const topOverflow = containerRect.top - draftRect.top;
 
       if (bottomOverflow > 0) {
-        scrollContainer.scrollTop += bottomOverflow + 12;
+        scrollContainer.scrollTop += bottomOverflow + 6;
         return;
       }
 
       if (topOverflow > 0) {
-        scrollContainer.scrollTop -= topOverflow + 12;
+        scrollContainer.scrollTop -= topOverflow + 6;
       }
     });
 
