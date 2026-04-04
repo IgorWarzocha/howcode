@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
@@ -7,6 +7,8 @@ import type {
   DesktopActionResult,
 } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
+import { submitComposerDraft } from "./submitComposerDraft";
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: "Off",
@@ -43,6 +45,10 @@ export function useComposerController({
   onAction,
   onPickAttachments,
 }: UseComposerControllerProps) {
+  const draftThreadId = useMemo(
+    () => getComposerDraftThreadId({ projectId, sessionPath }),
+    [projectId, sessionPath],
+  );
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [openMenu, setOpenMenu] = useState<"model" | "thinking" | null>(null);
@@ -52,6 +58,33 @@ export function useComposerController({
   const thinkingButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const thinkingMenuRef = useRef<HTMLDivElement>(null);
+  const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
+  const skipNextDraftPersistenceRef = useRef<string | null>(null);
+
+  activeDraftThreadIdRef.current = draftThreadId;
+
+  useEffect(() => {
+    skipNextDraftPersistenceRef.current = draftThreadId;
+
+    const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
+    setDraft(persistedDraft?.prompt ?? "");
+    setAttachments(persistedDraft?.attachments ?? []);
+    setErrorMessage(null);
+  }, [draftThreadId]);
+
+  useEffect(() => {
+    if (!draftThreadId) {
+      return;
+    }
+
+    if (skipNextDraftPersistenceRef.current === draftThreadId) {
+      skipNextDraftPersistenceRef.current = null;
+      return;
+    }
+
+    composerDraftStore.setPrompt(draftThreadId, draft);
+    composerDraftStore.setAttachments(draftThreadId, attachments);
+  }, [attachments, draft, draftThreadId]);
 
   useDismissibleLayer({
     open: openMenu !== null,
@@ -72,34 +105,39 @@ export function useComposerController({
   };
 
   const send = async () => {
-    const text = draft.trim();
-    if (!text || isSending) {
+    if (draft.trim().length === 0 || isSending) {
       return;
     }
 
     const submittedAttachments = attachments;
+    const submittedDraftThreadId = draftThreadId;
 
     setIsSending(true);
     setErrorMessage(null);
+    skipNextDraftPersistenceRef.current = submittedDraftThreadId;
     setDraft("");
     setAttachments([]);
 
-    try {
-      await onAction("composer.send", {
-        text,
-        attachments: submittedAttachments,
-        projectId,
-        sessionPath,
-      });
-    } catch (error) {
-      setDraft((currentDraft) => (currentDraft.length === 0 ? text : currentDraft));
+    const result = await submitComposerDraft({
+      draft,
+      attachments: submittedAttachments,
+      draftThreadId: submittedDraftThreadId,
+      isSending,
+      projectId,
+      sessionPath,
+      onAction,
+      clearStoredDraft: (threadId) => composerDraftStore.clearComposerContent(threadId),
+    });
+
+    if (result.status === "error" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
+      setDraft((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
       setAttachments((currentAttachments) =>
         currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
       );
-      setErrorMessage(error instanceof Error ? error.message : "Could not send prompt.");
-    } finally {
-      setIsSending(false);
+      setErrorMessage(result.errorMessage);
     }
+
+    setIsSending(false);
   };
 
   const pickAttachments = async () => {
