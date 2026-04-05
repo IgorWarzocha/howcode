@@ -346,6 +346,10 @@ export function ThreadTimelineRow({
   if (row.kind === "summary") {
     const summaryLabel =
       row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
+    const summarySecondary =
+      row.message.role === "compactionSummary"
+        ? "Very long — expand only if you really need the full dump."
+        : null;
     const showCompactionDivider = row.message.role === "compactionSummary";
     const chevronOffsetClass = showCompactionDivider ? "mt-[22px]" : "mt-2";
 
@@ -363,6 +367,7 @@ export function ThreadTimelineRow({
             ) : null}
             <FoldedTimelineRow
               label={summaryLabel}
+              secondary={summarySecondary}
               singleLine
               onToggle={() => onToggleRowCollapse(row.id)}
             />
