@@ -345,9 +345,7 @@ export function ThreadTimelineRow({
 
   if (row.kind === "summary") {
     const summaryLabel =
-      row.message.role === "compactionSummary"
-        ? "Compaction summary — very long, expand only if needed"
-        : "Branch summary";
+      row.message.role === "compactionSummary" ? "Compaction summary" : "Branch summary";
     const showCompactionDivider = row.message.role === "compactionSummary";
     const chevronOffsetClass = showCompactionDivider ? "mt-[22px]" : "mt-2";
 
@@ -363,11 +361,28 @@ export function ThreadTimelineRow({
             {showCompactionDivider ? (
               <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
             ) : null}
-            <FoldedTimelineRow
-              label={summaryLabel}
-              singleLine
-              onToggle={() => onToggleRowCollapse(row.id)}
-            />
+            {showCompactionDivider ? (
+              <button
+                type="button"
+                className="flex w-full min-w-0 items-center gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+                onClick={() => onToggleRowCollapse(row.id)}
+              >
+                <span
+                  className={`min-w-0 flex-1 text-[13px] font-medium leading-[1.4] text-[color:var(--text)]/92 ${clampOneLineClass}`}
+                >
+                  {summaryLabel}
+                </span>
+                <span className="shrink-0 rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
+                  very long
+                </span>
+              </button>
+            ) : (
+              <FoldedTimelineRow
+                label={summaryLabel}
+                singleLine
+                onToggle={() => onToggleRowCollapse(row.id)}
+              />
+            )}
           </div>
         </TimelineRowShell>
       );
