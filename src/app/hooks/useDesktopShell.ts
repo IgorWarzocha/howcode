@@ -20,11 +20,51 @@ import {
   pickComposerAttachmentsQuery,
 } from "../query/desktop-query";
 
+function mergeShellStateProjects(
+  currentState: ShellState | null | undefined,
+  nextState: ShellState,
+): ShellState {
+  if (!currentState) {
+    return nextState;
+  }
+
+  const currentProjectsById = new Map(
+    currentState.projects.map((project) => [project.id, project] as const),
+  );
+
+  return {
+    ...nextState,
+    projects: nextState.projects.map((project) => {
+      const currentProject = currentProjectsById.get(project.id);
+
+      // Shell refreshes rebuild project rows from backend metadata only, which currently drops
+      // loaded thread lists. Preserve already-loaded sidebar thread data across refreshes so
+      // desktop events do not cause the tree to briefly reset/jump before per-project reloads land.
+      if (!currentProject?.threadsLoaded || project.threadsLoaded) {
+        return project;
+      }
+
+      return {
+        ...project,
+        threads: currentProject.threads,
+        threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
+        threadsLoaded: true,
+      };
+    }),
+  };
+}
+
 export function useDesktopShell() {
   const queryClient = useQueryClient();
+  const loadMergedShellState = useCallback(async () => {
+    const nextState = await getShellStateQuery();
+    const currentState = queryClient.getQueryData<ShellState | null>(desktopQueryKeys.shellState());
+    return mergeShellStateProjects(currentState, nextState);
+  }, [queryClient]);
+
   const shellStateQuery = useQuery<ShellState | null>({
     queryKey: desktopQueryKeys.shellState(),
-    queryFn: getShellStateQuery,
+    queryFn: loadMergedShellState,
     staleTime: Number.POSITIVE_INFINITY,
   });
 
@@ -42,12 +82,12 @@ export function useDesktopShell() {
   const refreshShellState = useCallback(async () => {
     const nextState = await queryClient.fetchQuery({
       queryKey: desktopQueryKeys.shellState(),
-      queryFn: getShellStateQuery,
+      queryFn: loadMergedShellState,
       staleTime: 0,
     });
 
     return nextState;
-  }, [queryClient]);
+  }, [loadMergedShellState, queryClient]);
 
   const scheduleShellStateRefresh = useCallback(() => {
     shellRefreshDebouncer.maybeExecute();
