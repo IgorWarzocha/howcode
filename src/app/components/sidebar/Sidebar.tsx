@@ -84,47 +84,47 @@ export function Sidebar({
       <nav className="grid gap-0.5" aria-label="Primary navigation">
         <NavButton
           icon={<MessageSquare size={16} />}
-          label="Chat"
-          active={activeView === "home"}
-          onClick={() => {
-            onShowView("home");
-            onAction("thread.new", {
-              projectId: (selectedProjectId || projects[0]?.id) ?? null,
-            });
-          }}
+          label={
+            <span className="inline-flex items-center gap-2">
+              <span>Chat</span>
+              <FeatureStatusBadge statusId="feature:sidebar.plugins" />
+            </span>
+          }
+          active={activeView === "chat"}
+          onClick={() => onShowView("chat")}
         />
         <NavButton
           icon={<PawPrint size={16} />}
           label={
             <span className="inline-flex items-center gap-2">
               <span>Claw</span>
-              <FeatureStatusBadge statusId="feature:sidebar.plugins" />
+              <FeatureStatusBadge statusId="feature:sidebar.automations" />
             </span>
           }
-          active={activeView === "plugins"}
-          onClick={() => onShowView("plugins")}
+          active={activeView === "claw"}
+          onClick={() => onShowView("claw")}
         />
         <NavButton
           icon={<BriefcaseBusiness size={16} />}
           label={
             <span className="inline-flex items-center gap-2">
               <span>Work</span>
-              <FeatureStatusBadge statusId="feature:sidebar.automations" />
-            </span>
-          }
-          active={activeView === "automations"}
-          onClick={() => onShowView("automations")}
-        />
-        <NavButton
-          icon={<Code2 size={16} />}
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Code</span>
               <FeatureStatusBadge statusId="feature:sidebar.debug" />
             </span>
           }
-          active={activeView === "debug"}
-          onClick={() => onShowView("debug")}
+          active={activeView === "work"}
+          onClick={() => onShowView("work")}
+        />
+        <NavButton
+          icon={<Code2 size={16} />}
+          label="Code"
+          active={activeView === "code"}
+          onClick={() => {
+            onShowView("code");
+            onAction("thread.new", {
+              projectId: (selectedProjectId || projects[0]?.id) ?? null,
+            });
+          }}
         />
       </nav>
 

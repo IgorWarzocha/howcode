@@ -41,7 +41,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
   const [firstProject] = projects;
 
   return {
-    activeView: "home",
+    activeView: "code",
     selectedProjectId: firstProject?.id ?? "",
     selectedThreadId: null,
     selectedSessionPath: null,
@@ -82,7 +82,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView:
           hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
             ? state.activeView
-            : "home",
+            : "code",
         selectedProjectId,
         selectedThreadId:
           hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
@@ -107,7 +107,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "select-project":
       return {
         ...state,
-        activeView: "home",
+        activeView: "code",
         selectedProjectId: action.projectId,
         selectedThreadId: null,
         selectedSessionPath: null,

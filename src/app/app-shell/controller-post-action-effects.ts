@@ -121,7 +121,7 @@ export async function runPostDesktopActionEffects({
       action === "thread.archive" &&
       contextualPayload.threadId === workspaceState.selectedThreadId
     ) {
-      dispatch({ type: "show-view", view: "home" });
+      dispatch({ type: "show-view", view: "code" });
     }
   }
 
@@ -137,7 +137,7 @@ export async function runPostDesktopActionEffects({
       action === "thread.delete" &&
       contextualPayload.threadId === workspaceState.selectedThreadId
     ) {
-      dispatch({ type: "show-view", view: "home" });
+      dispatch({ type: "show-view", view: "code" });
     }
   }
 
@@ -165,13 +165,13 @@ export async function runPostDesktopActionEffects({
     });
 
     if (contextualPayload.projectId === workspaceState.selectedProjectId) {
-      dispatch({ type: "show-view", view: "home" });
+      dispatch({ type: "show-view", view: "code" });
     }
   }
 
   if (action === "project.remove-project") {
     if (contextualPayload.projectId === workspaceState.selectedProjectId) {
-      dispatch({ type: "show-view", view: "home" });
+      dispatch({ type: "show-view", view: "code" });
     }
 
     await refreshShellState();
@@ -187,7 +187,7 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "thread.new") {
-    dispatch({ type: "show-view", view: "home" });
+    dispatch({ type: "show-view", view: "code" });
 
     const nextComposerState = await loadComposerState({ projectId: composerProjectId });
     if (nextComposerState) {

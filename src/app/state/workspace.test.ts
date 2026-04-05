@@ -47,7 +47,7 @@ describe("workspace state", () => {
       },
     );
 
-    expect(nextState.activeView).toBe("home");
+    expect(nextState.activeView).toBe("code");
     expect(nextState.selectedProjectId).toBe("alpha");
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
@@ -109,6 +109,6 @@ describe("workspace state", () => {
     expect(getProjectName(project)).toBe("pi-plugin-codex");
     expect(thread).toBeUndefined();
     expect(getCurrentTitle("thread", thread)).toBe("New thread");
-    expect(getCurrentTitle("home", thread)).toBe("New thread");
+    expect(getCurrentTitle("code", thread)).toBe("New thread");
   });
 });
