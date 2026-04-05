@@ -64,7 +64,7 @@ export function Composer(props: ComposerProps) {
       {props.activeView === "home" ? <ComposerBanner onAction={props.onAction} /> : null}
 
       <SurfacePanel
-        className="grid gap-0 overflow-hidden border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
         aria-label="Composer panel"
       >
         {surface === "git-ops" ? (

@@ -162,7 +162,7 @@ export function ComposerPromptSurface({
         <div className="relative">
           <ToolbarButton
             ref={modelButtonRef}
-            label="Model"
+            label="Agent"
             icon={<Bot size={14} />}
             onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}
             aria-haspopup="menu"
