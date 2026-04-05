@@ -63,11 +63,11 @@ export function ComposerFilePicker({
     <SurfacePanel
       ref={panelRef}
       className={cn(
-        "absolute right-0 bottom-full left-0 z-[70] grid overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+        "absolute right-0 bottom-full left-0 z-[70] grid h-[378px] grid-rows-[44px_minmax(0,1fr)_52px] overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
         popoverPanelClass,
       )}
     >
-      <div className="flex items-center gap-2 border-b border-[rgba(169,178,215,0.08)] px-3 py-2">
+      <div className="flex h-11 items-center gap-2 border-b border-[rgba(169,178,215,0.08)] px-3 py-2">
         <button
           type="button"
           className={cn(compactIconButtonClass, "shrink-0")}
@@ -99,7 +99,7 @@ export function ComposerFilePicker({
         </div>
       </div>
 
-      <div className="relative max-h-80 overflow-y-auto p-1">
+      <div className="relative min-h-0 overflow-y-auto p-1">
         {!picker && loading ? (
           <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
             Loading files…
@@ -168,7 +168,7 @@ export function ComposerFilePicker({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-[rgba(169,178,215,0.08)] px-3 py-2">
+      <div className="flex h-[52px] items-center gap-2 border-t border-[rgba(169,178,215,0.08)] px-3 py-2">
         <button
           type="button"
           className={cn(
