@@ -50,53 +50,40 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   return (
     <>
       <div
-        className={
-          state.sidebarVisible
-            ? "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)] md:grid-cols-[300px_minmax(0,1fr)]"
-            : "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
-        }
+        className="motion-shell-root relative h-screen overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
+        data-sidebar-open={state.sidebarVisible ? "true" : "false"}
       >
-        {state.sidebarVisible ? (
-          <div className="relative min-h-0 min-w-0">
-            <Sidebar
-              projects={projects}
-              activeView={state.activeView}
-              selectedProjectId={state.selectedProjectId}
-              selectedThreadId={state.selectedThreadId}
-              settingsOpen={state.settingsOpen}
-              collapsedProjectIds={collapsedProjectIds}
-              onAction={(action, payload) => void handleAction(action, payload)}
-              onShowView={handleShowView}
-              onToggleSettings={handleToggleSettings}
-              onOpenSettingsPanel={() => {
-                handleShowView("settings");
-                handleToggleSettings();
-              }}
-              onOpenArchivedThreads={handleOpenArchivedThreads}
-              onCollapseAll={handleCollapseAll}
-              onProjectSelect={handleProjectSelect}
-              onProjectReorder={handleProjectReorder}
-              onThreadOpen={handleThreadOpen}
-              onToggleProjectCollapse={handleToggleProjectCollapse}
-            />
-
-            <button
-              type="button"
-              className={cn(
-                "absolute top-3 left-full z-20 ml-2.5 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
-                iconButtonClass,
-              )}
-              onClick={handleToggleSidebar}
-              aria-label="Hide sidebar"
-            >
-              <PanelLeft size={16} />
-            </button>
-          </div>
-        ) : null}
+        <div
+          className="motion-sidebar-panel absolute inset-y-0 left-0 z-10 w-[300px] max-w-[calc(100vw-1rem)] min-w-0"
+          data-open={state.sidebarVisible ? "true" : "false"}
+          aria-hidden={state.sidebarVisible ? undefined : true}
+        >
+          <Sidebar
+            projects={projects}
+            activeView={state.activeView}
+            selectedProjectId={state.selectedProjectId}
+            selectedThreadId={state.selectedThreadId}
+            settingsOpen={state.settingsOpen}
+            collapsedProjectIds={collapsedProjectIds}
+            onAction={(action, payload) => void handleAction(action, payload)}
+            onShowView={handleShowView}
+            onToggleSettings={handleToggleSettings}
+            onOpenSettingsPanel={() => {
+              handleShowView("settings");
+              handleToggleSettings();
+            }}
+            onOpenArchivedThreads={handleOpenArchivedThreads}
+            onCollapseAll={handleCollapseAll}
+            onProjectSelect={handleProjectSelect}
+            onProjectReorder={handleProjectReorder}
+            onThreadOpen={handleThreadOpen}
+            onToggleProjectCollapse={handleToggleProjectCollapse}
+          />
+        </div>
 
         <section
           ref={mainSectionRef}
-          className="flex min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]"
+          className="motion-shell-main flex min-w-0 min-h-0 h-full flex-col overflow-hidden bg-[color:var(--workspace)]"
         >
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             {desktopWorkspacePresent ? (
@@ -128,19 +115,18 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         </section>
       </div>
 
-      {!state.sidebarVisible ? (
-        <button
-          type="button"
-          className={cn(
-            "fixed top-3 left-2.5 z-20 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
-            iconButtonClass,
-          )}
-          onClick={handleToggleSidebar}
-          aria-label="Show sidebar"
-        >
-          <PanelLeft size={16} />
-        </button>
-      ) : null}
+      <button
+        type="button"
+        className={cn(
+          "motion-sidebar-toggle fixed top-3 left-2.5 z-20 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
+          iconButtonClass,
+        )}
+        data-open={state.sidebarVisible ? "true" : "false"}
+        onClick={handleToggleSidebar}
+        aria-label={state.sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+      >
+        <PanelLeft size={16} />
+      </button>
 
       <ArchivedThreadsPanel
         open={state.archivedThreadsOpen}
