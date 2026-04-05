@@ -1,26 +1,14 @@
-import {
-  BriefcaseBusiness,
-  ChevronsUpDown,
-  Code2,
-  FolderPlus,
-  ListFilter,
-  MessageSquare,
-  PawPrint,
-  Settings,
-} from "lucide-react";
+import { BriefcaseBusiness, Code2, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
-import { getFeatureStatusButtonClass } from "../../features/feature-status";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
-import { sidebarSectionLabelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
-import { IconButton } from "../common/IconButton";
 import { NavButton } from "../common/NavButton";
-import { ProjectTree } from "./ProjectTree";
 import { SettingsMenu } from "./SettingsMenu";
+import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 
 type SidebarProps = {
   projects: Project[];
@@ -61,9 +49,10 @@ export function Sidebar({
 }: SidebarProps) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
-  const threadsHeadingId = "sidebar-threads-heading";
   const settingsMenuId = "sidebar-settings-menu";
   const settingsMenuPresent = useAnimatedPresence(settingsOpen);
+  const codeModeActive =
+    activeView === "code" || activeView === "thread" || activeView === "settings";
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -118,51 +107,24 @@ export function Sidebar({
         <NavButton
           icon={<Code2 size={16} />}
           label="Code"
-          active={activeView === "code"}
+          active={codeModeActive}
           onClick={() => onShowView("code")}
         />
       </nav>
 
-      <section
-        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden"
-        aria-labelledby={threadsHeadingId}
-      >
-        <div className={sidebarSectionLabelClass}>
-          <span id={threadsHeadingId}>Threads</span>
-          <div className="flex items-center gap-1.5">
-            <IconButton
-              label="Collapse all"
-              onClick={onCollapseAll}
-              icon={<ChevronsUpDown size={15} />}
-            />
-            <IconButton
-              label="Filter sidebar threads"
-              onClick={() => onAction("threads.filter")}
-              icon={<ListFilter size={15} />}
-              className={getFeatureStatusButtonClass("feature:sidebar.threads.filter")}
-            />
-            <IconButton
-              label="Add new project"
-              onClick={() => onAction("project.add")}
-              icon={<FolderPlus size={15} />}
-              className={getFeatureStatusButtonClass("feature:sidebar.project.add")}
-            />
-          </div>
-        </div>
-
-        <ProjectTree
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          selectedThreadId={selectedThreadId}
-          activeView={activeView}
-          collapsedProjectIds={collapsedProjectIds}
-          onAction={onAction}
-          onProjectSelect={onProjectSelect}
-          onProjectReorder={onProjectReorder}
-          onThreadOpen={onThreadOpen}
-          onToggleProjectCollapse={onToggleProjectCollapse}
-        />
-      </section>
+      <SidebarProjectsSection
+        activeView={activeView}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        selectedThreadId={selectedThreadId}
+        collapsedProjectIds={collapsedProjectIds}
+        onAction={onAction}
+        onCollapseAll={onCollapseAll}
+        onProjectSelect={onProjectSelect}
+        onProjectReorder={onProjectReorder}
+        onThreadOpen={onThreadOpen}
+        onToggleProjectCollapse={onToggleProjectCollapse}
+      />
 
       <button
         ref={settingsButtonRef}
