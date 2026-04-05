@@ -11,7 +11,7 @@ export function AttachmentChips({ attachments, onRemove }: AttachmentChipsProps)
   }
 
   return (
-    <div className="flex flex-wrap gap-2 px-4 pt-3 pb-1" aria-label="Composer attachments">
+    <div className="flex flex-wrap gap-2 px-4 pt-1 pb-1" aria-label="Composer attachments">
       {attachments.map((attachment) => (
         <button
           key={attachment.path}

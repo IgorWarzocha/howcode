@@ -51,13 +51,11 @@ export function useComposerController({
   );
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
-  const [openMenu, setOpenMenu] = useState<"model" | "thinking" | null>(null);
+  const [openMenu, setOpenMenu] = useState<"model" | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
-  const thinkingButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
-  const thinkingMenuRef = useRef<HTMLDivElement>(null);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
   const skipNextDraftPersistenceRef = useRef<string | null>(null);
 
@@ -88,7 +86,7 @@ export function useComposerController({
   useDismissibleLayer({
     open: openMenu !== null,
     onDismiss: () => setOpenMenu(null),
-    refs: [modelButtonRef, thinkingButtonRef, modelMenuRef, thinkingMenuRef],
+    refs: [modelButtonRef, modelMenuRef],
   });
 
   const canSend = draft.trim().length > 0 && !isSending;
@@ -190,9 +188,6 @@ export function useComposerController({
     send,
     setDraft,
     setOpenMenu,
-    thinkingButtonRef,
     thinkingLevelLabels,
-    thinkingMenuOpen: openMenu === "thinking",
-    thinkingMenuRef,
   };
 }

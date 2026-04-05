@@ -222,7 +222,11 @@ export function ComposerGitOpsSurface({
       data-feature-id="feature:composer.git-ops"
       data-feature-status="partial"
     >
+      {/* This outer height is the reference for the prompt composer too. Keep both surfaces in sync
+          so switching between prompt and git-ops does not resize the composer shell. */}
       <div className="relative min-h-24">
+        {/* Top git-ops controls are absolutely positioned inside this shared block. The prompt
+            composer mirrors this pattern with its + button, prompt body, and send controls. */}
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
           {isGitRepo ? (
             hasOrigin ? (
@@ -371,6 +375,7 @@ export function ComposerGitOpsSurface({
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
+      {/* Footer row structure here is mirrored by the prompt composer footer. */}
       <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
         <button
           type="button"

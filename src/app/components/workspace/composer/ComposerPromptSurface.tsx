@@ -1,13 +1,13 @@
-import { ChevronDown, GitBranch, Mic, Plus, Send, SquareTerminal, Terminal } from "lucide-react";
+import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
-import { compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
-import { ComposerMenu } from "./ComposerMenu";
+import { ComposerModelPopover } from "./ComposerModelPopover";
 import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops";
 import { useComposerController } from "./useComposerController";
 
@@ -15,7 +15,6 @@ type ComposerPromptSurfaceProps = ComposerProps & { onOpenGitOps: () => void };
 
 export function ComposerPromptSurface({
   activeView,
-  hostLabel,
   model,
   availableModels,
   thinkingLevel,
@@ -42,7 +41,6 @@ export function ComposerPromptSurface({
     draft,
     errorMessage,
     modelButtonRef,
-    modelLabel,
     modelMenuOpen,
     modelMenuRef,
     pickAttachments,
@@ -51,10 +49,7 @@ export function ComposerPromptSurface({
     send,
     setDraft,
     setOpenMenu,
-    thinkingButtonRef,
     thinkingLevelLabels,
-    thinkingMenuOpen,
-    thinkingMenuRef,
   } = useComposerController({
     model,
     projectId,
@@ -63,129 +58,76 @@ export function ComposerPromptSurface({
     onPickAttachments,
   });
 
-  const modelMenuId = "composer-model-menu";
-  const thinkingMenuId = "composer-thinking-menu";
-
   return (
-    <>
-      <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
-      <textarea
-        className="min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onInput={() => {
-          if (errorMessage) {
-            clearError();
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            void send();
-          }
-        }}
-        aria-label="Prompt composer"
-        placeholder={
-          activeView === "thread"
-            ? "Ask for follow-up changes"
-            : "Ask Pi anything, @ to add files, / for commands, $ for skills"
-        }
-      />
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="flex items-center gap-1.5 max-md:flex-wrap">
-          <ToolbarButton
-            label="Add files and more"
-            icon={<Plus size={16} />}
-            onClick={pickAttachments}
-          />
-          <div className="relative">
-            <ToolbarButton
-              ref={modelButtonRef}
-              label={modelLabel}
-              icon={<ChevronDown size={14} />}
-              onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}
-              trailing
-              aria-haspopup="menu"
-              aria-expanded={modelMenuOpen}
-              aria-controls={modelMenuId}
-            />
-            {modelMenuOpen ? (
-              <ComposerMenu
-                items={availableModels.map((availableModel) => ({
-                  id: `${availableModel.provider}/${availableModel.id}`,
-                  label: availableModel.name,
-                  description: `${availableModel.provider}/${availableModel.id}`,
-                  selected:
-                    model?.provider === availableModel.provider && model.id === availableModel.id,
-                }))}
-                menuId={modelMenuId}
-                panelRef={modelMenuRef}
-                onSelect={(value) => {
-                  const [provider, ...modelIdParts] = value.split("/");
-                  void runComposerAction("composer.model", {
-                    provider,
-                    modelId: modelIdParts.join("/"),
-                    projectId,
-                    sessionPath,
-                  });
-                }}
-                widthClassName="max-h-72 w-72 overflow-y-auto"
-              />
-            ) : null}
-          </div>
-          <div className="relative">
-            <ToolbarButton
-              ref={thinkingButtonRef}
-              label={thinkingLevelLabels[thinkingLevel]}
-              icon={<ChevronDown size={14} />}
-              onClick={() => setOpenMenu((current) => (current === "thinking" ? null : "thinking"))}
-              trailing
-              aria-haspopup="menu"
-              aria-expanded={thinkingMenuOpen}
-              aria-controls={thinkingMenuId}
-            />
-            {thinkingMenuOpen ? (
-              <ComposerMenu
-                items={availableThinkingLevels.map((level) => ({
-                  id: level,
-                  label: thinkingLevelLabels[level],
-                  selected: level === thinkingLevel,
-                }))}
-                menuId={thinkingMenuId}
-                panelRef={thinkingMenuRef}
-                onSelect={(level) => {
-                  void runComposerAction("composer.thinking", {
-                    level,
-                    projectId,
-                    sessionPath,
-                  });
-                }}
-                widthClassName="w-48"
-              />
-            ) : null}
-          </div>
-          <ToolbarButton
-            label={
-              <span className="inline-flex items-center gap-2">
-                <span>Dictate</span>
-                <FeatureStatusBadge statusId="feature:composer.dictate" />
-              </span>
-            }
-            icon={<Mic size={15} />}
-            onClick={() => onAction("composer.dictate")}
-            className={getFeatureStatusButtonClass("feature:composer.dictate")}
-          />
-        </div>
-
+    <div className="grid min-h-[189px] gap-0">
+      {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
+          swap without vertical jump. */}
+      <div className="relative min-h-24">
+        {/* The prompt surface intentionally uses one shared top block: +, attachments, placeholder,
+            textarea, and dictate/send all live here so we match git-ops height without adding a
+            separate control row above or below the prompt. */}
         <button
           type="button"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
-          onClick={() => void send()}
-          disabled={!canSend}
-          aria-label="Send"
+          className={cn(compactIconButtonClass, "absolute top-3 left-4 z-10")}
+          onClick={pickAttachments}
+          aria-label="Add attachment"
+          title="Add attachment"
         >
-          <Send size={16} />
+          <Plus size={16} />
         </button>
+        {attachments.length > 0 ? (
+          <div className="pt-7">
+            <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
+          </div>
+        ) : null}
+        <textarea
+          className={cn(
+            "min-h-24 w-full resize-none bg-transparent px-4 pr-24 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
+            attachments.length > 0 ? "pt-2" : "pt-10",
+          )}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onInput={() => {
+            if (errorMessage) {
+              clearError();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void send();
+            }
+          }}
+          aria-label="Prompt composer"
+          placeholder=""
+        />
+        {draft.length === 0 ? (
+          <div className="pointer-events-none absolute right-24 bottom-4 left-4 text-[14px] leading-[1.45] text-[color:var(--muted-2)]">
+            {activeView === "thread"
+              ? "Ask for follow-up changes"
+              : "Ask Pi anything, @ to add files, / for commands, $ for skills"}
+          </div>
+        ) : null}
+        <div className="absolute right-4 bottom-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onAction("composer.dictate")}
+            className={cn(iconButtonClass, getFeatureStatusButtonClass("feature:composer.dictate"))}
+            aria-label="Dictate"
+            title="Dictate"
+          >
+            <Mic size={15} />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => void send()}
+            disabled={!canSend}
+            aria-label="Send"
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </div>
 
       {errorMessage ? (
@@ -196,14 +138,13 @@ export function ComposerPromptSurface({
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 
+      {/* Bottom toolbar should remain structurally aligned with the git-ops footer row. */}
       <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
-        {sessionPath ? (
-          <ToolbarButton
-            label="TUI"
-            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
-            onClick={onOpenTakeoverTerminal}
-          />
-        ) : null}
+        <ToolbarButton
+          label="TUI"
+          icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+          onClick={onOpenTakeoverTerminal}
+        />
         <ToolbarButton
           label={
             <span className="inline-flex items-center gap-2">
@@ -218,18 +159,42 @@ export function ComposerPromptSurface({
             terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
           )}
         />
-        <ToolbarButton
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>{hostLabel}</span>
-              <FeatureStatusBadge statusId="feature:composer.host" />
-            </span>
-          }
-          icon={<SquareTerminal size={14} />}
-          onClick={() => onAction("composer.host")}
-          trailing
-          className={getFeatureStatusButtonClass("feature:composer.host")}
-        />
+        <div className="relative">
+          <ToolbarButton
+            ref={modelButtonRef}
+            label="Model"
+            icon={<Bot size={14} />}
+            onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}
+            aria-haspopup="menu"
+            aria-expanded={modelMenuOpen}
+            aria-controls="composer-model-menu"
+          />
+          {modelMenuOpen ? (
+            <ComposerModelPopover
+              availableModels={availableModels}
+              availableThinkingLevels={availableThinkingLevels}
+              currentModel={model}
+              currentThinkingLevel={thinkingLevel}
+              panelRef={modelMenuRef}
+              thinkingLevelLabels={thinkingLevelLabels}
+              onSelectModel={(availableModel) => {
+                void runComposerAction("composer.model", {
+                  provider: availableModel.provider,
+                  modelId: availableModel.id,
+                  projectId,
+                  sessionPath,
+                });
+              }}
+              onSelectThinkingLevel={(level) => {
+                void runComposerAction("composer.thinking", {
+                  level,
+                  projectId,
+                  sessionPath,
+                });
+              }}
+            />
+          ) : null}
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <FeatureStatusBadge statusId="feature:composer.git-ops" />
           <div className="flex items-center gap-2 text-[12px]">
@@ -266,6 +231,6 @@ export function ComposerPromptSurface({
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
