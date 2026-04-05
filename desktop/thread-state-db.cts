@@ -18,6 +18,7 @@ export {
   reorderProjects,
   renameProject,
   restoreThread,
+  setProjectRepoOrigin,
   setProjectCollapsed,
   syncSessionSummaries,
   toggleThreadPinned,

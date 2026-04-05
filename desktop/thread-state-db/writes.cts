@@ -145,6 +145,17 @@ export function renameProject(projectId: string, projectName: string) {
   ).run(projectName, projectId);
 }
 
+export function setProjectRepoOrigin(projectId: string, originUrl: string | null) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE projects
+      SET repo_origin_url = ?, repo_origin_checked = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(originUrl, projectId);
+}
+
 export function reorderProjects(projectIds: string[]) {
   if (projectIds.length === 0) {
     return;

@@ -173,19 +173,24 @@ export function CodeWorkspaceView({
             <CodeWorkspaceMainView
               activeView={state.activeView}
               appSettings={
-                shellState?.appSettings ?? { gitCommitMessageModel: null, favoriteFolders: [] }
+                shellState?.appSettings ?? {
+                  gitCommitMessageModel: null,
+                  favoriteFolders: [],
+                  projectImportState: null,
+                  projectScanRoots: [],
+                }
               }
               availableModels={activeComposerState?.availableModels ?? []}
               currentModel={activeComposerState?.currentModel ?? null}
               currentProjectName={currentProjectName}
               projects={controller.projects}
               selectedProjectId={controller.state.selectedProjectId}
-              shellCwd={shellState?.cwd ?? null}
               workspaceContentClass={workspaceContentClass}
               threadData={activeThreadData}
               composerLayoutVersion={composerLayoutVersion}
               onAction={handleAction}
               onLoadEarlierMessages={handleLoadEarlierMessages}
+              onOpenSettings={() => controller.handleShowView("settings")}
               onOpenTurnDiff={handleOpenDiffSelection}
               onSelectProject={controller.handleProjectSelect}
             />

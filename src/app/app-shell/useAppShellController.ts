@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
 import type {
@@ -38,6 +38,7 @@ export function useAppShellController() {
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
   );
+  const inspectedProjectIdsRef = useRef<Set<string>>(new Set());
   const {
     shellState,
     loadArchivedThreads,
@@ -104,6 +105,20 @@ export function useAppShellController() {
     setComposerState,
     setProjectGitState,
   });
+
+  useEffect(() => {
+    const selectedProject = projects.find((project) => project.id === state.selectedProjectId);
+    if (!selectedProject || selectedProject.repoOriginChecked) {
+      return;
+    }
+
+    if (inspectedProjectIdsRef.current.has(selectedProject.id)) {
+      return;
+    }
+
+    inspectedProjectIdsRef.current.add(selectedProject.id);
+    void runDesktopAction("project.inspect-repo", { projectId: selectedProject.id });
+  }, [projects, state.selectedProjectId]);
 
   const runDesktopAction = async (
     action: DesktopAction,

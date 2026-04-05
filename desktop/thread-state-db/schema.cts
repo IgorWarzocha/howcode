@@ -26,6 +26,8 @@ export function ensureThreadStateSchema(database: Database) {
       order_index INTEGER,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
+      repo_origin_url TEXT,
+      repo_origin_checked INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -76,6 +78,14 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "projects", "hidden")) {
     database.exec("ALTER TABLE projects ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "projects", "repo_origin_url")) {
+    database.exec("ALTER TABLE projects ADD COLUMN repo_origin_url TEXT");
+  }
+
+  if (!hasColumn(database, "projects", "repo_origin_checked")) {
+    database.exec("ALTER TABLE projects ADD COLUMN repo_origin_checked INTEGER NOT NULL DEFAULT 0");
   }
 
   schemaReady = true;

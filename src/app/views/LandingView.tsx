@@ -4,7 +4,7 @@ import { PiLogoMark } from "../components/common/PiLogoMark";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
 import type { DesktopAction } from "../desktop/actions";
-import type { DesktopActionResult } from "../desktop/types";
+import type { AppSettings, DesktopActionResult } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import type { Project } from "../types";
@@ -12,25 +12,27 @@ import { menuOptionClass, popoverPanelClass, settingsInputClass } from "../ui/cl
 import { cn } from "../utils/cn";
 
 type LandingViewProps = {
+  appSettings: AppSettings;
   projectName: string;
   projects: Project[];
   selectedProjectId: string;
-  shellCwd?: string | null;
   className?: string;
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,
   ) => Promise<DesktopActionResult | null>;
+  onOpenSettings: () => void;
   onSelectProject: (projectId: string) => void;
 };
 
 export function LandingView({
+  appSettings,
   projectName,
   projects,
   selectedProjectId,
-  shellCwd,
   className,
   onAction,
+  onOpenSettings,
   onSelectProject,
 }: LandingViewProps) {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
@@ -66,6 +68,8 @@ export function LandingView({
     projectSearchInputRef.current?.focus();
   }, [projectMenuOpen]);
 
+  const showProjectImportNotice = appSettings.projectImportState === null;
+
   return (
     <section
       className={cn(
@@ -79,6 +83,38 @@ export function LandingView({
       <h1 className="m-0 text-[clamp(36px,6vw,54px)] font-medium tracking-[-0.04em] text-[color:var(--accent)]">
         Let’s build
       </h1>
+      {showProjectImportNotice ? (
+        <SurfacePanel className="mt-3 grid w-full max-w-[460px] gap-3 rounded-3xl border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.62)] p-4 text-left">
+          <div className="grid gap-1">
+            <div className="text-[14px] font-medium text-[color:var(--text)]">Import projects</div>
+            <p className="m-0 text-[12.5px] leading-5 text-[color:var(--muted)]">
+              Scan your preferred folders once, import the repos you want, and keep rescanning for
+              new projects later from Settings.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3.5 text-[13px] font-medium text-[#1a1c26] transition-opacity hover:opacity-90"
+              onClick={onOpenSettings}
+            >
+              Open settings
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border)] px-3.5 text-[13px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+              onClick={() => {
+                void onAction("settings.update", {
+                  key: "projectImportState",
+                  imported: false,
+                });
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </SurfacePanel>
+      ) : null}
       <div className="mt-3 grid w-full max-w-[460px] grid-cols-2 gap-1.5 max-sm:grid-cols-1">
         <TextButton
           className="inline-flex h-11 w-full min-w-0 items-center justify-center rounded-2xl border border-transparent bg-transparent px-4 text-[15px] text-[color:var(--text)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[rgba(255,255,255,0.05)] disabled:cursor-not-allowed disabled:opacity-45"

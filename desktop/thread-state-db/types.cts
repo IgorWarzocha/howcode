@@ -19,6 +19,8 @@ export type ProjectRow = {
   collapsed: number;
   threadCount: number;
   latestModifiedMs: number;
+  repoOriginUrl: string | null;
+  repoOriginChecked: number;
 };
 
 export type ThreadRow = {

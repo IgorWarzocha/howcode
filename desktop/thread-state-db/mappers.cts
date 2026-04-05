@@ -46,6 +46,8 @@ export function mapProjectRow(row: ProjectRow): Project {
     threadCount: row.threadCount,
     threadsLoaded: false,
     collapsed: Boolean(row.collapsed),
+    repoOriginUrl: row.repoOriginUrl,
+    repoOriginChecked: Boolean(row.repoOriginChecked),
   };
 }
 

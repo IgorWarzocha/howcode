@@ -175,6 +175,7 @@ export function ProjectTree({
                       isActive={projectIsActive}
                       isDragging={isDragging}
                       isExpanded={isExpanded}
+                      hasRepoOrigin={Boolean(project.repoOriginUrl)}
                       name={project.name}
                       threadGroupId={threadGroupId}
                       onEdit={() =>

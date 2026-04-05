@@ -9,6 +9,7 @@ export const desktopActions = [
   "project.open-in-file-manager",
   "project.reorder",
   "project.edit-name",
+  "project.inspect-repo",
   "project.archive-threads",
   "project.remove-project",
   "project.create-worktree",
@@ -40,6 +41,8 @@ export const desktopActions = [
   "debug.open-card",
   "landing.project-switcher",
   "settings.update",
+  "projects.import.scan",
+  "projects.import.apply",
   "diff.review",
   "terminal.close",
 ] as const;

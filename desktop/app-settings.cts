@@ -3,6 +3,8 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const favoriteFoldersKey = "favoriteFolders";
+const projectImportStateKey = "projectImportState";
+const projectScanRootsKey = "projectScanRoots";
 
 type PreferenceRow = {
   valueJson: string;
@@ -24,6 +26,41 @@ function parseModelSelection(valueJson: string | null | undefined): ModelSelecti
 }
 
 function parseFavoriteFolders(valueJson: string | null | undefined): string[] {
+  if (!valueJson) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return Array.isArray(parsed)
+      ? [
+          ...new Set(
+            parsed
+              .filter((value): value is string => typeof value === "string")
+              .map((value) => value.trim())
+              .filter(Boolean),
+          ),
+        ]
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseBooleanPreference(valueJson: string | null | undefined): boolean | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return typeof parsed === "boolean" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseStringArrayPreference(valueJson: string | null | undefined): string[] {
   if (!valueJson) {
     return [];
   }
@@ -88,10 +125,30 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(favoriteFoldersKey) as PreferenceRow | undefined;
+  const projectImportStateRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(projectImportStateKey) as PreferenceRow | undefined;
+  const projectScanRootsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(projectScanRootsKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
+    projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
+    projectScanRoots: parseStringArrayPreference(projectScanRootsRow?.valueJson),
   };
 }
 
@@ -115,4 +172,26 @@ export function setFavoriteFolders(favoriteFolders: string[]) {
   }
 
   writeAppPreference(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders));
+}
+
+export function setProjectImportState(projectImportState: boolean | null) {
+  if (projectImportState === null) {
+    deleteAppPreference(projectImportStateKey);
+    return;
+  }
+
+  writeAppPreference(projectImportStateKey, JSON.stringify(projectImportState));
+}
+
+export function setProjectScanRoots(projectScanRoots: string[]) {
+  const normalizedProjectScanRoots = [
+    ...new Set(projectScanRoots.map((root) => root.trim()).filter(Boolean)),
+  ];
+
+  if (normalizedProjectScanRoots.length === 0) {
+    deleteAppPreference(projectScanRootsKey);
+    return;
+  }
+
+  writeAppPreference(projectScanRootsKey, JSON.stringify(normalizedProjectScanRoots));
 }

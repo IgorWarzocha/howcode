@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, GitBranchPlus, Pencil, X } from "lucide-react";
+import { Archive, FolderOpen, GitBranchPlus, X } from "lucide-react";
 import type { RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { popoverPanelClass } from "../../ui/classes";
@@ -50,11 +50,6 @@ export function ProjectActionMenu({
           title: "Create permanent worktree",
           action: "project.create-worktree" as const,
           statusId: "feature:project.action.create-worktree" as const,
-        },
-        {
-          icon: <Pencil size={14} />,
-          title: "Edit name",
-          action: "project.edit-name" as const,
         },
         {
           icon: <Archive size={14} />,

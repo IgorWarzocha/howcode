@@ -28,6 +28,8 @@ export function listProjects(cwd: string): Project[] {
           COALESCE(projects.custom_name, projects.name) AS name,
           projects.order_index AS orderIndex,
           projects.collapsed AS collapsed,
+          projects.repo_origin_url AS repoOriginUrl,
+          projects.repo_origin_checked AS repoOriginChecked,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
@@ -37,7 +39,9 @@ export function listProjects(cwd: string): Project[] {
           projects.cwd,
           COALESCE(projects.custom_name, projects.name),
           projects.order_index,
-          projects.collapsed
+          projects.collapsed,
+          projects.repo_origin_url,
+          projects.repo_origin_checked
         ORDER BY
           CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,
           projects.order_index ASC,

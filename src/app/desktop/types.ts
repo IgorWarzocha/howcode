@@ -14,6 +14,7 @@ export type {
   ModelSelection,
   ProjectDiffResult,
   ProjectGitState,
+  ProjectImportCandidate,
   ShellState,
   Thread,
   ThreadData,

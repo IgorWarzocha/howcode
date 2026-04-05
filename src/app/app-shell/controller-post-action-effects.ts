@@ -46,7 +46,12 @@ export function getOptimisticallyUpdatedShellState(
     return null;
   }
 
-  if (payload.key !== "gitCommitMessageModel" && payload.key !== "favoriteFolders") {
+  if (
+    payload.key !== "gitCommitMessageModel" &&
+    payload.key !== "favoriteFolders" &&
+    payload.key !== "projectImportState" &&
+    payload.key !== "projectScanRoots"
+  ) {
     return currentState;
   }
 
@@ -71,12 +76,32 @@ export function getOptimisticallyUpdatedShellState(
         ]
       : currentState.appSettings.favoriteFolders;
 
+  const nextProjectImportState =
+    payload.key === "projectImportState" &&
+    (payload.imported === null || typeof payload.imported === "boolean")
+      ? payload.imported
+      : currentState.appSettings.projectImportState;
+
+  const nextProjectScanRoots =
+    payload.key === "projectScanRoots" && Array.isArray(payload.roots)
+      ? [
+          ...new Set(
+            payload.roots
+              .filter((root): root is string => typeof root === "string")
+              .map((root) => root.trim())
+              .filter(Boolean),
+          ),
+        ]
+      : currentState.appSettings.projectScanRoots;
+
   return {
     ...currentState,
     appSettings: {
       ...currentState.appSettings,
       gitCommitMessageModel: nextSelection,
       favoriteFolders: nextFavoriteFolders,
+      projectImportState: nextProjectImportState,
+      projectScanRoots: nextProjectScanRoots,
     },
   } satisfies ShellState;
 }
@@ -170,6 +195,10 @@ export async function runPostDesktopActionEffects({
     });
   }
 
+  if (action === "project.inspect-repo") {
+    await refreshShellState();
+  }
+
   if (action === "project.archive-threads") {
     const projectId = getPayloadProjectId(contextualPayload);
 
@@ -250,6 +279,8 @@ export async function runPostDesktopActionEffects({
     if (projectId) {
       setProjectGitState(await loadProjectGitState(projectId));
     }
+
+    await refreshShellState();
   }
 
   if (action === "workspace.commit") {
@@ -258,5 +289,9 @@ export async function runPostDesktopActionEffects({
     if (projectId && actionResult?.result?.committed === true) {
       setProjectGitState(await loadProjectGitState(projectId));
     }
+  }
+
+  if (action === "projects.import.apply") {
+    await refreshShellState();
   }
 }

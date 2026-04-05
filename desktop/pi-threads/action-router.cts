@@ -15,14 +15,23 @@ import {
   getGitRepoUrl,
   getProjectId,
   getProjectIds,
+  getProjectImportRoots,
+  getProjectImportSelections,
   getProjectName,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
+  getSettingsProjectImportState,
+  getSettingsProjectScanRoots,
   getSettingsReset,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads.ts";
-import { setFavoriteFolders, setGitCommitMessageModelSelection } from "../app-settings.cts";
+import {
+  setFavoriteFolders,
+  setGitCommitMessageModelSelection,
+  setProjectImportState,
+  setProjectScanRoots,
+} from "../app-settings.cts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
 import {
   openThreadRuntime,
@@ -33,6 +42,8 @@ import {
   startNewThread,
 } from "../pi-desktop-runtime.cts";
 import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git.cts";
+import { getOriginUrl } from "../project-git/project-state.cts";
+import { importProjects, scanProjectImportRoots } from "../project-import.cts";
 import {
   archiveProjectThreads,
   archiveThread,
@@ -44,6 +55,7 @@ import {
   reorderProjects,
   restoreThread,
   setProjectCollapsed,
+  setProjectRepoOrigin,
   toggleThreadPinned,
 } from "../thread-state-db.cts";
 
@@ -143,6 +155,20 @@ export async function handleDesktopAction(
         renameProject(projectId, projectName);
       }
       return;
+    }
+
+    case "project.inspect-repo": {
+      const projectId = getProjectId(payload);
+      if (!projectId) {
+        return;
+      }
+
+      const originUrl = await getOriginUrl(projectId);
+      setProjectRepoOrigin(projectId, originUrl);
+      return {
+        projectId,
+        originUrl,
+      };
     }
 
     case "project.archive-threads": {
@@ -260,10 +286,12 @@ export async function handleDesktopAction(
 
       if (repoUrl) {
         await setProjectOrigin(projectId, repoUrl);
+        setProjectRepoOrigin(projectId, repoUrl);
         return;
       }
 
       await initializeProjectGit(projectId);
+      setProjectRepoOrigin(projectId, null);
       return;
     }
 
@@ -278,6 +306,16 @@ export async function handleDesktopAction(
         return;
       }
 
+      if (key === "projectImportState") {
+        setProjectImportState(getSettingsProjectImportState(payload));
+        return;
+      }
+
+      if (key === "projectScanRoots") {
+        setProjectScanRoots(getSettingsProjectScanRoots(payload));
+        return;
+      }
+
       if (getSettingsReset(payload)) {
         setGitCommitMessageModelSelection(null);
         return;
@@ -288,6 +326,17 @@ export async function handleDesktopAction(
         setGitCommitMessageModelSelection(selection);
       }
       return;
+    }
+
+    case "projects.import.scan": {
+      const roots = getProjectImportRoots(payload);
+      return {
+        projects: await scanProjectImportRoots(roots),
+      };
+    }
+
+    case "projects.import.apply": {
+      return await importProjects(getProjectImportSelections(payload));
     }
   }
 

@@ -7,6 +7,7 @@ export const implementedDesktopActions = [
   "project.open-in-file-manager",
   "project.reorder",
   "project.edit-name",
+  "project.inspect-repo",
   "project.archive-threads",
   "project.remove-project",
   "threads.collapse-all",
@@ -22,6 +23,8 @@ export const implementedDesktopActions = [
   "workspace.commit",
   "workspace.commit-options",
   "settings.update",
+  "projects.import.scan",
+  "projects.import.apply",
 ] as const satisfies readonly DesktopAction[];
 
 // These actions are intentionally accepted by the bridge but currently no-op on the

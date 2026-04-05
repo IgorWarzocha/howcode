@@ -16,6 +16,17 @@ export type Project = {
   collapsed?: boolean;
   threadsLoaded?: boolean;
   threadCount?: number;
+  repoOriginUrl?: string | null;
+  repoOriginChecked?: boolean;
+};
+
+export type ProjectImportCandidate = {
+  projectId: string;
+  name: string;
+  isGitRepo: boolean;
+  hasOrigin: boolean;
+  originUrl: string | null;
+  alreadyImported: boolean;
 };
 
 export type ArchivedThread = {
@@ -120,6 +131,8 @@ export type ModelSelection = {
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   favoriteFolders: string[];
+  projectImportState: boolean | null;
+  projectScanRoots: string[];
 };
 
 export type ComposerStateRequest = {

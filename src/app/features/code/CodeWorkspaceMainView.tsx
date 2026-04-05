@@ -18,7 +18,6 @@ type CodeWorkspaceMainViewProps = {
   currentProjectName: string;
   projects: Project[];
   selectedProjectId: string;
-  shellCwd?: string | null;
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
@@ -28,6 +27,7 @@ type CodeWorkspaceMainViewProps = {
   ) => Promise<DesktopActionResult | null>;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
+  onOpenSettings: () => void;
   onSelectProject: (projectId: string) => void;
 };
 
@@ -39,13 +39,13 @@ export function CodeWorkspaceMainView({
   currentProjectName,
   projects,
   selectedProjectId,
-  shellCwd,
   workspaceContentClass,
   threadData,
   composerLayoutVersion,
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
+  onOpenSettings,
   onSelectProject,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
@@ -77,12 +77,13 @@ export function CodeWorkspaceMainView({
   return (
     <div className="grid h-full content-start justify-items-center px-4 pb-6">
       <LandingView
+        appSettings={appSettings}
         className={workspaceContentClass}
         projectName={currentProjectName}
         projects={projects}
         selectedProjectId={selectedProjectId}
-        shellCwd={shellCwd}
         onAction={onAction}
+        onOpenSettings={onOpenSettings}
         onSelectProject={onSelectProject}
       />
     </div>
