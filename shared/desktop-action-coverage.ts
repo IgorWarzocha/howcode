@@ -27,8 +27,6 @@ export const implementedDesktopActions = [
 // These actions are intentionally accepted by the bridge but currently no-op on the
 // backend until their renderer/desktop integrations are implemented.
 export const unimplementedDesktopActions = [
-  "nav.back",
-  "nav.forward",
   "threads.filter",
   "project.add",
   "project.actions",

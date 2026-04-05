@@ -17,9 +17,7 @@ These are high-value, lower-risk tasks that should make the app feel more honest
   - `project.remove-project`
   - sidebar rename/status drift
 - [ ] audit unsurfaced `feature:header.*` and other orphaned status IDs; either wire them or delete them
-- [ ] add markers for visible no-op controls that currently look real
-  - nav back
-  - nav forward
+- [ ] remove dead nav back/forward affordances from the shell completely
 
 ### Small UI shells that can become real quickly
 
@@ -44,7 +42,6 @@ These should be tackled as grouped lanes, not as isolated tickets.
 
 Work on all of these together so the shell gets one coherent navigation model.
 
-- [ ] implement nav back/forward semantics
 - [ ] implement `project.switch`
 - [ ] implement landing/project switching UX
 - [ ] implement `thread.actions`
@@ -162,7 +159,7 @@ Likely connected areas:
 If we want a sensible work sequence, do this:
 
 1. easy wins / badge cleanup
-2. navigation + header semantics batch
+2. header + project-switch semantics batch
 3. git + diff + review batch
 4. terminal + host + remote batch
 5. project/discovery batch

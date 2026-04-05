@@ -39,7 +39,6 @@ These are the highest-value "make the current app feel honest" items:
 
 Representative items:
 
-- nav back/forward semantics
 - landing/project switchers
 - thread action menu / run action
 - workspace open / open options / handoff / popout decisions
@@ -150,7 +149,7 @@ Long-term options:
 Recommended order:
 
 1. clean up visible drift and small mocks
-2. implement header/navigation semantics together
+2. implement header/project-switch/action semantics together
 3. implement git/diff/review together
 4. implement terminal/host/remote/handoff together
 5. decide the fate of plugins/automations/debug

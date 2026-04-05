@@ -105,15 +105,11 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Filter button emits `threads.filter`: `src/app/components/sidebar/Sidebar.tsx`
 - Add project button emits `project.add`: `src/app/components/sidebar/Sidebar.tsx`
-- Back/forward emit navigation actions only: `src/app/components/sidebar/Sidebar.tsx`
 - No backend behavior for:
-  - `nav.back`
-  - `nav.forward`
   - `threads.filter`
   - `project.add`
 
 **Expansion direction:**
-- Decide whether these are renderer-only behaviors, desktop actions, or both.
 - Add search/filter state + project import/create flows.
 - Project ordering now supports intentional drag-and-drop. If thread ordering becomes important later, add it as an explicit product rule instead of layering ad hoc pointer logic onto the current sidebar.
 

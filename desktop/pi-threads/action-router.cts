@@ -72,8 +72,6 @@ export async function handleDesktopAction(
   payload: DesktopActionPayload,
 ): Promise<Record<string, unknown> | null | undefined> {
   switch (action) {
-    case "nav.back":
-    case "nav.forward":
     case "threads.filter":
     case "project.add":
     case "project.actions":

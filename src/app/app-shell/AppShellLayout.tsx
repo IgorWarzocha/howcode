@@ -1,6 +1,9 @@
+import { PanelLeft } from "lucide-react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
+import { iconButtonClass } from "../ui/classes";
+import { cn } from "../utils/cn";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
@@ -53,29 +56,43 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             : "grid h-screen grid-cols-[minmax(0,1fr)] overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
         }
       >
-        <Sidebar
-          projects={projects}
-          activeView={state.activeView}
-          selectedProjectId={state.selectedProjectId}
-          selectedThreadId={state.selectedThreadId}
-          sidebarVisible={state.sidebarVisible}
-          settingsOpen={state.settingsOpen}
-          collapsedProjectIds={collapsedProjectIds}
-          onAction={(action, payload) => void handleAction(action, payload)}
-          onShowView={handleShowView}
-          onToggleSidebar={handleToggleSidebar}
-          onToggleSettings={handleToggleSettings}
-          onOpenSettingsPanel={() => {
-            handleShowView("settings");
-            handleToggleSettings();
-          }}
-          onOpenArchivedThreads={handleOpenArchivedThreads}
-          onCollapseAll={handleCollapseAll}
-          onProjectSelect={handleProjectSelect}
-          onProjectReorder={handleProjectReorder}
-          onThreadOpen={handleThreadOpen}
-          onToggleProjectCollapse={handleToggleProjectCollapse}
-        />
+        {state.sidebarVisible ? (
+          <div className="relative min-h-0 min-w-0">
+            <Sidebar
+              projects={projects}
+              activeView={state.activeView}
+              selectedProjectId={state.selectedProjectId}
+              selectedThreadId={state.selectedThreadId}
+              settingsOpen={state.settingsOpen}
+              collapsedProjectIds={collapsedProjectIds}
+              onAction={(action, payload) => void handleAction(action, payload)}
+              onShowView={handleShowView}
+              onToggleSettings={handleToggleSettings}
+              onOpenSettingsPanel={() => {
+                handleShowView("settings");
+                handleToggleSettings();
+              }}
+              onOpenArchivedThreads={handleOpenArchivedThreads}
+              onCollapseAll={handleCollapseAll}
+              onProjectSelect={handleProjectSelect}
+              onProjectReorder={handleProjectReorder}
+              onThreadOpen={handleThreadOpen}
+              onToggleProjectCollapse={handleToggleProjectCollapse}
+            />
+
+            <button
+              type="button"
+              className={cn(
+                "absolute top-3 left-full z-20 ml-2.5 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
+                iconButtonClass,
+              )}
+              onClick={handleToggleSidebar}
+              aria-label="Hide sidebar"
+            >
+              <PanelLeft size={16} />
+            </button>
+          </div>
+        ) : null}
 
         <section
           ref={mainSectionRef}
@@ -110,6 +127,20 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           </div>
         </section>
       </div>
+
+      {!state.sidebarVisible ? (
+        <button
+          type="button"
+          className={cn(
+            "fixed top-3 left-2.5 z-20 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
+            iconButtonClass,
+          )}
+          onClick={handleToggleSidebar}
+          aria-label="Show sidebar"
+        >
+          <PanelLeft size={16} />
+        </button>
+      ) : null}
 
       <ArchivedThreadsPanel
         open={state.archivedThreadsOpen}

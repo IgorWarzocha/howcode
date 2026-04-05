@@ -1,6 +1,4 @@
 export const desktopActions = [
-  "nav.back",
-  "nav.forward",
   "threads.collapse-all",
   "threads.filter",
   "project.add",
