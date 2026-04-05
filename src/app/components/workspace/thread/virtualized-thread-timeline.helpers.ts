@@ -53,24 +53,34 @@ function getStreamingTurnRowId({
 
 function getFirstUnvirtualizedRowIndex({
   rows,
+  effectiveCollapsedRowIds,
   isStreaming,
   streamingTurnRowId,
 }: {
   rows: TimelineRow[];
+  effectiveCollapsedRowIds: Record<string, boolean>;
   isStreaming: boolean;
   streamingTurnRowId: string | null;
 }) {
   const firstTailRowIndex = Math.max(rows.length - ALWAYS_UNVIRTUALIZED_TAIL_ROWS, 0);
+  const firstExpandedSummaryRowIndex = rows.findIndex(
+    (row) => row.kind === "summary" && effectiveCollapsedRowIds[row.id] === false,
+  );
+  const firstStableRowIndex =
+    firstExpandedSummaryRowIndex >= 0
+      ? Math.min(firstTailRowIndex, firstExpandedSummaryRowIndex)
+      : firstTailRowIndex;
+
   if (!isStreaming || !streamingTurnRowId) {
-    return firstTailRowIndex;
+    return firstStableRowIndex;
   }
 
   const streamingTurnIndex = rows.findIndex((row) => row.id === streamingTurnRowId);
   if (streamingTurnIndex < 0) {
-    return firstTailRowIndex;
+    return firstStableRowIndex;
   }
 
-  return Math.min(streamingTurnIndex, firstTailRowIndex);
+  return Math.min(streamingTurnIndex, firstStableRowIndex);
 }
 
 export function buildVirtualizedThreadTimelineState({
@@ -115,6 +125,7 @@ export function buildVirtualizedThreadTimelineState({
   );
   const firstUnvirtualizedRowIndex = getFirstUnvirtualizedRowIndex({
     rows,
+    effectiveCollapsedRowIds,
     isStreaming,
     streamingTurnRowId,
   });
