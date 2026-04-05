@@ -6,19 +6,30 @@ import {
   type FileDiffMetadata,
 } from "@pierre/diffs/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Check, ChevronDown, ChevronRight, MessageSquarePlus, X } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquarePlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
+import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
 import {
+  DIFF_FILE_ESTIMATED_FILE_GAP,
+  DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   DIFF_PANEL_UNSAFE_CSS,
+  type DiffCommentMetadata,
+  alignElementInScrollViewport,
+  buildDraftTarget,
   buildFileDiffRenderKey,
+  estimateFileDiffHeight,
+  getFileChangeCounts,
+  getFileHeaderContextLabel,
   getRenderablePatch,
+  isSameDraftTarget,
   joinProjectFilePath,
   orderRenderableFiles,
   resolveFileDiffPath,
+  resolvePointerLineTarget,
 } from "./diff-panel-content.helpers";
 import { resolveDiffThemeName } from "./diff-rendering";
 import {
@@ -29,275 +40,6 @@ import {
 } from "./diffCommentStore";
 
 type DiffThemeType = "light" | "dark";
-
-type DiffCommentMetadata = {
-  id: string;
-  body: string;
-  kind: "comment" | "draft";
-  side: AnnotationSide;
-  lineNumber: number;
-  endSide?: AnnotationSide;
-  endLineNumber?: number;
-};
-
-function isSameDraftTarget(
-  left: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
-  right: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
-) {
-  return (
-    left.fileKey === right.fileKey &&
-    left.side === right.side &&
-    left.lineNumber === right.lineNumber &&
-    (left.endSide ?? left.side) === (right.endSide ?? right.side) &&
-    (left.endLineNumber ?? left.lineNumber) === (right.endLineNumber ?? right.lineNumber)
-  );
-}
-
-function buildDraftTarget({
-  fileKey,
-  filePath,
-  side,
-  lineNumber,
-  endSide,
-  endLineNumber,
-}: {
-  fileKey: string;
-  filePath: string;
-  side: AnnotationSide;
-  lineNumber: number;
-  endSide?: AnnotationSide;
-  endLineNumber?: number;
-}): Omit<DiffCommentDraft, "body"> {
-  const resolvedEndSide = endSide ?? side;
-  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
-
-  return {
-    fileKey,
-    filePath,
-    side,
-    lineNumber,
-    ...(resolvedEndSide !== side ? { endSide: resolvedEndSide } : {}),
-    ...(resolvedEndLineNumber !== lineNumber ? { endLineNumber: resolvedEndLineNumber } : {}),
-  };
-}
-
-function describeCommentTarget({
-  side,
-  lineNumber,
-  endSide,
-  endLineNumber,
-}: Pick<DiffCommentDraft, "side" | "lineNumber" | "endSide" | "endLineNumber">) {
-  const resolvedEndSide = endSide ?? side;
-  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
-  const sideLabel = side === "deletions" ? "Old" : "New";
-
-  if (side === resolvedEndSide) {
-    const start = Math.min(lineNumber, resolvedEndLineNumber);
-    const end = Math.max(lineNumber, resolvedEndLineNumber);
-    return start === end ? `${sideLabel} line ${start}` : `${sideLabel} lines ${start}-${end}`;
-  }
-
-  const endSideLabel = resolvedEndSide === "deletions" ? "Old" : "New";
-  return `${sideLabel} line ${lineNumber} → ${endSideLabel} line ${resolvedEndLineNumber}`;
-}
-
-function describeCollapsedLines(count: number) {
-  return `${count} unmodified line${count === 1 ? "" : "s"}`;
-}
-
-function getFileHeaderContextLabel(fileDiff: FileDiffMetadata) {
-  const collapsedBefore = fileDiff.hunks[0]?.collapsedBefore ?? 0;
-  return collapsedBefore > 0 ? describeCollapsedLines(collapsedBefore) : null;
-}
-
-function getFileChangeCounts(fileDiff: FileDiffMetadata) {
-  let additions = 0;
-  let deletions = 0;
-
-  for (const hunk of fileDiff.hunks) {
-    additions += hunk.additionLines;
-    deletions += hunk.deletionLines;
-  }
-
-  return { additions, deletions };
-}
-
-const DIFF_FILE_ESTIMATED_LINE_HEIGHT = 20;
-const DIFF_FILE_ESTIMATED_HEADER_HEIGHT = 36;
-const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
-const DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT = 32;
-const DIFF_FILE_ESTIMATED_COMMENT_HEIGHT = 92;
-
-function alignElementInScrollViewport({
-  scrollContainer,
-  targetElement,
-  mode,
-}: {
-  scrollContainer: HTMLDivElement;
-  targetElement: HTMLElement;
-  mode: "center" | "draft-fit";
-}) {
-  const containerRect = scrollContainer.getBoundingClientRect();
-  const targetRect = targetElement.getBoundingClientRect();
-
-  if (mode === "draft-fit") {
-    const viewportPadding = 8;
-    const availableHeight = containerRect.height - viewportPadding * 2;
-
-    if (targetRect.height <= availableHeight) {
-      const bottomOverflow = targetRect.bottom - (containerRect.bottom - viewportPadding);
-      const topOverflow = containerRect.top + viewportPadding - targetRect.top;
-
-      if (bottomOverflow > 0) {
-        scrollContainer.scrollTop += bottomOverflow;
-        return;
-      }
-
-      if (topOverflow > 0) {
-        scrollContainer.scrollTop -= topOverflow;
-      }
-      return;
-    }
-
-    const desiredVisibleDraftHeight = Math.min(120, targetRect.height);
-    const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
-    const bottomOverflow = targetRect.top - desiredDraftTop;
-    const topOverflow = containerRect.top + viewportPadding - targetRect.top;
-
-    if (bottomOverflow > 0) {
-      scrollContainer.scrollTop += bottomOverflow + 6;
-      return;
-    }
-
-    if (topOverflow > 0) {
-      scrollContainer.scrollTop -= topOverflow;
-    }
-    return;
-  }
-
-  const desiredTargetTop = containerRect.top + (containerRect.height - targetRect.height) / 2;
-  const offset = targetRect.top - desiredTargetTop;
-
-  if (Math.abs(offset) > 4) {
-    scrollContainer.scrollTop += offset;
-  }
-}
-
-function estimateFileDiffHeight({
-  fileDiff,
-  collapsed,
-  diffRenderMode,
-  annotationCount,
-}: {
-  fileDiff: FileDiffMetadata;
-  collapsed: boolean;
-  diffRenderMode: "stacked" | "split";
-  annotationCount: number;
-}) {
-  let height = DIFF_FILE_ESTIMATED_HEADER_HEIGHT;
-
-  if (!collapsed) {
-    let lineCount = 0;
-    let separatorCount = 0;
-
-    for (const hunk of fileDiff.hunks) {
-      lineCount += diffRenderMode === "split" ? hunk.splitLineCount : hunk.unifiedLineCount;
-
-      if (hunk.collapsedBefore > 0) {
-        separatorCount += 1;
-      }
-    }
-
-    height += lineCount * DIFF_FILE_ESTIMATED_LINE_HEIGHT;
-    height +=
-      separatorCount * (DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
-
-    if (fileDiff.hunks.length > 0) {
-      height += DIFF_FILE_ESTIMATED_FILE_GAP;
-    }
-  }
-
-  if (annotationCount > 0) {
-    height += annotationCount * DIFF_FILE_ESTIMATED_COMMENT_HEIGHT;
-  }
-
-  return Math.max(height, DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
-}
-
-function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
-  side: AnnotationSide;
-  lineNumber: number;
-} | null {
-  const path = event.composedPath?.() ?? [];
-  let numberElement: HTMLElement | null = null;
-  let codeElement: HTMLElement | null = null;
-  let lineType: string | null = null;
-  let lineNumber: number | null = null;
-
-  for (const node of path) {
-    if (!(node instanceof HTMLElement)) {
-      continue;
-    }
-
-    if (
-      node instanceof HTMLButtonElement ||
-      node instanceof HTMLTextAreaElement ||
-      node instanceof HTMLInputElement ||
-      node instanceof HTMLSelectElement
-    ) {
-      return null;
-    }
-
-    if (node.hasAttribute("data-title") || node.hasAttribute("data-file-info")) {
-      return null;
-    }
-
-    if (!numberElement) {
-      const columnNumber = node.getAttribute("data-column-number");
-      if (columnNumber) {
-        const parsedLineNumber = Number.parseInt(columnNumber, 10);
-        if (!Number.isNaN(parsedLineNumber)) {
-          numberElement = node;
-          lineNumber = parsedLineNumber;
-          lineType = node.getAttribute("data-line-type");
-          continue;
-        }
-      }
-    }
-
-    if (lineNumber == null) {
-      const lineAttribute = node.getAttribute("data-line");
-      if (lineAttribute) {
-        const parsedLineNumber = Number.parseInt(lineAttribute, 10);
-        if (!Number.isNaN(parsedLineNumber)) {
-          lineNumber = parsedLineNumber;
-          lineType = node.getAttribute("data-line-type");
-          continue;
-        }
-      }
-    }
-
-    if (!codeElement && node.hasAttribute("data-code")) {
-      codeElement = node;
-      break;
-    }
-  }
-
-  if (!codeElement || lineNumber == null) {
-    return null;
-  }
-
-  const side: AnnotationSide =
-    lineType === "change-deletion"
-      ? "deletions"
-      : lineType === "change-addition"
-        ? "additions"
-        : codeElement.hasAttribute("data-deletions")
-          ? "deletions"
-          : "additions";
-
-  return { side, lineNumber };
-}
 
 type DiffPanelContentProps = {
   projectId: string;
@@ -750,92 +492,16 @@ export function DiffPanelContent({
     [openDraftComment],
   );
 
-  const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => {
-    const metadata = annotation.metadata;
-
-    if (metadata.kind === "draft") {
-      return (
-        <div
-          ref={draftCardRef}
-          className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
-          style={{
-            fontFamily:
-              'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-          }}
-        >
-          <div className="mb-2 text-[11px] font-medium text-[color:var(--muted)]">
-            Add comment · {draftComment ? describeCommentTarget(draftComment) : "Line comment"}
-          </div>
-          <textarea
-            className="min-h-20 w-full resize-y rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2 text-[12px] leading-5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-            value={draftComment?.body ?? ""}
-            onChange={(event) => {
-              setDraftComment((current) =>
-                current
-                  ? {
-                      ...current,
-                      body: event.target.value,
-                    }
-                  : current,
-              );
-            }}
-            placeholder="Leave a note on this diff"
-            aria-label={`Comment for line ${annotation.lineNumber}`}
-          />
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-              onClick={() => {
-                setDraftComment(null);
-              }}
-              aria-label="Cancel comment"
-              title="Cancel comment"
-            >
-              <X size={14} />
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--accent)] text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={persistDraftComment}
-              disabled={(draftComment?.body.trim().length ?? 0) === 0}
-              aria-label="Save comment"
-              title="Save comment"
-            >
-              <Check size={14} />
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        data-saved-diff-comment-id={metadata.id}
-        className="mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2"
-        style={{
-          fontFamily:
-            'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-        }}
-      >
-        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-[color:var(--muted)]">
-          <span>Comment · {describeCommentTarget(metadata)}</span>
-          <button
-            type="button"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-            onClick={() => removeComment(metadata.id)}
-            aria-label="Remove comment"
-            title="Remove comment"
-          >
-            <X size={12} />
-          </button>
-        </div>
-        <p className="m-0 whitespace-pre-wrap text-[12px] leading-5 text-[color:var(--text)]">
-          {metadata.body}
-        </p>
-      </div>
-    );
-  };
+  const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => (
+    <DiffCommentAnnotationCard
+      annotation={annotation}
+      draftCardRef={draftCardRef}
+      draftComment={draftComment}
+      setDraftComment={setDraftComment}
+      onPersistDraftComment={persistDraftComment}
+      onRemoveComment={removeComment}
+    />
+  );
 
   useEffect(() => {
     if (!draftTarget) {

@@ -1,6 +1,8 @@
 import { parsePatchFiles } from "@pierre/diffs";
 import type { FileDiffMetadata } from "@pierre/diffs/react";
+import type { AnnotationSide } from "@pierre/diffs/react";
 import { buildPatchCacheKey } from "./diff-rendering";
+import type { DiffCommentDraft } from "./diffCommentStore";
 
 export type RenderablePatch =
   | {
@@ -12,6 +14,22 @@ export type RenderablePatch =
       text: string;
       reason: string;
     };
+
+export type DiffCommentMetadata = {
+  id: string;
+  body: string;
+  kind: "comment" | "draft";
+  side: AnnotationSide;
+  lineNumber: number;
+  endSide?: AnnotationSide;
+  endLineNumber?: number;
+};
+
+export const DIFF_FILE_ESTIMATED_LINE_HEIGHT = 20;
+export const DIFF_FILE_ESTIMATED_HEADER_HEIGHT = 36;
+export const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
+export const DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT = 32;
+export const DIFF_FILE_ESTIMATED_COMMENT_HEIGHT = 92;
 
 export const DIFF_PANEL_UNSAFE_CSS = `
 :host {
@@ -319,6 +337,259 @@ export function joinProjectFilePath(projectId: string, filePath: string) {
   const normalizedProjectId = projectId.replace(/\/$/, "");
   const normalizedFilePath = filePath.replace(/^\.\//, "");
   return `${normalizedProjectId}/${normalizedFilePath}`;
+}
+
+export function isSameDraftTarget(
+  left: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
+  right: Pick<DiffCommentDraft, "fileKey" | "side" | "lineNumber" | "endSide" | "endLineNumber">,
+) {
+  return (
+    left.fileKey === right.fileKey &&
+    left.side === right.side &&
+    left.lineNumber === right.lineNumber &&
+    (left.endSide ?? left.side) === (right.endSide ?? right.side) &&
+    (left.endLineNumber ?? left.lineNumber) === (right.endLineNumber ?? right.lineNumber)
+  );
+}
+
+export function buildDraftTarget({
+  fileKey,
+  filePath,
+  side,
+  lineNumber,
+  endSide,
+  endLineNumber,
+}: {
+  fileKey: string;
+  filePath: string;
+  side: AnnotationSide;
+  lineNumber: number;
+  endSide?: AnnotationSide;
+  endLineNumber?: number;
+}): Omit<DiffCommentDraft, "body"> {
+  const resolvedEndSide = endSide ?? side;
+  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
+
+  return {
+    fileKey,
+    filePath,
+    side,
+    lineNumber,
+    ...(resolvedEndSide !== side ? { endSide: resolvedEndSide } : {}),
+    ...(resolvedEndLineNumber !== lineNumber ? { endLineNumber: resolvedEndLineNumber } : {}),
+  };
+}
+
+export function describeCommentTarget({
+  side,
+  lineNumber,
+  endSide,
+  endLineNumber,
+}: Pick<DiffCommentDraft, "side" | "lineNumber" | "endSide" | "endLineNumber">) {
+  const resolvedEndSide = endSide ?? side;
+  const resolvedEndLineNumber = endLineNumber ?? lineNumber;
+  const sideLabel = side === "deletions" ? "Old" : "New";
+
+  if (side === resolvedEndSide) {
+    const start = Math.min(lineNumber, resolvedEndLineNumber);
+    const end = Math.max(lineNumber, resolvedEndLineNumber);
+    return start === end ? `${sideLabel} line ${start}` : `${sideLabel} lines ${start}-${end}`;
+  }
+
+  const endSideLabel = resolvedEndSide === "deletions" ? "Old" : "New";
+  return `${sideLabel} line ${lineNumber} → ${endSideLabel} line ${resolvedEndLineNumber}`;
+}
+
+export function describeCollapsedLines(count: number) {
+  return `${count} unmodified line${count === 1 ? "" : "s"}`;
+}
+
+export function getFileHeaderContextLabel(fileDiff: FileDiffMetadata) {
+  const collapsedBefore = fileDiff.hunks[0]?.collapsedBefore ?? 0;
+  return collapsedBefore > 0 ? describeCollapsedLines(collapsedBefore) : null;
+}
+
+export function getFileChangeCounts(fileDiff: FileDiffMetadata) {
+  let additions = 0;
+  let deletions = 0;
+
+  for (const hunk of fileDiff.hunks) {
+    additions += hunk.additionLines;
+    deletions += hunk.deletionLines;
+  }
+
+  return { additions, deletions };
+}
+
+export function alignElementInScrollViewport({
+  scrollContainer,
+  targetElement,
+  mode,
+}: {
+  scrollContainer: HTMLDivElement;
+  targetElement: HTMLElement;
+  mode: "center" | "draft-fit";
+}) {
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const targetRect = targetElement.getBoundingClientRect();
+
+  if (mode === "draft-fit") {
+    const viewportPadding = 8;
+    const availableHeight = containerRect.height - viewportPadding * 2;
+
+    if (targetRect.height <= availableHeight) {
+      const bottomOverflow = targetRect.bottom - (containerRect.bottom - viewportPadding);
+      const topOverflow = containerRect.top + viewportPadding - targetRect.top;
+
+      if (bottomOverflow > 0) {
+        scrollContainer.scrollTop += bottomOverflow;
+        return;
+      }
+
+      if (topOverflow > 0) {
+        scrollContainer.scrollTop -= topOverflow;
+      }
+      return;
+    }
+
+    const desiredVisibleDraftHeight = Math.min(120, targetRect.height);
+    const desiredDraftTop = containerRect.bottom - desiredVisibleDraftHeight;
+    const bottomOverflow = targetRect.top - desiredDraftTop;
+    const topOverflow = containerRect.top + viewportPadding - targetRect.top;
+
+    if (bottomOverflow > 0) {
+      scrollContainer.scrollTop += bottomOverflow + 6;
+      return;
+    }
+
+    if (topOverflow > 0) {
+      scrollContainer.scrollTop -= topOverflow;
+    }
+    return;
+  }
+
+  const desiredTargetTop = containerRect.top + (containerRect.height - targetRect.height) / 2;
+  const offset = targetRect.top - desiredTargetTop;
+
+  if (Math.abs(offset) > 4) {
+    scrollContainer.scrollTop += offset;
+  }
+}
+
+export function estimateFileDiffHeight({
+  fileDiff,
+  collapsed,
+  diffRenderMode,
+  annotationCount,
+}: {
+  fileDiff: FileDiffMetadata;
+  collapsed: boolean;
+  diffRenderMode: "stacked" | "split";
+  annotationCount: number;
+}) {
+  let height = DIFF_FILE_ESTIMATED_HEADER_HEIGHT;
+
+  if (!collapsed) {
+    let lineCount = 0;
+    let separatorCount = 0;
+
+    for (const hunk of fileDiff.hunks) {
+      lineCount += diffRenderMode === "split" ? hunk.splitLineCount : hunk.unifiedLineCount;
+
+      if (hunk.collapsedBefore > 0) {
+        separatorCount += 1;
+      }
+    }
+
+    height += lineCount * DIFF_FILE_ESTIMATED_LINE_HEIGHT;
+    height +=
+      separatorCount * (DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
+
+    if (fileDiff.hunks.length > 0) {
+      height += DIFF_FILE_ESTIMATED_FILE_GAP;
+    }
+  }
+
+  if (annotationCount > 0) {
+    height += annotationCount * DIFF_FILE_ESTIMATED_COMMENT_HEIGHT;
+  }
+
+  return Math.max(height, DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP);
+}
+
+export function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
+  side: AnnotationSide;
+  lineNumber: number;
+} | null {
+  const path = event.composedPath?.() ?? [];
+  let numberElement: HTMLElement | null = null;
+  let codeElement: HTMLElement | null = null;
+  let lineType: string | null = null;
+  let lineNumber: number | null = null;
+
+  for (const node of path) {
+    if (!(node instanceof HTMLElement)) {
+      continue;
+    }
+
+    if (
+      node instanceof HTMLButtonElement ||
+      node instanceof HTMLTextAreaElement ||
+      node instanceof HTMLInputElement ||
+      node instanceof HTMLSelectElement
+    ) {
+      return null;
+    }
+
+    if (node.hasAttribute("data-title") || node.hasAttribute("data-file-info")) {
+      return null;
+    }
+
+    if (!numberElement) {
+      const columnNumber = node.getAttribute("data-column-number");
+      if (columnNumber) {
+        const parsedLineNumber = Number.parseInt(columnNumber, 10);
+        if (!Number.isNaN(parsedLineNumber)) {
+          numberElement = node;
+          lineNumber = parsedLineNumber;
+          lineType = node.getAttribute("data-line-type");
+          continue;
+        }
+      }
+    }
+
+    if (lineNumber == null) {
+      const lineAttribute = node.getAttribute("data-line");
+      if (lineAttribute) {
+        const parsedLineNumber = Number.parseInt(lineAttribute, 10);
+        if (!Number.isNaN(parsedLineNumber)) {
+          lineNumber = parsedLineNumber;
+          lineType = node.getAttribute("data-line-type");
+          continue;
+        }
+      }
+    }
+
+    if (!codeElement && node.hasAttribute("data-code")) {
+      codeElement = node;
+      break;
+    }
+  }
+
+  if (!codeElement || lineNumber == null) {
+    return null;
+  }
+
+  const side: AnnotationSide =
+    lineType === "change-deletion"
+      ? "deletions"
+      : lineType === "change-addition"
+        ? "additions"
+        : codeElement.hasAttribute("data-deletions")
+          ? "deletions"
+          : "additions";
+
+  return { side, lineNumber };
 }
 
 export function orderTurnDiffSummaries<

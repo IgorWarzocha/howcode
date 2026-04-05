@@ -3,22 +3,16 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
+import { ThreadTimelineRows } from "./ThreadTimelineRows";
 import { buildTimelineRows } from "./buildTimelineRows";
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
 import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
 import { reconcileCollapsedRowIds } from "./reconcileCollapsedRowIds";
 import { chatScrollableAreaClass, chatViewportClass } from "./thread-layout";
-import {
-  getCollapsibleRowKey,
-  getFoldableRows,
-  getMessageRenderSignature,
-  getRowStructureSignature,
-  getStreamingAssistantMessageId,
-  getStreamingToolGroupId,
-} from "./thread-timeline-signatures";
+import { getCollapsibleRowKey } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
-
-const ALWAYS_UNVIRTUALIZED_TAIL_ROWS = 8;
+import { useTimelineWidth } from "./useTimelineWidth";
+import { buildVirtualizedThreadTimelineState } from "./virtualized-thread-timeline.helpers";
 
 type VirtualizedThreadTimelineProps = {
   messages: Message[];
@@ -42,7 +36,6 @@ export function VirtualizedThreadTimeline({
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
-  const [timelineWidthPx, setTimelineWidthPx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRootRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -77,96 +70,37 @@ export function VirtualizedThreadTimeline({
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
     [messages, previousMessageCount, turnDiffSummaries],
   );
-  const bottomAnchorKey = useMemo(
+  const timelineWidthPx = useTimelineWidth(timelineRootRef);
+  const {
+    bottomAnchorKey,
+    effectiveCollapsedRowIds,
+    foldableRows,
+    latestTurnRowId,
+    rowStructureSignature,
+    streamingAssistantMessageId,
+    streamingToolGroupId,
+    streamingTurnRowId,
+    virtualMeasureSignature,
+    virtualizedRowCount,
+  } = useMemo(
     () =>
-      `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? "streaming" : "idle"}`,
-    [isStreaming, messages],
-  );
-  const streamingAssistantMessageId = useMemo(
-    () => getStreamingAssistantMessageId(messages, isStreaming),
-    [isStreaming, messages],
-  );
-  const streamingToolGroupId = useMemo(
-    () => getStreamingToolGroupId(rows, messages, isStreaming),
-    [isStreaming, messages, rows],
-  );
-  const foldableRows = useMemo(() => getFoldableRows(rows), [rows]);
-  const latestTurnRowId = useMemo(
-    () => [...rows].reverse().find((row) => row.kind === "turn")?.id ?? null,
-    [rows],
-  );
-  const streamingTurnRowId = useMemo(() => {
-    if (!isStreaming) {
-      return null;
-    }
-
-    return (
-      rows.find(
-        (row) =>
-          row.kind === "turn" &&
-          row.items.some(
-            (item) => item.kind === "message" && item.message.id === streamingAssistantMessageId,
-          ),
-      )?.id ?? latestTurnRowId
-    );
-  }, [isStreaming, latestTurnRowId, rows, streamingAssistantMessageId]);
-  const effectiveCollapsedRowIds = useMemo(
-    () =>
-      reconcileCollapsedRowIds(foldableRows, collapsedRowIds, {
-        defaultExpandedRowId: latestTurnRowId,
-        forcedExpandedRowId: streamingTurnRowId,
+      buildVirtualizedThreadTimelineState({
+        rows,
+        messages,
+        isStreaming,
+        collapsedRowIds,
+        expandedToolGroupIds,
+        expandedDiffTrees,
+        timelineWidthPx,
       }),
-    [collapsedRowIds, foldableRows, latestTurnRowId, streamingTurnRowId],
-  );
-  const rowStructureSignature = useMemo(
-    () => getRowStructureSignature(rows, effectiveCollapsedRowIds),
-    [effectiveCollapsedRowIds, rows],
-  );
-  const expandedToolGroupSignature = useMemo(
-    () =>
-      Object.keys(expandedToolGroupIds)
-        .sort()
-        .map((key) => `${key}:${expandedToolGroupIds[key] ? "1" : "0"}`)
-        .join("||"),
-    [expandedToolGroupIds],
-  );
-  const expandedDiffTreeSignature = useMemo(
-    () =>
-      Object.keys(expandedDiffTrees)
-        .sort((left, right) => Number(left) - Number(right))
-        .map((key) => `${key}:${expandedDiffTrees[Number(key)] ? "1" : "0"}`)
-        .join("||"),
-    [expandedDiffTrees],
-  );
-  const firstUnvirtualizedRowIndex = useMemo(() => {
-    const firstTailRowIndex = Math.max(rows.length - ALWAYS_UNVIRTUALIZED_TAIL_ROWS, 0);
-    if (!isStreaming || !streamingTurnRowId) {
-      return firstTailRowIndex;
-    }
-
-    const streamingTurnIndex = rows.findIndex((row) => row.id === streamingTurnRowId);
-    if (streamingTurnIndex < 0) {
-      return firstTailRowIndex;
-    }
-
-    return Math.min(streamingTurnIndex, firstTailRowIndex);
-  }, [isStreaming, rows, streamingTurnRowId]);
-  const virtualizedRowCount = Math.max(0, Math.min(firstUnvirtualizedRowIndex, rows.length));
-  const virtualMeasureSignature = useMemo(
-    () =>
-      [
-        expandedDiffTreeSignature,
-        expandedToolGroupSignature,
-        rowStructureSignature,
-        timelineWidthPx ?? "auto",
-        virtualizedRowCount,
-      ].join("@@"),
     [
-      expandedDiffTreeSignature,
-      expandedToolGroupSignature,
-      rowStructureSignature,
+      collapsedRowIds,
+      expandedDiffTrees,
+      expandedToolGroupIds,
+      isStreaming,
+      messages,
+      rows,
       timelineWidthPx,
-      virtualizedRowCount,
     ],
   );
   const getVirtualRowKey = useCallback(
@@ -299,38 +233,6 @@ export function VirtualizedThreadTimeline({
       suppressAutoScrollRef.current = false;
       suppressAutoScrollTimerRef.current = null;
     }, 180);
-  }, []);
-
-  useLayoutEffect(() => {
-    const timelineRoot = timelineRootRef.current;
-    if (!timelineRoot) {
-      return;
-    }
-
-    const updateWidth = (nextWidth: number) => {
-      setTimelineWidthPx((current) => {
-        if (current !== null && Math.abs(current - nextWidth) < 0.5) {
-          return current;
-        }
-
-        return nextWidth;
-      });
-    };
-
-    updateWidth(timelineRoot.getBoundingClientRect().width);
-
-    if (typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      updateWidth(timelineRoot.getBoundingClientRect().width);
-    });
-    observer.observe(timelineRoot);
-
-    return () => {
-      observer.disconnect();
-    };
   }, []);
 
   useLayoutEffect(() => {
@@ -856,37 +758,14 @@ export function VirtualizedThreadTimeline({
           ref={timelineRootRef}
           className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8"
         >
-          {virtualizedRowCount > 0 ? (
-            <div
-              className="relative min-w-0"
-              style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-            >
-              {virtualRows.map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                if (!row) {
-                  return null;
-                }
-
-                return (
-                  <div
-                    key={`virtual-row:${virtualRow.key}`}
-                    data-index={virtualRow.index}
-                    ref={rowVirtualizer.measureElement}
-                    className="absolute left-0 top-0 w-full min-w-0"
-                    style={{ transform: `translateY(${virtualRow.start}px)` }}
-                  >
-                    {renderRow(row)}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {nonVirtualizedRows.map((row) => (
-            <div key={`tail-row:${row.id}`} className="min-w-0">
-              {renderRow(row)}
-            </div>
-          ))}
+          <ThreadTimelineRows
+            rows={rows}
+            totalSize={rowVirtualizer.getTotalSize()}
+            virtualRows={virtualRows}
+            nonVirtualizedRows={nonVirtualizedRows}
+            measureElement={rowVirtualizer.measureElement}
+            renderRow={renderRow}
+          />
 
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
