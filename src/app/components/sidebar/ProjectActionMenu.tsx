@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, GitBranchPlus } from "lucide-react";
+import { Archive, FolderOpen, GitBranchPlus, Pin } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { popoverPanelClass } from "../../ui/classes";
@@ -16,6 +16,7 @@ type ProjectActionMenuProps = {
   menuId: string;
   projectId: string;
   projectName: string;
+  pinned?: boolean;
   panelRef?: RefObject<HTMLDivElement | null>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onClose: () => void;
@@ -25,6 +26,7 @@ export function ProjectActionMenu({
   menuId,
   projectId,
   projectName,
+  pinned = false,
   panelRef,
   onAction,
   onClose,
@@ -39,6 +41,11 @@ export function ProjectActionMenu({
       icon: <FolderOpen size={14} />,
       title: "File Manager",
       action: "project.open-in-file-manager",
+    },
+    {
+      icon: <Pin size={14} />,
+      title: pinned ? "Unpin Project" : "Pin Project",
+      action: "project.pin",
     },
     {
       icon: <GitBranchPlus size={14} />,

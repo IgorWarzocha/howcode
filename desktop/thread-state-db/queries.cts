@@ -27,6 +27,7 @@ export function listProjects(cwd: string): Project[] {
           projects.cwd AS id,
           COALESCE(projects.custom_name, projects.name) AS name,
           projects.order_index AS orderIndex,
+          projects.pinned AS pinned,
           projects.collapsed AS collapsed,
           projects.repo_origin_url AS repoOriginUrl,
           projects.repo_origin_checked AS repoOriginChecked,
@@ -39,10 +40,12 @@ export function listProjects(cwd: string): Project[] {
           projects.cwd,
           COALESCE(projects.custom_name, projects.name),
           projects.order_index,
+          projects.pinned,
           projects.collapsed,
           projects.repo_origin_url,
           projects.repo_origin_checked
         ORDER BY
+          projects.pinned DESC,
           CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,
           projects.order_index ASC,
           CASE WHEN projects.order_index IS NULL AND projects.cwd = ? THEN 0 ELSE 1 END,

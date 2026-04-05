@@ -52,6 +52,7 @@ import {
   restoreThread,
   setProjectCollapsed,
   setProjectRepoOrigin,
+  toggleProjectPinned,
   toggleThreadPinned,
 } from "../thread-state-db.cts";
 
@@ -140,6 +141,14 @@ export async function handleDesktopAction(
       const projectIds = getProjectIds(payload);
       if (projectIds.length > 0) {
         reorderProjects(projectIds);
+      }
+      return;
+    }
+
+    case "project.pin": {
+      const projectId = getProjectId(payload);
+      if (projectId) {
+        toggleProjectPinned(projectId);
       }
       return;
     }

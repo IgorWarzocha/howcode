@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragStartEvent,
   type DraggableAttributes,
   type DraggableSyntheticListeners,
   PointerSensor,
@@ -117,6 +118,7 @@ export function ProjectTree({
 }: ProjectTreeProps) {
   const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [draggingProjectId, setDraggingProjectId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const { containerRef } = useProjectMenuDismiss(openProjectMenuId !== null, () =>
     setOpenProjectMenuId(null),
@@ -130,7 +132,14 @@ export function ProjectTree({
   );
   const projectIds = useMemo(() => projects.map((project) => project.id), [projects]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingProjectId(typeof event.active.id === "string" ? event.active.id : null);
+    setOpenProjectMenuId(null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingProjectId(null);
+
     const { active, over } = event;
     if (!over || active.id === over.id) {
       return;
@@ -179,11 +188,14 @@ export function ProjectTree({
         sensors={sensors}
         collisionDetection={closestCorners}
         modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+        onDragStart={handleDragStart}
+        onDragCancel={() => setDraggingProjectId(null)}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={projectIds} strategy={verticalListSortingStrategy}>
           {projects.map((project) => {
             const isExpanded = !collapsedProjectIds[project.id];
+            const effectiveIsExpanded = isExpanded && draggingProjectId !== project.id;
             const hasThreads = project.threadsLoaded
               ? project.threads.length > 0
               : (project.threadCount ?? 0) > 0;
@@ -204,7 +216,7 @@ export function ProjectTree({
                         isActive={projectIsActive}
                         isDragging={isDragging}
                         isEditing={editingProjectId === project.id}
-                        isExpanded={isExpanded}
+                        isExpanded={effectiveIsExpanded}
                         hasRepoOrigin={Boolean(project.repoOriginUrl)}
                         name={project.name}
                         renameDraft={renameDraft}
@@ -231,6 +243,7 @@ export function ProjectTree({
                           menuId={actionMenuId}
                           projectId={project.id}
                           projectName={project.name}
+                          pinned={Boolean(project.pinned)}
                           onAction={onAction}
                           onClose={() => setOpenProjectMenuId(null)}
                         />
@@ -238,7 +251,7 @@ export function ProjectTree({
                     </div>
 
                     <ProjectThreadsGroup
-                      isExpanded={isExpanded}
+                      isExpanded={effectiveIsExpanded}
                       threadGroupId={threadGroupId}
                       projectName={project.name}
                     >
@@ -251,6 +264,7 @@ export function ProjectTree({
                             <ThreadRow
                               key={thread.id}
                               age={thread.age}
+                              pinned={Boolean(thread.pinned)}
                               isSelected={isSelected}
                               title={thread.title}
                               onArchive={() =>

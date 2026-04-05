@@ -21,6 +21,7 @@ export {
   setProjectRepoOrigin,
   setProjectCollapsed,
   syncSessionSummaries,
+  toggleProjectPinned,
   toggleThreadPinned,
   upsertThreadSummary,
   upsertTurnDiffSummary,

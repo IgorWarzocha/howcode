@@ -8,6 +8,7 @@ export const desktopActions = [
   "project.actions",
   "project.open-in-file-manager",
   "project.reorder",
+  "project.pin",
   "project.edit-name",
   "project.inspect-repo",
   "project.archive-threads",

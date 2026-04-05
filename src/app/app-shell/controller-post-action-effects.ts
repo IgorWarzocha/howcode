@@ -18,6 +18,36 @@ function getPayloadProjectId(payload: ActionPayload) {
   return typeof payload.projectId === "string" ? payload.projectId : null;
 }
 
+function getPayloadThreadId(payload: ActionPayload) {
+  return typeof payload.threadId === "string" ? payload.threadId : null;
+}
+
+function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
+  return [...threads].sort((left, right) => {
+    const leftPinned = Boolean(left.pinned);
+    const rightPinned = Boolean(right.pinned);
+
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1;
+    }
+
+    return 0;
+  });
+}
+
+function sortPinnedProjects<T extends { id: string; pinned?: boolean }>(projects: T[]) {
+  return [...projects].sort((left, right) => {
+    const leftPinned = Boolean(left.pinned);
+    const rightPinned = Boolean(right.pinned);
+
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1;
+    }
+
+    return 0;
+  });
+}
+
 function hasElectrobunDesktopBridge() {
   if (typeof window === "undefined") {
     return false;
@@ -133,6 +163,74 @@ export function applyOptimisticProjectRename(
   );
 }
 
+export function getOptimisticallyPinnedShellState(
+  currentState: ShellState | null,
+  action: DesktopAction,
+  payload: ActionPayload,
+) {
+  if (!currentState) {
+    return null;
+  }
+
+  if (action === "thread.pin") {
+    const projectId = getPayloadProjectId(payload);
+    const threadId = getPayloadThreadId(payload);
+
+    if (!projectId || !threadId) {
+      return currentState;
+    }
+
+    return {
+      ...currentState,
+      projects: currentState.projects.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
+
+        const nextThreads = sortPinnedThreads(
+          project.threads.map((thread) =>
+            thread.id === threadId ? { ...thread, pinned: !thread.pinned } : thread,
+          ),
+        );
+
+        return {
+          ...project,
+          threads: nextThreads,
+        };
+      }),
+    } satisfies ShellState;
+  }
+
+  if (action === "project.pin") {
+    const projectId = getPayloadProjectId(payload);
+
+    if (!projectId) {
+      return currentState;
+    }
+
+    return {
+      ...currentState,
+      projects: sortPinnedProjects(
+        currentState.projects.map((project) =>
+          project.id === projectId ? { ...project, pinned: !project.pinned } : project,
+        ),
+      ),
+    } satisfies ShellState;
+  }
+
+  return currentState;
+}
+
+export function applyOptimisticPinUpdate(
+  queryClient: QueryClient,
+  action: DesktopAction,
+  payload: Record<string, unknown>,
+) {
+  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
+    getOptimisticallyPinnedShellState(currentState ?? null, action, payload),
+  );
+}
+
 type RunPostDesktopActionEffectsInput = {
   action: DesktopAction;
   contextualPayload: ActionPayload;
@@ -214,6 +312,10 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "project.inspect-repo") {
+    await refreshShellState();
+  }
+
+  if (action === "project.pin") {
     await refreshShellState();
   }
 

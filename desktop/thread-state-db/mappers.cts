@@ -43,6 +43,7 @@ export function mapProjectRow(row: ProjectRow): Project {
     id: row.id,
     name: row.name,
     threads: [],
+    pinned: Boolean(row.pinned),
     threadCount: row.threadCount,
     threadsLoaded: false,
     collapsed: Boolean(row.collapsed),

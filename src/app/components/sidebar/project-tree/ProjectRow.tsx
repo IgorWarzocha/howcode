@@ -50,6 +50,7 @@ export function ProjectRow({
   onToggleExpanded,
 }: ProjectRowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const clickTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isEditing) {
@@ -59,6 +60,35 @@ export function ProjectRow({
     inputRef.current?.focus();
     inputRef.current?.select();
   }, [isEditing]);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current !== null) {
+        window.clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleRowClick = () => {
+    if (clickTimeoutRef.current !== null) {
+      window.clearTimeout(clickTimeoutRef.current);
+    }
+
+    clickTimeoutRef.current = window.setTimeout(() => {
+      onSelect();
+      onToggleExpanded();
+      clickTimeoutRef.current = null;
+    }, 180);
+  };
+
+  const handleRowDoubleClick = () => {
+    if (clickTimeoutRef.current !== null) {
+      window.clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+
+    onEdit();
+  };
 
   return (
     <div
@@ -79,24 +109,24 @@ export function ProjectRow({
       >
         {hasRepoOrigin ? (
           <Github
-            size={14}
-            className="absolute transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
+            size={12}
+            className="absolute inset-0 m-auto transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
           />
         ) : (
           <Folder
-            size={14}
-            className="absolute transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
+            size={12}
+            className="absolute inset-0 m-auto transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
           />
         )}
         {isExpanded ? (
           <ChevronDown
-            size={14}
-            className="absolute opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
+            size={12}
+            className="absolute inset-0 m-auto opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
           />
         ) : (
           <ChevronRight
-            size={14}
-            className="absolute opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
+            size={12}
+            className="absolute inset-0 m-auto opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
           />
         )}
       </button>
@@ -133,8 +163,8 @@ export function ProjectRow({
           )}
           {...dragHandleProps.attributes}
           {...dragHandleProps.listeners}
-          onClick={onSelect}
-          onDoubleClick={onEdit}
+          onClick={handleRowClick}
+          onDoubleClick={handleRowDoubleClick}
           aria-current={isActive ? "page" : undefined}
         >
           <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">

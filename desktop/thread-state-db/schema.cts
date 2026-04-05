@@ -24,6 +24,7 @@ export function ensureThreadStateSchema(database: Database) {
       name TEXT NOT NULL,
       custom_name TEXT,
       order_index INTEGER,
+      pinned INTEGER NOT NULL DEFAULT 0,
       hidden INTEGER NOT NULL DEFAULT 0,
       collapsed INTEGER NOT NULL DEFAULT 1,
       repo_origin_url TEXT,
@@ -78,6 +79,10 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "projects", "hidden")) {
     database.exec("ALTER TABLE projects ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "projects", "pinned")) {
+    database.exec("ALTER TABLE projects ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0");
   }
 
   if (!hasColumn(database, "projects", "repo_origin_url")) {

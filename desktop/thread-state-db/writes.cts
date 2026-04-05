@@ -91,6 +91,17 @@ export function setProjectCollapsed(projectId: string, collapsed: boolean) {
   ).run(collapsed ? 1 : 0, projectId);
 }
 
+export function toggleProjectPinned(projectId: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE projects
+      SET pinned = CASE pinned WHEN 1 THEN 0 ELSE 1 END, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(projectId);
+}
+
 export function collapseAllProjects() {
   const db = getThreadStateDatabase();
   db.prepare(

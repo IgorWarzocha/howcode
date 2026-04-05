@@ -13,6 +13,7 @@ export type Project = {
   id: string;
   name: string;
   threads: Thread[];
+  pinned?: boolean;
   collapsed?: boolean;
   threadsLoaded?: boolean;
   threadCount?: number;
