@@ -74,3 +74,15 @@ export const diffPanelIconButtonClass =
 
 export const inlineCodeClass =
   "rounded-md bg-[rgba(114,120,152,0.18)] px-1.5 py-0.5 font-mono text-[11.5px] break-all text-[color:var(--text)]";
+
+export const settingsSectionClass =
+  "grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3";
+
+export const settingsSelectButtonClass =
+  "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]";
+
+export const settingsInputClass =
+  "min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]";
+
+export const settingsListRowClass =
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2";

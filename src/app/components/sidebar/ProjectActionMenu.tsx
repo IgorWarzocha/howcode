@@ -1,10 +1,9 @@
 import { Archive, FolderOpen, GitBranchPlus, Pencil, X } from "lucide-react";
 import type { RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
-import { getFeatureStatusButtonClass, getFeatureStatusMeta } from "../../features/feature-status";
-import { menuItemClass, popoverPanelClass } from "../../ui/classes";
+import { popoverPanelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
-import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
+import { MenuItem } from "../common/MenuItem";
 import { SurfacePanel } from "../common/SurfacePanel";
 
 type ProjectActionMenuProps = {
@@ -68,27 +67,15 @@ export function ProjectActionMenu({
           action: "project.remove-project" as const,
         },
       ].map((item) => (
-        <button
+        <MenuItem
           key={item.action}
-          type="button"
-          className={cn(
-            menuItemClass,
-            "text-[13px] text-[color:var(--text)] hover:bg-[rgba(255,255,255,0.04)]",
-            item.statusId ? getFeatureStatusButtonClass(item.statusId) : undefined,
-          )}
+          icon={item.icon}
+          title={item.title}
+          statusId={item.statusId}
+          className="text-[13px] text-[color:var(--text)]"
           onClick={() => handleClick(item.action)}
-          data-feature-id={item.statusId}
-          data-feature-status={
-            item.statusId ? getFeatureStatusMeta(item.statusId).status : undefined
-          }
           role="menuitem"
-        >
-          <span className="text-[color:var(--muted)]">{item.icon}</span>
-          <span className="truncate">{item.title}</span>
-          {item.statusId ? (
-            <FeatureStatusBadge statusId={item.statusId} className="ml-auto" />
-          ) : null}
-        </button>
+        />
       ))}
     </SurfacePanel>
   );

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   type FeatureStatusId,
   getFeatureStatusBadgeClass,
+  getFeatureStatusDataAttributes,
   getFeatureStatusMeta,
 } from "../../features/feature-status";
 
@@ -19,8 +20,7 @@ export function FeatureStatusBadge({ statusId, className, children }: FeatureSta
           ? `${getFeatureStatusBadgeClass(statusId)} ${className}`
           : getFeatureStatusBadgeClass(statusId)
       }
-      data-feature-id={statusId}
-      data-feature-status={getFeatureStatusMeta(statusId).status}
+      {...getFeatureStatusDataAttributes(statusId)}
     >
       {children ?? getFeatureStatusMeta(statusId).label}
     </span>

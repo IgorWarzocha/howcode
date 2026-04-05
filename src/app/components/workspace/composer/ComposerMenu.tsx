@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import type { RefObject } from "react";
 import { menuOptionClass, popoverPanelClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 
 type ComposerMenuItem = {
@@ -30,7 +31,11 @@ export function ComposerMenu({
       ref={panelRef}
       id={menuId}
       role="menu"
-      className={`absolute bottom-[calc(100%+8px)] left-0 z-30 grid rounded-2xl border-[color:var(--border-strong)] bg-[rgba(39,42,57,0.98)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass} ${widthClassName}`}
+      className={cn(
+        popoverPanelClass,
+        "absolute bottom-[calc(100%+8px)] left-0 z-30 grid rounded-2xl p-1.5",
+        widthClassName,
+      )}
     >
       {items.map((item) => (
         <button

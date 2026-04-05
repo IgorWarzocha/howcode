@@ -8,6 +8,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, ChevronDown, ChevronRight, MessageSquarePlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
@@ -953,8 +954,7 @@ export function DiffPanelContent({
         "flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] bg-[color:var(--workspace)]",
         layoutMode === "split" && "border-l border-[color:var(--border)] xl:w-full",
       )}
-      data-feature-id="feature:diff.panel"
-      data-feature-status="partial"
+      {...getFeatureStatusDataAttributes("feature:diff.panel")}
     >
       {!isGitRepo ? (
         <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />

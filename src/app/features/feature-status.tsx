@@ -53,6 +53,13 @@ export function getFeatureStatusMeta(statusId: FeatureStatusId) {
   return featureStatusById[statusId];
 }
 
+export function getFeatureStatusDataAttributes(statusId: FeatureStatusId) {
+  return {
+    "data-feature-id": statusId,
+    "data-feature-status": getFeatureStatusMeta(statusId).status,
+  } as const;
+}
+
 export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
   return getFeatureStatusMeta(statusId).status === "mock"
     ? "border-[rgba(255,110,110,0.42)] bg-[rgba(255,94,94,0.14)] text-[#ff9c9c]"

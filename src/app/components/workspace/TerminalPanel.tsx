@@ -1,6 +1,9 @@
 import { SquareTerminal, X } from "lucide-react";
 import type { DesktopAction } from "../../desktop/actions";
-import type { FeatureStatusId } from "../../features/feature-status";
+import {
+  type FeatureStatusId,
+  getFeatureStatusDataAttributes,
+} from "../../features/feature-status";
 import { iconButtonClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
@@ -32,8 +35,7 @@ export function TerminalPanel({
       <SurfacePanel
         aria-label="Pi terminal panel"
         className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
-        data-feature-id="feature:terminal.panel"
-        data-feature-status="partial"
+        {...getFeatureStatusDataAttributes(statusId)}
       >
         <div className="flex min-h-0 min-w-0 overflow-hidden px-2.5 pt-2.5">
           <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-t-2xl rounded-b-none bg-[color:var(--terminal-bg)]">
@@ -75,8 +77,7 @@ export function TerminalPanel({
     <section
       aria-label="Terminal panel"
       className={panelClass}
-      data-feature-id="feature:terminal.panel"
-      data-feature-status="partial"
+      {...getFeatureStatusDataAttributes(statusId)}
     >
       <div className="flex items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-2 text-[12px] text-[color:var(--muted)]">

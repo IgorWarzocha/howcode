@@ -49,7 +49,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 4. Thread action menu / run action
 - [ ] Implement `thread.actions`
 - [ ] Implement `thread.run-action`
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
+  - files: `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
 #### 4b. Header open / commit controls
 - [ ] Implement `workspace.open`
@@ -59,7 +59,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Implement `workspace.commit-options`
   - branch control in the composer git surface is still display-only for now
   - [ ] Feed pre-commit hook / formatter / lint errors back into the main Pi agent flow instead of treating them as opaque git failures
-  - files: `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
+  - files: `src/app/components/workspace/composer/ComposerGitOpsSurface.tsx`, `desktop/pi-threads/action-router.cts`
 
 #### 5. Terminal panel
 - [x] Replace static terminal transcript with a real PTY-backed xterm.js viewport
@@ -108,7 +108,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 9. Landing project switcher
 - [ ] Implement `landing.project-switcher`
 - [ ] Implement `project.switch`
-  - files: `src/app/views/LandingView.tsx`, `src/app/components/workspace/WorkspaceHeader.tsx`, `desktop/pi-threads/action-router.cts`
+  - files: `src/app/views/LandingView.tsx`, `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
 
@@ -131,7 +131,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Add real send-thread desktop bridge requests
 - [ ] Add real new-thread desktop bridge requests
 - [x] Add stream/event desktop bridge messages for assistant output
-- [ ] Implement typed project actions instead of generic `project.actions`
+- [x] Replace generic `project.actions` stubs with explicit typed project actions for supported menu items
 - [ ] Implement diff review backend
 - [ ] Implement terminal backend or run-log backend
 - [ ] Implement filter/search backend if needed

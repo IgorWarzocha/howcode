@@ -10,6 +10,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
+import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import {
   compactCardClass,
   compactIconButtonClass,
@@ -223,8 +224,7 @@ export function ComposerGitOpsSurface({
   return (
     <div
       className="grid min-h-[189px] gap-0"
-      data-feature-id="feature:composer.git-ops"
-      data-feature-status="partial"
+      {...getFeatureStatusDataAttributes("feature:composer.git-ops")}
     >
       {/* This outer height is the reference for the prompt composer too. Keep both surfaces in sync
           so switching between prompt and git-ops does not resize the composer shell. */}

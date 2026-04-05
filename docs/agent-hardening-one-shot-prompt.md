@@ -1,5 +1,8 @@
 # One-shot prompt: execute the hardening + ARIA plan
 
+> Historical note: this prompt references several pre-split file paths. For current ownership,
+> prefer `README.md` and `docs/lane-map.md` when they disagree with this prompt.
+
 ```md
 You are working in the `howcode` repo.
 
@@ -23,7 +26,9 @@ Also inspect the current relevant implementation files before changing anything:
 - `src/app/components/workspace/Composer.tsx`
 - `src/app/components/sidebar/ProjectTree.tsx`
 - `src/app/components/sidebar/Sidebar.tsx`
-- `src/app/components/workspace/WorkspaceHeader.tsx`
+- `src/app/app-shell/AppShellWorkspace.tsx`
+- `src/app/components/workspace/composer/ComposerGitOpsSurface.tsx`
+- `src/app/components/workspace/TerminalPanel.tsx`
 - `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - `src/app/state/workspace.ts`
 - `src/app/state/workspace.test.ts`

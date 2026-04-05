@@ -1,5 +1,9 @@
 # Agent hardening and UI traversability plan
 
+> Historical note: this plan predates the current shell split. Treat `README.md`, `docs/lane-map.md`,
+> and live file paths as source of truth where this document references pre-split files like
+> `WorkspaceHeader.tsx`.
+
 This plan captures the next hardening pass for the repo using the `agent-native-hardening` lens.
 
 ## Status update
@@ -297,7 +301,7 @@ Recommended fix:
 - move focus into the panel on open and restore it on close
 - support Escape close
 
-#### 2. Popup menus are visual surfaces, not semantic menus
+#### 2. Popup menus still duplicate behavior across surfaces
 
 Files:
 
@@ -308,9 +312,9 @@ Files:
 
 Problems:
 
-- trigger buttons do not expose `aria-haspopup`, `aria-expanded`, or `aria-controls`
-- popup containers do not expose `role="menu"`
-- menu items are just plain buttons with no menu role pattern
+- menu semantics now exist, but the same status/menu wiring is still duplicated across popup surfaces
+- several notes below still reference the old `WorkspaceHeader.tsx` ownership path
+- feature-status metadata is not yet routed through a single shared panel/menu primitive everywhere
 
 Why it matters for agents:
 
@@ -321,7 +325,7 @@ Recommended fix:
 
 - for each trigger, add `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls`
 - for each popup, add `role="menu"`
-- use `role="menuitem"` on actionable items if you keep the menu pattern
+- keep `role="menuitem"` on actionable items and remove bespoke copies of the same menu-item wiring
 - close on Escape and outside click consistently
 
 #### 3. Expand/collapse and selection state is not exposed enough

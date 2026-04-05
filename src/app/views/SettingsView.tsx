@@ -5,6 +5,13 @@ import type { DesktopAction } from "../desktop/actions";
 import type { AppSettings, ComposerModel } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
+import {
+  primaryButtonClass,
+  settingsInputClass,
+  settingsListRowClass,
+  settingsSectionClass,
+  settingsSelectButtonClass,
+} from "../ui/classes";
 import { cn } from "../utils/cn";
 
 type SettingsViewProps = {
@@ -85,12 +92,12 @@ export function SettingsView({
         </p>
       </div>
 
-      <section className="grid gap-2 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3">
+      <section className={cn(settingsSectionClass, "gap-2")}>
         <div className="relative">
           <button
             ref={buttonRef}
             type="button"
-            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+            className={settingsSelectButtonClass}
             onClick={() => setMenuOpen((current) => !current)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
@@ -141,7 +148,7 @@ export function SettingsView({
         </div>
       </section>
 
-      <section className="grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3">
+      <section className={settingsSectionClass}>
         <div className="grid gap-1">
           <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Favorite folders</h2>
           <p className="m-0 text-[13px] text-[color:var(--muted)]">
@@ -160,13 +167,16 @@ export function SettingsView({
                 addFavoriteFolder();
               }
             }}
-            className="min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className={settingsInputClass}
             placeholder="Paste an absolute folder path"
             aria-label="Favorite folder path"
           />
           <button
             type="button"
-            className="rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[13px] font-medium text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45"
+            className={cn(
+              primaryButtonClass,
+              "px-3 disabled:cursor-not-allowed disabled:opacity-45",
+            )}
             onClick={addFavoriteFolder}
             disabled={favoriteFolderDraft.trim().length === 0}
           >
@@ -177,10 +187,7 @@ export function SettingsView({
         <div className="grid gap-2">
           {favoriteFolders.length > 0 ? (
             favoriteFolders.map((favoriteFolder) => (
-              <div
-                key={favoriteFolder}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2"
-              >
+              <div key={favoriteFolder} className={settingsListRowClass}>
                 <div
                   className="truncate text-[13px] text-[color:var(--text)]"
                   title={favoriteFolder}

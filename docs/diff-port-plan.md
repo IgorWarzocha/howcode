@@ -1,5 +1,8 @@
 # Diff view port plan from `/home/igorw/Frameworks/t3code`
 
+> Historical note: this investigation doc includes some legacy workspace-header references. Current
+> diff ownership lives under `src/app/components/workspace/diff/*` plus `src/app/app-shell/*`.
+
 This document captures the current investigation of the diff-view implementation in `/home/igorw/Frameworks/t3code` and maps it onto `/home/igorw/Work/howcode`.
 
 The goal is faithful adaptation with minimal reinvention.

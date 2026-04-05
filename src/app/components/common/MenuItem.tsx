@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import {
   type FeatureStatusId,
   getFeatureStatusButtonClass,
-  getFeatureStatusMeta,
+  getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
 import { hoverSurfaceClass, menuItemClass, transitionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
@@ -42,8 +42,7 @@ export function MenuItem({
         active && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
         statusId && getFeatureStatusButtonClass(statusId),
       )}
-      data-feature-id={statusId}
-      data-feature-status={statusId ? getFeatureStatusMeta(statusId).status : undefined}
+      {...(statusId ? getFeatureStatusDataAttributes(statusId) : {})}
       {...buttonProps}
     >
       <span className="text-[color:var(--muted)]">{icon}</span>

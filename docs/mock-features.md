@@ -121,7 +121,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Status:** Layout now matches Codex more closely, but most controls are still stubbed except local pane toggles.
 
-- Header UI: `src/app/components/workspace/WorkspaceHeader.tsx`
+- Header-era controls are now split across `src/app/app-shell/AppShellWorkspace.tsx`, `src/app/components/workspace/composer/ComposerGitOpsSurface.tsx`, and `src/app/components/workspace/TerminalPanel.tsx`
 - Selected-project git detection is real and drives which header variant renders: `desktop/project-git.cts`, `src/app/app-shell/useAppShellController.ts`
 - Codex-style structure now differs by view:
   - non-git: run action, open split button, terminal, diff, popout
