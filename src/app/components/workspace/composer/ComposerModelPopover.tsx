@@ -1,5 +1,4 @@
-import { Check } from "lucide-react";
-import { type ReactNode, type RefObject, useEffect, useMemo, useState } from "react";
+import { type RefObject, useEffect, useMemo, useState } from "react";
 import type { ComposerModel, ComposerThinkingLevel } from "../../../desktop/types";
 import { menuOptionClass, popoverPanelClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -18,25 +17,13 @@ type ComposerModelPopoverProps = {
 
 type NestedMenu = "provider" | "model" | "thinking" | null;
 
-function NestedMenuPanel({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <SurfacePanel
-      className={cn(
-        "absolute bottom-[calc(100%+8px)] left-0 z-40 grid max-h-80 overflow-y-auto rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
-        popoverPanelClass,
-        className,
-      )}
-    >
-      {children}
-    </SurfacePanel>
-  );
-}
+type MenuOption = {
+  id: string;
+  label: string;
+  description?: string;
+  selected: boolean;
+  onSelect: () => void;
+};
 
 function TriggerButton({
   label,
@@ -62,6 +49,38 @@ function TriggerButton({
       <span className="text-[12px] text-[color:var(--muted)]">{label}</span>
       <span className="truncate text-[13px] text-[color:var(--text)]">{value}</span>
     </button>
+  );
+}
+
+function MenuList({ items }: { items: MenuOption[] }) {
+  return (
+    <div className="-mx-1.5 -mt-1.5 max-h-72 overflow-y-auto pr-0">
+      <div className="grid pl-1 pt-1.5 pr-0 pb-2.5">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="menuitemradio"
+            aria-checked={item.selected}
+            className={cn(
+              menuOptionClass,
+              "mr-1 grid-cols-[minmax(0,1fr)] text-[color:var(--text)]",
+              item.selected && "bg-[rgba(255,255,255,0.06)]",
+            )}
+            onClick={item.onSelect}
+          >
+            <span className="min-w-0">
+              <span className="block truncate">{item.label}</span>
+              {item.description ? (
+                <span className="block truncate text-[11px] text-[color:var(--muted)]">
+                  {item.description}
+                </span>
+              ) : null}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -108,13 +127,74 @@ export function ComposerModelPopover({
   const currentModelForSelectedProvider =
     currentModel?.provider === selectedProvider ? currentModel : null;
 
+  const openMenuItems = useMemo<MenuOption[]>(() => {
+    if (openMenu === "provider") {
+      return providers.map((provider) => ({
+        id: provider.provider,
+        label: provider.provider,
+        selected: provider.provider === selectedProvider,
+        onSelect: () => {
+          setSelectedProvider(provider.provider);
+          setOpenMenu(null);
+        },
+      }));
+    }
+
+    if (openMenu === "model") {
+      return modelsForProvider.map((availableModel) => ({
+        id: `${availableModel.provider}/${availableModel.id}`,
+        label: availableModel.name,
+        selected:
+          currentModel?.provider === availableModel.provider &&
+          currentModel.id === availableModel.id,
+        onSelect: () => {
+          onSelectModel(availableModel);
+          setOpenMenu(null);
+        },
+      }));
+    }
+
+    if (openMenu === "thinking") {
+      return availableThinkingLevels.map((level) => ({
+        id: level,
+        label: thinkingLevelLabels[level],
+        selected: level === currentThinkingLevel,
+        onSelect: () => {
+          onSelectThinkingLevel(level);
+          setOpenMenu(null);
+        },
+      }));
+    }
+
+    return [];
+  }, [
+    availableThinkingLevels,
+    currentModel?.id,
+    currentModel?.provider,
+    currentThinkingLevel,
+    modelsForProvider,
+    onSelectModel,
+    onSelectThinkingLevel,
+    openMenu,
+    providers,
+    selectedProvider,
+    thinkingLevelLabels,
+  ]);
+
   return (
     <SurfacePanel
       ref={panelRef}
       id="composer-model-menu"
       role="menu"
-      className={`absolute bottom-[calc(100%+8px)] left-0 z-50 grid w-48 gap-1 rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
+      className={`absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-48 overflow-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
     >
+      {openMenuItems.length > 0 ? (
+        <>
+          <MenuList items={openMenuItems} />
+          <div className="mx-2 mb-1 h-px bg-[rgba(169,178,215,0.08)]" />
+        </>
+      ) : null}
+
       <div className="relative min-w-0">
         <TriggerButton
           label="Provider"
@@ -122,32 +202,6 @@ export function ComposerModelPopover({
           active={openMenu === "provider"}
           onClick={() => setOpenMenu((current) => (current === "provider" ? null : "provider"))}
         />
-        {openMenu === "provider" ? (
-          <NestedMenuPanel className="w-48">
-            {providers.map((provider) => {
-              const selected = provider.provider === selectedProvider;
-
-              return (
-                <button
-                  key={provider.provider}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={selected}
-                  className={`${menuOptionClass} text-[color:var(--text)]`}
-                  onClick={() => {
-                    setSelectedProvider(provider.provider);
-                    setOpenMenu(null);
-                  }}
-                >
-                  <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                    {selected ? <Check size={14} /> : null}
-                  </span>
-                  <span className="min-w-0 truncate">{provider.provider}</span>
-                </button>
-              );
-            })}
-          </NestedMenuPanel>
-        ) : null}
       </div>
 
       <div className="relative min-w-0">
@@ -159,39 +213,6 @@ export function ComposerModelPopover({
           active={openMenu === "model"}
           onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}
         />
-        {openMenu === "model" ? (
-          <NestedMenuPanel className="w-56">
-            {modelsForProvider.map((availableModel) => {
-              const selected =
-                currentModel?.provider === availableModel.provider &&
-                currentModel.id === availableModel.id;
-
-              return (
-                <button
-                  key={`${availableModel.provider}/${availableModel.id}`}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={selected}
-                  className={`${menuOptionClass} text-[color:var(--text)]`}
-                  onClick={() => {
-                    onSelectModel(availableModel);
-                    setOpenMenu(null);
-                  }}
-                >
-                  <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                    {selected ? <Check size={14} /> : null}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate">{availableModel.name}</span>
-                    <span className="block truncate text-[11px] text-[color:var(--muted)]">
-                      {availableModel.id}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </NestedMenuPanel>
-        ) : null}
       </div>
 
       <div className="relative min-w-0">
@@ -201,32 +222,6 @@ export function ComposerModelPopover({
           active={openMenu === "thinking"}
           onClick={() => setOpenMenu((current) => (current === "thinking" ? null : "thinking"))}
         />
-        {openMenu === "thinking" ? (
-          <NestedMenuPanel className="w-48">
-            {availableThinkingLevels.map((level) => {
-              const selected = level === currentThinkingLevel;
-
-              return (
-                <button
-                  key={level}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={selected}
-                  className={`${menuOptionClass} text-[color:var(--text)]`}
-                  onClick={() => {
-                    onSelectThinkingLevel(level);
-                    setOpenMenu(null);
-                  }}
-                >
-                  <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                    {selected ? <Check size={14} /> : null}
-                  </span>
-                  <span className="min-w-0 truncate">{thinkingLevelLabels[level]}</span>
-                </button>
-              );
-            })}
-          </NestedMenuPanel>
-        ) : null}
       </div>
     </SurfacePanel>
   );
