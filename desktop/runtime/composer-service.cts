@@ -26,13 +26,10 @@ export { getLiveThread, subscribeDesktopEvents };
 
 export async function getComposerState(request: ComposerStateRequest = {}): Promise<ComposerState> {
   const runtime = await getRuntimeForRequest(request);
-  if (!runtime.session.isStreaming) {
-    await runtime.session.reload();
-  }
 
-  const composer = await buildComposerState(runtime);
-  publishComposerUpdate(composer);
-  return composer;
+  // Reads should reflect the current in-memory runtime state. Reloading or publishing here can
+  // race with just-applied composer mutations and re-broadcast stale snapshots back into the UI.
+  return await buildComposerState(runtime);
 }
 
 export async function setComposerModel(

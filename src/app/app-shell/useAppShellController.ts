@@ -19,7 +19,6 @@ import {
   buildContextualActionPayload,
   buildPendingProjectAction,
   refreshArchivedThreadsIfOpen,
-  refreshComposerState,
   shouldConfirmProjectAction,
 } from "./controller-action-helpers";
 import { deriveControllerViewModel } from "./controller-view-model";
@@ -207,16 +206,6 @@ export function useAppShellController() {
         archivedThreadsOpen: state.archivedThreadsOpen,
         loadArchivedThreads,
         setArchivedThreads,
-      });
-    }
-
-    if (action === "composer.model" || action === "composer.thinking") {
-      await refreshComposerState({
-        composerProjectId,
-        activeView: state.activeView,
-        selectedSessionPath: state.selectedSessionPath,
-        loadComposerState,
-        setComposerState,
       });
     }
 

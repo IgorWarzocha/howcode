@@ -1,6 +1,6 @@
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type { ArchivedThread, ComposerState } from "../desktop/types";
+import type { ArchivedThread } from "../desktop/types";
 import type { WorkspaceState } from "../state/workspace";
 import type { Project } from "../types";
 
@@ -78,30 +78,4 @@ export async function refreshArchivedThreadsIfOpen({
   }
 
   setArchivedThreads(await loadArchivedThreads());
-}
-
-export async function refreshComposerState({
-  composerProjectId,
-  activeView,
-  selectedSessionPath,
-  loadComposerState,
-  setComposerState,
-}: {
-  composerProjectId: string;
-  activeView: WorkspaceState["activeView"];
-  selectedSessionPath: string | null;
-  loadComposerState: (request?: {
-    projectId?: string | null;
-    sessionPath?: string | null;
-  }) => Promise<ComposerState | null>;
-  setComposerState: (composer: ComposerState) => void;
-}) {
-  const nextComposerState = await loadComposerState({
-    projectId: composerProjectId,
-    sessionPath: activeView === "thread" ? selectedSessionPath : null,
-  });
-
-  if (nextComposerState) {
-    setComposerState(nextComposerState);
-  }
 }
