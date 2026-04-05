@@ -1,4 +1,5 @@
 import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -37,6 +38,7 @@ export function ComposerPromptSurface({
     : projectGitState.fileCount > 0
       ? "dirty"
       : "clean";
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     attachments,
     canSend,
@@ -72,6 +74,25 @@ export function ComposerPromptSurface({
     onPickAttachments,
     onListAttachmentEntries,
   });
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 24)}px`;
+
+    if (draft.length === 0) {
+      textarea.scrollTop = 0;
+    }
+  }, [draft]);
+
+  const placeholderText =
+    activeView === "thread"
+      ? "Ask for follow-up changes"
+      : "Ask Pi anything, @ to add files, / for commands, $ for skills";
 
   return (
     <div className="grid min-h-[189px] gap-0">
@@ -114,34 +135,28 @@ export function ComposerPromptSurface({
             onToggleFile={togglePendingPickerAttachment}
           />
         ) : null}
-        <textarea
-          className={cn(
-            "min-h-24 w-full resize-none bg-transparent px-4 pr-24 pb-2 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
-            attachments.length > 0 ? "pt-2" : "pt-10",
-          )}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onInput={() => {
-            if (errorMessage) {
-              clearError();
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void send();
-            }
-          }}
-          aria-label="Prompt composer"
-          placeholder=""
-        />
-        {draft.length === 0 ? (
-          <div className="pointer-events-none absolute right-24 bottom-4 left-4 text-[14px] leading-[1.45] text-[color:var(--muted-2)]">
-            {activeView === "thread"
-              ? "Ask for follow-up changes"
-              : "Ask Pi anything, @ to add files, / for commands, $ for skills"}
-          </div>
-        ) : null}
+        <div className="flex min-h-24 flex-col justify-end pt-10">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className="w-full min-h-6 resize-none bg-transparent px-4 pr-24 pb-4 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onInput={() => {
+              if (errorMessage) {
+                clearError();
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void send();
+              }
+            }}
+            aria-label="Prompt composer"
+            placeholder={placeholderText}
+          />
+        </div>
         <div className="absolute right-4 bottom-3 flex items-center gap-2">
           <button
             type="button"
