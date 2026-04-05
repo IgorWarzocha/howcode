@@ -135,7 +135,6 @@ export function ComposerModelPopover({
         selected: provider.provider === selectedProvider,
         onSelect: () => {
           setSelectedProvider(provider.provider);
-          setOpenMenu(null);
         },
       }));
     }
@@ -149,7 +148,6 @@ export function ComposerModelPopover({
           currentModel.id === availableModel.id,
         onSelect: () => {
           onSelectModel(availableModel);
-          setOpenMenu(null);
         },
       }));
     }

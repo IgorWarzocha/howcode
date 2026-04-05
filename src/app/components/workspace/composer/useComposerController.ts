@@ -91,11 +91,17 @@ export function useComposerController({
 
   const canSend = draft.trim().length > 0 && !isSending;
 
-  const runComposerAction = async (action: DesktopAction, payload: Record<string, unknown>) => {
+  const runComposerAction = async (
+    action: DesktopAction,
+    payload: Record<string, unknown>,
+    options?: { closeMenu?: boolean },
+  ) => {
     try {
       await onAction(action, payload);
       setErrorMessage(null);
-      setOpenMenu(null);
+      if (options?.closeMenu ?? true) {
+        setOpenMenu(null);
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not update the composer.");
     }

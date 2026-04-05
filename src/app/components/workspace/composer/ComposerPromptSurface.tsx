@@ -178,12 +178,16 @@ export function ComposerPromptSurface({
               panelRef={modelMenuRef}
               thinkingLevelLabels={thinkingLevelLabels}
               onSelectModel={(availableModel) => {
-                void runComposerAction("composer.model", {
-                  provider: availableModel.provider,
-                  modelId: availableModel.id,
-                  projectId,
-                  sessionPath,
-                });
+                void runComposerAction(
+                  "composer.model",
+                  {
+                    provider: availableModel.provider,
+                    modelId: availableModel.id,
+                    projectId,
+                    sessionPath,
+                  },
+                  { closeMenu: false },
+                );
               }}
               onSelectThinkingLevel={(level) => {
                 void runComposerAction("composer.thinking", {
