@@ -195,45 +195,47 @@ export function ProjectTree({
             return (
               <SortableProjectItem key={project.id} projectId={project.id}>
                 {({ dragHandleProps, isDragging }) => (
-                  <div className="relative mb-2">
-                    <ProjectRow
-                      actionMenuId={actionMenuId}
-                      actionMenuOpen={projectMenuOpen}
-                      dragHandleProps={dragHandleProps}
-                      isActive={projectIsActive}
-                      isDragging={isDragging}
-                      isEditing={editingProjectId === project.id}
-                      isExpanded={isExpanded}
-                      hasRepoOrigin={Boolean(project.repoOriginUrl)}
-                      name={project.name}
-                      renameDraft={renameDraft}
-                      threadGroupId={threadGroupId}
-                      onCancelEdit={handleCancelEdit}
-                      onChangeRenameDraft={setRenameDraft}
-                      onEdit={() => handleStartEdit(project.id, project.name)}
-                      onSelect={() => {
-                        onProjectSelect(project.id);
-                        onAction("project.select", { projectId: project.id });
-                        setOpenProjectMenuId(null);
-                      }}
-                      onSubmitEdit={() => handleSubmitEdit(project.id)}
-                      onToggleActions={() =>
-                        setOpenProjectMenuId((current) =>
-                          current === project.id ? null : project.id,
-                        )
-                      }
-                      onToggleExpanded={() => onToggleProjectCollapse(project.id)}
-                    />
-
-                    {projectMenuOpen && editingProjectId !== project.id ? (
-                      <ProjectActionMenu
-                        menuId={actionMenuId}
-                        projectId={project.id}
-                        projectName={project.name}
-                        onAction={onAction}
-                        onClose={() => setOpenProjectMenuId(null)}
+                  <div className="mb-2">
+                    <div className="relative">
+                      <ProjectRow
+                        actionMenuId={actionMenuId}
+                        actionMenuOpen={projectMenuOpen}
+                        dragHandleProps={dragHandleProps}
+                        isActive={projectIsActive}
+                        isDragging={isDragging}
+                        isEditing={editingProjectId === project.id}
+                        isExpanded={isExpanded}
+                        hasRepoOrigin={Boolean(project.repoOriginUrl)}
+                        name={project.name}
+                        renameDraft={renameDraft}
+                        threadGroupId={threadGroupId}
+                        onCancelEdit={handleCancelEdit}
+                        onChangeRenameDraft={setRenameDraft}
+                        onEdit={() => handleStartEdit(project.id, project.name)}
+                        onSelect={() => {
+                          onProjectSelect(project.id);
+                          onAction("project.select", { projectId: project.id });
+                          setOpenProjectMenuId(null);
+                        }}
+                        onSubmitEdit={() => handleSubmitEdit(project.id)}
+                        onToggleActions={() =>
+                          setOpenProjectMenuId((current) =>
+                            current === project.id ? null : project.id,
+                          )
+                        }
+                        onToggleExpanded={() => onToggleProjectCollapse(project.id)}
                       />
-                    ) : null}
+
+                      {projectMenuOpen && editingProjectId !== project.id ? (
+                        <ProjectActionMenu
+                          menuId={actionMenuId}
+                          projectId={project.id}
+                          projectName={project.name}
+                          onAction={onAction}
+                          onClose={() => setOpenProjectMenuId(null)}
+                        />
+                      ) : null}
+                    </div>
 
                     <ProjectThreadsGroup
                       isExpanded={isExpanded}

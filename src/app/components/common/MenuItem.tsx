@@ -47,7 +47,7 @@ export function MenuItem({
     >
       <span className="text-[color:var(--muted)]">{icon}</span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 truncate">
+        <div className="flex min-w-0 items-center gap-2 truncate">
           <span className="truncate">{title}</span>
           {statusId ? <FeatureStatusBadge statusId={statusId} /> : null}
         </div>
