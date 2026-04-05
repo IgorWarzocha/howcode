@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Composer } from "../components/workspace/Composer";
 import { DiffPanel } from "../components/workspace/DiffPanel";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -23,6 +23,8 @@ type AppShellWorkspaceProps = {
   workspaceContentClass: string;
 };
 
+const WORKSPACE_FOOTER_OVERLAP_PX = 20;
+
 export function AppShellWorkspace({
   controller,
   activeComposerState,
@@ -35,6 +37,7 @@ export function AppShellWorkspace({
 }: AppShellWorkspaceProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
+  const [footerHeight, setFooterHeight] = useState(0);
   const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
   const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([]);
   const [diffCommentCount, setDiffCommentCount] = useState(0);
@@ -42,6 +45,7 @@ export function AppShellWorkspace({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
+  const footerContentRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
@@ -58,10 +62,41 @@ export function AppShellWorkspace({
   } = controller;
   const showWorkspaceFooter = state.activeView !== "settings";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
+  const footerInset = showWorkspaceFooter
+    ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
+    : 0;
   const diffCommentContextId = useMemo(
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
+
+  useLayoutEffect(() => {
+    const footerContent = footerContentRef.current;
+    if (!showWorkspaceFooter || !footerContent) {
+      setFooterHeight(0);
+      return;
+    }
+
+    const updateFooterHeight = () => {
+      const nextHeight = Math.ceil(footerContent.getBoundingClientRect().height);
+      setFooterHeight((current) => (current === nextHeight ? current : nextHeight));
+    };
+
+    updateFooterHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateFooterHeight();
+    });
+    observer.observe(footerContent);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [showWorkspaceFooter]);
 
   useEffect(() => {
     const syncCommentCount = () => {
@@ -112,12 +147,15 @@ export function AppShellWorkspace({
   };
 
   return (
-    <>
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5">
+    <div className="relative min-h-0 flex-1">
+      <div
+        className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
+        style={footerInset > 0 ? { paddingBottom: `${footerInset}px` } : undefined}
+      >
         <main
           className={
             state.activeView === "thread" || showDiffInMainView
-              ? "mb-5 min-h-0 overflow-hidden pt-1.5"
+              ? "min-h-0 overflow-hidden pt-1.5"
               : mainPanelClass
           }
         >
@@ -151,8 +189,8 @@ export function AppShellWorkspace({
       </div>
 
       {showWorkspaceFooter ? (
-        <footer className="relative z-10 -mt-5 shrink-0 grid gap-2.5 px-5 pt-0 pb-4">
-          <div className="grid gap-2.5">
+        <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
+          <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
               <Composer
                 activeView={state.activeView}
@@ -210,6 +248,6 @@ export function AppShellWorkspace({
           </div>
         </footer>
       ) : null}
-    </>
+    </div>
   );
 }
