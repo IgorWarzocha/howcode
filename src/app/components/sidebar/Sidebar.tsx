@@ -1,12 +1,12 @@
 import {
+  BriefcaseBusiness,
   ChevronsUpDown,
-  Clock3,
+  Code2,
   FolderPlus,
-  LayoutGrid,
   ListFilter,
+  MessageSquare,
+  PawPrint,
   Settings,
-  Sparkles,
-  Workflow,
 } from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
@@ -79,12 +79,12 @@ export function Sidebar({
   return (
     <aside
       aria-label="Workspace sidebar"
-      className="relative flex min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
+      className="relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
     >
       <nav className="grid gap-0.5" aria-label="Primary navigation">
         <NavButton
-          icon={<Sparkles size={16} />}
-          label="New thread"
+          icon={<MessageSquare size={16} />}
+          label="Chat"
           active={activeView === "home"}
           onClick={() => {
             onShowView("home");
@@ -94,10 +94,10 @@ export function Sidebar({
           }}
         />
         <NavButton
-          icon={<LayoutGrid size={16} />}
+          icon={<PawPrint size={16} />}
           label={
             <span className="inline-flex items-center gap-2">
-              <span>Plugins</span>
+              <span>Claw</span>
               <FeatureStatusBadge statusId="feature:sidebar.plugins" />
             </span>
           }
@@ -105,10 +105,10 @@ export function Sidebar({
           onClick={() => onShowView("plugins")}
         />
         <NavButton
-          icon={<Workflow size={16} />}
+          icon={<BriefcaseBusiness size={16} />}
           label={
             <span className="inline-flex items-center gap-2">
-              <span>Automations</span>
+              <span>Work</span>
               <FeatureStatusBadge statusId="feature:sidebar.automations" />
             </span>
           }
@@ -116,10 +116,10 @@ export function Sidebar({
           onClick={() => onShowView("automations")}
         />
         <NavButton
-          icon={<Clock3 size={16} />}
+          icon={<Code2 size={16} />}
           label={
             <span className="inline-flex items-center gap-2">
-              <span>Debug</span>
+              <span>Code</span>
               <FeatureStatusBadge statusId="feature:sidebar.debug" />
             </span>
           }
