@@ -1,0 +1,256 @@
+export const DIFF_FILE_ESTIMATED_LINE_HEIGHT = 20;
+export const DIFF_FILE_ESTIMATED_HEADER_HEIGHT = 36;
+export const DIFF_FILE_ESTIMATED_FILE_GAP = 8;
+export const DIFF_FILE_ESTIMATED_SEPARATOR_HEIGHT = 32;
+export const DIFF_FILE_ESTIMATED_COMMENT_HEIGHT = 92;
+
+export const DIFF_PANEL_UNSAFE_CSS = `
+:host {
+  color-scheme: dark;
+  --diffs-header-font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif) !important;
+  --diffs-font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
+  --diffs-light-bg: var(--workspace) !important;
+  --diffs-dark-bg: var(--workspace) !important;
+  --diffs-bg: var(--workspace) !important;
+  --diffs-light: var(--text) !important;
+  --diffs-dark: var(--text) !important;
+  --diffs-token-light: currentColor !important;
+  --diffs-token-dark: currentColor !important;
+  --diffs-token-light-bg: transparent !important;
+  --diffs-token-dark-bg: transparent !important;
+  --diffs-token-light-font-weight: inherit !important;
+  --diffs-token-dark-font-weight: inherit !important;
+  --diffs-token-light-font-style: inherit !important;
+  --diffs-token-dark-font-style: inherit !important;
+  --diffs-token-light-text-decoration: none !important;
+  --diffs-token-dark-text-decoration: none !important;
+  --diffs-fg-number-override: var(--muted) !important;
+  --diffs-fg-number-addition-override: var(--green) !important;
+  --diffs-fg-number-deletion-override: #d06b72 !important;
+  --diffs-fg-conflict-marker-override: var(--muted) !important;
+  --diffs-addition-color-override: var(--green) !important;
+  --diffs-deletion-color-override: #d06b72 !important;
+  --diffs-modified-color-override: var(--accent) !important;
+  --diffs-bg-context-override: var(--workspace) !important;
+  --diffs-bg-context-number-override: var(--workspace) !important;
+  --diffs-bg-hover-override: var(--panel) !important;
+  --diffs-bg-separator-override: var(--panel) !important;
+  --diffs-bg-buffer-override: var(--panel-2) !important;
+  --diffs-bg-addition-override: color-mix(in srgb, var(--workspace) 90%, var(--green)) !important;
+  --diffs-bg-addition-number-override: color-mix(in srgb, var(--workspace) 86%, var(--green)) !important;
+  --diffs-bg-addition-hover-override: color-mix(in srgb, var(--workspace) 84%, var(--green)) !important;
+  --diffs-bg-addition-emphasis-override: color-mix(in srgb, var(--workspace) 78%, var(--green)) !important;
+  --diffs-bg-deletion-override: color-mix(in srgb, var(--workspace) 90%, #d06b72) !important;
+  --diffs-bg-deletion-number-override: color-mix(in srgb, var(--workspace) 86%, #d06b72) !important;
+  --diffs-bg-deletion-hover-override: color-mix(in srgb, var(--workspace) 84%, #d06b72) !important;
+  --diffs-bg-deletion-emphasis-override: color-mix(in srgb, var(--workspace) 78%, #d06b72) !important;
+  --diffs-selection-color-override: var(--accent) !important;
+  --diffs-bg-selection-override: var(--panel-3) !important;
+  --diffs-bg-selection-number-override: var(--panel-2) !important;
+  --diffs-bg-conflict-marker-override: var(--panel-2) !important;
+  --diffs-bg-conflict-marker-number-override: var(--panel-3) !important;
+  --diffs-bg-conflict-current-override: var(--panel) !important;
+  --diffs-bg-conflict-current-number-override: var(--panel-2) !important;
+  --diffs-bg-conflict-base-override: var(--panel) !important;
+  --diffs-bg-conflict-base-number-override: var(--panel-2) !important;
+  --diffs-bg-conflict-incoming-override: var(--panel) !important;
+  --diffs-bg-conflict-incoming-number-override: var(--panel-2) !important;
+  --conflict-bg-current-override: var(--panel) !important;
+  --conflict-bg-current-number-override: var(--panel-2) !important;
+  --conflict-bg-incoming-override: var(--panel) !important;
+  --conflict-bg-incoming-number-override: var(--panel-2) !important;
+  --conflict-bg-current-header-override: var(--panel-2) !important;
+  --conflict-bg-current-header-number-override: var(--panel-3) !important;
+  --conflict-bg-incoming-header-override: var(--panel-2) !important;
+  --conflict-bg-incoming-header-number-override: var(--panel-3) !important;
+  --diffs-gap-style: 1px solid var(--border) !important;
+  background-color: var(--workspace) !important;
+  color: var(--text) !important;
+}
+
+[data-diff-span],
+[data-line] span {
+  background-color: transparent !important;
+  color: inherit !important;
+  font-weight: inherit !important;
+  font-style: inherit !important;
+  text-decoration: none !important;
+}
+
+[data-diff],
+[data-file] {
+  background-color: var(--workspace) !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+[data-gutter] [data-column-number],
+[data-gutter] [data-gutter-buffer] {
+  border-right: 1px solid var(--border) !important;
+}
+
+[data-content-buffer],
+[data-gutter-buffer='buffer'] {
+  background-color: var(--workspace) !important;
+}
+
+[data-file-info] {
+  background-color: var(--panel) !important;
+  border-block-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+[data-diffs-header='default'] {
+  background-color: var(--panel) !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+[data-diffs-header='custom'] {
+  background-color: var(--panel) !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+slot[name='header-custom'] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+[data-header-content] {
+  align-items: center !important;
+}
+
+slot[name='header-prefix'] {
+  order: 99;
+  margin-left: 8px;
+}
+
+slot[name='header-prefix']::slotted(*) {
+  color: var(--muted) !important;
+  font-family: var(--diffs-header-font-family) !important;
+}
+
+[data-change-icon],
+[data-rename-icon] {
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  flex: 0 0 auto;
+}
+
+[data-prev-name],
+[data-diffs-header='default'] [data-metadata],
+[data-separator-wrapper],
+[data-separator-content],
+[data-expand-button],
+[data-merge-conflict-action],
+[data-merge-conflict-action-separator] {
+  color: var(--muted) !important;
+}
+
+[data-separator='line-info'],
+[data-separator='line-info-basic'],
+[data-separator='metadata'],
+[data-separator='simple'],
+[data-separator-wrapper],
+[data-separator-content],
+[data-expand-button] {
+  background-color: var(--panel) !important;
+}
+
+[data-separator='line-info'][data-separator-first],
+[data-separator='line-info-basic'][data-separator-first] {
+  display: none !important;
+}
+
+[data-expand-button]:hover,
+[data-merge-conflict-action]:hover {
+  background-color: var(--panel-2) !important;
+  color: var(--text) !important;
+}
+
+[data-diff-type='split'][data-overflow='scroll'] [data-additions] {
+  border-left: 1px solid var(--border) !important;
+}
+
+[data-diff-type='split'][data-overflow='scroll'] [data-deletions] {
+  border-right: 1px solid var(--border) !important;
+}
+
+[data-diff-type='split'][data-overflow='wrap'] [data-deletions] [data-content] {
+  border-right: 1px solid var(--border) !important;
+}
+
+[data-diff-type='split'][data-overflow='wrap'] [data-additions] [data-gutter] {
+  border-left: 1px solid var(--border) !important;
+}
+
+[data-title] {
+  cursor: pointer;
+}
+
+[data-line-annotation] {
+  --diffs-line-bg: var(--workspace);
+}
+
+[data-line-annotation],
+[data-gutter-buffer='annotation'],
+[data-merge-conflict-actions],
+[data-gutter-buffer='merge-conflict-action'] {
+  background-color: var(--workspace) !important;
+}
+
+[data-selected-line][data-line] {
+  background-color: var(--panel-3) !important;
+}
+
+[data-selected-line][data-column-number],
+[data-selected-line][data-gutter-buffer='annotation'] {
+  background-color: var(--panel-2) !important;
+  color: var(--text) !important;
+}
+
+[data-line-type='change-addition'][data-selected-line][data-line],
+[data-line-type='change-addition'][data-selected-line][data-line][data-hovered] {
+  background-color: color-mix(in srgb, var(--panel-3) 84%, var(--green)) !important;
+}
+
+[data-line-type='change-deletion'][data-selected-line][data-line],
+[data-line-type='change-deletion'][data-selected-line][data-line][data-hovered] {
+  background-color: color-mix(in srgb, var(--panel-3) 84%, #d06b72) !important;
+}
+
+[data-line-type='change-addition'][data-selected-line][data-column-number],
+[data-line-type='change-addition'][data-selected-line][data-column-number][data-hovered] {
+  background-color: color-mix(in srgb, var(--panel-2) 84%, var(--green)) !important;
+}
+
+[data-line-type='change-deletion'][data-selected-line][data-column-number],
+[data-line-type='change-deletion'][data-selected-line][data-column-number][data-hovered] {
+  background-color: color-mix(in srgb, var(--panel-2) 84%, #d06b72) !important;
+}
+
+[data-change-icon='change'],
+[data-change-icon='rename-pure'],
+[data-change-icon='rename-changed'] {
+  color: var(--accent) !important;
+}
+
+[data-change-icon='new'] {
+  color: var(--green) !important;
+}
+
+[data-change-icon='deleted'] {
+  color: var(--muted-2) !important;
+}
+
+[data-utility-button] {
+  background-color: var(--panel-3) !important;
+  color: var(--text) !important;
+}
+
+[data-annotation-content] {
+  padding-block: 4px 0;
+}
+`;

@@ -1,46 +1,24 @@
-import type { GetHoveredLineResult, SelectedLineRange } from "@pierre/diffs";
-import {
-  type AnnotationSide,
-  type DiffLineAnnotation,
-  FileDiff,
-  type FileDiffMetadata,
-} from "@pierre/diffs/react";
+import type { DiffLineAnnotation, FileDiffMetadata } from "@pierre/diffs/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, ChevronRight, MessageSquarePlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
 import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
+import { DiffPanelFileList } from "./DiffPanelFileList";
 import {
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
-  DIFF_PANEL_UNSAFE_CSS,
   type DiffCommentMetadata,
-  alignElementInScrollViewport,
-  buildDraftTarget,
   buildFileDiffRenderKey,
   estimateFileDiffHeight,
-  getFileChangeCounts,
-  getFileHeaderContextLabel,
   getRenderablePatch,
-  isSameDraftTarget,
-  joinProjectFilePath,
   orderRenderableFiles,
-  resolveFileDiffPath,
-  resolvePointerLineTarget,
 } from "./diff-panel-content.helpers";
-import { resolveDiffThemeName } from "./diff-rendering";
-import {
-  type DiffCommentDraft,
-  type SavedDiffComment,
-  diffCommentStore,
-  getDiffCommentContextId,
-} from "./diffCommentStore";
 import { useDiffCommentDrafting } from "./useDiffCommentDrafting";
-
-type DiffThemeType = "light" | "dark";
+import { useDiffPanelCommentState } from "./useDiffPanelCommentState";
+import { useDiffPanelScrollAlignment } from "./useDiffPanelScrollAlignment";
 
 type DiffPanelContentProps = {
   projectId: string;
@@ -61,8 +39,6 @@ export function DiffPanelContent({
   diffRenderMode,
   layoutMode = "split",
 }: DiffPanelContentProps) {
-  const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
-  const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
@@ -82,45 +58,18 @@ export function DiffPanelContent({
         : [],
     [renderablePatch],
   );
-  const diffCommentContextId = useMemo(
-    () =>
-      getDiffCommentContextId({
-        projectId,
-      }),
-    [projectId],
-  );
-  const draftFileKey = draftComment?.fileKey ?? null;
-  const draftFilePath = draftComment?.filePath ?? null;
-  const draftSide = draftComment?.side ?? null;
-  const draftLineNumber = draftComment?.lineNumber ?? null;
-  const draftEndSide = draftComment?.endSide;
-  const draftEndLineNumber = draftComment?.endLineNumber;
-  const draftTarget = useMemo(
-    () =>
-      draftFileKey && draftFilePath && draftSide && draftLineNumber !== null
-        ? {
-            fileKey: draftFileKey,
-            filePath: draftFilePath,
-            side: draftSide,
-            lineNumber: draftLineNumber,
-            endSide: draftEndSide,
-            endLineNumber: draftEndLineNumber,
-          }
-        : null,
-    [draftEndLineNumber, draftEndSide, draftFileKey, draftFilePath, draftLineNumber, draftSide],
-  );
-  const draftSelectedLines = useMemo<SelectedLineRange | null>(() => {
-    if (!draftTarget) {
-      return null;
-    }
-
-    return {
-      start: draftTarget.lineNumber,
-      end: draftTarget.endLineNumber ?? draftTarget.lineNumber,
-      side: draftTarget.side,
-      endSide: draftTarget.endSide ?? draftTarget.side,
-    };
-  }, [draftTarget]);
+  const {
+    annotationCountByFile,
+    commentAnnotationsByFile,
+    draftComment,
+    draftSelectedLines,
+    draftTarget,
+    hasCommentContext,
+    persistDraftComment,
+    removeComment,
+    savedComments,
+    setDraftComment,
+  } = useDiffPanelCommentState({ projectId });
 
   const {
     clearDragSelection,
@@ -134,80 +83,10 @@ export function DiffPanelContent({
   });
 
   useEffect(() => {
-    if (!diffCommentContextId) {
-      setSavedComments([]);
-      setDraftComment(null);
+    if (!hasCommentContext) {
       clearDragSelection();
-      return;
     }
-
-    const persistedContext = diffCommentStore.getContext(diffCommentContextId);
-    setSavedComments(persistedContext?.comments ?? []);
-    setDraftComment(persistedContext?.draft ?? null);
-  }, [clearDragSelection, diffCommentContextId]);
-
-  useEffect(() => {
-    if (!diffCommentContextId) {
-      return;
-    }
-
-    diffCommentStore.setContext(diffCommentContextId, {
-      comments: savedComments,
-      draft: draftComment,
-    });
-  }, [diffCommentContextId, draftComment, savedComments]);
-
-  const commentAnnotationsByFile = useMemo(() => {
-    const next = new Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>();
-
-    for (const comment of savedComments) {
-      const entries = next.get(comment.fileKey) ?? [];
-      entries.push({
-        side: comment.side,
-        lineNumber: comment.lineNumber,
-        metadata: {
-          id: comment.id,
-          body: comment.body,
-          kind: "comment",
-          side: comment.side,
-          lineNumber: comment.lineNumber,
-          endSide: comment.endSide,
-          endLineNumber: comment.endLineNumber,
-        },
-      });
-      next.set(comment.fileKey, entries);
-    }
-
-    if (draftTarget) {
-      const entries = next.get(draftTarget.fileKey) ?? [];
-      entries.push({
-        side: draftTarget.side,
-        lineNumber: draftTarget.lineNumber,
-        metadata: {
-          id: `draft:${draftTarget.fileKey}:${draftTarget.side}:${draftTarget.lineNumber}`,
-          body: "",
-          kind: "draft",
-          side: draftTarget.side,
-          lineNumber: draftTarget.lineNumber,
-          endSide: draftTarget.endSide,
-          endLineNumber: draftTarget.endLineNumber,
-        },
-      });
-      next.set(draftTarget.fileKey, entries);
-    }
-
-    return next;
-  }, [draftTarget, savedComments]);
-
-  const annotationCountByFile = useMemo(() => {
-    const next = new Map<string, number>();
-
-    for (const [fileKey, annotations] of commentAnnotationsByFile) {
-      next.set(fileKey, annotations.length);
-    }
-
-    return next;
-  }, [commentAnnotationsByFile]);
+  }, [clearDragSelection, hasCommentContext]);
 
   const estimatedFileHeights = useMemo(
     () =>
@@ -239,28 +118,6 @@ export function DiffPanelContent({
     useAnimationFrameWithResizeObserver: true,
   });
 
-  const persistDraftComment = () => {
-    const nextBody = draftComment?.body.trim() ?? "";
-    if (!draftComment || nextBody.length === 0) {
-      return;
-    }
-
-    setSavedComments((current) => [
-      ...current,
-      {
-        ...draftComment,
-        id: `${draftComment.fileKey}:${draftComment.side}:${draftComment.lineNumber}:${Date.now()}`,
-        body: nextBody,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-    setDraftComment(null);
-  };
-
-  const removeComment = (commentId: string) => {
-    setSavedComments((current) => current.filter((comment) => comment.id !== commentId));
-  };
-
   const toggleFileCollapsed = useCallback((fileKey: string) => {
     setCollapsedFiles((current) => ({
       ...current,
@@ -279,116 +136,19 @@ export function DiffPanelContent({
     />
   );
 
-  useEffect(() => {
-    if (!draftTarget) {
-      return;
-    }
-
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      const draftCard = draftCardRef.current;
-      if (!draftCard) {
-        return;
-      }
-
-      alignElementInScrollViewport({
-        scrollContainer,
-        targetElement: draftCard,
-        mode: "draft-fit",
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [draftTarget]);
-
-  useEffect(() => {
-    if (!selectedCommentId || selectedCommentJumpKey < 0) {
-      return;
-    }
-
-    const scrollContainer = scrollContainerRef.current;
-    const selectedComment = savedComments.find((comment) => comment.id === selectedCommentId);
-    if (!scrollContainer || !selectedComment) {
-      return;
-    }
-
-    if (collapsedFiles[selectedComment.fileKey] === true) {
-      setCollapsedFiles((current) => ({
-        ...current,
-        [selectedComment.fileKey]: false,
-      }));
-      return;
-    }
-
-    const selectedFileIndex = renderableFiles.findIndex(
-      (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.fileKey,
-    );
-    if (selectedFileIndex >= 0) {
-      fileListVirtualizer.scrollToIndex(selectedFileIndex, { align: "center" });
-    }
-
-    let cancelled = false;
-    let attempts = 0;
-    let frame = 0;
-
-    const alignSelectedComment = () => {
-      if (cancelled) {
-        return;
-      }
-
-      const commentElement = Array.from(
-        scrollContainer.querySelectorAll<HTMLElement>("[data-saved-diff-comment-id]"),
-      ).find((element) => element.dataset.savedDiffCommentId === selectedCommentId);
-
-      if (commentElement) {
-        alignElementInScrollViewport({
-          scrollContainer,
-          targetElement: commentElement,
-          mode: "center",
-        });
-        return;
-      }
-
-      if (attempts >= 6) {
-        const fileElement = Array.from(
-          scrollContainer.querySelectorAll<HTMLElement>("[data-diff-file-path]"),
-        ).find((element) => element.dataset.diffFilePath === selectedFilePath);
-
-        if (fileElement) {
-          alignElementInScrollViewport({
-            scrollContainer,
-            targetElement: fileElement,
-            mode: "center",
-          });
-        }
-        return;
-      }
-
-      attempts += 1;
-      frame = window.requestAnimationFrame(alignSelectedComment);
-    };
-
-    frame = window.requestAnimationFrame(alignSelectedComment);
-
-    return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(frame);
-    };
-  }, [
+  useDiffPanelScrollAlignment({
     collapsedFiles,
+    draftCardRef,
+    draftTarget,
     fileListVirtualizer,
     renderableFiles,
     savedComments,
+    scrollContainerRef,
     selectedCommentId,
     selectedCommentJumpKey,
     selectedFilePath,
-  ]);
+    setCollapsedFiles,
+  });
 
   return (
     <aside
@@ -424,151 +184,23 @@ export function DiffPanelContent({
                 ref={scrollContainerRef}
                 className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
               >
-                <div
-                  className="relative w-full"
-                  style={{ height: fileListVirtualizer.getTotalSize() }}
-                >
-                  <div
-                    style={{
-                      transform: `translateY(${fileListVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
-                    }}
-                  >
-                    {fileListVirtualizer.getVirtualItems().map((virtualRow) => {
-                      const fileDiff = renderableFiles[virtualRow.index] as FileDiffMetadata;
-                      const filePath = resolveFileDiffPath(fileDiff);
-                      const fileKey = buildFileDiffRenderKey(fileDiff);
-                      const isCollapsed = collapsedFiles[fileKey] === true;
-                      const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath);
-                      const selectedLines = getSelectedLinesForFile(fileKey, draftSelectedLines);
-                      return (
-                        <div
-                          key={virtualRow.key}
-                          data-index={virtualRow.index}
-                          data-diff-file-path={filePath}
-                          className="first:mt-0"
-                          ref={fileListVirtualizer.measureElement}
-                          onPointerDownCapture={(event) =>
-                            handleFilePointerDownCapture(event, fileKey, filePath)
-                          }
-                          onClickCapture={(event) => {
-                            const nativeEvent = event.nativeEvent as MouseEvent;
-                            const composedPath = nativeEvent.composedPath?.() ?? [];
-                            const clickedHeader = composedPath.some((node) => {
-                              if (!(node instanceof Element)) return false;
-                              return node.hasAttribute("data-title");
-                            });
-                            if (!clickedHeader) return;
-
-                            const openPathPromise = window.piDesktop?.openPath?.(
-                              joinProjectFilePath(projectId, filePath),
-                            );
-                            void openPathPromise?.catch(() => undefined);
-                          }}
-                        >
-                          <FileDiff<DiffCommentMetadata>
-                            fileDiff={fileDiff}
-                            lineAnnotations={commentAnnotationsByFile.get(fileKey)}
-                            selectedLines={selectedLines}
-                            renderCustomHeader={(currentFileDiff) => {
-                              const headerContextLabel = getFileHeaderContextLabel(currentFileDiff);
-                              const { additions, deletions } = getFileChangeCounts(currentFileDiff);
-
-                              return (
-                                <button
-                                  type="button"
-                                  className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
-                                  style={{
-                                    fontFamily:
-                                      'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-                                  }}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    toggleFileCollapsed(fileKey);
-                                  }}
-                                  aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
-                                  aria-expanded={!isCollapsed}
-                                >
-                                  <span className="flex min-w-0 items-center gap-2.5">
-                                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
-                                      {isCollapsed ? (
-                                        <ChevronRight size={14} />
-                                      ) : (
-                                        <ChevronDown size={14} />
-                                      )}
-                                    </span>
-                                    <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
-                                      {filePath}
-                                    </span>
-                                    {headerContextLabel ? (
-                                      <span className="shrink-0 text-[12px] text-[color:var(--muted)]">
-                                        {headerContextLabel}
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                  <span className="flex shrink-0 items-center gap-2 text-[12px]">
-                                    {deletions > 0 || additions === 0 ? (
-                                      <span className="text-[#d06b72]">-{deletions}</span>
-                                    ) : null}
-                                    {additions > 0 || deletions === 0 ? (
-                                      <span className="text-[color:var(--green)]">
-                                        +{additions}
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                </button>
-                              );
-                            }}
-                            renderAnnotation={renderCommentAnnotation}
-                            renderGutterUtility={(() => {
-                              return (
-                                getHoveredLine: () => GetHoveredLineResult<"diff"> | undefined,
-                              ) => {
-                                const hoveredLine = getHoveredLine();
-                                if (!hoveredLine) {
-                                  return null;
-                                }
-
-                                return (
-                                  <button
-                                    type="button"
-                                    className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
-                                    onClick={(event) => {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      openDraftComment(
-                                        fileKey,
-                                        filePath,
-                                        hoveredLine.side,
-                                        hoveredLine.lineNumber,
-                                      );
-                                    }}
-                                    aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-                                    title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-                                  >
-                                    <MessageSquarePlus size={12} />
-                                  </button>
-                                );
-                              };
-                            })()}
-                            options={{
-                              diffStyle: diffRenderMode === "split" ? "split" : "unified",
-                              lineDiffType: "none",
-                              theme: resolveDiffThemeName("dark"),
-                              themeType: "dark" as DiffThemeType,
-                              unsafeCSS: DIFF_PANEL_UNSAFE_CSS,
-                              collapsed: isCollapsed,
-                              enableGutterUtility: true,
-                              lineHoverHighlight: "both",
-                              onLineClick: fileInteractionHandlers.onLineClick,
-                              onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <DiffPanelFileList
+                  collapsedFiles={collapsedFiles}
+                  commentAnnotationsByFile={commentAnnotationsByFile}
+                  diffRenderMode={diffRenderMode}
+                  draftSelectedLines={draftSelectedLines}
+                  getFileInteractionHandlers={getFileInteractionHandlers}
+                  getSelectedLinesForFile={getSelectedLinesForFile}
+                  handleFilePointerDownCapture={handleFilePointerDownCapture}
+                  measureElement={fileListVirtualizer.measureElement}
+                  onOpenDraftComment={openDraftComment}
+                  onToggleFileCollapsed={toggleFileCollapsed}
+                  projectId={projectId}
+                  renderCommentAnnotation={renderCommentAnnotation}
+                  renderableFiles={renderableFiles}
+                  totalSize={fileListVirtualizer.getTotalSize()}
+                  virtualItems={fileListVirtualizer.getVirtualItems()}
+                />
               </div>
             ) : (
               <div className="h-full overflow-auto p-3">
