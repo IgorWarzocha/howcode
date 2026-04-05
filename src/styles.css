@@ -20,10 +20,15 @@
   --green: #86d9a0;
   --terminal-bg: #171923;
   --shadow: 0 12px 36px rgba(6, 7, 13, 0.18);
+  --motion-duration-fast: 170ms;
+  --motion-duration-standard: 220ms;
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-slide-y-sm: 8px;
+  --motion-slide-y-md: 10px;
+  --motion-slide-y-lg: 12px;
+  --motion-slide-x-shell: 12px;
   --sidebar-width: 300px;
   --sidebar-toggle-gap: 10px;
-  --shell-transition-duration: 220ms;
-  --shell-transition-ease: cubic-bezier(0.22, 1, 0.36, 1);
   font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
@@ -113,10 +118,11 @@ code {
 
 .motion-popover {
   opacity: 0;
-  transform: translateY(8px) scale(0.985);
+  transform: translateY(var(--motion-slide-y-sm)) scale(0.985);
   transform-origin: bottom left;
   pointer-events: none;
-  transition: opacity 170ms ease, transform 170ms ease;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard), transform
+    var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .motion-popover[data-open="true"] {
@@ -127,8 +133,9 @@ code {
 
 .motion-overlay-panel {
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transform: translateY(var(--motion-slide-y-md));
+  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
+    var(--motion-duration-standard) var(--motion-ease-standard);
 }
 
 .motion-overlay-panel[data-open="true"] {
@@ -138,13 +145,13 @@ code {
 
 .motion-shell-main,
 .motion-sidebar-toggle {
-  transition: transform var(--shell-transition-duration) var(--shell-transition-ease);
+  transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
   will-change: transform;
 }
 
 .motion-sidebar-panel {
-  transform: translateX(calc(-100% - 12px));
-  transition: transform var(--shell-transition-duration) var(--shell-transition-ease);
+  transform: translateX(calc(-100% - var(--motion-slide-x-shell)));
+  transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
   will-change: transform;
   pointer-events: none;
 }
@@ -168,12 +175,13 @@ code {
 
 .motion-desktop-workspace,
 .motion-takeover-panel {
-  transition: opacity 190ms ease, transform 190ms ease;
+  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
+    var(--motion-duration-standard) var(--motion-ease-standard);
 }
 
 .motion-desktop-workspace {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(var(--motion-slide-y-sm));
 }
 
 .motion-desktop-workspace[data-open="true"] {
@@ -183,7 +191,7 @@ code {
 
 .motion-takeover-panel {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(var(--motion-slide-y-lg));
 }
 
 .motion-takeover-panel[data-open="true"] {
