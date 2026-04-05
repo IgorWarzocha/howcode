@@ -1,6 +1,11 @@
 import type { Virtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect } from "react";
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX } from "./chat-scroll";
+import {
+  getResizeAdjustmentMode,
+  hasPendingExpandedRowReveal,
+  shouldAdjustVirtualScrollPositionOnItemSizeChange,
+} from "./thread-timeline-scroll-adjustment";
 import type { ThreadTimelineScrollHelpers } from "./useThreadTimelineScrollHelpers";
 import type { ThreadTimelineScrollState } from "./useThreadTimelineScrollState";
 
@@ -162,13 +167,17 @@ export function useThreadTimelineScrollEffects({
       const scrollOffset = instance.scrollOffset ?? 0;
       const remainingDistance = instance.getTotalSize() - (scrollOffset + viewportHeight);
 
-      return remainingDistance > CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX;
+      return shouldAdjustVirtualScrollPositionOnItemSizeChange({
+        hasPendingExpandedReveal: hasPendingExpandedRowReveal(state),
+        remainingDistance,
+        thresholdPx: CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX,
+      });
     };
 
     return () => {
       rowVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = undefined;
     };
-  }, [rowVirtualizer]);
+  }, [rowVirtualizer, state]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -224,15 +233,19 @@ export function useThreadTimelineScrollEffects({
             return;
           }
 
-          const shouldPinToBottom = !state.suppressAutoScrollRef.current && stickyBeforeResize;
+          const adjustmentMode = getResizeAdjustmentMode({
+            hasPendingExpandedReveal: hasPendingExpandedRowReveal(state),
+            stickyBeforeResize,
+            suppressAutoScroll: state.suppressAutoScrollRef.current,
+          });
 
-          if (shouldPinToBottom) {
+          if (adjustmentMode === "pin-bottom") {
             const bottomSentinel = bottomSentinelRef.current;
             if (bottomSentinel) {
               bottomSentinel.scrollIntoView({ block: "end" });
             }
             activeContainer.scrollTop = activeContainer.scrollHeight;
-          } else {
+          } else if (adjustmentMode === "restore-previous") {
             activeContainer.scrollTop = previousMetrics.scrollTop;
           }
 
