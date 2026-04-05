@@ -5,6 +5,7 @@ import type {
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
 import { prepareTurnDiffCapture } from "../diff/query.cts";
+import { upsertThreadSummary } from "../thread-state-db.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry.cts";
@@ -12,6 +13,7 @@ import { rememberSessionPath } from "./session-path-index.cts";
 import {
   getLiveThread,
   publishComposerUpdate,
+  publishThreadUpdate,
   subscribeDesktopEvents,
 } from "./thread-publisher.cts";
 
@@ -87,14 +89,30 @@ export async function sendComposerPrompt(
   }
 }
 
-export async function startNewThread(request: ComposerStateRequest = {}): Promise<ComposerState> {
+export async function startNewThread(request: ComposerStateRequest = {}) {
   const runtime = await getRuntimeForRequest(request);
   await runtime.session.newSession();
   rememberSessionPath(runtime.session.sessionFile, runtime.cwd);
 
+  if (runtime.session.sessionFile) {
+    upsertThreadSummary({
+      id: runtime.session.sessionId,
+      cwd: runtime.cwd,
+      sessionPath: runtime.session.sessionFile,
+      title: "New thread",
+      lastModifiedMs: Date.now(),
+    });
+    await publishThreadUpdate(runtime, "start");
+  }
+
   const composer = await buildComposerState(runtime);
   publishComposerUpdate(composer);
-  return composer;
+  return {
+    composer,
+    projectId: runtime.cwd,
+    sessionPath: runtime.session.sessionFile,
+    threadId: runtime.session.sessionId,
+  };
 }
 
 export async function selectProjectRuntime(

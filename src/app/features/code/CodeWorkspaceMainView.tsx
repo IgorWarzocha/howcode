@@ -1,6 +1,11 @@
 import type { DesktopAction } from "../../desktop/actions";
-import type { AppSettings, ComposerModel, ThreadData } from "../../desktop/types";
-import type { View } from "../../types";
+import type {
+  AppSettings,
+  ComposerModel,
+  DesktopActionResult,
+  ThreadData,
+} from "../../desktop/types";
+import type { Project, View } from "../../types";
 import { LandingView } from "../../views/LandingView";
 import { SettingsView } from "../../views/SettingsView";
 import { ThreadView } from "../../views/ThreadView";
@@ -11,11 +16,19 @@ type CodeWorkspaceMainViewProps = {
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
   currentProjectName: string;
+  projects: Project[];
+  selectedProjectId: string;
+  shellCwd?: string | null;
+  workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: (
+    action: DesktopAction,
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
+  onSelectProject: (projectId: string) => void;
 };
 
 export function CodeWorkspaceMainView({
@@ -24,11 +37,16 @@ export function CodeWorkspaceMainView({
   availableModels,
   currentModel,
   currentProjectName,
+  projects,
+  selectedProjectId,
+  shellCwd,
+  workspaceContentClass,
   threadData,
   composerLayoutVersion,
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
+  onSelectProject,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
     return (
@@ -57,8 +75,16 @@ export function CodeWorkspaceMainView({
   }
 
   return (
-    <div className="grid h-full place-items-center px-4 pb-6">
-      <LandingView projectName={currentProjectName} onAction={onAction} />
+    <div className="grid h-full content-start justify-items-center px-4 pb-6">
+      <LandingView
+        className={workspaceContentClass}
+        projectName={currentProjectName}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        shellCwd={shellCwd}
+        onAction={onAction}
+        onSelectProject={onSelectProject}
+      />
     </div>
   );
 }

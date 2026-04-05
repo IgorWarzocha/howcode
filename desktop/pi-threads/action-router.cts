@@ -202,8 +202,7 @@ export async function handleDesktopAction(
     }
 
     case "thread.new":
-      await startNewThread(getComposerRequest(payload));
-      return;
+      return await startNewThread(getComposerRequest(payload));
 
     case "composer.model": {
       const selection = getComposerModelSelection(payload);

@@ -1,6 +1,13 @@
 import type { DesktopAction } from "../desktop/actions";
 import type { DesktopActionPayload, DesktopActionResult } from "../desktop/types";
 
+function hasElectrobunDesktopBridge() {
+  return (
+    typeof (window as Window & { __electrobunRpcSocketPort?: unknown })
+      .__electrobunRpcSocketPort === "number"
+  );
+}
+
 export function useDesktopBridge() {
   return async (
     action: DesktopAction,
@@ -8,6 +15,17 @@ export function useDesktopBridge() {
   ): Promise<DesktopActionResult | null> => {
     if (!window.piDesktop) {
       return null;
+    }
+
+    if (!hasElectrobunDesktopBridge()) {
+      return {
+        ok: false,
+        at: new Date().toISOString(),
+        payload: { action, payload },
+        result: {
+          error: "Electrobun RPC bridge is unavailable.",
+        },
+      };
     }
 
     try {

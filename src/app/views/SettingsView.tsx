@@ -2,7 +2,7 @@ import { ChevronDown, GitCommitHorizontal } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ComposerMenu } from "../components/workspace/composer/ComposerMenu";
 import type { DesktopAction } from "../desktop/actions";
-import type { AppSettings, ComposerModel } from "../desktop/types";
+import type { AppSettings, ComposerModel, DesktopActionResult } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import {
@@ -18,7 +18,10 @@ type SettingsViewProps = {
   appSettings: AppSettings;
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: (
+    action: DesktopAction,
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
 };
 
 export function SettingsView({

@@ -119,12 +119,7 @@ export function Sidebar({
           icon={<Code2 size={16} />}
           label="Code"
           active={activeView === "code"}
-          onClick={() => {
-            onShowView("code");
-            onAction("thread.new", {
-              projectId: (selectedProjectId || projects[0]?.id) ?? null,
-            });
-          }}
+          onClick={() => onShowView("code")}
         />
       </nav>
 

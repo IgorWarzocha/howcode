@@ -18,6 +18,26 @@ function getPayloadProjectId(payload: ActionPayload) {
   return typeof payload.projectId === "string" ? payload.projectId : null;
 }
 
+function hasElectrobunDesktopBridge() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    typeof (window as Window & { __electrobunRpcSocketPort?: unknown })
+      .__electrobunRpcSocketPort === "number"
+  );
+}
+
+function buildLocalThreadFallback(projectId: string) {
+  const timestamp = Date.now();
+  return {
+    projectId,
+    threadId: `local-thread-${timestamp}`,
+    sessionPath: `local://${encodeURIComponent(projectId)}/${timestamp}`,
+  };
+}
+
 export function getOptimisticallyUpdatedShellState(
   currentState: ShellState | null,
   payload: ActionPayload,
@@ -187,11 +207,40 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "thread.new") {
-    dispatch({ type: "show-view", view: "code" });
+    const projectId = getPayloadProjectId(contextualPayload) ?? composerProjectId;
+    const sessionPath =
+      typeof actionResult?.result?.sessionPath === "string"
+        ? actionResult.result.sessionPath
+        : null;
+    const threadId =
+      typeof actionResult?.result?.threadId === "string" ? actionResult.result.threadId : null;
+    const localFallback =
+      !threadId && !sessionPath && projectId && !hasElectrobunDesktopBridge()
+        ? buildLocalThreadFallback(projectId)
+        : null;
 
-    const nextComposerState = await loadComposerState({ projectId: composerProjectId });
-    if (nextComposerState) {
-      setComposerState(nextComposerState);
+    if (projectId && threadId && sessionPath) {
+      dispatch({ type: "open-thread", projectId, threadId, sessionPath });
+      await loadProjectThreads(projectId);
+    } else if (localFallback) {
+      dispatch({
+        type: "open-thread",
+        projectId: localFallback.projectId,
+        threadId: localFallback.threadId,
+        sessionPath: localFallback.sessionPath,
+      });
+    } else if (projectId) {
+      dispatch({ type: "select-project", projectId });
+      await loadProjectThreads(projectId);
+    } else {
+      dispatch({ type: "show-view", view: "code" });
+    }
+
+    if (!localFallback) {
+      const nextComposerState = await loadComposerState({ projectId });
+      if (nextComposerState) {
+        setComposerState(nextComposerState);
+      }
     }
   }
 

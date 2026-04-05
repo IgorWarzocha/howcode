@@ -10,7 +10,6 @@ import type {
 } from "../../desktop/types";
 import type { View } from "../../types";
 import { SurfacePanel } from "../common/SurfacePanel";
-import { ComposerBanner } from "./composer/ComposerBanner";
 import { ComposerGitOpsSurface } from "./composer/ComposerGitOpsSurface";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
@@ -68,32 +67,28 @@ export function Composer(props: ComposerProps) {
   }, [props.onSetDiffPanelVisible, surface]);
 
   return (
-    <>
-      {props.activeView === "code" ? <ComposerBanner onAction={props.onAction} /> : null}
-
-      <SurfacePanel
-        className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
-        aria-label="Composer panel"
-      >
-        {surface === "git-ops" ? (
-          <ComposerGitOpsSurface
-            projectGitState={props.projectGitState}
-            diffRenderMode={props.diffRenderMode}
-            diffComments={props.diffComments}
-            diffCommentCount={props.diffCommentCount}
-            diffCommentsSending={props.diffCommentsSending}
-            diffCommentError={props.diffCommentError}
-            onSetDiffRenderMode={props.onSetDiffRenderMode}
-            onSendDiffComments={props.onSendDiffComments}
-            onSelectDiffComment={props.onSelectDiffComment}
-            onAction={props.onAction}
-            onLayoutChange={props.onLayoutChange}
-            onBack={() => setSurface("prompt")}
-          />
-        ) : (
-          <ComposerPromptSurface {...props} onOpenGitOps={() => setSurface("git-ops")} />
-        )}
-      </SurfacePanel>
-    </>
+    <SurfacePanel
+      className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+      aria-label="Composer panel"
+    >
+      {surface === "git-ops" ? (
+        <ComposerGitOpsSurface
+          projectGitState={props.projectGitState}
+          diffRenderMode={props.diffRenderMode}
+          diffComments={props.diffComments}
+          diffCommentCount={props.diffCommentCount}
+          diffCommentsSending={props.diffCommentsSending}
+          diffCommentError={props.diffCommentError}
+          onSetDiffRenderMode={props.onSetDiffRenderMode}
+          onSendDiffComments={props.onSendDiffComments}
+          onSelectDiffComment={props.onSelectDiffComment}
+          onAction={props.onAction}
+          onLayoutChange={props.onLayoutChange}
+          onBack={() => setSurface("prompt")}
+        />
+      ) : (
+        <ComposerPromptSurface {...props} onOpenGitOps={() => setSurface("git-ops")} />
+      )}
+    </SurfacePanel>
   );
 }

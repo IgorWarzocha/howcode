@@ -60,7 +60,7 @@ export function CodeWorkspaceView({
     shellState,
     state,
   } = controller;
-  const showWorkspaceFooter = state.activeView !== "settings";
+  const showWorkspaceFooter = state.activeView === "thread";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
@@ -178,11 +178,16 @@ export function CodeWorkspaceView({
               availableModels={activeComposerState?.availableModels ?? []}
               currentModel={activeComposerState?.currentModel ?? null}
               currentProjectName={currentProjectName}
+              projects={controller.projects}
+              selectedProjectId={controller.state.selectedProjectId}
+              shellCwd={shellState?.cwd ?? null}
+              workspaceContentClass={workspaceContentClass}
               threadData={activeThreadData}
               composerLayoutVersion={composerLayoutVersion}
-              onAction={(action, payload) => void handleAction(action, payload)}
+              onAction={handleAction}
               onLoadEarlierMessages={handleLoadEarlierMessages}
               onOpenTurnDiff={handleOpenDiffSelection}
+              onSelectProject={controller.handleProjectSelect}
             />
           )}
         </main>
