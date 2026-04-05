@@ -6,10 +6,10 @@
   "packageManager": "bun@1.3.9",
   "scripts": {
     "dev": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:desktop:build\" \"bun run dev:desktop\"",
-    "dev:clean": "rm -rf build/dev-linux-x64 build/desktop",
-    "dev:web": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:clean": "rm -rf build/dev-linux-x64 build/desktop build/dev-server.json",
+    "dev:web": "bun run ./scripts/dev-web.ts",
     "dev:desktop:build": "bun --watch ./scripts/build-desktop-backend.ts",
-    "dev:desktop": "sh -c 'until [ -f build/desktop/pi-threads.mjs ] && [ -f build/desktop/terminal-manager.mjs ]; do sleep 0.2; done; WEBKIT_DISABLE_DMABUF_RENDERER=1 electrobun dev --watch'",
+    "dev:desktop": "sh -c 'until [ -f build/desktop/pi-threads.mjs ] && [ -f build/desktop/terminal-manager.mjs ] && [ -f build/dev-server.json ]; do sleep 0.2; done; WEBKIT_DISABLE_DMABUF_RENDERER=1 electrobun dev --watch'",
     "build": "vite build && bun run build:desktop && electrobun build",
     "build:desktop": "bun run ./scripts/build-desktop-backend.ts",
     "preview": "vite preview",

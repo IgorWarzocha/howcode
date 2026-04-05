@@ -1,4 +1,4 @@
-import { readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
@@ -21,6 +21,7 @@ import type {
 } from "../../shared/desktop-contracts";
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
 import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
+import { parseDevServerMetadata, resolveDevServerMetadataPath } from "./dev-server";
 
 if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
   process.env.WEBKIT_DISABLE_DMABUF_RENDERER = "1";
@@ -64,9 +65,6 @@ const piThreads = (await import(
 const terminalManager = (await import(
   new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
 )) as TerminalManagerModule;
-
-const DEV_SERVER_PORT = 5173;
-const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 
 async function pathExists(path: string) {
   try {
@@ -162,11 +160,36 @@ async function listComposerAttachmentEntries(request: {
 async function getMainViewUrl(): Promise<string> {
   const channel = await Updater.localInfo.channel();
   if (channel === "dev") {
+    const devServerMetadataPath = resolveDevServerMetadataPath([
+      process.env.HOWCODE_REPO_ROOT ?? "",
+      import.meta.dir,
+      process.cwd(),
+    ]);
+
+    if (!devServerMetadataPath) {
+      console.warn("Falling back to packaged views because the repo root could not be resolved.", {
+        moduleDirectoryPath: import.meta.dir,
+        processCwd: process.cwd(),
+      });
+      return "views://mainview/index.html";
+    }
+
     try {
-      await fetch(DEV_SERVER_URL, { method: "HEAD" });
-      return DEV_SERVER_URL;
-    } catch {
-      // Fall through to packaged views.
+      const rawMetadata = await readFile(devServerMetadataPath, "utf8");
+      const devServerUrl = parseDevServerMetadata(rawMetadata);
+
+      if (devServerUrl) {
+        await fetch(devServerUrl, { method: "HEAD" });
+        return devServerUrl;
+      }
+    } catch (error) {
+      console.warn(
+        "Falling back to packaged views because the dev server metadata was unavailable.",
+        {
+          devServerMetadataPath,
+          error,
+        },
+      );
     }
   }
 
