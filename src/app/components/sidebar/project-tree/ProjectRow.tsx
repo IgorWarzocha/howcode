@@ -1,5 +1,6 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -16,9 +17,14 @@ type ProjectRowProps = {
   isExpanded: boolean;
   hasRepoOrigin: boolean;
   name: string;
+  renameDraft: string;
+  isEditing: boolean;
   threadGroupId: string;
+  onCancelEdit: () => void;
+  onChangeRenameDraft: (value: string) => void;
   onEdit: () => void;
   onSelect: () => void;
+  onSubmitEdit: () => void;
   onToggleActions: () => void;
   onToggleExpanded: () => void;
 };
@@ -32,12 +38,28 @@ export function ProjectRow({
   isExpanded,
   hasRepoOrigin,
   name,
+  renameDraft,
+  isEditing,
   threadGroupId,
+  onCancelEdit,
+  onChangeRenameDraft,
   onEdit,
   onSelect,
+  onSubmitEdit,
   onToggleActions,
   onToggleExpanded,
 }: ProjectRowProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [isEditing]);
+
   return (
     <div
       className={cn(
@@ -79,28 +101,52 @@ export function ProjectRow({
         )}
       </button>
 
-      <button
-        type="button"
-        className={cn(
-          "flex min-h-8 min-w-0 cursor-grab items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] active:cursor-grabbing",
-          isActive && "text-[color:var(--text)]",
-        )}
-        {...dragHandleProps.attributes}
-        {...dragHandleProps.listeners}
-        onClick={onSelect}
-        onDoubleClick={onEdit}
-        aria-current={isActive ? "page" : undefined}
-      >
-        <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">
-          {name}
-        </span>
-      </button>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          value={renameDraft}
+          onChange={(event) => onChangeRenameDraft(event.target.value)}
+          onBlur={onCancelEdit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onSubmitEdit();
+              return;
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onCancelEdit();
+            }
+          }}
+          className="h-8 min-w-0 rounded-xl border border-[rgba(183,186,245,0.26)] bg-[rgba(255,255,255,0.05)] px-2.5 text-[13.5px] font-medium text-[color:var(--text)] outline-none"
+          aria-label={`Rename ${name}`}
+        />
+      ) : (
+        <button
+          type="button"
+          className={cn(
+            "flex min-h-8 min-w-0 cursor-grab items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] active:cursor-grabbing",
+            isActive && "text-[color:var(--text)]",
+          )}
+          {...dragHandleProps.attributes}
+          {...dragHandleProps.listeners}
+          onClick={onSelect}
+          onDoubleClick={onEdit}
+          aria-current={isActive ? "page" : undefined}
+        >
+          <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">
+            {name}
+          </span>
+        </button>
+      )}
 
       <div
         className={cn(
           "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
           actionMenuOpen && "opacity-100",
           isDragging && "opacity-100",
+          isEditing && "opacity-0 pointer-events-none",
         )}
       >
         <button

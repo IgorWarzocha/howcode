@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getOptimisticallyUpdatedShellState } from "../app/app-shell/controller-post-action-effects";
+import {
+  getOptimisticallyRenamedShellState,
+  getOptimisticallyUpdatedShellState,
+} from "../app/app-shell/controller-post-action-effects";
 import type { ShellState } from "../app/desktop/types";
 
 function buildShellState(): ShellState {
@@ -22,7 +25,18 @@ function buildShellState(): ShellState {
       currentThinkingLevel: "medium",
       availableThinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh"],
     },
-    projects: [],
+    projects: [
+      {
+        id: "/repo",
+        name: "Repo",
+        threads: [],
+        collapsed: false,
+        threadsLoaded: true,
+        threadCount: 0,
+        repoOriginChecked: false,
+        repoOriginUrl: null,
+      },
+    ],
   };
 }
 
@@ -51,6 +65,22 @@ describe("controller post action effects", () => {
       appSettings: {
         favoriteFolders: ["/repo", "/existing"],
       },
+    });
+  });
+
+  it("renames projects optimistically", () => {
+    expect(
+      getOptimisticallyRenamedShellState(buildShellState(), {
+        projectId: "/repo",
+        projectName: "Renamed repo",
+      }),
+    ).toMatchObject({
+      projects: [
+        {
+          id: "/repo",
+          name: "Renamed repo",
+        },
+      ],
     });
   });
 });

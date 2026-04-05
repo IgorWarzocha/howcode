@@ -101,6 +101,38 @@ export function applyOptimisticSettingsUpdate(
   );
 }
 
+export function getOptimisticallyRenamedShellState(
+  currentState: ShellState | null,
+  payload: ActionPayload,
+) {
+  if (!currentState) {
+    return null;
+  }
+
+  const projectId = getPayloadProjectId(payload);
+  const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
+
+  if (!projectId || projectName.length === 0) {
+    return currentState;
+  }
+
+  return {
+    ...currentState,
+    projects: currentState.projects.map((project) =>
+      project.id === projectId ? { ...project, name: projectName } : project,
+    ),
+  } satisfies ShellState;
+}
+
+export function applyOptimisticProjectRename(
+  queryClient: QueryClient,
+  payload: Record<string, unknown>,
+) {
+  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
+    getOptimisticallyRenamedShellState(currentState ?? null, payload),
+  );
+}
+
 type RunPostDesktopActionEffectsInput = {
   action: DesktopAction;
   contextualPayload: ActionPayload;

@@ -1,13 +1,10 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
 import { TextButton } from "../common/TextButton";
 
-export type ProjectDialogAction =
-  | "project.edit-name"
-  | "project.archive-threads"
-  | "project.remove-project";
+export type ProjectDialogAction = "project.archive-threads" | "project.remove-project";
 
 export type PendingProjectDialog = {
   action: ProjectDialogAction;
@@ -23,14 +20,6 @@ type ProjectActionDialogProps = {
 
 function getDialogCopy(pendingAction: PendingProjectDialog) {
   switch (pendingAction.action) {
-    case "project.edit-name":
-      return {
-        confirmLabel: "Save name",
-        description:
-          "This only changes the app display name for this project. Pi session files stay where they are.",
-        inputLabel: "Project name",
-        title: "Rename project",
-      };
     case "project.archive-threads":
       return {
         confirmLabel: "Archive threads",
@@ -54,20 +43,14 @@ export function ProjectActionDialog({
   onConfirm,
 }: ProjectActionDialogProps) {
   const titleId = useId();
-  const [draftName, setDraftName] = useState("");
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!pendingAction) {
       return;
     }
 
-    setDraftName(pendingAction.projectName);
-
-    const focusTarget =
-      pendingAction.action === "project.edit-name" ? inputRef.current : confirmButtonRef.current;
-    focusTarget?.focus();
+    confirmButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -112,37 +95,9 @@ export function ProjectActionDialog({
           <p className="m-0 text-[13px] text-[color:var(--muted)]">{copy.description}</p>
         </div>
 
-        {copy.inputLabel ? (
-          <label className="grid gap-2 text-[13px] text-[color:var(--muted)]">
-            <span>{copy.inputLabel}</span>
-            <input
-              ref={inputRef}
-              value={draftName}
-              onChange={(event) => setDraftName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && draftName.trim().length > 0) {
-                  event.preventDefault();
-                  void onConfirm({ projectName: draftName.trim() });
-                }
-              }}
-              className="h-10 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-3 text-[14px] text-[color:var(--text)] outline-none focus:border-[rgba(183,186,245,0.36)]"
-            />
-          </label>
-        ) : null}
-
         <div className="flex items-center justify-end gap-2">
           <TextButton onClick={onClose}>Cancel</TextButton>
-          <PrimaryButton
-            ref={confirmButtonRef}
-            onClick={() =>
-              onConfirm(
-                pendingAction.action === "project.edit-name"
-                  ? { projectName: draftName.trim() }
-                  : undefined,
-              )
-            }
-            disabled={pendingAction.action === "project.edit-name" && draftName.trim().length === 0}
-          >
+          <PrimaryButton ref={confirmButtonRef} onClick={() => onConfirm()}>
             {copy.confirmLabel}
           </PrimaryButton>
         </div>

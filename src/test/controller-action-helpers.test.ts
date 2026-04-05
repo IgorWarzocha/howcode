@@ -34,7 +34,7 @@ describe("controller action helpers", () => {
 
   it("builds pending project confirmation payloads", () => {
     expect(
-      buildPendingProjectAction("project.edit-name", { projectId: "p1" }, [
+      buildPendingProjectAction("project.archive-threads", { projectId: "p1" }, [
         {
           id: "p1",
           name: "Chat",
@@ -45,14 +45,14 @@ describe("controller action helpers", () => {
         },
       ]),
     ).toEqual({
-      action: "project.edit-name",
+      action: "project.archive-threads",
       projectId: "p1",
       projectName: "Chat",
     });
   });
 
   it("recognizes confirmation-only project actions", () => {
-    expect(shouldConfirmProjectAction("project.edit-name")).toBe(true);
+    expect(shouldConfirmProjectAction("project.edit-name")).toBe(false);
     expect(shouldConfirmProjectAction("thread.open")).toBe(false);
   });
 });

@@ -116,6 +116,8 @@ export function ProjectTree({
   onToggleProjectCollapse,
 }: ProjectTreeProps) {
   const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const { containerRef } = useProjectMenuDismiss(openProjectMenuId !== null, () =>
     setOpenProjectMenuId(null),
   );
@@ -143,6 +145,32 @@ export function ProjectTree({
 
     const nextProjects = arrayMove(projects, oldIndex, newIndex);
     onProjectReorder(nextProjects.map((project) => project.id));
+  };
+
+  const handleStartEdit = (projectId: string, projectName: string) => {
+    setOpenProjectMenuId(null);
+    setEditingProjectId(projectId);
+    setRenameDraft(projectName);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProjectId(null);
+    setRenameDraft("");
+  };
+
+  const handleSubmitEdit = (projectId: string) => {
+    const nextProjectName = renameDraft.trim();
+    if (!nextProjectName) {
+      handleCancelEdit();
+      return;
+    }
+
+    void onAction("project.edit-name", {
+      projectId,
+      projectName: nextProjectName,
+    });
+    setEditingProjectId(null);
+    setRenameDraft("");
   };
 
   return (
@@ -174,21 +202,21 @@ export function ProjectTree({
                       dragHandleProps={dragHandleProps}
                       isActive={projectIsActive}
                       isDragging={isDragging}
+                      isEditing={editingProjectId === project.id}
                       isExpanded={isExpanded}
                       hasRepoOrigin={Boolean(project.repoOriginUrl)}
                       name={project.name}
+                      renameDraft={renameDraft}
                       threadGroupId={threadGroupId}
-                      onEdit={() =>
-                        onAction("project.edit-name", {
-                          projectId: project.id,
-                          projectName: project.name,
-                        })
-                      }
+                      onCancelEdit={handleCancelEdit}
+                      onChangeRenameDraft={setRenameDraft}
+                      onEdit={() => handleStartEdit(project.id, project.name)}
                       onSelect={() => {
                         onProjectSelect(project.id);
                         onAction("project.select", { projectId: project.id });
                         setOpenProjectMenuId(null);
                       }}
+                      onSubmitEdit={() => handleSubmitEdit(project.id)}
                       onToggleActions={() =>
                         setOpenProjectMenuId((current) =>
                           current === project.id ? null : project.id,
@@ -197,7 +225,7 @@ export function ProjectTree({
                       onToggleExpanded={() => onToggleProjectCollapse(project.id)}
                     />
 
-                    {projectMenuOpen ? (
+                    {projectMenuOpen && editingProjectId !== project.id ? (
                       <ProjectActionMenu
                         menuId={actionMenuId}
                         projectId={project.id}

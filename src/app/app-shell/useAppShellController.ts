@@ -21,6 +21,7 @@ import {
   shouldConfirmProjectAction,
 } from "./controller-action-helpers";
 import {
+  applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from "./controller-post-action-effects";
@@ -170,6 +171,10 @@ export function useAppShellController() {
 
     if (action === "settings.update") {
       applyOptimisticSettingsUpdate(queryClient, payload);
+    }
+
+    if (action === "project.edit-name") {
+      applyOptimisticProjectRename(queryClient, payload);
     }
 
     return await runDesktopAction(action, payload);

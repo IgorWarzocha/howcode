@@ -31,18 +31,11 @@ export function buildContextualActionPayload({
 }
 
 export function shouldConfirmProjectAction(action: DesktopAction) {
-  return (
-    action === "project.edit-name" ||
-    action === "project.archive-threads" ||
-    action === "project.remove-project"
-  );
+  return action === "project.archive-threads" || action === "project.remove-project";
 }
 
 export function buildPendingProjectAction(
-  action: Extract<
-    DesktopAction,
-    "project.edit-name" | "project.archive-threads" | "project.remove-project"
-  >,
+  action: Extract<DesktopAction, "project.archive-threads" | "project.remove-project">,
   payload: Record<string, unknown>,
   projects: Project[],
 ): PendingProjectDialog | null {
