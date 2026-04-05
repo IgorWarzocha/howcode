@@ -1,6 +1,6 @@
-# Pi Desktop Mock
+# howcode
 
-Codex-inspired desktop shell for Pi, focused on UI/UX first.
+Codex-inspired desktop shell for Pi, focused on making local coding workflows feel fast, native, and eventually collaborative.
 
 ## Current scope
 
@@ -12,7 +12,7 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - Bun-native main process with Electrobun RPC bridge into the renderer
 - real xterm.js terminal panel backed by Bun PTY first, with `node-pty` kept only as the Windows compatibility fallback
 - Pi takeover terminal view that replaces the thread pane with an embedded native Pi TUI lane
-- composer surface split into prompt and mock git-ops modes so we can iterate on each state independently
+- composer surface split into prompt and git-ops modes so we can iterate on each state independently while the git lane is still partial
 - centered thread scroller with natural-flow row rendering, reliable folding, bottom-stick behavior during live updates, and preserved in-lane scrolling
 - selected-session Pi JSONL watching so the open thread refreshes when the same session changes externally in Pi TUI
 - visible assistant reasoning blocks that auto-expand while streaming and collapse when the turn settles
@@ -23,6 +23,21 @@ Codex-inspired desktop shell for Pi, focused on UI/UX first.
 - deterministic workspace + shared helper unit tests
 - Biome for linting and formatting
 - Husky + lint-staged pre-commit scaffolding
+
+## Product status snapshot
+
+This repo is no longer "all mock," but it is still intentionally mixed:
+
+- **real enough today:** composer send/streaming, thread hydration, project/thread persistence, terminal PTY integration, checkpoint-backed diff rendering, git probing, project actions like rename/archive/remove/open-in-file-manager
+- **still partial:** git-ops UX, terminal polish, diff review flow, some settings/navigation/header affordances
+- **still mocked or placeholder-only:** remote connections, dictate/host controls, plugins/automations/debug surfaces, several header actions, project worktree creation, some settings items
+
+The canonical status docs live here:
+
+- `docs/mock-features.md` — current real vs mock inventory
+- `docs/implementation-todo.md` — legacy execution backlog
+- `docs/roadmap.md` — product roadmap and major epics
+- `docs/todolist.md` — grouped work buckets we can pick up next
 
 ## Run
 
@@ -73,17 +88,25 @@ The `prepare` script will then activate Husky automatically.
 - `src/bun/index.ts` — Electrobun main-process entry and RPC request handlers
 - `desktop/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
 - `desktop/pi-threads/*` — shell loading, thread hydration, action routing
-- `desktop/project-git.cts` — selected-project git/branch/diff-stat probing for header chrome
+- `desktop/project-git/*` — selected-project git/branch/diff/commit helpers
 - `desktop/terminal/*` — PTY adapters and terminal session manager
 - `desktop/thread-state-db/*` — SQLite schema/query/write/mapping lanes
 - `shared/` — shared contracts, mapping helpers, action coverage metadata
 - `docs/lane-map.md` — concise ownership map
 - `docs/mock-features.md` — current real vs mock inventory
 - `docs/implementation-todo.md` — prioritized execution backlog
+- `docs/roadmap.md` — phased roadmap and product bets
+- `docs/todolist.md` — grouped execution checklist
 
-## Next integration step
+## Current roadmap focus
 
-Finish the remaining mock desktop controls (`project.actions`, header action menus, host/dictate, composer-adjacent git ops, terminal multi-session polish) while keeping the new lane boundaries intact.
+Near-term work is concentrated in three buckets:
+
+1. **easy wins / cleanup** — status-marker drift, nav semantics, lightweight settings shells, remaining small mock controls
+2. **interconnected implementation batches** — header/navigation actions, git+diff+review convergence, terminal+host+remote execution convergence
+3. **longer-term epics** — OpenClaw-style workflows, Just Chat mode, Cowork/collaboration flows, and an extension that tightly integrates Pi with the app
+
+See `docs/roadmap.md` and `docs/todolist.md` for the actual plan.
 
 ## Routing note for later
 
