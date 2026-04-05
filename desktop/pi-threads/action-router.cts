@@ -15,14 +15,11 @@ import {
   getGitRepoUrl,
   getProjectId,
   getProjectIds,
-  getProjectImportRoots,
-  getProjectImportSelections,
   getProjectName,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
   getSettingsProjectImportState,
-  getSettingsProjectScanRoots,
   getSettingsReset,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads.ts";
@@ -30,7 +27,6 @@ import {
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setProjectImportState,
-  setProjectScanRoots,
 } from "../app-settings.cts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
 import {
@@ -43,7 +39,7 @@ import {
 } from "../pi-desktop-runtime.cts";
 import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
-import { importProjects, scanProjectImportRoots } from "../project-import.cts";
+import { importProjects, scanKnownProjects } from "../project-import.cts";
 import {
   archiveProjectThreads,
   archiveThread,
@@ -311,11 +307,6 @@ export async function handleDesktopAction(
         return;
       }
 
-      if (key === "projectScanRoots") {
-        setProjectScanRoots(getSettingsProjectScanRoots(payload));
-        return;
-      }
-
       if (getSettingsReset(payload)) {
         setGitCommitMessageModelSelection(null);
         return;
@@ -329,14 +320,14 @@ export async function handleDesktopAction(
     }
 
     case "projects.import.scan": {
-      const roots = getProjectImportRoots(payload);
+      const projectIds = getProjectIds(payload);
       return {
-        projects: await scanProjectImportRoots(roots),
+        projects: await scanKnownProjects(projectIds),
       };
     }
 
     case "projects.import.apply": {
-      return await importProjects(getProjectImportSelections(payload));
+      return await importProjects(getProjectIds(payload));
     }
   }
 

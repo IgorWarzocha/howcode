@@ -1,116 +1,56 @@
-import type { Dirent } from "node:fs";
-import { readdir } from "node:fs/promises";
-import path from "node:path";
 import type { ProjectImportCandidate } from "../shared/desktop-contracts.ts";
 import { setProjectImportState } from "./app-settings.cts";
-import { getOriginUrl } from "./project-git/project-state.cts";
-import { ensureProject, listProjects, setProjectRepoOrigin } from "./thread-state-db.cts";
+import { getOriginUrl, isGitRepository } from "./project-git/project-state.cts";
+import { listProjects, setProjectRepoOrigin } from "./thread-state-db.cts";
 
-const MAX_SCAN_DEPTH = 4;
-const skippedDirectoryNames = new Set([
-  ".git",
-  ".hg",
-  ".svn",
-  "node_modules",
-  ".next",
-  ".nuxt",
-  "dist",
-  "build",
-  "coverage",
-  ".turbo",
-  ".cache",
-  ".idea",
-  ".vscode",
-]);
-
-async function hasGitDirectory(projectId: string) {
-  try {
-    const entries = await readdir(projectId, { withFileTypes: true, encoding: "utf8" });
-    return entries.some((entry) => entry.isDirectory() && entry.name === ".git");
-  } catch {
-    return false;
+function resolveProjectIds(projectIds: string[]) {
+  if (projectIds.length > 0) {
+    return [...new Set(projectIds)];
   }
+
+  return listProjects(process.cwd())
+    .filter((project) => project.threadCount !== 0)
+    .map((project) => project.id);
 }
 
-async function walkRoots(
-  projectId: string,
-  depth: number,
-  results: Set<string>,
-  visited: Set<string>,
-) {
-  const normalizedProjectId = path.resolve(projectId);
-  if (visited.has(normalizedProjectId)) {
-    return;
-  }
-
-  visited.add(normalizedProjectId);
-
-  if (await hasGitDirectory(normalizedProjectId)) {
-    results.add(normalizedProjectId);
-    return;
-  }
-
-  if (depth <= 0) {
-    return;
-  }
-
-  let entries: Dirent<string>[];
-  try {
-    entries = await readdir(normalizedProjectId, { withFileTypes: true, encoding: "utf8" });
-  } catch {
-    return;
-  }
-
-  for (const entry of entries) {
-    if (!entry.isDirectory() || skippedDirectoryNames.has(entry.name)) {
-      continue;
-    }
-
-    await walkRoots(path.join(normalizedProjectId, entry.name), depth - 1, results, visited);
-  }
-}
-
-export async function scanProjectImportRoots(roots: string[]): Promise<ProjectImportCandidate[]> {
-  const discoveredProjectIds = new Set<string>();
-  const visited = new Set<string>();
-  const existingProjectIds = new Set(listProjects(process.cwd()).map((project) => project.id));
-
-  for (const root of roots) {
-    await walkRoots(root, MAX_SCAN_DEPTH, discoveredProjectIds, visited);
-  }
-
-  const candidates = await Promise.all(
-    [...discoveredProjectIds]
-      .sort((left, right) => left.localeCompare(right))
-      .map(async (projectId) => {
-        const originUrl = await getOriginUrl(projectId);
-        return {
-          projectId,
-          name: path.basename(projectId) || projectId,
-          isGitRepo: true,
-          hasOrigin: originUrl !== null,
-          originUrl,
-          alreadyImported: existingProjectIds.has(projectId),
-        } satisfies ProjectImportCandidate;
-      }),
+export async function scanKnownProjects(projectIds: string[]): Promise<ProjectImportCandidate[]> {
+  const knownProjects = new Map(
+    listProjects(process.cwd()).map((project) => [project.id, project] as const),
   );
 
-  return candidates;
+  return await Promise.all(
+    resolveProjectIds(projectIds).map(async (projectId) => {
+      const knownProject = knownProjects.get(projectId);
+      const [isGitRepo, originUrl] = await Promise.all([
+        isGitRepository(projectId),
+        getOriginUrl(projectId),
+      ]);
+
+      return {
+        projectId,
+        name: knownProject?.name ?? projectId,
+        isGitRepo,
+        hasOrigin: originUrl !== null,
+        originUrl,
+        alreadyImported: knownProject?.repoOriginChecked ?? false,
+      } satisfies ProjectImportCandidate;
+    }),
+  );
 }
 
-export async function importProjects(
-  projects: Array<{ projectId: string; originUrl?: string | null }>,
-) {
-  for (const project of projects) {
-    ensureProject(project.projectId);
-    setProjectRepoOrigin(project.projectId, project.originUrl ?? null);
+export async function importProjects(projectIds: string[]) {
+  const candidates = await scanKnownProjects(projectIds);
+
+  for (const candidate of candidates) {
+    setProjectRepoOrigin(candidate.projectId, candidate.originUrl);
   }
 
-  if (projects.length > 0) {
-    setProjectImportState(true);
-  }
+  setProjectImportState(true);
 
   return {
-    importedProjectIds: projects.map((project) => project.projectId),
+    importedProjectIds: candidates.map((candidate) => candidate.projectId),
+    checkedProjectCount: candidates.length,
+    repoProjectCount: candidates.filter((candidate) => candidate.isGitRepo).length,
+    originProjectCount: candidates.filter((candidate) => candidate.hasOrigin).length,
   };
 }

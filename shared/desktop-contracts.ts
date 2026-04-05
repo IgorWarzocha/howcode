@@ -132,7 +132,6 @@ export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   favoriteFolders: string[];
   projectImportState: boolean | null;
-  projectScanRoots: string[];
 };
 
 export type ComposerStateRequest = {

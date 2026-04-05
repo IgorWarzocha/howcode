@@ -14,7 +14,6 @@ function buildShellState(): ShellState {
       gitCommitMessageModel: null,
       favoriteFolders: ["/existing"],
       projectImportState: null,
-      projectScanRoots: [],
     },
     availableHosts: [],
     composer: {

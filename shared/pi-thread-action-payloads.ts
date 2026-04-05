@@ -42,39 +42,6 @@ export function getProjectIds(payload: DesktopActionPayload) {
     : [];
 }
 
-export function getProjectImportRoots(payload: DesktopActionPayload) {
-  return Array.isArray(payload.roots)
-    ? [
-        ...new Set(
-          payload.roots
-            .filter((root): root is string => typeof root === "string")
-            .map((root) => root.trim())
-            .filter(Boolean),
-        ),
-      ]
-    : [];
-}
-
-export function getProjectImportSelections(payload: DesktopActionPayload) {
-  return Array.isArray(payload.projects)
-    ? payload.projects.filter(
-        (
-          project,
-        ): project is {
-          projectId: string;
-          originUrl?: string | null;
-        } =>
-          typeof project === "object" &&
-          project !== null &&
-          typeof project.projectId === "string" &&
-          project.projectId.trim().length > 0 &&
-          (project.originUrl === undefined ||
-            project.originUrl === null ||
-            typeof project.originUrl === "string"),
-      )
-    : [];
-}
-
 export function getComposerText(payload: DesktopActionPayload) {
   return typeof payload.text === "string" ? payload.text.trim() : "";
 }
@@ -131,8 +98,7 @@ export function getGitRepoUrl(payload: DesktopActionPayload) {
 export function getSettingsKey(payload: DesktopActionPayload) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "favoriteFolders" ||
-    payload.key === "projectImportState" ||
-    payload.key === "projectScanRoots"
+    payload.key === "projectImportState"
     ? (payload.key as keyof AppSettings)
     : null;
 }
@@ -165,17 +131,4 @@ export function getSettingsProjectImportState(payload: DesktopActionPayload) {
   return payload.imported === null || typeof payload.imported === "boolean"
     ? payload.imported
     : null;
-}
-
-export function getSettingsProjectScanRoots(payload: DesktopActionPayload): string[] {
-  return Array.isArray(payload.roots)
-    ? [
-        ...new Set(
-          payload.roots
-            .filter((root): root is string => typeof root === "string")
-            .map((root) => root.trim())
-            .filter(Boolean),
-        ),
-      ]
-    : [];
 }

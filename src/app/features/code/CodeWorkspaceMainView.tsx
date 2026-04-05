@@ -27,7 +27,6 @@ type CodeWorkspaceMainViewProps = {
   ) => Promise<DesktopActionResult | null>;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
-  onOpenSettings: () => void;
   onSelectProject: (projectId: string) => void;
 };
 
@@ -45,7 +44,6 @@ export function CodeWorkspaceMainView({
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
-  onOpenSettings,
   onSelectProject,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
@@ -69,6 +67,7 @@ export function CodeWorkspaceMainView({
         appSettings={appSettings}
         availableModels={availableModels}
         currentModel={currentModel}
+        projects={projects}
         onAction={onAction}
       />
     );
@@ -83,7 +82,6 @@ export function CodeWorkspaceMainView({
         projects={projects}
         selectedProjectId={selectedProjectId}
         onAction={onAction}
-        onOpenSettings={onOpenSettings}
         onSelectProject={onSelectProject}
       />
     </div>

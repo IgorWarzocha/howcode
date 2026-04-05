@@ -1,15 +1,11 @@
-import { Check, ChevronDown, GitCommitHorizontal, Github, LoaderCircle, Plus } from "lucide-react";
+import { ChevronDown, GitCommitHorizontal } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ComposerMenu } from "../components/workspace/composer/ComposerMenu";
 import type { DesktopAction } from "../desktop/actions";
-import type {
-  AppSettings,
-  ComposerModel,
-  DesktopActionResult,
-  ProjectImportCandidate,
-} from "../desktop/types";
+import type { AppSettings, ComposerModel, DesktopActionResult } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
+import type { Project } from "../types";
 import {
   primaryButtonClass,
   settingsInputClass,
@@ -23,31 +19,11 @@ function getActionError(result: DesktopActionResult | null) {
   return typeof result?.result?.error === "string" ? result.result.error : null;
 }
 
-function isProjectImportCandidate(value: unknown): value is ProjectImportCandidate {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.projectId === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.isGitRepo === "boolean" &&
-    typeof candidate.hasOrigin === "boolean" &&
-    (candidate.originUrl === null || typeof candidate.originUrl === "string") &&
-    typeof candidate.alreadyImported === "boolean"
-  );
-}
-
-function getProjectImportCandidates(result: DesktopActionResult | null) {
-  const projects = result?.result?.projects;
-  return Array.isArray(projects) ? projects.filter(isProjectImportCandidate) : [];
-}
-
 type SettingsViewProps = {
   appSettings: AppSettings;
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
+  projects: Project[];
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,
@@ -58,20 +34,16 @@ export function SettingsView({
   appSettings,
   availableModels,
   currentModel,
+  projects,
   onAction,
 }: SettingsViewProps) {
   const selectedModel = appSettings.gitCommitMessageModel;
   const favoriteFolders = appSettings.favoriteFolders;
-  const projectScanRoots = appSettings.projectScanRoots;
   const [menuOpen, setMenuOpen] = useState(false);
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
-  const [scanRootDraft, setScanRootDraft] = useState("");
-  const [scanBusy, setScanBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const [importCandidates, setImportCandidates] = useState<ProjectImportCandidate[]>([]);
-  const [selectedImportProjectIds, setSelectedImportProjectIds] = useState<string[]>([]);
+  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
+  const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const menuPresent = useAnimatedPresence(menuOpen);
@@ -92,7 +64,7 @@ export function SettingsView({
     : "Use composer model";
 
   const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
-    onAction("settings.update", {
+    void onAction("settings.update", {
       key: "favoriteFolders",
       folders: nextFavoriteFolders,
     });
@@ -108,32 +80,15 @@ export function SettingsView({
     setFavoriteFolderDraft("");
   };
 
-  const updateProjectScanRoots = (nextRoots: string[]) => {
-    void onAction("settings.update", {
-      key: "projectScanRoots",
-      roots: nextRoots,
-    });
-  };
-
-  const addProjectScanRoot = () => {
-    const nextScanRoot = scanRootDraft.trim();
-    if (!nextScanRoot) {
-      return;
-    }
-
-    updateProjectScanRoots([...projectScanRoots, nextScanRoot]);
-    setScanRootDraft("");
-  };
-
   const handleSelect = (id: string) => {
     if (id === "composer-default") {
-      onAction("settings.update", { key: "gitCommitMessageModel", reset: true });
+      void onAction("settings.update", { key: "gitCommitMessageModel", reset: true });
       closeMenu();
       return;
     }
 
     const [provider, ...modelIdParts] = id.split("/");
-    onAction("settings.update", {
+    void onAction("settings.update", {
       key: "gitCommitMessageModel",
       provider,
       modelId: modelIdParts.join("/"),
@@ -141,79 +96,35 @@ export function SettingsView({
     closeMenu();
   };
 
-  const handleScanProjects = async () => {
-    const rootsToScan = projectScanRoots.length > 0 ? projectScanRoots : favoriteFolders;
-    if (rootsToScan.length === 0) {
-      setImportError("Add at least one scan root before scanning for projects.");
-      setImportMessage(null);
-      return;
-    }
-
-    setScanBusy(true);
-    setImportError(null);
-    setImportMessage(null);
-
-    try {
-      const result = await onAction("projects.import.scan", { roots: rootsToScan });
-      const errorMessage = getActionError(result);
-      if (errorMessage) {
-        setImportError(errorMessage);
-        setImportCandidates([]);
-        setSelectedImportProjectIds([]);
-        return;
-      }
-
-      const nextCandidates = getProjectImportCandidates(result);
-      setImportCandidates(nextCandidates);
-      setSelectedImportProjectIds(
-        nextCandidates
-          .filter((candidate) => !candidate.alreadyImported)
-          .map((candidate) => candidate.projectId),
-      );
-      setImportMessage(
-        nextCandidates.length > 0
-          ? `Found ${nextCandidates.length} importable git ${nextCandidates.length === 1 ? "project" : "projects"}.`
-          : "No git projects found in those roots.",
-      );
-    } finally {
-      setScanBusy(false);
-    }
-  };
-
-  const handleImportProjects = async () => {
-    const selectedProjects = importCandidates
-      .filter((candidate) => selectedImportProjectIds.includes(candidate.projectId))
-      .map((candidate) => ({
-        projectId: candidate.projectId,
-        originUrl: candidate.originUrl,
-      }));
-
-    if (selectedProjects.length === 0) {
-      setImportError("Select at least one project to import.");
-      return;
-    }
-
+  const handleImportProjectUi = async () => {
     setImportBusy(true);
-    setImportError(null);
+    setImportStatusMessage("Scanning projects for UI info…");
+    setImportErrorMessage(null);
 
     try {
-      const result = await onAction("projects.import.apply", { projects: selectedProjects });
-      const errorMessage = getActionError(result);
-      if (errorMessage) {
-        setImportError(errorMessage);
+      const result = await onAction("projects.import.apply", {
+        projectIds: projects.map((project) => project.id),
+      });
+      const error = getActionError(result);
+      if (error) {
+        setImportErrorMessage(error);
+        setImportStatusMessage(null);
         return;
       }
 
-      setImportCandidates((currentCandidates) =>
-        currentCandidates.map((candidate) =>
-          selectedImportProjectIds.includes(candidate.projectId)
-            ? { ...candidate, alreadyImported: true }
-            : candidate,
-        ),
-      );
-      setSelectedImportProjectIds([]);
-      setImportMessage(
-        `Imported ${selectedProjects.length} ${selectedProjects.length === 1 ? "project" : "projects"}. You can rescan these roots anytime for new ones.`,
+      const checkedProjectCount =
+        typeof result?.result?.checkedProjectCount === "number"
+          ? result.result.checkedProjectCount
+          : 0;
+      const originProjectCount =
+        typeof result?.result?.originProjectCount === "number"
+          ? result.result.originProjectCount
+          : 0;
+
+      setImportStatusMessage(
+        checkedProjectCount > 0
+          ? `Scanned ${checkedProjectCount} · Found ${originProjectCount} origins`
+          : "Nothing to scan",
       );
     } finally {
       setImportBusy(false);
@@ -225,7 +136,7 @@ export function SettingsView({
       <div className="grid gap-1">
         <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Settings</h1>
         <p className="m-0 text-[13px] text-[color:var(--muted)]">
-          Git commit model, import roots, and favorite folders.
+          Git commit model, project UI import, and favorite folders.
         </p>
       </div>
 
@@ -287,70 +198,13 @@ export function SettingsView({
 
       <section className={settingsSectionClass}>
         <div className="grid gap-1">
-          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Project import</h2>
+          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">
+            Project UI import
+          </h2>
           <p className="m-0 text-[13px] text-[color:var(--muted)]">
-            Scan a few root folders for git repositories, review what was found, then import only
-            the projects you want. You can rerun this later to pick up new repos.
+            This scans your current projects for UI information like repo/origin status. New
+            projects are still checked once when you open them for the first time.
           </p>
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={scanRootDraft}
-            onChange={(event) => setScanRootDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                addProjectScanRoot();
-              }
-            }}
-            className={settingsInputClass}
-            placeholder="Paste a folder to scan for git repos"
-            aria-label="Project import root"
-          />
-          <button
-            type="button"
-            className={cn(
-              primaryButtonClass,
-              "inline-flex items-center gap-1.5 px-3 disabled:cursor-not-allowed disabled:opacity-45",
-            )}
-            onClick={addProjectScanRoot}
-            disabled={scanRootDraft.trim().length === 0}
-          >
-            <Plus size={14} />
-            Add root
-          </button>
-        </div>
-
-        <div className="grid gap-2">
-          {projectScanRoots.length > 0 ? (
-            projectScanRoots.map((projectScanRoot) => (
-              <div key={projectScanRoot} className={settingsListRowClass}>
-                <div
-                  className="truncate text-[13px] text-[color:var(--text)]"
-                  title={projectScanRoot}
-                >
-                  {projectScanRoot}
-                </div>
-                <button
-                  type="button"
-                  className="text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
-                  onClick={() =>
-                    updateProjectScanRoots(
-                      projectScanRoots.filter((currentRoot) => currentRoot !== projectScanRoot),
-                    )
-                  }
-                >
-                  Remove
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-              No scan roots yet. Add one or more folders to search for projects.
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -358,15 +212,18 @@ export function SettingsView({
             type="button"
             className={cn(
               primaryButtonClass,
-              "inline-flex items-center gap-2 px-3 disabled:cursor-not-allowed disabled:opacity-45",
+              "px-3 disabled:cursor-not-allowed disabled:opacity-45",
             )}
             onClick={() => {
-              void handleScanProjects();
+              void handleImportProjectUi();
             }}
-            disabled={scanBusy}
+            disabled={importBusy}
           >
-            {scanBusy ? <LoaderCircle size={14} className="animate-spin" /> : null}
-            {scanBusy ? "Scanning…" : "Scan for projects"}
+            {importBusy
+              ? "Importing…"
+              : appSettings.projectImportState
+                ? "Run again"
+                : "Import now"}
           </button>
           {appSettings.projectImportState === false ? (
             <button
@@ -379,99 +236,16 @@ export function SettingsView({
                 });
               }}
             >
-              Re-enable import reminder
+              Show first-launch reminder again
             </button>
           ) : null}
         </div>
 
-        {importMessage ? (
-          <div className="text-[12px] text-[color:var(--muted)]">{importMessage}</div>
+        {importStatusMessage ? (
+          <div className="text-[12px] text-[color:var(--muted)]">{importStatusMessage}</div>
         ) : null}
-        {importError ? <div className="text-[12px] text-[#f2a7a7]">{importError}</div> : null}
-
-        {importCandidates.length > 0 ? (
-          <div className="grid gap-2 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="grid gap-0.5">
-                <div className="text-[13px] font-medium text-[color:var(--text)]">Scan results</div>
-                <div className="text-[12px] text-[color:var(--muted)]">
-                  Imported projects are marked and won’t be selected by default.
-                </div>
-              </div>
-              <button
-                type="button"
-                className={cn(
-                  primaryButtonClass,
-                  "inline-flex items-center gap-2 px-3 disabled:cursor-not-allowed disabled:opacity-45",
-                )}
-                onClick={() => {
-                  void handleImportProjects();
-                }}
-                disabled={importBusy}
-              >
-                {importBusy ? <LoaderCircle size={14} className="animate-spin" /> : null}
-                {importBusy ? "Importing…" : "Import selected"}
-              </button>
-            </div>
-
-            <div className="grid gap-2">
-              {importCandidates.map((candidate) => {
-                const selected = selectedImportProjectIds.includes(candidate.projectId);
-
-                return (
-                  <label
-                    key={candidate.projectId}
-                    className={cn(
-                      settingsListRowClass,
-                      "grid-cols-[auto_minmax(0,1fr)] rounded-2xl py-3",
-                      selected && "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)]",
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      className="mt-0.5"
-                      checked={selected}
-                      disabled={candidate.alreadyImported}
-                      onChange={(event) => {
-                        setSelectedImportProjectIds((currentProjectIds) =>
-                          event.target.checked
-                            ? [...currentProjectIds, candidate.projectId]
-                            : currentProjectIds.filter(
-                                (currentProjectId) => currentProjectId !== candidate.projectId,
-                              ),
-                        );
-                      }}
-                    />
-                    <div className="grid min-w-0 gap-1">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="truncate text-[13px] font-medium text-[color:var(--text)]">
-                          {candidate.name}
-                        </span>
-                        {candidate.alreadyImported ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[11px] text-[color:var(--muted)]">
-                            <Check size={11} />
-                            Imported
-                          </span>
-                        ) : null}
-                        {candidate.hasOrigin ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[11px] text-[color:var(--muted)]">
-                            <Github size={11} />
-                            Origin
-                          </span>
-                        ) : null}
-                      </div>
-                      <div
-                        className="truncate text-[12px] text-[color:var(--muted)]"
-                        title={candidate.projectId}
-                      >
-                        {candidate.projectId}
-                      </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+        {importErrorMessage ? (
+          <div className="text-[12px] text-[#f2a7a7]">{importErrorMessage}</div>
         ) : null}
       </section>
 

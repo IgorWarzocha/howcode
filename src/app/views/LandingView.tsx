@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Folder, Search } from "lucide-react";
+import { Check, ChevronDown, Folder, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PiLogoMark } from "../components/common/PiLogoMark";
 import { SurfacePanel } from "../components/common/SurfacePanel";
@@ -8,7 +8,12 @@ import type { AppSettings, DesktopActionResult } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import type { Project } from "../types";
-import { menuOptionClass, popoverPanelClass, settingsInputClass } from "../ui/classes";
+import {
+  menuOptionClass,
+  popoverPanelClass,
+  settingsInputClass,
+  toolbarButtonClass,
+} from "../ui/classes";
 import { cn } from "../utils/cn";
 
 type LandingViewProps = {
@@ -21,7 +26,6 @@ type LandingViewProps = {
     action: DesktopAction,
     payload?: Record<string, unknown>,
   ) => Promise<DesktopActionResult | null>;
-  onOpenSettings: () => void;
   onSelectProject: (projectId: string) => void;
 };
 
@@ -32,11 +36,13 @@ export function LandingView({
   selectedProjectId,
   className,
   onAction,
-  onOpenSettings,
   onSelectProject,
 }: LandingViewProps) {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectQuery, setProjectQuery] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
+  const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
   const projectButtonRef = useRef<HTMLButtonElement>(null);
   const projectMenuRef = useRef<HTMLDivElement>(null);
   const projectSearchInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +75,41 @@ export function LandingView({
   }, [projectMenuOpen]);
 
   const showProjectImportNotice = appSettings.projectImportState === null;
+  const projectIds = projects.map((project) => project.id);
+
+  const handleImportProjectUi = async () => {
+    setImportBusy(true);
+    setImportErrorMessage(null);
+    setImportStatusMessage("Scanning projects for UI info…");
+
+    try {
+      const result = await onAction("projects.import.apply", { projectIds });
+      const error = typeof result?.result?.error === "string" ? result.result.error : null;
+
+      if (error) {
+        setImportErrorMessage(error);
+        setImportStatusMessage(null);
+        return;
+      }
+
+      const checkedProjectCount =
+        typeof result?.result?.checkedProjectCount === "number"
+          ? result.result.checkedProjectCount
+          : projectIds.length;
+      const originProjectCount =
+        typeof result?.result?.originProjectCount === "number"
+          ? result.result.originProjectCount
+          : 0;
+
+      setImportStatusMessage(
+        checkedProjectCount > 0
+          ? `Scanned ${checkedProjectCount} · Found ${originProjectCount} origins`
+          : "Nothing to scan",
+      );
+    } finally {
+      setImportBusy(false);
+    }
+  };
 
   return (
     <section
@@ -83,38 +124,59 @@ export function LandingView({
       <h1 className="m-0 text-[clamp(36px,6vw,54px)] font-medium tracking-[-0.04em] text-[color:var(--accent)]">
         Let’s build
       </h1>
+
       {showProjectImportNotice ? (
-        <SurfacePanel className="mt-3 grid w-full max-w-[460px] gap-3 rounded-3xl border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.62)] p-4 text-left">
-          <div className="grid gap-1">
+        <SurfacePanel className="relative mt-3 grid w-full max-w-[460px] gap-2 rounded-3xl border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.62)] p-4 pr-10 text-left">
+          <button
+            type="button"
+            className="absolute top-3 right-3 inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]"
+            onClick={() => {
+              void onAction("settings.update", {
+                key: "projectImportState",
+                imported: false,
+              });
+            }}
+            aria-label="Dismiss import notice"
+          >
+            <X size={14} />
+          </button>
+
+          <div className="grid gap-1 pr-2">
             <div className="text-[14px] font-medium text-[color:var(--text)]">Import projects</div>
             <p className="m-0 text-[12.5px] leading-5 text-[color:var(--muted)]">
-              Scan your preferred folders once, import the repos you want, and keep rescanning for
-              new projects later from Settings.
+              This will scan your projects for UI information in the app. Recommended on first
+              launch. Accessible later in settings menu.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 text-[12px]">
             <button
               type="button"
-              className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3.5 text-[13px] font-medium text-[#1a1c26] transition-opacity hover:opacity-90"
-              onClick={onOpenSettings}
-            >
-              Open settings
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border)] px-3.5 text-[13px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+              className={cn(
+                toolbarButtonClass,
+                "shrink-0 whitespace-nowrap rounded-full border border-[color:var(--border)] px-2.5 text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-45",
+              )}
               onClick={() => {
-                void onAction("settings.update", {
-                  key: "projectImportState",
-                  imported: false,
-                });
+                void handleImportProjectUi();
               }}
+              disabled={importBusy}
             >
-              Dismiss
+              {importBusy ? "Importing…" : "Import now"}
             </button>
+            {importStatusMessage ? (
+              <span className="truncate text-[color:var(--muted)]" title={importStatusMessage}>
+                {importStatusMessage}
+              </span>
+            ) : null}
+            {importErrorMessage ? (
+              <span className="truncate text-[#f2a7a7]" title={importErrorMessage}>
+                {importErrorMessage}
+              </span>
+            ) : null}
           </div>
         </SurfacePanel>
       ) : null}
+
       <div className="mt-3 grid w-full max-w-[460px] grid-cols-2 gap-1.5 max-sm:grid-cols-1">
         <TextButton
           className="inline-flex h-11 w-full min-w-0 items-center justify-center rounded-2xl border border-transparent bg-transparent px-4 text-[15px] text-[color:var(--text)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[rgba(255,255,255,0.05)] disabled:cursor-not-allowed disabled:opacity-45"
@@ -125,7 +187,7 @@ export function LandingView({
           }}
           disabled={!latestProject}
         >
-          {latestProject?.name ?? "No recent project"}
+          {latestProject?.name ?? projectName}
         </TextButton>
 
         <div className="relative">

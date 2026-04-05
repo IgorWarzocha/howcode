@@ -177,7 +177,6 @@ export function CodeWorkspaceView({
                   gitCommitMessageModel: null,
                   favoriteFolders: [],
                   projectImportState: null,
-                  projectScanRoots: [],
                 }
               }
               availableModels={activeComposerState?.availableModels ?? []}
@@ -190,7 +189,6 @@ export function CodeWorkspaceView({
               composerLayoutVersion={composerLayoutVersion}
               onAction={handleAction}
               onLoadEarlierMessages={handleLoadEarlierMessages}
-              onOpenSettings={() => controller.handleShowView("settings")}
               onOpenTurnDiff={handleOpenDiffSelection}
               onSelectProject={controller.handleProjectSelect}
             />

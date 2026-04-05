@@ -4,7 +4,6 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
-const projectScanRootsKey = "projectScanRoots";
 
 type PreferenceRow = {
   valueJson: string;
@@ -60,28 +59,6 @@ function parseBooleanPreference(valueJson: string | null | undefined): boolean |
   }
 }
 
-function parseStringArrayPreference(valueJson: string | null | undefined): string[] {
-  if (!valueJson) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(valueJson) as unknown;
-    return Array.isArray(parsed)
-      ? [
-          ...new Set(
-            parsed
-              .filter((value): value is string => typeof value === "string")
-              .map((value) => value.trim())
-              .filter(Boolean),
-          ),
-        ]
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 function writeAppPreference(key: string, valueJson: string) {
   const db = getThreadStateDatabase();
   db.prepare(
@@ -134,21 +111,11 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(projectImportStateKey) as PreferenceRow | undefined;
-  const projectScanRootsRow = db
-    .prepare(
-      `
-        SELECT value_json AS valueJson
-        FROM app_preferences
-        WHERE key = ?
-      `,
-    )
-    .get(projectScanRootsKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
-    projectScanRoots: parseStringArrayPreference(projectScanRootsRow?.valueJson),
   };
 }
 
@@ -181,17 +148,4 @@ export function setProjectImportState(projectImportState: boolean | null) {
   }
 
   writeAppPreference(projectImportStateKey, JSON.stringify(projectImportState));
-}
-
-export function setProjectScanRoots(projectScanRoots: string[]) {
-  const normalizedProjectScanRoots = [
-    ...new Set(projectScanRoots.map((root) => root.trim()).filter(Boolean)),
-  ];
-
-  if (normalizedProjectScanRoots.length === 0) {
-    deleteAppPreference(projectScanRootsKey);
-    return;
-  }
-
-  writeAppPreference(projectScanRootsKey, JSON.stringify(normalizedProjectScanRoots));
 }

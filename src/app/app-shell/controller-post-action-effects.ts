@@ -49,8 +49,7 @@ export function getOptimisticallyUpdatedShellState(
   if (
     payload.key !== "gitCommitMessageModel" &&
     payload.key !== "favoriteFolders" &&
-    payload.key !== "projectImportState" &&
-    payload.key !== "projectScanRoots"
+    payload.key !== "projectImportState"
   ) {
     return currentState;
   }
@@ -82,18 +81,6 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.imported
       : currentState.appSettings.projectImportState;
 
-  const nextProjectScanRoots =
-    payload.key === "projectScanRoots" && Array.isArray(payload.roots)
-      ? [
-          ...new Set(
-            payload.roots
-              .filter((root): root is string => typeof root === "string")
-              .map((root) => root.trim())
-              .filter(Boolean),
-          ),
-        ]
-      : currentState.appSettings.projectScanRoots;
-
   return {
     ...currentState,
     appSettings: {
@@ -101,7 +88,6 @@ export function getOptimisticallyUpdatedShellState(
       gitCommitMessageModel: nextSelection,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,
-      projectScanRoots: nextProjectScanRoots,
     },
   } satisfies ShellState;
 }
