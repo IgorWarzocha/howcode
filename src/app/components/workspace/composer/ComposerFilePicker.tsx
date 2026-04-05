@@ -67,7 +67,7 @@ export function ComposerFilePicker({
         popoverPanelClass,
       )}
     >
-      <div className="flex h-11 items-center gap-2 border-b border-[rgba(169,178,215,0.08)] px-3 py-2">
+      <div className="grid h-11 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-[rgba(169,178,215,0.08)] px-3 py-2">
         <button
           type="button"
           className={cn(compactIconButtonClass, "shrink-0")}
@@ -79,7 +79,7 @@ export function ComposerFilePicker({
           <ChevronLeft size={14} />
         </button>
 
-        <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+        <div className="flex min-w-0 flex-wrap gap-1 overflow-hidden">
           {rootOptions.map((rootOption) => (
             <button
               key={rootOption.path}
@@ -168,7 +168,7 @@ export function ComposerFilePicker({
         ) : null}
       </div>
 
-      <div className="flex h-[52px] items-center gap-2 border-t border-[rgba(169,178,215,0.08)] px-3 py-2">
+      <div className="grid h-[52px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[rgba(169,178,215,0.08)] px-3 py-2">
         <button
           type="button"
           className={cn(
@@ -192,7 +192,7 @@ export function ComposerFilePicker({
                 onToggleFile(attachment);
               }
             }}
-            className="min-w-0 flex-1"
+            className="min-w-0"
             size="compact"
           />
         ) : null}

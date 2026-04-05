@@ -25,6 +25,7 @@ type VirtualizedThreadTimelineProps = {
   previousMessageCount: number;
   isStreaming: boolean;
   turnDiffSummaries: TurnDiffSummary[];
+  composerLayoutVersion: number;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
 };
@@ -34,6 +35,7 @@ export function VirtualizedThreadTimeline({
   previousMessageCount,
   isStreaming,
   turnDiffSummaries,
+  composerLayoutVersion,
   onOpenTurnDiff,
   onLoadEarlierMessages,
 }: VirtualizedThreadTimelineProps) {
@@ -43,7 +45,19 @@ export function VirtualizedThreadTimeline({
   const [timelineWidthPx, setTimelineWidthPx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRootRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
+  const lastKnownContainerMetricsRef = useRef<{
+    scrollTop: number;
+    clientHeight: number;
+    scrollHeight: number;
+  } | null>(null);
+  const pendingResizeMetricsRef = useRef<{
+    scrollTop: number;
+    clientHeight: number;
+    scrollHeight: number;
+  } | null>(null);
+  const pendingResizeStickyRef = useRef<boolean | null>(null);
   const lastKnownScrollTopRef = useRef(0);
   const isPointerScrollActiveRef = useRef(false);
   const lastTouchClientYRef = useRef<number | null>(null);
@@ -57,6 +71,7 @@ export function VirtualizedThreadTimeline({
   const pendingAutoScrollFrameRef = useRef<number | null>(null);
   const pendingInteractionAnchorFrameRef = useRef<number | null>(null);
   const pendingMeasureFrameRef = useRef<number | null>(null);
+  const pendingResizeAdjustmentFrameRef = useRef<number | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
@@ -219,8 +234,20 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
-    container.scrollTo({ top: container.scrollHeight, behavior });
+    const bottomSentinel = bottomSentinelRef.current;
+    if (bottomSentinel) {
+      bottomSentinel.scrollIntoView({ block: "end", behavior });
+    } else {
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    }
+
+    container.scrollTop = container.scrollHeight;
     lastKnownScrollTopRef.current = container.scrollTop;
+    lastKnownContainerMetricsRef.current = {
+      scrollTop: container.scrollTop,
+      clientHeight: container.clientHeight,
+      scrollHeight: container.scrollHeight,
+    };
     shouldStickToBottomRef.current = true;
   }, []);
 
@@ -318,6 +345,11 @@ export function VirtualizedThreadTimeline({
       container.scrollTop = pendingHistoryPrepend.scrollTop + Math.max(0, delta);
       pendingHistoryPrependRef.current = null;
       lastKnownScrollTopRef.current = container.scrollTop;
+      lastKnownContainerMetricsRef.current = {
+        scrollTop: container.scrollTop,
+        clientHeight: container.clientHeight,
+        scrollHeight: container.scrollHeight,
+      };
       return;
     }
 
@@ -327,6 +359,45 @@ export function VirtualizedThreadTimeline({
 
     scheduleScrollToBottom();
   }, [bottomAnchorKey, rowStructureSignature, rows.length, scheduleScrollToBottom]);
+
+  useLayoutEffect(() => {
+    if (composerLayoutVersion <= 0) {
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const stickyBeforeLayout = shouldStickToBottomRef.current;
+    const previousScrollTop = container.scrollTop;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const activeContainer = containerRef.current;
+      if (!activeContainer) {
+        return;
+      }
+
+      rowVirtualizer.measure();
+
+      if (stickyBeforeLayout) {
+        scrollToBottom();
+      } else {
+        activeContainer.scrollTop = previousScrollTop;
+        lastKnownScrollTopRef.current = activeContainer.scrollTop;
+        lastKnownContainerMetricsRef.current = {
+          scrollTop: activeContainer.scrollTop,
+          clientHeight: activeContainer.clientHeight,
+          scrollHeight: activeContainer.scrollHeight,
+        };
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [composerLayoutVersion, rowVirtualizer, scrollToBottom]);
 
   useLayoutEffect(() => {
     void virtualMeasureSignature;
@@ -410,15 +481,72 @@ export function VirtualizedThreadTimeline({
       return;
     }
 
+    lastKnownContainerMetricsRef.current = {
+      scrollTop: container.scrollTop,
+      clientHeight: container.clientHeight,
+      scrollHeight: container.scrollHeight,
+    };
+
     const observer = new ResizeObserver(() => {
+      if (pendingResizeMetricsRef.current === null) {
+        pendingResizeMetricsRef.current = lastKnownContainerMetricsRef.current ?? {
+          scrollTop: container.scrollTop,
+          clientHeight: container.clientHeight,
+          scrollHeight: container.scrollHeight,
+        };
+        pendingResizeStickyRef.current = shouldStickToBottomRef.current;
+      }
+
       if (pendingMeasureFrameRef.current !== null) {
         return;
       }
 
       pendingMeasureFrameRef.current = window.requestAnimationFrame(() => {
         pendingMeasureFrameRef.current = null;
+        const previousMetrics = pendingResizeMetricsRef.current ??
+          lastKnownContainerMetricsRef.current ?? {
+            scrollTop: container.scrollTop,
+            clientHeight: container.clientHeight,
+            scrollHeight: container.scrollHeight,
+          };
+        const stickyBeforeResize = pendingResizeStickyRef.current ?? shouldStickToBottomRef.current;
+        pendingResizeMetricsRef.current = null;
+        pendingResizeStickyRef.current = null;
+
         rowVirtualizer.measure();
-        scheduleScrollToBottom();
+
+        if (pendingResizeAdjustmentFrameRef.current !== null) {
+          window.cancelAnimationFrame(pendingResizeAdjustmentFrameRef.current);
+        }
+
+        pendingResizeAdjustmentFrameRef.current = window.requestAnimationFrame(() => {
+          pendingResizeAdjustmentFrameRef.current = null;
+
+          const activeContainer = containerRef.current;
+          if (!activeContainer) {
+            return;
+          }
+
+          const shouldPinToBottom = !suppressAutoScrollRef.current && stickyBeforeResize;
+
+          if (shouldPinToBottom) {
+            const bottomSentinel = bottomSentinelRef.current;
+            if (bottomSentinel) {
+              bottomSentinel.scrollIntoView({ block: "end" });
+            }
+            activeContainer.scrollTop = activeContainer.scrollHeight;
+          } else {
+            activeContainer.scrollTop = previousMetrics.scrollTop;
+          }
+
+          shouldStickToBottomRef.current = stickyBeforeResize;
+          lastKnownScrollTopRef.current = activeContainer.scrollTop;
+          lastKnownContainerMetricsRef.current = {
+            scrollTop: activeContainer.scrollTop,
+            clientHeight: activeContainer.clientHeight,
+            scrollHeight: activeContainer.scrollHeight,
+          };
+        });
       });
     });
 
@@ -431,8 +559,13 @@ export function VirtualizedThreadTimeline({
         window.cancelAnimationFrame(pendingMeasureFrameRef.current);
         pendingMeasureFrameRef.current = null;
       }
+
+      if (pendingResizeAdjustmentFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingResizeAdjustmentFrameRef.current);
+        pendingResizeAdjustmentFrameRef.current = null;
+      }
     };
-  }, [rowVirtualizer, scheduleScrollToBottom]);
+  }, [rowVirtualizer]);
 
   useEffect(() => {
     return () => {
@@ -446,6 +579,11 @@ export function VirtualizedThreadTimeline({
       if (pendingMeasureFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingMeasureFrameRef.current);
         pendingMeasureFrameRef.current = null;
+      }
+
+      if (pendingResizeAdjustmentFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingResizeAdjustmentFrameRef.current);
+        pendingResizeAdjustmentFrameRef.current = null;
       }
 
       if (pendingExpandedRowRevealFrameRef.current !== null) {
@@ -486,6 +624,11 @@ export function VirtualizedThreadTimeline({
     }
 
     lastKnownScrollTopRef.current = currentScrollTop;
+    lastKnownContainerMetricsRef.current = {
+      scrollTop: container.scrollTop,
+      clientHeight: container.clientHeight,
+      scrollHeight: container.scrollHeight,
+    };
   }, []);
 
   const handleScrollClickCapture = useCallback(
@@ -744,6 +887,8 @@ export function VirtualizedThreadTimeline({
               {renderRow(row)}
             </div>
           ))}
+
+          <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
       </div>
     </div>

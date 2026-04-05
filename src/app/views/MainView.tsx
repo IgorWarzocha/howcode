@@ -14,6 +14,7 @@ type MainViewProps = {
   currentModel: ComposerModel | null;
   currentProjectName: string;
   threadData: ThreadData | null;
+  composerLayoutVersion: number;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
@@ -26,6 +27,7 @@ export function MainView({
   currentModel,
   currentProjectName,
   threadData,
+  composerLayoutVersion,
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
@@ -38,6 +40,7 @@ export function MainView({
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
         turnDiffSummaries={threadData?.turnDiffSummaries ?? []}
+        composerLayoutVersion={composerLayoutVersion}
         onOpenTurnDiff={onOpenTurnDiff}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />

@@ -11,6 +11,7 @@ type ThreadViewProps = {
   previousMessageCount: number;
   isStreaming: boolean;
   turnDiffSummaries: TurnDiffSummary[];
+  composerLayoutVersion: number;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
 };
@@ -20,6 +21,7 @@ export function ThreadView({
   previousMessageCount,
   isStreaming,
   turnDiffSummaries,
+  composerLayoutVersion,
   onOpenTurnDiff,
   onLoadEarlierMessages,
 }: ThreadViewProps) {
@@ -39,6 +41,7 @@ export function ThreadView({
       previousMessageCount={previousMessageCount}
       isStreaming={isStreaming}
       turnDiffSummaries={turnDiffSummaries}
+      composerLayoutVersion={composerLayoutVersion}
       onOpenTurnDiff={onOpenTurnDiff}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {

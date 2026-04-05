@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
 import {
+  compactCardClass,
   compactIconButtonClass,
   diffPanelIconButtonClass,
   diffPanelTurnChipSelectedClass,
@@ -19,6 +20,7 @@ import {
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
+import { ComposerTextField } from "./ComposerTextField";
 import { formatGitCount } from "./git-ops";
 
 type ComposerGitOpsSurfaceProps = {
@@ -35,6 +37,7 @@ type ComposerGitOpsSurfaceProps = {
     action: DesktopAction,
     payload?: Record<string, unknown>,
   ) => Promise<DesktopActionResult | null>;
+  onLayoutChange: () => void;
   onBack: () => void;
 };
 
@@ -65,6 +68,7 @@ export function ComposerGitOpsSurface({
   onSendDiffComments,
   onSelectDiffComment,
   onAction,
+  onLayoutChange,
   onBack,
 }: ComposerGitOpsSurfaceProps) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
@@ -224,7 +228,7 @@ export function ComposerGitOpsSurface({
     >
       {/* This outer height is the reference for the prompt composer too. Keep both surfaces in sync
           so switching between prompt and git-ops does not resize the composer shell. */}
-      <div className="relative min-h-24">
+      <div className={cn("relative", hasDiffComments ? "min-h-24" : "min-h-[148px]")}>
         {/* Top git-ops controls are absolutely positioned inside this shared block. The prompt
             composer mirrors this pattern with its + button, prompt body, and send controls. */}
         <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
@@ -232,7 +236,10 @@ export function ComposerGitOpsSurface({
             hasOrigin ? (
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--text)]"
+                className={cn(
+                  compactCardClass,
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
+                )}
                 title={projectGitState?.originUrl ?? "origin"}
               >
                 {isGitHubOrigin ? <Github size={12} /> : null}
@@ -251,7 +258,10 @@ export function ComposerGitOpsSurface({
                     void handleSaveOrigin();
                   }
                 }}
-                className="w-64 rounded-lg border border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                className={cn(
+                  compactCardClass,
+                  "w-64 bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]",
+                )}
                 placeholder="Paste repository URL"
                 aria-label="Repository URL"
               />
@@ -266,7 +276,10 @@ export function ComposerGitOpsSurface({
           {isGitRepo ? (
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--border)] px-2.5 py-1 text-[12px] text-[color:var(--muted)]"
+              className={cn(
+                compactCardClass,
+                "inline-flex items-center gap-1 px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+              )}
               title="Branch switching will wire into this control later."
             >
               <GitBranch size={12} />
@@ -328,50 +341,84 @@ export function ComposerGitOpsSurface({
             </div>
           </div>
         ) : null}
+        {!hasDiffComments ? (
+          <div className="grid min-h-[148px] content-end px-4 pt-[52px] pb-3">
+            <div className="flex min-h-[82px] items-end justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <ComposerTextField
+                  value={commitMessage}
+                  onChange={(nextMessage) => {
+                    setCommitMessage(nextMessage);
+                    if (actionErrorMessage) {
+                      setActionErrorMessage(null);
+                    }
+                    if (nextMessage.trim().length === 0) {
+                      setPreviewPendingCommit(false);
+                    }
+                    if (persistedCleanMessage && nextMessage !== persistedCleanMessage) {
+                      setPersistedCleanMessage(null);
+                    }
+                  }}
+                  onFocus={() => setCommitFocused(true)}
+                  onBlur={() => setCommitFocused(false)}
+                  ariaLabel="Commit message"
+                  placeholder={commitFocused ? "" : "Leave blank to autogenerate a commit message"}
+                  onHeightChange={onLayoutChange}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  "inline-flex h-8 items-center justify-end rounded-full text-right text-[12px] leading-5",
+                  actionErrorMessage || diffCommentError ? "text-[#f2a7a7]" : "invisible w-8",
+                )}
+                aria-live={actionErrorMessage || diffCommentError ? "polite" : undefined}
+                aria-hidden={actionErrorMessage || diffCommentError ? undefined : true}
+              >
+                {actionErrorMessage ?? diffCommentError ?? <GitCompareArrows size={16} />}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 pb-3 max-md:flex-wrap">
-        <div className="min-w-0 flex-1">
-          <input
-            className="w-full bg-transparent text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-            value={commitMessage}
-            onChange={(event) => {
-              const nextMessage = event.target.value;
-              setCommitMessage(nextMessage);
-              if (actionErrorMessage) {
-                setActionErrorMessage(null);
-              }
-              if (nextMessage.trim().length === 0) {
-                setPreviewPendingCommit(false);
-              }
-              if (persistedCleanMessage && nextMessage !== persistedCleanMessage) {
-                setPersistedCleanMessage(null);
-              }
-            }}
-            onFocus={() => setCommitFocused(true)}
-            onBlur={() => setCommitFocused(false)}
-            aria-label={hasDiffComments ? "Comment instructions" : "Commit message"}
-            placeholder={
-              commitFocused
-                ? ""
-                : hasDiffComments
-                  ? "Address & fix these comments: "
-                  : "Leave blank to autogenerate a commit message"
-            }
-          />
-        </div>
+      {hasDiffComments ? (
+        <div className="flex items-end justify-between gap-2 px-4 pb-3">
+          <div className="min-w-0 flex-1">
+            <ComposerTextField
+              value={commitMessage}
+              onChange={(nextMessage) => {
+                setCommitMessage(nextMessage);
+                if (actionErrorMessage) {
+                  setActionErrorMessage(null);
+                }
+                if (nextMessage.trim().length === 0) {
+                  setPreviewPendingCommit(false);
+                }
+                if (persistedCleanMessage && nextMessage !== persistedCleanMessage) {
+                  setPersistedCleanMessage(null);
+                }
+              }}
+              onFocus={() => setCommitFocused(true)}
+              onBlur={() => setCommitFocused(false)}
+              ariaLabel="Comment instructions"
+              placeholder={commitFocused ? "" : "Address & fix these comments: "}
+              onHeightChange={onLayoutChange}
+            />
+          </div>
 
-        <div
-          className={cn(
-            "inline-flex h-8 items-center justify-end rounded-full text-right text-[12px] leading-5",
-            actionErrorMessage || diffCommentError ? "text-[#f2a7a7]" : "invisible w-8",
-          )}
-          aria-live={actionErrorMessage || diffCommentError ? "polite" : undefined}
-          aria-hidden={actionErrorMessage || diffCommentError ? undefined : true}
-        >
-          {actionErrorMessage ?? diffCommentError ?? <GitCompareArrows size={16} />}
+          <div
+            className={cn(
+              "inline-flex h-8 items-center justify-end rounded-full text-right text-[12px] leading-5",
+              actionErrorMessage || diffCommentError ? "text-[#f2a7a7]" : "invisible w-8",
+            )}
+            aria-live={actionErrorMessage || diffCommentError ? "polite" : undefined}
+            aria-hidden={actionErrorMessage || diffCommentError ? undefined : true}
+          >
+            {actionErrorMessage ?? diffCommentError ?? <GitCompareArrows size={16} />}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="h-px bg-[rgba(169,178,215,0.07)]" />
 

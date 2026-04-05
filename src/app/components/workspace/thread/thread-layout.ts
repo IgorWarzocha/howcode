@@ -12,7 +12,7 @@ export const CHAT_DIFF_TREE_INDENT_STEP_PX = 16;
 export const chatViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-visible`;
 export const chatHiddenViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-hidden`;
 export const chatScrollableAreaClass =
-  "min-h-0 w-full overflow-y-scroll overflow-x-visible [scrollbar-gutter:stable]";
+  "min-h-0 w-full overflow-y-scroll overflow-x-visible [overflow-anchor:none] [scrollbar-gutter:stable]";
 export const chatEmptyStateClass =
   "min-h-0 w-full overflow-y-scroll overflow-x-hidden px-4 pt-8 text-[color:var(--muted)] [scrollbar-gutter:stable]";
 export const chatTimelinePaddingClass = "px-4 pt-4 pb-8";

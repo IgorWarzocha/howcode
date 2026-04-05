@@ -35,6 +35,9 @@ export const primaryButtonClass =
 export const interactiveCardClass =
   "rounded-[20px] border border-[color:var(--border)] bg-[rgba(39,42,57,0.9)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(44,47,64,0.94)]";
 
+export const compactCardClass =
+  "rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)]";
+
 export const featureCardClass = `${interactiveCardClass} grid min-h-[160px] gap-3.5 p-[18px]`;
 
 export const sectionShellClass = "grid w-full max-w-[980px] content-start gap-[18px]";

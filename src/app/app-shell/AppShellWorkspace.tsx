@@ -34,6 +34,7 @@ export function AppShellWorkspace({
   workspaceContentClass,
 }: AppShellWorkspaceProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
+  const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
   const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
   const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([]);
   const [diffCommentCount, setDiffCommentCount] = useState(0);
@@ -140,6 +141,7 @@ export function AppShellWorkspace({
               currentModel={activeComposerState?.currentModel ?? null}
               currentProjectName={currentProjectName}
               threadData={activeThreadData}
+              composerLayoutVersion={composerLayoutVersion}
               onAction={(action, payload) => void handleAction(action, payload)}
               onLoadEarlierMessages={handleLoadEarlierMessages}
               onOpenTurnDiff={handleOpenDiffSelection}
@@ -185,6 +187,7 @@ export function AppShellWorkspace({
                   handleOpenWorktreeDiffFile(filePath);
                 }}
                 promptResetKey={composerPromptResetKey}
+                onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                 onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                 onToggleTerminal={handleToggleTerminal}
                 terminalVisible={state.terminalVisible}

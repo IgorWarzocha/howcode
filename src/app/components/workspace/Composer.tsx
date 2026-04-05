@@ -39,6 +39,7 @@ export type ComposerProps = {
   onOpenTakeoverTerminal: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
+  onLayoutChange: () => void;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
@@ -86,6 +87,7 @@ export function Composer(props: ComposerProps) {
             onSendDiffComments={props.onSendDiffComments}
             onSelectDiffComment={props.onSelectDiffComment}
             onAction={props.onAction}
+            onLayoutChange={props.onLayoutChange}
             onBack={() => setSurface("prompt")}
           />
         ) : (

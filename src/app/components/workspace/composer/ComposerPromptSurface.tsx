@@ -1,5 +1,4 @@
 import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
-import { useEffect, useRef } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -10,6 +9,7 @@ import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
 import { ComposerFilePicker } from "./ComposerFilePicker";
 import { ComposerModelPopover } from "./ComposerModelPopover";
+import { ComposerTextField } from "./ComposerTextField";
 import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops";
 import { useComposerController } from "./useComposerController";
 
@@ -32,13 +32,13 @@ export function ComposerPromptSurface({
   onAction,
   terminalVisible,
   onOpenGitOps,
+  onLayoutChange,
 }: ComposerPromptSurfaceProps) {
   const gitVisualMode = !projectGitState?.isGitRepo
     ? "not-git"
     : projectGitState.fileCount > 0
       ? "dirty"
       : "clean";
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     attachments,
     canSend,
@@ -75,20 +75,6 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   });
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-
-    textarea.style.height = "0px";
-    textarea.style.height = `${Math.max(textarea.scrollHeight, 24)}px`;
-
-    if (draft.length === 0) {
-      textarea.scrollTop = 0;
-    }
-  }, [draft]);
-
   const placeholderText =
     activeView === "thread"
       ? "Ask for follow-up changes"
@@ -98,11 +84,11 @@ export function ComposerPromptSurface({
     <div className="grid min-h-[189px] gap-0">
       {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
           swap without vertical jump. */}
-      <div className="relative min-h-24">
+      <div className="relative min-h-[148px]">
         {/* The prompt surface intentionally uses one shared top block: +, attachments, placeholder,
             textarea, and dictate/send all live here so we match git-ops height without adding a
             separate control row above or below the prompt. */}
-        <div className="absolute top-3 left-4 right-4 z-10 flex items-start gap-2">
+        <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-2">
           <button
             ref={pickerButtonRef}
             type="button"
@@ -135,47 +121,56 @@ export function ComposerPromptSurface({
             onToggleFile={togglePendingPickerAttachment}
           />
         ) : null}
-        <div className="flex min-h-24 flex-col justify-end pt-10">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className="w-full min-h-6 resize-none bg-transparent px-4 pr-24 pb-4 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onInput={() => {
-              if (errorMessage) {
-                clearError();
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void send();
-              }
-            }}
-            aria-label="Prompt composer"
-            placeholder={placeholderText}
-          />
-        </div>
-        <div className="absolute right-4 bottom-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onAction("composer.dictate")}
-            className={cn(iconButtonClass, getFeatureStatusButtonClass("feature:composer.dictate"))}
-            aria-label="Dictate"
-            title="Dictate"
-          >
-            <Mic size={15} />
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45"
-            onClick={() => void send()}
-            disabled={!canSend}
-            aria-label="Send"
-          >
-            <Send size={16} />
-          </button>
+        <div className="grid min-h-[148px] content-end px-4 pt-[52px] pb-3">
+          <div className="flex min-h-[82px] items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <ComposerTextField
+                value={draft}
+                onChange={setDraft}
+                onInput={() => {
+                  if (errorMessage) {
+                    clearError();
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void send();
+                  }
+                }}
+                ariaLabel="Prompt composer"
+                placeholder={placeholderText}
+                onHeightChange={onLayoutChange}
+              />
+            </div>
+
+            <div className="inline-flex h-8 items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => onAction("composer.dictate")}
+                className={cn(
+                  iconButtonClass,
+                  getFeatureStatusButtonClass("feature:composer.dictate"),
+                )}
+                aria-label="Dictate"
+                title="Dictate"
+              >
+                <Mic size={15} />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
+                )}
+                onClick={() => void send()}
+                disabled={!canSend}
+                aria-label="Send"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
