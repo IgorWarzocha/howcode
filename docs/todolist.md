@@ -10,28 +10,20 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 ### Status + labeling cleanup
 
-- [ ] reclassify or remove stale mock labels for already-real project actions
+- [ ] reclassify or remove stale mock labels for already-real project actions and landing picker
   - `project.open-in-file-manager`
   - `project.edit-name`
   - `project.archive-threads`
-  - `project.remove-project`
-  - sidebar rename/status drift
-- [ ] audit unsurfaced `feature:header.*` and other orphaned status IDs; either wire them or delete them
-- [ ] remove dead nav back/forward affordances from the shell completely
+  - `landing.project-switcher`
+- [ ] keep unsurfaced `feature:header.*` IDs as trace-only inventory; do not re-surface them until the header comes back
 
 ### Small UI shells that can become real quickly
 
-- [ ] add lightweight route-out / modal behavior for:
-  - language
-  - rate limits
-  - logout
-- [ ] connect landing project switcher to a simple real picker
 - [ ] decide whether remote-connections banner stays visible; hide it if not imminent
 
 ### Small composer/control wins
 
 - [ ] decide whether `composer.dictate` should be implemented soon or hidden
-- [ ] decide whether `composer.host` should be implemented soon or hidden
 - [ ] tighten README + status docs whenever mock/partial behavior changes
 
 ## B. Interconnected implementation batches

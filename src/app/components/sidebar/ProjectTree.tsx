@@ -187,7 +187,7 @@ export function ProjectTree({
             const hasThreads = project.threadsLoaded
               ? project.threads.length > 0
               : (project.threadCount ?? 0) > 0;
-            const projectIsActive = selectedProjectId === project.id;
+            const projectIsActive = false;
             const projectMenuOpen = openProjectMenuId === project.id;
             const threadGroupId = `project-threads-${project.id}`;
             const actionMenuId = `project-actions-${project.id}`;

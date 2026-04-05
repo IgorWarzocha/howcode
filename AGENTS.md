@@ -8,3 +8,8 @@
 - Mock/partial UI status markers are centralized in `src/app/features/feature-status.tsx`.
 - Grep `feature:` to find status-tagged UI features quickly.
 - Grep `FeatureStatusBadge`, `getFeatureStatusButtonClass`, or `data-feature-id` to find where a mock/partial feature is surfaced in the UI.
+- UI updates must be optimistic; persist to the DB in the background.
+- Reuse established UI structure, components, and styling; avoid one-off patterns unless explicitly requested.
+- Keep UI self-explanatory; prefer strong visual cues over explanatory copy.
+- UI must flow; popovers and transitions should stay aligned to their source element.
+- Editing a field must not change layout metrics; keep size, spacing, and typography stable unless asked otherwise.

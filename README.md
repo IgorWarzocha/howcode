@@ -30,7 +30,7 @@ This repo is no longer "all mock," but it is still intentionally mixed:
 
 - **real enough today:** composer send/streaming, thread hydration, project/thread persistence, terminal PTY integration, checkpoint-backed diff rendering, git probing, project actions like rename/archive/remove/open-in-file-manager
 - **still partial:** git-ops UX, terminal polish, diff review flow, some settings/navigation/header affordances
-- **still mocked or placeholder-only:** remote connections, dictate/host controls, plugins/automations/debug surfaces, several header actions, project worktree creation, some settings items
+- **still mocked or placeholder-only:** remote connections, dictate control, plugins/automations/debug surfaces, several header actions/trace IDs, project worktree creation
 
 The canonical status docs live here:
 
@@ -102,7 +102,7 @@ The `prepare` script will then activate Husky automatically.
 
 Near-term work is concentrated in three buckets:
 
-1. **easy wins / cleanup** — status-marker drift, nav semantics, lightweight settings shells, remaining small mock controls
+1. **easy wins / cleanup** — status-marker drift, sidebar polish, remaining small mock controls
 2. **interconnected implementation batches** — header/navigation actions, git+diff+review convergence, terminal+host+remote execution convergence
 3. **longer-term epics** — OpenClaw-style workflows, Just Chat mode, Cowork/collaboration flows, and an extension that tightly integrates Pi with the app
 

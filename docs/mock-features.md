@@ -117,6 +117,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Status:** Layout now matches Codex more closely, but most controls are still stubbed except local pane toggles.
 
+- `feature:header.*` status IDs are currently kept as trace-only inventory while the header is out of the product.
+
 - Header-era controls are now split across `src/app/app-shell/AppShellWorkspace.tsx`, `src/app/components/workspace/composer/ComposerGitOpsSurface.tsx`, and `src/app/components/workspace/TerminalPanel.tsx`
 - Selected-project git detection is real and drives which header variant renders: `desktop/project-git.cts`, `src/app/app-shell/useAppShellController.ts`
 - Codex-style structure now differs by view:
@@ -145,14 +147,14 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 6. Landing page / project switcher
 
-**Status:** Pure presentation.
+**Status:** Partially real.
 
 - UI: `src/app/views/LandingView.tsx`
-- Emits `landing.project-switcher`
-- No implementation beyond explicit no-op routing: `desktop/pi-threads/action-router.cts`
+- Real project picker opens from the landing surface and starts a new thread in the chosen project
+- Latest-project affordance also starts a real thread
 
 **Expansion direction:**
-- Connect this to a real project picker / recent project switcher.
+- Decide whether a separate `project.switch` concept is still needed beyond starting work in a chosen project.
 
 ### 7. Plugins / Automations / Debug pages
 

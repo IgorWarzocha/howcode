@@ -102,12 +102,11 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Implement add/import project flow
 - [x] Add drag-and-drop project reordering with persisted sidebar order
 - [ ] Extend drag-and-drop to thread-level ordering only if thread ordering semantics become explicit
-- [ ] Decide whether nav back/forward are renderer history or app history
   - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `desktop/pi-threads/action-router.cts`
 
 #### 9. Landing project switcher
-- [ ] Implement `landing.project-switcher`
-- [ ] Implement `project.switch`
+- [x] Implement `landing.project-switcher`
+- [ ] Decide whether `project.switch` is still needed as a separate concept from starting a thread in a chosen project
   - files: `src/app/views/LandingView.tsx`, `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
@@ -119,7 +118,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 11. Connections / settings shell items
 - [ ] Implement remote connection flow
-- [ ] Implement language/settings/rate limits/logout screens or route-outs
+- [ ] Revisit post-MVP settings surfaces like language and rate limits
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
 
 ---
@@ -176,8 +175,8 @@ Key files:
 - [x] Drag-and-drop project reordering
 - [ ] Optional thread-level drag-and-drop only if thread ordering becomes a real product rule
 - [x] Real project action menu operations except worktree creation
-- [ ] Real back/forward semantics
-- [ ] Real project switcher semantics
+- [x] Real landing project picker
+- [ ] Decide whether separate project-switch semantics still belong in the product
 
 ### Routing / navigation note
 

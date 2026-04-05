@@ -102,26 +102,28 @@ export function ProjectRow({
       </button>
 
       {isEditing ? (
-        <input
-          ref={inputRef}
-          value={renameDraft}
-          onChange={(event) => onChangeRenameDraft(event.target.value)}
-          onBlur={onCancelEdit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              onSubmitEdit();
-              return;
-            }
+        <div className="flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13.5px] leading-5 font-medium text-[color:var(--text)]/92">
+          <input
+            ref={inputRef}
+            value={renameDraft}
+            onChange={(event) => onChangeRenameDraft(event.target.value)}
+            onBlur={onCancelEdit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onSubmitEdit();
+                return;
+              }
 
-            if (event.key === "Escape") {
-              event.preventDefault();
-              onCancelEdit();
-            }
-          }}
-          className="h-8 min-w-0 rounded-xl border border-[rgba(183,186,245,0.26)] bg-[rgba(255,255,255,0.05)] px-2.5 text-[13.5px] font-medium text-[color:var(--text)] outline-none"
-          aria-label={`Rename ${name}`}
-        />
+              if (event.key === "Escape") {
+                event.preventDefault();
+                onCancelEdit();
+              }
+            }}
+            className="w-full min-w-0 bg-transparent p-0 text-[inherit] text-[color:inherit] [font:inherit] outline-none"
+            aria-label={`Rename ${name}`}
+          />
+        </div>
       ) : (
         <button
           type="button"
