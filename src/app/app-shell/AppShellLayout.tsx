@@ -1,7 +1,6 @@
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
-import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
@@ -19,7 +18,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     collapsedProjectIds,
     composerProjectId,
     currentProjectName,
-    currentTitle,
     handleAction,
     handleCloseArchivedThreads,
     handleCloseProjectActionDialog,
@@ -35,7 +33,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleToggleSidebar,
     pendingProjectAction,
     projects,
-    projectGitState,
     state,
   } = controller;
 
@@ -84,15 +81,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           ref={mainSectionRef}
           className="flex min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]"
         >
-          <WorkspaceHeader
-            activeView={state.activeView}
-            currentTitle={currentTitle}
-            currentProjectName={currentProjectName}
-            sidebarVisible={state.sidebarVisible}
-            projectGitState={projectGitState}
-            onAction={(action, payload) => void handleAction(action, payload)}
-          />
-
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             {desktopWorkspacePresent ? (
               <div
