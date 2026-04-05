@@ -82,6 +82,7 @@ function FoldedTimelineRow({
   singleLine = false,
   italicLabel = false,
   mutedLabel = false,
+  trailing,
   onToggle,
 }: {
   label: string;
@@ -89,6 +90,7 @@ function FoldedTimelineRow({
   singleLine?: boolean;
   italicLabel?: boolean;
   mutedLabel?: boolean;
+  trailing?: ReactNode;
   onToggle: () => void;
 }) {
   return (
@@ -97,10 +99,13 @@ function FoldedTimelineRow({
       className="grid w-full min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div
-        className={`min-w-0 text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${singleLine || secondary ? clampOneLineClass : clampThreeLinesClass}`}
-      >
-        {label}
+      <div className="flex min-w-0 items-center gap-2">
+        <div
+          className={`min-w-0 flex-1 text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${singleLine || secondary || trailing ? clampOneLineClass : clampThreeLinesClass}`}
+        >
+          {label}
+        </div>
+        {trailing ? <div className="shrink-0">{trailing}</div> : null}
       </div>
       {secondary ? (
         <div
@@ -361,28 +366,18 @@ export function ThreadTimelineRow({
             {showCompactionDivider ? (
               <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
             ) : null}
-            {showCompactionDivider ? (
-              <button
-                type="button"
-                className="flex w-full min-w-0 items-center gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
-                onClick={() => onToggleRowCollapse(row.id)}
-              >
-                <span
-                  className={`min-w-0 flex-1 text-[13px] font-medium leading-[1.4] text-[color:var(--text)]/92 ${clampOneLineClass}`}
-                >
-                  {summaryLabel}
-                </span>
-                <span className="shrink-0 rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
-                  very long
-                </span>
-              </button>
-            ) : (
-              <FoldedTimelineRow
-                label={summaryLabel}
-                singleLine
-                onToggle={() => onToggleRowCollapse(row.id)}
-              />
-            )}
+            <FoldedTimelineRow
+              label={summaryLabel}
+              trailing={
+                showCompactionDivider ? (
+                  <span className="rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
+                    very long
+                  </span>
+                ) : null
+              }
+              singleLine
+              onToggle={() => onToggleRowCollapse(row.id)}
+            />
           </div>
         </TimelineRowShell>
       );
