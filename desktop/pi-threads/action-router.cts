@@ -16,12 +16,13 @@ import {
   getProjectId,
   getProjectIds,
   getProjectName,
+  getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
   getSettingsReset,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads";
-import { setGitCommitMessageModelSelection } from "../app-settings";
+import { setFavoriteFolders, setGitCommitMessageModelSelection } from "../app-settings";
 import { generateGitCommitMessage } from "../git-commit-message";
 import {
   openThreadRuntime,
@@ -271,7 +272,12 @@ export async function handleDesktopAction(
 
     case "settings.update": {
       const key = getSettingsKey(payload);
-      if (key !== "gitCommitMessageModel") {
+      if (!key) {
+        return;
+      }
+
+      if (key === "favoriteFolders") {
+        setFavoriteFolders(getSettingsFavoriteFolders(payload));
         return;
       }
 

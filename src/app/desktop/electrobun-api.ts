@@ -4,6 +4,7 @@ import type { DesktopAction } from "./actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -94,6 +95,16 @@ export const piDesktopApi = {
     (await getRpc()).request.pickComposerAttachments({
       projectId,
     }) as Promise<ComposerAttachment[]>,
+  listComposerAttachmentEntries: async (
+    request: {
+      projectId?: string | null;
+      path?: string | null;
+      rootPath?: string | null;
+    } = {},
+  ) =>
+    (await getRpc()).request.listComposerAttachmentEntries(
+      request,
+    ) as Promise<ComposerFilePickerState>,
   getComposerState: async (request: ComposerStateRequest = {}) =>
     (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
   getProjectThreads: async (projectId: string) =>

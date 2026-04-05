@@ -2,6 +2,7 @@ import type { DesktopAction } from "./app/desktop/actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -27,6 +28,11 @@ declare global {
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
       getProjectDiff?: (projectId: string) => Promise<ProjectDiffResult | null>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
+      listComposerAttachmentEntries?: (request?: {
+        projectId?: string | null;
+        path?: string | null;
+        rootPath?: string | null;
+      }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;

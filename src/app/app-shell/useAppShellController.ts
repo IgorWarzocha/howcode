@@ -39,6 +39,7 @@ export function useAppShellController() {
     shellState,
     loadArchivedThreads,
     loadComposerState,
+    listComposerAttachmentEntries,
     loadProjectGitState,
     loadProjectThreads,
     applyProjectOrder,
@@ -93,7 +94,7 @@ export function useAppShellController() {
   });
 
   const applyOptimisticSettingsUpdate = (payload: Record<string, unknown>) => {
-    if (payload.key !== "gitCommitMessageModel") {
+    if (payload.key !== "gitCommitMessageModel" && payload.key !== "favoriteFolders") {
       return;
     }
 
@@ -103,17 +104,32 @@ export function useAppShellController() {
       }
 
       const nextSelection =
-        payload.reset === true
-          ? null
-          : typeof payload.provider === "string" && typeof payload.modelId === "string"
-            ? { provider: payload.provider, id: payload.modelId }
-            : currentState.appSettings.gitCommitMessageModel;
+        payload.key === "gitCommitMessageModel"
+          ? payload.reset === true
+            ? null
+            : typeof payload.provider === "string" && typeof payload.modelId === "string"
+              ? { provider: payload.provider, id: payload.modelId }
+              : currentState.appSettings.gitCommitMessageModel
+          : currentState.appSettings.gitCommitMessageModel;
+
+      const nextFavoriteFolders =
+        payload.key === "favoriteFolders" && Array.isArray(payload.folders)
+          ? [
+              ...new Set(
+                payload.folders
+                  .filter((folder): folder is string => typeof folder === "string")
+                  .map((folder) => folder.trim())
+                  .filter(Boolean),
+              ),
+            ]
+          : currentState.appSettings.favoriteFolders;
 
       return {
         ...currentState,
         appSettings: {
           ...currentState.appSettings,
           gitCommitMessageModel: nextSelection,
+          favoriteFolders: nextFavoriteFolders,
         },
       };
     });
@@ -378,6 +394,7 @@ export function useAppShellController() {
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
+    listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
     projects,

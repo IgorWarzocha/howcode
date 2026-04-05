@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type {
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionResult,
@@ -24,6 +25,7 @@ export type ComposerProps = {
   projectId: string;
   projectGitState: ProjectGitState | null;
   sessionPath: string | null;
+  favoriteFolders: string[];
   onSetDiffPanelVisible: (visible: boolean) => void;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
@@ -38,6 +40,11 @@ export type ComposerProps = {
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
+  onListAttachmentEntries: (request: {
+    projectId?: string | null;
+    path?: string | null;
+    rootPath?: string | null;
+  }) => Promise<ComposerFilePickerState | null>;
   onAction: (
     action: DesktopAction,
     payload?: Record<string, unknown>,

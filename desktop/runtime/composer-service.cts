@@ -5,7 +5,7 @@ import type {
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts";
 import { prepareTurnDiffCapture } from "../diff/query";
-import { processComposerAttachments } from "./attachments";
+import { buildComposerAttachmentPrompt } from "./attachments";
 import { buildComposerState } from "./composer-state";
 import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry";
 import { rememberSessionPath } from "./session-path-index";
@@ -65,18 +65,8 @@ export async function sendComposerPrompt(
     await createFreshThreadIfNeeded(runtime);
   }
 
-  const processedAttachments = await processComposerAttachments(request.attachments ?? []);
-  if (
-    processedAttachments.images.length > 0 &&
-    runtime.session.model &&
-    !runtime.session.model.input?.includes("image")
-  ) {
-    throw new Error(
-      `${runtime.session.model.name ?? runtime.session.model.id} does not support image attachments.`,
-    );
-  }
-
-  const message = `${request.text}${processedAttachments.text ? `\n\n${processedAttachments.text.trimEnd()}` : ""}`;
+  const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
+  const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
 
   try {
     await prepareTurnDiffCapture(runtime);
@@ -86,9 +76,7 @@ export async function sendComposerPrompt(
   }
 
   try {
-    await runtime.session.prompt(message, {
-      images: processedAttachments.images,
-    });
+    await runtime.session.prompt(message);
   } catch (error) {
     runtime.pendingTurnCount = null;
     throw error;

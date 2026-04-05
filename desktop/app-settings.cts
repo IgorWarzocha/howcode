@@ -2,6 +2,7 @@ import type { AppSettings, ModelSelection } from "../shared/desktop-contracts";
 import { getThreadStateDatabase } from "./thread-state-db/db";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
+const favoriteFoldersKey = "favoriteFolders";
 
 type PreferenceRow = {
   valueJson: string;
@@ -22,36 +23,30 @@ function parseModelSelection(valueJson: string | null | undefined): ModelSelecti
   }
 }
 
-export function loadAppSettings(): AppSettings {
-  const db = getThreadStateDatabase();
-  const row = db
-    .prepare(
-      `
-        SELECT value_json AS valueJson
-        FROM app_preferences
-        WHERE key = ?
-      `,
-    )
-    .get(gitCommitMessageModelKey) as PreferenceRow | undefined;
-
-  return {
-    gitCommitMessageModel: parseModelSelection(row?.valueJson),
-  };
-}
-
-export function setGitCommitMessageModelSelection(selection: ModelSelection | null) {
-  const db = getThreadStateDatabase();
-
-  if (!selection) {
-    db.prepare(
-      `
-        DELETE FROM app_preferences
-        WHERE key = ?
-      `,
-    ).run(gitCommitMessageModelKey);
-    return;
+function parseFavoriteFolders(valueJson: string | null | undefined): string[] {
+  if (!valueJson) {
+    return [];
   }
 
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return Array.isArray(parsed)
+      ? [
+          ...new Set(
+            parsed
+              .filter((value): value is string => typeof value === "string")
+              .map((value) => value.trim())
+              .filter(Boolean),
+          ),
+        ]
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAppPreference(key: string, valueJson: string) {
+  const db = getThreadStateDatabase();
   db.prepare(
     `
       INSERT INTO app_preferences (key, value_json)
@@ -60,5 +55,64 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
         value_json = excluded.value_json,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(gitCommitMessageModelKey, JSON.stringify(selection));
+  ).run(key, valueJson);
+}
+
+function deleteAppPreference(key: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      DELETE FROM app_preferences
+      WHERE key = ?
+    `,
+  ).run(key);
+}
+
+export function loadAppSettings(): AppSettings {
+  const db = getThreadStateDatabase();
+  const modelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitCommitMessageModelKey) as PreferenceRow | undefined;
+  const favoriteFoldersRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(favoriteFoldersKey) as PreferenceRow | undefined;
+
+  return {
+    gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
+    favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
+  };
+}
+
+export function setGitCommitMessageModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(gitCommitMessageModelKey);
+    return;
+  }
+
+  writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
+}
+
+export function setFavoriteFolders(favoriteFolders: string[]) {
+  const normalizedFavoriteFolders = [
+    ...new Set(favoriteFolders.map((folder) => folder.trim()).filter(Boolean)),
+  ];
+
+  if (normalizedFavoriteFolders.length === 0) {
+    deleteAppPreference(favoriteFoldersKey);
+    return;
+  }
+
+  writeAppPreference(favoriteFoldersKey, JSON.stringify(normalizedFavoriteFolders));
 }

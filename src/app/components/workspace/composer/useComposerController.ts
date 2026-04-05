@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerModel,
   ComposerThinkingLevel,
   DesktopActionResult,
@@ -36,6 +37,11 @@ type UseComposerControllerProps = {
     payload?: Record<string, unknown>,
   ) => Promise<DesktopActionResult | null>;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
+  onListAttachmentEntries: (request: {
+    projectId?: string | null;
+    path?: string | null;
+    rootPath?: string | null;
+  }) => Promise<ComposerFilePickerState | null>;
 };
 
 export function useComposerController({
@@ -44,6 +50,7 @@ export function useComposerController({
   sessionPath,
   onAction,
   onPickAttachments,
+  onListAttachmentEntries,
 }: UseComposerControllerProps) {
   const draftThreadId = useMemo(
     () => getComposerDraftThreadId({ projectId, sessionPath }),
@@ -51,9 +58,16 @@ export function useComposerController({
   );
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
-  const [openMenu, setOpenMenu] = useState<"model" | null>(null);
+  const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
+    [],
+  );
+  const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const pickerPanelRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
@@ -86,10 +100,38 @@ export function useComposerController({
   useDismissibleLayer({
     open: openMenu !== null,
     onDismiss: () => setOpenMenu(null),
-    refs: [modelButtonRef, modelMenuRef],
+    refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
   });
 
   const canSend = draft.trim().length > 0 && !isSending;
+
+  const mergeAttachments = (current: ComposerAttachment[], next: ComposerAttachment[]) => {
+    const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
+
+    for (const attachment of next) {
+      byPath.set(attachment.path, attachment);
+    }
+
+    return [...byPath.values()];
+  };
+
+  const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
+    setPickerLoading(true);
+
+    try {
+      const nextPickerState = await onListAttachmentEntries({
+        projectId,
+        path: path ?? null,
+        rootPath: rootPath ?? pickerState?.rootPath ?? projectId ?? null,
+      });
+      setPickerState(nextPickerState);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
+    } finally {
+      setPickerLoading(false);
+    }
+  };
 
   const runComposerAction = async (
     action: DesktopAction,
@@ -144,28 +186,52 @@ export function useComposerController({
   };
 
   const pickAttachments = async () => {
-    let nextAttachments: ComposerAttachment[] = [];
-
-    try {
-      nextAttachments = await onPickAttachments(projectId);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not open the file picker.");
+    if (openMenu === "picker") {
+      setOpenMenu(null);
       return;
     }
 
-    if (nextAttachments.length === 0) {
+    setPendingPickerAttachments([]);
+    setOpenMenu("picker");
+    await loadPickerEntries(projectId, projectId);
+  };
+
+  const openPickerDirectory = async (path: string) => {
+    await loadPickerEntries(path);
+  };
+
+  const openPickerRoot = async (rootPath: string) => {
+    await loadPickerEntries(rootPath, rootPath);
+  };
+
+  const navigatePickerUp = async () => {
+    if (!pickerState?.parentPath) {
       return;
     }
 
-    setAttachments((current) => {
-      const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
+    await loadPickerEntries(pickerState.parentPath);
+  };
 
-      for (const attachment of nextAttachments) {
-        byPath.set(attachment.path, attachment);
-      }
+  const togglePendingPickerAttachment = (attachment: ComposerAttachment) => {
+    setPendingPickerAttachments((current) => {
+      const exists = current.some(
+        (currentAttachment) => currentAttachment.path === attachment.path,
+      );
 
-      return [...byPath.values()];
+      return exists
+        ? current.filter((currentAttachment) => currentAttachment.path !== attachment.path)
+        : [...current, attachment];
     });
+  };
+
+  const attachPendingPickerAttachments = () => {
+    if (pendingPickerAttachments.length === 0) {
+      return;
+    }
+
+    setAttachments((current) => mergeAttachments(current, pendingPickerAttachments));
+    setPendingPickerAttachments([]);
+    setOpenMenu(null);
     setErrorMessage(null);
   };
 
@@ -184,16 +250,27 @@ export function useComposerController({
     draft,
     errorMessage,
     isSending,
+    pickerButtonRef,
+    pickerLoading,
+    pickerOpen: openMenu === "picker",
+    pickerPanelRef,
+    pickerState,
     modelButtonRef,
     modelLabel,
     modelMenuOpen: openMenu === "model",
     modelMenuRef,
+    pendingPickerAttachments,
     pickAttachments,
+    openPickerDirectory,
+    openPickerRoot,
+    navigatePickerUp,
     removeAttachment,
     runComposerAction,
     send,
     setDraft,
     setOpenMenu,
+    attachPendingPickerAttachments,
+    togglePendingPickerAttachment,
     thinkingLevelLabels,
   };
 }

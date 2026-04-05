@@ -7,6 +7,7 @@ import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
+import { ComposerFilePicker } from "./ComposerFilePicker";
 import { ComposerModelPopover } from "./ComposerModelPopover";
 import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops";
 import { useComposerController } from "./useComposerController";
@@ -22,9 +23,11 @@ export function ComposerPromptSurface({
   projectId,
   projectGitState,
   sessionPath,
+  favoriteFolders,
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onPickAttachments,
+  onListAttachmentEntries,
   onAction,
   terminalVisible,
   onOpenGitOps,
@@ -40,15 +43,26 @@ export function ComposerPromptSurface({
     clearError,
     draft,
     errorMessage,
+    pickerButtonRef,
+    pickerLoading,
+    pickerOpen,
+    pickerPanelRef,
+    pickerState,
     modelButtonRef,
     modelMenuOpen,
     modelMenuRef,
+    pendingPickerAttachments,
     pickAttachments,
+    openPickerDirectory,
+    openPickerRoot,
+    navigatePickerUp,
     removeAttachment,
     runComposerAction,
     send,
     setDraft,
     setOpenMenu,
+    attachPendingPickerAttachments,
+    togglePendingPickerAttachment,
     thinkingLevelLabels,
   } = useComposerController({
     model,
@@ -56,6 +70,7 @@ export function ComposerPromptSurface({
     sessionPath,
     onAction,
     onPickAttachments,
+    onListAttachmentEntries,
   });
 
   return (
@@ -66,19 +81,38 @@ export function ComposerPromptSurface({
         {/* The prompt surface intentionally uses one shared top block: +, attachments, placeholder,
             textarea, and dictate/send all live here so we match git-ops height without adding a
             separate control row above or below the prompt. */}
-        <button
-          type="button"
-          className={cn(compactIconButtonClass, "absolute top-3 left-4 z-10")}
-          onClick={pickAttachments}
-          aria-label="Add attachment"
-          title="Add attachment"
-        >
-          <Plus size={16} />
-        </button>
-        {attachments.length > 0 ? (
-          <div className="pt-7">
-            <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
-          </div>
+        <div className="absolute top-3 left-4 right-4 z-10 flex items-start gap-2">
+          <button
+            ref={pickerButtonRef}
+            type="button"
+            className={cn(compactIconButtonClass, "shrink-0")}
+            onClick={pickAttachments}
+            aria-label="Add attachment"
+            title="Add attachment"
+          >
+            <Plus size={16} />
+          </button>
+          {attachments.length > 0 ? (
+            <div className="min-w-0 flex-1">
+              <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
+            </div>
+          ) : null}
+        </div>
+        {pickerOpen ? (
+          <ComposerFilePicker
+            currentSelection={pendingPickerAttachments}
+            errorMessage={errorMessage}
+            favoriteFolders={favoriteFolders}
+            loading={pickerLoading}
+            picker={pickerState}
+            panelRef={pickerPanelRef}
+            projectRootPath={projectId}
+            onAttachSelected={attachPendingPickerAttachments}
+            onNavigateUp={navigatePickerUp}
+            onOpenRoot={openPickerRoot}
+            onOpenDirectory={openPickerDirectory}
+            onToggleFile={togglePendingPickerAttachment}
+          />
         ) : null}
         <textarea
           className={cn(

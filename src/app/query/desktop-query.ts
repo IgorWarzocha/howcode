@@ -1,6 +1,7 @@
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   ProjectDiffResult,
@@ -52,6 +53,16 @@ export async function pickComposerAttachmentsQuery(
   projectId?: string | null,
 ): Promise<ComposerAttachment[]> {
   return (await window.piDesktop?.pickComposerAttachments?.(projectId ?? null)) ?? [];
+}
+
+export async function listComposerAttachmentEntriesQuery(
+  request: {
+    projectId?: string | null;
+    path?: string | null;
+    rootPath?: string | null;
+  } = {},
+): Promise<ComposerFilePickerState | null> {
+  return (await window.piDesktop?.listComposerAttachmentEntries?.(request)) ?? null;
 }
 
 export async function getThreadQuery(

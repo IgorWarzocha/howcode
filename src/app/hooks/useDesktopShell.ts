@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   ProjectGitState,
@@ -17,6 +18,7 @@ import {
   getProjectGitStateQuery,
   getProjectThreadsQuery,
   getShellStateQuery,
+  listComposerAttachmentEntriesQuery,
   pickComposerAttachmentsQuery,
 } from "../query/desktop-query";
 
@@ -190,6 +192,17 @@ export function useDesktopShell() {
     return pickComposerAttachmentsQuery(projectId ?? null) as Promise<ComposerAttachment[]>;
   }, []);
 
+  const listComposerAttachmentEntries = useCallback(
+    async (request: {
+      projectId?: string | null;
+      path?: string | null;
+      rootPath?: string | null;
+    }) => {
+      return listComposerAttachmentEntriesQuery(request) as Promise<ComposerFilePickerState | null>;
+    },
+    [],
+  );
+
   useEffect(() => {
     return () => {
       shellRefreshDebouncer.cancel();
@@ -204,6 +217,7 @@ export function useDesktopShell() {
     applyProjectOrder,
     loadArchivedThreads,
     loadComposerState,
+    listComposerAttachmentEntries,
     loadProjectGitState,
     pickComposerAttachments,
   };

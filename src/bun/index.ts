@@ -1,8 +1,13 @@
+import { readdir, stat } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerEntry,
+  ComposerFilePickerState,
   ComposerState,
   DesktopActionPayload,
   DesktopActionResult,
@@ -63,6 +68,97 @@ const terminalManager = (await import(
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 
+async function pathExists(path: string) {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function normalizeDialogFilePaths(filePaths: string[]) {
+  const normalized: string[] = [];
+
+  for (let index = 0; index < filePaths.length; index += 1) {
+    let candidate = filePaths[index]?.trim();
+    if (!candidate) {
+      continue;
+    }
+
+    while (!(await pathExists(candidate)) && index + 1 < filePaths.length) {
+      index += 1;
+      candidate = `${candidate},${filePaths[index] ?? ""}`;
+    }
+
+    normalized.push(candidate);
+  }
+
+  return normalized;
+}
+
+function isPathWithinRoot(candidatePath: string, rootPath: string) {
+  const relativePath = path.relative(rootPath, candidatePath);
+  return (
+    relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+}
+
+function getAttachmentKind(filePath: string): ComposerAttachment["kind"] {
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath) ? "image" : "text";
+}
+
+async function listComposerAttachmentEntries(request: {
+  projectId?: string | null;
+  path?: string | null;
+  rootPath?: string | null;
+}): Promise<ComposerFilePickerState> {
+  const homePath = os.homedir();
+  const rootPath = path.resolve(request.rootPath ?? request.projectId ?? process.cwd());
+  const requestedPath = path.resolve(request.path ?? rootPath);
+  const currentPath = isPathWithinRoot(requestedPath, rootPath) ? requestedPath : rootPath;
+  const directoryEntries = await readdir(currentPath, { withFileTypes: true });
+
+  const entries: ComposerFilePickerEntry[] = directoryEntries
+    .filter((entry) => !entry.name.startsWith("."))
+    .map((entry) => {
+      const entryPath = path.join(currentPath, entry.name);
+
+      if (entry.isDirectory()) {
+        return {
+          path: entryPath,
+          name: entry.name,
+          kind: "directory",
+        } satisfies ComposerFilePickerEntry;
+      }
+
+      return {
+        path: entryPath,
+        name: entry.name,
+        kind: getAttachmentKind(entryPath),
+      } satisfies ComposerFilePickerEntry;
+    })
+    .sort((left, right) => {
+      if (left.kind === "directory" && right.kind !== "directory") {
+        return -1;
+      }
+
+      if (left.kind !== "directory" && right.kind === "directory") {
+        return 1;
+      }
+
+      return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+    });
+
+  return {
+    homePath,
+    rootPath,
+    currentPath,
+    parentPath: currentPath === rootPath ? null : path.dirname(currentPath),
+    entries,
+  };
+}
+
 async function getMainViewUrl(): Promise<string> {
   const channel = await Updater.localInfo.channel();
   if (channel === "dev") {
@@ -94,14 +190,18 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
           allowsMultipleSelection: true,
         });
 
-        return filePaths
+        const normalizedFilePaths = await normalizeDialogFilePaths(filePaths);
+
+        return normalizedFilePaths
           .filter((filePath) => filePath.length > 0)
           .map((filePath) => ({
             path: filePath,
             name: filePath.split(/[\\/]/).pop() ?? filePath,
-            kind: /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath) ? "image" : "text",
+            kind: getAttachmentKind(filePath),
           })) as ComposerAttachment[];
       },
+      listComposerAttachmentEntries: async (request) =>
+        listComposerAttachmentEntries(request) as Promise<ComposerFilePickerState>,
       getComposerState: async (request) =>
         piThreads.loadComposerState(request) as Promise<ComposerState>,
       getProjectThreads: async ({ projectId }) =>

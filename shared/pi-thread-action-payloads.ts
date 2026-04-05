@@ -96,7 +96,9 @@ export function getGitRepoUrl(payload: DesktopActionPayload) {
 }
 
 export function getSettingsKey(payload: DesktopActionPayload) {
-  return payload.key === "gitCommitMessageModel" ? (payload.key as keyof AppSettings) : null;
+  return payload.key === "gitCommitMessageModel" || payload.key === "favoriteFolders"
+    ? (payload.key as keyof AppSettings)
+    : null;
 }
 
 export function getSettingsReset(payload: DesktopActionPayload) {
@@ -108,4 +110,17 @@ export function getSettingsModelSelection(payload: DesktopActionPayload): ModelS
   const id = typeof payload.modelId === "string" ? payload.modelId : null;
 
   return provider && id ? { provider, id } : null;
+}
+
+export function getSettingsFavoriteFolders(payload: DesktopActionPayload): string[] {
+  return Array.isArray(payload.folders)
+    ? [
+        ...new Set(
+          payload.folders
+            .filter((folder): folder is string => typeof folder === "string")
+            .map((folder) => folder.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : [];
 }

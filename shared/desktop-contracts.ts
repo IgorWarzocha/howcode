@@ -98,6 +98,20 @@ export type ComposerAttachment = {
   kind: "text" | "image";
 };
 
+export type ComposerFilePickerEntry = {
+  path: string;
+  name: string;
+  kind: "directory" | "text" | "image";
+};
+
+export type ComposerFilePickerState = {
+  homePath: string;
+  rootPath: string;
+  currentPath: string;
+  parentPath: string | null;
+  entries: ComposerFilePickerEntry[];
+};
+
 export type ModelSelection = {
   provider: string;
   id: string;
@@ -105,6 +119,7 @@ export type ModelSelection = {
 
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
+  favoriteFolders: string[];
 };
 
 export type ComposerStateRequest = {

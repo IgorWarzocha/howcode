@@ -2,6 +2,8 @@ export type {
   AppSettings,
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerEntry,
+  ComposerFilePickerState,
   ComposerModel,
   ComposerState,
   ComposerStateRequest,

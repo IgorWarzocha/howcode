@@ -21,7 +21,9 @@ export function SettingsView({
   onAction,
 }: SettingsViewProps) {
   const selectedModel = appSettings.gitCommitMessageModel;
+  const favoriteFolders = appSettings.favoriteFolders;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const menuPresent = useAnimatedPresence(menuOpen);
@@ -40,6 +42,23 @@ export function SettingsView({
   const currentValue = selectedModel
     ? `${selectedModel.provider}/${selectedModel.id}`
     : "Use composer model";
+
+  const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
+    onAction("settings.update", {
+      key: "favoriteFolders",
+      folders: nextFavoriteFolders,
+    });
+  };
+
+  const addFavoriteFolder = () => {
+    const nextFavoriteFolder = favoriteFolderDraft.trim();
+    if (!nextFavoriteFolder) {
+      return;
+    }
+
+    updateFavoriteFolders([...favoriteFolders, nextFavoriteFolder]);
+    setFavoriteFolderDraft("");
+  };
 
   const handleSelect = (id: string) => {
     if (id === "composer-default") {
@@ -61,7 +80,9 @@ export function SettingsView({
     <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
       <div className="grid gap-1">
         <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Settings</h1>
-        <p className="m-0 text-[13px] text-[color:var(--muted)]">Git commit message model.</p>
+        <p className="m-0 text-[13px] text-[color:var(--muted)]">
+          Git commit model and favorite folders.
+        </p>
       </div>
 
       <section className="grid gap-2 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3">
@@ -117,6 +138,73 @@ export function SettingsView({
               widthClassName="top-[calc(100%+8px)] bottom-auto left-0 w-full max-h-80 overflow-y-auto"
             />
           ) : null}
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-3">
+        <div className="grid gap-1">
+          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Favorite folders</h2>
+          <p className="m-0 text-[13px] text-[color:var(--muted)]">
+            The attachment picker always shows Home plus the favorite folders you add here.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={favoriteFolderDraft}
+            onChange={(event) => setFavoriteFolderDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addFavoriteFolder();
+              }
+            }}
+            className="min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            placeholder="Paste an absolute folder path"
+            aria-label="Favorite folder path"
+          />
+          <button
+            type="button"
+            className="rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[13px] font-medium text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={addFavoriteFolder}
+            disabled={favoriteFolderDraft.trim().length === 0}
+          >
+            Add
+          </button>
+        </div>
+
+        <div className="grid gap-2">
+          {favoriteFolders.length > 0 ? (
+            favoriteFolders.map((favoriteFolder) => (
+              <div
+                key={favoriteFolder}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2"
+              >
+                <div
+                  className="truncate text-[13px] text-[color:var(--text)]"
+                  title={favoriteFolder}
+                >
+                  {favoriteFolder}
+                </div>
+                <button
+                  type="button"
+                  className="text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+                  onClick={() =>
+                    updateFavoriteFolders(
+                      favoriteFolders.filter((currentFolder) => currentFolder !== favoriteFolder),
+                    )
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
+              No favorite folders yet.
+            </div>
+          )}
         </div>
       </section>
     </div>

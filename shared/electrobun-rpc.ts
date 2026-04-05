@@ -3,6 +3,7 @@ import type { DesktopAction } from "./desktop-actions";
 import type {
   ArchivedThread,
   ComposerAttachment,
+  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   DesktopActionPayload,
@@ -33,6 +34,10 @@ export type PiDesktopRpc = {
       pickComposerAttachments: {
         params: { projectId?: string | null };
         response: ComposerAttachment[];
+      };
+      listComposerAttachmentEntries: {
+        params: { projectId?: string | null; path?: string | null; rootPath?: string | null };
+        response: ComposerFilePickerState;
       };
       getComposerState: { params: ComposerStateRequest; response: ComposerState };
       getProjectThreads: { params: { projectId: string }; response: Thread[] };

@@ -49,6 +49,7 @@ export function AppShellWorkspace({
     handleShowTakeoverTerminal,
     handleToggleDiff,
     handleToggleTerminal,
+    listComposerAttachmentEntries,
     pickComposerAttachments,
     projectGitState,
     shellState,
@@ -132,7 +133,9 @@ export function AppShellWorkspace({
           ) : (
             <MainView
               activeView={state.activeView}
-              appSettings={shellState?.appSettings ?? { gitCommitMessageModel: null }}
+              appSettings={
+                shellState?.appSettings ?? { gitCommitMessageModel: null, favoriteFolders: [] }
+              }
               availableModels={activeComposerState?.availableModels ?? []}
               currentModel={activeComposerState?.currentModel ?? null}
               currentProjectName={currentProjectName}
@@ -159,6 +162,7 @@ export function AppShellWorkspace({
                 projectId={composerProjectId}
                 projectGitState={projectGitState}
                 sessionPath={terminalSessionPath}
+                favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                 onSetDiffPanelVisible={(visible) => {
                   if (visible === state.diffVisible) {
                     return;
@@ -185,6 +189,7 @@ export function AppShellWorkspace({
                 onToggleTerminal={handleToggleTerminal}
                 terminalVisible={state.terminalVisible}
                 onPickAttachments={pickComposerAttachments}
+                onListAttachmentEntries={listComposerAttachmentEntries}
                 onAction={handleAction}
               />
             </div>
