@@ -12,7 +12,6 @@ import type {
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
-import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
 import {
@@ -21,6 +20,10 @@ import {
   refreshArchivedThreadsIfOpen,
   shouldConfirmProjectAction,
 } from "./controller-action-helpers";
+import {
+  applyOptimisticSettingsUpdate,
+  runPostDesktopActionEffects,
+} from "./controller-post-action-effects";
 import { deriveControllerViewModel } from "./controller-view-model";
 import { useAppShellEffects } from "./useAppShellEffects";
 
@@ -93,48 +96,6 @@ export function useAppShellController() {
     setProjectGitState,
   });
 
-  const applyOptimisticSettingsUpdate = (payload: Record<string, unknown>) => {
-    if (payload.key !== "gitCommitMessageModel" && payload.key !== "favoriteFolders") {
-      return;
-    }
-
-    queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
-      if (!currentState) {
-        return currentState ?? null;
-      }
-
-      const nextSelection =
-        payload.key === "gitCommitMessageModel"
-          ? payload.reset === true
-            ? null
-            : typeof payload.provider === "string" && typeof payload.modelId === "string"
-              ? { provider: payload.provider, id: payload.modelId }
-              : currentState.appSettings.gitCommitMessageModel
-          : currentState.appSettings.gitCommitMessageModel;
-
-      const nextFavoriteFolders =
-        payload.key === "favoriteFolders" && Array.isArray(payload.folders)
-          ? [
-              ...new Set(
-                payload.folders
-                  .filter((folder): folder is string => typeof folder === "string")
-                  .map((folder) => folder.trim())
-                  .filter(Boolean),
-              ),
-            ]
-          : currentState.appSettings.favoriteFolders;
-
-      return {
-        ...currentState,
-        appSettings: {
-          ...currentState.appSettings,
-          gitCommitMessageModel: nextSelection,
-          favoriteFolders: nextFavoriteFolders,
-        },
-      };
-    });
-  };
-
   const runDesktopAction = async (
     action: DesktopAction,
     payload: Record<string, unknown> = {},
@@ -149,112 +110,22 @@ export function useAppShellController() {
 
     const actionResult = await invokeDesktopAction(action, contextualPayload);
 
-    if (action === "thread.pin" || action === "thread.archive") {
-      const projectId =
-        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
-      if (projectId) {
-        await loadProjectThreads(projectId);
-      }
-
-      if (action === "thread.archive") {
-        await refreshArchivedThreadsIfOpen({
-          archivedThreadsOpen: state.archivedThreadsOpen,
-          loadArchivedThreads,
-          setArchivedThreads,
-        });
-      }
-
-      if (action === "thread.archive" && contextualPayload.threadId === state.selectedThreadId) {
-        dispatch({ type: "show-view", view: "home" });
-      }
-    }
-
-    if (action === "thread.restore" || action === "thread.delete") {
-      setArchivedThreads(await loadArchivedThreads());
-
-      const projectId =
-        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
-      if (projectId) {
-        await loadProjectThreads(projectId);
-      }
-
-      if (action === "thread.delete" && contextualPayload.threadId === state.selectedThreadId) {
-        dispatch({ type: "show-view", view: "home" });
-      }
-    }
-
-    if (action === "project.edit-name") {
-      await refreshShellState();
-      await refreshArchivedThreadsIfOpen({
-        archivedThreadsOpen: state.archivedThreadsOpen,
-        loadArchivedThreads,
-        setArchivedThreads,
-      });
-    }
-
-    if (action === "project.archive-threads") {
-      const projectId =
-        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
-
-      if (projectId) {
-        await loadProjectThreads(projectId);
-      }
-
-      await refreshShellState();
-      await refreshArchivedThreadsIfOpen({
-        archivedThreadsOpen: state.archivedThreadsOpen,
-        loadArchivedThreads,
-        setArchivedThreads,
-      });
-
-      if (contextualPayload.projectId === state.selectedProjectId) {
-        dispatch({ type: "show-view", view: "home" });
-      }
-    }
-
-    if (action === "project.remove-project") {
-      if (contextualPayload.projectId === state.selectedProjectId) {
-        dispatch({ type: "show-view", view: "home" });
-      }
-
-      await refreshShellState();
-      await refreshArchivedThreadsIfOpen({
-        archivedThreadsOpen: state.archivedThreadsOpen,
-        loadArchivedThreads,
-        setArchivedThreads,
-      });
-    }
-
-    if (action === "settings.update") {
-      await refreshShellState();
-    }
-
-    if (action === "thread.new") {
-      dispatch({ type: "show-view", view: "home" });
-
-      const nextComposerState = await loadComposerState({ projectId: composerProjectId });
-      if (nextComposerState) {
-        setComposerState(nextComposerState);
-      }
-    }
-
-    if (action === "workspace.commit-options") {
-      const projectId =
-        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
-
-      if (projectId) {
-        setProjectGitState(await loadProjectGitState(projectId));
-      }
-    }
-
-    if (action === "workspace.commit") {
-      const projectId =
-        typeof contextualPayload.projectId === "string" ? contextualPayload.projectId : null;
-
-      if (projectId && actionResult?.result?.committed === true) {
-        setProjectGitState(await loadProjectGitState(projectId));
-      }
-    }
+    await runPostDesktopActionEffects({
+      action,
+      contextualPayload,
+      actionResult,
+      workspaceState: state,
+      composerProjectId,
+      dispatch,
+      loadArchivedThreads,
+      loadComposerState,
+      loadProjectGitState,
+      loadProjectThreads,
+      refreshShellState,
+      setArchivedThreads,
+      setComposerState,
+      setProjectGitState,
+    });
 
     return actionResult;
   };
@@ -274,7 +145,7 @@ export function useAppShellController() {
     }
 
     if (action === "settings.update") {
-      applyOptimisticSettingsUpdate(payload);
+      applyOptimisticSettingsUpdate(queryClient, payload);
     }
 
     return await runDesktopAction(action, payload);
