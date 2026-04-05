@@ -1,6 +1,7 @@
 import type { DesktopAction } from "./desktop-actions";
 
 export const implementedDesktopActions = [
+  "project.add",
   "project.select",
   "project.expand",
   "project.collapse",
@@ -32,7 +33,6 @@ export const implementedDesktopActions = [
 // backend until their renderer/desktop integrations are implemented.
 export const unimplementedDesktopActions = [
   "threads.filter",
-  "project.add",
   "project.actions",
   "project.create-worktree",
   "project.switch",

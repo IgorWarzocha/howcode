@@ -45,6 +45,9 @@ export const sectionShellClass = "grid w-full max-w-[980px] content-start gap-[1
 export const sidebarSectionLabelClass =
   "flex items-center justify-between px-1.5 pt-1.5 text-[12px] leading-5 text-[color:var(--muted)]";
 
+export const sidebarSearchFieldClass =
+  "flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-2.5 text-[13px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.05)] focus-within:text-[color:var(--text)]";
+
 export const menuItemClass =
   "flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left text-[14px]";
 

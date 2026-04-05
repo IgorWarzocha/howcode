@@ -1,4 +1,4 @@
-import { Archive, Pin } from "lucide-react";
+import { Archive, Star } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
@@ -37,10 +37,10 @@ export function ThreadRow({
           isSelected && "opacity-100",
         )}
         onClick={onPin}
-        aria-label={pinned ? "Unpin thread" : "Pin thread"}
+        aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
         aria-pressed={pinned}
       >
-        <Pin size={12} className="absolute inset-0 m-auto" />
+        <Star size={12} className={cn("absolute inset-0 m-auto", pinned && "fill-current")} />
       </button>
 
       <button

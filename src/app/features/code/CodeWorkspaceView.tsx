@@ -177,6 +177,8 @@ export function CodeWorkspaceView({
                   gitCommitMessageModel: null,
                   favoriteFolders: [],
                   projectImportState: null,
+                  preferredProjectLocation: null,
+                  initializeGitOnProjectCreate: false,
                 }
               }
               availableModels={activeComposerState?.availableModels ?? []}

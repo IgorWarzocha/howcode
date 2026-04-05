@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, GitBranchPlus, Pin } from "lucide-react";
+import { Archive, FolderOpen, GitBranchPlus, Star } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import { popoverPanelClass } from "../../ui/classes";
@@ -43,8 +43,8 @@ export function ProjectActionMenu({
       action: "project.open-in-file-manager",
     },
     {
-      icon: <Pin size={14} />,
-      title: pinned ? "Unpin Project" : "Pin Project",
+      icon: <Star size={14} className={pinned ? "fill-current" : undefined} />,
+      title: pinned ? "Unmark Favourite" : "Mark Favourite",
       action: "project.pin",
     },
     {

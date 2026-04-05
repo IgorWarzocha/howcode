@@ -1,5 +1,5 @@
-import { ChevronDown, GitCommitHorizontal } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { Check, ChevronDown, FolderPlus, GitCommitHorizontal } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ComposerMenu } from "../components/workspace/composer/ComposerMenu";
 import type { DesktopAction } from "../desktop/actions";
 import type { AppSettings, ComposerModel, DesktopActionResult } from "../desktop/types";
@@ -39,6 +39,9 @@ export function SettingsView({
 }: SettingsViewProps) {
   const selectedModel = appSettings.gitCommitMessageModel;
   const favoriteFolders = appSettings.favoriteFolders;
+  const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
+    appSettings.preferredProjectLocation ?? "",
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
   const [importBusy, setImportBusy] = useState(false);
@@ -48,6 +51,10 @@ export function SettingsView({
   const panelRef = useRef<HTMLDivElement>(null);
   const menuPresent = useAnimatedPresence(menuOpen);
   const menuId = "settings-git-commit-model-menu";
+
+  useEffect(() => {
+    setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? "");
+  }, [appSettings.preferredProjectLocation]);
 
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
@@ -78,6 +85,13 @@ export function SettingsView({
 
     updateFavoriteFolders([...favoriteFolders, nextFavoriteFolder]);
     setFavoriteFolderDraft("");
+  };
+
+  const savePreferredProjectLocation = () => {
+    void onAction("settings.update", {
+      key: "preferredProjectLocation",
+      value: preferredProjectLocationDraft,
+    });
   };
 
   const handleSelect = (id: string) => {
@@ -193,6 +207,69 @@ export function SettingsView({
               widthClassName="top-[calc(100%+8px)] bottom-auto left-0 w-full max-h-80 overflow-y-auto"
             />
           ) : null}
+        </div>
+      </section>
+
+      <section className={settingsSectionClass}>
+        <div className="grid gap-1">
+          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">New projects</h2>
+          <p className="m-0 text-[13px] text-[color:var(--muted)]">
+            Set where new projects are created and whether git should be initialised for diffs.
+          </p>
+        </div>
+
+        <div className="grid gap-2">
+          <div className="grid gap-1">
+            <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 text-[13px] text-[color:var(--muted)]">
+              <FolderPlus size={14} />
+              <span>Default project location</span>
+            </div>
+            <input
+              type="text"
+              value={preferredProjectLocationDraft}
+              onChange={(event) => setPreferredProjectLocationDraft(event.target.value)}
+              onBlur={savePreferredProjectLocation}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  savePreferredProjectLocation();
+                }
+              }}
+              className={settingsInputClass}
+              placeholder="Paste an absolute folder path"
+              aria-label="Default project location"
+            />
+          </div>
+
+          <div className={settingsListRowClass}>
+            <div className="grid gap-0.5">
+              <div className="text-[13px] text-[color:var(--text)]">
+                Initialise git for new projects
+              </div>
+              <div className="text-[12px] text-[color:var(--muted)]">
+                Enables diffs for new projects.
+              </div>
+            </div>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors",
+                appSettings.initializeGitOnProjectCreate
+                  ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+                  : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
+              )}
+              onClick={() => {
+                void onAction("settings.update", {
+                  key: "initializeGitOnProjectCreate",
+                  value: !appSettings.initializeGitOnProjectCreate,
+                });
+              }}
+              aria-label="Initialise git for new projects"
+              aria-pressed={appSettings.initializeGitOnProjectCreate}
+            >
+              <Check size={13} />
+            </button>
+          </div>
         </div>
       </section>
 

@@ -16,16 +16,21 @@ import {
   getProjectId,
   getProjectIds,
   getProjectName,
+  getSettingsBooleanValue,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
+  getSettingsPreferredProjectLocation,
   getSettingsProjectImportState,
   getSettingsReset,
   getThreadId,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
+  loadAppSettings,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
+  setInitializeGitOnProjectCreate,
+  setPreferredProjectLocation,
   setProjectImportState,
 } from "../app-settings.cts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
@@ -37,6 +42,7 @@ import {
   setComposerThinkingLevel,
   startNewThread,
 } from "../pi-desktop-runtime.cts";
+import { createProject } from "../project-create.cts";
 import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
 import { importProjects, scanKnownProjects } from "../project-import.cts";
@@ -82,7 +88,6 @@ export async function handleDesktopAction(
 ): Promise<Record<string, unknown> | null | undefined> {
   switch (action) {
     case "threads.filter":
-    case "project.add":
     case "project.actions":
     case "project.create-worktree":
     case "project.switch":
@@ -104,6 +109,15 @@ export async function handleDesktopAction(
     case "diff.review":
     case "terminal.close":
       return;
+
+    case "project.add": {
+      const appSettings = loadAppSettings();
+      return await createProject({
+        preferredProjectLocation: appSettings.preferredProjectLocation,
+        projectName: getProjectName(payload) ?? "",
+        initializeGit: appSettings.initializeGitOnProjectCreate,
+      });
+    }
 
     case "project.select":
       await selectProjectRuntime(getComposerRequest(payload));
@@ -313,6 +327,19 @@ export async function handleDesktopAction(
 
       if (key === "projectImportState") {
         setProjectImportState(getSettingsProjectImportState(payload));
+        return;
+      }
+
+      if (key === "preferredProjectLocation") {
+        setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload));
+        return;
+      }
+
+      if (key === "initializeGitOnProjectCreate") {
+        const value = getSettingsBooleanValue(payload);
+        if (value !== null) {
+          setInitializeGitOnProjectCreate(value);
+        }
         return;
       }
 

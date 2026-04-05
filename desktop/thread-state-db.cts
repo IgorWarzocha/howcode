@@ -15,6 +15,7 @@ export {
   deleteThreadRecord,
   ensureProject,
   hideProject,
+  moveProjectToTop,
   reorderProjects,
   renameProject,
   restoreThread,

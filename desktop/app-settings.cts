@@ -4,6 +4,8 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
+const preferredProjectLocationKey = "preferredProjectLocation";
+const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
 
 type PreferenceRow = {
   valueJson: string;
@@ -54,6 +56,19 @@ function parseBooleanPreference(valueJson: string | null | undefined): boolean |
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return typeof parsed === "boolean" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseStringPreference(valueJson: string | null | undefined): string | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return typeof parsed === "string" && parsed.trim().length > 0 ? parsed.trim() : null;
   } catch {
     return null;
   }
@@ -111,11 +126,32 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(projectImportStateKey) as PreferenceRow | undefined;
+  const preferredProjectLocationRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(preferredProjectLocationKey) as PreferenceRow | undefined;
+  const initializeGitOnProjectCreateRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(initializeGitOnProjectCreateKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
+    preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
+    initializeGitOnProjectCreate:
+      parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
   };
 }
 
@@ -148,4 +184,18 @@ export function setProjectImportState(projectImportState: boolean | null) {
   }
 
   writeAppPreference(projectImportStateKey, JSON.stringify(projectImportState));
+}
+
+export function setPreferredProjectLocation(preferredProjectLocation: string | null) {
+  const normalizedLocation = preferredProjectLocation?.trim() ?? "";
+  if (normalizedLocation.length === 0) {
+    deleteAppPreference(preferredProjectLocationKey);
+    return;
+  }
+
+  writeAppPreference(preferredProjectLocationKey, JSON.stringify(normalizedLocation));
+}
+
+export function setInitializeGitOnProjectCreate(enabled: boolean) {
+  writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled));
 }

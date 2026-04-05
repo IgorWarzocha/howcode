@@ -18,6 +18,8 @@ function buildShellState(): ShellState {
       gitCommitMessageModel: null,
       favoriteFolders: ["/existing"],
       projectImportState: null,
+      preferredProjectLocation: null,
+      initializeGitOnProjectCreate: false,
     },
     availableHosts: [],
     composer: {
@@ -92,6 +94,30 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         favoriteFolders: ["/repo", "/existing"],
+      },
+    });
+  });
+
+  it("updates project creation settings optimistically", () => {
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "preferredProjectLocation",
+        value: "/work",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        preferredProjectLocation: "/work",
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "initializeGitOnProjectCreate",
+        value: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        initializeGitOnProjectCreate: true,
       },
     });
   });

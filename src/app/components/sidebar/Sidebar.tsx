@@ -1,6 +1,7 @@
 import { BriefcaseBusiness, Code2, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { DesktopAction } from "../../desktop/actions";
+import type { AppSettings, DesktopActionResult } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
@@ -12,17 +13,20 @@ import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 
 type SidebarProps = {
   projects: Project[];
+  appSettings: AppSettings;
   activeView: View;
   selectedProjectId: string;
   selectedThreadId: string | null;
   settingsOpen: boolean;
   collapsedProjectIds: Record<string, boolean>;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: (
+    action: DesktopAction,
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
   onShowView: (view: View) => void;
   onToggleSettings: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
-  onCollapseAll: () => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
@@ -31,6 +35,7 @@ type SidebarProps = {
 
 export function Sidebar({
   projects,
+  appSettings,
   activeView,
   selectedProjectId,
   selectedThreadId,
@@ -41,7 +46,6 @@ export function Sidebar({
   onToggleSettings,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
-  onCollapseAll,
   onProjectSelect,
   onProjectReorder,
   onThreadOpen,
@@ -114,12 +118,13 @@ export function Sidebar({
 
       <SidebarProjectsSection
         activeView={activeView}
+        appSettings={appSettings}
         projects={projects}
         selectedProjectId={selectedProjectId}
         selectedThreadId={selectedThreadId}
         collapsedProjectIds={collapsedProjectIds}
         onAction={onAction}
-        onCollapseAll={onCollapseAll}
+        onOpenSettingsPanel={onOpenSettingsPanel}
         onProjectSelect={onProjectSelect}
         onProjectReorder={onProjectReorder}
         onThreadOpen={onThreadOpen}

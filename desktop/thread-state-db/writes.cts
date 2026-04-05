@@ -195,6 +195,29 @@ export function reorderProjects(projectIds: string[]) {
   }
 }
 
+export function moveProjectToTop(projectId: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT MIN(order_index) AS minOrderIndex
+        FROM projects
+        WHERE hidden = 0 AND order_index IS NOT NULL
+      `,
+    )
+    .get() as { minOrderIndex?: number | null } | undefined;
+
+  const nextOrderIndex = typeof row?.minOrderIndex === "number" ? row.minOrderIndex - 1 : 0;
+
+  db.prepare(
+    `
+      UPDATE projects
+      SET order_index = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(nextOrderIndex, projectId);
+}
+
 export function hideProject(projectId: string) {
   const db = getThreadStateDatabase();
   db.prepare(

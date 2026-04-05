@@ -79,7 +79,9 @@ export function getOptimisticallyUpdatedShellState(
   if (
     payload.key !== "gitCommitMessageModel" &&
     payload.key !== "favoriteFolders" &&
-    payload.key !== "projectImportState"
+    payload.key !== "projectImportState" &&
+    payload.key !== "preferredProjectLocation" &&
+    payload.key !== "initializeGitOnProjectCreate"
   ) {
     return currentState;
   }
@@ -111,6 +113,18 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.imported
       : currentState.appSettings.projectImportState;
 
+  const nextPreferredProjectLocation =
+    payload.key === "preferredProjectLocation"
+      ? typeof payload.value === "string"
+        ? payload.value.trim() || null
+        : null
+      : currentState.appSettings.preferredProjectLocation;
+
+  const nextInitializeGitOnProjectCreate =
+    payload.key === "initializeGitOnProjectCreate" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.initializeGitOnProjectCreate;
+
   return {
     ...currentState,
     appSettings: {
@@ -118,6 +132,8 @@ export function getOptimisticallyUpdatedShellState(
       gitCommitMessageModel: nextSelection,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,
+      preferredProjectLocation: nextPreferredProjectLocation,
+      initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
     },
   } satisfies ShellState;
 }
@@ -355,8 +371,10 @@ export async function runPostDesktopActionEffects({
     await refreshShellState();
   }
 
-  if (action === "thread.new") {
+  if (action === "thread.new" || action === "project.add") {
     const projectId = getPayloadProjectId(contextualPayload) ?? composerProjectId;
+    const resultProjectId =
+      typeof actionResult?.result?.projectId === "string" ? actionResult.result.projectId : null;
     const sessionPath =
       typeof actionResult?.result?.sessionPath === "string"
         ? actionResult.result.sessionPath
@@ -368,9 +386,14 @@ export async function runPostDesktopActionEffects({
         ? buildLocalThreadFallback(projectId)
         : null;
 
-    if (projectId && threadId && sessionPath) {
-      dispatch({ type: "open-thread", projectId, threadId, sessionPath });
-      await loadProjectThreads(projectId);
+    if (action === "project.add") {
+      await refreshShellState();
+    }
+
+    if ((resultProjectId ?? projectId) && threadId && sessionPath) {
+      const nextProjectId = resultProjectId ?? projectId;
+      dispatch({ type: "open-thread", projectId: nextProjectId, threadId, sessionPath });
+      await loadProjectThreads(nextProjectId);
     } else if (localFallback) {
       dispatch({
         type: "open-thread",
@@ -378,15 +401,18 @@ export async function runPostDesktopActionEffects({
         threadId: localFallback.threadId,
         sessionPath: localFallback.sessionPath,
       });
-    } else if (projectId) {
-      dispatch({ type: "select-project", projectId });
-      await loadProjectThreads(projectId);
+    } else if (resultProjectId ?? projectId) {
+      const nextProjectId = resultProjectId ?? projectId;
+      dispatch({ type: "select-project", projectId: nextProjectId });
+      await loadProjectThreads(nextProjectId);
     } else {
       dispatch({ type: "show-view", view: "code" });
     }
 
     if (!localFallback) {
-      const nextComposerState = await loadComposerState({ projectId });
+      const nextComposerState = await loadComposerState({
+        projectId: resultProjectId ?? projectId,
+      });
       if (nextComposerState) {
         setComposerState(nextComposerState);
       }

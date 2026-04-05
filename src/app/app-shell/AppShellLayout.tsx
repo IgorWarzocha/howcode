@@ -25,7 +25,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleCloseArchivedThreads,
     handleCloseProjectActionDialog,
     handleConfirmProjectAction,
-    handleCollapseAll,
     handleOpenArchivedThreads,
     handleProjectReorder,
     handleProjectSelect,
@@ -60,20 +59,30 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         >
           <Sidebar
             projects={projects}
+            appSettings={
+              controller.shellState?.appSettings ?? {
+                gitCommitMessageModel: null,
+                favoriteFolders: [],
+                projectImportState: null,
+                preferredProjectLocation: null,
+                initializeGitOnProjectCreate: false,
+              }
+            }
             activeView={state.activeView}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
             collapsedProjectIds={collapsedProjectIds}
-            onAction={(action, payload) => void handleAction(action, payload)}
+            onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}
             onOpenSettingsPanel={() => {
               handleShowView("settings");
-              handleToggleSettings();
+              if (state.settingsOpen) {
+                handleToggleSettings();
+              }
             }}
             onOpenArchivedThreads={handleOpenArchivedThreads}
-            onCollapseAll={handleCollapseAll}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
             onThreadOpen={handleThreadOpen}

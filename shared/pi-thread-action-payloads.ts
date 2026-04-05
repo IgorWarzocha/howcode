@@ -98,7 +98,9 @@ export function getGitRepoUrl(payload: DesktopActionPayload) {
 export function getSettingsKey(payload: DesktopActionPayload) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "favoriteFolders" ||
-    payload.key === "projectImportState"
+    payload.key === "projectImportState" ||
+    payload.key === "preferredProjectLocation" ||
+    payload.key === "initializeGitOnProjectCreate"
     ? (payload.key as keyof AppSettings)
     : null;
 }
@@ -131,4 +133,12 @@ export function getSettingsProjectImportState(payload: DesktopActionPayload) {
   return payload.imported === null || typeof payload.imported === "boolean"
     ? payload.imported
     : null;
+}
+
+export function getSettingsPreferredProjectLocation(payload: DesktopActionPayload) {
+  return typeof payload.value === "string" ? payload.value.trim() : null;
+}
+
+export function getSettingsBooleanValue(payload: DesktopActionPayload) {
+  return typeof payload.value === "boolean" ? payload.value : null;
 }

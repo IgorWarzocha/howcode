@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
 import { iconButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
@@ -8,17 +8,13 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">
   active?: boolean;
 };
 
-export function IconButton({
-  label,
-  icon,
-  onClick,
-  active,
-  className,
-  type = "button",
-  ...buttonProps
-}: IconButtonProps) {
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  { label, icon, onClick, active, className, type = "button", ...buttonProps },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type={type}
       className={cn(
         iconButtonClass,
@@ -35,4 +31,4 @@ export function IconButton({
       {icon}
     </button>
   );
-}
+});
