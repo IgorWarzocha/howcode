@@ -38,6 +38,7 @@ import {
   diffCommentStore,
   getDiffCommentContextId,
 } from "./diffCommentStore";
+import { useDiffCommentDrafting } from "./useDiffCommentDrafting";
 
 type DiffThemeType = "light" | "dark";
 
@@ -62,45 +63,9 @@ export function DiffPanelContent({
 }: DiffPanelContentProps) {
   const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
   const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
-  const [dragSelectionRange, setDragSelectionRange] = useState<SelectedLineRange | null>(null);
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
-  const fileInteractionHandlersRef = useRef(
-    new Map<
-      string,
-      {
-        onLineClick: ({
-          lineNumber,
-          annotationSide,
-          event,
-        }: {
-          lineNumber: number;
-          annotationSide: AnnotationSide;
-          event: PointerEvent;
-        }) => void;
-        onLineNumberClick: ({
-          lineNumber,
-          annotationSide,
-          event,
-        }: {
-          lineNumber: number;
-          annotationSide: AnnotationSide;
-          event: PointerEvent;
-        }) => void;
-      }
-    >(),
-  );
-  const dragSelectionRef = useRef<{
-    pointerId: number;
-    fileKey: string;
-    filePath: string;
-    anchor: { side: AnnotationSide; lineNumber: number };
-    current: { side: AnnotationSide; lineNumber: number };
-    didDrag: boolean;
-  } | null>(null);
-  const dragUserSelectResetRef = useRef<(() => void) | null>(null);
-  const suppressNextLineClickRef = useRef(false);
   const { diff, isLoading, error } = useDesktopDiff(projectId, isGitRepo);
 
   const selectedPatch = diff?.diff;
@@ -157,18 +122,29 @@ export function DiffPanelContent({
     };
   }, [draftTarget]);
 
+  const {
+    clearDragSelection,
+    getFileInteractionHandlers,
+    getSelectedLinesForFile,
+    handleFilePointerDownCapture,
+    openDraftComment,
+  } = useDiffCommentDrafting({
+    draftComment,
+    setDraftComment,
+  });
+
   useEffect(() => {
     if (!diffCommentContextId) {
       setSavedComments([]);
       setDraftComment(null);
-      setDragSelectionRange(null);
+      clearDragSelection();
       return;
     }
 
     const persistedContext = diffCommentStore.getContext(diffCommentContextId);
     setSavedComments(persistedContext?.comments ?? []);
     setDraftComment(persistedContext?.draft ?? null);
-  }, [diffCommentContextId]);
+  }, [clearDragSelection, diffCommentContextId]);
 
   useEffect(() => {
     if (!diffCommentContextId) {
@@ -263,156 +239,6 @@ export function DiffPanelContent({
     useAnimationFrameWithResizeObserver: true,
   });
 
-  const disableDocumentSelection = useCallback(() => {
-    if (typeof document === "undefined") {
-      return;
-    }
-
-    dragUserSelectResetRef.current?.();
-
-    const htmlStyle = document.documentElement.style;
-    const bodyStyle = document.body.style;
-    const previousHtmlUserSelect = htmlStyle.userSelect;
-    const previousBodyUserSelect = bodyStyle.userSelect;
-    const previousHtmlWebkitUserSelect = htmlStyle.webkitUserSelect;
-    const previousBodyWebkitUserSelect = bodyStyle.webkitUserSelect;
-
-    htmlStyle.userSelect = "none";
-    bodyStyle.userSelect = "none";
-    htmlStyle.webkitUserSelect = "none";
-    bodyStyle.webkitUserSelect = "none";
-
-    dragUserSelectResetRef.current = () => {
-      htmlStyle.userSelect = previousHtmlUserSelect;
-      bodyStyle.userSelect = previousBodyUserSelect;
-      htmlStyle.webkitUserSelect = previousHtmlWebkitUserSelect;
-      bodyStyle.webkitUserSelect = previousBodyWebkitUserSelect;
-      dragUserSelectResetRef.current = null;
-    };
-  }, []);
-
-  const restoreDocumentSelection = useCallback(() => {
-    dragUserSelectResetRef.current?.();
-  }, []);
-
-  const openDraftComment = useCallback(
-    (
-      fileKey: string,
-      filePath: string,
-      side: AnnotationSide,
-      lineNumber: number,
-      endSide?: AnnotationSide,
-      endLineNumber?: number,
-    ) => {
-      const nextTarget = buildDraftTarget({
-        fileKey,
-        filePath,
-        side,
-        lineNumber,
-        endSide,
-        endLineNumber,
-      });
-
-      setDraftComment((current) => {
-        if (current && isSameDraftTarget(current, nextTarget)) {
-          return current;
-        }
-
-        return {
-          ...nextTarget,
-          body: "",
-        };
-      });
-    },
-    [],
-  );
-
-  const updateDragSelectionRange = useCallback(
-    (
-      side: AnnotationSide,
-      lineNumber: number,
-      endSide?: AnnotationSide,
-      endLineNumber?: number,
-    ) => {
-      setDragSelectionRange({
-        start: lineNumber,
-        end: endLineNumber ?? lineNumber,
-        side,
-        endSide: endSide ?? side,
-      });
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      const dragSelection = dragSelectionRef.current;
-      if (!dragSelection || dragSelection.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const target = resolvePointerLineTarget(event);
-      if (!target) {
-        return;
-      }
-
-      dragSelection.current = target;
-      dragSelection.didDrag ||=
-        target.side !== dragSelection.anchor.side ||
-        target.lineNumber !== dragSelection.anchor.lineNumber;
-      updateDragSelectionRange(
-        dragSelection.anchor.side,
-        dragSelection.anchor.lineNumber,
-        target.side,
-        target.lineNumber,
-      );
-    };
-
-    const handlePointerEnd = (event: PointerEvent) => {
-      const dragSelection = dragSelectionRef.current;
-      if (!dragSelection || dragSelection.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const target = resolvePointerLineTarget(event) ?? dragSelection.current;
-      if (target) {
-        suppressNextLineClickRef.current = true;
-        if (dragSelection.didDrag) {
-          openDraftComment(
-            dragSelection.fileKey,
-            dragSelection.filePath,
-            target.side,
-            target.lineNumber,
-            dragSelection.anchor.side,
-            dragSelection.anchor.lineNumber,
-          );
-        } else {
-          openDraftComment(
-            dragSelection.fileKey,
-            dragSelection.filePath,
-            target.side,
-            target.lineNumber,
-          );
-        }
-      }
-
-      dragSelectionRef.current = null;
-      setDragSelectionRange(null);
-      restoreDocumentSelection();
-    };
-
-    window.addEventListener("pointermove", handlePointerMove, true);
-    window.addEventListener("pointerup", handlePointerEnd, true);
-    window.addEventListener("pointercancel", handlePointerEnd, true);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove, true);
-      window.removeEventListener("pointerup", handlePointerEnd, true);
-      window.removeEventListener("pointercancel", handlePointerEnd, true);
-      restoreDocumentSelection();
-    };
-  }, [openDraftComment, restoreDocumentSelection, updateDragSelectionRange]);
-
   const persistDraftComment = () => {
     const nextBody = draftComment?.body.trim() ?? "";
     if (!draftComment || nextBody.length === 0) {
@@ -441,56 +267,6 @@ export function DiffPanelContent({
       [fileKey]: !current[fileKey],
     }));
   }, []);
-
-  const getFileInteractionHandlers = useCallback(
-    (fileKey: string, filePath: string) => {
-      const cached = fileInteractionHandlersRef.current.get(fileKey);
-      if (cached) {
-        return cached;
-      }
-
-      const next = {
-        onLineClick: ({
-          lineNumber,
-          annotationSide,
-          event,
-        }: {
-          lineNumber: number;
-          annotationSide: AnnotationSide;
-          event: PointerEvent;
-        }) => {
-          if (suppressNextLineClickRef.current) {
-            suppressNextLineClickRef.current = false;
-            event.preventDefault();
-            return;
-          }
-          event.preventDefault();
-          openDraftComment(fileKey, filePath, annotationSide, lineNumber);
-        },
-        onLineNumberClick: ({
-          lineNumber,
-          annotationSide,
-          event,
-        }: {
-          lineNumber: number;
-          annotationSide: AnnotationSide;
-          event: PointerEvent;
-        }) => {
-          if (suppressNextLineClickRef.current) {
-            suppressNextLineClickRef.current = false;
-            event.preventDefault();
-            return;
-          }
-          event.preventDefault();
-          openDraftComment(fileKey, filePath, annotationSide, lineNumber);
-        },
-      };
-
-      fileInteractionHandlersRef.current.set(fileKey, next);
-      return next;
-    },
-    [openDraftComment],
-  );
 
   const renderCommentAnnotation = (annotation: DiffLineAnnotation<DiffCommentMetadata>) => (
     <DiffCommentAnnotationCard
@@ -663,12 +439,7 @@ export function DiffPanelContent({
                       const fileKey = buildFileDiffRenderKey(fileDiff);
                       const isCollapsed = collapsedFiles[fileKey] === true;
                       const fileInteractionHandlers = getFileInteractionHandlers(fileKey, filePath);
-                      const selectedLines: SelectedLineRange | null =
-                        dragSelectionRef.current?.fileKey === fileKey && dragSelectionRange
-                          ? dragSelectionRange
-                          : draftComment?.fileKey === fileKey
-                            ? draftSelectedLines
-                            : null;
+                      const selectedLines = getSelectedLinesForFile(fileKey, draftSelectedLines);
                       return (
                         <div
                           key={virtualRow.key}
@@ -676,28 +447,9 @@ export function DiffPanelContent({
                           data-diff-file-path={filePath}
                           className="first:mt-0"
                           ref={fileListVirtualizer.measureElement}
-                          onPointerDownCapture={(event) => {
-                            if (event.button !== 0) {
-                              return;
-                            }
-
-                            const target = resolvePointerLineTarget(event.nativeEvent);
-                            if (!target) {
-                              return;
-                            }
-
-                            event.preventDefault();
-                            dragSelectionRef.current = {
-                              pointerId: event.pointerId,
-                              fileKey,
-                              filePath,
-                              anchor: target,
-                              current: target,
-                              didDrag: false,
-                            };
-                            updateDragSelectionRange(target.side, target.lineNumber);
-                            disableDocumentSelection();
-                          }}
+                          onPointerDownCapture={(event) =>
+                            handleFilePointerDownCapture(event, fileKey, filePath)
+                          }
                           onClickCapture={(event) => {
                             const nativeEvent = event.nativeEvent as MouseEvent;
                             const composedPath = nativeEvent.composedPath?.() ?? [];
