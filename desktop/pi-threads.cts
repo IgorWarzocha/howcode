@@ -1,10 +1,10 @@
-export { handleDesktopAction } from "./pi-threads/action-router";
+export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
   loadArchivedThreadList,
   loadProjectThreads,
   loadThread,
-} from "./pi-threads/thread-loader";
-export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader";
+} from "./pi-threads/thread-loader.cts";
+export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader.cts";
 export {
   loadComposerState,
   loadProjectDiff,
@@ -12,4 +12,4 @@ export {
   loadShellState,
   setWatchedSessionPath,
   subscribeDesktopEvents,
-} from "./pi-threads/shell-loader";
+} from "./pi-threads/shell-loader.cts";

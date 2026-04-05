@@ -1,10 +1,10 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ComposerStateRequest } from "../shared/desktop-contracts";
-import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper";
-import { loadAppSettings } from "./app-settings";
-import { getPiModule } from "./pi-module";
-import type { CommitMessageContext } from "./project-git";
-import { getRuntimeForRequest } from "./runtime/runtime-registry";
+import type { ComposerStateRequest } from "../shared/desktop-contracts.ts";
+import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper.ts";
+import { loadAppSettings } from "./app-settings.cts";
+import { getPiModule } from "./pi-module.cts";
+import type { CommitMessageContext } from "./project-git.cts";
+import { getRuntimeForRequest } from "./runtime/runtime-registry.cts";
 
 const MAX_FILE_SECTION_CHARS = 12_000;
 const MAX_PATCH_CHARS = 48_000;

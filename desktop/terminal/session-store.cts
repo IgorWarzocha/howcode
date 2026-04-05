@@ -1,5 +1,5 @@
-import type { TerminalEvent } from "../../shared/terminal-contracts";
-import type { TerminalSessionRecord } from "./session-record";
+import type { TerminalEvent } from "../../shared/terminal-contracts.ts";
+import type { TerminalSessionRecord } from "./session-record.cts";
 
 const terminalListeners = new Set<(event: TerminalEvent) => void>();
 const terminalSessions = new Map<string, TerminalSessionRecord>();

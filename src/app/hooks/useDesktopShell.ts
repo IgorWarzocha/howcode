@@ -24,8 +24,12 @@ import {
 
 function mergeShellStateProjects(
   currentState: ShellState | null | undefined,
-  nextState: ShellState,
-): ShellState {
+  nextState: ShellState | null,
+): ShellState | null {
+  if (!nextState) {
+    return null;
+  }
+
   if (!currentState) {
     return nextState;
   }

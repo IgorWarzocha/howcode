@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import type { ProjectDiffResult, ProjectGitState } from "../shared/desktop-contracts";
+import type { ProjectDiffResult, ProjectGitState } from "../shared/desktop-contracts.ts";
 
 const execFile = promisify(execFileCallback);
 

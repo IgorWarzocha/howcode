@@ -1,4 +1,4 @@
-import type { DesktopEvent } from "../../shared/desktop-contracts";
+import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 
 const desktopListeners = new Set<(event: DesktopEvent) => void>();
 

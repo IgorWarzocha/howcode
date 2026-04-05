@@ -3,8 +3,8 @@ import type {
   Project,
   Thread,
   TurnDiffSummary,
-} from "../../shared/desktop-contracts";
-import type { ArchivedThreadRow, ProjectRow, ThreadRow, TurnDiffRow } from "./types";
+} from "../../shared/desktop-contracts.ts";
+import type { ArchivedThreadRow, ProjectRow, ThreadRow, TurnDiffRow } from "./types.cts";
 
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);

@@ -1,9 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Utils } from "electrobun/bun";
-import type { TerminalSessionRecord } from "./session-record";
-
-const MAX_HISTORY_CHARS = 200_000;
+import { clampHistory } from "./session-history.helpers.ts";
+export { clampHistory } from "./session-history.helpers.ts";
+import type { TerminalSessionRecord } from "./session-record.cts";
 
 function getTranscriptDirectory() {
   const transcriptDirectory = path.join(Utils.paths.userData, "state", "terminals");
@@ -13,10 +13,6 @@ function getTranscriptDirectory() {
 
 export function nowIso() {
   return new Date().toISOString();
-}
-
-export function clampHistory(history: string) {
-  return history.length > MAX_HISTORY_CHARS ? history.slice(-MAX_HISTORY_CHARS) : history;
 }
 
 export function getTranscriptPath(sessionId: string) {

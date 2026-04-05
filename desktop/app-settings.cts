@@ -1,5 +1,5 @@
-import type { AppSettings, ModelSelection } from "../shared/desktop-contracts";
-import { getThreadStateDatabase } from "./thread-state-db/db";
+import type { AppSettings, ModelSelection } from "../shared/desktop-contracts.ts";
+import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const favoriteFoldersKey = "favoriteFolders";

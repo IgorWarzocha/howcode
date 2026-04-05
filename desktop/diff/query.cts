@@ -1,21 +1,21 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { TurnDiffResult } from "../../shared/desktop-contracts";
-import { mapAgentMessagesToUiMessages } from "../../shared/pi-message-mapper";
-import type { PiRuntime } from "../runtime/types";
+import type { TurnDiffResult } from "../../shared/desktop-contracts.ts";
+import { mapAgentMessagesToUiMessages } from "../../shared/pi-message-mapper.ts";
+import type { PiRuntime } from "../runtime/types.cts";
 import {
   getLatestTurnDiffSummary,
   getThreadCwd,
   listTurnDiffSummaries,
   upsertTurnDiffSummary,
-} from "../thread-state-db";
+} from "../thread-state-db.cts";
 import {
   captureCheckpoint,
   checkpointRefForSessionTurn,
   diffCheckpoints,
   hasCheckpointRef,
   isGitRepository,
-} from "./checkpoint-store";
-import { parseTurnDiffFilesFromUnifiedDiff } from "./summary-parser";
+} from "./checkpoint-store.cts";
+import { parseTurnDiffFilesFromUnifiedDiff } from "./summary-parser.cts";
 
 function getLatestAssistantMessageId(runtime: PiRuntime) {
   const messages = mapAgentMessagesToUiMessages(runtime.session.messages as AgentMessage[]);

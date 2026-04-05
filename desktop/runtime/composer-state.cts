@@ -4,8 +4,8 @@ import type {
   ComposerModel,
   ComposerState,
   ComposerThinkingLevel,
-} from "../../shared/desktop-contracts";
-import type { PiRuntime } from "./types";
+} from "../../shared/desktop-contracts.ts";
+import type { PiRuntime } from "./types.cts";
 
 function mapComposerModel(model: AgentSession["model"]): ComposerModel | null {
   if (!model) {

@@ -1,5 +1,5 @@
-import type { TerminalSessionSnapshot } from "../../shared/terminal-contracts";
-import type { PtyProcess } from "./types";
+import type { TerminalSessionSnapshot } from "../../shared/terminal-contracts.ts";
+import type { PtyProcess } from "./types.cts";
 
 export type TerminalSessionRecord = {
   snapshot: TerminalSessionSnapshot;

@@ -1,16 +1,16 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts";
-import { getPreviousMessageCount } from "../../shared/pi-message-mapper";
-import { buildThreadData } from "../../shared/thread-data";
-import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history";
-import { getLiveThread } from "../pi-desktop-runtime";
-import { getPiModule } from "../pi-module";
+import type { ArchivedThread, Thread, ThreadData } from "../../shared/desktop-contracts.ts";
+import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
+import { buildThreadData } from "../../shared/thread-data.ts";
+import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
+import { getLiveThread } from "../pi-desktop-runtime.cts";
+import { getPiModule } from "../pi-module.cts";
 import {
   ensureProject,
   listArchivedThreads,
   listProjectThreads,
   listTurnDiffSummaries,
-} from "../thread-state-db";
+} from "../thread-state-db.cts";
 
 export type LoadedThreadSnapshot = {
   projectId: string;

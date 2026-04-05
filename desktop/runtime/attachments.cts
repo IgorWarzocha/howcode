@@ -1,4 +1,4 @@
-import type { ComposerAttachment } from "../../shared/desktop-contracts";
+import type { ComposerAttachment } from "../../shared/desktop-contracts.ts";
 
 export function buildComposerAttachmentPrompt(attachments: ComposerAttachment[]): string {
   const attachmentPaths = attachments

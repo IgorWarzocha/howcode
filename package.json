@@ -16,9 +16,10 @@
     "prepare": "test -d .git && husky || true",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "bun run typecheck:web && bun run typecheck:desktop",
+    "typecheck": "bun run typecheck:web && bun run typecheck:bun && bun run typecheck:desktop",
     "typecheck:web": "tsc --noEmit",
-    "typecheck:desktop": "tsc -p tsconfig.bun.json --noEmit",
+    "typecheck:bun": "tsc -p tsconfig.bun.json --noEmit",
+    "typecheck:desktop": "tsc -p tsconfig.desktop.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "bun run lint && bun run typecheck && bun run test && bun run build"

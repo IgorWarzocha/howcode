@@ -1,4 +1,4 @@
-export type { SessionSummaryRecord } from "./thread-state-db/types";
+export type { SessionSummaryRecord } from "./thread-state-db/types.cts";
 export {
   getLatestTurnDiffSummary,
   getThreadCwd,
@@ -7,7 +7,7 @@ export {
   listProjectThreads,
   listProjects,
   listTurnDiffSummaries,
-} from "./thread-state-db/queries";
+} from "./thread-state-db/queries.cts";
 export {
   archiveProjectThreads,
   archiveThread,
@@ -23,4 +23,4 @@ export {
   toggleThreadPinned,
   upsertThreadSummary,
   upsertTurnDiffSummary,
-} from "./thread-state-db/writes";
+} from "./thread-state-db/writes.cts";

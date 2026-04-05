@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { Utils } from "electrobun/bun";
-import { ensureThreadStateSchema } from "./schema";
+import { ensureThreadStateSchema } from "./schema.cts";
 
 let database: Database | null = null;
 

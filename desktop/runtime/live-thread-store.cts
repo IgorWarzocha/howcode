@@ -1,4 +1,4 @@
-import type { ThreadData } from "../../shared/desktop-contracts";
+import type { ThreadData } from "../../shared/desktop-contracts.ts";
 
 const liveThreads = new Map<string, ThreadData>();
 const recentInternalThreadUpdateAt = new Map<string, number>();

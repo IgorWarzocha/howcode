@@ -1,4 +1,4 @@
-import type { PtyAdapter, PtyExitEvent, PtyProcess, PtySpawnInput } from "./types";
+import type { PtyAdapter, PtyExitEvent, PtyProcess, PtySpawnInput } from "./types.cts";
 
 class BunPtyProcess implements PtyProcess {
   private readonly dataListeners = new Set<(data: string) => void>();

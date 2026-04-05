@@ -1,6 +1,6 @@
 import path from "node:path";
-import { getThreadStateDatabase } from "./db";
-import type { SessionSummaryRecord, TurnDiffSummaryRecord } from "./types";
+import { getThreadStateDatabase } from "./db.cts";
+import type { SessionSummaryRecord, TurnDiffSummaryRecord } from "./types.cts";
 
 export function ensureProject(cwd: string) {
   const db = getThreadStateDatabase();

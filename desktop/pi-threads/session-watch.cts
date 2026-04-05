@@ -4,8 +4,8 @@ import path from "node:path";
 import {
   publishExternalThreadUpdate,
   shouldSuppressExternalThreadUpdate,
-} from "../runtime/thread-publisher";
-import { loadThreadSnapshot } from "./thread-loader";
+} from "../runtime/thread-publisher.cts";
+import { loadThreadSnapshot } from "./thread-loader.cts";
 
 const WATCH_DEBOUNCE_MS = 140;
 

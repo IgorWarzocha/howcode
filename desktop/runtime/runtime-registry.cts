@@ -1,9 +1,9 @@
-import type { ComposerStateRequest } from "../../shared/desktop-contracts";
-import { captureCompletedTurnDiff } from "../diff/query";
-import { getPiModule } from "../pi-module";
-import { getMappedCwd, rememberSessionPath } from "./session-path-index";
-import { publishThreadUpdate } from "./thread-publisher";
-import type { PiRuntime } from "./types";
+import type { ComposerStateRequest } from "../../shared/desktop-contracts.ts";
+import { captureCompletedTurnDiff } from "../diff/query.cts";
+import { getPiModule } from "../pi-module.cts";
+import { getMappedCwd, rememberSessionPath } from "./session-path-index.cts";
+import { publishThreadUpdate } from "./thread-publisher.cts";
+import type { PiRuntime } from "./types.cts";
 
 const runtimePromises = new Map<string, Promise<PiRuntime>>();
 

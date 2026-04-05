@@ -3,17 +3,17 @@ import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
   TerminalSessionSnapshot,
-} from "../../shared/terminal-contracts";
-import { flushSession, getTranscriptPath, nowIso, readTranscript } from "./session-history";
-import { makeSessionId } from "./session-id";
-import type { TerminalSessionRecord } from "./session-record";
+} from "../../shared/terminal-contracts.ts";
+import { flushSession, getTranscriptPath, nowIso, readTranscript } from "./session-history.cts";
+import { makeSessionId } from "./session-id.cts";
+import type { TerminalSessionRecord } from "./session-record.cts";
 import {
   deleteTerminalSession,
   getTerminalSession,
   setTerminalSession,
   subscribeTerminalEvents,
-} from "./session-store";
-import { clearSessionBindings, startProcess } from "./terminal-process";
+} from "./session-store.cts";
+import { clearSessionBindings, startProcess } from "./terminal-process.cts";
 
 export async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
   const cwd = request.cwd ?? request.projectId;

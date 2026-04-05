@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampHistory } from "./session-history";
+import { clampHistory } from "../../desktop/terminal/session-history.helpers";
 
 describe("session history helpers", () => {
   it("trims transcript history to the most recent supported window", () => {

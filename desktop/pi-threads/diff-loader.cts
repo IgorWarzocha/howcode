@@ -1,5 +1,5 @@
-import type { TurnDiffResult } from "../../shared/desktop-contracts";
-import { getFullThreadDiff, getTurnDiff } from "../diff/query";
+import type { TurnDiffResult } from "../../shared/desktop-contracts.ts";
+import { getFullThreadDiff, getTurnDiff } from "../diff/query.cts";
 
 export async function loadTurnDiff(
   sessionPath: string,

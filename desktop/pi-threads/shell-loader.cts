@@ -2,17 +2,17 @@ import type {
   ComposerState,
   ComposerStateRequest,
   ShellState,
-} from "../../shared/desktop-contracts";
-import { normalizeThreadTitle } from "../../shared/pi-message-mapper";
-import { loadAppSettings } from "../app-settings";
+} from "../../shared/desktop-contracts.ts";
+import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
+import { loadAppSettings } from "../app-settings.cts";
 import {
   getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
-} from "../pi-desktop-runtime";
-import { getPiModule } from "../pi-module";
-import { loadProjectDiff, loadProjectGitState } from "../project-git";
-import { listProjects, syncSessionSummaries } from "../thread-state-db";
-import { setWatchedSessionPath } from "./session-watch";
+} from "../pi-desktop-runtime.cts";
+import { getPiModule } from "../pi-module.cts";
+import { loadProjectDiff, loadProjectGitState } from "../project-git.cts";
+import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
+import { setWatchedSessionPath } from "./session-watch.cts";
 
 type SessionSummary = {
   id: string;

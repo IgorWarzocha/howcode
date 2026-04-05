@@ -19,6 +19,8 @@ export const implementedDesktopActions = [
   "composer.model",
   "composer.thinking",
   "composer.send",
+  "workspace.commit",
+  "workspace.commit-options",
   "settings.update",
 ] as const satisfies readonly DesktopAction[];
 
@@ -37,8 +39,6 @@ export const unimplementedDesktopActions = [
   "workspace.open",
   "workspace.open-options",
   "workspace.handoff",
-  "workspace.commit",
-  "workspace.commit-options",
   "workspace.popout",
   "connections.add",
   "connections.dismiss-banner",

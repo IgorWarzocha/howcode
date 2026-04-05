@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
     "types": ["node", "bun"]
   },
-  "include": ["src/bun/**/*.ts", "shared/**/*.ts", "scripts/**/*.ts", "electrobun.config.ts"]
+  "include": ["desktop/**/*.ts", "desktop/**/*.cts", "shared/**/*.ts"]
 }

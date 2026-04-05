@@ -1,8 +1,8 @@
-import type { TerminalOpenRequest } from "../../shared/terminal-contracts";
-import { clampHistory, flushSession, nowIso, persistSession } from "./session-history";
-import type { TerminalSessionRecord } from "./session-record";
-import { emitTerminalEvent } from "./session-store";
-import { getTerminalAdapter, resolveTerminalCommand } from "./terminal-command";
+import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
+import { clampHistory, flushSession, nowIso, persistSession } from "./session-history.cts";
+import type { TerminalSessionRecord } from "./session-record.cts";
+import { emitTerminalEvent } from "./session-store.cts";
+import { getTerminalAdapter, resolveTerminalCommand } from "./terminal-command.cts";
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
   for (const dispose of record.cleanup) {

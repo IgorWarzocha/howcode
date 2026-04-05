@@ -3,9 +3,9 @@ import type {
   Project,
   Thread,
   TurnDiffSummary,
-} from "../../shared/desktop-contracts";
-import { getThreadStateDatabase } from "./db";
-import { mapArchivedThreadRow, mapProjectRow, mapThreadRow, mapTurnDiffRow } from "./mappers";
+} from "../../shared/desktop-contracts.ts";
+import { getThreadStateDatabase } from "./db.cts";
+import { mapArchivedThreadRow, mapProjectRow, mapThreadRow, mapTurnDiffRow } from "./mappers.cts";
 import type {
   ArchivedThreadRow,
   ProjectRow,
@@ -13,8 +13,8 @@ import type {
   ThreadPathRow,
   ThreadRow,
   TurnDiffRow,
-} from "./types";
-import { ensureProject } from "./writes";
+} from "./types.cts";
+import { ensureProject } from "./writes.cts";
 
 export function listProjects(cwd: string): Project[] {
   const db = getThreadStateDatabase();

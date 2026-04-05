@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { makeSessionId } from "../../desktop/terminal/session-id";
+import { resolveTerminalCommand } from "../../desktop/terminal/terminal-command.helpers";
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts";
-import { makeSessionId } from "./session-id";
-import { resolveTerminalCommand } from "./terminal-command";
 
 describe("terminal command helpers", () => {
   it("builds stable terminal session ids from the terminal identity fields", () => {

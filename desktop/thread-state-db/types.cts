@@ -1,4 +1,8 @@
-import type { TurnDiffFile, TurnDiffStatus, TurnDiffSummary } from "../../shared/desktop-contracts";
+import type {
+  TurnDiffFile,
+  TurnDiffStatus,
+  TurnDiffSummary,
+} from "../../shared/desktop-contracts.ts";
 
 export type SessionSummaryRecord = {
   id: string;

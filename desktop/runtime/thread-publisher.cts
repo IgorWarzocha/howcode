@@ -1,20 +1,20 @@
 import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ComposerState, ThreadData } from "../../shared/desktop-contracts";
-import { getPreviousMessageCount } from "../../shared/pi-message-mapper";
-import { buildThreadData } from "../../shared/thread-data";
-import { getTurnDiffSummaries } from "../diff/query";
-import { upsertThreadSummary } from "../thread-state-db";
-import { buildComposerState } from "./composer-state";
-import { emitDesktopEvent, subscribeDesktopEvents } from "./desktop-events";
+import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
+import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
+import { buildThreadData } from "../../shared/thread-data.ts";
+import { getTurnDiffSummaries } from "../diff/query.cts";
+import { upsertThreadSummary } from "../thread-state-db.cts";
+import { buildComposerState } from "./composer-state.cts";
+import { emitDesktopEvent, subscribeDesktopEvents } from "./desktop-events.cts";
 import {
   getLiveThread,
   markInternalThreadUpdate,
   rememberLiveThread,
   shouldSuppressExternalThreadUpdate,
-} from "./live-thread-store";
-import { rememberSessionPath } from "./session-path-index";
-import type { PiRuntime, RuntimeThreadReason } from "./types";
+} from "./live-thread-store.cts";
+import { rememberSessionPath } from "./session-path-index.cts";
+import type { PiRuntime, RuntimeThreadReason } from "./types.cts";
 
 function buildLiveThreadData(runtime: PiRuntime) {
   const sessionPath = runtime.session.sessionFile;

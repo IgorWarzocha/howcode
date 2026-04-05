@@ -1,7 +1,7 @@
 import { unlink } from "node:fs/promises";
 import { Utils } from "electrobun/bun";
-import type { DesktopAction } from "../../shared/desktop-actions";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts";
+import type { DesktopAction } from "../../shared/desktop-actions.ts";
+import type { DesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import {
   getComposerAttachments,
   getComposerModelSelection,
@@ -21,9 +21,9 @@ import {
   getSettingsModelSelection,
   getSettingsReset,
   getThreadId,
-} from "../../shared/pi-thread-action-payloads";
-import { setFavoriteFolders, setGitCommitMessageModelSelection } from "../app-settings";
-import { generateGitCommitMessage } from "../git-commit-message";
+} from "../../shared/pi-thread-action-payloads.ts";
+import { setFavoriteFolders, setGitCommitMessageModelSelection } from "../app-settings.cts";
+import { generateGitCommitMessage } from "../git-commit-message.cts";
 import {
   openThreadRuntime,
   selectProjectRuntime,
@@ -31,8 +31,8 @@ import {
   setComposerModel,
   setComposerThinkingLevel,
   startNewThread,
-} from "../pi-desktop-runtime";
-import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git";
+} from "../pi-desktop-runtime.cts";
+import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git.cts";
 import {
   archiveProjectThreads,
   archiveThread,
@@ -45,7 +45,7 @@ import {
   restoreThread,
   setProjectCollapsed,
   toggleThreadPinned,
-} from "../thread-state-db";
+} from "../thread-state-db.cts";
 
 async function deletePersistedThread(threadId: string) {
   const sessionPath = getThreadSessionPath(threadId);

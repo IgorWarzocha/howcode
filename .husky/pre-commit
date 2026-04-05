@@ -1,3 +1,5 @@
 #!/usr/bin/env sh
 
 bunx lint-staged
+bun run typecheck
+bun run test

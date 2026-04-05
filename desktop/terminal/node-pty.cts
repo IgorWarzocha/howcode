@@ -1,4 +1,4 @@
-import type { PtyAdapter, PtyExitEvent, PtyProcess, PtySpawnInput } from "./types";
+import type { PtyAdapter, PtyExitEvent, PtyProcess, PtySpawnInput } from "./types.cts";
 
 class NodePtyProcess implements PtyProcess {
   constructor(private readonly process: import("node-pty").IPty) {}

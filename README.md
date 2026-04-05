@@ -44,7 +44,10 @@ bun run check
 
 ## Pre-commit hooks
 
-This repo includes a `.husky/pre-commit` hook that runs `lint-staged`, which in turn runs Biome on staged files.
+This repo includes:
+
+- `.husky/pre-commit` — runs `lint-staged`, `bun run typecheck`, and `bun run test`
+- `.husky/pre-push` — runs `bun run check`
 
 If this directory is turned into a git repo later, run:
 

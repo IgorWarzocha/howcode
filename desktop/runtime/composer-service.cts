@@ -3,13 +3,17 @@ import type {
   ComposerState,
   ComposerStateRequest,
   ComposerThinkingLevel,
-} from "../../shared/desktop-contracts";
-import { prepareTurnDiffCapture } from "../diff/query";
-import { buildComposerAttachmentPrompt } from "./attachments";
-import { buildComposerState } from "./composer-state";
-import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry";
-import { rememberSessionPath } from "./session-path-index";
-import { getLiveThread, publishComposerUpdate, subscribeDesktopEvents } from "./thread-publisher";
+} from "../../shared/desktop-contracts.ts";
+import { prepareTurnDiffCapture } from "../diff/query.cts";
+import { buildComposerAttachmentPrompt } from "./attachments.cts";
+import { buildComposerState } from "./composer-state.cts";
+import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry.cts";
+import { rememberSessionPath } from "./session-path-index.cts";
+import {
+  getLiveThread,
+  publishComposerUpdate,
+  subscribeDesktopEvents,
+} from "./thread-publisher.cts";
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const runtime = await getRuntimeForRequest(request);

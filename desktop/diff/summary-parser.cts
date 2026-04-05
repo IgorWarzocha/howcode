@@ -1,5 +1,5 @@
 import { parsePatchFiles } from "@pierre/diffs";
-import type { TurnDiffFile } from "../../shared/desktop-contracts";
+import type { TurnDiffFile } from "../../shared/desktop-contracts.ts";
 
 function normalizeFilePath(pathValue: string) {
   if (pathValue.startsWith("a/") || pathValue.startsWith("b/")) {
