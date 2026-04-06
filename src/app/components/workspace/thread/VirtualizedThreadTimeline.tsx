@@ -1,18 +1,11 @@
-import { measureElement as measureVirtualElement, useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
-import { ThreadTimelineRows } from "./ThreadTimelineRows";
 import { buildTimelineRows } from "./buildTimelineRows";
-import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX } from "./chat-scroll";
-import { estimateThreadTimelineRowHeight } from "./estimateThreadTimelineRowHeight";
-import { reconcileCollapsedRowIds } from "./reconcileCollapsedRowIds";
+import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
 import { chatScrollableAreaClass, chatViewportClass } from "./thread-layout";
-import { getCollapsibleRowKey } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
-import { useThreadTimelineScrollController } from "./useThreadTimelineScrollController";
-import { useTimelineWidth } from "./useTimelineWidth";
 import { buildVirtualizedThreadTimelineState } from "./virtualized-thread-timeline.helpers";
 
 type VirtualizedThreadTimelineProps = {
@@ -38,14 +31,14 @@ export function VirtualizedThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const timelineRootRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
     [messages, previousMessageCount, turnDiffSummaries],
   );
-  const timelineWidthPx = useTimelineWidth(timelineRootRef);
   const {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
@@ -55,8 +48,6 @@ export function VirtualizedThreadTimeline({
     streamingAssistantMessageId,
     streamingToolGroupId,
     streamingTurnRowId,
-    virtualMeasureSignature,
-    virtualizedRowCount,
   } = useMemo(
     () =>
       buildVirtualizedThreadTimelineState({
@@ -66,97 +57,27 @@ export function VirtualizedThreadTimeline({
         collapsedRowIds,
         expandedToolGroupIds,
         expandedDiffTrees,
-        timelineWidthPx,
+        timelineWidthPx: null,
       }),
-    [
-      collapsedRowIds,
-      expandedDiffTrees,
-      expandedToolGroupIds,
-      isStreaming,
-      messages,
-      rows,
-      timelineWidthPx,
-    ],
+    [collapsedRowIds, expandedDiffTrees, expandedToolGroupIds, isStreaming, messages, rows],
   );
-  const getVirtualRowKey = useCallback(
-    (index: number) => {
-      const row = rows[index];
-      if (!row) {
-        return index;
-      }
-
-      return getCollapsibleRowKey(row, effectiveCollapsedRowIds);
-    },
-    [effectiveCollapsedRowIds, rows],
-  );
-
-  const rowVirtualizer = useVirtualizer({
-    count: virtualizedRowCount,
-    getScrollElement: () => containerRef.current,
-    getItemKey: getVirtualRowKey,
-    estimateSize: (index) => {
-      const row = rows[index];
-      if (!row) {
-        return 96;
-      }
-
-      return estimateThreadTimelineRowHeight({
-        row,
-        collapsed: Boolean(effectiveCollapsedRowIds[row.id]),
-        expandedToolGroupIds,
-        expandedDiffTrees,
-        streamingAssistantMessageId,
-        streamingToolGroupId,
-        timelineWidthPx,
-      });
-    },
-    measureElement: measureVirtualElement,
-    useAnimationFrameWithResizeObserver: true,
-    overscan: 8,
-  });
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const nonVirtualizedRows = rows.slice(virtualizedRowCount);
-
-  const {
-    handleJumpToEarlierMessages,
-    handlePointerCancel,
-    handlePointerDown,
-    handlePointerUp,
-    handleScroll,
-    handleScrollClickCapture,
-    handleToggleDiffTree,
-    handleToggleRowCollapse,
-    handleToggleToolCallExpansion,
-    handleToggleToolGroupExpansion,
-    handleTouchEnd,
-    handleTouchMove,
-    handleTouchStart,
-    handleWheel,
-  } = useThreadTimelineScrollController({
-    bottomAnchorKey,
-    bottomSentinelRef,
-    composerLayoutVersion,
-    containerRef,
-    effectiveCollapsedRowIds,
-    onLoadEarlierMessages,
-    rowStructureSignature,
-    rowVirtualizer,
-    rowsLength: rows.length,
-    setCollapsedRowIds,
-    setExpandedDiffTrees,
-    setExpandedToolGroupIds,
-    streamingToolGroupId,
-    streamingTurnRowId,
-    timelineRootRef,
-    virtualMeasureSignature,
-  });
 
   useEffect(() => {
     setCollapsedRowIds((current) => {
-      const next = reconcileCollapsedRowIds(foldableRows, current, {
-        defaultExpandedRowId: latestTurnRowId,
-        forcedExpandedRowId: streamingTurnRowId,
-      });
+      const next = foldableRows.reduce<Record<string, boolean>>((result, row) => {
+        if (row.id === streamingTurnRowId) {
+          result[row.id] = false;
+          return result;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(current, row.id)) {
+          result[row.id] = current[row.id] as boolean;
+          return result;
+        }
+
+        result[row.id] = row.id !== latestTurnRowId;
+        return result;
+      }, {});
 
       const currentKeys = Object.keys(current);
       const nextKeys = Object.keys(next);
@@ -171,9 +92,121 @@ export function VirtualizedThreadTimeline({
     });
   }, [foldableRows, latestTurnRowId, streamingTurnRowId]);
 
+  const scrollToBottom = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const bottomSentinel = bottomSentinelRef.current;
+    if (bottomSentinel) {
+      bottomSentinel.scrollIntoView({ block: "end" });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    void bottomAnchorKey;
+    void composerLayoutVersion;
+    void rowStructureSignature;
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const pendingHistoryPrepend = pendingHistoryPrependRef.current;
+    if (pendingHistoryPrepend) {
+      const delta = container.scrollHeight - pendingHistoryPrepend.scrollHeight;
+      container.scrollTop = pendingHistoryPrepend.scrollTop + Math.max(0, delta);
+      pendingHistoryPrependRef.current = null;
+      return;
+    }
+
+    if (!rows.length) {
+      return;
+    }
+
+    if (shouldStickToBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [bottomAnchorKey, composerLayoutVersion, rowStructureSignature, rows.length, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    shouldStickToBottomRef.current = isScrollContainerNearBottom(
+      {
+        scrollTop: container.scrollTop,
+        clientHeight: container.clientHeight,
+        scrollHeight: container.scrollHeight,
+      },
+      CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX,
+    );
+  }, []);
+
+  const handleToggleRowCollapse = useCallback(
+    (rowId: string) => {
+      if (rowId === streamingTurnRowId) {
+        return;
+      }
+
+      shouldStickToBottomRef.current = false;
+      setCollapsedRowIds((current) => ({
+        ...current,
+        [rowId]: !current[rowId],
+      }));
+    },
+    [streamingTurnRowId],
+  );
+
+  const handleToggleToolCallExpansion = useCallback(() => {
+    shouldStickToBottomRef.current = false;
+  }, []);
+
+  const handleToggleToolGroupExpansion = useCallback(
+    (groupId: string) => {
+      if (groupId === streamingToolGroupId) {
+        return;
+      }
+
+      shouldStickToBottomRef.current = false;
+      setExpandedToolGroupIds((current) => ({
+        ...current,
+        [groupId]: !current[groupId],
+      }));
+    },
+    [streamingToolGroupId],
+  );
+
+  const handleToggleDiffTree = useCallback((checkpointTurnCount: number) => {
+    shouldStickToBottomRef.current = false;
+    setExpandedDiffTrees((current) => ({
+      ...current,
+      [checkpointTurnCount]: current[checkpointTurnCount] === false,
+    }));
+  }, []);
+
+  const handleJumpToEarlierMessages = useCallback(() => {
+    const container = containerRef.current;
+    if (container) {
+      pendingHistoryPrependRef.current = {
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      };
+    }
+
+    shouldStickToBottomRef.current = false;
+    onLoadEarlierMessages();
+  }, [onLoadEarlierMessages]);
+
   const renderRow = useCallback(
     (row: TimelineRow) => (
-      <div className="min-w-0 pb-4" data-timeline-row-id={row.id}>
+      <div key={row.id} className="min-w-0 pb-4" data-timeline-row-id={row.id}>
         <ThreadTimelineRow
           row={row}
           collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
@@ -207,33 +240,9 @@ export function VirtualizedThreadTimeline({
 
   return (
     <div className={chatViewportClass}>
-      <div
-        ref={containerRef}
-        className={chatScrollableAreaClass}
-        onScroll={handleScroll}
-        onClickCapture={handleScrollClickCapture}
-        onWheel={handleWheel}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-      >
-        <div
-          ref={timelineRootRef}
-          className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8"
-        >
-          <ThreadTimelineRows
-            rows={rows}
-            totalSize={rowVirtualizer.getTotalSize()}
-            virtualRows={virtualRows}
-            nonVirtualizedRows={nonVirtualizedRows}
-            measureElement={rowVirtualizer.measureElement}
-            renderRow={renderRow}
-          />
-
+      <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
+        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8">
+          {rows.map(renderRow)}
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
       </div>
