@@ -79,46 +79,36 @@ function getCollapsedTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
 function FoldedTimelineRow({
   label,
   secondary,
+  singleLine = false,
   italicLabel = false,
   mutedLabel = false,
-  trailing,
   onToggle,
 }: {
   label: string;
   secondary?: string | null;
+  singleLine?: boolean;
   italicLabel?: boolean;
   mutedLabel?: boolean;
-  trailing?: ReactNode;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
-      className="flex min-h-[42px] w-full min-w-0 items-center gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="grid w-full min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <span
-            className={`block text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${clampOneLineClass}`}
-          >
-            {label}
-          </span>
-        </div>
-        {secondary ? (
-          <>
-            <span className="shrink-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/72">
-              —
-            </span>
-            <span
-              className={`min-w-0 flex-1 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampOneLineClass}`}
-            >
-              {secondary}
-            </span>
-          </>
-        ) : null}
+      <div
+        className={`min-w-0 text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${singleLine || secondary ? clampOneLineClass : clampThreeLinesClass}`}
+      >
+        {label}
       </div>
-      {trailing ? <div className="shrink-0">{trailing}</div> : null}
+      {secondary ? (
+        <div
+          className={`min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampTwoLinesClass}`}
+        >
+          {secondary}
+        </div>
+      ) : null}
     </button>
   );
 }
@@ -164,39 +154,30 @@ function TimelineRowShell({
   expanded,
   ariaLabel,
   onToggle,
-  toggleAlignment = "default",
+  toggleClassName,
   children,
 }: {
   expanded?: boolean;
   ariaLabel?: string;
   onToggle?: () => void;
-  toggleAlignment?: "default" | "preview-line";
+  toggleClassName?: string;
   children: ReactNode;
 }) {
-  const toggleRailClass =
-    toggleAlignment === "preview-line"
-      ? "flex min-h-0 items-start justify-center pt-2.5"
-      : "flex min-h-0 items-start justify-center pt-2";
-  const toggleButtonClass =
-    toggleAlignment === "preview-line"
-      ? "inline-flex h-[18px] w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-      : "inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
-
   return (
     <div className={chatRowShellClass} data-row-toggle-anchor={onToggle ? "true" : undefined}>
-      <div className={toggleRailClass}>
-        {onToggle ? (
-          <button
-            type="button"
-            className={toggleButtonClass}
-            onClick={onToggle}
-            aria-expanded={expanded}
-            aria-label={ariaLabel}
-          >
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-        ) : null}
-      </div>
+      {onToggle ? (
+        <button
+          type="button"
+          className={`${toggleClassName ?? "mt-1"} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]`}
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={ariaLabel}
+        >
+          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+      ) : (
+        <div />
+      )}
       <div className="min-w-0">{children}</div>
       <div />
     </div>
@@ -294,6 +275,7 @@ export function ThreadTimelineRow({
     const isCollapsed = collapsed && !isStreamingTurn;
     const onToggleTurnCollapse =
       !canCollapseTurn || isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
+    const chevronOffsetClass = "mt-2";
     if (isCollapsed) {
       const preview = getCollapsedTurnPreview(row);
 
@@ -302,7 +284,7 @@ export function ThreadTimelineRow({
           expanded={false}
           ariaLabel="Expand turn"
           onToggle={onToggleTurnCollapse}
-          toggleAlignment="preview-line"
+          toggleClassName={chevronOffsetClass}
         >
           <FoldedTimelineRow
             label={preview.label}
@@ -316,7 +298,12 @@ export function ThreadTimelineRow({
     }
 
     return (
-      <TimelineRowShell expanded ariaLabel="Collapse turn" onToggle={onToggleTurnCollapse}>
+      <TimelineRowShell
+        expanded
+        ariaLabel="Collapse turn"
+        onToggle={onToggleTurnCollapse}
+        toggleClassName={chevronOffsetClass}
+      >
         <div className="grid min-w-0 gap-3">
           {row.userMessage ? (
             <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
@@ -357,8 +344,9 @@ export function ThreadTimelineRow({
 
   if (row.kind === "summary") {
     const summaryLabel =
-      row.message.role === "compactionSummary" ? "Compaction summary" : "Branch summary";
+      row.message.role === "branchSummary" ? "Branch summary" : "Compaction summary";
     const showCompactionDivider = row.message.role === "compactionSummary";
+    const chevronOffsetClass = showCompactionDivider ? "mt-[22px]" : "mt-2";
 
     if (collapsed) {
       return (
@@ -366,19 +354,18 @@ export function ThreadTimelineRow({
           expanded={false}
           ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
           onToggle={() => onToggleRowCollapse(row.id)}
-          toggleAlignment="preview-line"
+          toggleClassName={chevronOffsetClass}
         >
-          <FoldedTimelineRow
-            label={summaryLabel}
-            trailing={
-              showCompactionDivider ? (
-                <span className="rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
-                  very long
-                </span>
-              ) : null
-            }
-            onToggle={() => onToggleRowCollapse(row.id)}
-          />
+          <div className="grid min-w-0 gap-3">
+            {showCompactionDivider ? (
+              <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+            ) : null}
+            <FoldedTimelineRow
+              label={summaryLabel}
+              singleLine
+              onToggle={() => onToggleRowCollapse(row.id)}
+            />
+          </div>
         </TimelineRowShell>
       );
     }
@@ -388,8 +375,12 @@ export function ThreadTimelineRow({
         expanded
         ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
         onToggle={() => onToggleRowCollapse(row.id)}
+        toggleClassName={chevronOffsetClass}
       >
         <div className="grid min-w-0 gap-3">
+          {showCompactionDivider ? (
+            <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+          ) : null}
           <RowLeadToggleSurface onToggle={() => onToggleRowCollapse(row.id)}>
             <ThreadMessage message={row.message} />
           </RowLeadToggleSurface>
