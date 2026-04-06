@@ -79,7 +79,6 @@ function getCollapsedTurnPreview(row: Extract<TimelineRow, { kind: "turn" }>) {
 function FoldedTimelineRow({
   label,
   secondary,
-  singleLine = false,
   italicLabel = false,
   mutedLabel = false,
   trailing,
@@ -87,7 +86,6 @@ function FoldedTimelineRow({
 }: {
   label: string;
   secondary?: string | null;
-  singleLine?: boolean;
   italicLabel?: boolean;
   mutedLabel?: boolean;
   trailing?: ReactNode;
@@ -96,24 +94,31 @@ function FoldedTimelineRow({
   return (
     <button
       type="button"
-      className="grid w-full min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="flex min-h-[42px] w-full min-w-0 items-center gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
       onClick={onToggle}
     >
-      <div className="flex min-w-0 items-center gap-2">
-        <div
-          className={`min-w-0 flex-1 text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${singleLine || secondary || trailing ? clampOneLineClass : clampThreeLinesClass}`}
-        >
-          {label}
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <span
+            className={`block text-[13px] font-medium leading-[1.4] ${mutedLabel ? "text-[color:var(--muted-2)]/90" : "text-[color:var(--text)]/92"} ${italicLabel ? "italic" : ""} ${clampOneLineClass}`}
+          >
+            {label}
+          </span>
         </div>
-        {trailing ? <div className="shrink-0">{trailing}</div> : null}
+        {secondary ? (
+          <>
+            <span className="shrink-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/72">
+              —
+            </span>
+            <span
+              className={`min-w-0 flex-1 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampOneLineClass}`}
+            >
+              {secondary}
+            </span>
+          </>
+        ) : null}
       </div>
-      {secondary || singleLine ? (
-        <div
-          className={`min-h-[17px] min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampOneLineClass}`}
-        >
-          {secondary ?? <span aria-hidden="true">&nbsp;</span>}
-        </div>
-      ) : null}
+      {trailing ? <div className="shrink-0">{trailing}</div> : null}
     </button>
   );
 }
@@ -302,7 +307,6 @@ export function ThreadTimelineRow({
           <FoldedTimelineRow
             label={preview.label}
             secondary={preview.secondary}
-            singleLine
             italicLabel={preview.italicLabel}
             mutedLabel={preview.italicLabel}
             onToggle={() => onToggleTurnCollapse?.()}
@@ -373,7 +377,6 @@ export function ThreadTimelineRow({
                 </span>
               ) : null
             }
-            singleLine
             onToggle={() => onToggleRowCollapse(row.id)}
           />
         </TimelineRowShell>
