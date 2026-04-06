@@ -42,6 +42,7 @@ export function useAppShellController() {
     null,
   );
   const inspectedProjectIdsRef = useRef<Set<string>>(new Set());
+  const projectSelectionPulseFrameRef = useRef<number | null>(null);
   const projectSelectionPulseTimeoutRef = useRef<number | null>(null);
   const {
     shellState,
@@ -126,11 +127,37 @@ export function useAppShellController() {
 
   useEffect(() => {
     return () => {
+      if (projectSelectionPulseFrameRef.current !== null) {
+        window.cancelAnimationFrame(projectSelectionPulseFrameRef.current);
+      }
+
       if (projectSelectionPulseTimeoutRef.current !== null) {
         window.clearTimeout(projectSelectionPulseTimeoutRef.current);
       }
     };
   }, []);
+
+  const triggerProjectSelectionPulse = () => {
+    setProjectSelectionPulseActive(false);
+
+    if (projectSelectionPulseFrameRef.current !== null) {
+      window.cancelAnimationFrame(projectSelectionPulseFrameRef.current);
+    }
+
+    if (projectSelectionPulseTimeoutRef.current !== null) {
+      window.clearTimeout(projectSelectionPulseTimeoutRef.current);
+    }
+
+    projectSelectionPulseFrameRef.current = window.requestAnimationFrame(() => {
+      setProjectSelectionPulseActive(true);
+      projectSelectionPulseFrameRef.current = null;
+
+      projectSelectionPulseTimeoutRef.current = window.setTimeout(() => {
+        setProjectSelectionPulseActive(false);
+        projectSelectionPulseTimeoutRef.current = null;
+      }, 1800);
+    });
+  };
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -300,16 +327,7 @@ export function useAppShellController() {
     handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) => {
       dispatch({ type: "select-project", projectId });
-      setProjectSelectionPulseActive(true);
-
-      if (projectSelectionPulseTimeoutRef.current !== null) {
-        window.clearTimeout(projectSelectionPulseTimeoutRef.current);
-      }
-
-      projectSelectionPulseTimeoutRef.current = window.setTimeout(() => {
-        setProjectSelectionPulseActive(false);
-        projectSelectionPulseTimeoutRef.current = null;
-      }, 1400);
+      triggerProjectSelectionPulse();
     },
     handleProjectReorder,
     handleSelectDiffTurn,

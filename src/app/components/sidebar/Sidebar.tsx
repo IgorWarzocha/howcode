@@ -80,7 +80,7 @@ export function Sidebar({
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectSelectionPulseActive ? "true" : "false"}
-      className="motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
+      className="motion-surface-pulse motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
     >
       <nav className="grid gap-0.5" aria-label="Primary navigation">
         <NavButton
