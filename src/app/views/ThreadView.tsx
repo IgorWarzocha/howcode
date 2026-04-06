@@ -1,4 +1,4 @@
-import { VirtualizedThreadTimeline } from "../components/workspace/thread/VirtualizedThreadTimeline";
+import { ThreadTimeline } from "../components/workspace/thread/ThreadTimeline";
 import {
   chatEmptyStateClass,
   chatHiddenViewportClass,
@@ -36,7 +36,7 @@ export function ThreadView({
   }
 
   return (
-    <VirtualizedThreadTimeline
+    <ThreadTimeline
       messages={messages}
       previousMessageCount={previousMessageCount}
       isStreaming={isStreaming}

@@ -49,14 +49,13 @@ function getStreamingTurnRowId({
   );
 }
 
-export function buildVirtualizedThreadTimelineState({
+export function buildThreadTimelineState({
   rows,
   messages,
   isStreaming,
   collapsedRowIds,
   expandedToolGroupIds,
   expandedDiffTrees,
-  timelineWidthPx,
 }: {
   rows: TimelineRow[];
   messages: Message[];
@@ -64,7 +63,6 @@ export function buildVirtualizedThreadTimelineState({
   collapsedRowIds: Record<string, boolean>;
   expandedToolGroupIds: Record<string, boolean>;
   expandedDiffTrees: Record<number, boolean>;
-  timelineWidthPx: number | null;
 }) {
   const bottomAnchorKey = `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? "streaming" : "idle"}`;
   const streamingAssistantMessageId = getStreamingAssistantMessageId(messages, isStreaming);
@@ -89,32 +87,25 @@ export function buildVirtualizedThreadTimelineState({
     ),
     (left, right) => Number(left) - Number(right),
   );
-  // Top-level thread rows have too many layout modes (collapsed previews, expanded summaries,
-  // streaming content, inline diffs, tool groups) for estimate-based virtualization to stay stable.
-  // Keep them in normal document flow until we have a measured-only strategy.
-  const firstUnvirtualizedRowIndex = 0;
-  const virtualizedRowCount = 0;
-  const virtualMeasureSignature = [
-    expandedDiffTreeSignature,
-    expandedToolGroupSignature,
-    rowStructureSignature,
-    timelineWidthPx ?? "auto",
-    virtualizedRowCount,
-  ].join("@@");
 
   return {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
     expandedDiffTreeSignature,
     expandedToolGroupSignature,
-    firstUnvirtualizedRowIndex,
+    firstUnvirtualizedRowIndex: 0,
     foldableRows,
     latestTurnRowId,
     rowStructureSignature,
     streamingAssistantMessageId,
     streamingToolGroupId,
     streamingTurnRowId,
-    virtualMeasureSignature,
-    virtualizedRowCount,
+    virtualMeasureSignature: [
+      expandedDiffTreeSignature,
+      expandedToolGroupSignature,
+      rowStructureSignature,
+      0,
+    ].join("@@"),
+    virtualizedRowCount: 0,
   };
 }

@@ -5,10 +5,10 @@ import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
 import { chatScrollableAreaClass, chatViewportClass } from "./thread-layout";
+import { buildThreadTimelineState } from "./thread-timeline-state";
 import type { TimelineRow } from "./timeline-row";
-import { buildVirtualizedThreadTimelineState } from "./virtualized-thread-timeline.helpers";
 
-type VirtualizedThreadTimelineProps = {
+type ThreadTimelineProps = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
@@ -18,7 +18,7 @@ type VirtualizedThreadTimelineProps = {
   onLoadEarlierMessages: () => void;
 };
 
-export function VirtualizedThreadTimeline({
+export function ThreadTimeline({
   messages,
   previousMessageCount,
   isStreaming,
@@ -26,7 +26,7 @@ export function VirtualizedThreadTimeline({
   composerLayoutVersion,
   onOpenTurnDiff,
   onLoadEarlierMessages,
-}: VirtualizedThreadTimelineProps) {
+}: ThreadTimelineProps) {
   const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
@@ -39,6 +39,7 @@ export function VirtualizedThreadTimeline({
     () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
     [messages, previousMessageCount, turnDiffSummaries],
   );
+
   const {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
@@ -50,14 +51,13 @@ export function VirtualizedThreadTimeline({
     streamingTurnRowId,
   } = useMemo(
     () =>
-      buildVirtualizedThreadTimelineState({
+      buildThreadTimelineState({
         rows,
         messages,
         isStreaming,
         collapsedRowIds,
         expandedToolGroupIds,
         expandedDiffTrees,
-        timelineWidthPx: null,
       }),
     [collapsedRowIds, expandedDiffTrees, expandedToolGroupIds, isStreaming, messages, rows],
   );
@@ -233,8 +233,8 @@ export function VirtualizedThreadTimeline({
       handleToggleToolCallExpansion,
       handleToggleToolGroupExpansion,
       onOpenTurnDiff,
-      streamingToolGroupId,
       streamingAssistantMessageId,
+      streamingToolGroupId,
     ],
   );
 
