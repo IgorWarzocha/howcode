@@ -107,11 +107,11 @@ function FoldedTimelineRow({
         </div>
         {trailing ? <div className="shrink-0">{trailing}</div> : null}
       </div>
-      {secondary ? (
+      {secondary || singleLine ? (
         <div
-          className={`min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampTwoLinesClass}`}
+          className={`min-h-[17px] min-w-0 text-[12px] leading-[1.4] text-[color:var(--muted-2)]/90 ${clampOneLineClass}`}
         >
-          {secondary}
+          {secondary ?? <span aria-hidden="true">&nbsp;</span>}
         </div>
       ) : null}
     </button>
@@ -302,6 +302,7 @@ export function ThreadTimelineRow({
           <FoldedTimelineRow
             label={preview.label}
             secondary={preview.secondary}
+            singleLine
             italicLabel={preview.italicLabel}
             mutedLabel={preview.italicLabel}
             onToggle={() => onToggleTurnCollapse?.()}
