@@ -352,7 +352,7 @@ export function ThreadTimelineRow({
     const summaryLabel =
       row.message.role === "compactionSummary" ? "Compaction summary" : "Branch summary";
     const showCompactionDivider = row.message.role === "compactionSummary";
-    const chevronOffsetClass = showCompactionDivider ? "mt-[22px]" : "mt-2";
+    const chevronOffsetClass = "mt-2";
 
     if (collapsed) {
       return (
@@ -362,23 +362,18 @@ export function ThreadTimelineRow({
           onToggle={() => onToggleRowCollapse(row.id)}
           toggleClassName={chevronOffsetClass}
         >
-          <div className="grid min-w-0 gap-3">
-            {showCompactionDivider ? (
-              <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
-            ) : null}
-            <FoldedTimelineRow
-              label={summaryLabel}
-              trailing={
-                showCompactionDivider ? (
-                  <span className="rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
-                    very long
-                  </span>
-                ) : null
-              }
-              singleLine
-              onToggle={() => onToggleRowCollapse(row.id)}
-            />
-          </div>
+          <FoldedTimelineRow
+            label={summaryLabel}
+            trailing={
+              showCompactionDivider ? (
+                <span className="rounded-full border border-[rgba(161,173,221,0.18)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[11px] leading-none text-[color:var(--muted-2)]/95">
+                  very long
+                </span>
+              ) : null
+            }
+            singleLine
+            onToggle={() => onToggleRowCollapse(row.id)}
+          />
         </TimelineRowShell>
       );
     }
@@ -391,9 +386,6 @@ export function ThreadTimelineRow({
         toggleClassName={chevronOffsetClass}
       >
         <div className="grid min-w-0 gap-3">
-          {showCompactionDivider ? (
-            <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
-          ) : null}
           <RowLeadToggleSurface onToggle={() => onToggleRowCollapse(row.id)}>
             <ThreadMessage message={row.message} />
           </RowLeadToggleSurface>
