@@ -25,6 +25,7 @@ type SidebarProps = {
   ) => Promise<DesktopActionResult | null>;
   onShowView: (view: View) => void;
   onToggleSettings: () => void;
+  onOpenExtensionsPanel: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   onProjectSelect: (projectId: string) => void;
@@ -44,6 +45,7 @@ export function Sidebar({
   onAction,
   onShowView,
   onToggleSettings,
+  onOpenExtensionsPanel,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   onProjectSelect,
@@ -152,6 +154,7 @@ export function Sidebar({
           menuId={settingsMenuId}
           open={settingsOpen}
           panelRef={settingsMenuRef}
+          onOpenExtensionsPanel={onOpenExtensionsPanel}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onOpenArchivedThreads={onOpenArchivedThreads}
         />

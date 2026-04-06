@@ -12,6 +12,9 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -34,6 +37,21 @@ type PiThreadsModule = {
   ) => Promise<Record<string, unknown> | null | undefined>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadComposerState: (request: Record<string, unknown>) => Promise<ComposerState>;
+  searchPiPackages: (request?: {
+    query?: string | null;
+    cursor?: number | null;
+    pageSize?: number | null;
+  }) => Promise<PiPackageCatalogPage>;
+  listConfiguredPiPackages: () => Promise<PiConfiguredPackage[]>;
+  installPiPackage: (request: {
+    source: string;
+    kind?: "npm" | "git";
+    local?: boolean;
+  }) => Promise<PiPackageMutationResult>;
+  removePiPackage: (request: {
+    source: string;
+    local?: boolean;
+  }) => Promise<PiPackageMutationResult>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectDiff: (projectId: string) => Promise<ProjectDiffResult | null>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
@@ -197,7 +215,7 @@ async function getMainViewUrl(): Promise<string> {
 }
 
 const rpc = BrowserView.defineRPC<PiDesktopRpc>({
-  maxRequestTime: 60_000,
+  maxRequestTime: 300_000,
   handlers: {
     requests: {
       getShellState: async () => piThreads.loadShellState(process.cwd()) as Promise<ShellState>,
@@ -205,6 +223,14 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId }) =>
         (await piThreads.loadProjectDiff(projectId)) as ProjectDiffResult | null,
+      searchPiPackages: async (request) =>
+        piThreads.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
+      getConfiguredPiPackages: async () =>
+        piThreads.listConfiguredPiPackages() as Promise<PiConfiguredPackage[]>,
+      installPiPackage: async (request) =>
+        piThreads.installPiPackage(request) as Promise<PiPackageMutationResult>,
+      removePiPackage: async (request) =>
+        piThreads.removePiPackage(request) as Promise<PiPackageMutationResult>,
       pickComposerAttachments: async ({ projectId }) => {
         const filePaths = await Utils.openFileDialog({
           startingFolder: projectId ?? process.cwd(),

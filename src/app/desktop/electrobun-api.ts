@@ -10,6 +10,9 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -27,7 +30,7 @@ const desktopListeners = new Set<(event: DesktopEvent) => void>();
 const terminalListeners = new Set<(event: TerminalEvent) => void>();
 
 const rpc = Electroview.defineRPC<PiDesktopRpc>({
-  maxRequestTime: 60_000,
+  maxRequestTime: 300_000,
   handlers: {
     requests: {},
     messages: {
@@ -91,6 +94,15 @@ export const piDesktopApi = {
     (await getRpc()).request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
   getProjectDiff: async (projectId: string) =>
     (await getRpc()).request.getProjectDiff({ projectId }) as Promise<ProjectDiffResult | null>,
+  searchPiPackages: async (
+    request: { query?: string | null; cursor?: number | null; pageSize?: number | null } = {},
+  ) => (await getRpc()).request.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
+  getConfiguredPiPackages: async () =>
+    (await getRpc()).request.getConfiguredPiPackages({}) as Promise<PiConfiguredPackage[]>,
+  installPiPackage: async (request: { source: string; kind?: "npm" | "git"; local?: boolean }) =>
+    (await getRpc()).request.installPiPackage(request) as Promise<PiPackageMutationResult>,
+  removePiPackage: async (request: { source: string; local?: boolean }) =>
+    (await getRpc()).request.removePiPackage(request) as Promise<PiPackageMutationResult>,
   pickComposerAttachments: async (projectId: string | null = null) =>
     (await getRpc()).request.pickComposerAttachments({
       projectId,

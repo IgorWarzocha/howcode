@@ -110,6 +110,49 @@ export type ComposerAttachment = {
   kind: "text" | "image";
 };
 
+export type PiPackageCatalogItem = {
+  name: string;
+  version: string;
+  description: string | null;
+  keywords: string[];
+  monthlyDownloads: number;
+  weeklyDownloads: number;
+  searchScore: number;
+  publishedAt: string;
+  updatedAt: string;
+  npmUrl: string;
+  homepageUrl: string | null;
+  repositoryUrl: string | null;
+  source: string;
+  identityKey: string;
+};
+
+export type PiPackageCatalogPage = {
+  query: string;
+  sort: "monthlyDownloads-desc";
+  total: number;
+  nextCursor: number | null;
+  items: PiPackageCatalogItem[];
+};
+
+export type PiConfiguredPackageType = "npm" | "git" | "local";
+
+export type PiConfiguredPackage = {
+  source: string;
+  identityKey: string;
+  displayName: string;
+  type: PiConfiguredPackageType;
+  scope: "user" | "project";
+  filtered: boolean;
+  installedPath: string | null;
+};
+
+export type PiPackageMutationResult = {
+  source: string;
+  normalizedSource: string;
+  configuredPackages: PiConfiguredPackage[];
+};
+
 export type ComposerFilePickerEntry = {
   path: string;
   name: string;

@@ -1,5 +1,11 @@
 export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
+  installPiPackage,
+  listConfiguredPiPackages,
+  removePiPackage,
+  searchPiPackages,
+} from "./pi-packages.cts";
+export {
   loadArchivedThreadList,
   loadProjectThreads,
   loadThread,

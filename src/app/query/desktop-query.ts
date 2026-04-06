@@ -4,6 +4,9 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
+  PiConfiguredPackage,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -13,6 +16,8 @@ import type {
 
 export const desktopQueryKeys = {
   shellState: () => ["desktop", "shellState"] as const,
+  piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
+  configuredPiPackages: () => ["desktop", "piPackages", "configured"] as const,
   projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -47,6 +52,43 @@ export async function getProjectGitStateQuery(projectId: string): Promise<Projec
 
 export async function getProjectDiffQuery(projectId: string): Promise<ProjectDiffResult | null> {
   return (await window.piDesktop?.getProjectDiff?.(projectId)) ?? null;
+}
+
+export async function searchPiPackagesQuery(
+  request: {
+    query?: string | null;
+    cursor?: number | null;
+    pageSize?: number | null;
+  } = {},
+): Promise<PiPackageCatalogPage> {
+  return (
+    (await window.piDesktop?.searchPiPackages?.(request)) ?? {
+      query: request.query?.trim() ?? "",
+      sort: "monthlyDownloads-desc",
+      total: 0,
+      nextCursor: null,
+      items: [],
+    }
+  );
+}
+
+export async function getConfiguredPiPackagesQuery(): Promise<PiConfiguredPackage[]> {
+  return (await window.piDesktop?.getConfiguredPiPackages?.()) ?? [];
+}
+
+export async function installPiPackageQuery(request: {
+  source: string;
+  kind?: "npm" | "git";
+  local?: boolean;
+}): Promise<PiPackageMutationResult | null> {
+  return (await window.piDesktop?.installPiPackage?.(request)) ?? null;
+}
+
+export async function removePiPackageQuery(request: {
+  source: string;
+  local?: boolean;
+}): Promise<PiPackageMutationResult | null> {
+  return (await window.piDesktop?.removePiPackage?.(request)) ?? null;
 }
 
 export async function pickComposerAttachmentsQuery(

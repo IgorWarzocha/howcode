@@ -8,6 +8,9 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -27,6 +30,21 @@ declare global {
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
       getProjectDiff?: (projectId: string) => Promise<ProjectDiffResult | null>;
+      searchPiPackages?: (request?: {
+        query?: string | null;
+        cursor?: number | null;
+        pageSize?: number | null;
+      }) => Promise<PiPackageCatalogPage>;
+      getConfiguredPiPackages?: () => Promise<PiConfiguredPackage[]>;
+      installPiPackage?: (request: {
+        source: string;
+        kind?: "npm" | "git";
+        local?: boolean;
+      }) => Promise<PiPackageMutationResult>;
+      removePiPackage?: (request: {
+        source: string;
+        local?: boolean;
+      }) => Promise<PiPackageMutationResult>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;
