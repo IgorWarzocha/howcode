@@ -159,30 +159,28 @@ function TimelineRowShell({
   expanded,
   ariaLabel,
   onToggle,
-  toggleClassName,
   children,
 }: {
   expanded?: boolean;
   ariaLabel?: string;
   onToggle?: () => void;
-  toggleClassName?: string;
   children: ReactNode;
 }) {
   return (
     <div className={chatRowShellClass} data-row-toggle-anchor={onToggle ? "true" : undefined}>
-      {onToggle ? (
-        <button
-          type="button"
-          className={`${toggleClassName ?? "mt-1"} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]`}
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={ariaLabel}
-        >
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </button>
-      ) : (
-        <div />
-      )}
+      <div className="flex min-h-0 items-start justify-center pt-2">
+        {onToggle ? (
+          <button
+            type="button"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-label={ariaLabel}
+          >
+            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        ) : null}
+      </div>
       <div className="min-w-0">{children}</div>
       <div />
     </div>
@@ -280,18 +278,11 @@ export function ThreadTimelineRow({
     const isCollapsed = collapsed && !isStreamingTurn;
     const onToggleTurnCollapse =
       !canCollapseTurn || isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id);
-    const chevronOffsetClass = "mt-2";
-
     if (isCollapsed) {
       const preview = getCollapsedTurnPreview(row);
 
       return (
-        <TimelineRowShell
-          expanded={false}
-          ariaLabel="Expand turn"
-          onToggle={onToggleTurnCollapse}
-          toggleClassName={chevronOffsetClass}
-        >
+        <TimelineRowShell expanded={false} ariaLabel="Expand turn" onToggle={onToggleTurnCollapse}>
           <FoldedTimelineRow
             label={preview.label}
             secondary={preview.secondary}
@@ -304,12 +295,7 @@ export function ThreadTimelineRow({
     }
 
     return (
-      <TimelineRowShell
-        expanded
-        ariaLabel="Collapse turn"
-        onToggle={onToggleTurnCollapse}
-        toggleClassName={chevronOffsetClass}
-      >
+      <TimelineRowShell expanded ariaLabel="Collapse turn" onToggle={onToggleTurnCollapse}>
         <div className="grid min-w-0 gap-3">
           {row.userMessage ? (
             <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
@@ -352,7 +338,6 @@ export function ThreadTimelineRow({
     const summaryLabel =
       row.message.role === "compactionSummary" ? "Compaction summary" : "Branch summary";
     const showCompactionDivider = row.message.role === "compactionSummary";
-    const chevronOffsetClass = "mt-2";
 
     if (collapsed) {
       return (
@@ -360,7 +345,6 @@ export function ThreadTimelineRow({
           expanded={false}
           ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
           onToggle={() => onToggleRowCollapse(row.id)}
-          toggleClassName={chevronOffsetClass}
         >
           <FoldedTimelineRow
             label={summaryLabel}
@@ -383,7 +367,6 @@ export function ThreadTimelineRow({
         expanded
         ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
         onToggle={() => onToggleRowCollapse(row.id)}
-        toggleClassName={chevronOffsetClass}
       >
         <div className="grid min-w-0 gap-3">
           <RowLeadToggleSurface onToggle={() => onToggleRowCollapse(row.id)}>
