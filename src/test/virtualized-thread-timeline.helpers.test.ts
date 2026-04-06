@@ -164,7 +164,7 @@ const summaryRows: TimelineRow[] = [
 ];
 
 describe("virtualized thread timeline helpers", () => {
-  it("keeps the streaming turn in the unvirtualized tail", () => {
+  it("keeps thread rows out of the virtualized region", () => {
     const result = buildVirtualizedThreadTimelineState({
       rows,
       messages: [userMessage, streamingAssistantMessage],
@@ -177,10 +177,11 @@ describe("virtualized thread timeline helpers", () => {
 
     expect(result.streamingTurnRowId).toBe("turn-2");
     expect(result.virtualizedRowCount).toBe(0);
+    expect(result.firstUnvirtualizedRowIndex).toBe(0);
     expect(result.effectiveCollapsedRowIds["turn-2"]).toBe(false);
   });
 
-  it("keeps expanded summaries and following rows out of the virtualized region", () => {
+  it("still keeps expanded summaries in normal document flow", () => {
     const result = buildVirtualizedThreadTimelineState({
       rows: summaryRows,
       messages: [userMessage],
@@ -203,7 +204,7 @@ describe("virtualized thread timeline helpers", () => {
     });
 
     expect(result.effectiveCollapsedRowIds["summary-1"]).toBe(false);
-    expect(result.virtualizedRowCount).toBe(1);
-    expect(result.firstUnvirtualizedRowIndex).toBe(1);
+    expect(result.virtualizedRowCount).toBe(0);
+    expect(result.firstUnvirtualizedRowIndex).toBe(0);
   });
 });

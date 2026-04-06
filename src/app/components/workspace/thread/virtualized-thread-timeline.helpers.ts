@@ -9,8 +9,6 @@ import {
 } from "./thread-timeline-signatures";
 import type { TimelineRow } from "./timeline-row";
 
-const ALWAYS_UNVIRTUALIZED_TAIL_ROWS = 8;
-
 function getExpandedStateSignature(
   expandedState: Record<string, boolean>,
   sortKeys?: (a: string, b: string) => number,
@@ -49,38 +47,6 @@ function getStreamingTurnRowId({
         ),
     )?.id ?? latestTurnRowId
   );
-}
-
-function getFirstUnvirtualizedRowIndex({
-  rows,
-  effectiveCollapsedRowIds,
-  isStreaming,
-  streamingTurnRowId,
-}: {
-  rows: TimelineRow[];
-  effectiveCollapsedRowIds: Record<string, boolean>;
-  isStreaming: boolean;
-  streamingTurnRowId: string | null;
-}) {
-  const firstTailRowIndex = Math.max(rows.length - ALWAYS_UNVIRTUALIZED_TAIL_ROWS, 0);
-  const firstExpandedSummaryRowIndex = rows.findIndex(
-    (row) => row.kind === "summary" && effectiveCollapsedRowIds[row.id] === false,
-  );
-  const firstStableRowIndex =
-    firstExpandedSummaryRowIndex >= 0
-      ? Math.min(firstTailRowIndex, firstExpandedSummaryRowIndex)
-      : firstTailRowIndex;
-
-  if (!isStreaming || !streamingTurnRowId) {
-    return firstStableRowIndex;
-  }
-
-  const streamingTurnIndex = rows.findIndex((row) => row.id === streamingTurnRowId);
-  if (streamingTurnIndex < 0) {
-    return firstStableRowIndex;
-  }
-
-  return Math.min(streamingTurnIndex, firstStableRowIndex);
 }
 
 export function buildVirtualizedThreadTimelineState({
@@ -123,13 +89,11 @@ export function buildVirtualizedThreadTimelineState({
     ),
     (left, right) => Number(left) - Number(right),
   );
-  const firstUnvirtualizedRowIndex = getFirstUnvirtualizedRowIndex({
-    rows,
-    effectiveCollapsedRowIds,
-    isStreaming,
-    streamingTurnRowId,
-  });
-  const virtualizedRowCount = Math.max(0, Math.min(firstUnvirtualizedRowIndex, rows.length));
+  // Top-level thread rows have too many layout modes (collapsed previews, expanded summaries,
+  // streaming content, inline diffs, tool groups) for estimate-based virtualization to stay stable.
+  // Keep them in normal document flow until we have a measured-only strategy.
+  const firstUnvirtualizedRowIndex = 0;
+  const virtualizedRowCount = 0;
   const virtualMeasureSignature = [
     expandedDiffTreeSignature,
     expandedToolGroupSignature,
