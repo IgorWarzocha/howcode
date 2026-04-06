@@ -159,20 +159,31 @@ function TimelineRowShell({
   expanded,
   ariaLabel,
   onToggle,
+  toggleAlignment = "default",
   children,
 }: {
   expanded?: boolean;
   ariaLabel?: string;
   onToggle?: () => void;
+  toggleAlignment?: "default" | "preview-line";
   children: ReactNode;
 }) {
+  const toggleRailClass =
+    toggleAlignment === "preview-line"
+      ? "flex min-h-0 items-start justify-center pt-2.5"
+      : "flex min-h-0 items-start justify-center pt-2";
+  const toggleButtonClass =
+    toggleAlignment === "preview-line"
+      ? "inline-flex h-[18px] w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+      : "inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+
   return (
     <div className={chatRowShellClass} data-row-toggle-anchor={onToggle ? "true" : undefined}>
-      <div className="flex min-h-0 items-start justify-center pt-2">
+      <div className={toggleRailClass}>
         {onToggle ? (
           <button
             type="button"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+            className={toggleButtonClass}
             onClick={onToggle}
             aria-expanded={expanded}
             aria-label={ariaLabel}
@@ -282,7 +293,12 @@ export function ThreadTimelineRow({
       const preview = getCollapsedTurnPreview(row);
 
       return (
-        <TimelineRowShell expanded={false} ariaLabel="Expand turn" onToggle={onToggleTurnCollapse}>
+        <TimelineRowShell
+          expanded={false}
+          ariaLabel="Expand turn"
+          onToggle={onToggleTurnCollapse}
+          toggleAlignment="preview-line"
+        >
           <FoldedTimelineRow
             label={preview.label}
             secondary={preview.secondary}
@@ -345,6 +361,7 @@ export function ThreadTimelineRow({
           expanded={false}
           ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
           onToggle={() => onToggleRowCollapse(row.id)}
+          toggleAlignment="preview-line"
         >
           <FoldedTimelineRow
             label={summaryLabel}
