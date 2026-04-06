@@ -18,7 +18,7 @@ type SidebarProps = {
   selectedProjectId: string;
   selectedThreadId: string | null;
   settingsOpen: boolean;
-  projectSelectionPulseActive: boolean;
+  projectScopeLockActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
   onAction: (
     action: DesktopAction,
@@ -42,7 +42,7 @@ export function Sidebar({
   selectedProjectId,
   selectedThreadId,
   settingsOpen,
-  projectSelectionPulseActive,
+  projectScopeLockActive,
   collapsedProjectIds,
   onAction,
   onShowView,
@@ -79,7 +79,7 @@ export function Sidebar({
   return (
     <aside
       aria-label="Workspace sidebar"
-      data-pulse-active={projectSelectionPulseActive ? "true" : "false"}
+      data-pulse-active={projectScopeLockActive ? "true" : "false"}
       className="motion-surface-pulse motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
     >
       <nav className="grid gap-0.5" aria-label="Primary navigation">

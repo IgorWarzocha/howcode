@@ -8,7 +8,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useDeferredValue, useMemo, useState } from "react";
+import { type FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { PrimaryButton } from "../components/common/PrimaryButton";
 import { TextButton } from "../components/common/TextButton";
 import type { PiConfiguredPackage } from "../desktop/types";
@@ -24,6 +24,7 @@ import { cn } from "../utils/cn";
 
 type ExtensionsViewProps = {
   projectPath: string | null;
+  onSetProjectScopeActive: (active: boolean) => void;
 };
 
 type PendingAction = {
@@ -75,7 +76,7 @@ function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
   );
 }
 
-export function ExtensionsView({ projectPath }: ExtensionsViewProps) {
+export function ExtensionsView({ projectPath, onSetProjectScopeActive }: ExtensionsViewProps) {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [manualSource, setManualSource] = useState("");
@@ -123,6 +124,14 @@ export function ExtensionsView({ projectPath }: ExtensionsViewProps) {
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [packagesQuery.data?.pages],
   );
+
+  useEffect(() => {
+    onSetProjectScopeActive(installScope === "project");
+
+    return () => {
+      onSetProjectScopeActive(false);
+    };
+  }, [installScope, onSetProjectScopeActive]);
 
   const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
     queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath), packages);

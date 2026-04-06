@@ -33,6 +33,7 @@ type CodeWorkspaceMainViewProps = {
   ) => Promise<DesktopActionResult | null>;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
+  onSetExtensionsProjectScopeActive: (active: boolean) => void;
   onSelectProject: (projectId: string) => void;
 };
 
@@ -50,6 +51,7 @@ export function CodeWorkspaceMainView({
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
+  onSetExtensionsProjectScopeActive,
   onSelectProject,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
@@ -91,7 +93,10 @@ export function CodeWorkspaceMainView({
           </div>
         }
       >
-        <ExtensionsView projectPath={selectedProjectId || null} />
+        <ExtensionsView
+          projectPath={selectedProjectId || null}
+          onSetProjectScopeActive={onSetExtensionsProjectScopeActive}
+        />
       </Suspense>
     );
   }

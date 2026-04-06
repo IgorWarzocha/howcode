@@ -168,7 +168,7 @@ code {
 }
 
 .motion-sidebar-selection-pulse[data-pulse-active="true"]::before {
-  animation: standardSurfacePulse 1.8s ease-in-out 1;
+  animation: standardSurfacePulse 2.8s ease-in-out infinite;
 }
 
 .motion-overlay-panel {

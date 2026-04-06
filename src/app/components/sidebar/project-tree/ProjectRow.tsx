@@ -76,6 +76,7 @@ export function ProjectRow({
 
     clickTimeoutRef.current = window.setTimeout(() => {
       onSelect();
+      onToggleExpanded();
       clickTimeoutRef.current = null;
     }, 180);
   };

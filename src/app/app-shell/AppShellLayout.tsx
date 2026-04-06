@@ -37,6 +37,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     projects,
     state,
   } = controller;
+  const effectiveCollapsedProjectIds = controller.extensionsProjectScopeActive
+    ? Object.fromEntries(projects.map((project) => [project.id, true]))
+    : collapsedProjectIds;
 
   const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
   const takeoverVisible = state.takeoverVisible;
@@ -72,8 +75,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
-            projectSelectionPulseActive={controller.projectSelectionPulseActive}
-            collapsedProjectIds={collapsedProjectIds}
+            projectScopeLockActive={controller.extensionsProjectScopeActive}
+            collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}

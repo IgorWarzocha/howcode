@@ -113,9 +113,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: null,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
-        collapsedProjectIds: Object.fromEntries(
-          Object.keys(state.collapsedProjectIds).map((projectId) => [projectId, true]),
-        ),
       };
     case "open-thread":
       return {

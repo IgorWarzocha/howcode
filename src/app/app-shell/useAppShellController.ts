@@ -35,15 +35,13 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
-  const [projectSelectionPulseActive, setProjectSelectionPulseActive] = useState(false);
+  const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
   );
   const inspectedProjectIdsRef = useRef<Set<string>>(new Set());
-  const projectSelectionPulseFrameRef = useRef<number | null>(null);
-  const projectSelectionPulseTimeoutRef = useRef<number | null>(null);
   const {
     shellState,
     loadArchivedThreads,
@@ -126,38 +124,10 @@ export function useAppShellController() {
   }, [projects, state.selectedProjectId]);
 
   useEffect(() => {
-    return () => {
-      if (projectSelectionPulseFrameRef.current !== null) {
-        window.cancelAnimationFrame(projectSelectionPulseFrameRef.current);
-      }
-
-      if (projectSelectionPulseTimeoutRef.current !== null) {
-        window.clearTimeout(projectSelectionPulseTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const triggerProjectSelectionPulse = () => {
-    setProjectSelectionPulseActive(false);
-
-    if (projectSelectionPulseFrameRef.current !== null) {
-      window.cancelAnimationFrame(projectSelectionPulseFrameRef.current);
+    if (state.activeView !== "extensions" && extensionsProjectScopeActive) {
+      setExtensionsProjectScopeActive(false);
     }
-
-    if (projectSelectionPulseTimeoutRef.current !== null) {
-      window.clearTimeout(projectSelectionPulseTimeoutRef.current);
-    }
-
-    projectSelectionPulseFrameRef.current = window.requestAnimationFrame(() => {
-      setProjectSelectionPulseActive(true);
-      projectSelectionPulseFrameRef.current = null;
-
-      projectSelectionPulseTimeoutRef.current = window.setTimeout(() => {
-        setProjectSelectionPulseActive(false);
-        projectSelectionPulseTimeoutRef.current = null;
-      }, 1800);
-    });
-  };
+  }, [extensionsProjectScopeActive, state.activeView]);
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -325,10 +295,7 @@ export function useAppShellController() {
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
-    handleProjectSelect: (projectId: string) => {
-      dispatch({ type: "select-project", projectId });
-      triggerProjectSelectionPulse();
-    },
+    handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
     handleProjectReorder,
     handleSelectDiffTurn,
     handleShowView,
@@ -339,10 +306,11 @@ export function useAppShellController() {
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
+    handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
-    projectSelectionPulseActive,
+    extensionsProjectScopeActive,
     projects,
     projectGitState,
     shellState,
