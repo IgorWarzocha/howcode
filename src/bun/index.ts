@@ -42,15 +42,19 @@ type PiThreadsModule = {
     cursor?: number | null;
     pageSize?: number | null;
   }) => Promise<PiPackageCatalogPage>;
-  listConfiguredPiPackages: () => Promise<PiConfiguredPackage[]>;
+  listConfiguredPiPackages: (request?: { projectPath?: string | null }) => Promise<
+    PiConfiguredPackage[]
+  >;
   installPiPackage: (request: {
     source: string;
     kind?: "npm" | "git";
     local?: boolean;
+    projectPath?: string | null;
   }) => Promise<PiPackageMutationResult>;
   removePiPackage: (request: {
     source: string;
     local?: boolean;
+    projectPath?: string | null;
   }) => Promise<PiPackageMutationResult>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectDiff: (projectId: string) => Promise<ProjectDiffResult | null>;
@@ -225,8 +229,8 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectDiff(projectId)) as ProjectDiffResult | null,
       searchPiPackages: async (request) =>
         piThreads.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
-      getConfiguredPiPackages: async () =>
-        piThreads.listConfiguredPiPackages() as Promise<PiConfiguredPackage[]>,
+      getConfiguredPiPackages: async (request) =>
+        piThreads.listConfiguredPiPackages(request) as Promise<PiConfiguredPackage[]>,
       installPiPackage: async (request) =>
         piThreads.installPiPackage(request) as Promise<PiPackageMutationResult>,
       removePiPackage: async (request) =>

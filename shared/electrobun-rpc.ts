@@ -39,15 +39,20 @@ export type PiDesktopRpc = {
         response: PiPackageCatalogPage;
       };
       getConfiguredPiPackages: {
-        params: Record<string, never>;
+        params: { projectPath?: string | null };
         response: PiConfiguredPackage[];
       };
       installPiPackage: {
-        params: { source: string; kind?: "npm" | "git"; local?: boolean };
+        params: {
+          source: string;
+          kind?: "npm" | "git";
+          local?: boolean;
+          projectPath?: string | null;
+        };
         response: PiPackageMutationResult;
       };
       removePiPackage: {
-        params: { source: string; local?: boolean };
+        params: { source: string; local?: boolean; projectPath?: string | null };
         response: PiPackageMutationResult;
       };
       pickComposerAttachments: {

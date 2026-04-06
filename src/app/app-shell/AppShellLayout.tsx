@@ -72,6 +72,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
+            projectSelectionPulseActive={controller.projectSelectionPulseActive}
             collapsedProjectIds={collapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}

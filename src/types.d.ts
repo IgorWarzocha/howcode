@@ -35,15 +35,19 @@ declare global {
         cursor?: number | null;
         pageSize?: number | null;
       }) => Promise<PiPackageCatalogPage>;
-      getConfiguredPiPackages?: () => Promise<PiConfiguredPackage[]>;
+      getConfiguredPiPackages?: (request?: { projectPath?: string | null }) => Promise<
+        PiConfiguredPackage[]
+      >;
       installPiPackage?: (request: {
         source: string;
         kind?: "npm" | "git";
         local?: boolean;
+        projectPath?: string | null;
       }) => Promise<PiPackageMutationResult>;
       removePiPackage?: (request: {
         source: string;
         local?: boolean;
+        projectPath?: string | null;
       }) => Promise<PiPackageMutationResult>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       listComposerAttachmentEntries?: (request?: {

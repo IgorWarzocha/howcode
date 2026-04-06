@@ -97,12 +97,19 @@ export const piDesktopApi = {
   searchPiPackages: async (
     request: { query?: string | null; cursor?: number | null; pageSize?: number | null } = {},
   ) => (await getRpc()).request.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
-  getConfiguredPiPackages: async () =>
-    (await getRpc()).request.getConfiguredPiPackages({}) as Promise<PiConfiguredPackage[]>,
-  installPiPackage: async (request: { source: string; kind?: "npm" | "git"; local?: boolean }) =>
-    (await getRpc()).request.installPiPackage(request) as Promise<PiPackageMutationResult>,
-  removePiPackage: async (request: { source: string; local?: boolean }) =>
-    (await getRpc()).request.removePiPackage(request) as Promise<PiPackageMutationResult>,
+  getConfiguredPiPackages: async (request: { projectPath?: string | null } = {}) =>
+    (await getRpc()).request.getConfiguredPiPackages(request) as Promise<PiConfiguredPackage[]>,
+  installPiPackage: async (request: {
+    source: string;
+    kind?: "npm" | "git";
+    local?: boolean;
+    projectPath?: string | null;
+  }) => (await getRpc()).request.installPiPackage(request) as Promise<PiPackageMutationResult>,
+  removePiPackage: async (request: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => (await getRpc()).request.removePiPackage(request) as Promise<PiPackageMutationResult>,
   pickComposerAttachments: async (projectId: string | null = null) =>
     (await getRpc()).request.pickComposerAttachments({
       projectId,

@@ -35,12 +35,14 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [projectSelectionPulseActive, setProjectSelectionPulseActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
     null,
   );
   const inspectedProjectIdsRef = useRef<Set<string>>(new Set());
+  const projectSelectionPulseTimeoutRef = useRef<number | null>(null);
   const {
     shellState,
     loadArchivedThreads,
@@ -121,6 +123,14 @@ export function useAppShellController() {
     inspectedProjectIdsRef.current.add(selectedProject.id);
     void runDesktopAction("project.inspect-repo", { projectId: selectedProject.id });
   }, [projects, state.selectedProjectId]);
+
+  useEffect(() => {
+    return () => {
+      if (projectSelectionPulseTimeoutRef.current !== null) {
+        window.clearTimeout(projectSelectionPulseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -288,7 +298,19 @@ export function useAppShellController() {
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
-    handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleProjectSelect: (projectId: string) => {
+      dispatch({ type: "select-project", projectId });
+      setProjectSelectionPulseActive(true);
+
+      if (projectSelectionPulseTimeoutRef.current !== null) {
+        window.clearTimeout(projectSelectionPulseTimeoutRef.current);
+      }
+
+      projectSelectionPulseTimeoutRef.current = window.setTimeout(() => {
+        setProjectSelectionPulseActive(false);
+        projectSelectionPulseTimeoutRef.current = null;
+      }, 1400);
+    },
     handleProjectReorder,
     handleSelectDiffTurn,
     handleShowView,
@@ -302,6 +324,7 @@ export function useAppShellController() {
     listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
+    projectSelectionPulseActive,
     projects,
     projectGitState,
     shellState,

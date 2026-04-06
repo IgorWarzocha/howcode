@@ -22,6 +22,10 @@ import {
 import { settingsInputClass, settingsListRowClass } from "../ui/classes";
 import { cn } from "../utils/cn";
 
+type ExtensionsViewProps = {
+  projectPath: string | null;
+};
+
 type PendingAction = {
   kind: "install" | "remove";
   source: string;
@@ -71,7 +75,7 @@ function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
   );
 }
 
-export function ExtensionsView() {
+export function ExtensionsView({ projectPath }: ExtensionsViewProps) {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [manualSource, setManualSource] = useState("");
@@ -83,8 +87,8 @@ export function ExtensionsView() {
   const desktopPackagesAvailable = isDesktopPackagesAvailable();
 
   const configuredPackagesQuery = useQuery({
-    queryKey: desktopQueryKeys.configuredPiPackages(),
-    queryFn: getConfiguredPiPackagesQuery,
+    queryKey: desktopQueryKeys.configuredPiPackages(projectPath),
+    queryFn: () => getConfiguredPiPackagesQuery({ projectPath }),
     staleTime: 30_000,
     enabled: desktopPackagesAvailable,
   });
@@ -121,7 +125,7 @@ export function ExtensionsView() {
   );
 
   const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
-    queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(), packages);
+    queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath), packages);
   };
 
   const addPendingAction = (action: PendingAction) => {
@@ -156,6 +160,7 @@ export function ExtensionsView() {
         source: normalizedSource,
         kind,
         local: installScope === "project",
+        projectPath,
       });
 
       if (result?.configuredPackages) {
@@ -181,6 +186,7 @@ export function ExtensionsView() {
       const result = await removePiPackageQuery({
         source: configuredPackage.source,
         local: configuredPackage.scope === "project",
+        projectPath,
       });
 
       if (result?.configuredPackages) {
@@ -322,16 +328,32 @@ export function ExtensionsView() {
                   </div>
                 </div>
 
-                {configuredPackage.resourceKind === "package" ? (
-                  <TextButton
-                    className="inline-flex items-center gap-1.5 px-2 py-1.5 text-[12px] text-[color:var(--muted)] hover:text-[#ffb4b4]"
-                    onClick={() => void handleRemove(configuredPackage)}
-                    disabled={isPending("remove", configuredPackage.source)}
-                  >
-                    <Trash2 size={13} />
-                    {isPending("remove", configuredPackage.source) ? "Removing…" : "Remove"}
-                  </TextButton>
-                ) : null}
+                <div className="flex items-center gap-1">
+                  {(configuredPackage.type === "local" ||
+                    configuredPackage.resourceKind === "extension") &&
+                  configuredPackage.settingsPath ? (
+                    <TextButton
+                      className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]"
+                      onClick={() => {
+                        if (configuredPackage.settingsPath) {
+                          void window.piDesktop?.openPath?.(configuredPackage.settingsPath);
+                        }
+                      }}
+                    >
+                      Settings
+                    </TextButton>
+                  ) : null}
+                  {configuredPackage.resourceKind === "package" ? (
+                    <TextButton
+                      className="inline-flex items-center gap-1.5 px-2 py-1.5 text-[12px] text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                      onClick={() => void handleRemove(configuredPackage)}
+                      disabled={isPending("remove", configuredPackage.source)}
+                    >
+                      <Trash2 size={13} />
+                      {isPending("remove", configuredPackage.source) ? "Removing…" : "Remove"}
+                    </TextButton>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>

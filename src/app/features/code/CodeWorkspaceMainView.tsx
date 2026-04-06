@@ -91,7 +91,7 @@ export function CodeWorkspaceMainView({
           </div>
         }
       >
-        <ExtensionsView />
+        <ExtensionsView projectPath={selectedProjectId || null} />
       </Suspense>
     );
   }

@@ -17,7 +17,8 @@ import type {
 export const desktopQueryKeys = {
   shellState: () => ["desktop", "shellState"] as const,
   piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
-  configuredPiPackages: () => ["desktop", "piPackages", "configured"] as const,
+  configuredPiPackages: (projectPath?: string | null) =>
+    ["desktop", "piPackages", "configured", projectPath ?? null] as const,
   projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -72,14 +73,19 @@ export async function searchPiPackagesQuery(
   );
 }
 
-export async function getConfiguredPiPackagesQuery(): Promise<PiConfiguredPackage[]> {
-  return (await window.piDesktop?.getConfiguredPiPackages?.()) ?? [];
+export async function getConfiguredPiPackagesQuery(
+  request: {
+    projectPath?: string | null;
+  } = {},
+): Promise<PiConfiguredPackage[]> {
+  return (await window.piDesktop?.getConfiguredPiPackages?.(request)) ?? [];
 }
 
 export async function installPiPackageQuery(request: {
   source: string;
   kind?: "npm" | "git";
   local?: boolean;
+  projectPath?: string | null;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.installPiPackage?.(request)) ?? null;
 }
@@ -87,6 +93,7 @@ export async function installPiPackageQuery(request: {
 export async function removePiPackageQuery(request: {
   source: string;
   local?: boolean;
+  projectPath?: string | null;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.removePiPackage?.(request)) ?? null;
 }

@@ -54,6 +54,23 @@ describe("workspace state", () => {
     expect(nextState.selectedDiffTurnCount).toBeNull();
   });
 
+  it("collapses all projects when selecting a project", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        collapsedProjectIds: {
+          "pi-plugin-codex": false,
+          "claw-phone": false,
+        },
+      },
+      { type: "select-project", projectId: "claw-phone" },
+    );
+
+    expect(nextState.selectedProjectId).toBe("claw-phone");
+    expect(nextState.collapsedProjectIds["pi-plugin-codex"]).toBe(true);
+    expect(nextState.collapsedProjectIds["claw-phone"]).toBe(true);
+  });
+
   it("opens a thread and forces its project expanded", () => {
     const state = createInitialWorkspaceState(mockProjects);
     const nextState = workspaceReducer(state, {

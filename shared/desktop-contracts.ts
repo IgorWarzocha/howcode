@@ -146,6 +146,7 @@ export type PiConfiguredPackage = {
   scope: "user" | "project";
   filtered: boolean;
   installedPath: string | null;
+  settingsPath: string | null;
 };
 
 export type PiPackageMutationResult = {
