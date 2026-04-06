@@ -7,7 +7,7 @@ import { SurfacePanel } from "../common/SurfacePanel";
 type SettingsMenuProps = {
   menuId: string;
   open: boolean;
-  onOpenExtensionsPanel: () => void;
+  onOpenExtensionsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   panelRef?: RefObject<HTMLDivElement | null>;
@@ -16,7 +16,7 @@ type SettingsMenuProps = {
 export function SettingsMenu({
   menuId,
   open,
-  onOpenExtensionsPanel,
+  onOpenExtensionsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   panelRef,
@@ -44,7 +44,7 @@ export function SettingsMenu({
       <MenuItem
         icon={<PackagePlus size={15} />}
         title="Extensions"
-        onClick={onOpenExtensionsPanel}
+        onClick={onOpenExtensionsView}
         role="menuitem"
       />
       <MenuItem

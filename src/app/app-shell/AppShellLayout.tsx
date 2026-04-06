@@ -1,26 +1,19 @@
 import { PanelLeft } from "lucide-react";
-import { Suspense, lazy, useState } from "react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
-import { iconButtonClass, modalPanelClass, panelChromeClass } from "../ui/classes";
+import { iconButtonClass } from "../ui/classes";
 import { cn } from "../utils/cn";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
 import { useAppShellLayoutState } from "./useAppShellLayoutState";
 
-const ExtensionsPanel = lazy(async () => {
-  const module = await import("../components/settings/ExtensionsPanel");
-  return { default: module.ExtensionsPanel };
-});
-
 type AppShellLayoutProps = {
   controller: AppShellController;
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const [extensionsPanelOpen, setExtensionsPanelOpen] = useState(false);
   const {
     activeComposerState,
     activeThreadData,
@@ -83,8 +76,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}
-            onOpenExtensionsPanel={() => {
-              setExtensionsPanelOpen(true);
+            onOpenExtensionsView={() => {
+              handleShowView("extensions");
               if (state.settingsOpen) {
                 handleToggleSettings();
               }
@@ -156,30 +149,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         onClose={handleCloseArchivedThreads}
         onAction={(action, payload) => void handleAction(action, payload)}
       />
-      <Suspense
-        fallback={
-          extensionsPanelOpen ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(8,10,18,0.52)] px-6 py-8 backdrop-blur-sm">
-              <div
-                className={cn(
-                  panelChromeClass,
-                  modalPanelClass,
-                  "flex w-full max-w-[980px] items-center justify-center rounded-3xl px-6 py-16 text-[13px] text-[color:var(--muted)]",
-                )}
-              >
-                Loading extensions…
-              </div>
-            </div>
-          ) : null
-        }
-      >
-        {extensionsPanelOpen ? (
-          <ExtensionsPanel
-            open={extensionsPanelOpen}
-            onClose={() => setExtensionsPanelOpen(false)}
-          />
-        ) : null}
-      </Suspense>
       <ProjectActionDialog
         pendingAction={pendingProjectAction}
         onClose={handleCloseProjectActionDialog}

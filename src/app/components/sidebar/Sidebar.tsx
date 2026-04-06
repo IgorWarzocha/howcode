@@ -25,7 +25,7 @@ type SidebarProps = {
   ) => Promise<DesktopActionResult | null>;
   onShowView: (view: View) => void;
   onToggleSettings: () => void;
-  onOpenExtensionsPanel: () => void;
+  onOpenExtensionsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   onProjectSelect: (projectId: string) => void;
@@ -45,7 +45,7 @@ export function Sidebar({
   onAction,
   onShowView,
   onToggleSettings,
-  onOpenExtensionsPanel,
+  onOpenExtensionsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   onProjectSelect,
@@ -58,7 +58,10 @@ export function Sidebar({
   const settingsMenuId = "sidebar-settings-menu";
   const settingsMenuPresent = useAnimatedPresence(settingsOpen);
   const codeModeActive =
-    activeView === "code" || activeView === "thread" || activeView === "settings";
+    activeView === "code" ||
+    activeView === "thread" ||
+    activeView === "settings" ||
+    activeView === "extensions";
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -154,7 +157,7 @@ export function Sidebar({
           menuId={settingsMenuId}
           open={settingsOpen}
           panelRef={settingsMenuRef}
-          onOpenExtensionsPanel={onOpenExtensionsPanel}
+          onOpenExtensionsView={onOpenExtensionsView}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onOpenArchivedThreads={onOpenArchivedThreads}
         />

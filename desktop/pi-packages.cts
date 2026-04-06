@@ -60,8 +60,23 @@ type PiConfiguredPackageRecord = {
   installedPath?: string;
 };
 
+type PiSettingsPackageSource =
+  | string
+  | {
+      source: string;
+      extensions?: string[];
+      skills?: string[];
+      prompts?: string[];
+      themes?: string[];
+    };
+
+type PiSettingsManager = {
+  getGlobalSettings: () => { packages?: PiSettingsPackageSource[] };
+  getProjectSettings: () => { packages?: PiSettingsPackageSource[] };
+};
+
 type PiPackageManager = {
-  listConfiguredPackages: () => PiConfiguredPackageRecord[];
+  getInstalledPath: (source: string, scope: "user" | "project") => string | undefined;
   installAndPersist: (source: string, options?: { local?: boolean }) => Promise<void>;
   removeAndPersist: (source: string, options?: { local?: boolean }) => Promise<boolean>;
 };
@@ -242,17 +257,23 @@ async function getCatalog(query: string) {
   return promise;
 }
 
-async function getPiPackageManager(): Promise<PiPackageManager> {
+async function getPiPackageServices(): Promise<{
+  packageManager: PiPackageManager;
+  settingsManager: PiSettingsManager;
+}> {
   const { DefaultPackageManager, SettingsManager, getAgentDir } = await getPiModule();
   const cwd = process.cwd();
   const agentDir = getAgentDir();
   const settingsManager = SettingsManager.create(cwd, agentDir);
 
-  return new DefaultPackageManager({
-    cwd,
-    agentDir,
-    settingsManager,
-  }) as unknown as PiPackageManager;
+  return {
+    packageManager: new DefaultPackageManager({
+      cwd,
+      agentDir,
+      settingsManager,
+    }) as unknown as PiPackageManager,
+    settingsManager: settingsManager as unknown as PiSettingsManager,
+  };
 }
 
 function sortConfiguredPackages(packages: PiConfiguredPackage[]) {
@@ -289,10 +310,27 @@ export async function searchPiPackages(
 }
 
 export async function listConfiguredPiPackages(): Promise<PiConfiguredPackage[]> {
-  const packageManager = await getPiPackageManager();
+  const { packageManager, settingsManager } = await getPiPackageServices();
+  const configuredPackages: PiConfiguredPackageRecord[] = [];
+
+  const appendPackages = (scope: "user" | "project", packageSources: PiSettingsPackageSource[]) => {
+    for (const packageSource of packageSources) {
+      const source = typeof packageSource === "string" ? packageSource : packageSource.source;
+
+      configuredPackages.push({
+        source,
+        scope,
+        filtered: typeof packageSource === "object",
+        installedPath: packageManager.getInstalledPath(source, scope),
+      });
+    }
+  };
+
+  appendPackages("user", settingsManager.getGlobalSettings().packages ?? []);
+  appendPackages("project", settingsManager.getProjectSettings().packages ?? []);
 
   return sortConfiguredPackages(
-    packageManager.listConfiguredPackages().map((configuredPackage) => ({
+    configuredPackages.map((configuredPackage) => ({
       source: configuredPackage.source,
       identityKey: getPiPackageIdentityKey(configuredPackage.source),
       displayName: getConfiguredPiPackageDisplayName(configuredPackage.source),
@@ -315,7 +353,7 @@ export async function installPiPackage(request: {
     throw new Error("Enter a package source.");
   }
 
-  const packageManager = await getPiPackageManager();
+  const { packageManager } = await getPiPackageServices();
   await packageManager.installAndPersist(normalizedSource, request.local ? { local: true } : {});
 
   return {
@@ -335,7 +373,7 @@ export async function removePiPackage(request: {
     throw new Error("Choose a package to remove.");
   }
 
-  const packageManager = await getPiPackageManager();
+  const { packageManager } = await getPiPackageServices();
   await packageManager.removeAndPersist(source, request.local ? { local: true } : {});
 
   return {

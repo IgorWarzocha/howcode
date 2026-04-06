@@ -48,7 +48,10 @@ export function SidebarProjectsSection({
   onToggleProjectCollapse,
 }: SidebarProjectsSectionProps) {
   const showProjects =
-    activeView === "code" || activeView === "thread" || activeView === "settings";
+    activeView === "code" ||
+    activeView === "thread" ||
+    activeView === "settings" ||
+    activeView === "extensions";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>("all");
   const [createOpen, setCreateOpen] = useState(false);
