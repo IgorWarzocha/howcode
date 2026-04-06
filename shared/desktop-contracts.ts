@@ -138,6 +138,7 @@ export type PiPackageCatalogPage = {
 export type PiConfiguredPackageType = "npm" | "git" | "local";
 
 export type PiConfiguredPackage = {
+  resourceKind: "package" | "extension";
   source: string;
   identityKey: string;
   displayName: string;

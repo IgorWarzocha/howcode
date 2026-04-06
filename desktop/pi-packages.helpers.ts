@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { PiConfiguredPackageType, PiPackageCatalogItem } from "../shared/desktop-contracts.ts";
 
 const localSourcePattern = /^(?:\.{1,2}(?:\/|$)|\/|~(?:\/|$))/;
@@ -90,7 +91,7 @@ export function getConfiguredPiPackageDisplayName(source: string) {
     return source.startsWith("git:") ? source.slice(4) : source;
   }
 
-  return source;
+  return path.basename(source) || source;
 }
 
 export function sortPiPackageCatalogItems(items: PiPackageCatalogItem[]) {

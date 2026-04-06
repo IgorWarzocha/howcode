@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type {
   PiConfiguredPackage,
   PiPackageCatalogItem,
@@ -54,6 +55,7 @@ type CatalogCacheEntry = {
 };
 
 type PiConfiguredPackageRecord = {
+  resourceKind: "package" | "extension";
   source: string;
   scope: "user" | "project";
   filtered: boolean;
@@ -71,8 +73,8 @@ type PiSettingsPackageSource =
     };
 
 type PiSettingsManager = {
-  getGlobalSettings: () => { packages?: PiSettingsPackageSource[] };
-  getProjectSettings: () => { packages?: PiSettingsPackageSource[] };
+  getGlobalSettings: () => { packages?: PiSettingsPackageSource[]; extensions?: string[] };
+  getProjectSettings: () => { packages?: PiSettingsPackageSource[]; extensions?: string[] };
 };
 
 type PiPackageManager = {
@@ -318,6 +320,7 @@ export async function listConfiguredPiPackages(): Promise<PiConfiguredPackage[]>
       const source = typeof packageSource === "string" ? packageSource : packageSource.source;
 
       configuredPackages.push({
+        resourceKind: "package",
         source,
         scope,
         filtered: typeof packageSource === "object",
@@ -326,11 +329,29 @@ export async function listConfiguredPiPackages(): Promise<PiConfiguredPackage[]>
     }
   };
 
-  appendPackages("user", settingsManager.getGlobalSettings().packages ?? []);
-  appendPackages("project", settingsManager.getProjectSettings().packages ?? []);
+  const appendExtensions = (scope: "user" | "project", extensionPaths: string[]) => {
+    for (const extensionPath of extensionPaths) {
+      configuredPackages.push({
+        resourceKind: "extension",
+        source: extensionPath,
+        scope,
+        filtered: false,
+        installedPath: existsSync(extensionPath) ? extensionPath : undefined,
+      });
+    }
+  };
+
+  const globalSettings = settingsManager.getGlobalSettings();
+  const projectSettings = settingsManager.getProjectSettings();
+
+  appendPackages("user", globalSettings.packages ?? []);
+  appendPackages("project", projectSettings.packages ?? []);
+  appendExtensions("user", globalSettings.extensions ?? []);
+  appendExtensions("project", projectSettings.extensions ?? []);
 
   return sortConfiguredPackages(
     configuredPackages.map((configuredPackage) => ({
+      resourceKind: configuredPackage.resourceKind,
       source: configuredPackage.source,
       identityKey: getPiPackageIdentityKey(configuredPackage.source),
       displayName: getConfiguredPiPackageDisplayName(configuredPackage.source),

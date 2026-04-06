@@ -19,7 +19,7 @@ import {
   removePiPackageQuery,
   searchPiPackagesQuery,
 } from "../query/desktop-query";
-import { settingsInputClass, settingsListRowClass, settingsSectionClass } from "../ui/classes";
+import { settingsInputClass, settingsListRowClass } from "../ui/classes";
 import { cn } from "../utils/cn";
 
 type PendingAction = {
@@ -32,23 +32,12 @@ const compactNumberFormatter = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 });
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
 function getActionError(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
 function formatDownloads(downloads: number) {
   return `${compactNumberFormatter.format(downloads)}/mo`;
-}
-
-function formatPublishedAt(date: string) {
-  const parsedDate = new Date(date);
-  return Number.isNaN(parsedDate.getTime()) ? null : dateFormatter.format(parsedDate);
 }
 
 function normalizeExternalUrl(url: string) {
@@ -60,10 +49,6 @@ function isDesktopPackagesAvailable() {
 }
 
 async function openExternalUrl(url: string) {
-  if (!url) {
-    return;
-  }
-
   const normalizedUrl = normalizeExternalUrl(url);
 
   if (window.piDesktop?.openExternal) {
@@ -77,7 +62,11 @@ async function openExternalUrl(url: string) {
 function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
   return new Set(
     packages
-      .filter((configuredPackage) => typeof configuredPackage.installedPath === "string")
+      .filter(
+        (configuredPackage) =>
+          configuredPackage.resourceKind === "package" &&
+          typeof configuredPackage.installedPath === "string",
+      )
       .map((configuredPackage) => configuredPackage.identityKey),
   );
 }
@@ -87,6 +76,7 @@ export function ExtensionsView() {
   const [searchInput, setSearchInput] = useState("");
   const [manualSource, setManualSource] = useState("");
   const [manualSourceKind, setManualSourceKind] = useState<"npm" | "git">("npm");
+  const [installScope, setInstallScope] = useState<"user" | "project">("user");
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const deferredSearchInput = useDeferredValue(searchInput.trim());
@@ -114,7 +104,7 @@ export function ExtensionsView() {
   });
 
   const configuredPackages = configuredPackagesQuery.data ?? [];
-  const installedPackages = useMemo(
+  const installedEntries = useMemo(
     () =>
       configuredPackages.filter(
         (configuredPackage) => typeof configuredPackage.installedPath === "string",
@@ -129,7 +119,6 @@ export function ExtensionsView() {
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [packagesQuery.data?.pages],
   );
-  const totalPackages = packagesQuery.data?.pages[0]?.total ?? 0;
 
   const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
     queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(), packages);
@@ -163,10 +152,16 @@ export function ExtensionsView() {
     setActionError(null);
 
     try {
-      const result = await installPiPackageQuery({ source: normalizedSource, kind });
+      const result = await installPiPackageQuery({
+        source: normalizedSource,
+        kind,
+        local: installScope === "project",
+      });
+
       if (result?.configuredPackages) {
         updateConfiguredPackagesCache(result.configuredPackages);
       }
+
       return true;
     } catch (error) {
       setActionError(getActionError(error));
@@ -187,6 +182,7 @@ export function ExtensionsView() {
         source: configuredPackage.source,
         local: configuredPackage.scope === "project",
       });
+
       if (result?.configuredPackages) {
         updateConfiguredPackagesCache(result.configuredPackages);
       }
@@ -213,12 +209,10 @@ export function ExtensionsView() {
 
   if (!desktopPackagesAvailable) {
     return (
-      <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
-        <div className="grid gap-1">
-          <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
-          <p className="m-0 text-[13px] text-[color:var(--muted)]">
-            Open the desktop build to browse and install extensions here.
-          </p>
+      <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
+        <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
+        <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
+          Desktop build required.
         </div>
       </div>
     );
@@ -226,100 +220,90 @@ export function ExtensionsView() {
 
   return (
     <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
-      <div className="grid gap-1">
-        <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
-        <p className="m-0 text-[13px] text-[color:var(--muted)]">
-          Popular pi packages from npm, plus direct install from npm or git.
-        </p>
-      </div>
+      <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
 
-      <section className={settingsSectionClass}>
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
-            <Search size={14} />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-              placeholder="Search pi packages"
-              aria-label="Search pi packages"
-            />
-          </label>
-          <div className="text-[12px] text-[color:var(--muted)]">
-            {totalPackages > 0
-              ? `${compactNumberFormatter.format(totalPackages)} results · most downloaded first`
-              : "Searching npm…"}
-          </div>
+      <form
+        className="grid gap-2 md:grid-cols-[auto_auto_minmax(0,1fr)_auto]"
+        onSubmit={handleManualInstall}
+      >
+        <div className="inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
+          {(["user", "project"] as const).map((scope) => (
+            <button
+              key={scope}
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 text-[12px] capitalize transition-colors",
+                installScope === scope
+                  ? "bg-[rgba(183,186,245,0.16)] text-[color:var(--text)]"
+                  : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
+              )}
+              onClick={() => setInstallScope(scope)}
+              aria-pressed={installScope === scope}
+            >
+              {scope}
+            </button>
+          ))}
         </div>
 
-        <form
-          className="grid gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]"
-          onSubmit={handleManualInstall}
+        <div className="inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
+          {(["npm", "git"] as const).map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 text-[12px] capitalize transition-colors",
+                manualSourceKind === kind
+                  ? "bg-[rgba(183,186,245,0.16)] text-[color:var(--text)]"
+                  : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
+              )}
+              onClick={() => setManualSourceKind(kind)}
+              aria-pressed={manualSourceKind === kind}
+            >
+              {kind}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="text"
+          value={manualSource}
+          onChange={(event) => setManualSource(event.target.value)}
+          className={settingsInputClass}
+          placeholder={
+            manualSourceKind === "npm"
+              ? "Package name or npm:@scope/pkg"
+              : "git:github.com/user/repo or https://…"
+          }
+          aria-label={manualSourceKind === "npm" ? "Install npm package" : "Install git package"}
+        />
+
+        <PrimaryButton
+          type="submit"
+          className="inline-flex items-center justify-center gap-1.5 px-3 disabled:cursor-not-allowed disabled:opacity-45"
+          disabled={manualSource.trim().length === 0 || isPending("install", manualSource)}
         >
-          <div className="inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
-            {(["npm", "git"] as const).map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                className={cn(
-                  "rounded-full px-3 py-1 text-[12px] capitalize transition-colors",
-                  manualSourceKind === kind
-                    ? "bg-[rgba(183,186,245,0.16)] text-[color:var(--text)]"
-                    : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
-                )}
-                onClick={() => setManualSourceKind(kind)}
-                aria-pressed={manualSourceKind === kind}
-              >
-                {kind}
-              </button>
-            ))}
-          </div>
+          {isPending("install", manualSource) ? (
+            <>
+              <Sparkles size={14} />
+              Installing…
+            </>
+          ) : (
+            <>
+              {manualSourceKind === "npm" ? <PackagePlus size={14} /> : <GitBranch size={14} />}
+              Install
+            </>
+          )}
+        </PrimaryButton>
+      </form>
 
-          <input
-            type="text"
-            value={manualSource}
-            onChange={(event) => setManualSource(event.target.value)}
-            className={settingsInputClass}
-            placeholder={
-              manualSourceKind === "npm"
-                ? "Package name or npm:@scope/pkg"
-                : "git:github.com/user/repo or https://…"
-            }
-            aria-label={manualSourceKind === "npm" ? "Install npm package" : "Install git package"}
-          />
+      {actionError ? <div className="text-[12px] text-[#f2a7a7]">{actionError}</div> : null}
 
-          <PrimaryButton
-            type="submit"
-            className="inline-flex items-center justify-center gap-1.5 px-3 disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={manualSource.trim().length === 0 || isPending("install", manualSource)}
-          >
-            {isPending("install", manualSource) ? (
-              <>
-                <Sparkles size={14} />
-                Installing…
-              </>
-            ) : (
-              <>
-                {manualSourceKind === "npm" ? <PackagePlus size={14} /> : <GitBranch size={14} />}
-                Install
-              </>
-            )}
-          </PrimaryButton>
-        </form>
+      <div className="grid gap-2">
+        <h2 className="m-0 text-[13px] font-medium text-[color:var(--text)]">Installed</h2>
 
-        {actionError ? <div className="text-[12px] text-[#f2a7a7]">{actionError}</div> : null}
-      </section>
-
-      <section className={settingsSectionClass}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Installed</h2>
-          <div className="text-[12px] text-[color:var(--muted)]">{installedPackages.length}</div>
-        </div>
-
-        {installedPackages.length > 0 ? (
+        {installedEntries.length > 0 ? (
           <div className="grid gap-2">
-            {installedPackages.map((configuredPackage) => (
+            {installedEntries.map((configuredPackage) => (
               <div
                 key={`${configuredPackage.scope}:${configuredPackage.source}`}
                 className={cn(settingsListRowClass, "gap-2 py-2")}
@@ -338,29 +322,40 @@ export function ExtensionsView() {
                   </div>
                 </div>
 
-                <TextButton
-                  className="inline-flex items-center gap-1.5 px-2 py-1.5 text-[12px] text-[color:var(--muted)] hover:text-[#ffb4b4]"
-                  onClick={() => void handleRemove(configuredPackage)}
-                  disabled={isPending("remove", configuredPackage.source)}
-                >
-                  <Trash2 size={13} />
-                  {isPending("remove", configuredPackage.source) ? "Removing…" : "Remove"}
-                </TextButton>
+                {configuredPackage.resourceKind === "package" ? (
+                  <TextButton
+                    className="inline-flex items-center gap-1.5 px-2 py-1.5 text-[12px] text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                    onClick={() => void handleRemove(configuredPackage)}
+                    disabled={isPending("remove", configuredPackage.source)}
+                  >
+                    <Trash2 size={13} />
+                    {isPending("remove", configuredPackage.source) ? "Removing…" : "Remove"}
+                  </TextButton>
+                ) : null}
               </div>
             ))}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-            No installed packages yet.
+            No installed extensions.
           </div>
         )}
-      </section>
+      </div>
 
-      <section className={settingsSectionClass}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Browse</h2>
-          <div className="text-[12px] text-[color:var(--muted)]">npm</div>
-        </div>
+      <div className="grid gap-2">
+        <h2 className="m-0 text-[13px] font-medium text-[color:var(--text)]">Browse</h2>
+
+        <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
+          <Search size={14} />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            placeholder="Search pi packages"
+            aria-label="Search pi packages"
+          />
+        </label>
 
         {packagesQuery.isLoading ? (
           <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
@@ -375,7 +370,6 @@ export function ExtensionsView() {
             {catalogItems.map((item) => {
               const installed = installedIdentityKeys.has(item.identityKey);
               const pendingInstall = isPending("install", item.source);
-              const publishedAt = formatPublishedAt(item.publishedAt);
 
               return (
                 <div key={item.name} className={cn(settingsListRowClass, "gap-2 py-2")}>
@@ -388,21 +382,13 @@ export function ExtensionsView() {
                         {formatDownloads(item.monthlyDownloads)}
                       </span>
                       <span className="text-[11px] text-[color:var(--muted)]">v{item.version}</span>
-                      {publishedAt ? (
-                        <span className="hidden text-[11px] text-[color:var(--muted)] sm:inline">
-                          {publishedAt}
-                        </span>
+                      {installed ? (
+                        <span className="text-[11px] text-[color:var(--muted)]">Installed</span>
                       ) : null}
                     </div>
-                    {item.description ? (
-                      <div className="truncate text-[12px] text-[color:var(--muted)]">
-                        {item.description}
-                      </div>
-                    ) : (
-                      <div className="truncate text-[12px] text-[color:var(--muted)]">
-                        {item.source}
-                      </div>
-                    )}
+                    <div className="truncate text-[12px] text-[color:var(--muted)]">
+                      {item.description || item.source}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -444,7 +430,7 @@ export function ExtensionsView() {
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-            No pi packages match that search.
+            No pi packages.
           </div>
         )}
 
@@ -459,7 +445,7 @@ export function ExtensionsView() {
             </TextButton>
           </div>
         ) : null}
-      </section>
+      </div>
     </div>
   );
 }
