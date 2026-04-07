@@ -64,6 +64,7 @@ export function Sidebar({
     activeView === "thread" ||
     activeView === "settings" ||
     activeView === "extensions";
+  const showModeSelection = activeView !== "extensions";
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -82,47 +83,49 @@ export function Sidebar({
       data-pulse-active={projectScopeLockActive ? "true" : "false"}
       className="motion-surface-pulse motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
     >
-      <nav className="grid gap-0.5" aria-label="Primary navigation">
-        <NavButton
-          icon={<MessageSquare size={16} />}
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Chat</span>
-              <FeatureStatusBadge statusId="feature:sidebar.plugins" />
-            </span>
-          }
-          active={activeView === "chat"}
-          onClick={() => onShowView("chat")}
-        />
-        <NavButton
-          icon={<PawPrint size={16} />}
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Claw</span>
-              <FeatureStatusBadge statusId="feature:sidebar.automations" />
-            </span>
-          }
-          active={activeView === "claw"}
-          onClick={() => onShowView("claw")}
-        />
-        <NavButton
-          icon={<BriefcaseBusiness size={16} />}
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Work</span>
-              <FeatureStatusBadge statusId="feature:sidebar.debug" />
-            </span>
-          }
-          active={activeView === "work"}
-          onClick={() => onShowView("work")}
-        />
-        <NavButton
-          icon={<Code2 size={16} />}
-          label="Code"
-          active={codeModeActive}
-          onClick={() => onShowView("code")}
-        />
-      </nav>
+      {showModeSelection ? (
+        <nav className="grid gap-0.5" aria-label="Primary navigation">
+          <NavButton
+            icon={<MessageSquare size={16} />}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Chat</span>
+                <FeatureStatusBadge statusId="feature:sidebar.plugins" />
+              </span>
+            }
+            active={activeView === "chat"}
+            onClick={() => onShowView("chat")}
+          />
+          <NavButton
+            icon={<PawPrint size={16} />}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Claw</span>
+                <FeatureStatusBadge statusId="feature:sidebar.automations" />
+              </span>
+            }
+            active={activeView === "claw"}
+            onClick={() => onShowView("claw")}
+          />
+          <NavButton
+            icon={<BriefcaseBusiness size={16} />}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Work</span>
+                <FeatureStatusBadge statusId="feature:sidebar.debug" />
+              </span>
+            }
+            active={activeView === "work"}
+            onClick={() => onShowView("work")}
+          />
+          <NavButton
+            icon={<Code2 size={16} />}
+            label="Code"
+            active={codeModeActive}
+            onClick={() => onShowView("code")}
+          />
+        </nav>
+      ) : null}
 
       <SidebarProjectsSection
         activeView={activeView}
