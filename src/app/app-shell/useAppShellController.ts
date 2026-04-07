@@ -295,7 +295,11 @@ export function useAppShellController() {
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
-    handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleProjectSelect: (projectId: string) =>
+      dispatch({
+        type: state.activeView === "extensions" ? "set-selected-project" : "select-project",
+        projectId,
+      }),
     handleProjectReorder,
     handleSelectDiffTurn,
     handleShowView,

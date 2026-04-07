@@ -52,6 +52,7 @@ export function SidebarProjectsSection({
     activeView === "thread" ||
     activeView === "settings" ||
     activeView === "extensions";
+  const extensionsSelectionMode = activeView === "extensions";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -176,20 +177,22 @@ export function SidebarProjectsSection({
               }
               active={filterMode !== "all"}
             />
-            <IconButton
-              ref={createButtonRef}
-              label="Add new project"
-              onClick={() => {
-                if (!appSettings.preferredProjectLocation) {
-                  onOpenSettingsPanel();
-                  return;
-                }
+            {extensionsSelectionMode ? null : (
+              <IconButton
+                ref={createButtonRef}
+                label="Add new project"
+                onClick={() => {
+                  if (!appSettings.preferredProjectLocation) {
+                    onOpenSettingsPanel();
+                    return;
+                  }
 
-                setCreateErrorMessage(null);
-                setCreateOpen(true);
-              }}
-              icon={<FolderPlus size={15} />}
-            />
+                  setCreateErrorMessage(null);
+                  setCreateOpen(true);
+                }}
+                icon={<FolderPlus size={15} />}
+              />
+            )}
           </div>
         ) : null}
 

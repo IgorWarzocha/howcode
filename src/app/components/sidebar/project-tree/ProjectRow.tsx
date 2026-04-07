@@ -8,10 +8,12 @@ import { cn } from "../../../utils/cn";
 type ProjectRowProps = {
   actionMenuId: string;
   actionMenuOpen: boolean;
-  dragHandleProps: {
+  dragHandleProps?: {
     attributes: DraggableAttributes;
     listeners: DraggableSyntheticListeners | undefined;
   };
+  canEdit: boolean;
+  canToggleExpanded: boolean;
   isActive: boolean;
   isDragging: boolean;
   isExpanded: boolean;
@@ -19,6 +21,7 @@ type ProjectRowProps = {
   name: string;
   renameDraft: string;
   isEditing: boolean;
+  showActions: boolean;
   threadGroupId: string;
   onCancelEdit: () => void;
   onChangeRenameDraft: (value: string) => void;
@@ -33,6 +36,8 @@ export function ProjectRow({
   actionMenuId,
   actionMenuOpen,
   dragHandleProps,
+  canEdit,
+  canToggleExpanded,
   isActive,
   isDragging,
   isExpanded,
@@ -40,6 +45,7 @@ export function ProjectRow({
   name,
   renameDraft,
   isEditing,
+  showActions,
   threadGroupId,
   onCancelEdit,
   onChangeRenameDraft,
@@ -76,7 +82,9 @@ export function ProjectRow({
 
     clickTimeoutRef.current = window.setTimeout(() => {
       onSelect();
-      onToggleExpanded();
+      if (canToggleExpanded) {
+        onToggleExpanded();
+      }
       clickTimeoutRef.current = null;
     }, 180);
   };
@@ -87,7 +95,9 @@ export function ProjectRow({
       clickTimeoutRef.current = null;
     }
 
-    onEdit();
+    if (canEdit) {
+      onEdit();
+    }
   };
 
   return (
@@ -101,11 +111,15 @@ export function ProjectRow({
     >
       <button
         type="button"
-        className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
-        onClick={onToggleExpanded}
+        className={cn(
+          "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out",
+          canToggleExpanded ? "hover:text-[color:var(--text)]" : "cursor-default",
+        )}
+        onClick={canToggleExpanded ? onToggleExpanded : undefined}
         aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         aria-expanded={isExpanded}
         aria-controls={threadGroupId}
+        disabled={!canToggleExpanded}
       >
         {hasRepoOrigin ? (
           <Github
@@ -158,13 +172,14 @@ export function ProjectRow({
         <button
           type="button"
           className={cn(
-            "flex min-h-8 min-w-0 cursor-grab items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] active:cursor-grabbing",
+            "flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
+            dragHandleProps ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
             isActive && "text-[color:var(--text)]",
           )}
-          {...dragHandleProps.attributes}
-          {...dragHandleProps.listeners}
+          {...dragHandleProps?.attributes}
+          {...dragHandleProps?.listeners}
           onClick={handleRowClick}
-          onDoubleClick={handleRowDoubleClick}
+          onDoubleClick={canEdit ? handleRowDoubleClick : undefined}
           aria-current={isActive ? "page" : undefined}
         >
           <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">
@@ -173,30 +188,32 @@ export function ProjectRow({
         </button>
       )}
 
-      <div
-        className={cn(
-          "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
-          actionMenuOpen && "opacity-100",
-          isDragging && "opacity-100",
-          isEditing && "opacity-0 pointer-events-none",
-        )}
-      >
-        <button
-          type="button"
+      {showActions ? (
+        <div
           className={cn(
-            compactIconButtonClass,
-            actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-            getFeatureStatusButtonClass("feature:sidebar.project.actions"),
+            "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
+            actionMenuOpen && "opacity-100",
+            isDragging && "opacity-100",
+            isEditing && "opacity-0 pointer-events-none",
           )}
-          onClick={onToggleActions}
-          aria-label="Project actions"
-          aria-haspopup="menu"
-          aria-expanded={actionMenuOpen}
-          aria-controls={actionMenuId}
         >
-          <MoreHorizontal size={14} />
-        </button>
-      </div>
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+              getFeatureStatusButtonClass("feature:sidebar.project.actions"),
+            )}
+            onClick={onToggleActions}
+            aria-label="Project actions"
+            aria-haspopup="menu"
+            aria-expanded={actionMenuOpen}
+            aria-controls={actionMenuId}
+          >
+            <MoreHorizontal size={14} />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

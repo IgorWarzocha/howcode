@@ -70,6 +70,20 @@ describe("workspace state", () => {
     expect(nextState.selectedDiffTurnCount).toBeNull();
   });
 
+  it("can change the selected project without leaving extensions", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "extensions",
+        selectedProjectId: "pi-plugin-codex",
+      },
+      { type: "set-selected-project", projectId: "claw-phone" },
+    );
+
+    expect(nextState.activeView).toBe("extensions");
+    expect(nextState.selectedProjectId).toBe("claw-phone");
+  });
+
   it("can open the diff panel with a selected turn and file", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
       type: "open-diff",
