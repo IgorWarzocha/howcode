@@ -16,6 +16,7 @@ function buildShellState(): ShellState {
     sessionDir: "/repo/.pi/sessions",
     appSettings: {
       gitCommitMessageModel: null,
+      skillCreatorModel: null,
       favoriteFolders: ["/existing"],
       projectImportState: null,
       preferredProjectLocation: null,
@@ -82,6 +83,20 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         gitCommitMessageModel: { provider: "openai", id: "gpt-5" },
+      },
+    });
+  });
+
+  it("updates the optimistic skill creator model selection", () => {
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "skillCreatorModel",
+        provider: "anthropic",
+        modelId: "claude-sonnet",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        skillCreatorModel: { provider: "anthropic", id: "claude-sonnet" },
       },
     });
   });

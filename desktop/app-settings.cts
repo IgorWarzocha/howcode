@@ -2,6 +2,7 @@ import type { AppSettings, ModelSelection } from "../shared/desktop-contracts.ts
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
+const skillCreatorModelKey = "skillCreatorModel";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
@@ -118,6 +119,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(favoriteFoldersKey) as PreferenceRow | undefined;
+  const skillCreatorModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(skillCreatorModelKey) as PreferenceRow | undefined;
   const projectImportStateRow = db
     .prepare(
       `
@@ -157,6 +167,7 @@ export function loadAppSettings(): AppSettings {
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
+    skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
@@ -173,6 +184,15 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   }
 
   writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
+}
+
+export function setSkillCreatorModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(skillCreatorModelKey);
+    return;
+  }
+
+  writeAppPreference(skillCreatorModelKey, JSON.stringify(selection));
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {

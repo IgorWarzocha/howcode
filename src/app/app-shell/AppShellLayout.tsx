@@ -63,6 +63,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appSettings={
               controller.shellState?.appSettings ?? {
                 gitCommitMessageModel: null,
+                skillCreatorModel: null,
                 favoriteFolders: [],
                 projectImportState: null,
                 preferredProjectLocation: null,

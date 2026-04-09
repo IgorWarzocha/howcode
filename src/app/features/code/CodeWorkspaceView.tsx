@@ -175,6 +175,7 @@ export function CodeWorkspaceView({
               appSettings={
                 shellState?.appSettings ?? {
                   gitCommitMessageModel: null,
+                  skillCreatorModel: null,
                   favoriteFolders: [],
                   projectImportState: null,
                   preferredProjectLocation: null,

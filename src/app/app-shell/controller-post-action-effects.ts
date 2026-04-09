@@ -78,6 +78,7 @@ export function getOptimisticallyUpdatedShellState(
 
   if (
     payload.key !== "gitCommitMessageModel" &&
+    payload.key !== "skillCreatorModel" &&
     payload.key !== "favoriteFolders" &&
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
@@ -95,6 +96,15 @@ export function getOptimisticallyUpdatedShellState(
           ? { provider: payload.provider, id: payload.modelId }
           : currentState.appSettings.gitCommitMessageModel
       : currentState.appSettings.gitCommitMessageModel;
+
+  const nextSkillCreatorSelection =
+    payload.key === "skillCreatorModel"
+      ? payload.reset === true
+        ? null
+        : typeof payload.provider === "string" && typeof payload.modelId === "string"
+          ? { provider: payload.provider, id: payload.modelId }
+          : currentState.appSettings.skillCreatorModel
+      : currentState.appSettings.skillCreatorModel;
 
   const nextFavoriteFolders =
     payload.key === "favoriteFolders" && Array.isArray(payload.folders)
@@ -136,6 +146,7 @@ export function getOptimisticallyUpdatedShellState(
     appSettings: {
       ...currentState.appSettings,
       gitCommitMessageModel: nextSelection,
+      skillCreatorModel: nextSkillCreatorSelection,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,

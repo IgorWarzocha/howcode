@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CornerDownLeft,
   FilePenLine,
+  FolderOpen,
   PackagePlus,
   RefreshCw,
   Search,
@@ -42,6 +43,12 @@ type SkillsViewProps = {
 type PendingAction = {
   kind: "install" | "remove";
   source: string;
+};
+
+type MockCreateSkillMessage = {
+  id: string;
+  role: "assistant" | "user";
+  content: string;
 };
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
@@ -149,6 +156,10 @@ export function SkillsView({
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
+  const [createSkillDraft, setCreateSkillDraft] = useState("");
+  const [mockCreateSkillMessages, setMockCreateSkillMessages] = useState<MockCreateSkillMessage[]>(
+    [],
+  );
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null);
   const confirmRemovePanelRef = useRef<HTMLDivElement>(null);
@@ -293,6 +304,31 @@ export function SkillsView({
 
   const handleUseOwnSkillCreator = async () => {
     await configuredSkillsQuery.refetch();
+  };
+
+  const handleSubmitCreateSkillMock = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const prompt = createSkillDraft.trim();
+    if (!prompt) {
+      return;
+    }
+
+    const mockReplyPath =
+      installScope === "project"
+        ? "(/absolute/path/to/project-skill)"
+        : "(/absolute/path/to/global-skill)";
+
+    setMockCreateSkillMessages((current) => [
+      ...current,
+      { id: `${Date.now()}-user`, role: "user", content: prompt },
+      {
+        id: `${Date.now()}-assistant`,
+        role: "assistant",
+        content: `${mockReplyPath} Done, please click the button below and let me know if you'd like any changes to it.`,
+      },
+    ]);
+    setCreateSkillDraft("");
   };
 
   const handleToggleUseAgentsSkillsPaths = () => {
@@ -672,9 +708,51 @@ export function SkillsView({
         <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
           <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
             {skillCreatorReady ? (
-              <>
-                <div>Create flow comes next.</div>
-              </>
+              <div className="grid gap-2">
+                <div className="grid max-h-[220px] gap-2 overflow-y-auto px-0.5 py-0.5">
+                  {mockCreateSkillMessages.length > 0 ? (
+                    mockCreateSkillMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          "max-w-[85%] rounded-xl px-2.5 py-2 text-[12px] leading-5",
+                          message.role === "user"
+                            ? "ml-auto bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]"
+                            : "bg-[rgba(255,255,255,0.03)] text-[color:var(--muted)]",
+                        )}
+                      >
+                        {message.content}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                      This spawns a temporary chat session. For complex project-skills, please use
+                      normal chat for best results.
+                    </div>
+                  )}
+                </div>
+
+                <form
+                  className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+                  onSubmit={handleSubmitCreateSkillMock}
+                >
+                  <input
+                    type="text"
+                    value={createSkillDraft}
+                    onChange={(event) => setCreateSkillDraft(event.target.value)}
+                    className={settingsInputClass}
+                    placeholder="Describe the skill you want"
+                    aria-label="Describe the skill you want"
+                  />
+                  <TextButton
+                    className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
+                    disabled
+                  >
+                    <span>Open folder</span>
+                    <FolderOpen size={11} />
+                  </TextButton>
+                </form>
+              </div>
             ) : (
               <>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -740,20 +818,20 @@ export function SkillsView({
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+            className="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted)]"
             onClick={handleToggleUseAgentsSkillsPaths}
             aria-pressed={appSettings.useAgentsSkillsPaths}
           >
+            <span className="text-[color:var(--muted)]">Use .agents instead of .pi?</span>
             <span
               className={cn(
-                "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--muted-2)] bg-transparent transition-colors",
+                "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--border)] bg-transparent text-[color:var(--muted)] transition-colors hover:border-[color:var(--border-strong)] hover:text-[color:var(--text)]",
                 appSettings.useAgentsSkillsPaths &&
-                  "border-[rgba(183,186,245,0.42)] text-[color:var(--text)]",
+                  "border-[color:var(--border-strong)] bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)]",
               )}
             >
               {appSettings.useAgentsSkillsPaths ? <Check size={11} strokeWidth={2.6} /> : null}
             </span>
-            <span>Use .agents instead of .pi?</span>
           </button>
         </div>
 

@@ -168,6 +168,7 @@ export type ModelSelection = {
 
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
+  skillCreatorModel: ModelSelection | null;
   favoriteFolders: string[];
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;

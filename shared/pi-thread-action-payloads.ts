@@ -97,6 +97,7 @@ export function getGitRepoUrl(payload: DesktopActionPayload) {
 
 export function getSettingsKey(payload: DesktopActionPayload) {
   return payload.key === "gitCommitMessageModel" ||
+    payload.key === "skillCreatorModel" ||
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
