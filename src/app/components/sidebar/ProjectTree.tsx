@@ -236,7 +236,7 @@ export function ProjectTree({
                         onEdit={() => handleStartEdit(project.id, project.name)}
                         onSelect={() => {
                           onProjectSelect(project.id);
-                          if (activeView !== "extensions") {
+                          if (activeView !== "extensions" && activeView !== "skills") {
                             onAction("project.select", { projectId: project.id });
                           }
                           setOpenProjectMenuId(null);

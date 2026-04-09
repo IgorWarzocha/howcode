@@ -155,6 +155,56 @@ export type PiPackageMutationResult = {
   configuredPackages: PiConfiguredPackage[];
 };
 
+export type PiSkillCatalogItem = {
+  id: string;
+  skillId: string;
+  name: string;
+  source: string;
+  installs: number;
+  description: string | null;
+  url: string;
+  sourceUrl: string;
+  identityKey: string;
+};
+
+export type PiSkillCatalogPage = {
+  query: string;
+  total: number;
+  items: PiSkillCatalogItem[];
+};
+
+export type PiConfiguredSkill = {
+  source: string;
+  identityKey: string;
+  displayName: string;
+  description: string | null;
+  scope: "user" | "project";
+  provenance: "skills.sh" | "local";
+  installedPath: string;
+  skillFilePath: string;
+  sourceRepo: string | null;
+  sourceUrl: string | null;
+};
+
+export type PiSkillMutationResult = {
+  source: string;
+  normalizedSource: string;
+  configuredSkills: PiConfiguredSkill[];
+};
+
+export type SkillCreatorSessionMessage = {
+  id: string;
+  role: "assistant" | "user";
+  content: string;
+};
+
+export type SkillCreatorSessionState = {
+  sessionId: string;
+  messages: SkillCreatorSessionMessage[];
+  latestResponse: string | null;
+  createdSkillPath: string | null;
+};
+
 export type ComposerFilePickerEntry = {
   path: string;
   name: string;
@@ -176,10 +226,12 @@ export type ModelSelection = {
 
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
+  skillCreatorModel: ModelSelection | null;
   favoriteFolders: string[];
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
+  useAgentsSkillsPaths: boolean;
 };
 
 export type ComposerStateRequest = {

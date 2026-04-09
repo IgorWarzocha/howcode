@@ -36,6 +36,7 @@ export function useAppShellController() {
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
+  const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
@@ -127,7 +128,11 @@ export function useAppShellController() {
     if (state.activeView !== "extensions" && extensionsProjectScopeActive) {
       setExtensionsProjectScopeActive(false);
     }
-  }, [extensionsProjectScopeActive, state.activeView]);
+
+    if (state.activeView !== "skills" && skillsProjectScopeActive) {
+      setSkillsProjectScopeActive(false);
+    }
+  }, [extensionsProjectScopeActive, skillsProjectScopeActive, state.activeView]);
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -297,10 +302,14 @@ export function useAppShellController() {
     handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) =>
       dispatch({
-        type: state.activeView === "extensions" ? "set-selected-project" : "select-project",
+        type:
+          state.activeView === "extensions" || state.activeView === "skills"
+            ? "set-selected-project"
+            : "select-project",
         projectId,
       }),
     handleProjectReorder,
+    handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
     handleSelectDiffTurn,
     handleShowView,
     handleThreadOpen,
@@ -318,6 +327,7 @@ export function useAppShellController() {
     projects,
     projectGitState,
     shellState,
+    skillsProjectScopeActive,
     state,
   };
 }

@@ -9,11 +9,15 @@ import type {
   DesktopActionResult,
   DesktopEvent,
   PiConfiguredPackage,
+  PiConfiguredSkill,
   PiPackageCatalogPage,
   PiPackageMutationResult,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -49,6 +53,32 @@ declare global {
         local?: boolean;
         projectPath?: string | null;
       }) => Promise<PiPackageMutationResult>;
+      searchPiSkills?: (request?: {
+        query?: string | null;
+        limit?: number | null;
+      }) => Promise<PiSkillCatalogPage>;
+      getConfiguredPiSkills?: (request?: {
+        projectPath?: string | null;
+      }) => Promise<PiConfiguredSkill[]>;
+      installPiSkill?: (request: {
+        source: string;
+        local?: boolean;
+        projectPath?: string | null;
+      }) => Promise<PiSkillMutationResult>;
+      removePiSkill?: (request: {
+        installedPath: string;
+        projectPath?: string | null;
+      }) => Promise<PiSkillMutationResult>;
+      startSkillCreatorSession?: (request: {
+        prompt: string;
+        local?: boolean;
+        projectPath?: string | null;
+      }) => Promise<SkillCreatorSessionState>;
+      continueSkillCreatorSession?: (request: {
+        sessionId: string;
+        prompt: string;
+      }) => Promise<SkillCreatorSessionState>;
+      closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;

@@ -35,9 +35,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleToggleSidebar,
     pendingProjectAction,
     projects,
+    extensionsProjectScopeActive,
+    skillsProjectScopeActive,
     state,
   } = controller;
-  const effectiveCollapsedProjectIds = controller.extensionsProjectScopeActive
+  const projectScopeLockActive = extensionsProjectScopeActive || skillsProjectScopeActive;
+  const effectiveCollapsedProjectIds = projectScopeLockActive
     ? Object.fromEntries(projects.map((project) => [project.id, true]))
     : collapsedProjectIds;
 
@@ -65,23 +68,31 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appSettings={
               controller.shellState?.appSettings ?? {
                 gitCommitMessageModel: null,
+                skillCreatorModel: null,
                 favoriteFolders: [],
                 projectImportState: null,
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
+                useAgentsSkillsPaths: false,
               }
             }
             activeView={state.activeView}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
-            projectScopeLockActive={controller.extensionsProjectScopeActive}
+            projectScopeLockActive={projectScopeLockActive}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}
             onOpenExtensionsView={() => {
               handleShowView("extensions");
+              if (state.settingsOpen) {
+                handleToggleSettings();
+              }
+            }}
+            onOpenSkillsView={() => {
+              handleShowView("skills");
               if (state.settingsOpen) {
                 handleToggleSettings();
               }

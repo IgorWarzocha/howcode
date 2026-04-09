@@ -96,6 +96,23 @@ describe("workspace state", () => {
     expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
 
+  it("can swap the selected project without leaving a non-code view", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "skills",
+        selectedProjectId: "pi-plugin-codex",
+      },
+      {
+        type: "set-selected-project",
+        projectId: "claw-phone",
+      },
+    );
+
+    expect(nextState.activeView).toBe("skills");
+    expect(nextState.selectedProjectId).toBe("claw-phone");
+  });
+
   it("can switch into takeover terminal mode", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
       type: "show-takeover",

@@ -175,10 +175,12 @@ export function CodeWorkspaceView({
               appSettings={
                 shellState?.appSettings ?? {
                   gitCommitMessageModel: null,
+                  skillCreatorModel: null,
                   favoriteFolders: [],
                   projectImportState: null,
                   preferredProjectLocation: null,
                   initializeGitOnProjectCreate: false,
+                  useAgentsSkillsPaths: false,
                 }
               }
               availableModels={activeComposerState?.availableModels ?? []}
@@ -193,6 +195,7 @@ export function CodeWorkspaceView({
               onLoadEarlierMessages={handleLoadEarlierMessages}
               onOpenTurnDiff={handleOpenDiffSelection}
               onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
+              onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
               onSelectProject={controller.handleProjectSelect}
             />
           )}

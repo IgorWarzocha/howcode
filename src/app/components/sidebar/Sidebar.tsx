@@ -27,6 +27,7 @@ type SidebarProps = {
   onShowView: (view: View) => void;
   onToggleSettings: () => void;
   onOpenExtensionsView: () => void;
+  onOpenSkillsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   onProjectSelect: (projectId: string) => void;
@@ -48,6 +49,7 @@ export function Sidebar({
   onShowView,
   onToggleSettings,
   onOpenExtensionsView,
+  onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   onProjectSelect,
@@ -63,8 +65,9 @@ export function Sidebar({
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "settings" ||
-    activeView === "extensions";
-  const showModeSelection = activeView !== "extensions";
+    activeView === "extensions" ||
+    activeView === "skills";
+  const showModeSelection = activeView !== "extensions" && activeView !== "skills";
   const closeSettings = useCallback(() => {
     if (settingsOpen) {
       onToggleSettings();
@@ -165,6 +168,7 @@ export function Sidebar({
           open={settingsOpen}
           panelRef={settingsMenuRef}
           onOpenExtensionsView={onOpenExtensionsView}
+          onOpenSkillsView={onOpenSkillsView}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onOpenArchivedThreads={onOpenArchivedThreads}
         />

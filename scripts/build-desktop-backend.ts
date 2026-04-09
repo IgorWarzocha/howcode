@@ -10,6 +10,14 @@ const builds = [
     outfile: path.join(outputDir, "pi-threads.mjs"),
   },
   {
+    entrypoint: path.join(process.cwd(), "desktop", "pi-skills.cts"),
+    outfile: path.join(outputDir, "pi-skills.mjs"),
+  },
+  {
+    entrypoint: path.join(process.cwd(), "desktop", "skill-creator-session.cts"),
+    outfile: path.join(outputDir, "skill-creator-session.mjs"),
+  },
+  {
     entrypoint: path.join(process.cwd(), "desktop", "terminal", "manager.cts"),
     outfile: path.join(outputDir, "terminal-manager.mjs"),
   },

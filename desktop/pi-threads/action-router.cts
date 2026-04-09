@@ -32,6 +32,8 @@ import {
   setInitializeGitOnProjectCreate,
   setPreferredProjectLocation,
   setProjectImportState,
+  setSkillCreatorModelSelection,
+  setUseAgentsSkillsPaths,
 } from "../app-settings.cts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
 import {
@@ -330,6 +332,11 @@ export async function handleDesktopAction(
         return;
       }
 
+      if (key === "useAgentsSkillsPaths") {
+        setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false);
+        return;
+      }
+
       if (key === "preferredProjectLocation") {
         setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload));
         return;
@@ -339,6 +346,19 @@ export async function handleDesktopAction(
         const value = getSettingsBooleanValue(payload);
         if (value !== null) {
           setInitializeGitOnProjectCreate(value);
+        }
+        return;
+      }
+
+      if (key === "skillCreatorModel") {
+        if (getSettingsReset(payload)) {
+          setSkillCreatorModelSelection(null);
+          return;
+        }
+
+        const selection = getSettingsModelSelection(payload);
+        if (selection) {
+          setSkillCreatorModelSelection(selection);
         }
         return;
       }

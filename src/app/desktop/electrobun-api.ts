@@ -11,11 +11,15 @@ import type {
   DesktopActionResult,
   DesktopEvent,
   PiConfiguredPackage,
+  PiConfiguredSkill,
   PiPackageCatalogPage,
   PiPackageMutationResult,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -110,6 +114,29 @@ export const piDesktopApi = {
     local?: boolean;
     projectPath?: string | null;
   }) => (await getRpc()).request.removePiPackage(request) as Promise<PiPackageMutationResult>,
+  searchPiSkills: async (request: { query?: string | null; limit?: number | null } = {}) =>
+    (await getRpc()).request.searchPiSkills(request) as Promise<PiSkillCatalogPage>,
+  getConfiguredPiSkills: async (request: { projectPath?: string | null } = {}) =>
+    (await getRpc()).request.getConfiguredPiSkills(request) as Promise<PiConfiguredSkill[]>,
+  installPiSkill: async (request: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => (await getRpc()).request.installPiSkill(request) as Promise<PiSkillMutationResult>,
+  removePiSkill: async (request: { installedPath: string; projectPath?: string | null }) =>
+    (await getRpc()).request.removePiSkill(request) as Promise<PiSkillMutationResult>,
+  startSkillCreatorSession: async (request: {
+    prompt: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) =>
+    (await getRpc()).request.startSkillCreatorSession(request) as Promise<SkillCreatorSessionState>,
+  continueSkillCreatorSession: async (request: { sessionId: string; prompt: string }) =>
+    (await getRpc()).request.continueSkillCreatorSession(
+      request,
+    ) as Promise<SkillCreatorSessionState>,
+  closeSkillCreatorSession: async (sessionId: string) =>
+    (await getRpc()).request.closeSkillCreatorSession({ sessionId }) as Promise<{ ok: boolean }>,
   pickComposerAttachments: async (projectId: string | null = null) =>
     (await getRpc()).request.pickComposerAttachments({
       projectId,
@@ -145,6 +172,11 @@ export const piDesktopApi = {
     }) as Promise<TurnDiffResult | null>,
   getFullThreadDiff: async (sessionPath: string) =>
     (await getRpc()).request.getFullThreadDiff({ sessionPath }) as Promise<TurnDiffResult | null>,
+  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
+    (await getRpc()).request.invokeAction({
+      action,
+      payload,
+    }) as Promise<DesktopActionResult>,
   openTerminal: async (request: TerminalOpenRequest) =>
     (await getRpc()).request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
   writeTerminal: async (sessionId: string, data: string) => {
@@ -156,32 +188,16 @@ export const piDesktopApi = {
   closeTerminal: async (request: TerminalCloseRequest) => {
     await (await getRpc()).request.terminalClose(request);
   },
-  openExternal: async (url: string) => {
-    const response = await (await getRpc()).request.openExternal({ url });
-    return response.ok;
-  },
-  openPath: async (path: string) => {
-    const response = await (await getRpc()).request.openPath({ path });
-    return response.ok;
-  },
+  openExternal: async (url: string) =>
+    (await getRpc()).request.openExternal({ url }).then(({ ok }) => ok),
+  openPath: async (path: string) =>
+    (await getRpc()).request.openPath({ path }).then(({ ok }) => ok),
   subscribe: (listener: (event: DesktopEvent) => void) => {
     desktopListeners.add(listener);
-
-    void getElectroview().catch(() => undefined);
-
-    return () => {
-      desktopListeners.delete(listener);
-    };
+    return () => desktopListeners.delete(listener);
   },
   subscribeTerminal: (listener: (event: TerminalEvent) => void) => {
     terminalListeners.add(listener);
-
-    void getElectroview().catch(() => undefined);
-
-    return () => {
-      terminalListeners.delete(listener);
-    };
+    return () => terminalListeners.delete(listener);
   },
-  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
-    (await getRpc()).request.invokeAction({ action, payload }) as Promise<DesktopActionResult>,
 };

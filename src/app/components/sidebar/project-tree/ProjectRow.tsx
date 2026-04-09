@@ -188,32 +188,31 @@ export function ProjectRow({
         </button>
       )}
 
-      {showActions ? (
-        <div
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
+          actionMenuOpen && "opacity-100",
+          isDragging && "opacity-100",
+          isEditing && "pointer-events-none opacity-0",
+          !showActions && "pointer-events-none opacity-0",
+        )}
+      >
+        <button
+          type="button"
           className={cn(
-            "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
-            actionMenuOpen && "opacity-100",
-            isDragging && "opacity-100",
-            isEditing && "opacity-0 pointer-events-none",
+            compactIconButtonClass,
+            actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+            getFeatureStatusButtonClass("feature:sidebar.project.actions"),
           )}
+          onClick={onToggleActions}
+          aria-label="Project actions"
+          aria-haspopup="menu"
+          aria-expanded={actionMenuOpen}
+          aria-controls={actionMenuId}
         >
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-              getFeatureStatusButtonClass("feature:sidebar.project.actions"),
-            )}
-            onClick={onToggleActions}
-            aria-label="Project actions"
-            aria-haspopup="menu"
-            aria-expanded={actionMenuOpen}
-            aria-controls={actionMenuId}
-          >
-            <MoreHorizontal size={14} />
-          </button>
-        </div>
-      ) : null}
+          <MoreHorizontal size={14} />
+        </button>
+      </div>
     </div>
   );
 }

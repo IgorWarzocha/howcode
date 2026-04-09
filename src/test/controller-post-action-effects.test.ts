@@ -16,10 +16,12 @@ function buildShellState(): ShellState {
     sessionDir: "/repo/.pi/sessions",
     appSettings: {
       gitCommitMessageModel: null,
+      skillCreatorModel: null,
       favoriteFolders: ["/existing"],
       projectImportState: null,
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
+      useAgentsSkillsPaths: false,
     },
     availableHosts: [],
     composer: {
@@ -85,6 +87,20 @@ describe("controller post action effects", () => {
     });
   });
 
+  it("updates the optimistic skill creator model selection", () => {
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "skillCreatorModel",
+        provider: "anthropic",
+        modelId: "claude-sonnet",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        skillCreatorModel: { provider: "anthropic", id: "claude-sonnet" },
+      },
+    });
+  });
+
   it("deduplicates favorite folders during optimistic updates", () => {
     expect(
       getOptimisticallyUpdatedShellState(buildShellState(), {
@@ -118,6 +134,17 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         initializeGitOnProjectCreate: true,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "useAgentsSkillsPaths",
+        value: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        useAgentsSkillsPaths: true,
       },
     });
   });
