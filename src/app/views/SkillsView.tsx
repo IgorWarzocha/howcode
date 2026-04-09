@@ -13,10 +13,10 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
+import { ThreeDotsSpinner } from "../components/common/ThreeDotsSpinner";
 import { Tooltip } from "../components/common/Tooltip";
 import type { AppSettings, DesktopActionResult, PiConfiguredSkill } from "../desktop/types";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
@@ -30,7 +30,13 @@ import {
   searchPiSkillsQuery,
   startSkillCreatorSessionQuery,
 } from "../query/desktop-query";
-import { popoverPanelClass, settingsInputClass, settingsListRowClass } from "../ui/classes";
+import {
+  compactRoundIconButtonClass,
+  popoverPanelClass,
+  settingsCompactListRowClass,
+  settingsInputClass,
+  settingsListRowClass,
+} from "../ui/classes";
 import { cn } from "../utils/cn";
 
 type SkillsViewProps = {
@@ -48,12 +54,19 @@ type PendingAction = {
   source: string;
 };
 
+type SkillCreatorSectionProps = {
+  installScope: "global" | "project";
+  projectPath: string | null;
+  skillCreatorDetected: boolean;
+  onRefreshSkillCreatorDetection: () => Promise<unknown>;
+  onInvalidateConfiguredSkillsCaches: () => void;
+  onSetActionError: (value: string | null) => void;
+};
+
 const compactNumberFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-
-const MOCK_SKILL_CREATOR_SOURCE = "skills.sh/skill-creator";
 
 function getActionError(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -135,6 +148,212 @@ function isSkillCreatorCandidate(skill: PiConfiguredSkill) {
   return hasSkillToken && hasCreatorToken;
 }
 
+function SkillCreatorSection({
+  installScope,
+  projectPath,
+  skillCreatorDetected,
+  onRefreshSkillCreatorDetection,
+  onInvalidateConfiguredSkillsCaches,
+  onSetActionError,
+}: SkillCreatorSectionProps) {
+  const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
+  const [createSkillDraft, setCreateSkillDraft] = useState("");
+  const [skillCreatorSessionId, setSkillCreatorSessionId] = useState<string | null>(null);
+  const [skillCreatorLatestResponse, setSkillCreatorLatestResponse] = useState<string | null>(null);
+  const [createdSkillPath, setCreatedSkillPath] = useState<string | null>(null);
+  const [skillCreatorBusy, setSkillCreatorBusy] = useState(false);
+
+  const skillCreatorReady = skillCreatorDetected || mockSkillCreatorInstalled;
+  const canSubmitCreateSkill =
+    !skillCreatorBusy &&
+    (createSkillDraft.trim().length > 0 ||
+      skillCreatorSessionId !== null ||
+      skillCreatorLatestResponse !== null);
+  const createSkillPlaceholder = skillCreatorLatestResponse
+    ? "Tell the agent what you want changed or send an empty line to start creating a new skill."
+    : "Describe the skill you want";
+
+  useEffect(() => {
+    return () => {
+      if (skillCreatorSessionId) {
+        void closeSkillCreatorSessionQuery(skillCreatorSessionId);
+      }
+    };
+  }, [skillCreatorSessionId]);
+
+  const resetSkillCreatorSession = useCallback(async () => {
+    if (skillCreatorSessionId) {
+      await closeSkillCreatorSessionQuery(skillCreatorSessionId);
+    }
+
+    setSkillCreatorSessionId(null);
+    setSkillCreatorLatestResponse(null);
+    setCreatedSkillPath(null);
+    setCreateSkillDraft("");
+    onSetActionError(null);
+  }, [onSetActionError, skillCreatorSessionId]);
+
+  const handleInstallMockSkillCreator = async () => {
+    onSetActionError(null);
+    setMockSkillCreatorInstalled(true);
+  };
+
+  const handleUseOwnSkillCreator = async () => {
+    await onRefreshSkillCreatorDetection();
+  };
+
+  const handleSubmitCreateSkill = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (skillCreatorBusy) {
+      return;
+    }
+
+    const prompt = createSkillDraft.trim();
+    if (prompt.length === 0) {
+      if (skillCreatorSessionId || skillCreatorLatestResponse) {
+        await resetSkillCreatorSession();
+      }
+      return;
+    }
+
+    setSkillCreatorBusy(true);
+    onSetActionError(null);
+
+    try {
+      const sessionState = skillCreatorSessionId
+        ? await continueSkillCreatorSessionQuery({
+            sessionId: skillCreatorSessionId,
+            prompt,
+          })
+        : await startSkillCreatorSessionQuery({
+            prompt,
+            local: installScope === "project",
+            projectPath,
+          });
+
+      if (!sessionState) {
+        throw new Error("Could not start the skill creator.");
+      }
+
+      setSkillCreatorSessionId(sessionState.sessionId);
+      setSkillCreatorLatestResponse(sessionState.latestResponse);
+      setCreatedSkillPath(sessionState.createdSkillPath);
+      setCreateSkillDraft("");
+      onInvalidateConfiguredSkillsCaches();
+    } catch (error) {
+      onSetActionError(getActionError(error));
+    } finally {
+      setSkillCreatorBusy(false);
+    }
+  };
+
+  return (
+    <section className="grid gap-2">
+      <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
+        <span>Create a skill</span>
+      </div>
+
+      <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
+        <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
+          {skillCreatorReady ? (
+            <div className="grid gap-2">
+              <div className="px-0.5 py-0.5">
+                {skillCreatorBusy ? (
+                  <div className="inline-flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                    <span>Pi is working</span>
+                    <ThreeDotsSpinner className="text-[color:var(--muted)]" />
+                  </div>
+                ) : skillCreatorLatestResponse ? (
+                  <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                    {skillCreatorLatestResponse}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                    This spawns a temporary chat session. For complex project-skills, please use
+                    normal chat for best results.
+                  </div>
+                )}
+              </div>
+
+              <form
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+                onSubmit={(event) => {
+                  void handleSubmitCreateSkill(event);
+                }}
+              >
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={createSkillDraft}
+                    onChange={(event) => setCreateSkillDraft(event.target.value)}
+                    className={cn(settingsInputClass, "w-full pr-7")}
+                    placeholder={createSkillPlaceholder}
+                    aria-label="Describe the skill you want"
+                    disabled={skillCreatorBusy}
+                  />
+                  <Tooltip content="Press Enter to send">
+                    <button
+                      type="submit"
+                      className="absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={!canSubmitCreateSkill}
+                      aria-label="Send skill creator message"
+                    >
+                      <span className="flex h-3.5 w-3.5 items-center justify-center">
+                        <CornerDownLeft size={12} strokeWidth={2} className="block" />
+                      </span>
+                    </button>
+                  </Tooltip>
+                </div>
+
+                <TextButton
+                  className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
+                  onClick={() => {
+                    if (createdSkillPath) {
+                      void window.piDesktop?.openPath?.(createdSkillPath);
+                    }
+                  }}
+                  disabled={!createdSkillPath}
+                >
+                  <span>Open folder</span>
+                  <FolderOpen size={11} />
+                </TextButton>
+              </form>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span>No global skill creator detected. Install the bundled skill creator?</span>
+                <TextButton
+                  className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
+                  onClick={() => {
+                    void handleInstallMockSkillCreator();
+                  }}
+                >
+                  Yes
+                </TextButton>
+                <TextButton
+                  className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
+                  onClick={() => {
+                    void handleUseOwnSkillCreator();
+                  }}
+                >
+                  <span>No - I have provided my own</span>
+                  <RefreshCw size={11} />
+                </TextButton>
+              </div>
+              <div>
+                Please note this skill creator is agent-agnostic, as opposed to most of the skill
+                creator skills you will find for other harnesses and agents.
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function SkillsView({
   appSettings,
   projectPath,
@@ -152,12 +371,6 @@ export function SkillsView({
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
-  const [createSkillDraft, setCreateSkillDraft] = useState("");
-  const [skillCreatorSessionId, setSkillCreatorSessionId] = useState<string | null>(null);
-  const [skillCreatorLatestResponse, setSkillCreatorLatestResponse] = useState<string | null>(null);
-  const [createdSkillPath, setCreatedSkillPath] = useState<string | null>(null);
-  const [skillCreatorBusy, setSkillCreatorBusy] = useState(false);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null);
   const confirmRemovePanelRef = useRef<HTMLDivElement>(null);
@@ -193,7 +406,6 @@ export function SkillsView({
   const hasGlobalSkillCreator = configuredSkills.some(
     (skill) => skill.scope === "user" && isSkillCreatorCandidate(skill),
   );
-  const skillCreatorReady = hasGlobalSkillCreator || mockSkillCreatorInstalled;
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
@@ -220,14 +432,6 @@ export function SkillsView({
       }),
     );
   }, [catalogItems, installedIdentityKeys]);
-
-  useEffect(() => {
-    return () => {
-      if (skillCreatorSessionId) {
-        void closeSkillCreatorSessionQuery(skillCreatorSessionId);
-      }
-    };
-  }, [skillCreatorSessionId]);
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
@@ -292,62 +496,6 @@ export function SkillsView({
       return false;
     } finally {
       removePendingAction(pendingAction);
-    }
-  };
-
-  const handleInstallMockSkillCreator = async () => {
-    const pendingAction = { kind: "install" as const, source: MOCK_SKILL_CREATOR_SOURCE };
-
-    addPendingAction(pendingAction);
-    setActionError(null);
-
-    try {
-      setMockSkillCreatorInstalled(true);
-    } finally {
-      removePendingAction(pendingAction);
-    }
-  };
-
-  const handleUseOwnSkillCreator = async () => {
-    await configuredSkillsQuery.refetch();
-  };
-
-  const handleSubmitCreateSkill = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const prompt = createSkillDraft.trim();
-    if (!prompt || skillCreatorBusy) {
-      return;
-    }
-
-    setSkillCreatorBusy(true);
-    setActionError(null);
-
-    try {
-      const sessionState = skillCreatorSessionId
-        ? await continueSkillCreatorSessionQuery({
-            sessionId: skillCreatorSessionId,
-            prompt,
-          })
-        : await startSkillCreatorSessionQuery({
-            prompt,
-            local: installScope === "project",
-            projectPath,
-          });
-
-      if (!sessionState) {
-        throw new Error("Could not start the skill creator.");
-      }
-
-      setSkillCreatorSessionId(sessionState.sessionId);
-      setSkillCreatorLatestResponse(sessionState.latestResponse);
-      setCreatedSkillPath(sessionState.createdSkillPath);
-      setCreateSkillDraft("");
-      invalidateConfiguredSkillsCaches();
-    } catch (error) {
-      setActionError(getActionError(error));
-    } finally {
-      setSkillCreatorBusy(false);
     }
   };
 
@@ -432,31 +580,23 @@ export function SkillsView({
         {visibleConfiguredSkills.map((configuredSkill) => (
           <div
             key={`${configuredSkill.scope}:${configuredSkill.installedPath}`}
-            className={cn(settingsListRowClass, "gap-2 py-2")}
+            className={settingsCompactListRowClass}
           >
-            <div className="min-w-0 grid gap-0.5">
-              <div className="flex items-center gap-2">
-                <div className="truncate text-[13px] text-[color:var(--text)]">
-                  {configuredSkill.displayName}
-                </div>
-                <span className="text-[11px] text-[color:var(--muted)]">
-                  {configuredSkill.scope === "project" ? "project" : "global"}
-                </span>
-                {configuredSkill.provenance === "local" ? (
-                  <span className="text-[11px] text-[color:var(--muted)]">Custom</span>
-                ) : null}
+            <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+              <div className="shrink-0 text-[13px] leading-4 text-[color:var(--text)]">
+                {configuredSkill.displayName}
               </div>
-              <div className="truncate text-[12px] text-[color:var(--muted)]">
+              <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
                 {configuredSkill.description ||
                   configuredSkill.sourceRepo ||
                   configuredSkill.source}
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <Tooltip content="Open SKILL.md in default editor">
                 <TextButton
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+                  className={compactRoundIconButtonClass}
                   onClick={() => void window.piDesktop?.openPath?.(configuredSkill.skillFilePath)}
                   aria-label="Open SKILL.md in default editor"
                 >
@@ -475,7 +615,7 @@ export function SkillsView({
                         ? confirmRemoveButtonRef
                         : undefined
                     }
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#ffb4b4]"
+                    className={cn(compactRoundIconButtonClass, "hover:text-[#ffb4b4]")}
                     onClick={() => {
                       if (isPending("remove", configuredSkill.installedPath)) {
                         return;
@@ -533,13 +673,7 @@ export function SkillsView({
     );
 
   const browseSectionContent =
-    submittedSearchInput.length < 2 ? (
-      <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        {normalizedSearchInput.length > 0 && normalizedSearchInput.length < 2
-          ? "Type at least 2 characters, then press Enter to search skills from skills.sh."
-          : "Press Enter to search skills from skills.sh (min 2 chars)."}
-      </div>
-    ) : skillsQuery.isLoading ? (
+    submittedSearchInput.length < 2 ? null : skillsQuery.isLoading ? (
       <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
         Loading skills…
       </div>
@@ -719,92 +853,14 @@ export function SkillsView({
 
       {actionError ? <div className="text-[12px] text-[#f2a7a7]">{actionError}</div> : null}
 
-      <section className="grid gap-2">
-        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
-          <span>Create a skill</span>
-          <FeatureStatusBadge statusId="feature:skills.create" />
-        </div>
-
-        <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
-          <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
-            {skillCreatorReady ? (
-              <div className="grid gap-2">
-                <div className="px-0.5 py-0.5">
-                  {skillCreatorLatestResponse ? (
-                    <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                      {skillCreatorLatestResponse}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                      This spawns a temporary chat session. For complex project-skills, please use
-                      normal chat for best results.
-                    </div>
-                  )}
-                </div>
-
-                <form
-                  className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
-                  onSubmit={handleSubmitCreateSkill}
-                >
-                  <input
-                    type="text"
-                    value={createSkillDraft}
-                    onChange={(event) => setCreateSkillDraft(event.target.value)}
-                    className={settingsInputClass}
-                    placeholder="Describe the skill you want"
-                    aria-label="Describe the skill you want"
-                    disabled={skillCreatorBusy}
-                  />
-                  <TextButton
-                    className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
-                    onClick={() => {
-                      if (createdSkillPath) {
-                        void window.piDesktop?.openPath?.(createdSkillPath);
-                      }
-                    }}
-                    disabled={!createdSkillPath}
-                  >
-                    <span>Open folder</span>
-                    <FolderOpen size={11} />
-                  </TextButton>
-                </form>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span>No global skill creator detected. Install the bundled skill creator?</span>
-                  <TextButton
-                    className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
-                    onClick={() => {
-                      void handleInstallMockSkillCreator();
-                    }}
-                    disabled={isPending("install", MOCK_SKILL_CREATOR_SOURCE)}
-                  >
-                    {isPending("install", MOCK_SKILL_CREATOR_SOURCE) ? "Installing…" : "Yes"}
-                  </TextButton>
-                  <TextButton
-                    className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
-                    onClick={() => {
-                      void handleUseOwnSkillCreator();
-                    }}
-                    disabled={configuredSkillsQuery.isFetching}
-                  >
-                    <span>No - I have provided my own</span>
-                    <RefreshCw
-                      size={11}
-                      className={configuredSkillsQuery.isFetching ? "animate-spin" : ""}
-                    />
-                  </TextButton>
-                </div>
-                <div>
-                  Please note this skill creator is agent-agnostic, as opposed to most of the skill
-                  creator skills you will find for other harnesses and agents.
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
+      <SkillCreatorSection
+        installScope={installScope}
+        projectPath={projectPath}
+        skillCreatorDetected={hasGlobalSkillCreator}
+        onRefreshSkillCreatorDetection={() => configuredSkillsQuery.refetch()}
+        onInvalidateConfiguredSkillsCaches={() => invalidateConfiguredSkillsCaches()}
+        onSetActionError={setActionError}
+      />
 
       <div className="grid gap-2">
         <button

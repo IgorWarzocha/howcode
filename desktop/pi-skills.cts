@@ -12,7 +12,6 @@ import { loadAppSettings } from "./app-settings.cts";
 const skillsApiBaseUrl = process.env.HOWCODE_SKILLS_API_URL || "https://skills.sh";
 const catalogCacheTtlMs = 5 * 60_000;
 const fetchTimeoutMs = 15_000;
-const installedSkillMetadataFileName = ".howcode-skill.json";
 
 type SkillSearchApiItem = {
   id?: unknown;
@@ -36,17 +35,6 @@ type SkillDownloadApiFile = {
 type SkillDownloadApiResponse = {
   files?: SkillDownloadApiFile[];
   hash?: unknown;
-};
-
-type InstalledSkillMetadata = {
-  source: string;
-  repo: string;
-  slug: string;
-  url: string;
-  sourceUrl: string;
-  description: string | null;
-  hash: string | null;
-  installedAt: string;
 };
 
 type ParsedSkillSource = {
@@ -352,18 +340,6 @@ async function getCatalog(query: string, limit: number) {
   return promise;
 }
 
-async function readInstalledSkillMetadata(skillDirPath: string) {
-  try {
-    const metadata = await readFile(
-      path.join(skillDirPath, installedSkillMetadataFileName),
-      "utf8",
-    );
-    return JSON.parse(metadata) as InstalledSkillMetadata;
-  } catch {
-    return null;
-  }
-}
-
 async function listSkillsInDirectory(
   skillsDirPath: string,
   scope: PiConfiguredSkill["scope"],
@@ -389,22 +365,19 @@ async function listSkillsInDirectory(
 
     const markdown = await readFile(skillFilePath, "utf8");
     const frontmatter = parseSkillFrontmatter(markdown);
-    const metadata = await readInstalledSkillMetadata(skillDirPath);
-    const source = metadata?.source ?? `local:${skillDirPath}`;
+    const source = `local:${skillDirPath}`;
 
     skills.push({
       source,
-      identityKey: metadata?.source
-        ? getSkillIdentityKey(metadata.source)
-        : `local:${skillDirPath}`,
+      identityKey: `local:${skillDirPath}`,
       displayName: frontmatter.name ?? entry.name,
-      description: metadata?.description ?? frontmatter.description ?? null,
+      description: frontmatter.description ?? null,
       scope,
-      provenance: metadata ? "skills.sh" : "local",
+      provenance: "local",
       installedPath: skillDirPath,
       skillFilePath,
-      sourceRepo: metadata?.repo ?? null,
-      sourceUrl: metadata?.url ?? null,
+      sourceRepo: null,
+      sourceUrl: null,
     });
   }
 
@@ -430,11 +403,7 @@ function isPathWithinRoot(candidatePath: string, rootPath: string) {
   );
 }
 
-async function writeDownloadedSkill(
-  targetDirPath: string,
-  files: SkillDownloadApiFile[],
-  metadata: InstalledSkillMetadata,
-) {
+async function writeDownloadedSkill(targetDirPath: string, files: SkillDownloadApiFile[]) {
   await mkdir(targetDirPath, { recursive: true });
 
   for (const file of files) {
@@ -450,12 +419,6 @@ async function writeDownloadedSkill(
     await mkdir(path.dirname(targetFilePath), { recursive: true });
     await writeFile(targetFilePath, file.contents, "utf8");
   }
-
-  await writeFile(
-    path.join(targetDirPath, installedSkillMetadataFileName),
-    `${JSON.stringify(metadata, null, 2)}\n`,
-    "utf8",
-  );
 }
 
 export async function searchPiSkills(
@@ -543,42 +506,12 @@ export async function installPiSkill(request: {
     throw new Error("That skill resolves outside the skills directory.");
   }
 
-  const existingMetadata = await readInstalledSkillMetadata(targetDirPath);
-  if (
-    (await pathExists(targetDirPath)) &&
-    existingMetadata?.source &&
-    getSkillIdentityKey(existingMetadata.source) !==
-      getSkillIdentityKey(parsedSource.normalizedSource)
-  ) {
-    throw new Error(
-      `A different skill is already installed at ${parsedSource.slug}. Remove it first.`,
-    );
+  if (await pathExists(targetDirPath)) {
+    throw new Error(`A skill already exists at ${parsedSource.slug}. Remove or rename it first.`);
   }
 
-  if ((await pathExists(targetDirPath)) && !existingMetadata) {
-    throw new Error(
-      `A custom skill already exists at ${parsedSource.slug}. Remove or rename it first.`,
-    );
-  }
-
-  await rm(targetDirPath, { recursive: true, force: true });
   await mkdir(targetRootPath, { recursive: true });
-
-  const skillFile = files.find((file) => file.path === "SKILL.md");
-  const frontmatter = parseSkillFrontmatter(
-    typeof skillFile?.contents === "string" ? skillFile.contents : "",
-  );
-
-  await writeDownloadedSkill(targetDirPath, files, {
-    source: parsedSource.normalizedSource,
-    repo: parsedSource.repo,
-    slug: parsedSource.slug,
-    url: `${skillsApiBaseUrl}/${parsedSource.repo}/${parsedSource.slug}`,
-    sourceUrl: `https://github.com/${parsedSource.repo}`,
-    description: frontmatter.description,
-    hash: typeof download.hash === "string" ? download.hash : null,
-    installedAt: new Date().toISOString(),
-  });
+  await writeDownloadedSkill(targetDirPath, files);
 
   return {
     source: request.source,
@@ -604,12 +537,11 @@ export async function removePiSkill(request: {
     throw new Error("That skill cannot be removed from here.");
   }
 
-  const metadata = await readInstalledSkillMetadata(installedPath);
   await rm(installedPath, { recursive: true, force: true });
 
   return {
-    source: metadata?.source ?? installedPath,
-    normalizedSource: metadata?.source ? normalizeSkillSource(metadata.source) : installedPath,
+    source: installedPath,
+    normalizedSource: installedPath,
     configuredSkills: await listConfiguredPiSkills({
       projectPath: request.projectPath ?? null,
     }),
