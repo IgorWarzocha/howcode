@@ -79,6 +79,18 @@ function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
   );
 }
 
+function getConfiguredSourceLabel(configuredPackage: PiConfiguredPackage) {
+  if (configuredPackage.type === "local") {
+    return configuredPackage.source;
+  }
+
+  return configuredPackage.type;
+}
+
+function isConfiguredSourcePath(configuredPackage: PiConfiguredPackage) {
+  return configuredPackage.type === "local";
+}
+
 export function ExtensionsView({ projectPath, onSetProjectScopeActive }: ExtensionsViewProps) {
   const queryClient = useQueryClient();
   const normalizedProjectPath = projectPath?.trim() ? projectPath : null;
@@ -122,6 +134,15 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
         (configuredPackage) => typeof configuredPackage.installedPath === "string",
       ),
     [configuredPackages],
+  );
+  const scopedInstalledEntries = useMemo(
+    () =>
+      installedEntries.filter((configuredPackage) =>
+        installScope === "project"
+          ? configuredPackage.scope === "project"
+          : configuredPackage.scope === "user",
+      ),
+    [installScope, installedEntries],
   );
   const installedIdentityKeys = useMemo(
     () => getInstalledIdentityKeys(configuredPackages),
@@ -242,40 +263,30 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
 
   const handleManualInstall = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const installTasks: Array<{ source: string; kind: "npm" | "git" }> = [];
-    const seenSources = new Set<string>();
     const manualSourceValue = manualSource.trim();
 
-    if (manualSourceValue) {
-      installTasks.push({ source: manualSourceValue, kind: manualSourceKind });
-      seenSources.add(manualSourceValue.trim().toLowerCase());
+    if (!manualSourceValue) {
+      return;
     }
 
-    for (const source of selectedCatalogSources) {
-      const normalizedSource = source.trim().toLowerCase();
-      if (seenSources.has(normalizedSource)) {
-        continue;
-      }
-
-      installTasks.push({ source, kind: "npm" });
-      seenSources.add(normalizedSource);
+    const installed = await handleInstall(manualSourceValue, manualSourceKind);
+    if (installed) {
+      setManualSource("");
     }
+  };
 
-    if (installTasks.length === 0) {
+  const handleSelectedCatalogInstall = async () => {
+    if (selectedCatalogSources.length === 0) {
       return;
     }
 
     const successfulSources = new Set<string>();
 
-    for (const task of installTasks) {
-      const installed = await handleInstall(task.source, task.kind);
+    for (const source of selectedCatalogSources) {
+      const installed = await handleInstall(source, "npm");
       if (installed) {
-        successfulSources.add(task.source.trim().toLowerCase());
+        successfulSources.add(source.trim().toLowerCase());
       }
-    }
-
-    if (manualSourceValue && successfulSources.has(manualSourceValue.trim().toLowerCase())) {
-      setManualSource("");
     }
 
     if (successfulSources.size > 0) {
@@ -286,25 +297,26 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
   };
 
   const installedSectionContent =
-    installedEntries.length > 0 ? (
+    scopedInstalledEntries.length > 0 ? (
       <div className="grid gap-2">
-        {installedEntries.map((configuredPackage) => (
+        {scopedInstalledEntries.map((configuredPackage) => (
           <div
             key={`${configuredPackage.scope}:${configuredPackage.source}`}
             className={cn(settingsListRowClass, "gap-2 py-2")}
           >
-            <div className="min-w-0 grid gap-0.5">
-              <div className="flex items-center gap-2">
-                <div className="truncate text-[13px] text-[color:var(--text)]">
-                  {configuredPackage.displayName}
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="truncate text-[13px] text-[color:var(--text)]">
+                {configuredPackage.displayName}
+              </div>
+              {isConfiguredSourcePath(configuredPackage) ? (
+                <div className="truncate text-[12px] text-[color:var(--muted)]">
+                  {getConfiguredSourceLabel(configuredPackage)}
                 </div>
-                <span className="text-[11px] text-[color:var(--muted)]">
-                  {configuredPackage.scope === "project" ? "project" : "global"}
-                </span>
-              </div>
-              <div className="truncate text-[12px] text-[color:var(--muted)]">
-                {configuredPackage.source}
-              </div>
+              ) : (
+                <div className="shrink-0 text-[12px] text-[color:var(--muted)]">
+                  {getConfiguredSourceLabel(configuredPackage)}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1">
@@ -499,6 +511,68 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
       {actionError ? <div className="text-[12px] text-[#f2a7a7]">{actionError}</div> : null}
 
       <div className="grid gap-2">
+        <div className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]">
+          <span>Install</span>
+        </div>
+
+        <form
+          className="grid gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]"
+          onSubmit={handleManualInstall}
+        >
+          <div className="inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
+            {(["npm", "git"] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                className={cn(
+                  "rounded-full px-3 py-1 text-[12px] capitalize transition-colors",
+                  manualSourceKind === kind
+                    ? "bg-[rgba(255,255,255,0.18)] font-medium text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]"
+                    : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
+                )}
+                onClick={() => setManualSourceKind(kind)}
+                aria-pressed={manualSourceKind === kind}
+              >
+                {kind}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="text"
+            value={manualSource}
+            onChange={(event) => setManualSource(event.target.value)}
+            className={settingsInputClass}
+            placeholder={
+              manualSourceKind === "npm"
+                ? "Package name or npm:@scope/pkg"
+                : "git:github.com/user/repo or https://…"
+            }
+            aria-label={manualSourceKind === "npm" ? "Install npm package" : "Install git package"}
+          />
+
+          <Tooltip content={hasManualSource ? `Install ${manualSourceKind} source` : "Install"}>
+            <TextButton
+              type="submit"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+              disabled={
+                !projectScopeAvailable && installScope === "project"
+                  ? true
+                  : !hasManualSource || isPending("install", manualSource) || hasPendingInstall
+              }
+              aria-label={hasManualSource ? `Install ${manualSourceKind} source` : "Install"}
+            >
+              {hasPendingInstall && hasManualSource ? (
+                <Sparkles size={14} />
+              ) : (
+                <PackagePlus size={14} />
+              )}
+            </TextButton>
+          </Tooltip>
+        </form>
+      </div>
+
+      <div className="grid gap-2">
         <button
           type="button"
           className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
@@ -506,7 +580,7 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
           aria-expanded={installedOpen}
         >
           {installedOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span>Installed</span>
+          <span>Active</span>
         </button>
 
         {installedOpen ? installedSectionContent : null}
@@ -520,96 +594,54 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
           aria-expanded={browseOpen}
         >
           {browseOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span>Browse</span>
+          <span>Search</span>
         </button>
 
         {browseOpen ? (
           <>
-            <form
-              className="grid gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]"
-              onSubmit={handleManualInstall}
-            >
-              <div className="inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
-                {(["npm", "git"] as const).map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    className={cn(
-                      "rounded-full px-3 py-1 text-[12px] capitalize transition-colors",
-                      manualSourceKind === kind
-                        ? "bg-[rgba(255,255,255,0.18)] font-medium text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]"
-                        : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
-                    )}
-                    onClick={() => setManualSourceKind(kind)}
-                    aria-pressed={manualSourceKind === kind}
-                  >
-                    {kind}
-                  </button>
-                ))}
-              </div>
-
-              <input
-                type="text"
-                value={manualSource}
-                onChange={(event) => setManualSource(event.target.value)}
-                className={settingsInputClass}
-                placeholder={
-                  manualSourceKind === "npm"
-                    ? "Package name or npm:@scope/pkg"
-                    : "git:github.com/user/repo or https://…"
-                }
-                aria-label={
-                  manualSourceKind === "npm" ? "Install npm package" : "Install git package"
-                }
-              />
+            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
+              <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
+                <Search size={14} />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                  placeholder="Search pi packages"
+                  aria-label="Search pi packages"
+                />
+              </label>
 
               <Tooltip
                 content={
-                  hasManualSource
-                    ? `Install ${manualSourceKind} source`
-                    : hasSelectedCatalogSources
-                      ? `Install ${selectedCatalogSources.length} selected extensions`
-                      : "Install extensions"
+                  hasSelectedCatalogSources
+                    ? `Install ${selectedCatalogSources.length} selected extensions`
+                    : "Install selected extensions"
                 }
               >
                 <TextButton
-                  type="submit"
+                  type="button"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+                  onClick={() => void handleSelectedCatalogInstall()}
                   disabled={
                     !projectScopeAvailable && installScope === "project"
                       ? true
-                      : (!hasManualSource && !hasSelectedCatalogSources) ||
-                        (hasManualSource && isPending("install", manualSource)) ||
-                        hasPendingInstall
+                      : !hasSelectedCatalogSources || hasPendingInstall
                   }
                   aria-label={
-                    hasManualSource
-                      ? `Install ${manualSourceKind} source`
-                      : hasSelectedCatalogSources
-                        ? `Install ${selectedCatalogSources.length} selected extensions`
-                        : "Install extensions"
+                    hasSelectedCatalogSources
+                      ? `Install ${selectedCatalogSources.length} selected extensions`
+                      : "Install selected extensions"
                   }
                 >
-                  {pendingActions.some((action) => action.kind === "install") ? (
+                  {hasPendingInstall && hasSelectedCatalogSources ? (
                     <Sparkles size={14} />
                   ) : (
                     <PackagePlus size={14} />
                   )}
                 </TextButton>
               </Tooltip>
-            </form>
-
-            <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
-              <Search size={14} />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                placeholder="Search pi packages"
-                aria-label="Search pi packages"
-              />
-            </label>
+            </div>
 
             {browseSectionContent}
 
