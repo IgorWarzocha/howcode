@@ -261,7 +261,7 @@ export function BrowseSkillsSection({
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  className={cn(settingsInputClass, "w-full py-1.5 pl-8 pr-9")}
+                  className={cn(settingsInputClass, "w-full pl-8 pr-9")}
                   placeholder="Search skills"
                   aria-label="Search skills"
                 />
