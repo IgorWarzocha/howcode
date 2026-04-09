@@ -1,19 +1,12 @@
-import { readFile, readdir, stat } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
+import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions";
 import type {
   AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
-  ComposerFilePickerEntry,
   ComposerFilePickerState,
   ComposerState,
-  ComposerStateRequest,
-  DesktopActionPayload,
   DesktopActionResult,
-  DesktopActionResultData,
   DesktopEvent,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -30,250 +23,18 @@ import type {
   TurnDiffResult,
 } from "../../shared/desktop-contracts";
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
-import type {
-  TerminalEvent,
-  TerminalOpenRequest,
-  TerminalSessionSnapshot,
-} from "../../shared/terminal-contracts";
-import { parseDevServerMetadata, resolveDevServerMetadataPath } from "./dev-server";
+import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
+import {
+  getAttachmentKind,
+  isSafeExternalUrl,
+  listComposerAttachmentEntries,
+  normalizeDialogFilePaths,
+} from "./composer-attachments";
+import { piSkills, piThreads, skillCreator, terminalManager } from "./desktop-runtime-modules";
+import { getMainViewUrl } from "./main-view-url";
 
 if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
   process.env.WEBKIT_DISABLE_DMABUF_RENDERER = "1";
-}
-
-type PiThreadsModule = {
-  handleDesktopAction: (
-    action: DesktopAction,
-    payload: AnyDesktopActionPayload,
-  ) => Promise<DesktopActionResultData | null | undefined>;
-  loadArchivedThreadList: () => Promise<ArchivedThread[]>;
-  loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
-  searchPiPackages: (request?: {
-    query?: string | null;
-    cursor?: number | null;
-    pageSize?: number | null;
-  }) => Promise<PiPackageCatalogPage>;
-  listConfiguredPiPackages: (request?: { projectPath?: string | null }) => Promise<
-    PiConfiguredPackage[]
-  >;
-  installPiPackage: (request: {
-    source: string;
-    kind?: "npm" | "git";
-    local?: boolean;
-    projectPath?: string | null;
-  }) => Promise<PiPackageMutationResult>;
-  removePiPackage: (request: {
-    source: string;
-    local?: boolean;
-    projectPath?: string | null;
-  }) => Promise<PiPackageMutationResult>;
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectDiff: (projectId: string) => Promise<ProjectDiffResult | null>;
-  loadProjectThreads: (projectId: string) => Promise<Thread[]>;
-  loadShellState: (cwd: string) => Promise<ShellState>;
-  loadThread: (
-    sessionPath: string,
-    options?: { historyCompactions?: number },
-  ) => Promise<ThreadData | null>;
-  setWatchedSessionPath: (sessionPath: string | null) => Promise<void>;
-  loadTurnDiff: (
-    sessionPath: string,
-    checkpointTurnCount: number,
-  ) => Promise<TurnDiffResult | null>;
-  loadFullThreadDiff: (sessionPath: string) => Promise<TurnDiffResult | null>;
-  subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void;
-};
-
-type TerminalManagerModule = {
-  closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
-  openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
-  resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>;
-  subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void;
-  writeTerminal: (sessionId: string, data: string) => Promise<void>;
-};
-
-type PiSkillsModule = {
-  searchPiSkills: (request?: {
-    query?: string | null;
-    limit?: number | null;
-  }) => Promise<PiSkillCatalogPage>;
-  listConfiguredPiSkills: (request?: { projectPath?: string | null }) => Promise<
-    PiConfiguredSkill[]
-  >;
-  installPiSkill: (request: {
-    source: string;
-    local?: boolean;
-    projectPath?: string | null;
-  }) => Promise<PiSkillMutationResult>;
-  removePiSkill: (request: {
-    installedPath: string;
-    projectPath?: string | null;
-  }) => Promise<PiSkillMutationResult>;
-};
-
-type SkillCreatorModule = {
-  startSkillCreatorSession: (request: {
-    prompt: string;
-    local?: boolean;
-    projectPath?: string | null;
-  }) => Promise<SkillCreatorSessionState>;
-  continueSkillCreatorSession: (request: {
-    sessionId: string;
-    prompt: string;
-  }) => Promise<SkillCreatorSessionState>;
-  closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>;
-};
-
-const piThreads = (await import(
-  new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
-)) as PiThreadsModule;
-const piSkills = (await import(
-  new URL("../build/desktop/pi-skills.mjs", import.meta.url).pathname
-)) as PiSkillsModule;
-const skillCreator = (await import(
-  new URL("../build/desktop/skill-creator-session.mjs", import.meta.url).pathname
-)) as SkillCreatorModule;
-const terminalManager = (await import(
-  new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
-)) as TerminalManagerModule;
-
-async function pathExists(path: string) {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function normalizeDialogFilePaths(filePaths: string[]) {
-  const normalized: string[] = [];
-
-  for (let index = 0; index < filePaths.length; index += 1) {
-    let candidate = filePaths[index]?.trim();
-    if (!candidate) {
-      continue;
-    }
-
-    while (!(await pathExists(candidate)) && index + 1 < filePaths.length) {
-      index += 1;
-      candidate = `${candidate},${filePaths[index] ?? ""}`;
-    }
-
-    normalized.push(candidate);
-  }
-
-  return normalized;
-}
-
-function isSafeExternalUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function isPathWithinRoot(candidatePath: string, rootPath: string) {
-  const relativePath = path.relative(rootPath, candidatePath);
-  return (
-    relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-  );
-}
-
-function getAttachmentKind(filePath: string): ComposerAttachment["kind"] {
-  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath) ? "image" : "text";
-}
-
-async function listComposerAttachmentEntries(request: {
-  projectId?: string | null;
-  path?: string | null;
-  rootPath?: string | null;
-}): Promise<ComposerFilePickerState> {
-  const homePath = os.homedir();
-  const rootPath = path.resolve(request.rootPath ?? request.projectId ?? process.cwd());
-  const requestedPath = path.resolve(request.path ?? rootPath);
-  const currentPath = isPathWithinRoot(requestedPath, rootPath) ? requestedPath : rootPath;
-  const directoryEntries = await readdir(currentPath, { withFileTypes: true });
-
-  const entries: ComposerFilePickerEntry[] = directoryEntries
-    .filter((entry) => !entry.name.startsWith("."))
-    .map((entry) => {
-      const entryPath = path.join(currentPath, entry.name);
-
-      if (entry.isDirectory()) {
-        return {
-          path: entryPath,
-          name: entry.name,
-          kind: "directory",
-        } satisfies ComposerFilePickerEntry;
-      }
-
-      return {
-        path: entryPath,
-        name: entry.name,
-        kind: getAttachmentKind(entryPath),
-      } satisfies ComposerFilePickerEntry;
-    })
-    .sort((left, right) => {
-      if (left.kind === "directory" && right.kind !== "directory") {
-        return -1;
-      }
-
-      if (left.kind !== "directory" && right.kind === "directory") {
-        return 1;
-      }
-
-      return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
-    });
-
-  return {
-    homePath,
-    rootPath,
-    currentPath,
-    parentPath: currentPath === rootPath ? null : path.dirname(currentPath),
-    entries,
-  };
-}
-
-async function getMainViewUrl(): Promise<string> {
-  const channel = await Updater.localInfo.channel();
-  if (channel === "dev") {
-    const devServerMetadataPath = resolveDevServerMetadataPath([
-      process.env.HOWCODE_REPO_ROOT ?? "",
-      import.meta.dir,
-      process.cwd(),
-    ]);
-
-    if (!devServerMetadataPath) {
-      console.warn("Falling back to packaged views because the repo root could not be resolved.", {
-        moduleDirectoryPath: import.meta.dir,
-        processCwd: process.cwd(),
-      });
-      return "views://mainview/index.html";
-    }
-
-    try {
-      const rawMetadata = await readFile(devServerMetadataPath, "utf8");
-      const devServerUrl = parseDevServerMetadata(rawMetadata);
-
-      if (devServerUrl) {
-        await fetch(devServerUrl, { method: "HEAD" });
-        return devServerUrl;
-      }
-    } catch (error) {
-      console.warn(
-        "Falling back to packaged views because the dev server metadata was unavailable.",
-        {
-          devServerMetadataPath,
-          error,
-        },
-      );
-    }
-  }
-
-  return "views://mainview/index.html";
 }
 
 const rpc = BrowserView.defineRPC<PiDesktopRpc>({
