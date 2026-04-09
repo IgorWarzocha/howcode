@@ -10,6 +10,9 @@ This repo is intentionally split around future Pi desktop integration seams.
 - `src/app/app-shell/*`
   - renderer orchestration lane
   - shell bootstrap, live desktop-event sync, action post-processing, layout wiring
+  - `useDesktopActionHandlers.ts` owns optimistic action dispatch and confirmation flow
+  - `useProjectRepoInspection.ts` owns lazy repo-origin probing for the selected project
+  - `useScopedProjectViewSync.ts` owns skills/extensions scoped-project reset behavior
 - `src/app/state/workspace.ts`
   - deterministic workspace reducer + selectors
   - safest place to grow mock state into persisted session state
@@ -51,6 +54,7 @@ This repo is intentionally split around future Pi desktop integration seams.
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `desktop/pi-threads/*`
   - shell loading, thread hydration, action routing, and payload parsing
+  - `action-router.cts` is a thin dispatcher over `noop-actions.cts`, `project-actions.cts`, `thread-actions.cts`, `composer-actions.cts`, `workspace-actions.cts`, and `settings-actions.cts`
 - `desktop/thread-state-db/*`
   - SQLite bootstrap/schema/query/write/mapping split
 - `shared/pi-message-mapper.ts`

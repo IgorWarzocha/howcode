@@ -12,6 +12,8 @@ export async function handleDesktopAction(
   action: DesktopAction,
   payload: DesktopActionPayload,
 ): Promise<Record<string, unknown> | null | undefined> {
+  // Keep the public router thin: each domain owns its own action family and can grow
+  // without turning this entrypoint back into a switch-based godfile.
   const handlers = [
     handleNoopDesktopAction(action),
     await handleProjectDesktopAction(action, payload),

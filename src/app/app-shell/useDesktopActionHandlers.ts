@@ -76,6 +76,8 @@ export function useDesktopActionHandlers({
       action: DesktopAction,
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
+      // Build the renderer-context payload first so optimistic UI and desktop writes
+      // operate against the same project/session selection.
       const contextualPayload = buildContextualActionPayload({
         action,
         payload,
@@ -128,6 +130,8 @@ export function useDesktopActionHandlers({
       action: DesktopAction,
       payload: ActionPayload = {},
     ): Promise<DesktopActionResult | null> => {
+      // Optimistic updates happen before the desktop call so the renderer stays stable
+      // while the background write and refresh pipeline converges.
       if (shouldConfirmProjectAction(action)) {
         const nextPendingProjectAction = buildPendingProjectAction(action, payload, projects);
         if (!nextPendingProjectAction) {

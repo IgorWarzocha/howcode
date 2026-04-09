@@ -76,7 +76,7 @@ The `prepare` script will then activate Husky automatically.
 ## File map
 
 - `src/app/AppShell.tsx` — top-level renderer composition
-- `src/app/app-shell/*` — shell controller + layout orchestration
+- `src/app/app-shell/*` — shell controller + layout orchestration, including focused action/scope hooks
 - `src/app/components/` — reusable UI pieces
 - `src/app/components/workspace/composer/*` — composer subcomponents/controller
 - `src/app/components/sidebar/project-tree/*` — project tree subcomponents/controller
@@ -89,7 +89,7 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/ui/` — shared Tailwind class primitives
 - `src/bun/index.ts` — Electrobun main-process entry and RPC request handlers
 - `desktop/runtime/*` — Pi runtime registry/composer/attachment/publisher lanes
-- `desktop/pi-threads/*` — shell loading, thread hydration, action routing
+- `desktop/pi-threads/*` — shell loading, thread hydration, and domain-split action routing
 - `desktop/project-git/*` — selected-project git/branch/diff/commit helpers
 - `desktop/terminal/*` — PTY adapters and terminal session manager
 - `desktop/thread-state-db/*` — SQLite schema/query/write/mapping lanes
