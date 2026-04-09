@@ -4,7 +4,7 @@ export {
   listConfiguredPiPackages,
   removePiPackage,
   searchPiPackages,
-} from "./pi-packages.cts";
+} from "./pi-packages/index.cts";
 export {
   loadArchivedThreadList,
   loadProjectThreads,

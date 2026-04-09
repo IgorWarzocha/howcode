@@ -4,7 +4,7 @@ import {
   getPiPackageIdentityKey,
   normalizePiPackageSource,
   sortPiPackageCatalogItems,
-} from "../../desktop/pi-packages.helpers";
+} from "../../desktop/pi-packages/helpers";
 
 describe("pi packages helpers", () => {
   it("normalizes npm and git sources for install requests", () => {

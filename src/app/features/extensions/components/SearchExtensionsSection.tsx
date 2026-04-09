@@ -1,0 +1,152 @@
+import { ChevronDown, ChevronRight, PackagePlus, Search, Sparkles } from "lucide-react";
+import { TextButton } from "../../../components/common/TextButton";
+import { Tooltip } from "../../../components/common/Tooltip";
+import type { PiPackageCatalogItem } from "../../../desktop/types";
+import type { InstallScope } from "../types";
+import { CatalogItemRow } from "./CatalogItemRow";
+
+type SearchExtensionsSectionProps = {
+  open: boolean;
+  searchInput: string;
+  installScope: InstallScope;
+  projectScopeAvailable: boolean;
+  hasSelectedCatalogSources: boolean;
+  hasPendingInstall: boolean;
+  selectedCatalogSources: string[];
+  catalogItems: PiPackageCatalogItem[];
+  installedIdentityKeys: Set<string>;
+  catalogLoading: boolean;
+  catalogError: string | null;
+  hasNextCatalogPage: boolean;
+  isFetchingNextCatalogPage: boolean;
+  onToggleOpen: () => void;
+  onSearchInputChange: (value: string) => void;
+  onInstallSelected: () => void | Promise<void>;
+  onToggleSelectedSource: (source: string) => void;
+  onLoadMore: () => void;
+  isInstallPending: (source: string) => boolean;
+};
+
+export function SearchExtensionsSection({
+  open,
+  searchInput,
+  installScope,
+  projectScopeAvailable,
+  hasSelectedCatalogSources,
+  hasPendingInstall,
+  selectedCatalogSources,
+  catalogItems,
+  installedIdentityKeys,
+  catalogLoading,
+  catalogError,
+  hasNextCatalogPage,
+  isFetchingNextCatalogPage,
+  onToggleOpen,
+  onSearchInputChange,
+  onInstallSelected,
+  onToggleSelectedSource,
+  onLoadMore,
+  isInstallPending,
+}: SearchExtensionsSectionProps) {
+  const installDisabled =
+    (!projectScopeAvailable && installScope === "project") ||
+    !hasSelectedCatalogSources ||
+    hasPendingInstall;
+
+  return (
+    <div className="grid gap-2">
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
+        onClick={onToggleOpen}
+        aria-expanded={open}
+      >
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span>Search</span>
+      </button>
+
+      {open ? (
+        <>
+          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
+            <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
+              <Search size={14} />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(event) => onSearchInputChange(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                placeholder="Search pi packages"
+                aria-label="Search pi packages"
+              />
+            </label>
+
+            <Tooltip
+              content={
+                hasSelectedCatalogSources
+                  ? `Install ${selectedCatalogSources.length} selected extensions`
+                  : "Install selected extensions"
+              }
+            >
+              <TextButton
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+                onClick={() => void onInstallSelected()}
+                disabled={installDisabled}
+                aria-label={
+                  hasSelectedCatalogSources
+                    ? `Install ${selectedCatalogSources.length} selected extensions`
+                    : "Install selected extensions"
+                }
+              >
+                {hasPendingInstall && hasSelectedCatalogSources ? (
+                  <Sparkles size={14} />
+                ) : (
+                  <PackagePlus size={14} />
+                )}
+              </TextButton>
+            </Tooltip>
+          </div>
+
+          {catalogLoading ? (
+            <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
+              Loading packages…
+            </div>
+          ) : catalogError ? (
+            <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[#f2a7a7]">
+              {catalogError}
+            </div>
+          ) : catalogItems.length > 0 ? (
+            <div className="grid gap-2">
+              {catalogItems.map((item) => (
+                <CatalogItemRow
+                  key={item.name}
+                  item={item}
+                  selected={selectedCatalogSources.includes(item.source)}
+                  installed={installedIdentityKeys.has(item.identityKey)}
+                  pendingInstall={isInstallPending(item.source)}
+                  onToggleSelected={onToggleSelectedSource}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
+              No pi packages.
+            </div>
+          )}
+
+          {hasNextCatalogPage ? (
+            <div className="flex justify-center pt-1">
+              <TextButton
+                className="rounded-full border border-[color:var(--border)] px-4 py-2 text-[12.5px] text-[color:var(--muted)] hover:text-[color:var(--text)]"
+                onClick={onLoadMore}
+                disabled={isFetchingNextCatalogPage}
+              >
+                {isFetchingNextCatalogPage ? "Loading more…" : "Load more"}
+              </TextButton>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}

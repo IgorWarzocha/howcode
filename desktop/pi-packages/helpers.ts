@@ -1,5 +1,8 @@
 import path from "node:path";
-import type { PiConfiguredPackageType, PiPackageCatalogItem } from "../shared/desktop-contracts.ts";
+import type {
+  PiConfiguredPackageType,
+  PiPackageCatalogItem,
+} from "../../shared/desktop-contracts.ts";
 
 const localSourcePattern = /^(?:\.{1,2}(?:\/|$)|\/|~(?:\/|$))/;
 const protocolGitSourcePattern = /^(?:git:|https?:\/\/|ssh:\/\/|git:\/\/)/i;

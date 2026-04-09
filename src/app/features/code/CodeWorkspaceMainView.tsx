@@ -12,7 +12,7 @@ import { SettingsView } from "../../views/SettingsView";
 import { ThreadView } from "../../views/ThreadView";
 
 const ExtensionsView = lazy(async () => {
-  const module = await import("../../views/ExtensionsView");
+  const module = await import("../extensions/ExtensionsView");
   return { default: module.ExtensionsView };
 });
 
