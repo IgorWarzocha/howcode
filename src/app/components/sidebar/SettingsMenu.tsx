@@ -45,14 +45,12 @@ export function SettingsMenu({
         icon={<Sparkles size={15} />}
         title="Skills"
         onClick={onOpenSkillsView}
-        statusId="feature:settings.menu.skills"
         role="menuitem"
       />
       <MenuItem
         icon={<Settings size={15} />}
         title="Settings"
         onClick={onOpenSettingsPanel}
-        statusId="feature:settings.menu.settings"
         role="menuitem"
       />
       <MenuItem
