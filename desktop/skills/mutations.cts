@@ -9,6 +9,7 @@ import {
   getGlobalSkillsDirs,
   getProjectSkillsDirs,
   isPathWithinRoot,
+  isPathWithinRootDescendant,
   isValidSkillSlug,
   pathExists,
 } from "./paths.cts";
@@ -92,8 +93,8 @@ export async function removePiSkill(request: {
   const projectRootPaths = getProjectSkillsDirs(request.projectPath);
 
   if (
-    !globalRootPaths.some((rootPath) => isPathWithinRoot(installedPath, rootPath)) &&
-    !projectRootPaths.some((rootPath) => isPathWithinRoot(installedPath, rootPath))
+    !globalRootPaths.some((rootPath) => isPathWithinRootDescendant(installedPath, rootPath)) &&
+    !projectRootPaths.some((rootPath) => isPathWithinRootDescendant(installedPath, rootPath))
   ) {
     throw new Error("That skill cannot be removed from here.");
   }

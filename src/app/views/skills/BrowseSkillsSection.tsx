@@ -14,7 +14,11 @@ import { TextButton } from "../../components/common/TextButton";
 import { Tooltip } from "../../components/common/Tooltip";
 import type { AppSettings, DesktopActionResult } from "../../desktop/types";
 import { desktopQueryKeys, searchPiSkillsQuery } from "../../query/desktop-query";
-import { settingsInputClass, settingsListRowClass } from "../../ui/classes";
+import {
+  compactRoundIconButtonClass,
+  settingsCompactListRowClass,
+  settingsInputClass,
+} from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { formatInstalls, getActionError, openExternalUrl } from "./helpers";
 
@@ -139,44 +143,40 @@ export function BrowseSkillsSection({
           return (
             <div
               key={item.id}
-              className={cn(
-                settingsListRowClass,
-                "gap-2 py-2",
-                selected && "bg-[rgba(255,255,255,0.04)]",
-              )}
+              className={cn(settingsCompactListRowClass, selected && "bg-[rgba(255,255,255,0.04)]")}
             >
-              <div className="min-w-0 grid gap-0.5">
-                <div className="flex items-center gap-2">
-                  <Tooltip content={item.url} contentClassName="max-w-[420px]">
-                    <button
-                      type="button"
-                      className="group inline-flex min-w-0 items-center gap-0.5 p-0"
-                      onClick={() => void openExternalUrl(item.url)}
-                      aria-label={`Open ${item.name}`}
-                    >
-                      <span className="truncate text-[13px] text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
-                        {item.name}
-                      </span>
-                      <ArrowUpRight
-                        size={12}
-                        className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-                      />
-                    </button>
-                  </Tooltip>
-                  <span className="text-[11px] text-[color:var(--muted)]">
-                    {formatInstalls(item.installs)}
-                  </span>
-                  {installed ? (
-                    <span className="text-[11px] text-[color:var(--muted)]">Installed</span>
-                  ) : null}
-                </div>
-                <div className="truncate text-[12px] text-[color:var(--muted)]">
+              <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+                <Tooltip content={item.url} contentClassName="max-w-[420px]">
+                  <button
+                    type="button"
+                    className="group inline-flex min-w-0 shrink-0 items-center gap-0.5 p-0"
+                    onClick={() => void openExternalUrl(item.url)}
+                    aria-label={`Open ${item.name}`}
+                  >
+                    <span className="truncate text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+                      {item.name}
+                    </span>
+                    <ArrowUpRight
+                      size={12}
+                      className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+                    />
+                  </button>
+                </Tooltip>
+                <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
                   {item.description || item.source}
                 </div>
+                <span className="shrink-0 text-[11px] leading-4 text-[color:var(--muted)]">
+                  {formatInstalls(item.installs)}
+                </span>
+                {installed ? (
+                  <span className="shrink-0 text-[11px] leading-4 text-[color:var(--muted)]">
+                    Installed
+                  </span>
+                ) : null}
               </div>
 
-              <div className="flex items-center gap-1">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)]">
+              <div className="flex items-center gap-0.5">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)]">
                   {pendingInstall ? (
                     <Sparkles size={14} />
                   ) : installed ? (
@@ -185,7 +185,7 @@ export function BrowseSkillsSection({
                     <Tooltip content={installLabel}>
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+                        className={compactRoundIconButtonClass}
                         onClick={() => {
                           setSelectedCatalogSources((current) =>
                             current.includes(item.identityKey)

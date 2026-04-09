@@ -1,5 +1,5 @@
 import { CornerDownLeft, FolderOpen, RefreshCw } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { TextButton } from "../../components/common/TextButton";
 import { ThreeDotsSpinner } from "../../components/common/ThreeDotsSpinner";
 import { Tooltip } from "../../components/common/Tooltip";
@@ -35,6 +35,10 @@ export function SkillCreatorSection({
   const [skillCreatorLatestResponse, setSkillCreatorLatestResponse] = useState<string | null>(null);
   const [createdSkillPath, setCreatedSkillPath] = useState<string | null>(null);
   const [skillCreatorBusy, setSkillCreatorBusy] = useState(false);
+  const previousDestinationRef = useRef({
+    installScope,
+    projectPath,
+  });
 
   const skillCreatorReady = skillCreatorDetected || mockSkillCreatorInstalled;
   const canSubmitCreateSkill =
@@ -65,6 +69,24 @@ export function SkillCreatorSection({
     setCreateSkillDraft("");
     onSetActionError(null);
   }, [onSetActionError, skillCreatorSessionId]);
+
+  useEffect(() => {
+    const previousDestination = previousDestinationRef.current;
+    const destinationChanged =
+      previousDestination.installScope !== installScope ||
+      previousDestination.projectPath !== projectPath;
+
+    previousDestinationRef.current = {
+      installScope,
+      projectPath,
+    };
+
+    if (!skillCreatorSessionId || !destinationChanged) {
+      return;
+    }
+
+    void resetSkillCreatorSession();
+  }, [installScope, projectPath, resetSkillCreatorSession, skillCreatorSessionId]);
 
   const handleSubmitCreateSkill = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -76,3 +76,10 @@ export function isPathWithinRoot(candidatePath: string, rootPath: string) {
     relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
   );
 }
+
+export function isPathWithinRootDescendant(candidatePath: string, rootPath: string) {
+  const relativePath = path.relative(rootPath, candidatePath);
+  return (
+    relativePath.length > 0 && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)
+  );
+}
