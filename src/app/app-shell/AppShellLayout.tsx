@@ -50,14 +50,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
   return (
     <>
-      <div
-        className="motion-shell-root relative h-screen overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
-        data-sidebar-open="true"
-      >
-        <div
-          className="motion-sidebar-panel absolute inset-y-0 left-0 z-10 w-[300px] max-w-[calc(100vw-1rem)] min-w-0"
-          data-open="true"
-        >
+      <div className="relative flex h-screen overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]">
+        <div className="relative w-[300px] max-w-[calc(100vw-1rem)] min-w-0 shrink-0">
           <Sidebar
             projects={projects}
             appSettings={
@@ -113,7 +107,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
         <section
           ref={mainSectionRef}
-          className="motion-shell-main flex min-w-0 min-h-0 h-full flex-col overflow-hidden bg-[color:var(--workspace)]"
+          className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
         >
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             {desktopWorkspacePresent ? (
