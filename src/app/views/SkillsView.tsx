@@ -11,11 +11,13 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
+import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
 import { Tooltip } from "../components/common/Tooltip";
 import type { PiConfiguredSkill } from "../desktop/types";
+import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import {
   desktopQueryKeys,
   getConfiguredPiSkillsQuery,
@@ -23,7 +25,7 @@ import {
   removePiSkillQuery,
   searchPiSkillsQuery,
 } from "../query/desktop-query";
-import { settingsInputClass, settingsListRowClass } from "../ui/classes";
+import { popoverPanelClass, settingsInputClass, settingsListRowClass } from "../ui/classes";
 import { cn } from "../utils/cn";
 
 type SkillsViewProps = {
@@ -74,10 +76,19 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   const [installScope, setInstallScope] = useState<"global" | "project">("global");
   const [installedOpen, setInstalledOpen] = useState(true);
   const [browseOpen, setBrowseOpen] = useState(true);
+  const [confirmRemovePath, setConfirmRemovePath] = useState<string | null>(null);
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
+  const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null);
+  const confirmRemovePanelRef = useRef<HTMLDivElement>(null);
+
+  useDismissibleLayer({
+    open: confirmRemovePath !== null,
+    onDismiss: () => setConfirmRemovePath(null),
+    refs: [confirmRemoveButtonRef, confirmRemovePanelRef],
+  });
 
   const configuredSkillsQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiSkills(projectPath),
@@ -193,6 +204,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
 
     addPendingAction(pendingAction);
     setActionError(null);
+    setConfirmRemovePath(null);
 
     try {
       const result = await removePiSkillQuery({
@@ -292,20 +304,68 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
                   <FilePenLine size={13} />
                 </TextButton>
               </Tooltip>
-              <Tooltip
-                content={isPending("remove", configuredSkill.installedPath) ? "Removing" : "Remove"}
-              >
-                <TextButton
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#ffb4b4]"
-                  onClick={() => void handleRemove(configuredSkill)}
-                  disabled={isPending("remove", configuredSkill.installedPath)}
-                  aria-label={
+              <div className="relative">
+                <Tooltip
+                  content={
                     isPending("remove", configuredSkill.installedPath) ? "Removing" : "Remove"
                   }
                 >
-                  <Trash2 size={13} />
-                </TextButton>
-              </Tooltip>
+                  <TextButton
+                    ref={
+                      confirmRemovePath === configuredSkill.installedPath
+                        ? confirmRemoveButtonRef
+                        : undefined
+                    }
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#ffb4b4]"
+                    onClick={() => {
+                      if (isPending("remove", configuredSkill.installedPath)) {
+                        return;
+                      }
+
+                      setConfirmRemovePath((current) =>
+                        current === configuredSkill.installedPath
+                          ? null
+                          : configuredSkill.installedPath,
+                      );
+                    }}
+                    disabled={isPending("remove", configuredSkill.installedPath)}
+                    aria-label={
+                      isPending("remove", configuredSkill.installedPath) ? "Removing" : "Remove"
+                    }
+                  >
+                    <Trash2 size={13} />
+                  </TextButton>
+                </Tooltip>
+
+                {confirmRemovePath === configuredSkill.installedPath ? (
+                  <SurfacePanel
+                    ref={confirmRemovePanelRef}
+                    className={cn(
+                      "motion-popover absolute top-[calc(100%+8px)] right-0 z-20 grid min-w-[180px] gap-2 rounded-2xl p-2.5",
+                      popoverPanelClass,
+                    )}
+                    data-open="true"
+                  >
+                    <div className="text-[12px] text-[color:var(--text)]">Remove this skill?</div>
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        className="rounded-full px-2.5 py-1 text-[11.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+                        onClick={() => setConfirmRemovePath(null)}
+                      >
+                        No
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full bg-[rgba(255,120,120,0.16)] px-2.5 py-1 text-[11.5px] font-medium text-[#ffb4b4] transition-colors hover:bg-[rgba(255,120,120,0.22)]"
+                        onClick={() => void handleRemove(configuredSkill)}
+                      >
+                        Yes
+                      </button>
+                    </div>
+                  </SurfacePanel>
+                ) : null}
+              </div>
             </div>
           </div>
         ))}
