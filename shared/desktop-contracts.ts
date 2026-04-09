@@ -156,6 +156,7 @@ export type SkillCreatorSessionMessage = {
 export type SkillCreatorSessionState = {
   sessionId: string;
   messages: SkillCreatorSessionMessage[];
+  latestResponse: string | null;
   createdSkillPath: string | null;
 };
 

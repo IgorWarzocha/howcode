@@ -30,7 +30,7 @@ export const featureStatusById = {
   "feature:views.plugins": { status: "mock", label: "Mock" },
   "feature:views.automations": { status: "mock", label: "Mock" },
   "feature:views.debug": { status: "mock", label: "Mock" },
-  "feature:skills.create": { status: "mock", label: "Mock" },
+  "feature:skills.create": { status: "partial", label: "Partial" },
   "feature:diff.panel": { status: "partial", label: "Partial" },
   "feature:diff.review": { status: "mock", label: "Mock" },
   "feature:terminal.panel": { status: "partial", label: "Partial" },

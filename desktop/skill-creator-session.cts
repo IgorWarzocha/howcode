@@ -221,6 +221,7 @@ async function runSkillCreatorPrompt(
     return {
       sessionId: sessionEntry.session.sessionId,
       messages: mapSkillCreatorMessages(sessionEntry.session.messages as AgentMessage[]),
+      latestResponse: sessionEntry.session.getLastAssistantText() ?? null,
       createdSkillPath: sessionEntry.createdSkillPath,
     };
   } finally {

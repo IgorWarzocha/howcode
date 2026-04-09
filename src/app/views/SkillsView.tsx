@@ -18,12 +18,7 @@ import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
 import { Tooltip } from "../components/common/Tooltip";
-import type {
-  AppSettings,
-  DesktopActionResult,
-  PiConfiguredSkill,
-  SkillCreatorSessionMessage,
-} from "../desktop/types";
+import type { AppSettings, DesktopActionResult, PiConfiguredSkill } from "../desktop/types";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import {
   closeSkillCreatorSessionQuery,
@@ -160,9 +155,7 @@ export function SkillsView({
   const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
   const [createSkillDraft, setCreateSkillDraft] = useState("");
   const [skillCreatorSessionId, setSkillCreatorSessionId] = useState<string | null>(null);
-  const [skillCreatorMessages, setSkillCreatorMessages] = useState<SkillCreatorSessionMessage[]>(
-    [],
-  );
+  const [skillCreatorLatestResponse, setSkillCreatorLatestResponse] = useState<string | null>(null);
   const [createdSkillPath, setCreatedSkillPath] = useState<string | null>(null);
   const [skillCreatorBusy, setSkillCreatorBusy] = useState(false);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
@@ -347,7 +340,7 @@ export function SkillsView({
       }
 
       setSkillCreatorSessionId(sessionState.sessionId);
-      setSkillCreatorMessages(sessionState.messages);
+      setSkillCreatorLatestResponse(sessionState.latestResponse);
       setCreatedSkillPath(sessionState.createdSkillPath);
       setCreateSkillDraft("");
       invalidateConfiguredSkillsCaches();
@@ -736,21 +729,11 @@ export function SkillsView({
           <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
             {skillCreatorReady ? (
               <div className="grid gap-2">
-                <div className="grid max-h-[220px] gap-2 overflow-y-auto px-0.5 py-0.5">
-                  {skillCreatorMessages.length > 0 ? (
-                    skillCreatorMessages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "max-w-[85%] rounded-xl px-2.5 py-2 text-[12px] leading-5",
-                          message.role === "user"
-                            ? "ml-auto bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]"
-                            : "bg-[rgba(255,255,255,0.03)] text-[color:var(--muted)]",
-                        )}
-                      >
-                        {message.content}
-                      </div>
-                    ))
+                <div className="px-0.5 py-0.5">
+                  {skillCreatorLatestResponse ? (
+                    <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                      {skillCreatorLatestResponse}
+                    </div>
                   ) : (
                     <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
                       This spawns a temporary chat session. For complex project-skills, please use
