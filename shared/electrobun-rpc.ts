@@ -9,9 +9,13 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredSkill,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   Thread,
   ThreadData,
   TurnDiffResult,
@@ -31,6 +35,34 @@ export type PiDesktopRpc = {
       getShellState: { params: Record<string, never>; response: ShellState };
       getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null };
       getProjectDiff: { params: { projectId: string }; response: ProjectDiffResult | null };
+      searchPiSkills: {
+        params: { query?: string | null; limit?: number | null };
+        response: PiSkillCatalogPage;
+      };
+      getConfiguredPiSkills: {
+        params: { projectPath?: string | null };
+        response: PiConfiguredSkill[];
+      };
+      installPiSkill: {
+        params: { source: string; local?: boolean; projectPath?: string | null };
+        response: PiSkillMutationResult;
+      };
+      removePiSkill: {
+        params: { installedPath: string; projectPath?: string | null };
+        response: PiSkillMutationResult;
+      };
+      startSkillCreatorSession: {
+        params: { prompt: string; local?: boolean; projectPath?: string | null };
+        response: SkillCreatorSessionState;
+      };
+      continueSkillCreatorSession: {
+        params: { sessionId: string; prompt: string };
+        response: SkillCreatorSessionState;
+      };
+      closeSkillCreatorSession: {
+        params: { sessionId: string };
+        response: { ok: boolean };
+      };
       pickComposerAttachments: {
         params: { projectId?: string | null };
         response: ComposerAttachment[];

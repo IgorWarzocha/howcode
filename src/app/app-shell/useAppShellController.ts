@@ -35,6 +35,7 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
   const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
@@ -121,6 +122,12 @@ export function useAppShellController() {
     inspectedProjectIdsRef.current.add(selectedProject.id);
     void runDesktopAction("project.inspect-repo", { projectId: selectedProject.id });
   }, [projects, state.selectedProjectId]);
+
+  useEffect(() => {
+    if (state.activeView !== "skills" && skillsProjectScopeActive) {
+      setSkillsProjectScopeActive(false);
+    }
+  }, [skillsProjectScopeActive, state.activeView]);
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -288,8 +295,13 @@ export function useAppShellController() {
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
-    handleProjectSelect: (projectId: string) => dispatch({ type: "select-project", projectId }),
+    handleProjectSelect: (projectId: string) =>
+      dispatch({
+        type: state.activeView === "skills" ? "set-selected-project" : "select-project",
+        projectId,
+      }),
     handleProjectReorder,
+    handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
     handleSelectDiffTurn,
     handleShowView,
     handleThreadOpen,
@@ -305,6 +317,7 @@ export function useAppShellController() {
     projects,
     projectGitState,
     shellState,
+    skillsProjectScopeActive,
     state,
   };
 }

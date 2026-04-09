@@ -2,10 +2,12 @@ import type { AppSettings, ModelSelection } from "../shared/desktop-contracts.ts
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
+const skillCreatorModelKey = "skillCreatorModel";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
+const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 
 type PreferenceRow = {
   valueJson: string;
@@ -117,6 +119,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(favoriteFoldersKey) as PreferenceRow | undefined;
+  const skillCreatorModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(skillCreatorModelKey) as PreferenceRow | undefined;
   const projectImportStateRow = db
     .prepare(
       `
@@ -144,14 +155,25 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(initializeGitOnProjectCreateKey) as PreferenceRow | undefined;
+  const useAgentsSkillsPathsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(useAgentsSkillsPathsKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
+    skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
+    useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
   };
 }
 
@@ -162,6 +184,15 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   }
 
   writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
+}
+
+export function setSkillCreatorModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(skillCreatorModelKey);
+    return;
+  }
+
+  writeAppPreference(skillCreatorModelKey, JSON.stringify(selection));
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {
@@ -198,4 +229,8 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled));
+}
+
+export function setUseAgentsSkillsPaths(enabled: boolean) {
+  writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled));
 }

@@ -21,6 +21,7 @@ export type WorkspaceAction =
   | { type: "sync-projects"; projects: Project[] }
   | { type: "show-view"; view: View }
   | { type: "select-project"; projectId: string }
+  | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | { type: "toggle-sidebar" }
   | { type: "toggle-terminal" }
@@ -113,6 +114,11 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: null,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
+      };
+    case "set-selected-project":
+      return {
+        ...state,
+        selectedProjectId: action.projectId,
       };
     case "open-thread":
       return {

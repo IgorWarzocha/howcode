@@ -18,6 +18,7 @@ import {
 type SidebarProjectsSectionProps = {
   activeView: View;
   appSettings: AppSettings;
+  projectScopeLockActive: boolean;
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
@@ -36,6 +37,7 @@ type SidebarProjectsSectionProps = {
 export function SidebarProjectsSection({
   activeView,
   appSettings,
+  projectScopeLockActive,
   projects,
   selectedProjectId,
   selectedThreadId,
@@ -48,7 +50,12 @@ export function SidebarProjectsSection({
   onToggleProjectCollapse,
 }: SidebarProjectsSectionProps) {
   const showProjects =
-    activeView === "code" || activeView === "thread" || activeView === "settings";
+    activeView === "code" ||
+    activeView === "thread" ||
+    activeView === "settings" ||
+    activeView === "skills";
+  const skillsSelectionMode = activeView === "skills" && projectScopeLockActive;
+  const showProjectCreate = activeView !== "skills";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -173,20 +180,22 @@ export function SidebarProjectsSection({
               }
               active={filterMode !== "all"}
             />
-            <IconButton
-              ref={createButtonRef}
-              label="Add new project"
-              onClick={() => {
-                if (!appSettings.preferredProjectLocation) {
-                  onOpenSettingsPanel();
-                  return;
-                }
+            {showProjectCreate ? (
+              <IconButton
+                ref={createButtonRef}
+                label="Add new project"
+                onClick={() => {
+                  if (!appSettings.preferredProjectLocation) {
+                    onOpenSettingsPanel();
+                    return;
+                  }
 
-                setCreateErrorMessage(null);
-                setCreateOpen(true);
-              }}
-              icon={<FolderPlus size={15} />}
-            />
+                  setCreateErrorMessage(null);
+                  setCreateOpen(true);
+                }}
+                icon={<FolderPlus size={15} />}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -223,6 +232,7 @@ export function SidebarProjectsSection({
             selectedProjectId={selectedProjectId}
             selectedThreadId={selectedThreadId}
             activeView={activeView}
+            selectionModeActive={skillsSelectionMode}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={(action, payload) => {
               void onAction(action, payload);

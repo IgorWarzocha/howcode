@@ -8,7 +8,7 @@ import { cn } from "../../../utils/cn";
 type ProjectRowProps = {
   actionMenuId: string;
   actionMenuOpen: boolean;
-  dragHandleProps: {
+  dragHandleProps?: {
     attributes: DraggableAttributes;
     listeners: DraggableSyntheticListeners | undefined;
   };
@@ -16,9 +16,12 @@ type ProjectRowProps = {
   isDragging: boolean;
   isExpanded: boolean;
   hasRepoOrigin: boolean;
+  canEdit: boolean;
+  canToggleExpanded: boolean;
   name: string;
   renameDraft: string;
   isEditing: boolean;
+  showActions: boolean;
   threadGroupId: string;
   onCancelEdit: () => void;
   onChangeRenameDraft: (value: string) => void;
@@ -37,9 +40,12 @@ export function ProjectRow({
   isDragging,
   isExpanded,
   hasRepoOrigin,
+  canEdit,
+  canToggleExpanded,
   name,
   renameDraft,
   isEditing,
+  showActions,
   threadGroupId,
   onCancelEdit,
   onChangeRenameDraft,
@@ -76,7 +82,9 @@ export function ProjectRow({
 
     clickTimeoutRef.current = window.setTimeout(() => {
       onSelect();
-      onToggleExpanded();
+      if (canToggleExpanded) {
+        onToggleExpanded();
+      }
       clickTimeoutRef.current = null;
     }, 180);
   };
@@ -103,6 +111,7 @@ export function ProjectRow({
         type="button"
         className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
         onClick={onToggleExpanded}
+        disabled={!canToggleExpanded}
         aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         aria-expanded={isExpanded}
         aria-controls={threadGroupId}
@@ -159,12 +168,13 @@ export function ProjectRow({
           type="button"
           className={cn(
             "flex min-h-8 min-w-0 cursor-grab items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] active:cursor-grabbing",
+            !dragHandleProps && "cursor-pointer active:cursor-pointer",
             isActive && "text-[color:var(--text)]",
           )}
-          {...dragHandleProps.attributes}
-          {...dragHandleProps.listeners}
+          {...dragHandleProps?.attributes}
+          {...dragHandleProps?.listeners}
           onClick={handleRowClick}
-          onDoubleClick={handleRowDoubleClick}
+          onDoubleClick={canEdit ? handleRowDoubleClick : undefined}
           aria-current={isActive ? "page" : undefined}
         >
           <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">
@@ -179,6 +189,7 @@ export function ProjectRow({
           actionMenuOpen && "opacity-100",
           isDragging && "opacity-100",
           isEditing && "opacity-0 pointer-events-none",
+          !showActions && "pointer-events-none opacity-0",
         )}
       >
         <button

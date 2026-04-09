@@ -11,6 +11,7 @@ export default {
       "dist/index.html": "views/mainview/index.html",
       "dist/assets": "views/mainview/assets",
       "build/desktop": "build/desktop",
+      "desktop/resources": "resources",
     },
     watchIgnore: ["dist/**"],
     mac: {
