@@ -230,7 +230,6 @@ export function useAppShellController() {
     handleToggleDiff: handleToggleDiffPanel,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
-    handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     listComposerAttachmentEntries,

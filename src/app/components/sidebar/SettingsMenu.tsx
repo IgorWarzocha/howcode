@@ -40,7 +40,8 @@ export function SettingsMenu({
       aria-label="Settings menu"
       data-open={open ? "true" : "false"}
       aria-hidden={!open}
-      className={`motion-popover fixed bottom-12 left-2.5 z-40 grid w-72 gap-1 rounded-2xl p-2 ${popoverPanelClass}`}
+      className={`motion-popover absolute inset-x-0 bottom-[calc(100%+8px)] z-40 grid max-h-[min(32rem,calc(100vh-7rem))] gap-1 overflow-y-auto rounded-2xl p-2 ${popoverPanelClass}`}
+      style={{ transformOrigin: "bottom center" }}
     >
       <div className="flex items-center gap-3 rounded-2xl px-2.5 py-2 text-left">
         <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.08)]">

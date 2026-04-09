@@ -26,7 +26,6 @@ describe("deriveControllerViewModel", () => {
         selectedProjectId: "/repo",
         selectedThreadId: "thread-1",
         selectedSessionPath: "/repo/session.json",
-        sidebarVisible: true,
         terminalVisible: false,
         takeoverVisible: false,
         diffVisible: false,

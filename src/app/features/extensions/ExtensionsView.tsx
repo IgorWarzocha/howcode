@@ -5,10 +5,37 @@ import { SegmentedToggle } from "./components/SegmentedToggle";
 import { useExtensionsController } from "./hooks/useExtensionsController";
 import type { ExtensionsViewProps } from "./types";
 
-const scopeOptions = [
-  { value: "global", label: "global" },
-  { value: "project", label: "project" },
-] as const;
+function ExtensionsHeader({
+  globalInstalledCount,
+  installScope,
+  projectInstalledCount,
+  projectScopeAvailable,
+  onScopeChange,
+}: {
+  globalInstalledCount: number;
+  installScope: "global" | "project";
+  projectInstalledCount: number;
+  projectScopeAvailable: boolean;
+  onScopeChange: (scope: "global" | "project") => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
+      <SegmentedToggle
+        value={installScope}
+        options={[
+          { value: "global", label: `Global (${globalInstalledCount})` },
+          {
+            value: "project",
+            label: `Project (${projectInstalledCount})`,
+            disabled: !projectScopeAvailable,
+          },
+        ]}
+        onChange={onScopeChange}
+      />
+    </div>
+  );
+}
 
 export function ExtensionsView(props: ExtensionsViewProps) {
   const controller = useExtensionsController(props);
@@ -26,17 +53,13 @@ export function ExtensionsView(props: ExtensionsViewProps) {
 
   return (
     <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
-        <SegmentedToggle
-          value={controller.installScope}
-          options={scopeOptions.map((option) => ({
-            ...option,
-            disabled: option.value === "project" && !controller.projectScopeAvailable,
-          }))}
-          onChange={controller.setInstallScope}
-        />
-      </div>
+      <ExtensionsHeader
+        globalInstalledCount={controller.globalInstalledCount}
+        installScope={controller.installScope}
+        projectInstalledCount={controller.projectInstalledCount}
+        projectScopeAvailable={controller.projectScopeAvailable}
+        onScopeChange={controller.setInstallScope}
+      />
 
       {controller.actionError ? (
         <div className="text-[12px] text-[#f2a7a7]">{controller.actionError}</div>

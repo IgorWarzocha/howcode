@@ -1,9 +1,6 @@
-import { PanelLeft } from "lucide-react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
-import { iconButtonClass } from "../ui/classes";
-import { cn } from "../utils/cn";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
@@ -32,7 +29,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleThreadOpen,
     handleToggleProjectCollapse,
     handleToggleSettings,
-    handleToggleSidebar,
     pendingProjectAction,
     projects,
     extensionsProjectScopeActive,
@@ -56,12 +52,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     <>
       <div
         className="motion-shell-root relative h-screen overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]"
-        data-sidebar-open={state.sidebarVisible ? "true" : "false"}
+        data-sidebar-open="true"
       >
         <div
           className="motion-sidebar-panel absolute inset-y-0 left-0 z-10 w-[300px] max-w-[calc(100vw-1rem)] min-w-0"
-          data-open={state.sidebarVisible ? "true" : "false"}
-          aria-hidden={state.sidebarVisible ? undefined : true}
+          data-open="true"
         >
           <Sidebar
             projects={projects}
@@ -103,7 +98,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 handleToggleSettings();
               }
             }}
-            onOpenArchivedThreads={handleOpenArchivedThreads}
+            onOpenArchivedThreads={() => {
+              handleOpenArchivedThreads();
+              if (state.settingsOpen) {
+                handleToggleSettings();
+              }
+            }}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
             onThreadOpen={handleThreadOpen}
@@ -144,19 +144,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           </div>
         </section>
       </div>
-
-      <button
-        type="button"
-        className={cn(
-          "motion-sidebar-toggle fixed top-3 left-2.5 z-20 border-[color:var(--border)] bg-[rgba(35,38,51,0.95)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]",
-          iconButtonClass,
-        )}
-        data-open={state.sidebarVisible ? "true" : "false"}
-        onClick={handleToggleSidebar}
-        aria-label={state.sidebarVisible ? "Hide sidebar" : "Show sidebar"}
-      >
-        <PanelLeft size={16} />
-      </button>
 
       <ArchivedThreadsPanel
         open={state.archivedThreadsOpen}

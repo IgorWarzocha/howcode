@@ -2,6 +2,8 @@ import { ChevronDown, ChevronRight, PackagePlus, Search, Sparkles } from "lucide
 import { TextButton } from "../../../components/common/TextButton";
 import { Tooltip } from "../../../components/common/Tooltip";
 import type { PiPackageCatalogItem } from "../../../desktop/types";
+import { compactRoundIconButtonClass, settingsInputClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 import type { InstallScope } from "../types";
 import { CatalogItemRow } from "./CatalogItemRow";
 
@@ -62,21 +64,23 @@ export function SearchExtensionsSection({
         aria-expanded={open}
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span>Search</span>
+        <span>Browse</span>
       </button>
 
       {open ? (
         <>
           <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
-              <Search size={14} />
+            <label className="relative block min-w-0">
+              <span className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
+                <Search size={14} />
+              </span>
               <input
                 type="text"
                 value={searchInput}
                 onChange={(event) => onSearchInputChange(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                placeholder="Search pi packages"
-                aria-label="Search pi packages"
+                className={cn(settingsInputClass, "w-full pl-8")}
+                placeholder="Search extensions"
+                aria-label="Search extensions"
               />
             </label>
 
@@ -89,7 +93,10 @@ export function SearchExtensionsSection({
             >
               <TextButton
                 type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+                className={cn(
+                  compactRoundIconButtonClass,
+                  "disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40",
+                )}
                 onClick={() => void onInstallSelected()}
                 disabled={installDisabled}
                 aria-label={

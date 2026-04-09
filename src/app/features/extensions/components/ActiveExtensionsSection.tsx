@@ -26,7 +26,7 @@ export function ActiveExtensionsSection({
         aria-expanded={open}
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span>Active</span>
+        <span>Installed</span>
       </button>
 
       {open ? (

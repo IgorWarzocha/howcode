@@ -22,7 +22,7 @@ export function useExtensionsController({
   const [manualSourceKind, setManualSourceKind] = useState<ManualSourceKind>("npm");
   const [installScope, setInstallScope] = useState<InstallScope>("global");
   const [installedOpen, setInstalledOpen] = useState(true);
-  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(true);
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -59,6 +59,12 @@ export function useExtensionsController({
       ),
     [configuredPackages],
   );
+  const globalInstalledCount = installedEntries.filter(
+    (configuredPackage) => configuredPackage.scope === "user",
+  ).length;
+  const projectInstalledCount = installedEntries.filter(
+    (configuredPackage) => configuredPackage.scope === "project",
+  ).length;
   const scopedConfiguredEntries = useMemo(
     () =>
       configuredPackages.filter((configuredPackage) =>
@@ -249,6 +255,7 @@ export function useExtensionsController({
     catalogItems,
     catalogLoading: packagesQuery.isLoading,
     desktopPackagesAvailable,
+    globalInstalledCount,
     hasManualSource,
     hasNextCatalogPage: Boolean(packagesQuery.hasNextPage),
     hasPendingInstall,
@@ -263,6 +270,7 @@ export function useExtensionsController({
     manualSource,
     manualSourceKind,
     projectScopeAvailable,
+    projectInstalledCount,
     scopedInstalledEntries,
     searchInput,
     selectedCatalogSources,

@@ -142,33 +142,35 @@ export function Sidebar({
         onToggleProjectCollapse={onToggleProjectCollapse}
       />
 
-      <button
-        ref={settingsButtonRef}
-        type="button"
-        className={cn(
-          "mt-auto flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[14px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
-          settingsOpen && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
-        )}
-        onClick={onToggleSettings}
-        aria-haspopup="menu"
-        aria-expanded={settingsOpen}
-        aria-controls={settingsMenuId}
-      >
-        <Settings size={16} />
-        <span>Settings</span>
-      </button>
+      <div className="relative mt-auto">
+        <button
+          ref={settingsButtonRef}
+          type="button"
+          className={cn(
+            "flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[14px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+            settingsOpen && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
+          )}
+          onClick={onToggleSettings}
+          aria-haspopup="menu"
+          aria-expanded={settingsOpen}
+          aria-controls={settingsMenuId}
+        >
+          <Settings size={16} />
+          <span>Settings</span>
+        </button>
 
-      {settingsMenuPresent ? (
-        <SettingsMenu
-          menuId={settingsMenuId}
-          open={settingsOpen}
-          panelRef={settingsMenuRef}
-          onOpenExtensionsView={onOpenExtensionsView}
-          onOpenSkillsView={onOpenSkillsView}
-          onOpenSettingsPanel={onOpenSettingsPanel}
-          onOpenArchivedThreads={onOpenArchivedThreads}
-        />
-      ) : null}
+        {settingsMenuPresent ? (
+          <SettingsMenu
+            menuId={settingsMenuId}
+            open={settingsOpen}
+            panelRef={settingsMenuRef}
+            onOpenExtensionsView={onOpenExtensionsView}
+            onOpenSkillsView={onOpenSkillsView}
+            onOpenSettingsPanel={onOpenSettingsPanel}
+            onOpenArchivedThreads={onOpenArchivedThreads}
+          />
+        ) : null}
+      </div>
     </aside>
   );
 }

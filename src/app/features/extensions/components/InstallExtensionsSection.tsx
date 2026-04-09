@@ -1,7 +1,7 @@
 import { PackagePlus, Sparkles } from "lucide-react";
 import { TextButton } from "../../../components/common/TextButton";
 import { Tooltip } from "../../../components/common/Tooltip";
-import { settingsInputClass } from "../../../ui/classes";
+import { compactRoundIconButtonClass, settingsInputClass } from "../../../ui/classes";
 import type { InstallScope, ManualSourceKind } from "../types";
 import { SegmentedToggle } from "./SegmentedToggle";
 
@@ -76,7 +76,7 @@ export function InstallExtensionsSection({
         <Tooltip content={hasManualSource ? `Install ${manualSourceKind} source` : "Install"}>
           <TextButton
             type="submit"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+            className={`${compactRoundIconButtonClass} disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40`}
             disabled={disabled}
             aria-label={hasManualSource ? `Install ${manualSourceKind} source` : "Install"}
           >

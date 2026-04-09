@@ -5,7 +5,6 @@ export type WorkspaceState = {
   selectedProjectId: string;
   selectedThreadId: string | null;
   selectedSessionPath: string | null;
-  sidebarVisible: boolean;
   terminalVisible: boolean;
   takeoverVisible: boolean;
   diffVisible: boolean;
@@ -23,7 +22,6 @@ export type WorkspaceAction =
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
-  | { type: "toggle-sidebar" }
   | { type: "toggle-terminal" }
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
@@ -46,7 +44,6 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedProjectId: firstProject?.id ?? "",
     selectedThreadId: null,
     selectedSessionPath: null,
-    sidebarVisible: true,
     terminalVisible: false,
     takeoverVisible: false,
     diffVisible: false,
@@ -134,8 +131,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           [action.projectId]: false,
         },
       };
-    case "toggle-sidebar":
-      return { ...state, sidebarVisible: !state.sidebarVisible };
     case "toggle-terminal":
       return { ...state, terminalVisible: !state.terminalVisible };
     case "show-takeover":
