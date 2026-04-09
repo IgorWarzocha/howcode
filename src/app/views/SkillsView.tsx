@@ -532,6 +532,23 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
 
       {actionError ? <div className="text-[12px] text-[#f2a7a7]">{actionError}</div> : null}
 
+      <section className="grid gap-2">
+        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
+          <span>Create</span>
+          <FeatureStatusBadge statusId="feature:skills.create" />
+        </div>
+
+        <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-4">
+          <div className="grid gap-1">
+            <div className="text-[13px] font-medium text-[color:var(--text)]">Custom skills</div>
+            <div className="text-[12px] leading-5 text-[color:var(--muted)]">
+              Placeholder surface for creating and packaging custom skills. We’ll wire up the real
+              flow next.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-2">
         <button
           type="button"
@@ -633,23 +650,6 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
           </>
         ) : null}
       </div>
-
-      <section className="grid gap-2">
-        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
-          <span>Create</span>
-          <FeatureStatusBadge statusId="feature:skills.create" />
-        </div>
-
-        <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-4">
-          <div className="grid gap-1">
-            <div className="text-[13px] font-medium text-[color:var(--text)]">Custom skills</div>
-            <div className="text-[12px] leading-5 text-[color:var(--muted)]">
-              Placeholder surface for creating and packaging custom skills. We’ll wire up the real
-              flow next.
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
