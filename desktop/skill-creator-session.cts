@@ -7,6 +7,11 @@ import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
 import { getRuntimeForRequest } from "./runtime/runtime-registry.cts";
+import {
+  getActiveGlobalSkillsRoot,
+  getActiveProjectSkillsRoot,
+  pathExists,
+} from "./skills/paths.cts";
 
 type SkillCreatorSessionEntry = {
   session: Awaited<ReturnType<typeof createSkillCreatorSession>>["session"];
@@ -17,32 +22,6 @@ type SkillCreatorSessionEntry = {
 };
 
 const skillCreatorSessions = new Map<string, SkillCreatorSessionEntry>();
-
-function getGlobalSkillsRoot() {
-  return loadAppSettings().useAgentsSkillsPaths
-    ? path.join(os.homedir(), ".agents", "skills")
-    : path.join(os.homedir(), ".pi", "agent", "skills");
-}
-
-function getProjectSkillsRoot(projectPath?: string | null) {
-  if (!projectPath?.trim()) {
-    return null;
-  }
-
-  const resolvedProjectPath = path.resolve(projectPath);
-  return loadAppSettings().useAgentsSkillsPaths
-    ? path.join(resolvedProjectPath, ".agents", "skills")
-    : path.join(resolvedProjectPath, ".pi", "skills");
-}
-
-async function pathExists(candidatePath: string) {
-  try {
-    await stat(candidatePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function listSkillPaths(skillsRootPath: string) {
   if (!(await pathExists(skillsRootPath))) {
@@ -236,7 +215,9 @@ export async function startSkillCreatorSession(request: {
 }) {
   const local = request.local === true;
   const launchCwd = local ? path.resolve(request.projectPath ?? "") : os.homedir();
-  const targetRootPath = local ? getProjectSkillsRoot(request.projectPath) : getGlobalSkillsRoot();
+  const targetRootPath = local
+    ? getActiveProjectSkillsRoot(request.projectPath)
+    : getActiveGlobalSkillsRoot();
 
   if (!targetRootPath) {
     throw new Error("Select a project before creating a project-specific skill.");
