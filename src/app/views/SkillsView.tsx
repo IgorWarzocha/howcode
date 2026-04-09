@@ -341,28 +341,25 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
                   <SurfacePanel
                     ref={confirmRemovePanelRef}
                     className={cn(
-                      "motion-popover absolute top-[calc(100%+8px)] right-0 z-20 grid min-w-[180px] gap-2 rounded-2xl p-2.5",
+                      "motion-popover absolute top-[calc(100%+6px)] right-0 z-20 flex items-center gap-1 rounded-xl p-1",
                       popoverPanelClass,
                     )}
                     data-open="true"
                   >
-                    <div className="text-[12px] text-[color:var(--text)]">Remove this skill?</div>
-                    <div className="flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        className="rounded-full px-2.5 py-1 text-[11.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
-                        onClick={() => setConfirmRemovePath(null)}
-                      >
-                        No
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-full bg-[rgba(255,120,120,0.16)] px-2.5 py-1 text-[11.5px] font-medium text-[#ffb4b4] transition-colors hover:bg-[rgba(255,120,120,0.22)]"
-                        onClick={() => void handleRemove(configuredSkill)}
-                      >
-                        Yes
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-[#ffb4b4] transition-colors hover:bg-[rgba(255,120,120,0.14)]"
+                      onClick={() => void handleRemove(configuredSkill)}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md px-1.5 py-0.5 text-[10.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+                      onClick={() => setConfirmRemovePath(null)}
+                    >
+                      No
+                    </button>
                   </SurfacePanel>
                 ) : null}
               </div>
