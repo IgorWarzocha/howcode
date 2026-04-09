@@ -59,6 +59,15 @@ export function useExtensionsController({
       ),
     [configuredPackages],
   );
+  const scopedConfiguredEntries = useMemo(
+    () =>
+      configuredPackages.filter((configuredPackage) =>
+        installScope === "project"
+          ? configuredPackage.scope === "project"
+          : configuredPackage.scope === "user",
+      ),
+    [configuredPackages, installScope],
+  );
   const scopedInstalledEntries = useMemo(
     () =>
       installedEntries.filter((configuredPackage) =>
@@ -69,8 +78,8 @@ export function useExtensionsController({
     [installScope, installedEntries],
   );
   const installedIdentityKeys = useMemo(
-    () => getInstalledIdentityKeys(configuredPackages),
-    [configuredPackages],
+    () => getInstalledIdentityKeys(scopedInstalledEntries),
+    [scopedInstalledEntries],
   );
   const catalogItems = useMemo(
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
@@ -102,6 +111,10 @@ export function useExtensionsController({
 
   const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
     queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath), packages);
+
+    void queryClient.invalidateQueries({
+      queryKey: ["desktop", "piPackages", "configured"],
+    });
   };
 
   const addPendingAction = (action: PendingAction) => {
@@ -250,7 +263,7 @@ export function useExtensionsController({
     manualSource,
     manualSourceKind,
     projectScopeAvailable,
-    scopedInstalledEntries,
+    scopedInstalledEntries: scopedConfiguredEntries,
     searchInput,
     selectedCatalogSources,
     setBrowseOpen,
