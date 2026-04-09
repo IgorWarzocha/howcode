@@ -80,7 +80,8 @@ export function Sidebar({
   return (
     <aside
       aria-label="Workspace sidebar"
-      className="relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
+      data-pulse-active={projectScopeLockActive ? "true" : "false"}
+      className="motion-surface-pulse motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
     >
       {showModeSelection ? (
         <nav className="grid gap-0.5" aria-label="Primary navigation">

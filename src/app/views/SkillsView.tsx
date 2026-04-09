@@ -98,9 +98,16 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   });
 
   const configuredSkills = configuredSkillsQuery.data ?? [];
+  const activeScope = installScope === "project" ? "project" : "user";
+  const globalSkillCount = configuredSkills.filter((skill) => skill.scope === "user").length;
+  const projectSkillCount = configuredSkills.filter((skill) => skill.scope === "project").length;
+  const visibleConfiguredSkills = useMemo(
+    () => configuredSkills.filter((skill) => skill.scope === activeScope),
+    [activeScope, configuredSkills],
+  );
   const installedIdentityKeys = useMemo(
-    () => getInstalledIdentityKeys(configuredSkills),
-    [configuredSkills],
+    () => getInstalledIdentityKeys(visibleConfiguredSkills),
+    [visibleConfiguredSkills],
   );
   const catalogItems = skillsQuery.data?.items ?? [];
 
@@ -249,9 +256,9 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   };
 
   const installedSectionContent =
-    configuredSkills.length > 0 ? (
+    visibleConfiguredSkills.length > 0 ? (
       <div className="grid gap-2">
-        {configuredSkills.map((configuredSkill) => (
+        {visibleConfiguredSkills.map((configuredSkill) => (
           <div
             key={`${configuredSkill.scope}:${configuredSkill.installedPath}`}
             className={cn(settingsListRowClass, "gap-2 py-2")}
@@ -305,7 +312,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
       </div>
     ) : (
       <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        No installed skills.
+        No {installScope} skills.
       </div>
     );
 
@@ -452,7 +459,9 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
               onClick={() => setInstallScope(scope)}
               aria-pressed={installScope === scope}
             >
-              {scope}
+              {scope === "global"
+                ? `Global (${globalSkillCount})`
+                : `Project (${projectSkillCount})`}
             </button>
           ))}
         </div>
