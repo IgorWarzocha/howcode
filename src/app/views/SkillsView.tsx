@@ -139,8 +139,14 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
     );
   }, [catalogItems, installedIdentityKeys]);
 
-  const updateConfiguredSkillsCache = (skills: PiConfiguredSkill[]) => {
-    queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath), skills);
+  const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
+    if (skills) {
+      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath), skills);
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: ["desktop", "piSkills", "configured"],
+    });
   };
 
   const addPendingAction = (action: PendingAction) => {
@@ -187,7 +193,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
       });
 
       if (result?.configuredSkills) {
-        updateConfiguredSkillsCache(result.configuredSkills);
+        invalidateConfiguredSkillsCaches(result.configuredSkills);
       }
 
       return true;
@@ -213,7 +219,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
       });
 
       if (result?.configuredSkills) {
-        updateConfiguredSkillsCache(result.configuredSkills);
+        invalidateConfiguredSkillsCaches(result.configuredSkills);
       }
     } catch (error) {
       setActionError(getActionError(error));

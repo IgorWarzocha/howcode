@@ -91,6 +91,18 @@ function normalizeSkillSource(source: string) {
   return source.trim().toLowerCase();
 }
 
+function isValidSkillSlug(slug: string) {
+  const trimmedSlug = slug.trim();
+
+  return (
+    trimmedSlug.length > 0 &&
+    trimmedSlug !== "." &&
+    trimmedSlug !== ".." &&
+    !trimmedSlug.includes("/") &&
+    !trimmedSlug.includes("\\")
+  );
+}
+
 function getSkillIdentityKey(source: string) {
   return normalizeSkillSource(source);
 }
@@ -487,7 +499,15 @@ export async function installPiSkill(request: {
     throw new Error("Select a project before installing a project-scoped skill.");
   }
 
-  const targetDirPath = path.join(targetRootPath, parsedSource.slug);
+  if (!isValidSkillSlug(parsedSource.slug)) {
+    throw new Error("That skill has an invalid slug.");
+  }
+
+  const targetDirPath = path.resolve(targetRootPath, parsedSource.slug);
+  if (!isPathWithinRoot(targetDirPath, targetRootPath)) {
+    throw new Error("That skill resolves outside the skills directory.");
+  }
+
   const existingMetadata = await readInstalledSkillMetadata(targetDirPath);
   if (
     (await pathExists(targetDirPath)) &&
