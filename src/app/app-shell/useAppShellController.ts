@@ -1,33 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
-import type { DesktopAction } from "../desktop/actions";
-import type {
-  ArchivedThread,
-  ComposerState,
-  DesktopActionResult,
-  ProjectGitState,
-  ShellState,
-} from "../desktop/types";
+import { useMemo, useReducer, useState } from "react";
+import type { ArchivedThread, ComposerState, ProjectGitState, ShellState } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
-import {
-  buildContextualActionPayload,
-  buildPendingProjectAction,
-  refreshArchivedThreadsIfOpen,
-  shouldConfirmProjectAction,
-} from "./controller-action-helpers";
-import {
-  applyOptimisticPinUpdate,
-  applyOptimisticProjectRename,
-  applyOptimisticSettingsUpdate,
-  runPostDesktopActionEffects,
-} from "./controller-post-action-effects";
 import { deriveControllerViewModel } from "./controller-view-model";
+import { getProjectSelectionAction } from "./scoped-project-view";
 import { useAppShellEffects } from "./useAppShellEffects";
+import { useDesktopActionHandlers } from "./useDesktopActionHandlers";
+import { useProjectRepoInspection } from "./useProjectRepoInspection";
+import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
@@ -39,10 +23,6 @@ export function useAppShellController() {
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
-  const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
-    null,
-  );
-  const inspectedProjectIdsRef = useRef<Set<string>>(new Set());
   const {
     shellState,
     loadArchivedThreads,
@@ -110,107 +90,43 @@ export function useAppShellController() {
     setProjectGitState,
   });
 
-  useEffect(() => {
-    const selectedProject = projects.find((project) => project.id === state.selectedProjectId);
-    if (!selectedProject || selectedProject.repoOriginChecked) {
-      return;
-    }
+  const {
+    handleAction,
+    handleConfirmProjectAction,
+    pendingProjectAction,
+    runDesktopAction,
+    setPendingProjectAction,
+  } = useDesktopActionHandlers({
+    activeView: state.activeView,
+    composerProjectId,
+    dispatch,
+    invokeDesktopAction,
+    loadArchivedThreads,
+    loadComposerState,
+    loadProjectGitState,
+    loadProjectThreads,
+    projects,
+    refreshShellState,
+    selectedSessionPath: state.selectedSessionPath,
+    setArchivedThreads,
+    setComposerState,
+    setProjectGitState,
+    workspaceState: state,
+  });
 
-    if (inspectedProjectIdsRef.current.has(selectedProject.id)) {
-      return;
-    }
+  useProjectRepoInspection({
+    projects,
+    selectedProjectId: state.selectedProjectId,
+    runDesktopAction,
+  });
 
-    inspectedProjectIdsRef.current.add(selectedProject.id);
-    void runDesktopAction("project.inspect-repo", { projectId: selectedProject.id });
-  }, [projects, state.selectedProjectId]);
-
-  useEffect(() => {
-    if (state.activeView !== "extensions" && extensionsProjectScopeActive) {
-      setExtensionsProjectScopeActive(false);
-    }
-
-    if (state.activeView !== "skills" && skillsProjectScopeActive) {
-      setSkillsProjectScopeActive(false);
-    }
-  }, [extensionsProjectScopeActive, skillsProjectScopeActive, state.activeView]);
-
-  const runDesktopAction = async (
-    action: DesktopAction,
-    payload: Record<string, unknown> = {},
-  ): Promise<DesktopActionResult | null> => {
-    const contextualPayload = buildContextualActionPayload({
-      action,
-      payload,
-      composerProjectId,
-      activeView: state.activeView,
-      selectedSessionPath: state.selectedSessionPath,
-    });
-
-    const actionResult = await invokeDesktopAction(action, contextualPayload);
-
-    await runPostDesktopActionEffects({
-      action,
-      contextualPayload,
-      actionResult,
-      workspaceState: state,
-      composerProjectId,
-      dispatch,
-      loadArchivedThreads,
-      loadComposerState,
-      loadProjectGitState,
-      loadProjectThreads,
-      refreshShellState,
-      setArchivedThreads,
-      setComposerState,
-      setProjectGitState,
-    });
-
-    return actionResult;
-  };
-
-  const handleAction = async (
-    action: DesktopAction,
-    payload: Record<string, unknown> = {},
-  ): Promise<DesktopActionResult | null> => {
-    if (shouldConfirmProjectAction(action)) {
-      const pendingAction = buildPendingProjectAction(action, payload, projects);
-      if (!pendingAction) {
-        return null;
-      }
-
-      setPendingProjectAction(pendingAction);
-      return null;
-    }
-
-    if (action === "settings.update") {
-      applyOptimisticSettingsUpdate(queryClient, payload);
-    }
-
-    if (action === "project.edit-name") {
-      applyOptimisticProjectRename(queryClient, payload);
-    }
-
-    if (action === "thread.pin" || action === "project.pin") {
-      applyOptimisticPinUpdate(queryClient, action, payload);
-    }
-
-    return await runDesktopAction(action, payload);
-  };
-
-  const handleConfirmProjectAction = async (payload: Record<string, unknown> = {}) => {
-    if (!pendingProjectAction) {
-      return;
-    }
-
-    const nextAction = pendingProjectAction;
-    setPendingProjectAction(null);
-
-    await runDesktopAction(nextAction.action, {
-      projectId: nextAction.projectId,
-      projectName: nextAction.projectName,
-      ...payload,
-    });
-  };
+  useScopedProjectViewSync({
+    activeView: state.activeView,
+    extensionsProjectScopeActive,
+    setExtensionsProjectScopeActive,
+    setSkillsProjectScopeActive,
+    skillsProjectScopeActive,
+  });
 
   const handleShowView = (view: View) => {
     dispatch({ type: "show-view", view });
@@ -302,10 +218,7 @@ export function useAppShellController() {
     handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) =>
       dispatch({
-        type:
-          state.activeView === "extensions" || state.activeView === "skills"
-            ? "set-selected-project"
-            : "select-project",
+        type: getProjectSelectionAction(state.activeView),
         projectId,
       }),
     handleProjectReorder,
