@@ -305,7 +305,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   const browseSectionContent =
     deferredSearchInput.length < 2 ? (
       <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        Start typing to search skills from skills.sh.
+        Type at least 2 characters to search skills from skills.sh.
       </div>
     ) : skillsQuery.isLoading ? (
       <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
@@ -531,7 +531,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                placeholder="Search skills"
+                placeholder="Search skills (min 2 chars)"
                 aria-label="Search skills"
               />
             </label>
