@@ -81,6 +81,7 @@ function getInstalledIdentityKeys(packages: PiConfiguredPackage[]) {
 
 export function ExtensionsView({ projectPath, onSetProjectScopeActive }: ExtensionsViewProps) {
   const queryClient = useQueryClient();
+  const normalizedProjectPath = projectPath?.trim() ? projectPath : null;
   const [searchInput, setSearchInput] = useState("");
   const [manualSource, setManualSource] = useState("");
   const [manualSourceKind, setManualSourceKind] = useState<"npm" | "git">("npm");
@@ -130,6 +131,13 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
     () => packagesQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [packagesQuery.data?.pages],
   );
+  const projectScopeAvailable = normalizedProjectPath !== null;
+
+  useEffect(() => {
+    if (!projectScopeAvailable && installScope === "project") {
+      setInstallScope("global");
+    }
+  }, [installScope, projectScopeAvailable]);
 
   useEffect(() => {
     onSetProjectScopeActive(installScope === "project");
@@ -174,8 +182,14 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
 
   const hasSelectedCatalogSources = selectedCatalogSources.length > 0;
   const hasManualSource = manualSource.trim().length > 0;
+  const hasPendingInstall = pendingActions.some((action) => action.kind === "install");
 
   const handleInstall = async (source: string, kind: "npm" | "git") => {
+    if (installScope === "project" && !normalizedProjectPath) {
+      setActionError("Select a project first.");
+      return false;
+    }
+
     const normalizedSource = source.trim();
     const pendingAction = { kind: "install" as const, source: normalizedSource };
 
@@ -187,7 +201,7 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
         source: normalizedSource,
         kind,
         local: installScope === "project",
-        projectPath,
+        projectPath: normalizedProjectPath,
       });
 
       if (result?.configuredPackages) {
@@ -213,7 +227,7 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
       const result = await removePiPackageQuery({
         source: configuredPackage.source,
         local: configuredPackage.scope === "project",
-        projectPath,
+        projectPath: normalizedProjectPath,
       });
 
       if (result?.configuredPackages) {
@@ -474,6 +488,7 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
               )}
               onClick={() => setInstallScope(scope)}
               aria-pressed={installScope === scope}
+              disabled={scope === "project" && !projectScopeAvailable}
             >
               {scope}
             </button>
@@ -561,8 +576,11 @@ export function ExtensionsView({ projectPath, onSetProjectScopeActive }: Extensi
                   type="submit"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
                   disabled={
-                    (!hasManualSource && !hasSelectedCatalogSources) ||
-                    (hasManualSource && isPending("install", manualSource))
+                    !projectScopeAvailable && installScope === "project"
+                      ? true
+                      : (!hasManualSource && !hasSelectedCatalogSources) ||
+                        (hasManualSource && isPending("install", manualSource)) ||
+                        hasPendingInstall
                   }
                   aria-label={
                     hasManualSource

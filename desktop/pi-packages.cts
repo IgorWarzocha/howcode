@@ -294,6 +294,14 @@ function sortConfiguredPackages(packages: PiConfiguredPackage[]) {
   });
 }
 
+function resolveConfiguredExtensionPath(extensionPath: string, settingsPath: string) {
+  const resolvedPath = path.isAbsolute(extensionPath)
+    ? extensionPath
+    : path.resolve(path.dirname(settingsPath), extensionPath);
+
+  return existsSync(resolvedPath) ? resolvedPath : undefined;
+}
+
 export async function searchPiPackages(
   request: {
     query?: string | null;
@@ -361,7 +369,7 @@ export async function listConfiguredPiPackages(
         source: extensionPath,
         scope,
         filtered: false,
-        installedPath: existsSync(extensionPath) ? extensionPath : undefined,
+        installedPath: resolveConfiguredExtensionPath(extensionPath, settingsPath),
         settingsPath,
       });
     }
