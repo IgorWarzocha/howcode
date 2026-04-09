@@ -26,8 +26,17 @@ export async function openExternalUrl(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-export function getInstalledIdentityKeys(skills: PiConfiguredSkill[]) {
-  return new Set(skills.map((skill) => skill.identityKey));
+function getPathBasename(targetPath: string) {
+  const segments = targetPath.split(/[\\/]+/).filter(Boolean);
+  return segments[segments.length - 1] ?? "";
+}
+
+export function getInstalledSkillSlugs(skills: PiConfiguredSkill[]) {
+  return new Set(
+    skills
+      .map((skill) => getPathBasename(skill.installedPath).trim().toLowerCase())
+      .filter(Boolean),
+  );
 }
 
 function getSkillCreatorDetectionText(skill: PiConfiguredSkill) {

@@ -20,7 +20,7 @@ import { formatInstalls, getActionError, openExternalUrl } from "./helpers";
 
 type BrowseSkillsSectionProps = {
   appSettings: AppSettings;
-  installedIdentityKeys: Set<string>;
+  installedSkillSlugs: Set<string>;
   onAction: (
     action: "settings.update",
     payload?: Record<string, unknown>,
@@ -32,7 +32,7 @@ type BrowseSkillsSectionProps = {
 
 export function BrowseSkillsSection({
   appSettings,
-  installedIdentityKeys,
+  installedSkillSlugs,
   onAction,
   onInstall,
   isPendingInstall,
@@ -65,10 +65,10 @@ export function BrowseSkillsSection({
     setSelectedCatalogSources((current) =>
       current.filter((source) => {
         const item = catalogItems.find((catalogItem) => catalogItem.identityKey === source);
-        return item ? !installedIdentityKeys.has(item.identityKey) : false;
+        return item ? !installedSkillSlugs.has(item.name.trim().toLowerCase()) : false;
       }),
     );
-  }, [catalogItems, installedIdentityKeys]);
+  }, [catalogItems, installedSkillSlugs]);
 
   const handleManualInstall = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,7 +127,7 @@ export function BrowseSkillsSection({
     ) : catalogItems.length > 0 ? (
       <div className="grid gap-2">
         {catalogItems.map((item) => {
-          const installed = installedIdentityKeys.has(item.identityKey);
+          const installed = installedSkillSlugs.has(item.name.trim().toLowerCase());
           const pendingInstall = isPendingInstall(`${item.source}@${item.name}`);
           const installLabel = pendingInstall
             ? `Installing ${item.name}`

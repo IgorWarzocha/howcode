@@ -14,7 +14,7 @@ import { InstalledSkillsSection } from "./skills/InstalledSkillsSection";
 import { SkillCreatorSection } from "./skills/SkillCreatorSection";
 import {
   getActionError,
-  getInstalledIdentityKeys,
+  getInstalledSkillSlugs,
   isDesktopSkillsAvailable,
   isSkillCreatorCandidate,
   openExternalUrl,
@@ -147,8 +147,8 @@ export function SkillsView({
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
   );
-  const installedIdentityKeys = useMemo(
-    () => getInstalledIdentityKeys(visibleConfiguredSkills),
+  const installedSkillSlugs = useMemo(
+    () => getInstalledSkillSlugs(visibleConfiguredSkills),
     [visibleConfiguredSkills],
   );
 
@@ -286,7 +286,7 @@ export function SkillsView({
 
       <BrowseSkillsSection
         appSettings={appSettings}
-        installedIdentityKeys={installedIdentityKeys}
+        installedSkillSlugs={installedSkillSlugs}
         onAction={onAction}
         onInstall={handleInstall}
         isPendingInstall={(source) => isPending("install", source)}
