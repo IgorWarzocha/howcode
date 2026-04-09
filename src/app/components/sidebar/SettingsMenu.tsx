@@ -1,4 +1,4 @@
-import { Archive, Clock3, Globe, LogOut, Settings, UserRound } from "lucide-react";
+import { Archive, Clock3, Globe, LogOut, Settings, Sparkles, UserRound } from "lucide-react";
 import type { RefObject } from "react";
 import { popoverPanelClass } from "../../ui/classes";
 import { MenuItem } from "../common/MenuItem";
@@ -7,6 +7,7 @@ import { SurfacePanel } from "../common/SurfacePanel";
 type SettingsMenuProps = {
   menuId: string;
   open: boolean;
+  onOpenSkillsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   panelRef?: RefObject<HTMLDivElement | null>;
@@ -15,6 +16,7 @@ type SettingsMenuProps = {
 export function SettingsMenu({
   menuId,
   open,
+  onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   panelRef,
@@ -39,6 +41,13 @@ export function SettingsMenu({
         </div>
       </div>
       <div className="mx-2 my-1 h-px bg-[color:var(--border)]" />
+      <MenuItem
+        icon={<Sparkles size={15} />}
+        title="Skills"
+        onClick={onOpenSkillsView}
+        statusId="feature:settings.menu.skills"
+        role="menuitem"
+      />
       <MenuItem
         icon={<Settings size={15} />}
         title="Settings"

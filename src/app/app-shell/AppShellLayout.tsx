@@ -35,6 +35,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleToggleSidebar,
     pendingProjectAction,
     projects,
+    skillsProjectScopeActive,
     state,
   } = controller;
 
@@ -72,10 +73,17 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
+            projectScopeLockActive={skillsProjectScopeActive}
             collapsedProjectIds={collapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}
+            onOpenSkillsView={() => {
+              handleShowView("skills");
+              if (state.settingsOpen) {
+                handleToggleSettings();
+              }
+            }}
             onOpenSettingsPanel={() => {
               handleShowView("settings");
               if (state.settingsOpen) {

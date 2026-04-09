@@ -8,6 +8,9 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredSkill,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -27,6 +30,22 @@ declare global {
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
       getProjectDiff?: (projectId: string) => Promise<ProjectDiffResult | null>;
+      searchPiSkills?: (request?: {
+        query?: string | null;
+        limit?: number | null;
+      }) => Promise<PiSkillCatalogPage>;
+      getConfiguredPiSkills?: (request?: {
+        projectPath?: string | null;
+      }) => Promise<PiConfiguredSkill[]>;
+      installPiSkill?: (request: {
+        source: string;
+        local?: boolean;
+        projectPath?: string | null;
+      }) => Promise<PiSkillMutationResult>;
+      removePiSkill?: (request: {
+        installedPath: string;
+        projectPath?: string | null;
+      }) => Promise<PiSkillMutationResult>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;

@@ -4,6 +4,9 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
+  PiConfiguredSkill,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -13,6 +16,9 @@ import type {
 
 export const desktopQueryKeys = {
   shellState: () => ["desktop", "shellState"] as const,
+  piSkillCatalog: (query: string) => ["desktop", "piSkills", "catalog", query] as const,
+  configuredPiSkills: (projectPath?: string | null) =>
+    ["desktop", "piSkills", "configured", projectPath ?? null] as const,
   projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -47,6 +53,44 @@ export async function getProjectGitStateQuery(projectId: string): Promise<Projec
 
 export async function getProjectDiffQuery(projectId: string): Promise<ProjectDiffResult | null> {
   return (await window.piDesktop?.getProjectDiff?.(projectId)) ?? null;
+}
+
+export async function searchPiSkillsQuery(
+  request: {
+    query?: string | null;
+    limit?: number | null;
+  } = {},
+): Promise<PiSkillCatalogPage> {
+  return (
+    (await window.piDesktop?.searchPiSkills?.(request)) ?? {
+      query: request.query?.trim() ?? "",
+      total: 0,
+      items: [],
+    }
+  );
+}
+
+export async function getConfiguredPiSkillsQuery(
+  request: {
+    projectPath?: string | null;
+  } = {},
+): Promise<PiConfiguredSkill[]> {
+  return (await window.piDesktop?.getConfiguredPiSkills?.(request)) ?? [];
+}
+
+export async function installPiSkillQuery(request: {
+  source: string;
+  local?: boolean;
+  projectPath?: string | null;
+}): Promise<PiSkillMutationResult | null> {
+  return (await window.piDesktop?.installPiSkill?.(request)) ?? null;
+}
+
+export async function removePiSkillQuery(request: {
+  installedPath: string;
+  projectPath?: string | null;
+}): Promise<PiSkillMutationResult | null> {
+  return (await window.piDesktop?.removePiSkill?.(request)) ?? null;
 }
 
 export async function pickComposerAttachmentsQuery(

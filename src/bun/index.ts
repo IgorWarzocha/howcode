@@ -12,6 +12,9 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredSkill,
+  PiSkillCatalogPage,
+  PiSkillMutationResult,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -59,9 +62,31 @@ type TerminalManagerModule = {
   writeTerminal: (sessionId: string, data: string) => Promise<void>;
 };
 
+type PiSkillsModule = {
+  searchPiSkills: (request?: {
+    query?: string | null;
+    limit?: number | null;
+  }) => Promise<PiSkillCatalogPage>;
+  listConfiguredPiSkills: (request?: { projectPath?: string | null }) => Promise<
+    PiConfiguredSkill[]
+  >;
+  installPiSkill: (request: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => Promise<PiSkillMutationResult>;
+  removePiSkill: (request: {
+    installedPath: string;
+    projectPath?: string | null;
+  }) => Promise<PiSkillMutationResult>;
+};
+
 const piThreads = (await import(
   new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
 )) as PiThreadsModule;
+const piSkills = (await import(
+  new URL("../build/desktop/pi-skills.mjs", import.meta.url).pathname
+)) as PiSkillsModule;
 const terminalManager = (await import(
   new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
 )) as TerminalManagerModule;
@@ -205,6 +230,14 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId }) =>
         (await piThreads.loadProjectDiff(projectId)) as ProjectDiffResult | null,
+      searchPiSkills: async (request) =>
+        piSkills.searchPiSkills(request) as Promise<PiSkillCatalogPage>,
+      getConfiguredPiSkills: async (request) =>
+        piSkills.listConfiguredPiSkills(request) as Promise<PiConfiguredSkill[]>,
+      installPiSkill: async (request) =>
+        piSkills.installPiSkill(request) as Promise<PiSkillMutationResult>,
+      removePiSkill: async (request) =>
+        piSkills.removePiSkill(request) as Promise<PiSkillMutationResult>,
       pickComposerAttachments: async ({ projectId }) => {
         const filePaths = await Utils.openFileDialog({
           startingFolder: projectId ?? process.cwd(),

@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type {
   AppSettings,
@@ -9,6 +10,11 @@ import type { Project, View } from "../../types";
 import { LandingView } from "../../views/LandingView";
 import { SettingsView } from "../../views/SettingsView";
 import { ThreadView } from "../../views/ThreadView";
+
+const SkillsView = lazy(async () => {
+  const module = await import("../../views/SkillsView");
+  return { default: module.SkillsView };
+});
 
 type CodeWorkspaceMainViewProps = {
   activeView: View;
@@ -27,6 +33,7 @@ type CodeWorkspaceMainViewProps = {
   ) => Promise<DesktopActionResult | null>;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
+  onSetSkillsProjectScopeActive: (active: boolean) => void;
   onSelectProject: (projectId: string) => void;
 };
 
@@ -44,6 +51,7 @@ export function CodeWorkspaceMainView({
   onAction,
   onOpenTurnDiff,
   onLoadEarlierMessages,
+  onSetSkillsProjectScopeActive,
   onSelectProject,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
@@ -70,6 +78,26 @@ export function CodeWorkspaceMainView({
         projects={projects}
         onAction={onAction}
       />
+    );
+  }
+
+  if (activeView === "skills") {
+    return (
+      <Suspense
+        fallback={
+          <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
+            <div className="grid gap-1">
+              <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Skills</h1>
+              <p className="m-0 text-[13px] text-[color:var(--muted)]">Loading skills…</p>
+            </div>
+          </div>
+        }
+      >
+        <SkillsView
+          projectPath={selectedProjectId || null}
+          onSetProjectScopeActive={onSetSkillsProjectScopeActive}
+        />
+      </Suspense>
     );
   }
 
