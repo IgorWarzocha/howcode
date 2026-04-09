@@ -4,13 +4,14 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  CornerDownLeft,
   FilePenLine,
   PackagePlus,
   Search,
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { TextButton } from "../components/common/TextButton";
 import { Tooltip } from "../components/common/Tooltip";
@@ -68,6 +69,7 @@ function getInstalledIdentityKeys(skills: PiConfiguredSkill[]) {
 export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewProps) {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
+  const [submittedSearchInput, setSubmittedSearchInput] = useState("");
   const [manualSource, setManualSource] = useState("");
   const [installScope, setInstallScope] = useState<"global" | "project">("global");
   const [installedOpen, setInstalledOpen] = useState(true);
@@ -75,7 +77,6 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
-  const deferredSearchInput = useDeferredValue(searchInput.trim());
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
 
   const configuredSkillsQuery = useQuery({
@@ -86,14 +87,14 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   });
 
   const skillsQuery = useQuery({
-    queryKey: desktopQueryKeys.piSkillCatalog(deferredSearchInput),
+    queryKey: desktopQueryKeys.piSkillCatalog(submittedSearchInput),
     queryFn: () =>
       searchPiSkillsQuery({
-        query: deferredSearchInput,
+        query: submittedSearchInput,
         limit: 12,
       }),
     staleTime: 5 * 60_000,
-    enabled: desktopSkillsAvailable && browseOpen && deferredSearchInput.length >= 2,
+    enabled: desktopSkillsAvailable && browseOpen && submittedSearchInput.length >= 2,
   });
 
   const configuredSkills = configuredSkillsQuery.data ?? [];
@@ -146,6 +147,12 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
 
   const hasSelectedCatalogSources = selectedCatalogSources.length > 0;
   const hasManualSource = manualSource.trim().length > 0;
+  const normalizedSearchInput = searchInput.trim();
+
+  const handleSubmitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittedSearchInput(normalizedSearchInput);
+  };
 
   const handleInstall = async (source: string) => {
     const normalizedSource = source.trim();
@@ -303,9 +310,11 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
     );
 
   const browseSectionContent =
-    deferredSearchInput.length < 2 ? (
+    submittedSearchInput.length < 2 ? (
       <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        Type at least 2 characters to search skills from skills.sh.
+        {normalizedSearchInput.length > 0 && normalizedSearchInput.length < 2
+          ? "Type at least 2 characters, then press Enter to search skills from skills.sh."
+          : "Press Enter to search skills from skills.sh (min 2 chars)."}
       </div>
     ) : skillsQuery.isLoading ? (
       <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
@@ -524,17 +533,29 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
               </Tooltip>
             </form>
 
-            <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
-              <Search size={14} />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                placeholder="Search skills (min 2 chars)"
-                aria-label="Search skills"
-              />
-            </label>
+            <form onSubmit={handleSubmitSearch}>
+              <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
+                <Search size={14} />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                  placeholder="Search skills"
+                  aria-label="Search skills"
+                />
+                <Tooltip content="Press Enter to search">
+                  <button
+                    type="submit"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={normalizedSearchInput.length < 2}
+                    aria-label="Search skills"
+                  >
+                    <CornerDownLeft size={14} />
+                  </button>
+                </Tooltip>
+              </label>
+            </form>
 
             {browseSectionContent}
           </>
