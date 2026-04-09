@@ -263,7 +263,7 @@ export function useExtensionsController({
     manualSource,
     manualSourceKind,
     projectScopeAvailable,
-    scopedInstalledEntries: scopedConfiguredEntries,
+    scopedInstalledEntries,
     searchInput,
     selectedCatalogSources,
     setBrowseOpen,

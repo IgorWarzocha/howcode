@@ -130,11 +130,11 @@ function mapRegistryObjectToCatalogItem(object: RegistrySearchObject): PiPackage
   };
 }
 
-async function fetchRegistryPage(query: string, from: number) {
+async function fetchRegistryPage(query: string, from: number, size: number) {
   const requestUrl = new URL(npmRegistrySearchUrl);
   requestUrl.searchParams.set("text", buildRegistrySearchText(query));
   requestUrl.searchParams.set("from", String(from));
-  requestUrl.searchParams.set("size", String(defaultCatalogPageSize));
+  requestUrl.searchParams.set("size", String(size));
 
   const response = await fetch(requestUrl, {
     headers: {
@@ -155,14 +155,14 @@ async function loadCatalog(
   cursor: number,
   pageSize: number,
 ): Promise<PiPackageCatalogPage> {
-  const response = await fetchRegistryPage(query, cursor);
+  const response = await fetchRegistryPage(query, cursor, pageSize);
   const objects = Array.isArray(response.objects) ? response.objects : [];
   const total = typeof response.total === "number" ? response.total : objects.length;
   const items = sortPiPackageCatalogItems(
     objects
       .map((object) => mapRegistryObjectToCatalogItem(object))
       .filter((item): item is PiPackageCatalogItem => item !== null),
-  ).slice(0, pageSize);
+  );
 
   return {
     query,
