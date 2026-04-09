@@ -17,7 +17,7 @@ const ExtensionsView = lazy(async () => {
 });
 
 const SkillsView = lazy(async () => {
-  const module = await import("../../views/SkillsView");
+  const module = await import("../skills/SkillsView");
   return { default: module.SkillsView };
 });
 

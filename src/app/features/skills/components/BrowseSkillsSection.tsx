@@ -10,23 +10,23 @@ import {
   Sparkles,
 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { TextButton } from "../../components/common/TextButton";
-import { Tooltip } from "../../components/common/Tooltip";
-import type { AppSettings, DesktopActionResult } from "../../desktop/types";
-import { desktopQueryKeys, searchPiSkillsQuery } from "../../query/desktop-query";
+import { TextButton } from "../../../components/common/TextButton";
+import { Tooltip } from "../../../components/common/Tooltip";
+import type { AppSettings, DesktopActionResult } from "../../../desktop/types";
+import { desktopQueryKeys, searchPiSkillsQuery } from "../../../query/desktop-query";
 import {
   compactRoundIconButtonClass,
   settingsCompactListRowClass,
   settingsInputClass,
-} from "../../ui/classes";
-import { cn } from "../../utils/cn";
+} from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 import {
   formatInstalls,
   getActionError,
   getCatalogSkillSource,
   normalizeSkillSlug,
   openExternalUrl,
-} from "./helpers";
+} from "../utils";
 
 type BrowseSkillsSectionProps = {
   appSettings: AppSettings;

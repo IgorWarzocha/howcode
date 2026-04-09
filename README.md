@@ -80,7 +80,9 @@ The `prepare` script will then activate Husky automatically.
 - `src/app/components/` — reusable UI pieces
 - `src/app/components/workspace/composer/*` — composer subcomponents/controller
 - `src/app/components/sidebar/project-tree/*` — project tree subcomponents/controller
-- `src/app/views/` — main content modes
+- `src/app/views/` — main content modes that are still pure views (`LandingView`, `ThreadView`, `SettingsView`)
+- `src/app/features/extensions/*` — extension catalog/install feature boundary
+- `src/app/features/skills/*` — skill catalog/install/create feature boundary
 - `src/app/query/*` — React Query client + desktop query helpers
 - `src/app/state/` — reducer/selectors and tests
 - `src/app/data/` — mock fixtures

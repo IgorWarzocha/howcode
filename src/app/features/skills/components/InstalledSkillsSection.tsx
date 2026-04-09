@@ -1,16 +1,16 @@
 import { FilePenLine, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { SurfacePanel } from "../../components/common/SurfacePanel";
-import { TextButton } from "../../components/common/TextButton";
-import { Tooltip } from "../../components/common/Tooltip";
-import type { PiConfiguredSkill } from "../../desktop/types";
-import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
+import { SurfacePanel } from "../../../components/common/SurfacePanel";
+import { TextButton } from "../../../components/common/TextButton";
+import { Tooltip } from "../../../components/common/Tooltip";
+import type { PiConfiguredSkill } from "../../../desktop/types";
+import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import {
   compactRoundIconButtonClass,
   popoverPanelClass,
   settingsCompactListRowClass,
-} from "../../ui/classes";
-import { cn } from "../../utils/cn";
+} from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 
 type InstalledSkillsSectionProps = {
   installScope: "global" | "project";

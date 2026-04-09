@@ -1,16 +1,16 @@
 import { CornerDownLeft, FolderOpen, RefreshCw } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { TextButton } from "../../components/common/TextButton";
-import { ThreeDotsSpinner } from "../../components/common/ThreeDotsSpinner";
-import { Tooltip } from "../../components/common/Tooltip";
+import { TextButton } from "../../../components/common/TextButton";
+import { ThreeDotsSpinner } from "../../../components/common/ThreeDotsSpinner";
+import { Tooltip } from "../../../components/common/Tooltip";
 import {
   closeSkillCreatorSessionQuery,
   continueSkillCreatorSessionQuery,
   startSkillCreatorSessionQuery,
-} from "../../query/desktop-query";
-import { settingsInputClass } from "../../ui/classes";
-import { cn } from "../../utils/cn";
-import { getActionError } from "./helpers";
+} from "../../../query/desktop-query";
+import { settingsInputClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
+import { getActionError } from "../utils";
 
 type SkillCreatorSectionProps = {
   installScope: "global" | "project";

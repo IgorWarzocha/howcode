@@ -23,7 +23,13 @@ This repo is intentionally split around future Pi desktop integration seams.
   - header, composer, diff, terminal shells
   - `workspace/composer/*` holds banner, menus, attachments, and controller logic
 - `src/app/views/*`
-  - main-panel view rendering by route/view mode, including centered thread scrolling and natural-flow thread rendering
+  - main-panel view rendering for presentation-first surfaces like thread, landing, and settings
+- `src/app/features/extensions/*`
+  - extensions feature lane
+  - package search, install/remove flows, and feature-local UI/controller ownership
+- `src/app/features/skills/*`
+  - skills feature lane
+  - skill search, install/remove flows, and skill-creator ownership
 - `src/app/ui/*`
   - shared Tailwind class primitives and utility helpers
 
