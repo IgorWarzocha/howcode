@@ -3,8 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { PiLogoMark } from "../components/common/PiLogoMark";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
-import type { DesktopAction } from "../desktop/actions";
-import type { AppSettings, DesktopActionResult } from "../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import type { Project } from "../types";
@@ -22,10 +21,7 @@ type LandingViewProps = {
   projects: Project[];
   selectedProjectId: string;
   className?: string;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onSelectProject: (projectId: string) => void;
 };
 

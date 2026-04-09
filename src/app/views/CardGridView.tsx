@@ -3,6 +3,7 @@ import { FeatureCard as FeatureCardButton } from "../components/common/FeatureCa
 import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { PageIntro } from "../components/common/PageIntro";
 import type { DesktopAction } from "../desktop/actions";
+import type { DesktopActionInvoker } from "../desktop/types";
 import type { FeatureStatusId } from "../features/feature-status";
 import type { FeatureCard } from "../types";
 import { sectionShellClass } from "../ui/classes";
@@ -14,7 +15,7 @@ type CardGridViewProps = {
   cards: FeatureCard[];
   action: DesktopAction;
   statusId: FeatureStatusId;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
 };
 
 export function CardGridView({

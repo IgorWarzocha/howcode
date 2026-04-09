@@ -2,6 +2,7 @@ import Electrobun, { Electroview } from "electrobun/view";
 import type { PiDesktopRpc } from "../../../shared/electrobun-rpc.js";
 import type { DesktopAction } from "./actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
   ComposerFilePickerState,
@@ -172,7 +173,7 @@ export const piDesktopApi = {
     }) as Promise<TurnDiffResult | null>,
   getFullThreadDiff: async (sessionPath: string) =>
     (await getRpc()).request.getFullThreadDiff({ sessionPath }) as Promise<TurnDiffResult | null>,
-  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
+  invokeAction: async (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
     (await getRpc()).request.invokeAction({
       action,
       payload,

@@ -1,6 +1,6 @@
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
-import type { ArchivedThread } from "../desktop/types";
+import type { AnyDesktopActionPayload, ArchivedThread } from "../desktop/types";
 import type { WorkspaceState } from "../state/workspace";
 import type { Project } from "../types";
 
@@ -12,7 +12,7 @@ export function buildContextualActionPayload({
   selectedSessionPath,
 }: {
   action: DesktopAction;
-  payload: Record<string, unknown>;
+  payload: AnyDesktopActionPayload;
   composerProjectId: string;
   activeView: WorkspaceState["activeView"];
   selectedSessionPath: string | null;
@@ -36,7 +36,7 @@ export function shouldConfirmProjectAction(action: DesktopAction) {
 
 export function buildPendingProjectAction(
   action: Extract<DesktopAction, "project.archive-threads" | "project.remove-project">,
-  payload: Record<string, unknown>,
+  payload: AnyDesktopActionPayload,
   projects: Project[],
 ): PendingProjectDialog | null {
   const projectId = typeof payload.projectId === "string" ? payload.projectId : null;

@@ -1,5 +1,5 @@
 import type { DesktopAction } from "../../../desktop/actions";
-import type { ComposerAttachment, DesktopActionResult } from "../../../desktop/types";
+import type { ComposerAttachment, DesktopActionInvoker } from "../../../desktop/types";
 
 type SubmitComposerDraftResult =
   | { status: "skipped" }
@@ -13,10 +13,7 @@ type SubmitComposerDraftOptions = {
   isSending: boolean;
   projectId: string;
   sessionPath: string | null;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   clearStoredDraft: (threadId: string) => void;
 };
 

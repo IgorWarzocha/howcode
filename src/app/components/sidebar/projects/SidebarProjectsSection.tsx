@@ -1,7 +1,6 @@
 import { FolderPlus, Github, ListFilter, Search, Star } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { DesktopAction } from "../../../desktop/actions";
-import type { AppSettings, DesktopActionResult } from "../../../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../../types";
 import { sidebarSearchFieldClass } from "../../../ui/classes";
@@ -23,10 +22,7 @@ type SidebarProjectsSectionProps = {
   selectedProjectId: string;
   selectedThreadId: string | null;
   collapsedProjectIds: Record<string, boolean>;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
@@ -236,9 +232,7 @@ export function SidebarProjectsSection({
             activeView={activeView}
             selectionModeActive={selectionModeActive}
             collapsedProjectIds={effectiveCollapsedProjectIds}
-            onAction={(action, payload) => {
-              void onAction(action, payload);
-            }}
+            onAction={onAction}
             onProjectSelect={onProjectSelect}
             onProjectReorder={onProjectReorder}
             onThreadOpen={onThreadOpen}

@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import type { DesktopAction } from "../../../desktop/actions";
-import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
+import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { cn } from "../../../utils/cn";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
@@ -19,10 +18,7 @@ type ComposerGitOpsSurfaceProps = {
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onLayoutChange: () => void;
   onBack: () => void;
 };

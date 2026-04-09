@@ -1,6 +1,6 @@
 import { unlink } from "node:fs/promises";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import { getComposerRequest, getThreadId } from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
 import {
@@ -35,7 +35,7 @@ async function deletePersistedThread(threadId: string) {
 
 export async function handleThreadDesktopAction(
   action: DesktopAction,
-  payload: DesktopActionPayload,
+  payload: AnyDesktopActionPayload,
 ): Promise<ActionHandlerResult> {
   switch (action) {
     case "thread.pin": {

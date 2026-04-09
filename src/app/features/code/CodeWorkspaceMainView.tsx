@@ -1,8 +1,8 @@
 import { Suspense, lazy } from "react";
-import type { DesktopAction } from "../../desktop/actions";
 import type {
   AppSettings,
   ComposerModel,
+  DesktopActionInvoker,
   DesktopActionResult,
   ThreadData,
 } from "../../desktop/types";
@@ -32,10 +32,7 @@ type CodeWorkspaceMainViewProps = {
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DesktopAction } from "../../../desktop/actions";
-import type { DesktopActionResult, ProjectGitState } from "../../../desktop/types";
+import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import {
   buildGitOpsCommentCards,
@@ -19,10 +18,7 @@ export function useComposerGitOpsState({
 }: {
   diffComments: SavedDiffComment[];
   diffCommentsSending: boolean;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onSendDiffComments: (message?: string | null) => void;
   projectGitState: ProjectGitState | null;
 }) {

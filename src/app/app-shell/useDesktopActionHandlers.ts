@@ -4,8 +4,10 @@ import type { Dispatch, SetStateAction } from "react";
 import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerState,
+  DesktopActionInvoker,
   DesktopActionResult,
   ProjectGitState,
 } from "../desktop/types";
@@ -23,16 +25,13 @@ import {
   runPostDesktopActionEffects,
 } from "./controller-post-action-effects";
 
-type ActionPayload = Record<string, unknown>;
+type ActionPayload = AnyDesktopActionPayload;
 
 type UseDesktopActionHandlersArgs = {
   activeView: View;
   composerProjectId: string;
   dispatch: Dispatch<WorkspaceAction>;
-  invokeDesktopAction: (
-    action: DesktopAction,
-    payload?: ActionPayload,
-  ) => Promise<DesktopActionResult | null>;
+  invokeDesktopAction: DesktopActionInvoker;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   loadComposerState: (request?: {
     projectId?: string | null;

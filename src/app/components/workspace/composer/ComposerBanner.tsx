@@ -1,6 +1,5 @@
 import { Globe, X } from "lucide-react";
-import type { DesktopAction } from "../../../desktop/actions";
-import type { DesktopActionResult } from "../../../desktop/types";
+import type { DesktopActionInvoker } from "../../../desktop/types";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { IconButton } from "../../common/IconButton";
@@ -8,10 +7,7 @@ import { PrimaryButton } from "../../common/PrimaryButton";
 import { SurfacePanel } from "../../common/SurfacePanel";
 
 type ComposerBannerProps = {
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
 };
 
 export function ComposerBanner({ onAction }: ComposerBannerProps) {

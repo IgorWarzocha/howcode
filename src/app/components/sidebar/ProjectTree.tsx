@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { type ReactNode, useMemo, useState } from "react";
-import type { DesktopAction } from "../../desktop/actions";
+import type { DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import type { Project, View } from "../../types";
 import { ProjectActionMenu } from "./ProjectActionMenu";
@@ -65,7 +65,7 @@ type ProjectTreeProps = {
   activeView: View;
   selectionModeActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;

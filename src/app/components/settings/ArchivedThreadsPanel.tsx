@@ -1,7 +1,6 @@
 import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
-import type { DesktopAction } from "../../desktop/actions";
-import type { ArchivedThread } from "../../desktop/types";
+import type { ArchivedThread, DesktopActionInvoker } from "../../desktop/types";
 import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
@@ -11,7 +10,7 @@ type ArchivedThreadsPanelProps = {
   threads: ArchivedThread[];
   open: boolean;
   onClose: () => void;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
 };
 
 export function ArchivedThreadsPanel({

@@ -1,7 +1,6 @@
 import { BriefcaseBusiness, Code2, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
-import type { DesktopAction } from "../../desktop/actions";
-import type { AppSettings, DesktopActionResult } from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
@@ -20,10 +19,7 @@ type SidebarProps = {
   settingsOpen: boolean;
   projectScopeLockActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onShowView: (view: View) => void;
   onToggleSettings: () => void;
   onOpenExtensionsView: () => void;

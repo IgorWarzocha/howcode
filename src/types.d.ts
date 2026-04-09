@@ -1,5 +1,6 @@
 import type { DesktopAction } from "./app/desktop/actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
   ComposerFilePickerState,
@@ -105,7 +106,7 @@ declare global {
       subscribe?: (listener: (event: DesktopEvent) => void) => () => void;
       invokeAction: (
         action: DesktopAction,
-        payload?: DesktopActionPayload,
+        payload?: AnyDesktopActionPayload,
       ) => Promise<DesktopActionResult>;
     };
   }

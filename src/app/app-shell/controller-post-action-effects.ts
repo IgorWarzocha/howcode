@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch } from "react";
 import type { DesktopAction } from "../desktop/actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerState,
   DesktopActionResult,
@@ -12,7 +13,7 @@ import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
 
-type ActionPayload = Record<string, unknown>;
+type ActionPayload = AnyDesktopActionPayload;
 
 function getPayloadProjectId(payload: ActionPayload) {
   return typeof payload.projectId === "string" ? payload.projectId : null;
@@ -156,10 +157,7 @@ export function getOptimisticallyUpdatedShellState(
   } satisfies ShellState;
 }
 
-export function applyOptimisticSettingsUpdate(
-  queryClient: QueryClient,
-  payload: Record<string, unknown>,
-) {
+export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyUpdatedShellState(currentState ?? null, payload),
   );
@@ -188,10 +186,7 @@ export function getOptimisticallyRenamedShellState(
   } satisfies ShellState;
 }
 
-export function applyOptimisticProjectRename(
-  queryClient: QueryClient,
-  payload: Record<string, unknown>,
-) {
+export function applyOptimisticProjectRename(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyRenamedShellState(currentState ?? null, payload),
   );
@@ -258,7 +253,7 @@ export function getOptimisticallyPinnedShellState(
 export function applyOptimisticPinUpdate(
   queryClient: QueryClient,
   action: DesktopAction,
-  payload: Record<string, unknown>,
+  payload: ActionPayload,
 ) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyPinnedShellState(currentState ?? null, action, payload),

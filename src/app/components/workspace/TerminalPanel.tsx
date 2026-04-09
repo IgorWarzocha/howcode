@@ -1,5 +1,5 @@
 import { SquareTerminal, X } from "lucide-react";
-import type { DesktopAction } from "../../desktop/actions";
+import type { DesktopActionInvoker } from "../../desktop/types";
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
@@ -17,7 +17,7 @@ type TerminalPanelProps = {
   onClose: () => void;
   mode?: "docked" | "takeover";
   hostLabel?: string;
-  onAction?: (action: DesktopAction, payload?: Record<string, unknown>) => void | Promise<void>;
+  onAction?: DesktopActionInvoker;
 };
 
 export function TerminalPanel({

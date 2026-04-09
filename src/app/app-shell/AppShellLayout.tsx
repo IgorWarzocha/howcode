@@ -162,7 +162,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         open={state.archivedThreadsOpen}
         threads={archivedThreads}
         onClose={handleCloseArchivedThreads}
-        onAction={(action, payload) => void handleAction(action, payload)}
+        onAction={handleAction}
       />
       <ProjectActionDialog
         pendingAction={pendingProjectAction}

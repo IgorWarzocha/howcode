@@ -30,10 +30,7 @@ export function AppShellWorkspace({
     return (
       <div className="relative min-h-0 flex-1 px-5 pt-1.5">
         <main className={mainPanelClass}>
-          <MainView
-            activeView={state.activeView}
-            onAction={(action, payload) => void handleAction(action, payload)}
-          />
+          <MainView activeView={state.activeView} onAction={handleAction} />
         </main>
       </div>
     );

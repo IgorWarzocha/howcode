@@ -1,6 +1,7 @@
 import type { RPCSchema } from "electrobun/view";
 import type { DesktopAction } from "./desktop-actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
   ComposerFilePickerState,
@@ -112,7 +113,7 @@ export type PiDesktopRpc = {
         response: TurnDiffResult | null;
       };
       invokeAction: {
-        params: { action: DesktopAction; payload?: DesktopActionPayload };
+        params: { action: DesktopAction; payload?: AnyDesktopActionPayload };
         response: DesktopActionResult;
       };
       terminalOpen: { params: TerminalOpenRequest; response: TerminalSessionSnapshot };

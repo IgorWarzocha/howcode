@@ -1,15 +1,16 @@
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
+import type { DesktopActionResultData } from "../../shared/desktop-contracts.ts";
 
 export type ActionHandlerResult =
   | {
       handled: true;
-      result?: Record<string, unknown> | null | undefined;
+      result?: DesktopActionResultData | null | undefined;
     }
   | {
       handled: false;
     };
 
-export function handledAction(result?: Record<string, unknown> | null | undefined) {
+export function handledAction(result?: DesktopActionResultData | null | undefined) {
   return {
     handled: true,
     result,

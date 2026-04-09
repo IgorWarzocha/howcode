@@ -1,5 +1,5 @@
 import { Columns2, PanelRightClose, Rows3, Send, SlidersHorizontal } from "lucide-react";
-import type { DesktopAction } from "../../../desktop/actions";
+import type { DesktopActionInvoker } from "../../../desktop/types";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { diffPanelIconButtonClass, diffPanelTurnChipSelectedClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -12,7 +12,7 @@ type DiffPanelToolbarProps = {
   commentsSending: boolean;
   showCloseButton: boolean;
   onClose?: () => void;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
   onSendCommentsToAgent: () => void;
   onSetDiffRenderMode: (mode: DiffRenderMode) => void;
 };

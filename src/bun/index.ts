@@ -4,13 +4,16 @@ import path from "node:path";
 import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions";
 import type {
+  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
   ComposerFilePickerEntry,
   ComposerFilePickerState,
   ComposerState,
+  ComposerStateRequest,
   DesktopActionPayload,
   DesktopActionResult,
+  DesktopActionResultData,
   DesktopEvent,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -27,7 +30,11 @@ import type {
   TurnDiffResult,
 } from "../../shared/desktop-contracts";
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
-import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
+import type {
+  TerminalEvent,
+  TerminalOpenRequest,
+  TerminalSessionSnapshot,
+} from "../../shared/terminal-contracts";
 import { parseDevServerMetadata, resolveDevServerMetadataPath } from "./dev-server";
 
 if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
@@ -37,10 +44,10 @@ if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER)
 type PiThreadsModule = {
   handleDesktopAction: (
     action: DesktopAction,
-    payload: DesktopActionPayload,
-  ) => Promise<Record<string, unknown> | null | undefined>;
+    payload: AnyDesktopActionPayload,
+  ) => Promise<DesktopActionResultData | null | undefined>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
-  loadComposerState: (request: Record<string, unknown>) => Promise<ComposerState>;
+  loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
   searchPiPackages: (request?: {
     query?: string | null;
     cursor?: number | null;
@@ -79,7 +86,7 @@ type PiThreadsModule = {
 
 type TerminalManagerModule = {
   closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
-  openTerminal: (request: Record<string, unknown>) => Promise<TerminalSessionSnapshot>;
+  openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>;
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void;
   writeTerminal: (sessionId: string, data: string) => Promise<void>;

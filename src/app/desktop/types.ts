@@ -1,4 +1,5 @@
 export type {
+  AnyDesktopActionPayload,
   AppSettings,
   ArchivedThread,
   ComposerAttachment,
@@ -8,9 +9,11 @@ export type {
   ComposerState,
   ComposerStateRequest,
   ComposerThinkingLevel,
+  DesktopActionInvoker,
   DesktopEvent,
   DesktopActionPayload,
   DesktopActionResult,
+  DesktopActionResultData,
   ModelSelection,
   PiConfiguredPackage,
   PiConfiguredPackageType,

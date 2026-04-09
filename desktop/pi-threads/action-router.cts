@@ -1,5 +1,8 @@
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import type {
+  AnyDesktopActionPayload,
+  DesktopActionResultData,
+} from "../../shared/desktop-contracts.ts";
 import { assertUnhandledDesktopAction } from "./action-router-result.cts";
 import { handleComposerDesktopAction } from "./composer-actions.cts";
 import { handleNoopDesktopAction } from "./noop-actions.cts";
@@ -10,8 +13,8 @@ import { handleWorkspaceDesktopAction } from "./workspace-actions.cts";
 
 export async function handleDesktopAction(
   action: DesktopAction,
-  payload: DesktopActionPayload,
-): Promise<Record<string, unknown> | null | undefined> {
+  payload: AnyDesktopActionPayload,
+): Promise<DesktopActionResultData | null | undefined> {
   // Keep the public router thin: each domain owns its own action family and can grow
   // without turning this entrypoint back into a switch-based godfile.
   const handlers = [

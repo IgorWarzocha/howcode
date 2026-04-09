@@ -5,7 +5,7 @@ import type {
   ComposerFilePickerState,
   ComposerModel,
   ComposerThinkingLevel,
-  DesktopActionResult,
+  DesktopActionInvoker,
 } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
@@ -32,10 +32,7 @@ type UseComposerControllerProps = {
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
@@ -135,7 +132,7 @@ export function useComposerController({
 
   const runComposerAction = async (
     action: DesktopAction,
-    payload: Record<string, unknown>,
+    payload: NonNullable<Parameters<DesktopActionInvoker>[1]>,
     options?: { closeMenu?: boolean },
   ) => {
     try {

@@ -12,7 +12,7 @@ import {
 import { type FormEvent, useEffect, useState } from "react";
 import { TextButton } from "../../../components/common/TextButton";
 import { Tooltip } from "../../../components/common/Tooltip";
-import type { AppSettings, DesktopActionResult } from "../../../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { desktopQueryKeys, searchPiSkillsQuery } from "../../../query/desktop-query";
 import {
   compactRoundIconButtonClass,
@@ -31,10 +31,7 @@ import {
 type BrowseSkillsSectionProps = {
   appSettings: AppSettings;
   installedSkillSlugs: Set<string>;
-  onAction: (
-    action: "settings.update",
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
   onInstall: (source: string) => Promise<boolean>;
   isPendingInstall: (source: string) => boolean;
   hasPendingInstall: boolean;

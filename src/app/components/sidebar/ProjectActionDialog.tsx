@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import type { AnyDesktopActionPayload } from "../../desktop/types";
 import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
@@ -15,7 +16,7 @@ export type PendingProjectDialog = {
 type ProjectActionDialogProps = {
   pendingAction: PendingProjectDialog | null;
   onClose: () => void;
-  onConfirm: (payload?: Record<string, unknown>) => Promise<void>;
+  onConfirm: (payload?: AnyDesktopActionPayload) => Promise<void>;
 };
 
 function getDialogCopy(pendingAction: PendingProjectDialog) {

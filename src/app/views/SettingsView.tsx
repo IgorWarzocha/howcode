@@ -1,10 +1,10 @@
 import { Check, ChevronDown, FilePenLine, FolderPlus, GitCommitHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ComposerMenu } from "../components/workspace/composer/ComposerMenu";
-import type { DesktopAction } from "../desktop/actions";
 import type {
   AppSettings,
   ComposerModel,
+  DesktopActionInvoker,
   DesktopActionResult,
   ModelSelection,
 } from "../desktop/types";
@@ -55,10 +55,7 @@ type SettingsViewProps = {
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
   projects: Project[];
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
 };
 
 export function SettingsView({

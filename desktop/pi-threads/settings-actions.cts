@@ -1,5 +1,5 @@
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import {
   getSettingsBooleanValue,
   getSettingsFavoriteFolders,
@@ -23,7 +23,7 @@ import { handledAction, unhandledAction } from "./action-router-result.cts";
 
 export function handleSettingsDesktopAction(
   action: DesktopAction,
-  payload: DesktopActionPayload,
+  payload: AnyDesktopActionPayload,
 ): ActionHandlerResult {
   if (action !== "settings.update") {
     return unhandledAction();

@@ -1,5 +1,5 @@
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { DesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import {
   getComposerRequest,
   getGitCommitMessage,
@@ -17,7 +17,7 @@ import { handledAction, unhandledAction } from "./action-router-result.cts";
 
 export async function handleWorkspaceDesktopAction(
   action: DesktopAction,
-  payload: DesktopActionPayload,
+  payload: AnyDesktopActionPayload,
 ): Promise<ActionHandlerResult> {
   switch (action) {
     case "workspace.commit": {

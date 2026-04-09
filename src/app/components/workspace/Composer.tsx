@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import type { DesktopAction } from "../../desktop/actions";
 import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
   ComposerThinkingLevel,
-  DesktopActionResult,
+  DesktopActionInvoker,
   ProjectGitState,
 } from "../../desktop/types";
 import type { View } from "../../types";
@@ -45,10 +44,7 @@ export type ComposerProps = {
     path?: string | null;
     rootPath?: string | null;
   }) => Promise<ComposerFilePickerState | null>;
-  onAction: (
-    action: DesktopAction,
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
 };
 
 export function Composer(props: ComposerProps) {

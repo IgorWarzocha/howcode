@@ -35,7 +35,7 @@ export function AppShellOverlays({
               onClose={handleCloseTakeoverTerminal}
               mode="takeover"
               hostLabel={shellState?.availableHosts[0] ?? "Local"}
-              onAction={(action, payload) => void handleAction(action, payload)}
+              onAction={handleAction}
             />
           </div>
         </div>

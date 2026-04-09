@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { DesktopAction } from "../desktop/actions";
-import type { DesktopActionResult } from "../desktop/types";
+import type { AnyDesktopActionPayload, DesktopActionResult } from "../desktop/types";
 import type { Project } from "../types";
 
 export function useProjectRepoInspection({
@@ -12,7 +12,7 @@ export function useProjectRepoInspection({
   selectedProjectId: string;
   runDesktopAction: (
     action: DesktopAction,
-    payload?: Record<string, unknown>,
+    payload?: AnyDesktopActionPayload,
   ) => Promise<DesktopActionResult | null>;
 }) {
   const inspectedProjectIdsRef = useRef<Set<string>>(new Set());

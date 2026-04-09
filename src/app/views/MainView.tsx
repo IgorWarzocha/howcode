@@ -1,11 +1,11 @@
 import { automationCards, debugCards, pluginCards } from "../data/mock-data";
-import type { DesktopAction } from "../desktop/actions";
+import type { DesktopActionInvoker } from "../desktop/types";
 import type { View } from "../types";
 import { CardGridView } from "./CardGridView";
 
 type MainViewProps = {
   activeView: View;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
 };
 
 export function MainView({ activeView, onAction }: MainViewProps) {

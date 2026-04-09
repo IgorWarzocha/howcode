@@ -1,13 +1,10 @@
-import type { AppSettings, DesktopActionResult } from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
 
 export type SkillsViewProps = {
   appSettings: AppSettings;
   projectPath: string | null;
   onSetProjectScopeActive: (active: boolean) => void;
-  onAction: (
-    action: "settings.update",
-    payload?: Record<string, unknown>,
-  ) => Promise<DesktopActionResult | null>;
+  onAction: DesktopActionInvoker;
 };
 
 export type InstallScope = "global" | "project";

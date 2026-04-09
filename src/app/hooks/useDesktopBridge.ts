@@ -1,5 +1,5 @@
 import type { DesktopAction } from "../desktop/actions";
-import type { DesktopActionPayload, DesktopActionResult } from "../desktop/types";
+import type { DesktopActionInvoker, DesktopActionResult } from "../desktop/types";
 
 function hasElectrobunDesktopBridge() {
   return (
@@ -9,9 +9,9 @@ function hasElectrobunDesktopBridge() {
 }
 
 export function useDesktopBridge() {
-  return async (
+  const invokeDesktopAction: DesktopActionInvoker = async (
     action: DesktopAction,
-    payload: DesktopActionPayload = {},
+    payload = {},
   ): Promise<DesktopActionResult | null> => {
     if (!window.piDesktop) {
       return null;
@@ -41,4 +41,6 @@ export function useDesktopBridge() {
       };
     }
   };
+
+  return invokeDesktopAction;
 }

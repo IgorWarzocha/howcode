@@ -255,7 +255,7 @@ export function CodeWorkspaceView({
                   sessionPath={terminalSessionPath}
                   onClose={handleToggleTerminal}
                   mode="docked"
-                  onAction={(action, payload) => void handleAction(action, payload)}
+                  onAction={handleAction}
                 />
               </div>
             ) : null}

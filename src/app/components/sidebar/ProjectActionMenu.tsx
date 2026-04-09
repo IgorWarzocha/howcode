@@ -1,6 +1,7 @@
 import { Archive, FolderOpen, GitBranchPlus, Star } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
+import type { DesktopActionInvoker } from "../../desktop/types";
 import { popoverPanelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -18,7 +19,7 @@ type ProjectActionMenuProps = {
   projectName: string;
   pinned?: boolean;
   panelRef?: RefObject<HTMLDivElement | null>;
-  onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
+  onAction: DesktopActionInvoker;
   onClose: () => void;
 };
 
