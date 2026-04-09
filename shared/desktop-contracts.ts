@@ -147,6 +147,18 @@ export type PiSkillMutationResult = {
   configuredSkills: PiConfiguredSkill[];
 };
 
+export type SkillCreatorSessionMessage = {
+  id: string;
+  role: "assistant" | "user";
+  content: string;
+};
+
+export type SkillCreatorSessionState = {
+  sessionId: string;
+  messages: SkillCreatorSessionMessage[];
+  createdSkillPath: string | null;
+};
+
 export type ComposerFilePickerEntry = {
   path: string;
   name: string;

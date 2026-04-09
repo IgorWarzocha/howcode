@@ -18,14 +18,22 @@ import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
 import { Tooltip } from "../components/common/Tooltip";
-import type { AppSettings, DesktopActionResult, PiConfiguredSkill } from "../desktop/types";
+import type {
+  AppSettings,
+  DesktopActionResult,
+  PiConfiguredSkill,
+  SkillCreatorSessionMessage,
+} from "../desktop/types";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import {
+  closeSkillCreatorSessionQuery,
+  continueSkillCreatorSessionQuery,
   desktopQueryKeys,
   getConfiguredPiSkillsQuery,
   installPiSkillQuery,
   removePiSkillQuery,
   searchPiSkillsQuery,
+  startSkillCreatorSessionQuery,
 } from "../query/desktop-query";
 import { popoverPanelClass, settingsInputClass, settingsListRowClass } from "../ui/classes";
 import { cn } from "../utils/cn";
@@ -43,12 +51,6 @@ type SkillsViewProps = {
 type PendingAction = {
   kind: "install" | "remove";
   source: string;
-};
-
-type MockCreateSkillMessage = {
-  id: string;
-  role: "assistant" | "user";
-  content: string;
 };
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
@@ -157,9 +159,12 @@ export function SkillsView({
   const [actionError, setActionError] = useState<string | null>(null);
   const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
   const [createSkillDraft, setCreateSkillDraft] = useState("");
-  const [mockCreateSkillMessages, setMockCreateSkillMessages] = useState<MockCreateSkillMessage[]>(
+  const [skillCreatorSessionId, setSkillCreatorSessionId] = useState<string | null>(null);
+  const [skillCreatorMessages, setSkillCreatorMessages] = useState<SkillCreatorSessionMessage[]>(
     [],
   );
+  const [createdSkillPath, setCreatedSkillPath] = useState<string | null>(null);
+  const [skillCreatorBusy, setSkillCreatorBusy] = useState(false);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null);
   const confirmRemovePanelRef = useRef<HTMLDivElement>(null);
@@ -222,6 +227,14 @@ export function SkillsView({
       }),
     );
   }, [catalogItems, installedIdentityKeys]);
+
+  useEffect(() => {
+    return () => {
+      if (skillCreatorSessionId) {
+        void closeSkillCreatorSessionQuery(skillCreatorSessionId);
+      }
+    };
+  }, [skillCreatorSessionId]);
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
@@ -306,29 +319,43 @@ export function SkillsView({
     await configuredSkillsQuery.refetch();
   };
 
-  const handleSubmitCreateSkillMock = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmitCreateSkill = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const prompt = createSkillDraft.trim();
-    if (!prompt) {
+    if (!prompt || skillCreatorBusy) {
       return;
     }
 
-    const mockReplyPath =
-      installScope === "project"
-        ? "(/absolute/path/to/project-skill)"
-        : "(/absolute/path/to/global-skill)";
+    setSkillCreatorBusy(true);
+    setActionError(null);
 
-    setMockCreateSkillMessages((current) => [
-      ...current,
-      { id: `${Date.now()}-user`, role: "user", content: prompt },
-      {
-        id: `${Date.now()}-assistant`,
-        role: "assistant",
-        content: `${mockReplyPath} Done, please click the button below and let me know if you'd like any changes to it.`,
-      },
-    ]);
-    setCreateSkillDraft("");
+    try {
+      const sessionState = skillCreatorSessionId
+        ? await continueSkillCreatorSessionQuery({
+            sessionId: skillCreatorSessionId,
+            prompt,
+          })
+        : await startSkillCreatorSessionQuery({
+            prompt,
+            local: installScope === "project",
+            projectPath,
+          });
+
+      if (!sessionState) {
+        throw new Error("Could not start the skill creator.");
+      }
+
+      setSkillCreatorSessionId(sessionState.sessionId);
+      setSkillCreatorMessages(sessionState.messages);
+      setCreatedSkillPath(sessionState.createdSkillPath);
+      setCreateSkillDraft("");
+      invalidateConfiguredSkillsCaches();
+    } catch (error) {
+      setActionError(getActionError(error));
+    } finally {
+      setSkillCreatorBusy(false);
+    }
   };
 
   const handleToggleUseAgentsSkillsPaths = () => {
@@ -710,8 +737,8 @@ export function SkillsView({
             {skillCreatorReady ? (
               <div className="grid gap-2">
                 <div className="grid max-h-[220px] gap-2 overflow-y-auto px-0.5 py-0.5">
-                  {mockCreateSkillMessages.length > 0 ? (
-                    mockCreateSkillMessages.map((message) => (
+                  {skillCreatorMessages.length > 0 ? (
+                    skillCreatorMessages.map((message) => (
                       <div
                         key={message.id}
                         className={cn(
@@ -734,7 +761,7 @@ export function SkillsView({
 
                 <form
                   className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
-                  onSubmit={handleSubmitCreateSkillMock}
+                  onSubmit={handleSubmitCreateSkill}
                 >
                   <input
                     type="text"
@@ -743,10 +770,16 @@ export function SkillsView({
                     className={settingsInputClass}
                     placeholder="Describe the skill you want"
                     aria-label="Describe the skill you want"
+                    disabled={skillCreatorBusy}
                   />
                   <TextButton
-                    className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
-                    disabled
+                    className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
+                    onClick={() => {
+                      if (createdSkillPath) {
+                        void window.piDesktop?.openPath?.(createdSkillPath);
+                      }
+                    }}
+                    disabled={!createdSkillPath}
                   >
                     <span>Open folder</span>
                     <FolderOpen size={11} />

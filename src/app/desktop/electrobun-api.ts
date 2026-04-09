@@ -16,6 +16,7 @@ import type {
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -105,6 +106,18 @@ export const piDesktopApi = {
   }) => (await getRpc()).request.installPiSkill(request) as Promise<PiSkillMutationResult>,
   removePiSkill: async (request: { installedPath: string; projectPath?: string | null }) =>
     (await getRpc()).request.removePiSkill(request) as Promise<PiSkillMutationResult>,
+  startSkillCreatorSession: async (request: {
+    prompt: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) =>
+    (await getRpc()).request.startSkillCreatorSession(request) as Promise<SkillCreatorSessionState>,
+  continueSkillCreatorSession: async (request: { sessionId: string; prompt: string }) =>
+    (await getRpc()).request.continueSkillCreatorSession(
+      request,
+    ) as Promise<SkillCreatorSessionState>,
+  closeSkillCreatorSession: async (sessionId: string) =>
+    (await getRpc()).request.closeSkillCreatorSession({ sessionId }) as Promise<{ ok: boolean }>,
   pickComposerAttachments: async (projectId: string | null = null) =>
     (await getRpc()).request.pickComposerAttachments({
       projectId,

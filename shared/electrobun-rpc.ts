@@ -15,6 +15,7 @@ import type {
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   Thread,
   ThreadData,
   TurnDiffResult,
@@ -49,6 +50,18 @@ export type PiDesktopRpc = {
       removePiSkill: {
         params: { installedPath: string; projectPath?: string | null };
         response: PiSkillMutationResult;
+      };
+      startSkillCreatorSession: {
+        params: { prompt: string; local?: boolean; projectPath?: string | null };
+        response: SkillCreatorSessionState;
+      };
+      continueSkillCreatorSession: {
+        params: { sessionId: string; prompt: string };
+        response: SkillCreatorSessionState;
+      };
+      closeSkillCreatorSession: {
+        params: { sessionId: string };
+        response: { ok: boolean };
       };
       pickComposerAttachments: {
         params: { projectId?: string | null };

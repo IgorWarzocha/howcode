@@ -18,6 +18,7 @@ import type {
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   Thread,
   ThreadData,
   TurnDiffResult,
@@ -81,12 +82,28 @@ type PiSkillsModule = {
   }) => Promise<PiSkillMutationResult>;
 };
 
+type SkillCreatorModule = {
+  startSkillCreatorSession: (request: {
+    prompt: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => Promise<SkillCreatorSessionState>;
+  continueSkillCreatorSession: (request: {
+    sessionId: string;
+    prompt: string;
+  }) => Promise<SkillCreatorSessionState>;
+  closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>;
+};
+
 const piThreads = (await import(
   new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
 )) as PiThreadsModule;
 const piSkills = (await import(
   new URL("../build/desktop/pi-skills.mjs", import.meta.url).pathname
 )) as PiSkillsModule;
+const skillCreator = (await import(
+  new URL("../build/desktop/skill-creator-session.mjs", import.meta.url).pathname
+)) as SkillCreatorModule;
 const terminalManager = (await import(
   new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
 )) as TerminalManagerModule;
@@ -238,6 +255,12 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         piSkills.installPiSkill(request) as Promise<PiSkillMutationResult>,
       removePiSkill: async (request) =>
         piSkills.removePiSkill(request) as Promise<PiSkillMutationResult>,
+      startSkillCreatorSession: async (request) =>
+        skillCreator.startSkillCreatorSession(request) as Promise<SkillCreatorSessionState>,
+      continueSkillCreatorSession: async (request) =>
+        skillCreator.continueSkillCreatorSession(request) as Promise<SkillCreatorSessionState>,
+      closeSkillCreatorSession: async (request) =>
+        skillCreator.closeSkillCreatorSession(request) as Promise<{ ok: boolean }>,
       pickComposerAttachments: async ({ projectId }) => {
         const filePaths = await Utils.openFileDialog({
           startingFolder: projectId ?? process.cwd(),

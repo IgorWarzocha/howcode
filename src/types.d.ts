@@ -14,6 +14,7 @@ import type {
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   TerminalCloseRequest,
   TerminalEvent,
   TerminalOpenRequest,
@@ -46,6 +47,16 @@ declare global {
         installedPath: string;
         projectPath?: string | null;
       }) => Promise<PiSkillMutationResult>;
+      startSkillCreatorSession?: (request: {
+        prompt: string;
+        local?: boolean;
+        projectPath?: string | null;
+      }) => Promise<SkillCreatorSessionState>;
+      continueSkillCreatorSession?: (request: {
+        sessionId: string;
+        prompt: string;
+      }) => Promise<SkillCreatorSessionState>;
+      closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;

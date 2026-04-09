@@ -20,6 +20,8 @@ export type {
   ProjectGitState,
   ProjectImportCandidate,
   ShellState,
+  SkillCreatorSessionMessage,
+  SkillCreatorSessionState,
   Thread,
   ThreadData,
   TurnDiffFile,

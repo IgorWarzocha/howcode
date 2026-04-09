@@ -10,6 +10,7 @@ import type {
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
+  SkillCreatorSessionState,
   Thread,
   ThreadData,
 } from "../desktop/types";
@@ -91,6 +92,25 @@ export async function removePiSkillQuery(request: {
   projectPath?: string | null;
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.removePiSkill?.(request)) ?? null;
+}
+
+export async function startSkillCreatorSessionQuery(request: {
+  prompt: string;
+  local?: boolean;
+  projectPath?: string | null;
+}): Promise<SkillCreatorSessionState | null> {
+  return (await window.piDesktop?.startSkillCreatorSession?.(request)) ?? null;
+}
+
+export async function continueSkillCreatorSessionQuery(request: {
+  sessionId: string;
+  prompt: string;
+}): Promise<SkillCreatorSessionState | null> {
+  return (await window.piDesktop?.continueSkillCreatorSession?.(request)) ?? null;
+}
+
+export async function closeSkillCreatorSessionQuery(sessionId: string): Promise<void> {
+  await window.piDesktop?.closeSkillCreatorSession?.(sessionId);
 }
 
 export async function pickComposerAttachmentsQuery(
