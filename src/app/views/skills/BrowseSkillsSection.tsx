@@ -45,11 +45,9 @@ export function BrowseSkillsSection({
   const [browseOpen, setBrowseOpen] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [submittedSearchInput, setSubmittedSearchInput] = useState("");
-  const [manualSource, setManualSource] = useState("");
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
 
   const normalizedSearchInput = searchInput.trim();
-  const hasManualSource = manualSource.trim().length > 0;
   const hasSelectedCatalogSources = selectedCatalogSources.length > 0;
 
   const skillsQuery = useQuery({
@@ -74,16 +72,9 @@ export function BrowseSkillsSection({
     );
   }, [catalogItems, installedSkillSlugs]);
 
-  const handleManualInstall = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleInstallSelected = async () => {
     const installSources: string[] = [];
     const seenSources = new Set<string>();
-    const manualSourceValue = manualSource.trim();
-
-    if (manualSourceValue) {
-      installSources.push(manualSourceValue);
-      seenSources.add(manualSourceValue.toLowerCase());
-    }
 
     for (const source of selectedCatalogSources) {
       const item = catalogItems.find((catalogItem) => catalogItem.identityKey === source);
@@ -108,10 +99,6 @@ export function BrowseSkillsSection({
       if (installed) {
         successfulSources.add(source.trim().toLowerCase());
       }
-    }
-
-    if (manualSourceValue && successfulSources.has(manualSourceValue.toLowerCase())) {
-      setManualSource("");
     }
 
     if (successfulSources.size > 0) {
@@ -145,15 +132,15 @@ export function BrowseSkillsSection({
               key={item.id}
               className={cn(settingsCompactListRowClass, selected && "bg-[rgba(255,255,255,0.04)]")}
             >
-              <div className="min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+              <div className="min-w-0 grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-1.5 overflow-hidden">
                 <Tooltip content={item.url} contentClassName="max-w-[420px]">
                   <button
                     type="button"
-                    className="group inline-flex min-w-0 shrink-0 items-center gap-0.5 p-0"
+                    className="group inline-flex shrink-0 items-center gap-0.5 p-0"
                     onClick={() => void openExternalUrl(item.url)}
                     aria-label={`Open ${item.name}`}
                   >
-                    <span className="truncate text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+                    <span className="text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
                       {item.name}
                     </span>
                     <ArrowUpRight
@@ -165,11 +152,11 @@ export function BrowseSkillsSection({
                 <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
                   {item.description || item.source}
                 </div>
-                <span className="shrink-0 text-[11px] leading-4 text-[color:var(--muted)]">
+                <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
                   {formatInstalls(item.installs)}
                 </span>
                 {installed ? (
-                  <span className="shrink-0 text-[11px] leading-4 text-[color:var(--muted)]">
+                  <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
                     Installed
                   </span>
                 ) : null}
@@ -258,76 +245,67 @@ export function BrowseSkillsSection({
 
       {browseOpen ? (
         <>
-          <form
-            className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]"
-            onSubmit={handleManualInstall}
-          >
-            <input
-              type="text"
-              value={manualSource}
-              onChange={(event) => setManualSource(event.target.value)}
-              className={settingsInputClass}
-              placeholder="owner/repo@skill or https://skills.sh/owner/repo/skill"
-              aria-label="Install skill source"
-            />
+          <div className="flex items-center gap-2">
+            <form
+              className="min-w-0 flex-1"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSubmittedSearchInput(normalizedSearchInput);
+              }}
+            >
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-3 z-10 inline-flex items-center text-[color:var(--muted)]">
+                  <Search size={14} />
+                </div>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  className={cn(settingsInputClass, "w-full py-1.5 pl-8 pr-9")}
+                  placeholder="Search skills"
+                  aria-label="Search skills"
+                />
+                <Tooltip content="Press Enter to search">
+                  <button
+                    type="submit"
+                    className="absolute inset-y-0 right-2 z-10 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={normalizedSearchInput.length < 2}
+                    aria-label="Search skills"
+                  >
+                    <span className="flex h-3.5 w-3.5 items-center justify-center">
+                      <CornerDownLeft size={12} strokeWidth={2} className="block" />
+                    </span>
+                  </button>
+                </Tooltip>
+              </div>
+            </form>
 
-            <Tooltip
-              content={
-                hasManualSource
-                  ? "Install skill source"
-                  : hasSelectedCatalogSources
+            <div className="shrink-0">
+              <Tooltip
+                content={
+                  hasSelectedCatalogSources
                     ? `Install ${selectedCatalogSources.length} selected skills`
                     : "Install skills"
-              }
-            >
-              <TextButton
-                type="submit"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
-                disabled={
-                  (!hasManualSource && !hasSelectedCatalogSources) ||
-                  (hasManualSource && isPendingInstall(manualSource))
-                }
-                aria-label={
-                  hasManualSource
-                    ? "Install skill source"
-                    : hasSelectedCatalogSources
-                      ? `Install ${selectedCatalogSources.length} selected skills`
-                      : "Install skills"
                 }
               >
-                {hasPendingInstall ? <Sparkles size={14} /> : <PackagePlus size={14} />}
-              </TextButton>
-            </Tooltip>
-          </form>
-
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSubmittedSearchInput(normalizedSearchInput);
-            }}
-          >
-            <label className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--muted)] focus-within:text-[color:var(--text)]">
-              <Search size={14} />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
-                placeholder="Search skills"
-                aria-label="Search skills"
-              />
-              <Tooltip content="Press Enter to search">
-                <button
-                  type="submit"
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={normalizedSearchInput.length < 2}
-                  aria-label="Search skills"
+                <TextButton
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+                  disabled={!hasSelectedCatalogSources}
+                  onClick={() => {
+                    void handleInstallSelected();
+                  }}
+                  aria-label={
+                    hasSelectedCatalogSources
+                      ? `Install ${selectedCatalogSources.length} selected skills`
+                      : "Install skills"
+                  }
                 >
-                  <CornerDownLeft size={14} />
-                </button>
+                  {hasPendingInstall ? <Sparkles size={14} /> : <PackagePlus size={14} />}
+                </TextButton>
               </Tooltip>
-            </label>
-          </form>
+            </div>
+          </div>
 
           {browseSectionContent}
         </>

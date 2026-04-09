@@ -90,7 +90,7 @@ function SkillsHeader({
 
 function DesktopRequiredState() {
   return (
-    <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
+    <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-8 px-2 pt-6 pb-6">
       <div className="flex items-center gap-1.5">
         <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Skills</h1>
         <span className="text-[12px] text-[color:var(--muted)]">via</span>

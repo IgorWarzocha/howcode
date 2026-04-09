@@ -140,102 +140,100 @@ export function SkillCreatorSection({
         <span>Create a skill</span>
       </div>
 
-      <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
-        <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
-          {skillCreatorReady ? (
-            <div className="grid gap-2">
-              <div className="px-0.5 py-0.5">
-                {skillCreatorBusy ? (
-                  <div className="inline-flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                    <span>Pi is working</span>
-                    <ThreeDotsSpinner className="text-[color:var(--muted)]" />
-                  </div>
-                ) : skillCreatorLatestResponse ? (
-                  <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                    {skillCreatorLatestResponse}
-                  </div>
-                ) : (
-                  <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                    This spawns a temporary chat session. For complex project-skills, please use
-                    normal chat for best results.
-                  </div>
-                )}
+      <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
+        {skillCreatorReady ? (
+          <div className="grid gap-2">
+            <div className="px-0.5 py-0.5">
+              {skillCreatorBusy ? (
+                <div className="inline-flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                  <span>Pi is working</span>
+                  <ThreeDotsSpinner className="text-[color:var(--muted)]" />
+                </div>
+              ) : skillCreatorLatestResponse ? (
+                <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                  {skillCreatorLatestResponse}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-[rgba(255,255,255,0.03)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                  This spawns a temporary chat session. For complex project-skills, please use
+                  normal chat for best results.
+                </div>
+              )}
+            </div>
+
+            <form
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
+              onSubmit={(event) => {
+                void handleSubmitCreateSkill(event);
+              }}
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={createSkillDraft}
+                  onChange={(event) => setCreateSkillDraft(event.target.value)}
+                  className={cn(settingsInputClass, "w-full pr-7")}
+                  placeholder={createSkillPlaceholder}
+                  aria-label="Describe the skill you want"
+                  disabled={skillCreatorBusy}
+                />
+                <Tooltip content="Press Enter to send">
+                  <button
+                    type="submit"
+                    className="absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!canSubmitCreateSkill}
+                    aria-label="Send skill creator message"
+                  >
+                    <span className="flex h-3.5 w-3.5 items-center justify-center">
+                      <CornerDownLeft size={12} strokeWidth={2} className="block" />
+                    </span>
+                  </button>
+                </Tooltip>
               </div>
 
-              <form
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
-                onSubmit={(event) => {
-                  void handleSubmitCreateSkill(event);
+              <TextButton
+                className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
+                onClick={() => {
+                  if (createdSkillPath) {
+                    void window.piDesktop?.openPath?.(createdSkillPath);
+                  }
+                }}
+                disabled={!createdSkillPath}
+              >
+                <span>Open folder</span>
+                <FolderOpen size={11} />
+              </TextButton>
+            </form>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span>No global skill creator detected. Install the bundled skill creator?</span>
+              <TextButton
+                className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
+                onClick={() => {
+                  onSetActionError(null);
+                  setMockSkillCreatorInstalled(true);
                 }}
               >
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={createSkillDraft}
-                    onChange={(event) => setCreateSkillDraft(event.target.value)}
-                    className={cn(settingsInputClass, "w-full pr-7")}
-                    placeholder={createSkillPlaceholder}
-                    aria-label="Describe the skill you want"
-                    disabled={skillCreatorBusy}
-                  />
-                  <Tooltip content="Press Enter to send">
-                    <button
-                      type="submit"
-                      className="absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={!canSubmitCreateSkill}
-                      aria-label="Send skill creator message"
-                    >
-                      <span className="flex h-3.5 w-3.5 items-center justify-center">
-                        <CornerDownLeft size={12} strokeWidth={2} className="block" />
-                      </span>
-                    </button>
-                  </Tooltip>
-                </div>
-
-                <TextButton
-                  className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
-                  onClick={() => {
-                    if (createdSkillPath) {
-                      void window.piDesktop?.openPath?.(createdSkillPath);
-                    }
-                  }}
-                  disabled={!createdSkillPath}
-                >
-                  <span>Open folder</span>
-                  <FolderOpen size={11} />
-                </TextButton>
-              </form>
+                Yes
+              </TextButton>
+              <TextButton
+                className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
+                onClick={() => {
+                  void onRefreshSkillCreatorDetection();
+                }}
+              >
+                <span>No - I have provided my own</span>
+                <RefreshCw size={11} />
+              </TextButton>
             </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span>No global skill creator detected. Install the bundled skill creator?</span>
-                <TextButton
-                  className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
-                  onClick={() => {
-                    onSetActionError(null);
-                    setMockSkillCreatorInstalled(true);
-                  }}
-                >
-                  Yes
-                </TextButton>
-                <TextButton
-                  className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
-                  onClick={() => {
-                    void onRefreshSkillCreatorDetection();
-                  }}
-                >
-                  <span>No - I have provided my own</span>
-                  <RefreshCw size={11} />
-                </TextButton>
-              </div>
-              <div>
-                Please note this skill creator is agent-agnostic, as opposed to most of the skill
-                creator skills you will find for other harnesses and agents.
-              </div>
-            </>
-          )}
-        </div>
+            <div>
+              Please note this skill creator is agent-agnostic, as opposed to most of the skill
+              creator skills you will find for other harnesses and agents.
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
