@@ -18,6 +18,7 @@ import {
 type SidebarProjectsSectionProps = {
   activeView: View;
   appSettings: AppSettings;
+  projectScopeLockActive: boolean;
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
@@ -36,6 +37,7 @@ type SidebarProjectsSectionProps = {
 export function SidebarProjectsSection({
   activeView,
   appSettings,
+  projectScopeLockActive,
   projects,
   selectedProjectId,
   selectedThreadId,
@@ -52,7 +54,8 @@ export function SidebarProjectsSection({
     activeView === "thread" ||
     activeView === "settings" ||
     activeView === "extensions";
-  const extensionsSelectionMode = activeView === "extensions";
+  const extensionsSelectionMode = activeView === "extensions" && projectScopeLockActive;
+  const showProjectCreate = activeView !== "extensions";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -177,7 +180,7 @@ export function SidebarProjectsSection({
               }
               active={filterMode !== "all"}
             />
-            {extensionsSelectionMode ? null : (
+            {showProjectCreate ? (
               <IconButton
                 ref={createButtonRef}
                 label="Add new project"
@@ -192,7 +195,7 @@ export function SidebarProjectsSection({
                 }}
                 icon={<FolderPlus size={15} />}
               />
-            )}
+            ) : null}
           </div>
         ) : null}
 
@@ -229,6 +232,7 @@ export function SidebarProjectsSection({
             selectedProjectId={selectedProjectId}
             selectedThreadId={selectedThreadId}
             activeView={activeView}
+            selectionModeActive={extensionsSelectionMode}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={(action, payload) => {
               void onAction(action, payload);

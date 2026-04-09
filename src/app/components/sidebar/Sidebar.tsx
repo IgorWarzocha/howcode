@@ -130,6 +130,7 @@ export function Sidebar({
       <SidebarProjectsSection
         activeView={activeView}
         appSettings={appSettings}
+        projectScopeLockActive={projectScopeLockActive}
         projects={projects}
         selectedProjectId={selectedProjectId}
         selectedThreadId={selectedThreadId}

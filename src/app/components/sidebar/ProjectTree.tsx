@@ -63,6 +63,7 @@ type ProjectTreeProps = {
   selectedProjectId: string;
   selectedThreadId: string | null;
   activeView: View;
+  selectionModeActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
   onAction: (action: DesktopAction, payload?: Record<string, unknown>) => void;
   onProjectSelect: (projectId: string) => void;
@@ -111,6 +112,7 @@ export function ProjectTree({
   selectedProjectId,
   selectedThreadId,
   activeView,
+  selectionModeActive,
   collapsedProjectIds,
   onAction,
   onProjectSelect,
@@ -133,7 +135,6 @@ export function ProjectTree({
     }),
   );
   const projectIds = useMemo(() => projects.map((project) => project.id), [projects]);
-  const extensionsSelectionMode = activeView === "extensions";
 
   const handleDragStart = (event: DragStartEvent) => {
     setDraggingProjectId(typeof event.active.id === "string" ? event.active.id : null);
@@ -202,7 +203,6 @@ export function ProjectTree({
             const hasThreads = project.threadsLoaded
               ? project.threads.length > 0
               : (project.threadCount ?? 0) > 0;
-            const projectIsActive = false;
             const projectMenuOpen = openProjectMenuId === project.id;
             const threadGroupId = `project-threads-${project.id}`;
             const actionMenuId = `project-actions-${project.id}`;
@@ -211,7 +211,7 @@ export function ProjectTree({
               <SortableProjectItem
                 key={project.id}
                 projectId={project.id}
-                disabled={extensionsSelectionMode}
+                disabled={selectionModeActive}
               >
                 {({ dragHandleProps, isDragging }) => (
                   <div className="mb-2">
@@ -220,23 +220,25 @@ export function ProjectTree({
                         actionMenuId={actionMenuId}
                         actionMenuOpen={projectMenuOpen}
                         dragHandleProps={dragHandleProps}
-                        isActive={extensionsSelectionMode && selectedProjectId === project.id}
+                        isActive={selectionModeActive && selectedProjectId === project.id}
                         isDragging={isDragging}
                         isEditing={editingProjectId === project.id}
                         isExpanded={effectiveIsExpanded}
                         hasRepoOrigin={Boolean(project.repoOriginUrl)}
-                        canEdit={!extensionsSelectionMode}
-                        canToggleExpanded={!extensionsSelectionMode}
+                        canEdit={!selectionModeActive}
+                        canToggleExpanded={!selectionModeActive}
                         name={project.name}
                         renameDraft={renameDraft}
-                        showActions={!extensionsSelectionMode}
+                        showActions={!selectionModeActive}
                         threadGroupId={threadGroupId}
                         onCancelEdit={handleCancelEdit}
                         onChangeRenameDraft={setRenameDraft}
                         onEdit={() => handleStartEdit(project.id, project.name)}
                         onSelect={() => {
                           onProjectSelect(project.id);
-                          onAction("project.select", { projectId: project.id });
+                          if (activeView !== "extensions") {
+                            onAction("project.select", { projectId: project.id });
+                          }
                           setOpenProjectMenuId(null);
                         }}
                         onSubmitEdit={() => handleSubmitEdit(project.id)}
@@ -250,7 +252,7 @@ export function ProjectTree({
 
                       {projectMenuOpen &&
                       editingProjectId !== project.id &&
-                      !extensionsSelectionMode ? (
+                      !selectionModeActive ? (
                         <ProjectActionMenu
                           menuId={actionMenuId}
                           projectId={project.id}
@@ -262,7 +264,7 @@ export function ProjectTree({
                       ) : null}
                     </div>
 
-                    {extensionsSelectionMode ? null : (
+                    {selectionModeActive ? null : (
                       <ProjectThreadsGroup
                         isExpanded={effectiveIsExpanded}
                         threadGroupId={threadGroupId}
