@@ -17,7 +17,7 @@ import { FeatureStatusBadge } from "../components/common/FeatureStatusBadge";
 import { SurfacePanel } from "../components/common/SurfacePanel";
 import { TextButton } from "../components/common/TextButton";
 import { Tooltip } from "../components/common/Tooltip";
-import type { PiConfiguredSkill } from "../desktop/types";
+import type { AppSettings, DesktopActionResult, PiConfiguredSkill } from "../desktop/types";
 import { useDismissibleLayer } from "../hooks/useDismissibleLayer";
 import {
   desktopQueryKeys,
@@ -30,8 +30,13 @@ import { popoverPanelClass, settingsInputClass, settingsListRowClass } from "../
 import { cn } from "../utils/cn";
 
 type SkillsViewProps = {
+  appSettings: AppSettings;
   projectPath: string | null;
   onSetProjectScopeActive: (active: boolean) => void;
+  onAction: (
+    action: "settings.update",
+    payload?: Record<string, unknown>,
+  ) => Promise<DesktopActionResult | null>;
 };
 
 type PendingAction = {
@@ -126,7 +131,12 @@ function isSkillCreatorCandidate(skill: PiConfiguredSkill) {
   return hasSkillToken && hasCreatorToken;
 }
 
-export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewProps) {
+export function SkillsView({
+  appSettings,
+  projectPath,
+  onSetProjectScopeActive,
+  onAction,
+}: SkillsViewProps) {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [submittedSearchInput, setSubmittedSearchInput] = useState("");
@@ -283,6 +293,13 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
 
   const handleUseOwnSkillCreator = async () => {
     await configuredSkillsQuery.refetch();
+  };
+
+  const handleToggleUseAgentsSkillsPaths = () => {
+    void onAction("settings.update", {
+      key: "useAgentsSkillsPaths",
+      value: !appSettings.useAgentsSkillsPaths,
+    });
   };
 
   const handleRemove = async (configuredSkill: PiConfiguredSkill) => {
@@ -710,15 +727,35 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
       </div>
 
       <div className="grid gap-2">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
-          onClick={() => setBrowseOpen((current) => !current)}
-          aria-expanded={browseOpen}
-        >
-          {browseOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span>Browse</span>
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
+            onClick={() => setBrowseOpen((current) => !current)}
+            aria-expanded={browseOpen}
+          >
+            {browseOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span>Browse</span>
+          </button>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
+            onClick={handleToggleUseAgentsSkillsPaths}
+            aria-pressed={appSettings.useAgentsSkillsPaths}
+          >
+            <span
+              className={cn(
+                "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--muted-2)] bg-transparent transition-colors",
+                appSettings.useAgentsSkillsPaths &&
+                  "border-[rgba(183,186,245,0.42)] text-[color:var(--text)]",
+              )}
+            >
+              {appSettings.useAgentsSkillsPaths ? <Check size={11} strokeWidth={2.6} /> : null}
+            </span>
+            <span>Use .agents instead of .pi?</span>
+          </button>
+        </div>
 
         {browseOpen ? (
           <>

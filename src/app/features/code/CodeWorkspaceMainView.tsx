@@ -94,8 +94,10 @@ export function CodeWorkspaceMainView({
         }
       >
         <SkillsView
+          appSettings={appSettings}
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetSkillsProjectScopeActive}
+          onAction={onAction}
         />
       </Suspense>
     );

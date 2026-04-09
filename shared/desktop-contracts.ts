@@ -172,6 +172,7 @@ export type AppSettings = {
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
+  useAgentsSkillsPaths: boolean;
 };
 
 export type ComposerStateRequest = {

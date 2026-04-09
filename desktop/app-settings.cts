@@ -6,6 +6,7 @@ const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
+const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 
 type PreferenceRow = {
   valueJson: string;
@@ -144,6 +145,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(initializeGitOnProjectCreateKey) as PreferenceRow | undefined;
+  const useAgentsSkillsPathsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(useAgentsSkillsPathsKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
@@ -152,6 +162,7 @@ export function loadAppSettings(): AppSettings {
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
+    useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
   };
 }
 
@@ -198,4 +209,8 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled));
+}
+
+export function setUseAgentsSkillsPaths(enabled: boolean) {
+  writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled));
 }

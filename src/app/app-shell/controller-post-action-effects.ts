@@ -81,7 +81,8 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "favoriteFolders" &&
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
-    payload.key !== "initializeGitOnProjectCreate"
+    payload.key !== "initializeGitOnProjectCreate" &&
+    payload.key !== "useAgentsSkillsPaths"
   ) {
     return currentState;
   }
@@ -125,6 +126,11 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.initializeGitOnProjectCreate;
 
+  const nextUseAgentsSkillsPaths =
+    payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.useAgentsSkillsPaths;
+
   return {
     ...currentState,
     appSettings: {
@@ -134,6 +140,7 @@ export function getOptimisticallyUpdatedShellState(
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
+      useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
     },
   } satisfies ShellState;
 }

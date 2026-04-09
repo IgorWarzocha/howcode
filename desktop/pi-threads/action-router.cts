@@ -32,6 +32,7 @@ import {
   setInitializeGitOnProjectCreate,
   setPreferredProjectLocation,
   setProjectImportState,
+  setUseAgentsSkillsPaths,
 } from "../app-settings.cts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
 import {
@@ -327,6 +328,11 @@ export async function handleDesktopAction(
 
       if (key === "projectImportState") {
         setProjectImportState(getSettingsProjectImportState(payload));
+        return;
+      }
+
+      if (key === "useAgentsSkillsPaths") {
+        setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false);
         return;
       }
 

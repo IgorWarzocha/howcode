@@ -7,6 +7,7 @@ import type {
   PiSkillCatalogPage,
   PiSkillMutationResult,
 } from "../shared/desktop-contracts.ts";
+import { loadAppSettings } from "./app-settings.cts";
 
 const skillsApiBaseUrl = process.env.HOWCODE_SKILLS_API_URL || "https://skills.sh";
 const catalogCacheTtlMs = 5 * 60_000;
@@ -521,9 +522,14 @@ export async function installPiSkill(request: {
     throw new Error("Could not download that skill.");
   }
 
+  const appSettings = loadAppSettings();
   const targetRootPath = request.local
-    ? getProjectNativeSkillsDir(request.projectPath)
-    : getGlobalNativeSkillsDir();
+    ? appSettings.useAgentsSkillsPaths
+      ? getProjectInteropSkillsDir(request.projectPath)
+      : getProjectNativeSkillsDir(request.projectPath)
+    : appSettings.useAgentsSkillsPaths
+      ? getGlobalInteropSkillsDir()
+      : getGlobalNativeSkillsDir();
   if (!targetRootPath) {
     throw new Error("Select a project before installing a project-scoped skill.");
   }

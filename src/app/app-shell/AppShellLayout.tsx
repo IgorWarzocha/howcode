@@ -67,6 +67,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 projectImportState: null,
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
+                useAgentsSkillsPaths: false,
               }
             }
             activeView={state.activeView}

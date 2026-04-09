@@ -179,6 +179,7 @@ export function CodeWorkspaceView({
                   projectImportState: null,
                   preferredProjectLocation: null,
                   initializeGitOnProjectCreate: false,
+                  useAgentsSkillsPaths: false,
                 }
               }
               availableModels={activeComposerState?.availableModels ?? []}

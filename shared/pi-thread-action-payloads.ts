@@ -100,7 +100,8 @@ export function getSettingsKey(payload: DesktopActionPayload) {
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
-    payload.key === "initializeGitOnProjectCreate"
+    payload.key === "initializeGitOnProjectCreate" ||
+    payload.key === "useAgentsSkillsPaths"
     ? (payload.key as keyof AppSettings)
     : null;
 }

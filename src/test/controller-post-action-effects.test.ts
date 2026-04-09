@@ -20,6 +20,7 @@ function buildShellState(): ShellState {
       projectImportState: null,
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
+      useAgentsSkillsPaths: false,
     },
     availableHosts: [],
     composer: {
@@ -118,6 +119,17 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         initializeGitOnProjectCreate: true,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "useAgentsSkillsPaths",
+        value: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        useAgentsSkillsPaths: true,
       },
     });
   });
