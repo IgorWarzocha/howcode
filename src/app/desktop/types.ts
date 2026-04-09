@@ -10,6 +10,7 @@ export type {
   ComposerStateRequest,
   ComposerThinkingLevel,
   DesktopActionInvoker,
+  DesktopSettingsUpdatePayload,
   DesktopEvent,
   DesktopActionPayload,
   DesktopActionResult,
