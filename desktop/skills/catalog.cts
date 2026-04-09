@@ -13,14 +13,14 @@ const catalogCacheTtlMs = 5 * 60_000;
 const catalogCache = new Map<string, CatalogCacheEntry>();
 const detailCache = new Map<string, { description: string | null; hash: string | null }>();
 
-async function fetchSkillDetails(skill: { id: string; source: string; name: string }) {
-  const cacheKey = `${skill.source}/${skill.name}`.toLowerCase();
+async function fetchSkillDetails(skill: { id: string; source: string; skillId: string }) {
+  const cacheKey = `${skill.source}/${skill.skillId}`.toLowerCase();
   const cached = detailCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
-  const download = await downloadSkillApi(skill.source, skill.name);
+  const download = await downloadSkillApi(skill.source, skill.skillId);
   const skillFile = Array.isArray(download.files)
     ? download.files.find((file) => file.path === "SKILL.md")
     : null;
@@ -42,21 +42,22 @@ async function loadCatalog(query: string, limit: number) {
   const items = await Promise.all(
     skills.map(async (skill): Promise<PiSkillCatalogItem | null> => {
       const id = typeof skill.id === "string" ? skill.id : null;
+      const skillId = typeof skill.skillId === "string" ? skill.skillId : null;
       const name = typeof skill.name === "string" ? skill.name : null;
       const source = typeof skill.source === "string" ? skill.source : null;
 
-      if (!id || !name || !source) {
+      if (!id || !skillId || !name || !source) {
         return null;
       }
 
-      const details = await fetchSkillDetails({ id, source, name }).catch(() => ({
+      const details = await fetchSkillDetails({ id, source, skillId }).catch(() => ({
         description: null,
         hash: null,
       }));
 
       return {
         id,
-        skillId: typeof skill.skillId === "string" ? skill.skillId : name,
+        skillId,
         name,
         source,
         installs:
@@ -66,7 +67,7 @@ async function loadCatalog(query: string, limit: number) {
         description: details.description,
         url: getSkillsAppUrl(id),
         sourceUrl: getSkillsSourceUrl(source),
-        identityKey: getSkillIdentityKey(`${source}@${name}`),
+        identityKey: getSkillIdentityKey(`${source}@${skillId}`),
       };
     }),
   );

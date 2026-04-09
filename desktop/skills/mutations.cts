@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PiSkillMutationResult } from "../../shared/desktop-contracts.ts";
 import { type SkillDownloadApiFile, downloadSkillApi } from "./api.cts";
@@ -15,8 +15,13 @@ import {
 } from "./paths.cts";
 import { parseSkillSource } from "./source.cts";
 
-async function writeDownloadedSkill(targetDirPath: string, files: SkillDownloadApiFile[]) {
-  await mkdir(targetDirPath, { recursive: true });
+type DownloadedSkillTarget = {
+  targetFilePath: string;
+  contents: string;
+};
+
+function getDownloadedSkillTargets(targetDirPath: string, files: SkillDownloadApiFile[]) {
+  const targets: DownloadedSkillTarget[] = [];
 
   for (const file of files) {
     if (typeof file.path !== "string" || typeof file.contents !== "string") {
@@ -28,8 +33,21 @@ async function writeDownloadedSkill(targetDirPath: string, files: SkillDownloadA
       throw new Error("Downloaded skill contains an invalid file path.");
     }
 
-    await mkdir(path.dirname(targetFilePath), { recursive: true });
-    await writeFile(targetFilePath, file.contents, "utf8");
+    targets.push({
+      targetFilePath,
+      contents: file.contents,
+    });
+  }
+
+  return targets;
+}
+
+async function writeDownloadedSkill(targetDirPath: string, targets: DownloadedSkillTarget[]) {
+  await mkdir(targetDirPath, { recursive: true });
+
+  for (const target of targets) {
+    await mkdir(path.dirname(target.targetFilePath), { recursive: true });
+    await writeFile(target.targetFilePath, target.contents, "utf8");
   }
 }
 
@@ -73,7 +91,22 @@ export async function installPiSkill(request: {
   }
 
   await mkdir(targetRootPath, { recursive: true });
-  await writeDownloadedSkill(targetDirPath, files);
+  const temporaryTargetDirPath = await mkdtemp(
+    path.join(targetRootPath, `.tmp-${parsedSource.slug}-`),
+  );
+
+  try {
+    const targets = getDownloadedSkillTargets(temporaryTargetDirPath, files);
+    if (targets.length === 0) {
+      throw new Error("Could not download that skill.");
+    }
+
+    await writeDownloadedSkill(temporaryTargetDirPath, targets);
+    await rename(temporaryTargetDirPath, targetDirPath);
+  } catch (error) {
+    await rm(temporaryTargetDirPath, { recursive: true, force: true });
+    throw error;
+  }
 
   return {
     source: request.source,

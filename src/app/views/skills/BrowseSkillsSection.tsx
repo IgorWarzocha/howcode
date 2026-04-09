@@ -20,7 +20,13 @@ import {
   settingsInputClass,
 } from "../../ui/classes";
 import { cn } from "../../utils/cn";
-import { formatInstalls, getActionError, openExternalUrl } from "./helpers";
+import {
+  formatInstalls,
+  getActionError,
+  getCatalogSkillSource,
+  normalizeSkillSlug,
+  openExternalUrl,
+} from "./helpers";
 
 type BrowseSkillsSectionProps = {
   appSettings: AppSettings;
@@ -67,7 +73,7 @@ export function BrowseSkillsSection({
     setSelectedCatalogSources((current) =>
       current.filter((source) => {
         const item = catalogItems.find((catalogItem) => catalogItem.identityKey === source);
-        return item ? !installedSkillSlugs.has(item.name.trim().toLowerCase()) : false;
+        return item ? !installedSkillSlugs.has(normalizeSkillSlug(item.skillId)) : false;
       }),
     );
   }, [catalogItems, installedSkillSlugs]);
@@ -84,7 +90,7 @@ export function BrowseSkillsSection({
         continue;
       }
 
-      installSources.push(`${item.source}@${item.name}`);
+      installSources.push(getCatalogSkillSource(item));
       seenSources.add(normalizedSource);
     }
 
@@ -118,8 +124,8 @@ export function BrowseSkillsSection({
     ) : catalogItems.length > 0 ? (
       <div className="grid gap-2">
         {catalogItems.map((item) => {
-          const installed = installedSkillSlugs.has(item.name.trim().toLowerCase());
-          const pendingInstall = isPendingInstall(`${item.source}@${item.name}`);
+          const installed = installedSkillSlugs.has(normalizeSkillSlug(item.skillId));
+          const pendingInstall = isPendingInstall(getCatalogSkillSource(item));
           const installLabel = pendingInstall
             ? `Installing ${item.name}`
             : installed

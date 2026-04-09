@@ -4,7 +4,8 @@ import type {
   PiPackageCatalogItem,
 } from "../../shared/desktop-contracts.ts";
 
-const localSourcePattern = /^(?:\.{1,2}(?:\/|$)|\/|~(?:\/|$))/;
+const localSourcePattern =
+  /^(?:\.{1,2}(?:[\\/]|$)|[\\/]|~(?:[\\/]|$)|[A-Za-z]:[\\/]|\\\\[^\\]+\\[^\\]+)/;
 const protocolGitSourcePattern = /^(?:git:|https?:\/\/|ssh:\/\/|git:\/\/)/i;
 const sshGitSourcePattern = /^git@[^:]+:.+/i;
 

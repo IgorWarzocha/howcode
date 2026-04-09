@@ -1,4 +1,4 @@
-import type { PiConfiguredSkill } from "../../desktop/types";
+import type { PiConfiguredSkill, PiSkillCatalogItem } from "../../desktop/types";
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -11,6 +11,14 @@ export function getActionError(error: unknown) {
 
 export function formatInstalls(installs: number) {
   return `${compactNumberFormatter.format(installs)} installs`;
+}
+
+export function normalizeSkillSlug(slug: string) {
+  return slug.trim().toLowerCase();
+}
+
+export function getCatalogSkillSource(skill: Pick<PiSkillCatalogItem, "source" | "skillId">) {
+  return `${skill.source}@${skill.skillId}`;
 }
 
 export function isDesktopSkillsAvailable() {
@@ -33,9 +41,7 @@ function getPathBasename(targetPath: string) {
 
 export function getInstalledSkillSlugs(skills: PiConfiguredSkill[]) {
   return new Set(
-    skills
-      .map((skill) => getPathBasename(skill.installedPath).trim().toLowerCase())
-      .filter(Boolean),
+    skills.map((skill) => normalizeSkillSlug(getPathBasename(skill.installedPath))).filter(Boolean),
   );
 }
 

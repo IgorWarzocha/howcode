@@ -3,7 +3,7 @@ import { Tooltip } from "../../../components/common/Tooltip";
 import type { PiPackageCatalogItem } from "../../../desktop/types";
 import { settingsListRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
-import { formatDownloads, openExternalUrl } from "../utils";
+import { formatDownloads, openExternalUrl, pickSafeExternalUrl } from "../utils";
 
 type CatalogItemRowProps = {
   item: PiPackageCatalogItem;
@@ -20,7 +20,7 @@ export function CatalogItemRow({
   pendingInstall,
   onToggleSelected,
 }: CatalogItemRowProps) {
-  const externalUrl = item.repositoryUrl ?? item.homepageUrl ?? item.npmUrl;
+  const externalUrl = pickSafeExternalUrl([item.repositoryUrl, item.homepageUrl, item.npmUrl]);
   const installLabel = pendingInstall
     ? `Installing ${item.name}`
     : installed
@@ -33,22 +33,26 @@ export function CatalogItemRow({
     >
       <div className="min-w-0 grid gap-0.5">
         <div className="flex items-center gap-2">
-          <Tooltip content={externalUrl} contentClassName="max-w-[420px]">
-            <button
-              type="button"
-              className="group inline-flex min-w-0 items-center gap-0.5 p-0"
-              onClick={() => void openExternalUrl(externalUrl)}
-              aria-label={`Open ${item.name}`}
-            >
-              <span className="truncate text-[13px] text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
-                {item.name}
-              </span>
-              <ArrowUpRight
-                size={12}
-                className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-              />
-            </button>
-          </Tooltip>
+          {externalUrl ? (
+            <Tooltip content={externalUrl} contentClassName="max-w-[420px]">
+              <button
+                type="button"
+                className="group inline-flex min-w-0 items-center gap-0.5 p-0"
+                onClick={() => void openExternalUrl(externalUrl)}
+                aria-label={`Open ${item.name}`}
+              >
+                <span className="truncate text-[13px] text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+                  {item.name}
+                </span>
+                <ArrowUpRight
+                  size={12}
+                  className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+                />
+              </button>
+            </Tooltip>
+          ) : (
+            <span className="truncate text-[13px] text-[color:var(--text)]">{item.name}</span>
+          )}
           <span className="text-[11px] text-[color:var(--muted)]">
             {formatDownloads(item.monthlyDownloads)}
           </span>

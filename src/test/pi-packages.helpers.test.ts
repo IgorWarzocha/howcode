@@ -29,6 +29,9 @@ describe("pi packages helpers", () => {
     expect(getConfiguredPiPackageType("npm:taskplane")).toBe("npm");
     expect(getConfiguredPiPackageType("git:github.com/user/repo")).toBe("git");
     expect(getConfiguredPiPackageType("./local-extension")).toBe("local");
+    expect(getConfiguredPiPackageType(".\\local-extension")).toBe("local");
+    expect(getConfiguredPiPackageType("C:\\Users\\igor\\pi-extension")).toBe("local");
+    expect(getConfiguredPiPackageType("\\\\server\\share\\pi-extension")).toBe("local");
   });
 
   it("sorts package search results by popularity first", () => {

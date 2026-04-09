@@ -159,6 +159,15 @@ async function normalizeDialogFilePaths(filePaths: string[]) {
   return normalized;
 }
 
+function isSafeExternalUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function isPathWithinRoot(candidatePath: string, rootPath: string) {
   const relativePath = path.relative(rootPath, candidatePath);
   return (
@@ -362,7 +371,9 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         await terminalManager.closeTerminal(request);
         return { ok: true };
       },
-      openExternal: async ({ url }) => ({ ok: Utils.openExternal(url) }),
+      openExternal: async ({ url }) => ({
+        ok: isSafeExternalUrl(url) ? Utils.openExternal(url) : false,
+      }),
       openPath: async ({ path }) => ({ ok: Utils.openPath(path) }),
     },
     messages: {},

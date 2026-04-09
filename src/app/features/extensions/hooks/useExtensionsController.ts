@@ -44,7 +44,7 @@ export function useExtensionsController({
       searchPiPackagesQuery({
         query: deferredSearchInput,
         cursor: typeof pageParam === "number" ? pageParam : 0,
-        pageSize: 24,
+        pageSize: 20,
       }),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 5 * 60_000,

@@ -1,8 +1,8 @@
 import type { PiPackageCatalogItem, PiPackageCatalogPage } from "../../shared/desktop-contracts.ts";
-import { sortPiPackageCatalogItems } from "./helpers.ts";
+import { sortPiPackageCatalogItems } from "./helpers";
 
 const npmRegistrySearchUrl = "https://registry.npmjs.org/-/v1/search";
-const npmRegistryPageSize = 250;
+const defaultCatalogPageSize = 20;
 const catalogCacheTtlMs = 5 * 60_000;
 
 type RegistryPackageLinks = {
@@ -37,8 +37,8 @@ type RegistrySearchResponse = {
 
 type CatalogCacheEntry = {
   expiresAt: number;
-  items?: PiPackageCatalogItem[];
-  promise?: Promise<PiPackageCatalogItem[]>;
+  page?: PiPackageCatalogPage;
+  promise?: Promise<PiPackageCatalogPage>;
 };
 
 const catalogCache = new Map<string, CatalogCacheEntry>();
@@ -49,10 +49,10 @@ function normalizeCatalogQuery(query?: string | null) {
 
 function clampPageSize(pageSize?: number | null) {
   if (typeof pageSize !== "number" || !Number.isFinite(pageSize)) {
-    return 24;
+    return defaultCatalogPageSize;
   }
 
-  return Math.max(12, Math.min(48, Math.floor(pageSize)));
+  return Math.max(1, Math.min(defaultCatalogPageSize, Math.floor(pageSize)));
 }
 
 function clampCursor(cursor?: number | null) {
@@ -134,7 +134,7 @@ async function fetchRegistryPage(query: string, from: number) {
   const requestUrl = new URL(npmRegistrySearchUrl);
   requestUrl.searchParams.set("text", buildRegistrySearchText(query));
   requestUrl.searchParams.set("from", String(from));
-  requestUrl.searchParams.set("size", String(npmRegistryPageSize));
+  requestUrl.searchParams.set("size", String(defaultCatalogPageSize));
 
   const response = await fetch(requestUrl, {
     headers: {
@@ -150,59 +150,49 @@ async function fetchRegistryPage(query: string, from: number) {
   return (await response.json()) as RegistrySearchResponse;
 }
 
-async function loadCatalog(query: string) {
-  const items: PiPackageCatalogItem[] = [];
-  const seenPackageNames = new Set<string>();
-  let from = 0;
-  let total = 0;
+async function loadCatalog(
+  query: string,
+  cursor: number,
+  pageSize: number,
+): Promise<PiPackageCatalogPage> {
+  const response = await fetchRegistryPage(query, cursor);
+  const objects = Array.isArray(response.objects) ? response.objects : [];
+  const total = typeof response.total === "number" ? response.total : objects.length;
+  const items = sortPiPackageCatalogItems(
+    objects
+      .map((object) => mapRegistryObjectToCatalogItem(object))
+      .filter((item): item is PiPackageCatalogItem => item !== null),
+  ).slice(0, pageSize);
 
-  while (true) {
-    const response = await fetchRegistryPage(query, from);
-    const objects = Array.isArray(response.objects) ? response.objects : [];
-
-    total = typeof response.total === "number" ? response.total : objects.length;
-
-    for (const object of objects) {
-      const item = mapRegistryObjectToCatalogItem(object);
-
-      if (!item || seenPackageNames.has(item.name)) {
-        continue;
-      }
-
-      seenPackageNames.add(item.name);
-      items.push(item);
-    }
-
-    if (objects.length === 0 || from + objects.length >= total) {
-      break;
-    }
-
-    from += objects.length;
-  }
-
-  return sortPiPackageCatalogItems(items);
+  return {
+    query,
+    sort: "monthlyDownloads-desc",
+    total,
+    nextCursor: cursor + objects.length < total ? cursor + objects.length : null,
+    items,
+  };
 }
 
-async function getCatalog(query: string) {
-  const cacheKey = query.toLowerCase();
+async function getCatalog(query: string, cursor: number, pageSize: number) {
+  const cacheKey = `${query.toLowerCase()}:${cursor}:${pageSize}`;
   const cachedEntry = catalogCache.get(cacheKey);
 
-  if (cachedEntry?.items && cachedEntry.expiresAt > Date.now()) {
-    return cachedEntry.items;
+  if (cachedEntry?.page && cachedEntry.expiresAt > Date.now()) {
+    return cachedEntry.page;
   }
 
   if (cachedEntry?.promise) {
     return cachedEntry.promise;
   }
 
-  const promise = loadCatalog(query)
-    .then((items) => {
+  const promise = loadCatalog(query, cursor, pageSize)
+    .then((page) => {
       catalogCache.set(cacheKey, {
-        items,
+        page,
         expiresAt: Date.now() + catalogCacheTtlMs,
       });
 
-      return items;
+      return page;
     })
     .catch((error) => {
       catalogCache.delete(cacheKey);
@@ -227,13 +217,5 @@ export async function searchPiPackages(
   const query = normalizeCatalogQuery(request.query);
   const pageSize = clampPageSize(request.pageSize);
   const cursor = clampCursor(request.cursor);
-  const catalog = await getCatalog(query);
-
-  return {
-    query,
-    sort: "monthlyDownloads-desc",
-    total: catalog.length,
-    nextCursor: cursor + pageSize < catalog.length ? cursor + pageSize : null,
-    items: catalog.slice(cursor, cursor + pageSize),
-  };
+  return await getCatalog(query, cursor, pageSize);
 }
