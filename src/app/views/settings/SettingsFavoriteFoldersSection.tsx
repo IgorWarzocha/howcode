@@ -1,4 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
+import { EmptyStateCard } from "../../components/common/EmptyStateCard";
+import { SectionIntro } from "../../components/common/SectionIntro";
 import {
   primaryButtonClass,
   settingsInputClass,
@@ -22,12 +24,10 @@ export function SettingsFavoriteFoldersSection({
 }) {
   return (
     <section className={settingsSectionClass}>
-      <div className="grid gap-1">
-        <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">Favorite folders</h2>
-        <p className="m-0 text-[13px] text-[color:var(--muted)]">
-          The attachment picker always shows Home plus the favorite folders you add here.
-        </p>
-      </div>
+      <SectionIntro
+        title="Favorite folders"
+        description="The attachment picker always shows Home plus the favorite folders you add here."
+      />
 
       <div className="flex gap-2">
         <input
@@ -75,9 +75,7 @@ export function SettingsFavoriteFoldersSection({
             </div>
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-            No favorite folders yet.
-          </div>
+          <EmptyStateCard>No favorite folders yet.</EmptyStateCard>
         )}
       </div>
     </section>

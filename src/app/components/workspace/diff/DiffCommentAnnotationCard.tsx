@@ -6,9 +6,6 @@ import type { DiffCommentDraft } from "./diffCommentStore";
 
 const commentCardClass =
   "mx-3 mb-1.5 rounded-lg border border-[color:var(--border)] bg-[color:var(--workspace)] px-3 py-2";
-const commentCardFontStyle = {
-  fontFamily: 'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-} as const;
 
 type DiffCommentAnnotationCardProps = {
   annotation: DiffLineAnnotation<DiffCommentMetadata>;
@@ -31,7 +28,7 @@ export function DiffCommentAnnotationCard({
 
   if (metadata.kind === "draft") {
     return (
-      <div ref={draftCardRef} className={commentCardClass} style={commentCardFontStyle}>
+      <div ref={draftCardRef} className={commentCardClass}>
         <div className="mb-2 text-[11px] font-medium text-[color:var(--muted)]">
           Add comment · {draftComment ? describeCommentTarget(draftComment) : "Line comment"}
         </div>
@@ -79,11 +76,7 @@ export function DiffCommentAnnotationCard({
   }
 
   return (
-    <div
-      data-saved-diff-comment-id={metadata.id}
-      className={commentCardClass}
-      style={commentCardFontStyle}
-    >
+    <div data-saved-diff-comment-id={metadata.id} className={commentCardClass}>
       <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-[color:var(--muted)]">
         <span>Comment · {describeCommentTarget(metadata)}</span>
         <button

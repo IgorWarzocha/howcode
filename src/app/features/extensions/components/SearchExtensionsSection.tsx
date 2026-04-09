@@ -1,8 +1,14 @@
-import { ChevronDown, ChevronRight, PackagePlus, Search, Sparkles } from "lucide-react";
+import { PackagePlus, Search, Sparkles } from "lucide-react";
+import { DisclosureSection } from "../../../components/common/DisclosureSection";
+import { EmptyStateCard } from "../../../components/common/EmptyStateCard";
 import { TextButton } from "../../../components/common/TextButton";
 import { Tooltip } from "../../../components/common/Tooltip";
 import type { PiPackageCatalogItem } from "../../../desktop/types";
-import { compactRoundIconButtonClass, settingsInputClass } from "../../../ui/classes";
+import {
+  compactRoundIconButtonClass,
+  iconActionButtonDisabledClass,
+  settingsInputClass,
+} from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { InstallScope } from "../types";
 import { CatalogItemRow } from "./CatalogItemRow";
@@ -56,17 +62,7 @@ export function SearchExtensionsSection({
     hasPendingInstall;
 
   return (
-    <div className="grid gap-2">
-      <button
-        type="button"
-        className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
-        onClick={onToggleOpen}
-        aria-expanded={open}
-      >
-        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span>Browse</span>
-      </button>
-
+    <DisclosureSection title="Browse" open={open} onToggle={onToggleOpen}>
       {open ? (
         <>
           <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -93,10 +89,7 @@ export function SearchExtensionsSection({
             >
               <TextButton
                 type="button"
-                className={cn(
-                  compactRoundIconButtonClass,
-                  "disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40",
-                )}
+                className={cn(compactRoundIconButtonClass, iconActionButtonDisabledClass)}
                 onClick={() => void onInstallSelected()}
                 disabled={installDisabled}
                 aria-label={
@@ -136,9 +129,7 @@ export function SearchExtensionsSection({
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-              No pi packages.
-            </div>
+            <EmptyStateCard>No pi packages.</EmptyStateCard>
           )}
 
           {hasNextCatalogPage ? (
@@ -154,6 +145,6 @@ export function SearchExtensionsSection({
           ) : null}
         </>
       ) : null}
-    </div>
+    </DisclosureSection>
   );
 }

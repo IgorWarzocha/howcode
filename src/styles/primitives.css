@@ -1,0 +1,19 @@
+@keyframes threeDotsSpinnerPulse {
+  93.75%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.three-dots-spinner__dot {
+  animation: threeDotsSpinnerPulse 0.8s linear infinite;
+  animation-delay: -0.8s;
+}
+
+.three-dots-spinner__dot--second {
+  animation-delay: -0.65s;
+}
+
+.three-dots-spinner__dot--third {
+  animation-delay: -0.5s;
+}

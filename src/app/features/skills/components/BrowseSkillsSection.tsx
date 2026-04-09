@@ -1,22 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowUpRight,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  CornerDownLeft,
-  PackagePlus,
-  Search,
-  Sparkles,
-} from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { ArrowUpRight, Check, CornerDownLeft, PackagePlus, Search, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CompactMetaRow } from "../../../components/common/CompactMetaRow";
+import { DisclosureSection } from "../../../components/common/DisclosureSection";
+import { EmptyStateCard } from "../../../components/common/EmptyStateCard";
 import { TextButton } from "../../../components/common/TextButton";
 import { Tooltip } from "../../../components/common/Tooltip";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { desktopQueryKeys, searchPiSkillsQuery } from "../../../query/desktop-query";
 import {
   compactRoundIconButtonClass,
-  settingsCompactListRowClass,
+  iconActionButtonDisabledClass,
   settingsInputClass,
 } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -131,41 +125,10 @@ export function BrowseSkillsSection({
           const selected = selectedCatalogSources.includes(item.identityKey);
 
           return (
-            <div
+            <CompactMetaRow
               key={item.id}
-              className={cn(settingsCompactListRowClass, selected && "bg-[rgba(255,255,255,0.04)]")}
-            >
-              <div className="min-w-0 grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-1.5 overflow-hidden">
-                <Tooltip content={item.url} contentClassName="max-w-[420px]">
-                  <button
-                    type="button"
-                    className="group inline-flex shrink-0 items-center gap-0.5 p-0"
-                    onClick={() => void openExternalUrl(item.url)}
-                    aria-label={`Open ${item.name}`}
-                  >
-                    <span className="text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
-                      {item.name}
-                    </span>
-                    <ArrowUpRight
-                      size={12}
-                      className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
-                    />
-                  </button>
-                </Tooltip>
-                <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
-                  {item.description || item.source}
-                </div>
-                <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
-                  {formatInstalls(item.installs)}
-                </span>
-                {installed ? (
-                  <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
-                    Installed
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-0.5">
+              selected={selected}
+              actions={
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)]">
                   {pendingInstall ? (
                     <Sparkles size={14} />
@@ -198,30 +161,50 @@ export function BrowseSkillsSection({
                     </Tooltip>
                   )}
                 </span>
+              }
+              contentClassName="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-1.5 overflow-hidden"
+            >
+              <Tooltip content={item.url} contentClassName="max-w-[420px]">
+                <button
+                  type="button"
+                  className="group inline-flex shrink-0 items-center gap-0.5 p-0"
+                  onClick={() => void openExternalUrl(item.url)}
+                  aria-label={`Open ${item.name}`}
+                >
+                  <span className="text-[13px] leading-4 text-[color:var(--text)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
+                    {item.name}
+                  </span>
+                  <ArrowUpRight
+                    size={12}
+                    className="shrink-0 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]"
+                  />
+                </button>
+              </Tooltip>
+              <div className="min-w-0 truncate text-[12px] leading-4 text-[color:var(--muted)]">
+                {item.description || item.source}
               </div>
-            </div>
+              <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
+                {formatInstalls(item.installs)}
+              </span>
+              {installed ? (
+                <span className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-[color:var(--muted)]">
+                  Installed
+                </span>
+              ) : null}
+            </CompactMetaRow>
           );
         })}
       </div>
     ) : (
-      <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-        No skills found.
-      </div>
+      <EmptyStateCard>No skills found.</EmptyStateCard>
     );
 
   return (
-    <div className="grid gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]"
-          onClick={() => setBrowseOpen((current) => !current)}
-          aria-expanded={browseOpen}
-        >
-          {browseOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <span>Browse</span>
-        </button>
-
+    <DisclosureSection
+      title="Browse"
+      open={browseOpen}
+      onToggle={() => setBrowseOpen((current) => !current)}
+      actions={
         <button
           type="button"
           className="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted)]"
@@ -244,8 +227,8 @@ export function BrowseSkillsSection({
             {appSettings.useAgentsSkillsPaths ? <Check size={11} strokeWidth={2.6} /> : null}
           </span>
         </button>
-      </div>
-
+      }
+    >
       {browseOpen ? (
         <>
           <div className="flex items-center gap-2">
@@ -293,7 +276,7 @@ export function BrowseSkillsSection({
               >
                 <TextButton
                   type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full px-0 text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40"
+                  className={cn(compactRoundIconButtonClass, iconActionButtonDisabledClass)}
                   disabled={!hasSelectedCatalogSources}
                   onClick={() => {
                     void handleInstallSelected();
@@ -313,6 +296,6 @@ export function BrowseSkillsSection({
           {browseSectionContent}
         </>
       ) : null}
-    </div>
+    </DisclosureSection>
   );
 }

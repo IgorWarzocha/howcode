@@ -1,11 +1,14 @@
+import { EmptyStateCard } from "../../components/common/EmptyStateCard";
+import { SegmentedToggle } from "../../components/common/SegmentedToggle";
+import { ViewHeader } from "../../components/common/ViewHeader";
+import { ViewShell } from "../../components/common/ViewShell";
 import { ActiveExtensionsSection } from "./components/ActiveExtensionsSection";
 import { InstallExtensionsSection } from "./components/InstallExtensionsSection";
 import { SearchExtensionsSection } from "./components/SearchExtensionsSection";
-import { SegmentedToggle } from "./components/SegmentedToggle";
 import { useExtensionsController } from "./hooks/useExtensionsController";
 import type { ExtensionsViewProps } from "./types";
 
-function ExtensionsHeader({
+function ExtensionsScopeToggle({
   globalInstalledCount,
   installScope,
   projectInstalledCount,
@@ -19,21 +22,18 @@ function ExtensionsHeader({
   onScopeChange: (scope: "global" | "project") => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
-      <SegmentedToggle
-        value={installScope}
-        options={[
-          { value: "global", label: `Global (${globalInstalledCount})` },
-          {
-            value: "project",
-            label: `Project (${projectInstalledCount})`,
-            disabled: !projectScopeAvailable,
-          },
-        ]}
-        onChange={onScopeChange}
-      />
-    </div>
+    <SegmentedToggle
+      value={installScope}
+      options={[
+        { value: "global", label: `Global (${globalInstalledCount})` },
+        {
+          value: "project",
+          label: `Project (${projectInstalledCount})`,
+          disabled: !projectScopeAvailable,
+        },
+      ]}
+      onChange={onScopeChange}
+    />
   );
 }
 
@@ -42,23 +42,26 @@ export function ExtensionsView(props: ExtensionsViewProps) {
 
   if (!controller.desktopPackagesAvailable) {
     return (
-      <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
-        <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Extensions</h1>
-        <div className="rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-          Desktop build required.
-        </div>
-      </div>
+      <ViewShell>
+        <ViewHeader title="Extensions" />
+        <EmptyStateCard>Desktop build required.</EmptyStateCard>
+      </ViewShell>
     );
   }
 
   return (
-    <div className="mx-auto grid h-full w-full max-w-[860px] content-start gap-4 px-2 pt-6 pb-6">
-      <ExtensionsHeader
-        globalInstalledCount={controller.globalInstalledCount}
-        installScope={controller.installScope}
-        projectInstalledCount={controller.projectInstalledCount}
-        projectScopeAvailable={controller.projectScopeAvailable}
-        onScopeChange={controller.setInstallScope}
+    <ViewShell>
+      <ViewHeader
+        title="Extensions"
+        actions={
+          <ExtensionsScopeToggle
+            globalInstalledCount={controller.globalInstalledCount}
+            installScope={controller.installScope}
+            projectInstalledCount={controller.projectInstalledCount}
+            projectScopeAvailable={controller.projectScopeAvailable}
+            onScopeChange={controller.setInstallScope}
+          />
+        }
       />
 
       {controller.actionError ? (
@@ -107,6 +110,6 @@ export function ExtensionsView(props: ExtensionsViewProps) {
         onLoadMore={controller.loadMoreCatalog}
         isInstallPending={controller.isInstallPending}
       />
-    </div>
+    </ViewShell>
   );
 }

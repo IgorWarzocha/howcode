@@ -55,10 +55,9 @@ export function ThreadRow({
       <span className="relative inline-flex h-4 w-7 shrink-0 items-center justify-end text-[color:var(--muted-2)]">
         <span
           className={cn(
-            "absolute transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
+            "absolute right-0 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
             isSelected && "opacity-0",
           )}
-          style={{ right: 0 }}
           aria-hidden="true"
         >
           {age}

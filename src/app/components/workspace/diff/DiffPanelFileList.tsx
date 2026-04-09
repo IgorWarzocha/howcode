@@ -133,10 +133,6 @@ export function DiffPanelFileList({
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-3 bg-transparent px-3 py-2 text-left text-[color:var(--text)]"
-                      style={{
-                        fontFamily:
-                          'var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif)',
-                      }}
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();

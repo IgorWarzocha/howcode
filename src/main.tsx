@@ -21,7 +21,7 @@ try {
 } catch (error) {
   const root = document.getElementById("root");
   if (root) {
-    root.innerHTML = `<pre style="padding:16px;color:#f8caca;background:#241517;white-space:pre-wrap;">Bootstrap error:\n${String(error)}</pre>`;
+    root.innerHTML = `<pre class="bootstrap-error">Bootstrap error:\n${String(error)}</pre>`;
   }
 
   throw error;

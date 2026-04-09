@@ -1,3 +1,5 @@
+import { ViewHeader } from "../components/common/ViewHeader";
+import { ViewShell } from "../components/common/ViewShell";
 import type { AppSettings, ComposerModel, DesktopActionInvoker } from "../desktop/types";
 import type { Project } from "../types";
 import { SettingsFavoriteFoldersSection } from "./settings/SettingsFavoriteFoldersSection";
@@ -24,13 +26,11 @@ export function SettingsView({
   const controller = useSettingsController({ appSettings, projects, onAction });
 
   return (
-    <div className="mx-auto grid h-full w-full max-w-[760px] content-start gap-4 px-2 pt-6 pb-6">
-      <div className="grid gap-1">
-        <h1 className="m-0 text-[18px] font-medium text-[color:var(--text)]">Settings</h1>
-        <p className="m-0 text-[13px] text-[color:var(--muted)]">
-          Git commit model, skill creator model, project UI import, and favorite folders.
-        </p>
-      </div>
+    <ViewShell maxWidthClassName="max-w-[760px]">
+      <ViewHeader
+        title="Settings"
+        subtitle="Git commit model, skill creator model, project UI import, and favorite folders."
+      />
 
       <SettingsModelSection
         availableModels={availableModels}
@@ -81,6 +81,6 @@ export function SettingsView({
         setFavoriteFolderDraft={controller.setFavoriteFolderDraft}
         updateFavoriteFolders={controller.updateFavoriteFolders}
       />
-    </div>
+    </ViewShell>
   );
 }

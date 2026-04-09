@@ -47,7 +47,6 @@ export function LandingView({
   const visibleProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(projectQuery.trim().toLowerCase()),
   );
-  const projectMenuTop = (projectButtonRef.current?.getBoundingClientRect().bottom ?? 0) + 10;
 
   const startNewThreadInProject = async (projectId: string) => {
     onSelectProject(projectId);
@@ -206,9 +205,8 @@ export function LandingView({
               role="menu"
               aria-label="Select project"
               data-open={projectMenuOpen ? "true" : "false"}
-              style={{ top: projectMenuTop }}
               className={cn(
-                "motion-popover fixed left-1/2 z-20 grid h-[378px] w-[min(800px,calc(100vw-32px))] grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] p-0 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)] -translate-x-1/2",
+                "motion-popover absolute top-[calc(100%+10px)] left-1/2 z-20 grid h-[378px] w-[min(800px,calc(100vw-32px))] grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] p-0 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)] -translate-x-1/2",
                 popoverPanelClass,
               )}
             >

@@ -11,8 +11,40 @@ export const modalPanelClass =
 export const popoverPanelClass =
   "border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] shadow-[0_18px_40px_rgba(0,0,0,0.28)]";
 
+export const confirmPopoverClass =
+  "motion-popover absolute top-[calc(100%+6px)] right-0 z-20 flex items-center gap-1 rounded-xl p-1";
+
 export const mainPanelClass =
   "min-h-0 overflow-y-scroll overflow-x-hidden pt-1.5 [scrollbar-gutter:stable_both-edges]";
+
+export const viewShellClass = "mx-auto grid h-full w-full content-start gap-4 px-2 pt-6 pb-6";
+
+export const viewTitleClass = "m-0 text-[18px] font-medium text-[color:var(--text)]";
+
+export const viewSubtitleClass = "m-0 text-[13px] text-[color:var(--muted)]";
+
+export const sectionIntroClass = "grid gap-1";
+
+export const sectionTitleClass = "m-0 text-[15px] font-medium text-[color:var(--text)]";
+
+export const sectionDescriptionClass = "m-0 text-[13px] text-[color:var(--muted)]";
+
+export const disclosureButtonClass =
+  "inline-flex items-center gap-1.5 text-left text-[13px] font-medium text-[color:var(--text)]";
+
+export const emptyStateCardClass =
+  "rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]";
+
+export const segmentedControlClass =
+  "inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1";
+
+export const segmentedControlOptionClass =
+  "rounded-full px-3 py-1 text-[12px] capitalize transition-colors";
+
+export const iconActionButtonDisabledClass =
+  "disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[color:var(--muted)] disabled:opacity-40";
+
+export const compactMetaRowActionsClass = "flex items-center gap-0.5";
 
 export const iconButtonClass =
   "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent bg-transparent text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";

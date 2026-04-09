@@ -1,0 +1,69 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+textarea {
+  line-height: 1.45;
+}
+
+button {
+  color: inherit;
+}
+
+code {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(140, 148, 181, 0.22);
+  background-clip: padding-box;
+}
+
+.diff-turn-strip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.diff-turn-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.bootstrap-error {
+  padding: 16px;
+  color: #f8caca;
+  white-space: pre-wrap;
+  background: #241517;
+}

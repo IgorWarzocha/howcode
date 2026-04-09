@@ -1,5 +1,6 @@
 import { Check, FolderPlus } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { SectionIntro } from "../../components/common/SectionIntro";
 import type { AppSettings } from "../../desktop/types";
 import { settingsInputClass, settingsListRowClass, settingsSectionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
@@ -19,12 +20,10 @@ export function SettingsProjectDefaultsSection({
 }) {
   return (
     <section className={settingsSectionClass}>
-      <div className="grid gap-1">
-        <h2 className="m-0 text-[15px] font-medium text-[color:var(--text)]">New projects</h2>
-        <p className="m-0 text-[13px] text-[color:var(--muted)]">
-          Set where new projects are created and whether git should be initialised for diffs.
-        </p>
-      </div>
+      <SectionIntro
+        title="New projects"
+        description="Set where new projects are created and whether git should be initialised for diffs."
+      />
 
       <div className="grid gap-2">
         <div className="grid gap-1">
