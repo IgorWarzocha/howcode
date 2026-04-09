@@ -7,6 +7,7 @@ import {
   CornerDownLeft,
   FilePenLine,
   PackagePlus,
+  RefreshCw,
   Search,
   Sparkles,
   Trash2,
@@ -43,6 +44,8 @@ const compactNumberFormatter = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 });
 
+const MOCK_SKILL_CREATOR_SOURCE = "skills.sh/skill-creator";
+
 function getActionError(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
@@ -68,6 +71,61 @@ function getInstalledIdentityKeys(skills: PiConfiguredSkill[]) {
   return new Set(skills.map((skill) => skill.identityKey));
 }
 
+function getSkillCreatorDetectionText(skill: PiConfiguredSkill) {
+  return [
+    skill.displayName,
+    skill.description,
+    skill.identityKey,
+    skill.source,
+    skill.installedPath,
+    skill.skillFilePath,
+    skill.sourceRepo,
+    skill.sourceUrl,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isSkillCreatorCandidate(skill: PiConfiguredSkill) {
+  const normalized = getSkillCreatorDetectionText(skill);
+
+  if (!normalized) {
+    return false;
+  }
+
+  const creatorPatterns = [
+    /\bskill(?:s)?\s*(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\b/i,
+    /\b(?:creator|create|creation|maker|making|author|authoring|builder|build|craft(?:er)?|smith)\s*skill(?:s)?\b/i,
+    /\b(?:create|build|author|make|craft)\s+skills?\b/i,
+  ];
+
+  if (creatorPatterns.some((pattern) => pattern.test(normalized))) {
+    return true;
+  }
+
+  const tokens = new Set(normalized.split(/\s+/).filter(Boolean));
+  const hasSkillToken = tokens.has("skill") || tokens.has("skills");
+  const hasCreatorToken = [
+    "create",
+    "creator",
+    "creation",
+    "maker",
+    "making",
+    "author",
+    "authoring",
+    "builder",
+    "build",
+    "craft",
+    "crafter",
+    "smith",
+  ].some((token) => tokens.has(token));
+
+  return hasSkillToken && hasCreatorToken;
+}
+
 export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewProps) {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
@@ -80,6 +138,7 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [mockSkillCreatorInstalled, setMockSkillCreatorInstalled] = useState(false);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
   const confirmRemoveButtonRef = useRef<HTMLButtonElement>(null);
   const confirmRemovePanelRef = useRef<HTMLDivElement>(null);
@@ -112,6 +171,10 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
   const activeScope = installScope === "project" ? "project" : "user";
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === "user").length;
   const projectSkillCount = configuredSkills.filter((skill) => skill.scope === "project").length;
+  const hasGlobalSkillCreator = configuredSkills.some(
+    (skill) => skill.scope === "user" && isSkillCreatorCandidate(skill),
+  );
+  const skillCreatorReady = hasGlobalSkillCreator || mockSkillCreatorInstalled;
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
@@ -203,6 +266,23 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
     } finally {
       removePendingAction(pendingAction);
     }
+  };
+
+  const handleInstallMockSkillCreator = async () => {
+    const pendingAction = { kind: "install" as const, source: MOCK_SKILL_CREATOR_SOURCE };
+
+    addPendingAction(pendingAction);
+    setActionError(null);
+
+    try {
+      setMockSkillCreatorInstalled(true);
+    } finally {
+      removePendingAction(pendingAction);
+    }
+  };
+
+  const handleUseOwnSkillCreator = async () => {
+    await configuredSkillsQuery.refetch();
   };
 
   const handleRemove = async (configuredSkill: PiConfiguredSkill) => {
@@ -568,17 +648,49 @@ export function SkillsView({ projectPath, onSetProjectScopeActive }: SkillsViewP
 
       <section className="grid gap-2">
         <div className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--text)]">
-          <span>Create</span>
+          <span>Create a skill</span>
           <FeatureStatusBadge statusId="feature:skills.create" />
         </div>
 
-        <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-4">
-          <div className="grid gap-1">
-            <div className="text-[13px] font-medium text-[color:var(--text)]">Custom skills</div>
-            <div className="text-[12px] leading-5 text-[color:var(--muted)]">
-              Placeholder surface for creating and packaging custom skills. We’ll wire up the real
-              flow next.
-            </div>
+        <div className="rounded-[18px] border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5">
+          <div className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--muted)]">
+            {skillCreatorReady ? (
+              <>
+                <div>Create flow comes next.</div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span>No global skill creator detected. Install the bundled skill creator?</span>
+                  <TextButton
+                    className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
+                    onClick={() => {
+                      void handleInstallMockSkillCreator();
+                    }}
+                    disabled={isPending("install", MOCK_SKILL_CREATOR_SOURCE)}
+                  >
+                    {isPending("install", MOCK_SKILL_CREATOR_SOURCE) ? "Installing…" : "Yes"}
+                  </TextButton>
+                  <TextButton
+                    className="inline-flex h-auto items-center gap-1 rounded-md px-1.5 py-0 text-[12px]"
+                    onClick={() => {
+                      void handleUseOwnSkillCreator();
+                    }}
+                    disabled={configuredSkillsQuery.isFetching}
+                  >
+                    <span>No - I have provided my own</span>
+                    <RefreshCw
+                      size={11}
+                      className={configuredSkillsQuery.isFetching ? "animate-spin" : ""}
+                    />
+                  </TextButton>
+                </div>
+                <div>
+                  Please note this skill creator is agent-agnostic, as opposed to most of the skill
+                  creator skills you will find for other harnesses and agents.
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

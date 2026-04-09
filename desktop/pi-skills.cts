@@ -75,16 +75,38 @@ function clampResultLimit(limit?: number | null) {
   return Math.max(6, Math.min(24, Math.floor(limit)));
 }
 
-function getGlobalSkillsDir() {
+function getGlobalNativeSkillsDir() {
   return path.join(os.homedir(), ".pi", "agent", "skills");
 }
 
-function getProjectSkillsDir(projectPath?: string | null) {
+function getGlobalInteropSkillsDir() {
+  return path.join(os.homedir(), ".agents", "skills");
+}
+
+function getProjectNativeSkillsDir(projectPath?: string | null) {
   if (!projectPath?.trim()) {
     return null;
   }
 
   return path.join(path.resolve(projectPath), ".pi", "skills");
+}
+
+function getProjectInteropSkillsDir(projectPath?: string | null) {
+  if (!projectPath?.trim()) {
+    return null;
+  }
+
+  return path.join(path.resolve(projectPath), ".agents", "skills");
+}
+
+function getGlobalSkillsDirs() {
+  return [getGlobalNativeSkillsDir(), getGlobalInteropSkillsDir()];
+}
+
+function getProjectSkillsDirs(projectPath?: string | null) {
+  return [getProjectNativeSkillsDir(projectPath), getProjectInteropSkillsDir(projectPath)].filter(
+    (skillsDirPath): skillsDirPath is string => Boolean(skillsDirPath),
+  );
 }
 
 function normalizeSkillSource(source: string) {
@@ -459,11 +481,18 @@ export async function searchPiSkills(
 export async function listConfiguredPiSkills(
   request: { projectPath?: string | null } = {},
 ): Promise<PiConfiguredSkill[]> {
-  const globalSkills = await listSkillsInDirectory(getGlobalSkillsDir(), "user");
-  const projectSkillsDir = getProjectSkillsDir(request.projectPath);
-  const projectSkills = projectSkillsDir
-    ? await listSkillsInDirectory(projectSkillsDir, "project")
-    : [];
+  const globalSkills = (
+    await Promise.all(
+      getGlobalSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, "user")),
+    )
+  ).flat();
+  const projectSkills = (
+    await Promise.all(
+      getProjectSkillsDirs(request.projectPath).map((skillsDirPath) =>
+        listSkillsInDirectory(skillsDirPath, "project"),
+      ),
+    )
+  ).flat();
 
   return sortConfiguredSkills([...globalSkills, ...projectSkills]);
 }
@@ -493,8 +522,8 @@ export async function installPiSkill(request: {
   }
 
   const targetRootPath = request.local
-    ? getProjectSkillsDir(request.projectPath)
-    : getGlobalSkillsDir();
+    ? getProjectNativeSkillsDir(request.projectPath)
+    : getGlobalNativeSkillsDir();
   if (!targetRootPath) {
     throw new Error("Select a project before installing a project-scoped skill.");
   }
@@ -559,12 +588,12 @@ export async function removePiSkill(request: {
   projectPath?: string | null;
 }): Promise<PiSkillMutationResult> {
   const installedPath = path.resolve(request.installedPath);
-  const globalRootPath = getGlobalSkillsDir();
-  const projectRootPath = getProjectSkillsDir(request.projectPath);
+  const globalRootPaths = getGlobalSkillsDirs();
+  const projectRootPaths = getProjectSkillsDirs(request.projectPath);
 
   if (
-    !isPathWithinRoot(installedPath, globalRootPath) &&
-    !(projectRootPath && isPathWithinRoot(installedPath, projectRootPath))
+    !globalRootPaths.some((rootPath) => isPathWithinRoot(installedPath, rootPath)) &&
+    !projectRootPaths.some((rootPath) => isPathWithinRoot(installedPath, rootPath))
   ) {
     throw new Error("That skill cannot be removed from here.");
   }
