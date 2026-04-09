@@ -53,9 +53,11 @@ export function SidebarProjectsSection({
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "settings" ||
+    activeView === "extensions" ||
     activeView === "skills";
-  const skillsSelectionMode = activeView === "skills" && projectScopeLockActive;
-  const showProjectCreate = activeView !== "skills";
+  const selectionModeActive =
+    (activeView === "extensions" || activeView === "skills") && projectScopeLockActive;
+  const showProjectCreate = activeView !== "extensions" && activeView !== "skills";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -232,7 +234,7 @@ export function SidebarProjectsSection({
             selectedProjectId={selectedProjectId}
             selectedThreadId={selectedThreadId}
             activeView={activeView}
-            selectionModeActive={skillsSelectionMode}
+            selectionModeActive={selectionModeActive}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={(action, payload) => {
               void onAction(action, payload);

@@ -208,7 +208,9 @@ export function SkillCreatorSection({
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span>No global skill creator detected. Install the bundled skill creator?</span>
+              <span>
+                No skill creator detected for this scope. Install the bundled skill creator?
+              </span>
               <TextButton
                 className="h-auto rounded-md px-1.5 py-0 text-[12px] text-[color:var(--text)]"
                 onClick={() => {

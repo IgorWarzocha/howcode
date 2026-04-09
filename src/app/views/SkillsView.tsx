@@ -140,8 +140,9 @@ export function SkillsView({
   const activeScope = installScope === "project" ? "project" : "user";
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === "user").length;
   const projectSkillCount = configuredSkills.filter((skill) => skill.scope === "project").length;
-  const hasGlobalSkillCreator = configuredSkills.some(
-    (skill) => skill.scope === "user" && isSkillCreatorCandidate(skill),
+  const skillCreatorDetected = configuredSkills.some(
+    (skill) =>
+      isSkillCreatorCandidate(skill) && (skill.scope === "user" || installScope === "project"),
   );
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
@@ -257,7 +258,7 @@ export function SkillsView({
       <SkillCreatorSection
         installScope={installScope}
         projectPath={projectPath}
-        skillCreatorDetected={hasGlobalSkillCreator}
+        skillCreatorDetected={skillCreatorDetected}
         onRefreshSkillCreatorDetection={() => configuredSkillsQuery.refetch()}
         onInvalidateConfiguredSkillsCaches={() => invalidateConfiguredSkillsCaches()}
         onSetActionError={setActionError}

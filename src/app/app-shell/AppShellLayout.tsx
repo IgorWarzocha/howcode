@@ -35,9 +35,14 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleToggleSidebar,
     pendingProjectAction,
     projects,
+    extensionsProjectScopeActive,
     skillsProjectScopeActive,
     state,
   } = controller;
+  const projectScopeLockActive = extensionsProjectScopeActive || skillsProjectScopeActive;
+  const effectiveCollapsedProjectIds = projectScopeLockActive
+    ? Object.fromEntries(projects.map((project) => [project.id, true]))
+    : collapsedProjectIds;
 
   const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
   const takeoverVisible = state.takeoverVisible;
@@ -75,11 +80,17 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
-            projectScopeLockActive={skillsProjectScopeActive}
-            collapsedProjectIds={collapsedProjectIds}
+            projectScopeLockActive={projectScopeLockActive}
+            collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}
             onToggleSettings={handleToggleSettings}
+            onOpenExtensionsView={() => {
+              handleShowView("extensions");
+              if (state.settingsOpen) {
+                handleToggleSettings();
+              }
+            }}
             onOpenSkillsView={() => {
               handleShowView("skills");
               if (state.settingsOpen) {

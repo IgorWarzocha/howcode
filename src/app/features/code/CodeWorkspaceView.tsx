@@ -194,6 +194,7 @@ export function CodeWorkspaceView({
               onAction={handleAction}
               onLoadEarlierMessages={handleLoadEarlierMessages}
               onOpenTurnDiff={handleOpenDiffSelection}
+              onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
               onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
               onSelectProject={controller.handleProjectSelect}
             />

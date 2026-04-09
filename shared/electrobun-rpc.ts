@@ -9,7 +9,10 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
   PiConfiguredSkill,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectDiffResult,
@@ -35,6 +38,27 @@ export type PiDesktopRpc = {
       getShellState: { params: Record<string, never>; response: ShellState };
       getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null };
       getProjectDiff: { params: { projectId: string }; response: ProjectDiffResult | null };
+      searchPiPackages: {
+        params: { query?: string | null; cursor?: number | null; pageSize?: number | null };
+        response: PiPackageCatalogPage;
+      };
+      getConfiguredPiPackages: {
+        params: { projectPath?: string | null };
+        response: PiConfiguredPackage[];
+      };
+      installPiPackage: {
+        params: {
+          source: string;
+          kind?: "npm" | "git";
+          local?: boolean;
+          projectPath?: string | null;
+        };
+        response: PiPackageMutationResult;
+      };
+      removePiPackage: {
+        params: { source: string; local?: boolean; projectPath?: string | null };
+        response: PiPackageMutationResult;
+      };
       searchPiSkills: {
         params: { query?: string | null; limit?: number | null };
         response: PiSkillCatalogPage;

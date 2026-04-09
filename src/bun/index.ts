@@ -12,7 +12,10 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
   PiConfiguredSkill,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectDiffResult,
@@ -38,6 +41,25 @@ type PiThreadsModule = {
   ) => Promise<Record<string, unknown> | null | undefined>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadComposerState: (request: Record<string, unknown>) => Promise<ComposerState>;
+  searchPiPackages: (request?: {
+    query?: string | null;
+    cursor?: number | null;
+    pageSize?: number | null;
+  }) => Promise<PiPackageCatalogPage>;
+  listConfiguredPiPackages: (request?: { projectPath?: string | null }) => Promise<
+    PiConfiguredPackage[]
+  >;
+  installPiPackage: (request: {
+    source: string;
+    kind?: "npm" | "git";
+    local?: boolean;
+    projectPath?: string | null;
+  }) => Promise<PiPackageMutationResult>;
+  removePiPackage: (request: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => Promise<PiPackageMutationResult>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectDiff: (projectId: string) => Promise<ProjectDiffResult | null>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
@@ -135,6 +157,15 @@ async function normalizeDialogFilePaths(filePaths: string[]) {
   }
 
   return normalized;
+}
+
+function isSafeExternalUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function isPathWithinRoot(candidatePath: string, rootPath: string) {
@@ -239,7 +270,7 @@ async function getMainViewUrl(): Promise<string> {
 }
 
 const rpc = BrowserView.defineRPC<PiDesktopRpc>({
-  maxRequestTime: 60_000,
+  maxRequestTime: 300_000,
   handlers: {
     requests: {
       getShellState: async () => piThreads.loadShellState(process.cwd()) as Promise<ShellState>,
@@ -247,6 +278,14 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId }) =>
         (await piThreads.loadProjectDiff(projectId)) as ProjectDiffResult | null,
+      searchPiPackages: async (request) =>
+        piThreads.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
+      getConfiguredPiPackages: async (request) =>
+        piThreads.listConfiguredPiPackages(request) as Promise<PiConfiguredPackage[]>,
+      installPiPackage: async (request) =>
+        piThreads.installPiPackage(request) as Promise<PiPackageMutationResult>,
+      removePiPackage: async (request) =>
+        piThreads.removePiPackage(request) as Promise<PiPackageMutationResult>,
       searchPiSkills: async (request) =>
         piSkills.searchPiSkills(request) as Promise<PiSkillCatalogPage>,
       getConfiguredPiSkills: async (request) =>
@@ -332,7 +371,9 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         await terminalManager.closeTerminal(request);
         return { ok: true };
       },
-      openExternal: async ({ url }) => ({ ok: Utils.openExternal(url) }),
+      openExternal: async ({ url }) => ({
+        ok: isSafeExternalUrl(url) ? Utils.openExternal(url) : false,
+      }),
       openPath: async ({ path }) => ({ ok: Utils.openPath(path) }),
     },
     messages: {},

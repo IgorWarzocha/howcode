@@ -12,12 +12,12 @@ type ProjectRowProps = {
     attributes: DraggableAttributes;
     listeners: DraggableSyntheticListeners | undefined;
   };
+  canEdit: boolean;
+  canToggleExpanded: boolean;
   isActive: boolean;
   isDragging: boolean;
   isExpanded: boolean;
   hasRepoOrigin: boolean;
-  canEdit: boolean;
-  canToggleExpanded: boolean;
   name: string;
   renameDraft: string;
   isEditing: boolean;
@@ -36,12 +36,12 @@ export function ProjectRow({
   actionMenuId,
   actionMenuOpen,
   dragHandleProps,
+  canEdit,
+  canToggleExpanded,
   isActive,
   isDragging,
   isExpanded,
   hasRepoOrigin,
-  canEdit,
-  canToggleExpanded,
   name,
   renameDraft,
   isEditing,
@@ -95,7 +95,9 @@ export function ProjectRow({
       clickTimeoutRef.current = null;
     }
 
-    onEdit();
+    if (canEdit) {
+      onEdit();
+    }
   };
 
   return (
@@ -109,12 +111,15 @@ export function ProjectRow({
     >
       <button
         type="button"
-        className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
-        onClick={onToggleExpanded}
-        disabled={!canToggleExpanded}
+        className={cn(
+          "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out",
+          canToggleExpanded ? "hover:text-[color:var(--text)]" : "cursor-default",
+        )}
+        onClick={canToggleExpanded ? onToggleExpanded : undefined}
         aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         aria-expanded={isExpanded}
         aria-controls={threadGroupId}
+        disabled={!canToggleExpanded}
       >
         {hasRepoOrigin ? (
           <Github
@@ -167,8 +172,8 @@ export function ProjectRow({
         <button
           type="button"
           className={cn(
-            "flex min-h-8 min-w-0 cursor-grab items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] active:cursor-grabbing",
-            !dragHandleProps && "cursor-pointer active:cursor-pointer",
+            "flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
+            dragHandleProps ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
             isActive && "text-[color:var(--text)]",
           )}
           {...dragHandleProps?.attributes}
@@ -188,7 +193,7 @@ export function ProjectRow({
           "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
           actionMenuOpen && "opacity-100",
           isDragging && "opacity-100",
-          isEditing && "opacity-0 pointer-events-none",
+          isEditing && "pointer-events-none opacity-0",
           !showActions && "pointer-events-none opacity-0",
         )}
       >

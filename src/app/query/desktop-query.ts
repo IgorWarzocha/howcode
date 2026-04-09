@@ -4,7 +4,10 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
+  PiConfiguredPackage,
   PiConfiguredSkill,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectDiffResult,
@@ -17,6 +20,9 @@ import type {
 
 export const desktopQueryKeys = {
   shellState: () => ["desktop", "shellState"] as const,
+  piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
+  configuredPiPackages: (projectPath?: string | null) =>
+    ["desktop", "piPackages", "configured", projectPath ?? null] as const,
   piSkillCatalog: (query: string) => ["desktop", "piSkills", "catalog", query] as const,
   configuredPiSkills: (projectPath?: string | null) =>
     ["desktop", "piSkills", "configured", projectPath ?? null] as const,
@@ -56,6 +62,24 @@ export async function getProjectDiffQuery(projectId: string): Promise<ProjectDif
   return (await window.piDesktop?.getProjectDiff?.(projectId)) ?? null;
 }
 
+export async function searchPiPackagesQuery(
+  request: {
+    query?: string | null;
+    cursor?: number | null;
+    pageSize?: number | null;
+  } = {},
+): Promise<PiPackageCatalogPage> {
+  return (
+    (await window.piDesktop?.searchPiPackages?.(request)) ?? {
+      query: request.query?.trim() ?? "",
+      sort: "monthlyDownloads-desc",
+      total: 0,
+      nextCursor: null,
+      items: [],
+    }
+  );
+}
+
 export async function searchPiSkillsQuery(
   request: {
     query?: string | null;
@@ -69,6 +93,31 @@ export async function searchPiSkillsQuery(
       items: [],
     }
   );
+}
+
+export async function getConfiguredPiPackagesQuery(
+  request: {
+    projectPath?: string | null;
+  } = {},
+): Promise<PiConfiguredPackage[]> {
+  return (await window.piDesktop?.getConfiguredPiPackages?.(request)) ?? [];
+}
+
+export async function installPiPackageQuery(request: {
+  source: string;
+  kind?: "npm" | "git";
+  local?: boolean;
+  projectPath?: string | null;
+}): Promise<PiPackageMutationResult | null> {
+  return (await window.piDesktop?.installPiPackage?.(request)) ?? null;
+}
+
+export async function removePiPackageQuery(request: {
+  source: string;
+  local?: boolean;
+  projectPath?: string | null;
+}): Promise<PiPackageMutationResult | null> {
+  return (await window.piDesktop?.removePiPackage?.(request)) ?? null;
 }
 
 export async function getConfiguredPiSkillsQuery(

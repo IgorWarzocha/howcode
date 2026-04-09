@@ -1,4 +1,13 @@
-import { Archive, Clock3, Globe, LogOut, Settings, Sparkles, UserRound } from "lucide-react";
+import {
+  Archive,
+  Clock3,
+  Globe,
+  LogOut,
+  PackagePlus,
+  Settings,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import type { RefObject } from "react";
 import { popoverPanelClass } from "../../ui/classes";
 import { MenuItem } from "../common/MenuItem";
@@ -7,6 +16,7 @@ import { SurfacePanel } from "../common/SurfacePanel";
 type SettingsMenuProps = {
   menuId: string;
   open: boolean;
+  onOpenExtensionsView: () => void;
   onOpenSkillsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
@@ -16,6 +26,7 @@ type SettingsMenuProps = {
 export function SettingsMenu({
   menuId,
   open,
+  onOpenExtensionsView,
   onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
@@ -32,7 +43,7 @@ export function SettingsMenu({
       className={`motion-popover fixed bottom-12 left-2.5 z-40 grid w-72 gap-1 rounded-2xl p-2 ${popoverPanelClass}`}
     >
       <div className="flex items-center gap-3 rounded-2xl px-2.5 py-2 text-left">
-        <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--accent)]">
+        <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(183,186,245,0.16)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.08)]">
           <UserRound size={16} />
         </div>
         <div className="min-w-0">
@@ -45,6 +56,12 @@ export function SettingsMenu({
         icon={<Sparkles size={15} />}
         title="Skills"
         onClick={onOpenSkillsView}
+        role="menuitem"
+      />
+      <MenuItem
+        icon={<PackagePlus size={15} />}
+        title="Extensions"
+        onClick={onOpenExtensionsView}
         role="menuitem"
       />
       <MenuItem

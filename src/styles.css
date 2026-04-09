@@ -131,6 +131,50 @@ code {
   pointer-events: auto;
 }
 
+@keyframes standardSurfacePulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0.12), inset 0 0 14px rgba(183, 186, 245, 0.05);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0.28), inset 0 0 26px rgba(183, 186, 245, 0.14),
+      inset 0 0 42px rgba(183, 186, 245, 0.08);
+  }
+}
+
+.motion-surface-pulse {
+  position: relative;
+  isolation: isolate;
+}
+
+.motion-surface-pulse::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0);
+}
+
+.motion-surface-pulse > * {
+  position: relative;
+  z-index: 1;
+}
+
+.motion-sidebar-selection-pulse[data-pulse-active="true"] {
+  background-color: var(--sidebar);
+}
+
+.motion-sidebar-selection-pulse[data-pulse-active="true"]::before {
+  opacity: 1;
+  animation: standardSurfacePulse 2.8s ease-in-out infinite;
+}
+
 .motion-overlay-panel {
   opacity: 0;
   transform: translateY(var(--motion-slide-y-md));

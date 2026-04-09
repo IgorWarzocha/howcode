@@ -35,6 +35,7 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
@@ -124,10 +125,14 @@ export function useAppShellController() {
   }, [projects, state.selectedProjectId]);
 
   useEffect(() => {
+    if (state.activeView !== "extensions" && extensionsProjectScopeActive) {
+      setExtensionsProjectScopeActive(false);
+    }
+
     if (state.activeView !== "skills" && skillsProjectScopeActive) {
       setSkillsProjectScopeActive(false);
     }
-  }, [skillsProjectScopeActive, state.activeView]);
+  }, [extensionsProjectScopeActive, skillsProjectScopeActive, state.activeView]);
 
   const runDesktopAction = async (
     action: DesktopAction,
@@ -297,7 +302,10 @@ export function useAppShellController() {
     handleLoadEarlierMessages,
     handleProjectSelect: (projectId: string) =>
       dispatch({
-        type: state.activeView === "skills" ? "set-selected-project" : "select-project",
+        type:
+          state.activeView === "extensions" || state.activeView === "skills"
+            ? "set-selected-project"
+            : "select-project",
         projectId,
       }),
     handleProjectReorder,
@@ -311,9 +319,11 @@ export function useAppShellController() {
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleSidebar: () => dispatch({ type: "toggle-sidebar" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
+    handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
+    extensionsProjectScopeActive,
     projects,
     projectGitState,
     shellState,

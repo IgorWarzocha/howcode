@@ -10,7 +10,10 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  PiConfiguredPackage,
   PiConfiguredSkill,
+  PiPackageCatalogPage,
+  PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectDiffResult,
@@ -31,7 +34,7 @@ const desktopListeners = new Set<(event: DesktopEvent) => void>();
 const terminalListeners = new Set<(event: TerminalEvent) => void>();
 
 const rpc = Electroview.defineRPC<PiDesktopRpc>({
-  maxRequestTime: 60_000,
+  maxRequestTime: 300_000,
   handlers: {
     requests: {},
     messages: {
@@ -95,6 +98,22 @@ export const piDesktopApi = {
     (await getRpc()).request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
   getProjectDiff: async (projectId: string) =>
     (await getRpc()).request.getProjectDiff({ projectId }) as Promise<ProjectDiffResult | null>,
+  searchPiPackages: async (
+    request: { query?: string | null; cursor?: number | null; pageSize?: number | null } = {},
+  ) => (await getRpc()).request.searchPiPackages(request) as Promise<PiPackageCatalogPage>,
+  getConfiguredPiPackages: async (request: { projectPath?: string | null } = {}) =>
+    (await getRpc()).request.getConfiguredPiPackages(request) as Promise<PiConfiguredPackage[]>,
+  installPiPackage: async (request: {
+    source: string;
+    kind?: "npm" | "git";
+    local?: boolean;
+    projectPath?: string | null;
+  }) => (await getRpc()).request.installPiPackage(request) as Promise<PiPackageMutationResult>,
+  removePiPackage: async (request: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+  }) => (await getRpc()).request.removePiPackage(request) as Promise<PiPackageMutationResult>,
   searchPiSkills: async (request: { query?: string | null; limit?: number | null } = {}) =>
     (await getRpc()).request.searchPiSkills(request) as Promise<PiSkillCatalogPage>,
   getConfiguredPiSkills: async (request: { projectPath?: string | null } = {}) =>
@@ -153,6 +172,11 @@ export const piDesktopApi = {
     }) as Promise<TurnDiffResult | null>,
   getFullThreadDiff: async (sessionPath: string) =>
     (await getRpc()).request.getFullThreadDiff({ sessionPath }) as Promise<TurnDiffResult | null>,
+  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
+    (await getRpc()).request.invokeAction({
+      action,
+      payload,
+    }) as Promise<DesktopActionResult>,
   openTerminal: async (request: TerminalOpenRequest) =>
     (await getRpc()).request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
   writeTerminal: async (sessionId: string, data: string) => {
@@ -164,32 +188,16 @@ export const piDesktopApi = {
   closeTerminal: async (request: TerminalCloseRequest) => {
     await (await getRpc()).request.terminalClose(request);
   },
-  openExternal: async (url: string) => {
-    const response = await (await getRpc()).request.openExternal({ url });
-    return response.ok;
-  },
-  openPath: async (path: string) => {
-    const response = await (await getRpc()).request.openPath({ path });
-    return response.ok;
-  },
+  openExternal: async (url: string) =>
+    (await getRpc()).request.openExternal({ url }).then(({ ok }) => ok),
+  openPath: async (path: string) =>
+    (await getRpc()).request.openPath({ path }).then(({ ok }) => ok),
   subscribe: (listener: (event: DesktopEvent) => void) => {
     desktopListeners.add(listener);
-
-    void getElectroview().catch(() => undefined);
-
-    return () => {
-      desktopListeners.delete(listener);
-    };
+    return () => desktopListeners.delete(listener);
   },
   subscribeTerminal: (listener: (event: TerminalEvent) => void) => {
     terminalListeners.add(listener);
-
-    void getElectroview().catch(() => undefined);
-
-    return () => {
-      terminalListeners.delete(listener);
-    };
+    return () => terminalListeners.delete(listener);
   },
-  invokeAction: async (action: DesktopAction, payload: DesktopActionPayload = {}) =>
-    (await getRpc()).request.invokeAction({ action, payload }) as Promise<DesktopActionResult>,
 };
