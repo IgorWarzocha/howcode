@@ -113,5 +113,5 @@ See `docs/roadmap.md` and `docs/todolist.md` for the actual plan.
 ## Routing note for later
 
 - Defer router adoption until `/home/igorw/Work/howcode` has clearly navigable state worth encoding as route/search params.
-- Strong triggers for later adoption would be deep-linkable thread selection, diff turn/file selection, archived/settings panels, and real back/forward semantics.
+- Strong triggers for later adoption would be deep-linkable thread selection, diff turn/file selection, archived/app-settings panels, and real back/forward semantics.
 - Until then, reducer-driven shell state is intentionally simpler than introducing a route model too early.

@@ -28,7 +28,7 @@ export function SettingsView({
   return (
     <ViewShell maxWidthClassName="max-w-[760px]">
       <ViewHeader
-        title="Settings"
+        title="App settings"
         subtitle="Git commit model, skill creator model, project UI import, and favorite folders."
       />
 

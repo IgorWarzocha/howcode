@@ -420,4 +420,4 @@ Recommended fix:
 - modal overlays are real dialogs with focus management
 - active, selected, expanded, and pressed states are machine-readable
 - agents can locate major regions by landmark and label instead of CSS structure
-- a CDP script can open the app, navigate threads, send a prompt, open settings, and restore an archived thread using role/name/state queries alone
+- a CDP script can open the app, navigate threads, send a prompt, open app settings, and restore an archived thread using role/name/state queries alone

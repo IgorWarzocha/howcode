@@ -76,7 +76,7 @@ export function SettingsPanel({
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border)] px-6 py-5">
           <div>
             <div id={titleId} className="text-[18px] font-medium text-[color:var(--text)]">
-              Settings
+              App settings
             </div>
             <p className="mt-1 text-[13px] text-[color:var(--muted)]">
               Choose which Pi model should be used for git commit message generation when that flow
@@ -87,7 +87,7 @@ export function SettingsPanel({
             ref={closeButtonRef}
             className="p-1"
             onClick={onClose}
-            aria-label="Close settings dialog"
+            aria-label="Close app settings dialog"
           >
             <X size={16} />
           </TextButton>
