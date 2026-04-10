@@ -4,6 +4,7 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -27,6 +28,7 @@ export const desktopQueryKeys = {
   configuredPiSkills: (projectPath?: string | null) =>
     ["desktop", "piSkills", "configured", projectPath ?? null] as const,
   projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
+  inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
     ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
@@ -42,6 +44,10 @@ export async function getShellStateQuery(): Promise<ShellState | null> {
 
 export async function getProjectThreadsQuery(projectId: string): Promise<Thread[]> {
   return (await window.piDesktop?.getProjectThreads?.(projectId)) ?? [];
+}
+
+export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
+  return (await window.piDesktop?.getInboxThreads?.()) ?? [];
 }
 
 export async function getArchivedThreadsQuery(): Promise<ArchivedThread[]> {

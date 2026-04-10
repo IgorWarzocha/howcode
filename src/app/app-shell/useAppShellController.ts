@@ -1,7 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useReducer, useState } from "react";
-import type { ArchivedThread, ComposerState, ProjectGitState, ShellState } from "../desktop/types";
+import { useEffect, useMemo, useReducer, useState } from "react";
+import type {
+  ArchivedThread,
+  ComposerState,
+  InboxThread,
+  ProjectGitState,
+  ShellState,
+} from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
+import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
@@ -50,6 +57,12 @@ export function useAppShellController() {
     state.selectedSessionPath,
     threadRefreshKey,
     threadHistoryCompactions,
+  );
+  const inboxThreads = useDesktopInbox();
+  const selectedInboxThread = useMemo(
+    () =>
+      inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
+    [inboxThreads, state.selectedInboxSessionPath],
   );
 
   const {
@@ -128,6 +141,26 @@ export function useAppShellController() {
     skillsProjectScopeActive,
   });
 
+  useEffect(() => {
+    if (inboxThreads.length === 0) {
+      if (state.selectedInboxSessionPath !== null) {
+        dispatch({ type: "select-inbox-thread", sessionPath: null });
+      }
+      return;
+    }
+
+    const hasSelectedInboxThread = inboxThreads.some(
+      (thread) => thread.sessionPath === state.selectedInboxSessionPath,
+    );
+
+    if (!hasSelectedInboxThread) {
+      dispatch({
+        type: "select-inbox-thread",
+        sessionPath: inboxThreads[0]?.sessionPath ?? null,
+      });
+    }
+  }, [inboxThreads, state.selectedInboxSessionPath]);
+
   const handleShowView = (view: View) => {
     dispatch({ type: "show-view", view });
   };
@@ -147,6 +180,24 @@ export function useAppShellController() {
     setThreadHistoryCompactions(0);
     dispatch({ type: "open-thread", projectId, threadId, sessionPath });
     void handleAction("thread.open", { projectId, threadId, sessionPath });
+  };
+
+  const handleSelectInboxThread = (thread: InboxThread) => {
+    dispatch({ type: "select-inbox-thread", sessionPath: thread.sessionPath });
+
+    if (thread.unread) {
+      void handleAction("inbox.mark-read", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+      });
+    }
+  };
+
+  const handleDismissInboxThread = (thread: InboxThread) => {
+    void handleAction("inbox.dismiss", {
+      projectId: thread.projectId,
+      sessionPath: thread.sessionPath,
+    });
   };
 
   const handleLoadEarlierMessages = () => {
@@ -216,6 +267,8 @@ export function useAppShellController() {
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
+    handleDismissInboxThread,
+    inboxThreads,
     handleProjectSelect: (projectId: string) =>
       dispatch({
         type: getProjectSelectionAction(state.activeView),
@@ -225,6 +278,7 @@ export function useAppShellController() {
     handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
     handleSelectDiffTurn,
     handleShowView,
+    handleSelectInboxThread,
     handleThreadOpen,
     handleShowTakeoverTerminal: () => dispatch({ type: "show-takeover" }),
     handleToggleDiff: handleToggleDiffPanel,
@@ -241,6 +295,7 @@ export function useAppShellController() {
     shellState,
     skillsProjectScopeActive,
     state,
+    selectedInboxThread,
   };
 }
 

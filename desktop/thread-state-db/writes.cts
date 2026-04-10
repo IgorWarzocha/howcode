@@ -1,6 +1,10 @@
 import path from "node:path";
 import { getThreadStateDatabase } from "./db.cts";
-import type { SessionSummaryRecord, TurnDiffSummaryRecord } from "./types.cts";
+import type {
+  SessionSummaryRecord,
+  ThreadInboxMessageRecord,
+  TurnDiffSummaryRecord,
+} from "./types.cts";
 
 export function ensureProject(cwd: string) {
   const db = getThreadStateDatabase();
@@ -36,6 +40,7 @@ export function syncSessionSummaries(cwd: string, sessions: SessionSummaryRecord
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
+        title = excluded.title,
         last_modified_ms = excluded.last_modified_ms,
         updated_at = CURRENT_TIMESTAMP
     `,
@@ -74,10 +79,127 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
       ON CONFLICT(session_path) DO UPDATE SET
         id = excluded.id,
         cwd = excluded.cwd,
+        title = excluded.title,
         last_modified_ms = excluded.last_modified_ms,
         updated_at = CURRENT_TIMESTAMP
     `,
   ).run(session.id, session.cwd, session.sessionPath, session.title, session.lastModifiedMs);
+}
+
+export function setThreadRunningState(sessionPath: string, running: boolean) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE threads
+      SET running = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE session_path = ?
+    `,
+  ).run(running ? 1 : 0, sessionPath);
+}
+
+export function upsertInboxThreadPrompt(sessionPath: string, prompt: string | null) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      INSERT INTO inbox_items (session_path, unread, last_user_prompt)
+      VALUES (?, 0, ?)
+      ON CONFLICT(session_path) DO UPDATE SET
+        last_user_prompt = excluded.last_user_prompt,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+  ).run(sessionPath, prompt);
+}
+
+export function beginInboxThreadTurn(sessionPath: string, prompt: string | null) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      INSERT INTO inbox_items (
+        session_path,
+        unread,
+        last_user_prompt,
+        last_assistant_message_json,
+        last_assistant_preview,
+        last_assistant_at_ms
+      )
+      VALUES (?, 0, ?, NULL, NULL, NULL)
+      ON CONFLICT(session_path) DO UPDATE SET
+        unread = 0,
+        last_user_prompt = excluded.last_user_prompt,
+        last_assistant_message_json = NULL,
+        last_assistant_preview = NULL,
+        last_assistant_at_ms = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+  ).run(sessionPath, prompt);
+}
+
+export function markInboxThreadRead(sessionPath: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE inbox_items
+      SET unread = 0, updated_at = CURRENT_TIMESTAMP
+      WHERE session_path = ?
+    `,
+  ).run(sessionPath);
+}
+
+export function dismissInboxThread(sessionPath: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      DELETE FROM inbox_items
+      WHERE session_path = ?
+    `,
+  ).run(sessionPath);
+}
+
+export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      INSERT INTO inbox_items (
+        session_path,
+        unread,
+        last_user_prompt,
+        last_assistant_message_json,
+        last_assistant_preview,
+        last_assistant_at_ms
+      )
+      VALUES (?, 1, ?, ?, ?, ?)
+      ON CONFLICT(session_path) DO UPDATE SET
+        unread = 1,
+        last_user_prompt = excluded.last_user_prompt,
+        last_assistant_message_json = excluded.last_assistant_message_json,
+        last_assistant_preview = excluded.last_assistant_preview,
+        last_assistant_at_ms = excluded.last_assistant_at_ms,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+  ).run(
+    record.sessionPath,
+    record.userPrompt,
+    JSON.stringify(record.content),
+    record.preview,
+    record.lastAssistantAtMs,
+  );
+
+  db.prepare(
+    `
+      UPDATE threads
+      SET
+        last_assistant_message_json = ?,
+        last_assistant_preview = ?,
+        last_assistant_at_ms = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE session_path = ?
+    `,
+  ).run(
+    JSON.stringify(record.content),
+    record.preview,
+    record.lastAssistantAtMs,
+    record.sessionPath,
+  );
 }
 
 export function setProjectCollapsed(projectId: string, collapsed: boolean) {

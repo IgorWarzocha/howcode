@@ -102,6 +102,7 @@ export function useDesktopActionHandlers({
         setArchivedThreads,
         setComposerState,
         setProjectGitState,
+        queryClient,
       });
 
       return actionResult;
@@ -121,6 +122,7 @@ export function useDesktopActionHandlers({
       setComposerState,
       setProjectGitState,
       workspaceState,
+      queryClient,
     ],
   );
 

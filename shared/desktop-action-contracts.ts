@@ -111,6 +111,8 @@ export type DesktopActionPayloadMap = {
     text: string;
     attachments?: ComposerAttachment[];
   };
+  "inbox.mark-read": { sessionPath: string; projectId?: string | null };
+  "inbox.dismiss": { sessionPath: string; projectId?: string | null };
   "composer.host": EmptyActionPayload;
   "plugins.open-card": EmptyActionPayload;
   "automations.open-card": EmptyActionPayload;

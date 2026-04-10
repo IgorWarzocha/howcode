@@ -15,6 +15,7 @@ export type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopActionResultData,
+  InboxThread,
   ModelSelection,
   PiConfiguredPackage,
   PiConfiguredPackageType,

@@ -6,6 +6,7 @@ import type {
   ComposerStateRequest,
   DesktopActionResultData,
   DesktopEvent,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -32,6 +33,7 @@ export type PiThreadsModule = {
     payload: AnyDesktopActionPayload,
   ) => Promise<DesktopActionResultData | null | undefined>;
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
+  loadInboxThreadList: () => Promise<InboxThread[]>;
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
   searchPiPackages: (request?: {
     query?: string | null;

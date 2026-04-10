@@ -13,6 +13,7 @@ import { getPiModule } from "../pi-module.cts";
 import { loadProjectDiff, loadProjectGitState } from "../project-git.cts";
 import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
 import { setWatchedSessionPath } from "./session-watch.cts";
+export { loadInboxThreadList } from "./thread-loader.cts";
 
 type SessionSummary = {
   id: string;

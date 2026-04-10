@@ -10,6 +10,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -98,6 +99,7 @@ export type PiDesktopRpc = {
       };
       getComposerState: { params: ComposerStateRequest; response: ComposerState };
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
+      getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
       getThread: {
         params: { sessionPath: string; historyCompactions?: number };

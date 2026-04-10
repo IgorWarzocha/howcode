@@ -54,6 +54,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         <div className="relative w-[300px] max-w-[calc(100vw-1rem)] min-w-0 shrink-0">
           <Sidebar
             projects={projects}
+            inboxThreads={controller.inboxThreads}
             appSettings={
               controller.shellState?.appSettings ?? {
                 gitCommitMessageModel: null,
@@ -66,6 +67,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               }
             }
             activeView={state.activeView}
+            selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
@@ -98,8 +100,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 handleToggleSettings();
               }
             }}
+            onDismissInboxThread={controller.handleDismissInboxThread}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
+            onSelectInboxThread={controller.handleSelectInboxThread}
             onThreadOpen={handleThreadOpen}
             onToggleProjectCollapse={handleToggleProjectCollapse}
           />

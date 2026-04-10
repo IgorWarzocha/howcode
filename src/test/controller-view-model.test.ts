@@ -24,6 +24,7 @@ describe("deriveControllerViewModel", () => {
       workspaceState: {
         activeView: "thread",
         selectedProjectId: "/repo",
+        selectedInboxSessionPath: null,
         selectedThreadId: "thread-1",
         selectedSessionPath: "/repo/session.json",
         terminalVisible: false,

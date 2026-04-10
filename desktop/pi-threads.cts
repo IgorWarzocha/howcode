@@ -7,6 +7,7 @@ export {
 } from "./pi-packages/index.cts";
 export {
   loadArchivedThreadList,
+  loadInboxThreadList,
   loadProjectThreads,
   loadThread,
 } from "./pi-threads/thread-loader.cts";

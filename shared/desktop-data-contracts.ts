@@ -4,7 +4,23 @@ export type Thread = {
   age: string;
   sessionPath?: string;
   summary?: string;
+  running?: boolean;
+  unread?: boolean;
   pinned?: boolean;
+};
+
+export type InboxThread = {
+  threadId: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  sessionPath: string;
+  age: string;
+  prompt: string | null;
+  content: string[];
+  preview: string | null;
+  running: boolean;
+  unread: boolean;
 };
 
 export type Project = {

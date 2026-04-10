@@ -157,6 +157,16 @@ Key files:
 - [ ] Replace mock plugin/automation/debug data or remove views
 - [ ] Add richer thread block renderers
 
+#### 7a. Thread naming from compaction summaries
+- [ ] Rename thread titles from compaction summaries instead of leaving them as first-user-message truncations
+- [ ] Trigger the rename only when a new compaction is detected so we avoid recomputing titles on ordinary thread updates
+- [ ] Keep the rename path lightweight; if needed, use a very short Pi prompt or a custom compaction extension/addon that emits a dedicated `thread name` string alongside the summary
+  - likely files: `shared/pi-message-mapper.ts`, `shared/thread-data.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`, and any future Pi extension/addon hook
+
+#### 7b. Inbox
+- [x] Ship the persisted inbox mailbox flow in the app shell
+- [ ] Finish the remaining supporting feature work around it; inbox itself is now functionally useful but still partial because it depends on surrounding thread/product features that are still in flight
+
 Key files:
 - `src/app/AppShell.tsx`
 - `src/app/app-shell/*`

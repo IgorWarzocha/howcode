@@ -3,6 +3,7 @@ import type { Project, Thread, View } from "../types";
 export type WorkspaceState = {
   activeView: View;
   selectedProjectId: string;
+  selectedInboxSessionPath: string | null;
   selectedThreadId: string | null;
   selectedSessionPath: string | null;
   terminalVisible: boolean;
@@ -19,6 +20,7 @@ export type WorkspaceState = {
 export type WorkspaceAction =
   | { type: "sync-projects"; projects: Project[] }
   | { type: "show-view"; view: View }
+  | { type: "select-inbox-thread"; sessionPath: string | null }
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
@@ -42,6 +44,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
   return {
     activeView: "code",
     selectedProjectId: firstProject?.id ?? "",
+    selectedInboxSessionPath: null,
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
@@ -101,6 +104,11 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
         selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
+      };
+    case "select-inbox-thread":
+      return {
+        ...state,
+        selectedInboxSessionPath: action.sessionPath,
       };
     case "select-project":
       return {

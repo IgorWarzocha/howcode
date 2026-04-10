@@ -27,6 +27,10 @@ export function getProjectId(payload: DesktopActionPayloadInput) {
   return typeof payload.projectId === "string" ? payload.projectId : null;
 }
 
+export function getSessionPath(payload: DesktopActionPayloadInput) {
+  return typeof payload.sessionPath === "string" ? payload.sessionPath : null;
+}
+
 export function getThreadId(payload: DesktopActionPayloadInput) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
 }

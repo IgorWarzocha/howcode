@@ -28,8 +28,42 @@ export type ThreadRow = {
   id: string;
   title: string;
   sessionPath: string;
+  summary: string | null;
+  running: number;
+  unread: number;
   pinned: number;
   lastModifiedMs: number;
+};
+
+export type InboxThreadRow = {
+  threadId: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  sessionPath: string;
+  lastUserPrompt: string | null;
+  lastAssistantMessageJson: string | null;
+  lastAssistantPreview: string | null;
+  running: number;
+  unread: number;
+  lastActivityMs: number;
+};
+
+export type ThreadInboxMessageRecord = {
+  sessionPath: string;
+  userPrompt: string | null;
+  content: string[];
+  preview: string | null;
+  lastAssistantAtMs: number;
+};
+
+export type InboxPathRow = {
+  sessionPath: string;
+};
+
+export type ThreadAssistantSnapshotRow = {
+  messageJson: string | null;
+  preview: string | null;
 };
 
 export type ArchivedThreadRow = {

@@ -9,6 +9,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -88,6 +89,7 @@ declare global {
       }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
+      getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;
       watchSession?: (sessionPath: string | null) => Promise<void>;

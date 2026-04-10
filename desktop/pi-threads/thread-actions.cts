@@ -1,12 +1,18 @@
 import { unlink } from "node:fs/promises";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
-import { getComposerRequest, getThreadId } from "../../shared/pi-thread-action-payloads.ts";
+import {
+  getComposerRequest,
+  getSessionPath,
+  getThreadId,
+} from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
 import {
   archiveThread,
   deleteThreadRecord,
+  dismissInboxThread,
   getThreadSessionPath,
+  markInboxThreadRead,
   restoreThread,
   toggleThreadPinned,
 } from "../thread-state-db.cts";
@@ -46,9 +52,14 @@ export async function handleThreadDesktopAction(
       return handledAction();
     }
 
-    case "thread.open":
+    case "thread.open": {
+      const sessionPath = getSessionPath(payload);
       await openThreadRuntime(getComposerRequest(payload));
+      if (sessionPath) {
+        markInboxThreadRead(sessionPath);
+      }
       return handledAction();
+    }
 
     case "thread.archive": {
       const threadId = getThreadId(payload);
@@ -76,6 +87,22 @@ export async function handleThreadDesktopAction(
 
     case "thread.new":
       return handledAction(await startNewThread(getComposerRequest(payload)));
+
+    case "inbox.mark-read": {
+      const sessionPath = getSessionPath(payload);
+      if (sessionPath) {
+        markInboxThreadRead(sessionPath);
+      }
+      return handledAction();
+    }
+
+    case "inbox.dismiss": {
+      const sessionPath = getSessionPath(payload);
+      if (sessionPath) {
+        dismissInboxThread(sessionPath);
+      }
+      return handledAction();
+    }
 
     default:
       return unhandledAction();

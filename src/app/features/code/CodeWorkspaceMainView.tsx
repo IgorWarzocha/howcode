@@ -3,10 +3,11 @@ import type {
   AppSettings,
   ComposerModel,
   DesktopActionInvoker,
-  DesktopActionResult,
+  InboxThread,
   ThreadData,
 } from "../../desktop/types";
 import type { Project, View } from "../../types";
+import { InboxView } from "../../views/InboxView";
 import { LandingView } from "../../views/LandingView";
 import { SettingsView } from "../../views/SettingsView";
 import { ThreadView } from "../../views/ThreadView";
@@ -27,12 +28,15 @@ type CodeWorkspaceMainViewProps = {
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
   currentProjectName: string;
+  selectedInboxThread: InboxThread | null;
   projects: Project[];
   selectedProjectId: string;
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
   onAction: DesktopActionInvoker;
+  onDismissInboxThread: (thread: InboxThread) => void;
+  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
   onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
@@ -46,12 +50,15 @@ export function CodeWorkspaceMainView({
   availableModels,
   currentModel,
   currentProjectName,
+  selectedInboxThread,
   projects,
   selectedProjectId,
   workspaceContentClass,
   threadData,
   composerLayoutVersion,
   onAction,
+  onDismissInboxThread,
+  onOpenThread,
   onOpenTurnDiff,
   onLoadEarlierMessages,
   onSetExtensionsProjectScopeActive,
@@ -69,6 +76,18 @@ export function CodeWorkspaceMainView({
         composerLayoutVersion={composerLayoutVersion}
         onOpenTurnDiff={onOpenTurnDiff}
         onLoadEarlierMessages={onLoadEarlierMessages}
+      />
+    );
+  }
+
+  if (activeView === "inbox") {
+    return (
+      <InboxView
+        key={selectedInboxThread?.sessionPath ?? "inbox-empty"}
+        thread={selectedInboxThread}
+        onAction={onAction}
+        onDismissThread={onDismissInboxThread}
+        onOpenThread={onOpenThread}
       />
     );
   }
