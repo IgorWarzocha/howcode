@@ -11,6 +11,7 @@ import type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -156,6 +157,8 @@ export const piDesktopApi = {
     (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
   getProjectThreads: async (projectId: string) =>
     (await getRpc()).request.getProjectThreads({ projectId }) as Promise<Thread[]>,
+  getInboxThreads: async () =>
+    (await getRpc()).request.getInboxThreads({}) as Promise<InboxThread[]>,
   getArchivedThreads: async () =>
     (await getRpc()).request.getArchivedThreads({}) as Promise<ArchivedThread[]>,
   getThread: async (sessionPath: string, historyCompactions = 0) =>

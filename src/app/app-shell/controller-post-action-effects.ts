@@ -275,6 +275,7 @@ type RunPostDesktopActionEffectsInput = {
   setArchivedThreads: (threads: ArchivedThread[]) => void;
   setComposerState: (state: ComposerState | null) => void;
   setProjectGitState: (state: ProjectGitState | null) => void;
+  queryClient: QueryClient;
 };
 
 export async function runPostDesktopActionEffects({
@@ -292,7 +293,11 @@ export async function runPostDesktopActionEffects({
   setArchivedThreads,
   setComposerState,
   setProjectGitState,
+  queryClient,
 }: RunPostDesktopActionEffectsInput) {
+  const invalidateInboxThreads = () =>
+    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
+
   if (action === "thread.pin" || action === "thread.archive") {
     const projectId = getPayloadProjectId(contextualPayload);
     if (projectId) {
@@ -313,6 +318,8 @@ export async function runPostDesktopActionEffects({
     ) {
       dispatch({ type: "show-view", view: "code" });
     }
+
+    await invalidateInboxThreads();
   }
 
   if (action === "thread.restore" || action === "thread.delete") {
@@ -329,6 +336,18 @@ export async function runPostDesktopActionEffects({
     ) {
       dispatch({ type: "show-view", view: "code" });
     }
+
+    await invalidateInboxThreads();
+  }
+
+  if (action === "thread.open" || action === "inbox.mark-read" || action === "inbox.dismiss") {
+    const projectId = getPayloadProjectId(contextualPayload);
+
+    if (projectId) {
+      await loadProjectThreads(projectId);
+    }
+
+    await invalidateInboxThreads();
   }
 
   if (action === "project.edit-name") {
@@ -365,6 +384,8 @@ export async function runPostDesktopActionEffects({
     if (contextualPayload.projectId === workspaceState.selectedProjectId) {
       dispatch({ type: "show-view", view: "code" });
     }
+
+    await invalidateInboxThreads();
   }
 
   if (action === "project.remove-project") {
@@ -378,6 +399,8 @@ export async function runPostDesktopActionEffects({
       loadArchivedThreads,
       setArchivedThreads,
     });
+
+    await invalidateInboxThreads();
   }
 
   if (action === "settings.update") {

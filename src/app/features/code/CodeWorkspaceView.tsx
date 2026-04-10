@@ -186,12 +186,15 @@ export function CodeWorkspaceView({
               availableModels={activeComposerState?.availableModels ?? []}
               currentModel={activeComposerState?.currentModel ?? null}
               currentProjectName={currentProjectName}
+              selectedInboxThread={controller.selectedInboxThread}
               projects={controller.projects}
               selectedProjectId={controller.state.selectedProjectId}
               workspaceContentClass={workspaceContentClass}
               threadData={activeThreadData}
               composerLayoutVersion={composerLayoutVersion}
               onAction={handleAction}
+              onDismissInboxThread={controller.handleDismissInboxThread}
+              onOpenThread={controller.handleThreadOpen}
               onLoadEarlierMessages={handleLoadEarlierMessages}
               onOpenTurnDiff={handleOpenDiffSelection}
               onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}

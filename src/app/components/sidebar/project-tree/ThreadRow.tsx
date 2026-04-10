@@ -1,10 +1,13 @@
 import { Archive, Star } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
+import { ActivitySpinner } from "../../common/ActivitySpinner";
 
 type ThreadRowProps = {
   age: string;
   pinned?: boolean;
+  running?: boolean;
+  unread?: boolean;
   isSelected: boolean;
   title: string;
   onArchive: () => void;
@@ -15,6 +18,8 @@ type ThreadRowProps = {
 export function ThreadRow({
   age,
   pinned = false,
+  running = false,
+  unread = false,
   isSelected,
   title,
   onArchive,
@@ -29,26 +34,35 @@ export function ThreadRow({
           "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
       )}
     >
-      <button
-        type="button"
-        className={cn(
-          "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] group-hover:opacity-100 group-focus-within:opacity-100",
-          pinned ? "opacity-100 text-[color:var(--text)]" : "opacity-0",
-          isSelected && "opacity-100",
-        )}
-        onClick={onPin}
-        aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
-        aria-pressed={pinned}
-      >
-        <Star size={12} className={cn("absolute inset-0 m-auto", pinned && "fill-current")} />
-      </button>
+      {running ? (
+        <span className="inline-flex h-4 w-4 items-center justify-center text-[color:var(--text)]">
+          <ActivitySpinner />
+        </span>
+      ) : (
+        <button
+          type="button"
+          className={cn(
+            "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] group-hover:opacity-100 group-focus-within:opacity-100",
+            pinned ? "opacity-100 text-[color:var(--text)]" : "opacity-0",
+            isSelected && "opacity-100",
+          )}
+          onClick={onPin}
+          aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
+          aria-pressed={pinned}
+        >
+          <Star size={12} className={cn("absolute inset-0 m-auto", pinned && "fill-current")} />
+        </button>
+      )}
 
       <button
         type="button"
-        className="flex min-w-0 items-center py-1 text-left"
+        className="flex min-w-0 items-center gap-1.5 py-1 text-left"
         onClick={onOpen}
         aria-current={isSelected ? "page" : undefined}
       >
+        {unread ? (
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[rgba(183,186,245,0.95)]" />
+        ) : null}
         <span className="truncate">{title}</span>
       </button>
 

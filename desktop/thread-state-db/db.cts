@@ -13,11 +13,10 @@ function getDatabasePath() {
 }
 
 export function getThreadStateDatabase() {
-  if (database) {
-    return database;
+  if (!database) {
+    database = new Database(getDatabasePath());
   }
 
-  database = new Database(getDatabasePath());
   ensureThreadStateSchema(database);
   return database;
 }

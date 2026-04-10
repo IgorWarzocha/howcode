@@ -280,6 +280,8 @@ export function ProjectTree({
                                 key={thread.id}
                                 age={thread.age}
                                 pinned={Boolean(thread.pinned)}
+                                running={Boolean(thread.running)}
+                                unread={Boolean(thread.unread)}
                                 isSelected={isSelected}
                                 title={thread.title}
                                 onArchive={() =>

@@ -1,8 +1,11 @@
 export type { SessionSummaryRecord } from "./thread-state-db/types.cts";
 export {
+  getThreadAssistantSnapshot,
   getLatestTurnDiffSummary,
   getThreadCwd,
   getThreadSessionPath,
+  hasInboxItem,
+  listInboxThreads,
   listArchivedThreads,
   listProjectThreads,
   listProjects,
@@ -11,10 +14,13 @@ export {
 export {
   archiveProjectThreads,
   archiveThread,
+  beginInboxThreadTurn,
   collapseAllProjects,
   deleteThreadRecord,
+  dismissInboxThread,
   ensureProject,
   hideProject,
+  markInboxThreadRead,
   moveProjectToTop,
   reorderProjects,
   renameProject,
@@ -22,8 +28,11 @@ export {
   setProjectRepoOrigin,
   setProjectCollapsed,
   syncSessionSummaries,
+  setThreadRunningState,
   toggleProjectPinned,
   toggleThreadPinned,
+  upsertInboxThreadPrompt,
+  upsertInboxThreadMessage,
   upsertThreadSummary,
   upsertTurnDiffSummary,
 } from "./thread-state-db/writes.cts";

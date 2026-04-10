@@ -8,6 +8,7 @@ import type {
   ComposerState,
   DesktopActionResult,
   DesktopEvent,
+  InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -92,6 +93,7 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         piThreads.loadComposerState(request) as Promise<ComposerState>,
       getProjectThreads: async ({ projectId }) =>
         piThreads.loadProjectThreads(projectId) as Promise<Thread[]>,
+      getInboxThreads: async () => piThreads.loadInboxThreadList() as Promise<InboxThread[]>,
       getArchivedThreads: async () =>
         piThreads.loadArchivedThreadList() as Promise<ArchivedThread[]>,
       getThread: async ({ sessionPath, historyCompactions = 0 }) =>

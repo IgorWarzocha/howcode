@@ -11,5 +11,6 @@
 - UI updates must be optimistic; persist to the DB in the background.
 - Reuse established UI structure, components, and styling; avoid one-off patterns unless explicitly requested.
 - Keep UI self-explanatory; prefer strong visual cues over explanatory copy.
+- Default interactable UI controls to lucide icon affordances with hover/tooltip text rather than persistent button labels, unless the user explicitly asks for visible text.
 - UI must flow; popovers and transitions should stay aligned to their source element.
 - Editing a field must not change layout metrics; keep size, spacing, and typography stable unless asked otherwise.

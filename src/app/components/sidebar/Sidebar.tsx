@@ -1,6 +1,6 @@
-import { BriefcaseBusiness, Code2, MessageSquare, PawPrint, Settings } from "lucide-react";
+import { BriefcaseBusiness, Code2, Inbox, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
-import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker, InboxThread } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
@@ -8,12 +8,15 @@ import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
+import { SidebarInboxSection } from "./inbox/SidebarInboxSection";
 import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 
 type SidebarProps = {
   projects: Project[];
+  inboxThreads: InboxThread[];
   appSettings: AppSettings;
   activeView: View;
+  selectedInboxSessionPath: string | null;
   selectedProjectId: string;
   selectedThreadId: string | null;
   settingsOpen: boolean;
@@ -26,16 +29,20 @@ type SidebarProps = {
   onOpenSkillsView: () => void;
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
+  onDismissInboxThread: (thread: InboxThread) => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
+  onSelectInboxThread: (thread: InboxThread) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
 };
 
 export function Sidebar({
   projects,
+  inboxThreads,
   appSettings,
   activeView,
+  selectedInboxSessionPath,
   selectedProjectId,
   selectedThreadId,
   settingsOpen,
@@ -48,8 +55,10 @@ export function Sidebar({
   onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
+  onDismissInboxThread,
   onProjectSelect,
   onProjectReorder,
+  onSelectInboxThread,
   onThreadOpen,
   onToggleProjectCollapse,
 }: SidebarProps) {
@@ -58,6 +67,7 @@ export function Sidebar({
   const settingsMenuId = "sidebar-settings-menu";
   const settingsMenuPresent = useAnimatedPresence(settingsOpen);
   const codeModeActive =
+    activeView === "inbox" ||
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "settings" ||
@@ -84,6 +94,17 @@ export function Sidebar({
     >
       {showModeSelection ? (
         <nav className="grid gap-0.5" aria-label="Primary navigation">
+          <NavButton
+            icon={<Inbox size={16} />}
+            label={
+              <span className="inline-flex items-center gap-2">
+                <span>Inbox</span>
+                <FeatureStatusBadge statusId="feature:sidebar.inbox" />
+              </span>
+            }
+            active={activeView === "inbox"}
+            onClick={() => onShowView("inbox")}
+          />
           <NavButton
             icon={<MessageSquare size={16} />}
             label={
@@ -120,27 +141,36 @@ export function Sidebar({
           <NavButton
             icon={<Code2 size={16} />}
             label="Code"
-            active={codeModeActive}
+            active={codeModeActive && activeView !== "inbox"}
             onClick={() => onShowView("code")}
           />
         </nav>
       ) : null}
 
-      <SidebarProjectsSection
-        activeView={activeView}
-        appSettings={appSettings}
-        projectScopeLockActive={projectScopeLockActive}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        selectedThreadId={selectedThreadId}
-        collapsedProjectIds={collapsedProjectIds}
-        onAction={onAction}
-        onOpenSettingsPanel={onOpenSettingsPanel}
-        onProjectSelect={onProjectSelect}
-        onProjectReorder={onProjectReorder}
-        onThreadOpen={onThreadOpen}
-        onToggleProjectCollapse={onToggleProjectCollapse}
-      />
+      {activeView === "inbox" ? (
+        <SidebarInboxSection
+          threads={inboxThreads}
+          selectedSessionPath={selectedInboxSessionPath}
+          onDismissThread={onDismissInboxThread}
+          onSelectThread={onSelectInboxThread}
+        />
+      ) : (
+        <SidebarProjectsSection
+          activeView={activeView}
+          appSettings={appSettings}
+          projectScopeLockActive={projectScopeLockActive}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          selectedThreadId={selectedThreadId}
+          collapsedProjectIds={collapsedProjectIds}
+          onAction={onAction}
+          onOpenSettingsPanel={onOpenSettingsPanel}
+          onProjectSelect={onProjectSelect}
+          onProjectReorder={onProjectReorder}
+          onThreadOpen={onThreadOpen}
+          onToggleProjectCollapse={onToggleProjectCollapse}
+        />
+      )}
 
       <div className="relative mt-auto">
         <button

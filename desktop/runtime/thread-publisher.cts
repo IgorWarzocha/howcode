@@ -4,7 +4,14 @@ import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.t
 import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
 import { buildThreadData } from "../../shared/thread-data.ts";
 import { getTurnDiffSummaries } from "../diff/query.cts";
-import { upsertThreadSummary } from "../thread-state-db.cts";
+import {
+  beginInboxThreadTurn,
+  getThreadAssistantSnapshot,
+  hasInboxItem,
+  setThreadRunningState,
+  upsertInboxThreadMessage,
+  upsertThreadSummary,
+} from "../thread-state-db.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { emitDesktopEvent, subscribeDesktopEvents } from "./desktop-events.cts";
 import {
@@ -36,6 +43,66 @@ function buildLiveThreadData(runtime: PiRuntime) {
     isStreaming: runtime.session.isStreaming,
     turnDiffSummaries: getTurnDiffSummaries(sessionPath),
   });
+}
+
+function getLatestAssistantMessage(thread: ThreadData) {
+  const latestAssistantMessage = [...thread.messages]
+    .reverse()
+    .find((message) => message.role === "assistant");
+
+  if (!latestAssistantMessage || latestAssistantMessage.role !== "assistant") {
+    return null;
+  }
+
+  const content =
+    latestAssistantMessage.content.length > 0
+      ? latestAssistantMessage.content
+      : (latestAssistantMessage.thinkingContent ?? []);
+
+  if (content.length === 0) {
+    return null;
+  }
+
+  return {
+    content,
+    preview:
+      latestAssistantMessage.content[0] ??
+      latestAssistantMessage.thinkingHeaders?.[0] ??
+      latestAssistantMessage.thinkingContent?.[0] ??
+      null,
+  };
+}
+
+function hasAssistantMessageChanged(
+  sessionPath: string,
+  latestAssistantMessage: ReturnType<typeof getLatestAssistantMessage>,
+) {
+  if (!latestAssistantMessage) {
+    return false;
+  }
+
+  const storedAssistantSnapshot = getThreadAssistantSnapshot(sessionPath);
+  if (!storedAssistantSnapshot) {
+    return true;
+  }
+
+  return (
+    storedAssistantSnapshot.messageJson !== JSON.stringify(latestAssistantMessage.content) ||
+    storedAssistantSnapshot.preview !== latestAssistantMessage.preview
+  );
+}
+
+function getLatestUserPrompt(thread: ThreadData) {
+  const latestUserMessage = [...thread.messages]
+    .reverse()
+    .find((message) => message.role === "user");
+
+  if (!latestUserMessage || latestUserMessage.role !== "user") {
+    return null;
+  }
+
+  const prompt = latestUserMessage.content.join("\n\n").trim();
+  return prompt.length > 0 ? prompt : null;
 }
 
 export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReason) {
@@ -74,6 +141,32 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
       title: thread.title,
       lastModifiedMs: timestamp,
     });
+
+    setThreadRunningState(
+      sessionPath,
+      reason === "update" || (reason === "start" && thread.messages.length > 0),
+    );
+
+    if (reason === "start") {
+      const latestUserPrompt = getLatestUserPrompt(thread);
+      if (latestUserPrompt || hasInboxItem(sessionPath)) {
+        beginInboxThreadTurn(sessionPath, latestUserPrompt);
+      }
+    }
+
+    if (reason === "end") {
+      const latestUserPrompt = getLatestUserPrompt(thread);
+      const latestAssistantMessage = getLatestAssistantMessage(thread);
+      if (latestAssistantMessage) {
+        upsertInboxThreadMessage({
+          sessionPath,
+          userPrompt: latestUserPrompt,
+          content: latestAssistantMessage.content,
+          preview: latestAssistantMessage.preview,
+          lastAssistantAtMs: timestamp,
+        });
+      }
+    }
   }
 
   emitDesktopEvent({
@@ -109,6 +202,19 @@ export async function publishExternalThreadUpdate({
     title: thread.title,
     lastModifiedMs,
   });
+  setThreadRunningState(sessionPath, false);
+
+  const latestAssistantMessage = getLatestAssistantMessage(thread);
+  if (latestAssistantMessage && hasAssistantMessageChanged(sessionPath, latestAssistantMessage)) {
+    const latestUserPrompt = getLatestUserPrompt(thread);
+    upsertInboxThreadMessage({
+      sessionPath,
+      userPrompt: latestUserPrompt,
+      content: latestAssistantMessage.content,
+      preview: latestAssistantMessage.preview,
+      lastAssistantAtMs: lastModifiedMs,
+    });
+  }
 
   emitDesktopEvent({
     type: "thread-update",

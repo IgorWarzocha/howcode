@@ -172,6 +172,13 @@ export function useAppShellEffects({
       return;
     }
 
+    const visibleSessionPath =
+      workspaceState.activeView === "thread"
+        ? (workspaceState.selectedSessionPath ?? null)
+        : workspaceState.activeView === "inbox"
+          ? (workspaceState.selectedInboxSessionPath ?? null)
+          : null;
+
     const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
       if (event.type === "composer-update") {
         setComposerState(event.composer);
@@ -187,7 +194,33 @@ export function useAppShellEffects({
         setComposerState(event.composer);
       }
 
-      if (event.reason === "start") {
+      if (event.reason === "start" || event.reason === "end" || event.reason === "external") {
+        void loadProjectThreads(event.projectId);
+        void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
+        scheduleShellStateRefresh();
+      }
+
+      if (
+        (event.reason === "end" || event.reason === "external") &&
+        visibleSessionPath === event.sessionPath
+      ) {
+        void window.piDesktop
+          ?.invokeAction("inbox.mark-read", {
+            sessionPath: event.sessionPath,
+            projectId: event.projectId,
+          })
+          .then(async () => {
+            await Promise.all([
+              loadProjectThreads(event.projectId),
+              queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+            ]);
+          })
+          .catch((error) => {
+            console.warn("Failed to keep active inbox thread marked read.", error);
+          });
+      }
+
+      if (event.reason === "start" && workspaceState.activeView !== "inbox") {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
@@ -197,7 +230,6 @@ export function useAppShellEffects({
       }
 
       if (event.reason === "end" || event.reason === "external") {
-        void loadProjectThreads(event.projectId);
         void queryClient.invalidateQueries({
           queryKey: desktopQueryKeys.projectDiff(event.projectId),
         });
@@ -207,8 +239,6 @@ export function useAppShellEffects({
             setProjectGitState(nextProjectGitState);
           });
         }
-
-        scheduleShellStateRefresh();
       }
     });
 
@@ -222,5 +252,8 @@ export function useAppShellEffects({
     scheduleShellStateRefresh,
     setComposerState,
     setProjectGitState,
+    workspaceState.activeView,
+    workspaceState.selectedInboxSessionPath,
+    workspaceState.selectedSessionPath,
   ]);
 }

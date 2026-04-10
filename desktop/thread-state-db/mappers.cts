@@ -1,10 +1,33 @@
 import type {
   ArchivedThread,
+  InboxThread,
   Project,
   Thread,
   TurnDiffSummary,
 } from "../../shared/desktop-contracts.ts";
-import type { ArchivedThreadRow, ProjectRow, ThreadRow, TurnDiffRow } from "./types.cts";
+import type {
+  ArchivedThreadRow,
+  InboxThreadRow,
+  ProjectRow,
+  ThreadRow,
+  TurnDiffRow,
+} from "./types.cts";
+
+function parseStringArrayJson(value: string | null, context: string) {
+  if (!value) {
+    return [] as string[];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch (error) {
+    console.warn(`Failed to parse ${context}.`, error);
+    return [];
+  }
+}
 
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);
@@ -57,8 +80,27 @@ export function mapThreadRow(row: ThreadRow): Thread {
     id: row.id,
     title: row.title,
     age: formatRelativeAge(row.lastModifiedMs),
+    summary: row.summary ?? undefined,
+    running: Boolean(row.running),
+    unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
+  };
+}
+
+export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
+  return {
+    threadId: row.threadId,
+    title: row.title,
+    projectId: row.projectId,
+    projectName: row.projectName,
+    sessionPath: row.sessionPath,
+    age: formatRelativeAge(row.lastActivityMs),
+    prompt: row.lastUserPrompt,
+    content: parseStringArrayJson(row.lastAssistantMessageJson, `inbox thread ${row.sessionPath}`),
+    preview: row.lastAssistantPreview,
+    running: Boolean(row.running),
+    unread: Boolean(row.unread),
   };
 }
 

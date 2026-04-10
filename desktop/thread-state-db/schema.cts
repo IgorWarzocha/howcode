@@ -38,6 +38,10 @@ export function ensureThreadStateSchema(database: Database) {
       cwd TEXT NOT NULL,
       session_path TEXT NOT NULL UNIQUE,
       title TEXT NOT NULL,
+      last_assistant_message_json TEXT,
+      last_assistant_preview TEXT,
+      last_assistant_at_ms INTEGER,
+      running INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
       last_modified_ms INTEGER NOT NULL,
@@ -61,6 +65,20 @@ export function ensureThreadStateSchema(database: Database) {
     );
 
     CREATE INDEX IF NOT EXISTS thread_turn_diffs_by_path_idx ON thread_turn_diffs(session_path, checkpoint_turn_count DESC);
+
+    CREATE TABLE IF NOT EXISTS inbox_items (
+      session_path TEXT PRIMARY KEY,
+      unread INTEGER NOT NULL DEFAULT 1,
+      last_user_prompt TEXT,
+      last_assistant_message_json TEXT,
+      last_assistant_preview TEXT,
+      last_assistant_at_ms INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_path) REFERENCES threads(session_path) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS inbox_items_by_unread_idx ON inbox_items(unread DESC, last_assistant_at_ms DESC);
 
     CREATE TABLE IF NOT EXISTS app_preferences (
       key TEXT PRIMARY KEY,
@@ -91,6 +109,26 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "projects", "repo_origin_checked")) {
     database.exec("ALTER TABLE projects ADD COLUMN repo_origin_checked INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "threads", "last_assistant_message_json")) {
+    database.exec("ALTER TABLE threads ADD COLUMN last_assistant_message_json TEXT");
+  }
+
+  if (!hasColumn(database, "threads", "last_assistant_preview")) {
+    database.exec("ALTER TABLE threads ADD COLUMN last_assistant_preview TEXT");
+  }
+
+  if (!hasColumn(database, "threads", "last_assistant_at_ms")) {
+    database.exec("ALTER TABLE threads ADD COLUMN last_assistant_at_ms INTEGER");
+  }
+
+  if (!hasColumn(database, "threads", "running")) {
+    database.exec("ALTER TABLE threads ADD COLUMN running INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "inbox_items", "last_user_prompt")) {
+    database.exec("ALTER TABLE inbox_items ADD COLUMN last_user_prompt TEXT");
   }
 
   schemaReady = true;
