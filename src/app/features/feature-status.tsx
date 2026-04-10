@@ -4,14 +4,12 @@ export type FeatureStatus = "mock" | "partial";
 
 export const featureStatusById = {
   "feature:sidebar.inbox": { status: "partial", label: "Partial" },
-  "feature:landing.project-switcher": { status: "mock", label: "Mock" },
   "feature:sidebar.plugins": { status: "mock", label: "Mock" },
   "feature:sidebar.automations": { status: "mock", label: "Mock" },
   "feature:sidebar.debug": { status: "mock", label: "Mock" },
   "feature:sidebar.threads.filter": { status: "partial", label: "Partial" },
   "feature:sidebar.project.add": { status: "partial", label: "Partial" },
   "feature:sidebar.project.actions": { status: "partial", label: "Partial" },
-  "feature:sidebar.project.rename": { status: "mock", label: "Mock" },
   "feature:header.project-switch": { status: "mock", label: "Mock" },
   "feature:header.thread-actions": { status: "mock", label: "Mock" },
   "feature:header.thread-run-action": { status: "mock", label: "Mock" },
@@ -38,11 +36,6 @@ export const featureStatusById = {
   "feature:settings.menu.skills": { status: "partial", label: "Partial" },
   "feature:settings.menu.settings": { status: "partial", label: "Partial" },
   "feature:settings.menu.rate-limits": { status: "mock", label: "Mock" },
-  "feature:project.action.open-file-manager": { status: "mock", label: "Mock" },
-  "feature:project.action.create-worktree": { status: "mock", label: "Mock" },
-  "feature:project.action.edit-name": { status: "mock", label: "Mock" },
-  "feature:project.action.archive-threads": { status: "mock", label: "Mock" },
-  "feature:project.action.remove-project": { status: "mock", label: "Mock" },
 } as const satisfies Record<string, { status: FeatureStatus; label: string }>;
 
 export type FeatureStatusId = keyof typeof featureStatusById;
