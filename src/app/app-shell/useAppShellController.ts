@@ -18,7 +18,7 @@ import { deriveControllerViewModel } from "./controller-view-model";
 import { getProjectSelectionAction } from "./scoped-project-view";
 import { useAppShellEffects } from "./useAppShellEffects";
 import { useDesktopActionHandlers } from "./useDesktopActionHandlers";
-import { useProjectRepoInspection } from "./useProjectRepoInspection";
+import { useProjectRepoOriginRefresh } from "./useProjectRepoOriginRefresh";
 import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
@@ -129,7 +129,7 @@ export function useAppShellController() {
     workspaceState: state,
   });
 
-  useProjectRepoInspection({
+  useProjectRepoOriginRefresh({
     projects,
     selectedProjectId: state.selectedProjectId,
     runDesktopAction,

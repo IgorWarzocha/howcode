@@ -11,7 +11,7 @@ This repo is intentionally split around future Pi desktop integration seams.
   - renderer orchestration lane
   - shell bootstrap, live desktop-event sync, action post-processing, layout wiring
   - `useDesktopActionHandlers.ts` owns optimistic action dispatch and confirmation flow
-  - `useProjectRepoInspection.ts` owns lazy repo-origin probing for the selected project
+  - `useProjectRepoOriginRefresh.ts` owns lazy repo-origin probing for the selected project
   - `useScopedProjectViewSync.ts` owns skills/extensions scoped-project reset behavior
 - `src/app/state/workspace.ts`
   - deterministic workspace reducer + selectors

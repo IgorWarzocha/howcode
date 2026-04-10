@@ -98,7 +98,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Expansion direction:**
 - Worktree creation remains deferred.
-- If needed later, replace the remaining legacy `project.actions` compatibility path with a stricter payload contract everywhere.
 
 ### 4. Sidebar utility controls
 
@@ -135,7 +134,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - terminal toggle
   - diff toggle
 - Stubbed actions:
-  - `project.switch`
   - `thread.actions`
   - `thread.run-action`
   - `workspace.open`
@@ -148,7 +146,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Define open split-button behavior in the Bun desktop bridge.
 - Expand commit controls beyond the current project git surface wiring (branch switching is still display-only, and the diff lane is still on the older turn-based path).
 - Define real handoff behavior.
-- Define project switcher behavior.
 - Replace mock home diff stats with real workspace diff data when the diff lane is implemented.
 
 ### 6. Landing page / project switcher
@@ -161,7 +158,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Legacy `landing.project-switcher` still exists as a no-op action/status-inventory ID, but it is not the actual implementation path used by the UI
 
 **Expansion direction:**
-- Decide whether a separate `project.switch` concept is still needed beyond starting work in a chosen project.
+- Keep project switching as ordinary UI selection/thread-start flow rather than a separate desktop action.
 
 ### 7. Plugins / Automations / Debug pages
 
@@ -326,7 +323,6 @@ These currently exist in the action contract but are still no-op inventory rathe
 
 - no-op and largely legacy / unsurfaced:
   - `threads.filter`
-  - `project.switch`
   - `landing.project-switcher`
 - no-op but still surfaced in current UI:
   - `workspace.open`

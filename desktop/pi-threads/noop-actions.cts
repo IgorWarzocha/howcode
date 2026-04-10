@@ -4,9 +4,7 @@ import { handledAction, unhandledAction } from "./action-router-result.cts";
 
 const noopActions = new Set<DesktopAction>([
   "threads.filter",
-  "project.actions",
   "project.create-worktree",
-  "project.switch",
   "thread.actions",
   "thread.run-action",
   "workspace.open",

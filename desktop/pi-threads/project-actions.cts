@@ -99,7 +99,7 @@ export async function handleProjectDesktopAction(
       return handledAction();
     }
 
-    case "project.inspect-repo": {
+    case "project.refresh-repo-origin": {
       const projectId = getProjectId(payload);
       if (!projectId) {
         return handledAction();

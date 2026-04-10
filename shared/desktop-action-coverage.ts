@@ -9,7 +9,7 @@ export const implementedDesktopActions = [
   "project.reorder",
   "project.pin",
   "project.edit-name",
-  "project.inspect-repo",
+  "project.refresh-repo-origin",
   "project.archive-threads",
   "project.remove-project",
   "threads.collapse-all",
@@ -35,9 +35,7 @@ export const implementedDesktopActions = [
 // backend until their renderer/desktop integrations are implemented.
 export const unimplementedDesktopActions = [
   "threads.filter",
-  "project.actions",
   "project.create-worktree",
-  "project.switch",
   "thread.actions",
   "thread.run-action",
   "workspace.open",

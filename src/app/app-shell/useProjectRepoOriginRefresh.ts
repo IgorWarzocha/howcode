@@ -3,7 +3,7 @@ import type { DesktopAction } from "../desktop/actions";
 import type { AnyDesktopActionPayload, DesktopActionResult } from "../desktop/types";
 import type { Project } from "../types";
 
-export function useProjectRepoInspection({
+export function useProjectRepoOriginRefresh({
   projects,
   selectedProjectId,
   runDesktopAction,
@@ -28,6 +28,6 @@ export function useProjectRepoInspection({
     }
 
     inspectedProjectIdsRef.current.add(selectedProject.id);
-    void runDesktopAction("project.inspect-repo", { projectId: selectedProject.id });
+    void runDesktopAction("project.refresh-repo-origin", { projectId: selectedProject.id });
   }, [projects, runDesktopAction, selectedProjectId]);
 }

@@ -37,7 +37,6 @@ These should be tackled as grouped lanes, not as isolated tickets.
 
 Work on all of these together so the shell gets one coherent navigation model.
 
-- [ ] implement `project.switch`
 - [ ] implement landing/project switching UX
 - [ ] implement `thread.actions`
 - [ ] implement `thread.run-action`

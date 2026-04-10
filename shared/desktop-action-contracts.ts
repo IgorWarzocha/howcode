@@ -55,16 +55,14 @@ export type DesktopActionPayloadMap = {
   "project.select": { projectId?: string | null; sessionPath?: string | null };
   "project.expand": { projectId: string };
   "project.collapse": { projectId: string };
-  "project.actions": EmptyActionPayload;
   "project.open-in-file-manager": { projectId: string };
   "project.reorder": { projectIds: string[] };
   "project.pin": { projectId: string };
   "project.edit-name": { projectId: string; projectName: string };
-  "project.inspect-repo": { projectId: string };
+  "project.refresh-repo-origin": { projectId: string };
   "project.archive-threads": { projectId: string; projectName?: string };
   "project.remove-project": { projectId: string; projectName?: string };
   "project.create-worktree": EmptyActionPayload;
-  "project.switch": EmptyActionPayload;
   "thread.new": { projectId?: string | null; sessionPath?: string | null };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };

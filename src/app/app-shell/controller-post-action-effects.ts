@@ -359,7 +359,7 @@ export async function runPostDesktopActionEffects({
     });
   }
 
-  if (action === "project.inspect-repo") {
+  if (action === "project.refresh-repo-origin") {
     await refreshShellState();
   }
 

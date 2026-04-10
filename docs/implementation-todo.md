@@ -109,7 +109,6 @@ This turns `docs/mock-features.md` into an execution backlog.
 #### 9. Landing project switcher
 - [x] Ship the landing project picker flow via project selection + `thread.new`
 - [ ] Retire or reclassify legacy `landing.project-switcher` action/status inventory
-- [ ] Decide whether `project.switch` is still needed as a separate concept from starting a thread in a chosen project
   - files: `src/app/views/LandingView.tsx`, `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
@@ -190,7 +189,6 @@ Key files:
 - [ ] Optional thread-level drag-and-drop only if thread ordering becomes a real product rule
 - [x] Real project action menu operations except worktree creation
 - [x] Real landing project picker
-- [ ] Decide whether separate project-switch semantics still belong in the product
 
 ### Routing / navigation note
 
