@@ -159,6 +159,11 @@ export function useAppShellController() {
       (thread) => thread.sessionPath === state.selectedInboxSessionPath,
     );
 
+    const selectedInboxThread = hasSelectedInboxThread
+      ? (inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ??
+        null)
+      : null;
+
     if (!hasSelectedInboxThread) {
       const nextThread = inboxThreads[0] ?? null;
 
@@ -182,6 +187,24 @@ export function useAppShellController() {
             console.warn("Failed to auto-mark selected inbox thread read.", error);
           });
       }
+
+      return;
+    }
+
+    if (state.activeView === "inbox" && selectedInboxThread?.unread) {
+      void invokeDesktopAction("inbox.mark-read", {
+        projectId: selectedInboxThread.projectId,
+        sessionPath: selectedInboxThread.sessionPath,
+      })
+        .then(async () => {
+          await Promise.all([
+            loadProjectThreads(selectedInboxThread.projectId),
+            queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+          ]);
+        })
+        .catch((error) => {
+          console.warn("Failed to mark visible inbox thread read.", error);
+        });
     }
   }, [
     inboxThreads,
