@@ -266,12 +266,10 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Real navigation entries now exist for:
   - Skills
   - Extensions
-  - Settings
   - Archived threads
+  - App settings
 - Still just UI shells:
-  - Language
   - Rate limits remaining
-  - Log out
 
 **Expansion direction:**
 - Either route through actual desktop settings screens or reduce surface area until implemented.

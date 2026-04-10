@@ -121,7 +121,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 11. Connections / settings shell items
 - [ ] Implement remote connection flow
-- [ ] Revisit post-MVP settings surfaces like language and rate limits
+- [ ] Revisit post-MVP settings surfaces like rate limits remaining
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
 
 ---
