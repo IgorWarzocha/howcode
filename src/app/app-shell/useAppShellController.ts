@@ -11,6 +11,7 @@ import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
+import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
 import { deriveControllerViewModel } from "./controller-view-model";
@@ -154,12 +155,37 @@ export function useAppShellController() {
     );
 
     if (!hasSelectedInboxThread) {
+      const nextThread = inboxThreads[0] ?? null;
+
       dispatch({
         type: "select-inbox-thread",
-        sessionPath: inboxThreads[0]?.sessionPath ?? null,
+        sessionPath: nextThread?.sessionPath ?? null,
       });
+
+      if (state.activeView === "inbox" && nextThread?.unread) {
+        void invokeDesktopAction("inbox.mark-read", {
+          projectId: nextThread.projectId,
+          sessionPath: nextThread.sessionPath,
+        })
+          .then(async () => {
+            await Promise.all([
+              loadProjectThreads(nextThread.projectId),
+              queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+            ]);
+          })
+          .catch((error) => {
+            console.warn("Failed to auto-mark selected inbox thread read.", error);
+          });
+      }
     }
-  }, [inboxThreads, state.selectedInboxSessionPath]);
+  }, [
+    inboxThreads,
+    invokeDesktopAction,
+    loadProjectThreads,
+    queryClient,
+    state.activeView,
+    state.selectedInboxSessionPath,
+  ]);
 
   const handleShowView = (view: View) => {
     dispatch({ type: "show-view", view });
