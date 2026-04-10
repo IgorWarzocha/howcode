@@ -34,6 +34,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Thread pin persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
 - Thread archive / restore / permanent delete: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - Archived threads settings view: `src/app/components/settings/ArchivedThreadsPanel.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
+- Project create/import actions are wired through the desktop backend, even though surrounding UX/semantics are still partial: `desktop/pi-threads/project-actions.cts`, `src/app/components/sidebar/projects/SidebarProjectsSection.tsx`, `src/app/views/LandingView.tsx`, `src/app/views/settings/useSettingsController.ts`
 - Shared Pi thread/message mapping is real and deduplicated: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`
 - Assistant thinking/reasoning traces are now rendered from Pi assistant content blocks, auto-expanded while streaming and collapsed after the turn completes: `shared/pi-message-mapper.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/components/workspace/thread/VirtualizedThreadTimeline.tsx`
 - Desktop action coverage is explicit and test-backed: `shared/desktop-action-coverage.ts`, `src/test/desktop-action-coverage.test.ts`
@@ -101,16 +102,21 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 4. Sidebar utility controls
 
-**Status:** Mostly stubbed.
+**Status:** Partially real.
 
-- Filter button emits `threads.filter`: `src/app/components/sidebar/Sidebar.tsx`
-- Add project button emits `project.add`: `src/app/components/sidebar/Sidebar.tsx`
-- No backend behavior for:
-  - `threads.filter`
-  - `project.add`
+- Project create/add is real via `project.add`: `src/app/components/sidebar/projects/SidebarProjectsSection.tsx`, `desktop/pi-threads/project-actions.cts`
+- Project import scan/apply is real and currently used from landing/settings flows: `src/app/views/LandingView.tsx`, `src/app/views/settings/useSettingsController.ts`, `desktop/pi-threads/project-actions.cts`
+- Thread/project filtering now exists as renderer-local UI state in the sidebar and inbox rather than as a real backend action:
+  - `src/app/components/sidebar/projects/SidebarProjectsSection.tsx`
+  - `src/app/components/sidebar/projects/sidebar-projects.helpers.ts`
+  - `src/app/components/sidebar/inbox/SidebarInboxSection.tsx`
+- Still stubbed / legacy inventory:
+  - `threads.filter` remains a backend no-op legacy action ID
+  - thread filtering/search is not yet a coherent end-to-end product flow
 
 **Expansion direction:**
-- Add search/filter state + project import/create flows.
+- Finish the current search/filter UX as an explicit product flow instead of a renderer-local helper only.
+- Tighten project create/import semantics and surrounding UX now that the backend handlers exist.
 - Project ordering now supports intentional drag-and-drop. If thread ordering becomes important later, add it as an explicit product rule instead of layering ad hoc pointer logic onto the current sidebar.
 
 ### 5. Header controls
@@ -150,8 +156,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Status:** Partially real.
 
 - UI: `src/app/views/LandingView.tsx`
-- Real project picker opens from the landing surface and starts a new thread in the chosen project
+- Real project picker opens from the landing surface, selects a project, and starts a real thread via `thread.new`
 - Latest-project affordance also starts a real thread
+- Legacy `landing.project-switcher` still exists as a no-op action/status-inventory ID, but it is not the actual implementation path used by the UI
 
 **Expansion direction:**
 - Decide whether a separate `project.switch` concept is still needed beyond starting work in a chosen project.
@@ -173,16 +180,30 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 8. Diff panel
 
-**Status:** Mock content.
+**Status:** Partially real.
 
 - UI: `src/app/components/workspace/DiffPanel.tsx`
-- Static filenames / static diff lines
-- Explicit comment says future replacement is needed
-- `diff.review` is an explicit backend no-op today
+- Diff renderer stack now ports the main t3code pattern:
+  - `src/app/components/workspace/diff/DiffWorkerPoolProvider.tsx`
+  - `src/app/components/workspace/diff/DiffPanelContent.tsx`
+  - `src/app/components/workspace/diff/diff-rendering.ts`
+- Backend checkpoint/diff pipeline now exists in:
+  - `desktop/diff/checkpoint-store.cts`
+  - `desktop/diff/query.cts`
+  - `desktop/diff/summary-parser.cts`
+- The thread lane now surfaces per-assistant changed-file summaries and can open the diff panel for a selected turn/file.
+
+**Still partial because:**
+
+- checkpoint capture currently runs for completed composer turns only, not every possible Pi session mutation path
+- no placeholder/retry checkpoint lifecycle like t3code's full orchestration stack
+- no sheet/mobile diff layout yet
+- `diff.review` remains a shell action
 
 **Expansion direction:**
-- Feed from actual workspace diffs / review sessions.
-- Replace hardcoded content with file-based or session-based diff models.
+- Extend checkpoint capture to additional turn-completion paths such as takeover session reconciliation if needed.
+- Add richer diff review actions once a review/run-log model exists.
+- Current product direction is under review: we are mocking a simpler composer-adjacent git ops flow that would treat diffs as project/worktree state since the last commit instead of leaning harder into per-turn checkpoint history.
 
 ### 9. Terminal panel
 
@@ -225,34 +246,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Move from fixed-size client paging to explicit branch/page hydration if very large Pi sessions require it.
 
-### 9b. Diff panel
-
-**Status:** Partially real.
-
-- UI: `/home/igorw/Work/howcode/src/app/components/workspace/DiffPanel.tsx`
-- Diff renderer stack now ports the main t3code pattern:
-  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/DiffWorkerPoolProvider.tsx`
-  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/DiffPanelContent.tsx`
-  - `/home/igorw/Work/howcode/src/app/components/workspace/diff/diff-rendering.ts`
-- Backend checkpoint/diff pipeline now exists in:
-  - `/home/igorw/Work/howcode/desktop/diff/checkpoint-store.cts`
-  - `/home/igorw/Work/howcode/desktop/diff/query.cts`
-  - `/home/igorw/Work/howcode/desktop/diff/summary-parser.cts`
-- The thread lane now surfaces per-assistant changed-file summaries and can open the diff panel for a selected turn/file.
-
-**Still partial because:**
-
-- checkpoint capture currently runs for completed composer turns only, not every possible Pi session mutation path
-- no placeholder/retry checkpoint lifecycle like t3code’s full orchestration stack
-- no sheet/mobile diff layout yet
-- `diff.review` remains a shell action
-
-**Expansion direction:**
-
-- extend checkpoint capture to additional turn-completion paths such as takeover session reconciliation if needed
-- add richer diff review actions once a review/run-log model exists
-- current product direction is under review: we are mocking a simpler composer-adjacent git ops flow that would treat diffs as project/worktree state since the last commit instead of leaning harder into per-turn checkpoint history
-
 ### 10. Remote connections banner on home
 
 **Status:** Visual only.
@@ -267,12 +260,15 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 11. Product / settings items that are just shells
 
-**Status:** Mostly shell-only.
+**Status:** Mixed: some real navigation, some shell-only inventory.
 
 - Settings popup UI: `src/app/components/sidebar/SettingsMenu.tsx`
-- Real archived-threads entry exists now
-- Other entries still just UI shells:
+- Real navigation entries now exist for:
+  - Skills
+  - Extensions
   - Settings
+  - Archived threads
+- Still just UI shells:
   - Language
   - Rate limits remaining
   - Log out
@@ -308,11 +304,15 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Status:** Partially real.
 
 - Existing thread indexing/opening is real
-- New-thread-on-first-send is real
+- Explicit `thread.new` is real
+- Landing project picking also starts work through the same real `thread.new` path
 - Existing-thread follow-up prompting is real
 - Live assistant streaming into the open thread is real
 - Sidebar/thread cache refresh after send is real
--- Still missing / incomplete:
+- Session creation semantics are still slightly split between explicit new-thread setup and first-send/runtime activation behavior
+
+**Still missing / incomplete:**
+
   - richer streamed tool/bash/custom-message fidelity
   - clearer failure / retry UI
 
@@ -322,13 +322,22 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - `desktop/pi-threads/thread-loader.cts`
 - `desktop/pi-threads/action-router.cts`
 
-### 14. Unused or contract-only actions
+### 14. Contract-only / no-op actions that still need cleanup
 
-These exist in the action contract but currently do not have meaningful implementation or even an active trigger in the UI:
+These currently exist in the action contract but are still no-op inventory rather than meaningful product behavior:
 
-- `workspace.open`
+- no-op and largely legacy / unsurfaced:
+  - `threads.filter`
+  - `project.switch`
+  - `landing.project-switcher`
+- no-op but still surfaced in current UI:
+  - `workspace.open`
+  - `workspace.open-options`
+  - `workspace.handoff`
+  - `workspace.popout`
+  - `diff.review`
 
-Source: `shared/desktop-actions.ts`
+Sources: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/noop-actions.cts`
 
 ---
 
@@ -345,6 +354,7 @@ This is fine for tests, but the card/view content is still placeholder product s
 
 1. Finish the remaining non-chat parts of the composer flow (host/dictate)
 2. Header/project-switch/product-menu implementation
-3. Replace terminal + diff mock panels with real backing data
-4. Replace plugin/automation/debug mock cards with real registries or remove until ready
-5. Improve thread rendering fidelity for tool results and non-chat session entries
+3. Finish diff review + converge diff ownership with the intended git/worktree product model
+4. Finish terminal/host/remote/handoff semantics instead of treating them as separate partial shells
+5. Replace plugin/automation/debug mock cards with real registries or remove until ready
+6. Improve thread rendering fidelity for tool results and non-chat session entries

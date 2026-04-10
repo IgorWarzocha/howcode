@@ -98,14 +98,17 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `desktop/pi-threads/session-watch.cts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`
 
 #### 8. Sidebar utility controls
-- [ ] Implement thread filtering/search
-- [ ] Implement add/import project flow
+- [ ] Finish thread filtering/search as a coherent end-to-end flow
+  - current sidebar + inbox filtering/search is renderer-local only; legacy `threads.filter` remains a backend no-op
+- [ ] Finish add/import project flow UX + semantics
+  - `project.add`, `projects.import.scan`, and `projects.import.apply` are already wired; remaining work is product behavior/polish
 - [x] Add drag-and-drop project reordering with persisted sidebar order
 - [ ] Extend drag-and-drop to thread-level ordering only if thread ordering semantics become explicit
   - files: `src/app/components/sidebar/Sidebar.tsx`, `src/app/state/workspace.ts`, `desktop/pi-threads/action-router.cts`
 
 #### 9. Landing project switcher
-- [x] Implement `landing.project-switcher`
+- [x] Ship the landing project picker flow via project selection + `thread.new`
+- [ ] Retire or reclassify legacy `landing.project-switcher` action/status inventory
 - [ ] Decide whether `project.switch` is still needed as a separate concept from starting a thread in a chosen project
   - files: `src/app/views/LandingView.tsx`, `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
@@ -128,13 +131,14 @@ This turns `docs/mock-features.md` into an execution backlog.
 ### Bun / desktop backend checklist
 
 - [x] Add real send-thread desktop bridge requests
-- [ ] Add real new-thread desktop bridge requests
+- [x] Add real new-thread desktop bridge requests
 - [x] Add stream/event desktop bridge messages for assistant output
 - [x] Replace generic `project.actions` stubs with explicit typed project actions for supported menu items
 - [ ] Implement diff review backend
-- [ ] Implement terminal backend or run-log backend
+- [x] Implement PTY-backed terminal backend
+- [ ] Decide whether a separate run-log backend/product mode is still needed
 - [ ] Implement filter/search backend if needed
-- [ ] Implement project import/add flow
+- [x] Add backend handlers for project create/import flow
 - [ ] Expand session parsing beyond simplified user/assistant mapping
 - [ ] Add DB migrations/versioning for future schema changes
 
@@ -152,7 +156,7 @@ Key files:
 - [x] Add controlled composer state
 - [x] Add optimistic / streaming thread UI state
 - [x] Refresh shell + thread state coherently after mutations
-- [ ] Add thread filter/search UI
+- [ ] Finish thread filter/search UX and semantics beyond the current renderer-local filtering
 - [ ] Add proper menus for thread actions / project switching / header split-button actions
 - [ ] Replace mock plugin/automation/debug data or remove views
 - [ ] Add richer thread block renderers
@@ -180,8 +184,8 @@ Key files:
 ### Sidebar / navigation checklist
 
 - [x] Real new thread creation
-- [ ] Real project add/import
-- [ ] Real thread filtering
+- [ ] Finish project add/import flow UX + semantics
+- [ ] Finish thread filtering/search semantics beyond the current local filtering
 - [x] Drag-and-drop project reordering
 - [ ] Optional thread-level drag-and-drop only if thread ordering becomes a real product rule
 - [x] Real project action menu operations except worktree creation
@@ -225,7 +229,7 @@ Definition of done:
 - [x] Clicking send on an existing thread appends to the real Pi session
 - [x] Assistant output appears in the thread UI
 - [x] Sidebar updates recency/title/thread presence correctly
-- [ ] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
+- [x] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
 
 This milestone is now in place. Next, finish the remaining non-chat composer actions, mock the composer-adjacent git ops flow, and then move to project actions / terminal / diff parity.
 

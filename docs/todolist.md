@@ -1,6 +1,6 @@
 # Grouped todo list
 
-Snapshot: April 5, 2026.
+Snapshot: April 10, 2026.
 
 This is the practical working list grouped by what can be done independently, what should land together, and what belongs to larger epics.
 
@@ -15,6 +15,9 @@ These are high-value, lower-risk tasks that should make the app feel more honest
   - `project.edit-name`
   - `project.archive-threads`
   - `landing.project-switcher`
+- [ ] retire or reclassify legacy no-op action/status inventory that no longer matches the real UI path
+  - `landing.project-switcher`
+  - `threads.filter`
 - [ ] keep unsurfaced `feature:header.*` IDs as trace-only inventory; do not re-surface them until the header comes back
 
 ### Small UI shells that can become real quickly
@@ -71,8 +74,8 @@ These should become one execution-location story.
 
 ### Batch 4 — shell completeness around projects and discovery
 
-- [ ] implement project add/import flow
-- [ ] implement thread filtering/search
+- [ ] finish project add/import UX + semantics now that basic create/import handlers exist
+- [ ] finish thread filtering/search as a coherent product flow beyond the current renderer-local filtering
 - [ ] decide whether thread-level ordering is a real product rule
 - [ ] revisit router/deep-link ownership after header/diff/settings semantics are settled
 
