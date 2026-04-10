@@ -92,9 +92,9 @@ export function setThreadRunningState(sessionPath: string, running: boolean) {
     `
       UPDATE threads
       SET running = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE session_path = ?
+      WHERE session_path = ? AND running != ?
     `,
-  ).run(running ? 1 : 0, sessionPath);
+  ).run(running ? 1 : 0, sessionPath, running ? 1 : 0);
 }
 
 export function upsertInboxThreadPrompt(sessionPath: string, prompt: string | null) {

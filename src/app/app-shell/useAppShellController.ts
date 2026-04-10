@@ -59,7 +59,8 @@ export function useAppShellController() {
     threadRefreshKey,
     threadHistoryCompactions,
   );
-  const inboxThreads = useDesktopInbox();
+  const inboxQuery = useDesktopInbox();
+  const inboxThreads = inboxQuery.data ?? [];
   const selectedInboxThread = useMemo(
     () =>
       inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
@@ -143,6 +144,10 @@ export function useAppShellController() {
   });
 
   useEffect(() => {
+    if (!inboxQuery.isSuccess) {
+      return;
+    }
+
     if (inboxThreads.length === 0) {
       if (state.selectedInboxSessionPath !== null) {
         dispatch({ type: "select-inbox-thread", sessionPath: null });
@@ -185,6 +190,7 @@ export function useAppShellController() {
     queryClient,
     state.activeView,
     state.selectedInboxSessionPath,
+    inboxQuery.isSuccess,
   ]);
 
   const handleShowView = (view: View) => {
