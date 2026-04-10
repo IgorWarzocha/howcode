@@ -39,27 +39,32 @@ export async function loadInboxThreadList(): Promise<InboxThread[]> {
 
   return Promise.all(
     threads.map(async (thread) => {
-      if (thread.prompt?.trim()) {
-        return thread;
-      }
-
-      const loadedThread = await loadThread(thread.sessionPath);
-      let prompt: string | null = null;
-
-      for (const message of [...loadedThread.messages].reverse()) {
-        if (message.role === "user") {
-          const nextPrompt = message.content.join("\n\n").trim();
-          prompt = nextPrompt.length > 0 ? nextPrompt : null;
-          break;
+      try {
+        if (thread.prompt?.trim()) {
+          return thread;
         }
-      }
 
-      if (!prompt) {
+        const loadedThread = await loadThread(thread.sessionPath);
+        let prompt: string | null = null;
+
+        for (const message of [...loadedThread.messages].reverse()) {
+          if (message.role === "user") {
+            const nextPrompt = message.content.join("\n\n").trim();
+            prompt = nextPrompt.length > 0 ? nextPrompt : null;
+            break;
+          }
+        }
+
+        if (!prompt) {
+          return thread;
+        }
+
+        upsertInboxThreadPrompt(thread.sessionPath, prompt);
+        return { ...thread, prompt };
+      } catch (error) {
+        console.warn(`Failed to backfill inbox prompt for ${thread.sessionPath}.`, error);
         return thread;
       }
-
-      upsertInboxThreadPrompt(thread.sessionPath, prompt);
-      return { ...thread, prompt };
     }),
   );
 }

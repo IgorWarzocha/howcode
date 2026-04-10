@@ -172,6 +172,13 @@ export function useAppShellEffects({
       return;
     }
 
+    const visibleSessionPath =
+      workspaceState.activeView === "thread"
+        ? (workspaceState.selectedSessionPath ?? null)
+        : workspaceState.activeView === "inbox"
+          ? (workspaceState.selectedInboxSessionPath ?? null)
+          : null;
+
     const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
       if (event.type === "composer-update") {
         setComposerState(event.composer);
@@ -195,15 +202,19 @@ export function useAppShellEffects({
 
       if (
         (event.reason === "end" || event.reason === "external") &&
-        workspaceState.activeView === "thread" &&
-        workspaceState.selectedSessionPath === event.sessionPath
+        visibleSessionPath === event.sessionPath
       ) {
         void window.piDesktop
           ?.invokeAction("inbox.mark-read", {
             sessionPath: event.sessionPath,
             projectId: event.projectId,
           })
-          .then(() => queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }))
+          .then(async () => {
+            await Promise.all([
+              loadProjectThreads(event.projectId),
+              queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
+            ]);
+          })
           .catch((error) => {
             console.warn("Failed to keep active inbox thread marked read.", error);
           });
@@ -242,6 +253,7 @@ export function useAppShellEffects({
     setComposerState,
     setProjectGitState,
     workspaceState.activeView,
+    workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
 }

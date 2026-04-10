@@ -25,13 +25,20 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
     setIsSending(true);
     setErrorMessage(null);
 
-    const result = await onAction("composer.send", {
-      projectId: thread.projectId,
-      sessionPath: thread.sessionPath,
-      text: nextDraft,
-    });
+    let result: Awaited<ReturnType<DesktopActionInvoker>> | null = null;
 
-    setIsSending(false);
+    try {
+      result = await onAction("composer.send", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+        text: nextDraft,
+      });
+    } catch {
+      setErrorMessage("Could not send follow-up.");
+      return;
+    } finally {
+      setIsSending(false);
+    }
 
     if (!result?.ok || result.result?.error) {
       setErrorMessage(result?.result?.error ?? "Could not send follow-up.");

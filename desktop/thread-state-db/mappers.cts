@@ -13,6 +13,22 @@ import type {
   TurnDiffRow,
 } from "./types.cts";
 
+function parseStringArrayJson(value: string | null, context: string) {
+  if (!value) {
+    return [] as string[];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch (error) {
+    console.warn(`Failed to parse ${context}.`, error);
+    return [];
+  }
+}
+
 export function formatRelativeAge(lastModifiedMs: number) {
   const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);
   const minute = 60 * 1000;
@@ -81,7 +97,7 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     sessionPath: row.sessionPath,
     age: formatRelativeAge(row.lastActivityMs),
     prompt: row.lastUserPrompt,
-    content: row.lastAssistantMessageJson ? JSON.parse(row.lastAssistantMessageJson) : [],
+    content: parseStringArrayJson(row.lastAssistantMessageJson, `inbox thread ${row.sessionPath}`),
     preview: row.lastAssistantPreview,
     running: Boolean(row.running),
     unread: Boolean(row.unread),

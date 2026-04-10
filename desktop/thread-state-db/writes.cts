@@ -157,6 +157,8 @@ export function dismissInboxThread(sessionPath: string) {
 
 export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
   const db = getThreadStateDatabase();
+  const serializedContent = JSON.stringify(record.content);
+
   db.prepare(
     `
       INSERT INTO inbox_items (
@@ -179,7 +181,7 @@ export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
   ).run(
     record.sessionPath,
     record.userPrompt,
-    JSON.stringify(record.content),
+    serializedContent,
     record.preview,
     record.lastAssistantAtMs,
   );
@@ -194,12 +196,7 @@ export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
         updated_at = CURRENT_TIMESTAMP
       WHERE session_path = ?
     `,
-  ).run(
-    JSON.stringify(record.content),
-    record.preview,
-    record.lastAssistantAtMs,
-    record.sessionPath,
-  );
+  ).run(serializedContent, record.preview, record.lastAssistantAtMs, record.sessionPath);
 }
 
 export function setProjectCollapsed(projectId: string, collapsed: boolean) {
