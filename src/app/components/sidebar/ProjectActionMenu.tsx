@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, GitBranchPlus, Star } from "lucide-react";
+import { Archive, FolderOpen, Star } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { DesktopActionInvoker } from "../../desktop/types";
@@ -48,13 +48,13 @@ export function ProjectActionMenu({
       title: pinned ? "Unmark Favourite" : "Mark Favourite",
       action: "project.pin",
     },
-    {
-      icon: <GitBranchPlus size={14} />,
-      title: "Create Worktree",
-      action: "project.create-worktree",
-      className:
-        "text-[#f2a7a7] hover:text-[#ffd1d1] [&>span:first-child]:text-[#f2a7a7] [&:hover>span:first-child]:text-[#ffd1d1] [&>div>div>span]:text-[#f2a7a7] [&:hover>div>div>span]:text-[#ffd1d1]",
-    },
+    // {
+    //   icon: <GitBranchPlus size={14} />,
+    //   title: "Create Worktree",
+    //   action: "project.create-worktree",
+    //   className:
+    //     "text-[#f2a7a7] hover:text-[#ffd1d1] [&>span:first-child]:text-[#f2a7a7] [&:hover>span:first-child]:text-[#ffd1d1] [&>div>div>span]:text-[#f2a7a7] [&:hover>div>div>span]:text-[#ffd1d1]",
+    // },
     {
       icon: <Archive size={14} />,
       title: "Archive all",

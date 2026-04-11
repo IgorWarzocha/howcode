@@ -9,7 +9,6 @@ export const featureStatusById = {
   "feature:sidebar.debug": { status: "mock", label: "Mock" },
   "feature:sidebar.threads.filter": { status: "partial", label: "Partial" },
   "feature:sidebar.project.add": { status: "partial", label: "Partial" },
-  "feature:sidebar.project.actions": { status: "partial", label: "Partial" },
   "feature:header.project-switch": { status: "mock", label: "Mock" },
   "feature:header.thread-actions": { status: "mock", label: "Mock" },
   "feature:header.thread-run-action": { status: "mock", label: "Mock" },

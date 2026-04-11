@@ -10,10 +10,7 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 ### Status + labeling cleanup
 
-- [ ] reclassify or remove stale mock labels for already-real project actions and landing picker
-  - `project.open-in-file-manager`
-  - `project.edit-name`
-  - `project.archive-threads`
+- [ ] reclassify or remove stale mock labels for the remaining landing-picker inventory
   - `landing.project-switcher`
 - [ ] retire or reclassify legacy no-op action/status inventory that no longer matches the real UI path
   - `landing.project-switcher`

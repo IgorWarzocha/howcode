@@ -54,7 +54,7 @@ export function SettingsMenu({
       <MenuItem
         icon={<Clock3 size={15} />}
         title="Rate limits remaining"
-        caret
+        disabled
         statusId="feature:settings.menu.rate-limits"
         role="menuitem"
       />

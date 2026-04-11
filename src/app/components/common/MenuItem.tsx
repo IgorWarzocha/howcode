@@ -29,6 +29,8 @@ export function MenuItem({
   onClick,
   statusId,
   type = "button",
+  className,
+  disabled,
   ...buttonProps
 }: MenuItemProps) {
   return (
@@ -38,10 +40,14 @@ export function MenuItem({
       className={cn(
         menuItemClass,
         transitionClass,
-        hoverSurfaceClass,
+        !disabled && hoverSurfaceClass,
         active && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
-        statusId && getFeatureStatusButtonClass(statusId),
+        !disabled && statusId && getFeatureStatusButtonClass(statusId),
+        disabled &&
+          "cursor-not-allowed text-[color:var(--muted)] opacity-55 hover:bg-transparent hover:text-[color:var(--muted)]",
+        className,
       )}
+      disabled={disabled}
       {...(statusId ? getFeatureStatusDataAttributes(statusId) : {})}
       {...buttonProps}
     >

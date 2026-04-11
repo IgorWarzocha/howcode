@@ -1,7 +1,6 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
@@ -202,7 +201,6 @@ export function ProjectRow({
           className={cn(
             compactIconButtonClass,
             actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-            getFeatureStatusButtonClass("feature:sidebar.project.actions"),
           )}
           onClick={onToggleActions}
           aria-label="Project actions"

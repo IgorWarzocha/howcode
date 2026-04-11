@@ -69,7 +69,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 ### 2. New thread creation
 
-**Status:** Partially real.
+**Status:** Mostly real in the currently surfaced UI.
 
 - “New thread” now creates a fresh Pi session context for the selected project and returns the UI to home: `src/app/components/sidebar/Sidebar.tsx`, `desktop/runtime/composer-service.cts`, `desktop/pi-threads/action-router.cts`
 - Session persistence still happens on first assistant-backed send, matching Pi session behavior.
@@ -84,6 +84,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - UI menu: `src/app/components/sidebar/ProjectActionMenu.tsx`
 - Real actions now exist for:
   - open in file manager
+  - pin / unpin project
   - edit display name in the app index
   - archive all project threads in the app index
   - remove/hide project from the sidebar index
@@ -93,7 +94,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `src/app/app-shell/useAppShellController.ts`
   - `desktop/pi-threads/action-router.cts`
   - `desktop/thread-state-db/*`
-- Still stubbed:
+- Deferred / currently unsurfaced:
   - `project.create-worktree`
 
 **Expansion direction:**
