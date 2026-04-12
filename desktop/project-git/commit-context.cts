@@ -1,5 +1,10 @@
 import type { ProjectDiffResult } from "../../shared/desktop-contracts.ts";
-import { hasHeadCommit, runGitWithOptions, withTemporaryIndex } from "./git-runner.cts";
+import {
+  formatGitCommandError,
+  hasHeadCommit,
+  runGitWithOptions,
+  withTemporaryIndex,
+} from "./git-runner.cts";
 import { getBranch, getOriginUrl, isGitRepository } from "./project-state.cts";
 import type { CommitMessageContext } from "./types.cts";
 
@@ -162,13 +167,45 @@ export async function prepareCommitMessageContext(
 }
 
 export async function loadProjectDiff(projectId: string): Promise<ProjectDiffResult | null> {
-  const context = await prepareCommitMessageContext(projectId, true);
-  if (!context) {
+  if (!(await isGitRepository(projectId))) {
     return null;
   }
 
-  return {
-    projectId,
-    diff: context.patch,
-  };
+  try {
+    const diff = await withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+      await runGitWithOptions(projectId, ["add", "-A", "--", "."], {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 8,
+      });
+
+      const { stdout } = await runGitWithOptions(
+        projectId,
+        [
+          "diff",
+          "--cached",
+          ...(hasHead ? [] : ["--root"]),
+          "--unified=1",
+          "--no-color",
+          "--no-ext-diff",
+          "--find-renames",
+          "--",
+        ],
+        {
+          env,
+          timeout: 20_000,
+          maxBuffer: 1024 * 1024 * 24,
+        },
+      );
+
+      return stdout.trim();
+    });
+
+    return {
+      projectId,
+      diff,
+    };
+  } catch (error) {
+    throw new Error(`Could not load worktree diff: ${formatGitCommandError(error)}`);
+  }
 }

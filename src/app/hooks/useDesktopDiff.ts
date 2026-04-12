@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { ProjectDiffResult } from "../desktop/types";
 import { desktopQueryKeys, getProjectDiffQuery } from "../query/desktop-query";
 
@@ -15,7 +15,7 @@ export function useDesktopDiff(projectId: string | null, enabled = true) {
       : ["desktop", "projectDiff", null],
     queryFn: () => (projectId ? getProjectDiffQuery(projectId) : Promise.resolve(null)),
     enabled: enabled && Boolean(projectId),
-    placeholderData: keepPreviousData,
+    refetchOnMount: "always",
   });
 
   return {
