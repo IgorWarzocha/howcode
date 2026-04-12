@@ -1,15 +1,6 @@
 import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
-import { hasHeadCommit, runGit } from "./git-runner.cts";
-
-function parseShortStat(output: string) {
-  const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
-  const deletionsMatch = output.match(/(\d+)\s+deletions?\(-\)/);
-
-  return {
-    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1], 10) : 0,
-    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1], 10) : 0,
-  };
-}
+import { formatGitCommandError, hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
+import { loadWorktreeSnapshot } from "./worktree-snapshot.cts";
 
 function parseStatusSummary(output: string) {
   let fileCount = 0;
@@ -58,7 +49,10 @@ export async function isGitRepository(projectId: string) {
 
 async function getStatusSummary(projectId: string) {
   try {
-    const { stdout } = await runGit(projectId, ["status", "--short", "--branch"]);
+    const { stdout } = await runGitWithOptions(projectId, ["status", "--short", "--branch"], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024 * 4,
+    });
     return parseStatusSummary(stdout);
   } catch {
     return {
@@ -113,18 +107,6 @@ export async function getBranch(projectId: string) {
   return null;
 }
 
-async function getDiffStats(projectId: string) {
-  try {
-    const args = (await hasHeadCommit(projectId))
-      ? ["diff", "--shortstat", "HEAD", "--"]
-      : ["diff", "--cached", "--shortstat", "--root", "--"];
-    const { stdout } = await runGit(projectId, args);
-    return parseShortStat(stdout);
-  } catch {
-    return { insertions: 0, deletions: 0 };
-  }
-}
-
 export async function loadProjectGitState(projectId: string): Promise<ProjectGitState> {
   if (!(await isGitRepository(projectId))) {
     return {
@@ -142,22 +124,31 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     };
   }
 
-  const [branch, stats, statusSummary, originUrl] = await Promise.all([
+  const [branch, statusSummary, originUrl, snapshot] = await Promise.all([
     getBranch(projectId),
-    getDiffStats(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
+    loadWorktreeSnapshot(projectId).catch((error) => {
+      console.warn(
+        `Failed to load worktree snapshot for ${projectId}: ${formatGitCommandError(error)}`,
+      );
+      return null;
+    }),
   ]);
+
+  const fileCount = snapshot?.fileCount ?? statusSummary.fileCount;
+  const insertions = snapshot?.insertions ?? 0;
+  const deletions = snapshot?.deletions ?? 0;
 
   return {
     projectId,
     isGitRepo: true,
     branch,
-    fileCount: statusSummary.fileCount,
+    fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,
-    insertions: stats.insertions,
-    deletions: stats.deletions,
+    insertions,
+    deletions,
     hasOrigin: originUrl !== null,
     originName: deriveOriginName(originUrl),
     originUrl,

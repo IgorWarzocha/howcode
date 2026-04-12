@@ -7,6 +7,7 @@ import {
 } from "./git-runner.cts";
 import { getBranch, getOriginUrl, isGitRepository } from "./project-state.cts";
 import type { CommitMessageContext } from "./types.cts";
+import { loadWorktreeSnapshot } from "./worktree-snapshot.cts";
 
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
@@ -172,38 +173,11 @@ export async function loadProjectDiff(projectId: string): Promise<ProjectDiffRes
   }
 
   try {
-    const diff = await withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-      await runGitWithOptions(projectId, ["add", "-A", "--", "."], {
-        env,
-        timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 8,
-      });
-
-      const { stdout } = await runGitWithOptions(
-        projectId,
-        [
-          "diff",
-          "--cached",
-          ...(hasHead ? [] : ["--root"]),
-          "--unified=1",
-          "--no-color",
-          "--no-ext-diff",
-          "--find-renames",
-          "--",
-        ],
-        {
-          env,
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 24,
-        },
-      );
-
-      return stdout.trim();
-    });
+    const snapshot = await loadWorktreeSnapshot(projectId);
 
     return {
       projectId,
-      diff,
+      diff: snapshot.patch,
     };
   } catch (error) {
     throw new Error(`Could not load worktree diff: ${formatGitCommandError(error)}`);
