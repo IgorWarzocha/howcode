@@ -215,6 +215,7 @@ export function ComposerDiffBaselineSelector({
             <SurfacePanel
               id={panelId}
               ref={panelRef}
+              data-open={positionReady ? "true" : "false"}
               aria-label="Diff baseline selector"
               className={cn(
                 popoverPanelClass,
