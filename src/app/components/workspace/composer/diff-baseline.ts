@@ -11,7 +11,7 @@ export function getDiffBaselineLabel(
   commits: ProjectCommitEntry[] = [],
 ) {
   if (baseline?.kind === "before-today") {
-    return "today";
+    return "yesterday";
   }
 
   if (baseline?.kind === "main-branch") {
@@ -41,7 +41,7 @@ export function getResolvedDiffBaselineLabel(
 ) {
   switch (baseline?.kind ?? "head") {
     case "before-today":
-      return "today";
+      return "yesterday";
     case "main-branch":
       return "main branch";
     case "last-opened":

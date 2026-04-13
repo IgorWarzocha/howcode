@@ -36,6 +36,16 @@ type ComposerDiffBaselineSelectorProps = {
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
+const baselineOptions = [
+  { key: "head", label: "last commit", baseline: { kind: "head" } },
+  { key: "main-branch", label: "main branch", baseline: { kind: "main-branch" } },
+  { key: "before-today", label: "yesterday", baseline: { kind: "before-today" } },
+] as const satisfies ReadonlyArray<{
+  key: ProjectDiffBaseline["kind"];
+  label: string;
+  baseline: Extract<ProjectDiffBaseline, { kind: "head" | "main-branch" | "before-today" }>;
+}>;
+
 function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
   if (normalizedQuery.length === 0) {
@@ -104,6 +114,7 @@ export function ComposerDiffBaselineSelector({
   });
 
   const commits = commitsQuery.data ?? [];
+  const selectedCommitSha = selectedBaseline.kind === "commit" ? selectedBaseline.sha : null;
   const baselineLabel = useMemo(
     () => getDiffBaselineLabel(selectedBaseline, commits),
     [commits, selectedBaseline],
@@ -230,56 +241,25 @@ export function ComposerDiffBaselineSelector({
                 Changes since
               </div>
 
-              <button
-                type="button"
-                className={cn(
-                  toolbarButtonClass,
-                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-                  selectedBaseline.kind === "before-today" &&
-                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+              <div className="grid max-h-64 gap-0.5 overflow-y-auto pb-0.5">
+                {visibleCommits.length > 0 ? (
+                  visibleCommits.map((commit) => (
+                    <CommitOption
+                      key={commit.sha}
+                      commit={commit}
+                      selected={selectedCommitSha === commit.sha}
+                      onSelect={() => {
+                        onSelectBaseline({ kind: "commit", sha: commit.sha });
+                        setOpen(false);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="px-2.5 py-3 text-[12px] text-[color:var(--muted)]">
+                    {commitsQuery.isLoading ? "Loading commits…" : "No commits found."}
+                  </div>
                 )}
-                onClick={() => {
-                  onSelectBaseline({ kind: "before-today" });
-                  setOpen(false);
-                }}
-              >
-                <span>today</span>
-                {selectedBaseline.kind === "before-today" ? <Check size={14} /> : null}
-              </button>
-
-              <button
-                type="button"
-                className={cn(
-                  toolbarButtonClass,
-                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-                  selectedBaseline.kind === "main-branch" &&
-                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-                )}
-                onClick={() => {
-                  onSelectBaseline({ kind: "main-branch" });
-                  setOpen(false);
-                }}
-              >
-                <span>main branch</span>
-                {selectedBaseline.kind === "main-branch" ? <Check size={14} /> : null}
-              </button>
-
-              <button
-                type="button"
-                className={cn(
-                  toolbarButtonClass,
-                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-                  selectedBaseline.kind === "head" &&
-                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-                )}
-                onClick={() => {
-                  onSelectBaseline({ kind: "head" });
-                  setOpen(false);
-                }}
-              >
-                <span>last commit</span>
-                {selectedBaseline.kind === "head" ? <Check size={14} /> : null}
-              </button>
+              </div>
 
               <label className="relative block">
                 <Search
@@ -294,27 +274,25 @@ export function ComposerDiffBaselineSelector({
                 />
               </label>
 
-              <div className="grid max-h-64 gap-0.5 overflow-y-auto pb-0.5">
-                {visibleCommits.length > 0 ? (
-                  visibleCommits.map((commit) => (
-                    <CommitOption
-                      key={commit.sha}
-                      commit={commit}
-                      selected={
-                        selectedBaseline.kind === "commit" && selectedBaseline.sha === commit.sha
-                      }
-                      onSelect={() => {
-                        onSelectBaseline({ kind: "commit", sha: commit.sha });
-                        setOpen(false);
-                      }}
-                    />
-                  ))
-                ) : (
-                  <div className="px-2.5 py-3 text-[12px] text-[color:var(--muted)]">
-                    {commitsQuery.isLoading ? "Loading commits…" : "No commits found."}
-                  </div>
-                )}
-              </div>
+              {baselineOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={cn(
+                    toolbarButtonClass,
+                    "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
+                    selectedBaseline.kind === option.key &&
+                      "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+                  )}
+                  onClick={() => {
+                    onSelectBaseline(option.baseline);
+                    setOpen(false);
+                  }}
+                >
+                  <span>{option.label}</span>
+                  {selectedBaseline.kind === option.key ? <Check size={14} /> : null}
+                </button>
+              ))}
             </SurfacePanel>,
             document.body,
           )
