@@ -20,6 +20,7 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -105,9 +106,10 @@ export const piDesktopApi = {
       projectId,
       baseline,
     }) as Promise<ProjectDiffResult | null>,
-  captureProjectDiffBaseline: async (projectId: string) => {
-    await (await getRpc()).request.captureProjectDiffBaseline({ projectId });
-  },
+  captureProjectDiffBaseline: async (projectId: string) =>
+    (await getRpc()).request.captureProjectDiffBaseline({
+      projectId,
+    }) as Promise<ProjectDiffResolvedBaseline | null>,
   listProjectCommits: async (projectId: string, limit: number | null = null) =>
     (await getRpc()).request.listProjectCommits({ projectId, limit }) as Promise<
       ProjectCommitEntry[]

@@ -18,6 +18,7 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -41,7 +42,9 @@ declare global {
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
       ) => Promise<ProjectDiffResult | null>;
-      captureProjectDiffBaseline?: (projectId: string) => Promise<void>;
+      captureProjectDiffBaseline?: (
+        projectId: string,
+      ) => Promise<ProjectDiffResolvedBaseline | null>;
       listProjectCommits?: (
         projectId: string,
         limit?: number | null,

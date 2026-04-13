@@ -1,6 +1,15 @@
 import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
-import { formatGitCommandError, hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
-import { loadWorktreeStats } from "./worktree-snapshot.cts";
+import { hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
+
+function parseShortStat(output: string) {
+  const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
+  const deletionsMatch = output.match(/(\d+)\s+deletions?\(-\)/);
+
+  return {
+    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1], 10) : 0,
+    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1], 10) : 0,
+  };
+}
 
 function parseStatusSummary(output: string) {
   let fileCount = 0;
@@ -107,6 +116,21 @@ export async function getBranch(projectId: string) {
   return null;
 }
 
+async function getDiffStats(projectId: string) {
+  try {
+    const args = (await hasHeadCommit(projectId))
+      ? ["diff", "--shortstat", "HEAD", "--"]
+      : ["diff", "--cached", "--shortstat", "--root", "--"];
+    const { stdout } = await runGitWithOptions(projectId, args, {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024 * 4,
+    });
+    return parseShortStat(stdout);
+  } catch {
+    return { insertions: 0, deletions: 0 };
+  }
+}
+
 export async function loadProjectGitState(projectId: string): Promise<ProjectGitState> {
   if (!(await isGitRepository(projectId))) {
     return {
@@ -128,27 +152,18 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     getBranch(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
-    loadWorktreeStats(projectId).catch((error) => {
-      console.warn(
-        `Failed to load worktree stats for ${projectId}: ${formatGitCommandError(error)}`,
-      );
-      return null;
-    }),
+    getDiffStats(projectId),
   ]);
-
-  const fileCount = stats?.fileCount ?? statusSummary.fileCount;
-  const insertions = stats?.insertions ?? 0;
-  const deletions = stats?.deletions ?? 0;
 
   return {
     projectId,
     isGitRepo: true,
     branch,
-    fileCount,
+    fileCount: statusSummary.fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,
-    insertions,
-    deletions,
+    insertions: stats.insertions,
+    deletions: stats.deletions,
     hasOrigin: originUrl !== null,
     originName: deriveOriginName(originUrl),
     originUrl,

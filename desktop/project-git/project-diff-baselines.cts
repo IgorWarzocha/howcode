@@ -7,13 +7,6 @@ import { getProjectCommitEntry, resolveCommitRevision } from "./project-commits.
 import { isGitRepository } from "./project-state.cts";
 import { EMPTY_TREE_OID, captureWorktreeTree } from "./worktree-snapshot.cts";
 
-type LastOpenedBaselineState = {
-  rev: string;
-  capturedAt: string;
-};
-
-const lastOpenedBaselineByProject = new Map<string, LastOpenedBaselineState>();
-
 function formatLocalMidnightGitTimestamp(date = new Date()) {
   const localMidnight = new Date(date);
   localMidnight.setHours(0, 0, 0, 0);
@@ -79,7 +72,16 @@ async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDif
 
   const commitSha = stdout.trim();
   if (commitSha.length === 0) {
-    throw new Error("No commit exists from before today.");
+    return {
+      kind: "before-today",
+      rev: EMPTY_TREE_OID,
+      label: "Initial state",
+      commitSha: null,
+      shortSha: null,
+      subject: null,
+      committedAt: null,
+      capturedAt: null,
+    };
   }
 
   const entry = await getProjectCommitEntry(projectId, commitSha);
@@ -107,9 +109,10 @@ async function resolveChosenCommitBaseline(
   return toResolvedCommitBaseline("commit", entry);
 }
 
-function resolveLastOpenedBaseline(projectId: string): ProjectDiffResolvedBaseline {
-  const baseline = lastOpenedBaselineByProject.get(projectId);
-  if (!baseline) {
+function resolveLastOpenedBaseline(
+  baseline: Extract<ProjectDiffBaseline, { kind: "last-opened" }>,
+): ProjectDiffResolvedBaseline {
+  if (baseline.rev.trim().length === 0) {
     throw new Error("No diff baseline has been captured for this project yet.");
   }
 
@@ -121,7 +124,7 @@ function resolveLastOpenedBaseline(projectId: string): ProjectDiffResolvedBaseli
     shortSha: null,
     subject: null,
     committedAt: null,
-    capturedAt: baseline.capturedAt,
+    capturedAt: baseline.capturedAt ?? null,
   };
 }
 
@@ -134,7 +137,6 @@ export async function captureProjectDiffBaseline(
 
   const rev = await captureWorktreeTree(projectId);
   const capturedAt = new Date().toISOString();
-  lastOpenedBaselineByProject.set(projectId, { rev, capturedAt });
 
   return {
     kind: "last-opened",
@@ -162,7 +164,7 @@ export async function resolveProjectDiffBaseline(
     case "head":
       return resolveHeadBaseline(projectId);
     case "last-opened":
-      return resolveLastOpenedBaseline(projectId);
+      return resolveLastOpenedBaseline(requestedBaseline);
     case "before-today":
       return resolveBeforeTodayBaseline(projectId);
     case "commit":

@@ -19,6 +19,7 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -47,7 +48,7 @@ export type PiDesktopRpc = {
       };
       captureProjectDiffBaseline: {
         params: { projectId: string };
-        response: { ok: boolean };
+        response: ProjectDiffResolvedBaseline | null;
       };
       listProjectCommits: {
         params: { projectId: string; limit?: number | null };

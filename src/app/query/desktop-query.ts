@@ -13,6 +13,7 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -76,8 +77,10 @@ export async function getProjectDiffQuery(
   return (await window.piDesktop?.getProjectDiff?.(projectId, baseline)) ?? null;
 }
 
-export async function captureProjectDiffBaselineQuery(projectId: string): Promise<void> {
-  await window.piDesktop?.captureProjectDiffBaseline?.(projectId);
+export async function captureProjectDiffBaselineQuery(
+  projectId: string,
+): Promise<ProjectDiffResolvedBaseline | null> {
+  return (await window.piDesktop?.captureProjectDiffBaseline?.(projectId)) ?? null;
 }
 
 export async function listProjectCommitsQuery(

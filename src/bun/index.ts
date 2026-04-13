@@ -16,6 +16,7 @@ import type {
   PiSkillCatalogPage,
   PiSkillMutationResult,
   ProjectCommitEntry,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -48,10 +49,10 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId, baseline }) =>
         (await piThreads.loadProjectDiff(projectId, baseline ?? null)) as ProjectDiffResult | null,
-      captureProjectDiffBaseline: async ({ projectId }) => {
-        await piThreads.captureProjectDiffBaseline(projectId);
-        return { ok: true };
-      },
+      captureProjectDiffBaseline: async ({ projectId }) =>
+        (await piThreads.captureProjectDiffBaseline(
+          projectId,
+        )) as ProjectDiffResolvedBaseline | null,
       listProjectCommits: async ({ projectId, limit }) =>
         piThreads.listProjectCommits(projectId, limit ?? null) as Promise<ProjectCommitEntry[]>,
       searchPiPackages: async (request) =>

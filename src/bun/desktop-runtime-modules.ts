@@ -15,6 +15,7 @@ import type {
   PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -61,7 +62,7 @@ export type PiThreadsModule = {
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
   ) => Promise<ProjectDiffResult | null>;
-  captureProjectDiffBaseline: (projectId: string) => Promise<void>;
+  captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>;
   listProjectCommits: (projectId: string, limit?: number | null) => Promise<ProjectCommitEntry[]>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;
   loadShellState: (cwd: string) => Promise<ShellState>;
