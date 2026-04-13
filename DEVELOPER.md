@@ -48,6 +48,10 @@ Launcher base URL:
 
 - `https://github.com/IgorWarzocha/howcode/releases/latest/download`
 
+GitHub workflow:
+
+- push a tag like `v0.1.0` to build all release artifacts and publish a GitHub release automatically
+
 ## NPM launcher package
 
 The user-facing npm package lives in:
