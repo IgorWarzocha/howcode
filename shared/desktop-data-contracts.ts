@@ -271,6 +271,7 @@ export type ProjectDiffBaseline =
   | { kind: "head" }
   | { kind: "last-opened"; rev: string; capturedAt?: string | null }
   | { kind: "before-today" }
+  | { kind: "main-branch" }
   | { kind: "commit"; sha: string };
 
 export type ProjectDiffResolvedBaseline = {

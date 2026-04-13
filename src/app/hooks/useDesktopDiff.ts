@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ProjectDiffResult } from "../desktop/types";
+import type { ProjectDiffBaseline, ProjectDiffResult } from "../desktop/types";
 import { desktopQueryKeys, getProjectDiffQuery } from "../query/desktop-query";
 
 type DiffState = {
@@ -8,12 +8,16 @@ type DiffState = {
   error: string | null;
 };
 
-export function useDesktopDiff(projectId: string | null, enabled = true) {
+export function useDesktopDiff(
+  projectId: string | null,
+  baseline: ProjectDiffBaseline | null = null,
+  enabled = true,
+) {
   const query = useQuery<ProjectDiffResult | null, Error>({
     queryKey: projectId
-      ? desktopQueryKeys.projectDiff(projectId)
+      ? desktopQueryKeys.projectDiff(projectId, baseline)
       : ["desktop", "projectDiff", null],
-    queryFn: () => (projectId ? getProjectDiffQuery(projectId) : Promise.resolve(null)),
+    queryFn: () => (projectId ? getProjectDiffQuery(projectId, baseline) : Promise.resolve(null)),
     enabled: enabled && Boolean(projectId),
     refetchOnMount: "always",
   });

@@ -1,12 +1,15 @@
 import { ArrowLeft } from "lucide-react";
-import type { ProjectGitState } from "../../../desktop/types";
+import type { RefObject } from "react";
+import type { ProjectDiffBaseline, ProjectGitState } from "../../../desktop/types";
 import { compactIconButtonClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
+import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
 import { PlainToggle } from "./PlainToggle";
-import { formatGitCount } from "./git-ops";
 
 type ComposerGitOpsFooterProps = {
   canCommit: boolean;
+  composerPanelRef: RefObject<HTMLDivElement | null>;
+  diffBaseline: ProjectDiffBaseline;
   diffCommentsSending: boolean;
   hasDiffComments: boolean;
   hasOrigin: boolean;
@@ -14,6 +17,7 @@ type ComposerGitOpsFooterProps = {
   isGitRepo: boolean;
   onBack: () => void;
   onPrimaryAction: () => void;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onToggleIncludeUnstaged: () => void;
   onTogglePreview: () => void;
   onTogglePush: () => void;
@@ -26,6 +30,8 @@ type ComposerGitOpsFooterProps = {
 
 export function ComposerGitOpsFooter({
   canCommit,
+  composerPanelRef,
+  diffBaseline,
   diffCommentsSending,
   hasDiffComments,
   hasOrigin,
@@ -33,6 +39,7 @@ export function ComposerGitOpsFooter({
   isGitRepo,
   onBack,
   onPrimaryAction,
+  onSetDiffBaseline,
   onToggleIncludeUnstaged,
   onTogglePreview,
   onTogglePush,
@@ -67,29 +74,13 @@ export function ComposerGitOpsFooter({
 
       <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
         {isGitRepo ? (
-          <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[color:var(--muted)]">
-              {formatGitCount(projectGitState?.fileCount ?? 0)} files
-            </span>
-            <span
-              className={
-                (projectGitState?.insertions ?? 0) > 0
-                  ? "text-[#7ee0bb]"
-                  : "text-[color:var(--muted)]"
-              }
-            >
-              +{formatGitCount(projectGitState?.insertions ?? 0)}
-            </span>
-            <span
-              className={
-                (projectGitState?.deletions ?? 0) > 0
-                  ? "text-[#ff9c9c]"
-                  : "text-[color:var(--muted)]"
-              }
-            >
-              -{formatGitCount(projectGitState?.deletions ?? 0)}
-            </span>
-          </div>
+          <ComposerDiffBaselineSelector
+            composerPanelRef={composerPanelRef}
+            projectId={projectGitState?.projectId ?? ""}
+            projectGitState={projectGitState}
+            selectedBaseline={diffBaseline}
+            onSelectBaseline={onSetDiffBaseline}
+          />
         ) : null}
 
         <button

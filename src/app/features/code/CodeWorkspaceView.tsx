@@ -3,12 +3,14 @@ import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { TerminalPanel } from "../../components/workspace/TerminalPanel";
+import { defaultDiffBaseline } from "../../components/workspace/composer/diff-baseline";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
   type SavedDiffComment,
   diffCommentStore,
   getDiffCommentContextId,
 } from "../../components/workspace/diff/diffCommentStore";
+import type { ProjectDiffBaseline } from "../../desktop/types";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 
@@ -45,6 +47,7 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
+  const [diffBaseline, setDiffBaseline] = useState<ProjectDiffBaseline>(defaultDiffBaseline);
   const footerContentRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
@@ -69,6 +72,15 @@ export function CodeWorkspaceView({
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
+
+  useEffect(() => {
+    if (!composerProjectId) {
+      setDiffBaseline(defaultDiffBaseline);
+      return;
+    }
+
+    setDiffBaseline(defaultDiffBaseline);
+  }, [composerProjectId]);
 
   useLayoutEffect(() => {
     const footerContent = footerContentRef.current;
@@ -163,6 +175,7 @@ export function CodeWorkspaceView({
             <DiffPanel
               projectId={composerProjectId}
               isGitRepo={projectGitState?.isGitRepo ?? false}
+              baseline={diffBaseline}
               selectedFilePath={state.selectedDiffFilePath}
               selectedCommentId={selectedDiffCommentId}
               selectedCommentJumpKey={selectedDiffCommentJumpKey}
@@ -218,6 +231,7 @@ export function CodeWorkspaceView({
                 availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 projectId={composerProjectId}
                 projectGitState={projectGitState}
+                diffBaseline={diffBaseline}
                 sessionPath={terminalSessionPath}
                 favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                 onSetDiffPanelVisible={(visible) => {
@@ -232,6 +246,7 @@ export function CodeWorkspaceView({
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
+                onSetDiffBaseline={setDiffBaseline}
                 onSetDiffRenderMode={setDiffRenderMode}
                 onSendDiffComments={(message) => {
                   void handleSendDiffComments(message);

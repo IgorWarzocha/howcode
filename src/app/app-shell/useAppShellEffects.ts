@@ -254,7 +254,7 @@ export function useAppShellEffects({
       if (event.reason === "end" || event.reason === "external") {
         if (workspaceState.diffVisible) {
           void queryClient.invalidateQueries({
-            queryKey: desktopQueryKeys.projectDiff(event.projectId),
+            queryKey: desktopQueryKeys.projectDiffPrefix(event.projectId),
           });
         }
 

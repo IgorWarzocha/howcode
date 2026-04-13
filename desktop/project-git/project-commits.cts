@@ -4,7 +4,7 @@ import { isGitRepository } from "./project-state.cts";
 
 const FIELD_SEPARATOR = "\0";
 const COMMIT_FIELD_COUNT = 8;
-const COMMIT_PRETTY_FORMAT = ["%H", "%h", "%an", "%ae", "%aI", "%cI", "%D", "%s", ""].join("%x00");
+const COMMIT_PRETTY_FORMAT = ["%H", "%h", "%an", "%ae", "%aI", "%cI", "%D", "%s"].join("%x00");
 
 function parseDecorations(rawDecorations: string) {
   const value = rawDecorations.trim();

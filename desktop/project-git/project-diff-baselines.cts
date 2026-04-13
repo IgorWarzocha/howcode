@@ -35,7 +35,7 @@ function formatLocalMidnightGitTimestamp(date = new Date()) {
 }
 
 function toResolvedCommitBaseline(
-  kind: Extract<ProjectDiffBaseline["kind"], "head" | "before-today" | "commit">,
+  kind: Extract<ProjectDiffBaseline["kind"], "head" | "before-today" | "main-branch" | "commit">,
   entry: Awaited<ReturnType<typeof getProjectCommitEntry>>,
 ): ProjectDiffResolvedBaseline {
   return {
@@ -117,6 +117,63 @@ async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDif
   }
 
   return toResolvedCommitBaseline("before-today", entry);
+}
+
+async function resolveMainBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
+  const candidateRefs = [
+    "refs/heads/main",
+    "refs/remotes/origin/main",
+    "refs/heads/master",
+    "refs/remotes/origin/master",
+  ];
+
+  for (const ref of candidateRefs) {
+    const resolvedRef = await resolveCommitRevision(projectId, ref);
+    if (!resolvedRef) {
+      continue;
+    }
+
+    const entry = await getProjectCommitEntry(projectId, resolvedRef);
+    if (!entry) {
+      continue;
+    }
+
+    return {
+      ...toResolvedCommitBaseline("main-branch", entry),
+      label: "Main branch",
+    };
+  }
+
+  let originHeadRef = "";
+
+  try {
+    const { stdout } = await runGitWithOptions(
+      projectId,
+      ["symbolic-ref", "refs/remotes/origin/HEAD"],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 128,
+      },
+    );
+    originHeadRef = stdout.trim();
+  } catch {
+    originHeadRef = "";
+  }
+
+  if (originHeadRef.length > 0) {
+    const resolvedRef = await resolveCommitRevision(projectId, originHeadRef);
+    if (resolvedRef) {
+      const entry = await getProjectCommitEntry(projectId, resolvedRef);
+      if (entry) {
+        return {
+          ...toResolvedCommitBaseline("main-branch", entry),
+          label: "Main branch",
+        };
+      }
+    }
+  }
+
+  return resolveHeadBaseline(projectId);
 }
 
 async function resolveChosenCommitBaseline(
@@ -239,6 +296,8 @@ export async function resolveProjectDiffBaseline(
       return resolveLastOpenedBaseline(projectId, requestedBaseline);
     case "before-today":
       return resolveBeforeTodayBaseline(projectId);
+    case "main-branch":
+      return resolveMainBranchBaseline(projectId);
     case "commit":
       return resolveChosenCommitBaseline(projectId, requestedBaseline.sha);
     default:
