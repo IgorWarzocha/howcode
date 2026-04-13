@@ -6,7 +6,7 @@ import type { Message, SkillCreatorSessionState } from "../shared/desktop-contra
 import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
-import { getRuntimeForRequest } from "./runtime/runtime-registry.cts";
+import { resolveComposerModel } from "./runtime/composer-state.cts";
 import {
   getActiveGlobalSkillsRoot,
   getActiveProjectSkillsRoot,
@@ -154,8 +154,7 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   }
 
   if (!model) {
-    const runtime = await getRuntimeForRequest(projectPath ? { projectId: projectPath } : {});
-    model = runtime.session.model ?? null;
+    model = await resolveComposerModel(projectPath ? { projectId: projectPath } : {});
   }
 
   if (!model) {

@@ -6,6 +6,7 @@ import type {
   DesktopActionPayloadInput,
   ModelSelection,
 } from "./desktop-contracts";
+import { getPersistedSessionPath } from "./session-paths";
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
   "off",
@@ -19,7 +20,9 @@ const composerThinkingLevels = new Set<ComposerThinkingLevel>([
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
     projectId: typeof payload.projectId === "string" ? payload.projectId : null,
-    sessionPath: typeof payload.sessionPath === "string" ? payload.sessionPath : null,
+    sessionPath: getPersistedSessionPath(
+      typeof payload.sessionPath === "string" ? payload.sessionPath : null,
+    ),
   };
 }
 

@@ -4,7 +4,7 @@ import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
 import type { CommitMessageContext } from "./project-git.cts";
-import { getRuntimeForRequest } from "./runtime/runtime-registry.cts";
+import { resolveComposerModel } from "./runtime/composer-state.cts";
 
 const MAX_FILE_SECTION_CHARS = 12_000;
 const MAX_PATCH_CHARS = 48_000;
@@ -205,11 +205,15 @@ async function getServices() {
 }
 
 async function resolveCommitMessageModel(request: ComposerStateRequest) {
-  const runtime = await getRuntimeForRequest(request);
   const selectedModel = loadAppSettings().gitCommitMessageModel;
 
+  const { AuthStorage, ModelRegistry, getAgentDir } = await getPiModule();
+  const agentDir = getAgentDir();
+  const authStorage = AuthStorage.create();
+  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+
   if (selectedModel) {
-    const availableModels = await runtime.session.modelRegistry.getAvailable();
+    const availableModels = await modelRegistry.getAvailable();
     const configuredModel = availableModels.find(
       (model) => model.provider === selectedModel.provider && model.id === selectedModel.id,
     );
@@ -219,7 +223,7 @@ async function resolveCommitMessageModel(request: ComposerStateRequest) {
     }
   }
 
-  return runtime.session.model ?? null;
+  return await resolveComposerModel(request);
 }
 
 export async function generateGitCommitMessage(

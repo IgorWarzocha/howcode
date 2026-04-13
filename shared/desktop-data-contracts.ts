@@ -377,5 +377,7 @@ export type DesktopEvent =
     }
   | {
       type: "composer-update";
+      projectId: string | null;
+      sessionPath: string | null;
       composer: ComposerState;
     };
