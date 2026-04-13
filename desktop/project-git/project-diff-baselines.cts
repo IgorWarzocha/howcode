@@ -53,6 +53,77 @@ function toResolvedCommitBaseline(
   };
 }
 
+async function resolveFirstExistingRef(projectId: string, candidateRefs: string[]) {
+  for (const ref of candidateRefs) {
+    const resolvedRef = await resolveCommitRevision(projectId, ref);
+    if (resolvedRef) {
+      return { ref, resolvedRef };
+    }
+  }
+
+  return null;
+}
+
+async function resolveMergeBaseRevision(projectId: string, targetRev: string) {
+  if (!(await hasHeadCommit(projectId))) {
+    return EMPTY_TREE_OID;
+  }
+
+  try {
+    const { stdout } = await runGitWithOptions(projectId, ["merge-base", "HEAD", targetRev], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 128,
+    });
+
+    const mergeBaseRev = stdout.trim();
+    return mergeBaseRev.length > 0 ? mergeBaseRev : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveNamedBranchBaseline(
+  projectId: string,
+  options: {
+    kind: Extract<ProjectDiffBaseline["kind"], "main-branch" | "dev-branch">;
+    label: string;
+    candidateRefs: string[];
+  },
+): Promise<ProjectDiffResolvedBaseline> {
+  const resolvedTarget = await resolveFirstExistingRef(projectId, options.candidateRefs);
+  if (!resolvedTarget) {
+    throw new Error(`Could not find ${options.label.toLowerCase()}.`);
+  }
+
+  const mergeBaseRev = await resolveMergeBaseRevision(projectId, resolvedTarget.resolvedRef);
+  if (!mergeBaseRev) {
+    throw new Error(`Could not determine merge base with ${options.label.toLowerCase()}.`);
+  }
+
+  if (mergeBaseRev === EMPTY_TREE_OID) {
+    return {
+      kind: options.kind,
+      rev: EMPTY_TREE_OID,
+      label: options.label,
+      commitSha: null,
+      shortSha: null,
+      subject: null,
+      committedAt: null,
+      capturedAt: null,
+    };
+  }
+
+  const entry = await getProjectCommitEntry(projectId, mergeBaseRev);
+  if (!entry) {
+    throw new Error(`Could not load merge base for ${options.label.toLowerCase()}.`);
+  }
+
+  return {
+    ...toResolvedCommitBaseline(options.kind, entry),
+    label: options.label,
+  };
+}
+
 async function resolveHeadBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
   const entry = await getProjectCommitEntry(projectId, "HEAD");
   if (!entry) {
@@ -146,83 +217,24 @@ async function resolveYesterdayBaseline(projectId: string): Promise<ProjectDiffR
 }
 
 async function resolveMainBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
-  const candidateRefs = [
-    "refs/heads/main",
-    "refs/remotes/origin/main",
-    "refs/heads/master",
-    "refs/remotes/origin/master",
-  ];
-
-  for (const ref of candidateRefs) {
-    const resolvedRef = await resolveCommitRevision(projectId, ref);
-    if (!resolvedRef) {
-      continue;
-    }
-
-    const entry = await getProjectCommitEntry(projectId, resolvedRef);
-    if (!entry) {
-      continue;
-    }
-
-    return {
-      ...toResolvedCommitBaseline("main-branch", entry),
-      label: "Main branch",
-    };
-  }
-
-  let originHeadRef = "";
-
-  try {
-    const { stdout } = await runGitWithOptions(
-      projectId,
-      ["symbolic-ref", "refs/remotes/origin/HEAD"],
-      {
-        timeout: 10_000,
-        maxBuffer: 1024 * 128,
-      },
-    );
-    originHeadRef = stdout.trim();
-  } catch {
-    originHeadRef = "";
-  }
-
-  if (originHeadRef.length > 0) {
-    const resolvedRef = await resolveCommitRevision(projectId, originHeadRef);
-    if (resolvedRef) {
-      const entry = await getProjectCommitEntry(projectId, resolvedRef);
-      if (entry) {
-        return {
-          ...toResolvedCommitBaseline("main-branch", entry),
-          label: "Main branch",
-        };
-      }
-    }
-  }
-
-  return resolveHeadBaseline(projectId);
+  return resolveNamedBranchBaseline(projectId, {
+    kind: "main-branch",
+    label: "Main branch",
+    candidateRefs: [
+      "refs/heads/main",
+      "refs/remotes/origin/main",
+      "refs/heads/master",
+      "refs/remotes/origin/master",
+    ],
+  });
 }
 
 async function resolveDevBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
-  const candidateRefs = ["refs/heads/dev", "refs/remotes/origin/dev"];
-
-  for (const ref of candidateRefs) {
-    const resolvedRef = await resolveCommitRevision(projectId, ref);
-    if (!resolvedRef) {
-      continue;
-    }
-
-    const entry = await getProjectCommitEntry(projectId, resolvedRef);
-    if (!entry) {
-      continue;
-    }
-
-    return {
-      ...toResolvedCommitBaseline("dev-branch", entry),
-      label: "Dev branch",
-    };
-  }
-
-  throw new Error("Could not find dev branch.");
+  return resolveNamedBranchBaseline(projectId, {
+    kind: "dev-branch",
+    label: "Dev branch",
+    candidateRefs: ["refs/heads/dev", "refs/remotes/origin/dev"],
+  });
 }
 
 async function resolveChosenCommitBaseline(

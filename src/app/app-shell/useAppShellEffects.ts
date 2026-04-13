@@ -258,6 +258,10 @@ export function useAppShellEffects({
           });
         }
 
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectCommitsPrefix(event.projectId),
+        });
+
         if (event.projectId === composerProjectId) {
           void loadProjectGitState(event.projectId).then((nextProjectGitState) => {
             setProjectGitState(nextProjectGitState);

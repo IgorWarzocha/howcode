@@ -39,6 +39,7 @@ export const desktopQueryKeys = {
   projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ["desktop", "projectDiff", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
+  projectCommitsPrefix: (projectId: string) => ["desktop", "projectCommits", projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ["desktop", "projectCommits", projectId, limit] as const,
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>

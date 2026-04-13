@@ -33,8 +33,8 @@ type ComposerDiffBaselineSelectorProps = {
 };
 
 const baselineOptions = [
-  { key: "previous", label: "prev commit", baseline: { kind: "previous" } },
   { key: "head", label: "last commit", baseline: { kind: "head" } },
+  { key: "previous", label: "prev commit", baseline: { kind: "previous" } },
   { key: "dev-branch", label: "dev branch", baseline: { kind: "dev-branch" } },
   { key: "main-branch", label: "main branch", baseline: { kind: "main-branch" } },
   { key: "yesterday", label: "yesterday", baseline: { kind: "yesterday" } },
