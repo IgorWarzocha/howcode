@@ -35,6 +35,7 @@ type ComposerDiffBaselineSelectorProps = {
 const baselineOptions = [
   { key: "previous", label: "prev commit", baseline: { kind: "previous" } },
   { key: "head", label: "last commit", baseline: { kind: "head" } },
+  { key: "dev-branch", label: "dev branch", baseline: { kind: "dev-branch" } },
   { key: "main-branch", label: "main branch", baseline: { kind: "main-branch" } },
   { key: "yesterday", label: "yesterday", baseline: { kind: "yesterday" } },
 ] as const satisfies ReadonlyArray<{
@@ -42,7 +43,7 @@ const baselineOptions = [
   label: string;
   baseline: Extract<
     ProjectDiffBaseline,
-    { kind: "head" | "previous" | "main-branch" | "yesterday" }
+    { kind: "head" | "previous" | "dev-branch" | "main-branch" | "yesterday" }
   >;
 }>;
 
@@ -174,6 +175,14 @@ export function ComposerDiffBaselineSelector({
     }
 
     if (!baselineDiff.diff) {
+      if (selectedBaseline.kind === "dev-branch" && baselineDiff.error) {
+        return {
+          fileCount: Number.NaN,
+          insertions: Number.NaN,
+          deletions: Number.NaN,
+        };
+      }
+
       return null;
     }
 
@@ -182,7 +191,7 @@ export function ComposerDiffBaselineSelector({
       insertions: baselineDiff.diff.insertions,
       deletions: baselineDiff.diff.deletions,
     };
-  }, [baselineDiff.diff, projectGitState, selectedBaseline.kind]);
+  }, [baselineDiff.diff, baselineDiff.error, projectGitState, selectedBaseline.kind]);
 
   useDismissibleLayer({
     open,

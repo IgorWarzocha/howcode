@@ -37,7 +37,7 @@ function formatLocalMidnightGitTimestamp(date = new Date()) {
 function toResolvedCommitBaseline(
   kind: Extract<
     ProjectDiffBaseline["kind"],
-    "head" | "previous" | "yesterday" | "main-branch" | "commit"
+    "head" | "previous" | "yesterday" | "main-branch" | "dev-branch" | "commit"
   >,
   entry: Awaited<ReturnType<typeof getProjectCommitEntry>>,
 ): ProjectDiffResolvedBaseline {
@@ -202,6 +202,29 @@ async function resolveMainBranchBaseline(projectId: string): Promise<ProjectDiff
   return resolveHeadBaseline(projectId);
 }
 
+async function resolveDevBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
+  const candidateRefs = ["refs/heads/dev", "refs/remotes/origin/dev"];
+
+  for (const ref of candidateRefs) {
+    const resolvedRef = await resolveCommitRevision(projectId, ref);
+    if (!resolvedRef) {
+      continue;
+    }
+
+    const entry = await getProjectCommitEntry(projectId, resolvedRef);
+    if (!entry) {
+      continue;
+    }
+
+    return {
+      ...toResolvedCommitBaseline("dev-branch", entry),
+      label: "Dev branch",
+    };
+  }
+
+  throw new Error("Could not find dev branch.");
+}
+
 async function resolveChosenCommitBaseline(
   projectId: string,
   sha: string,
@@ -326,6 +349,8 @@ export async function resolveProjectDiffBaseline(
       return resolveYesterdayBaseline(projectId);
     case "main-branch":
       return resolveMainBranchBaseline(projectId);
+    case "dev-branch":
+      return resolveDevBranchBaseline(projectId);
     case "commit":
       return resolveChosenCommitBaseline(projectId, requestedBaseline.sha);
     default:
