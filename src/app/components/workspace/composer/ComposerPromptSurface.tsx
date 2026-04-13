@@ -252,7 +252,6 @@ export function ComposerPromptSurface({
           ) : null}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <FeatureStatusBadge statusId="feature:composer.git-ops" />
           {projectGitState?.isGitRepo ? (
             <ComposerDiffBaselineSelector
               composerPanelRef={composerPanelRef}

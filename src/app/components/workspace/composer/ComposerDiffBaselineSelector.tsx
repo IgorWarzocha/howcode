@@ -263,7 +263,7 @@ export function ComposerDiffBaselineSelector({
         </span>
         <span
           className={cn(
-            "pointer-events-none absolute inset-0 flex items-center justify-end truncate px-2.5 text-[11px] uppercase tracking-[0.08em] text-[color:var(--text)] transition-opacity duration-150 ease-out",
+            "pointer-events-none absolute inset-0 flex items-center justify-end truncate text-[12px] text-[color:var(--text)] transition-opacity duration-150 ease-out",
             open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >

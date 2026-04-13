@@ -24,12 +24,7 @@ export function getDiffBaselineLabel(
 
   if (baseline?.kind === "commit") {
     const selectedCommit = commits.find((commit) => commit.sha === baseline.sha);
-    return (
-      selectedCommit?.subject?.trim() ||
-      selectedCommit?.shortSha ||
-      baseline.sha.slice(0, 7) ||
-      "selected commit"
-    );
+    return selectedCommit?.shortSha || baseline.sha.slice(0, 7) || "selected commit";
   }
 
   return "last commit";
@@ -47,7 +42,9 @@ export function getResolvedDiffBaselineLabel(
     case "last-opened":
       return "last opened";
     case "commit":
-      return resolvedBaseline?.subject?.trim() || resolvedBaseline?.shortSha || "that commit";
+      return (
+        resolvedBaseline?.shortSha || resolvedBaseline?.commitSha?.slice(0, 7) || "that commit"
+      );
     default:
       return "last commit";
   }
