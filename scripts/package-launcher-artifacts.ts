@@ -7,6 +7,16 @@ const appName = "howcode";
 const buildRoot = path.join(process.cwd(), "build");
 const outputRoot = path.join(process.cwd(), "artifacts", "npm-launcher");
 
+function getElectrobunZstdPath() {
+  const electrobunRoot = path.join(process.cwd(), "node_modules", "electrobun");
+  const targetOs =
+    process.platform === "darwin" ? "macos" : process.platform === "win32" ? "win" : "linux";
+  const targetArch = process.arch === "arm64" ? "arm64" : "x64";
+  const binExt = process.platform === "win32" ? ".exe" : "";
+
+  return path.join(electrobunRoot, `dist-${targetOs}-${targetArch}`, `zig-zstd${binExt}`);
+}
+
 const targets = [
   { os: "macos", arch: "arm64" },
   { os: "macos", arch: "x64" },
@@ -14,6 +24,8 @@ const targets = [
   { os: "linux", arch: "arm64" },
   { os: "win", arch: "x64" },
 ] as const;
+
+const zstdPath = getElectrobunZstdPath();
 
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(outputRoot, { recursive: true });
@@ -41,7 +53,21 @@ for (const target of targets) {
   }
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
-  const extractResult = spawnSync("tar", ["--zstd", "-xf", payloadPath, "-C", tempRoot], {
+  const tarPath = path.join(tempRoot, `${appName}-${target.os}-${target.arch}.tar`);
+  const decompressResult = spawnSync(
+    zstdPath,
+    ["decompress", "-i", payloadPath, "-o", tarPath, "--no-timing"],
+    {
+      stdio: "inherit",
+    },
+  );
+
+  if (decompressResult.status !== 0) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error(`Failed to decompress payload for ${target.os}-${target.arch}.`);
+  }
+
+  const extractResult = spawnSync("tar", ["-xf", tarPath, "-C", tempRoot], {
     stdio: "inherit",
   });
 
