@@ -31,14 +31,8 @@ Today the app includes real:
 - project and thread persistence
 - PTY-backed terminal support
 - checkpoint-backed diff rendering
-- partial git/project actions
-
-Still in progress:
-
-- git-ops UX
-- diff review flow
-- some header/navigation actions
-- remote/collaboration-oriented surfaces
+- git and project actions
+- project-aware sidebar and inbox flows
 
 ## Docs
 
