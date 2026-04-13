@@ -50,4 +50,44 @@ describe("submitComposerDraft", () => {
     });
     expect(clearStoredDraft).not.toHaveBeenCalled();
   });
+
+  it("skips blank drafts without dispatching", async () => {
+    const onAction = vi.fn(async () => null);
+    const clearStoredDraft = vi.fn();
+
+    await expect(
+      submitComposerDraft({
+        draft: "   ",
+        attachments: [],
+        draftThreadId: "session:/repo/thread.json",
+        isSending: false,
+        projectId: "/repo",
+        sessionPath: "/repo/thread.json",
+        onAction,
+        clearStoredDraft,
+      }),
+    ).resolves.toEqual({ status: "skipped" });
+
+    expect(onAction).not.toHaveBeenCalled();
+    expect(clearStoredDraft).not.toHaveBeenCalled();
+  });
+
+  it("skips sends while a request is already in flight", async () => {
+    const onAction = vi.fn(async () => null);
+
+    await expect(
+      submitComposerDraft({
+        draft: "ship it",
+        attachments: [],
+        draftThreadId: "session:/repo/thread.json",
+        isSending: true,
+        projectId: "/repo",
+        sessionPath: "/repo/thread.json",
+        onAction,
+        clearStoredDraft: vi.fn(),
+      }),
+    ).resolves.toEqual({ status: "skipped" });
+
+    expect(onAction).not.toHaveBeenCalled();
+  });
 });

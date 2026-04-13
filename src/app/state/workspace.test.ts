@@ -113,6 +113,72 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
   });
 
+  it("clears thread-specific state when leaving thread view", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        selectedThreadId: "thread-1",
+        selectedSessionPath: "/tmp/thread.jsonl",
+        selectedDiffTurnCount: 3,
+        selectedDiffFilePath: "src/app.ts",
+      },
+      {
+        type: "show-view",
+        view: "code",
+      },
+    );
+
+    expect(nextState.activeView).toBe("code");
+    expect(nextState.selectedThreadId).toBeNull();
+    expect(nextState.selectedSessionPath).toBeNull();
+    expect(nextState.selectedDiffTurnCount).toBeNull();
+    expect(nextState.selectedDiffFilePath).toBeNull();
+  });
+
+  it("keeps settings and archived panels mutually exclusive", () => {
+    const settingsState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        settingsOpen: true,
+        archivedThreadsOpen: true,
+      },
+      { type: "set-settings-panel-open", open: true },
+    );
+
+    expect(settingsState.settingsPanelOpen).toBe(true);
+    expect(settingsState.settingsOpen).toBe(false);
+    expect(settingsState.archivedThreadsOpen).toBe(false);
+
+    const archivedState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        settingsOpen: true,
+        settingsPanelOpen: true,
+      },
+      { type: "set-archived-threads-open", open: true },
+    );
+
+    expect(archivedState.archivedThreadsOpen).toBe(true);
+    expect(archivedState.settingsOpen).toBe(false);
+    expect(archivedState.settingsPanelOpen).toBe(false);
+  });
+
+  it("toggles and collapses all project groups", () => {
+    const toggledState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "toggle-project-collapse",
+      projectId: "pi-plugin-codex",
+    });
+
+    expect(toggledState.collapsedProjectIds["pi-plugin-codex"]).toBe(false);
+
+    const collapsedState = workspaceReducer(toggledState, {
+      type: "collapse-all-projects",
+    });
+
+    expect(Object.values(collapsedState.collapsedProjectIds).every(Boolean)).toBe(true);
+  });
+
   it("can switch into takeover terminal mode", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
       type: "show-takeover",

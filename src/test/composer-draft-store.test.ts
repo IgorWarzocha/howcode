@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   composerDraftStorageKey,
   createComposerDraftStore,
+  getComposerDraftThreadId,
 } from "../app/components/workspace/composer/composerDraftStore";
 import { createMemoryStorage } from "./helpers/storage";
 
@@ -123,5 +124,42 @@ describe("composerDraftStore", () => {
 
     expect(store.getDraft("session:/repo/one.json")).toBeNull();
     expect(storage.getItem(composerDraftStorageKey)).toBeNull();
+  });
+
+  it("derives draft thread ids from session paths and project ids", () => {
+    expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: "/repo/thread.json" })).toBe(
+      "session:/repo/thread.json",
+    );
+    expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: null })).toBe(
+      "project:/repo:new-thread",
+    );
+    expect(getComposerDraftThreadId({ projectId: "", sessionPath: null })).toBeNull();
+  });
+
+  it("returns cloned drafts so callers cannot mutate store state", () => {
+    const storage = createMemoryStorage();
+    const store = createComposerDraftStore({
+      storage,
+      storageKey: composerDraftStorageKey,
+      debounceMs: 300,
+      beforeUnloadTarget: null,
+    });
+
+    store.setDraft("session:/repo/one.json", {
+      prompt: "rename the header",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+    });
+
+    const draft = store.getDraft("session:/repo/one.json");
+    if (!draft) {
+      throw new Error("Expected draft to exist");
+    }
+    draft.prompt = "mutated";
+    draft.attachments[0].name = "mutated.ts";
+
+    expect(store.getDraft("session:/repo/one.json")).toEqual({
+      prompt: "rename the header",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+    });
   });
 });

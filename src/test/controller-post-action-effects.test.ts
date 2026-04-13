@@ -149,6 +149,51 @@ describe("controller post action effects", () => {
     });
   });
 
+  it("resets model selections and trims blank project locations", () => {
+    const state = {
+      ...buildShellState(),
+      appSettings: {
+        ...buildShellState().appSettings,
+        gitCommitMessageModel: { provider: "openai", id: "gpt-5" },
+        skillCreatorModel: { provider: "anthropic", id: "claude" },
+        preferredProjectLocation: "/tmp/work",
+      },
+    } satisfies ShellState;
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "gitCommitMessageModel",
+        reset: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        gitCommitMessageModel: null,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "skillCreatorModel",
+        reset: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        skillCreatorModel: null,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "preferredProjectLocation",
+        value: "   ",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        preferredProjectLocation: null,
+      },
+    });
+  });
+
   it("renames projects optimistically", () => {
     const result = getOptimisticallyRenamedShellState(buildShellState(), {
       projectId: "/repo",
@@ -159,6 +204,25 @@ describe("controller post action effects", () => {
       id: "/repo",
       name: "Renamed repo",
     });
+  });
+
+  it("leaves state unchanged for invalid rename and pin payloads", () => {
+    const state = buildShellState();
+
+    expect(
+      getOptimisticallyRenamedShellState(state, {
+        projectId: "/repo",
+        projectName: "   ",
+      }),
+    ).toBe(state);
+
+    expect(getOptimisticallyPinnedShellState(state, "thread.pin", { projectId: "/another" })).toBe(
+      state,
+    );
+    expect(getOptimisticallyPinnedShellState(state, "project.pin", {})).toBe(state);
+    expect(getOptimisticallyPinnedShellState(state, "thread.open", { projectId: "/another" })).toBe(
+      state,
+    );
   });
 
   it("pins threads optimistically and moves them to the front", () => {
