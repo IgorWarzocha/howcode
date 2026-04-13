@@ -23,7 +23,7 @@ On first run, the launcher downloads the matching desktop build for your platfor
 
 ### Linux note
 
-If WebKit GPU buffer allocation fails, the npm launcher now retries with:
+The npm launcher now starts Linux builds with:
 
 ```bash
 WEBKIT_DISABLE_DMABUF_RENDERER=1

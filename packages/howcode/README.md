@@ -15,7 +15,7 @@ On first run, the launcher downloads the matching desktop build from GitHub Rele
 
 ## Linux note
 
-If the Linux build hits a WebKit/GBM white-screen issue, the launcher retries with `WEBKIT_DISABLE_DMABUF_RENDERER=1` automatically.
+On Linux, the npm launcher sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` automatically before starting the app to avoid the common WebKit/GBM white-screen issue.
 
 If you are launching a downloaded Linux release asset manually, use:
 

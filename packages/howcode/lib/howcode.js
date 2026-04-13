@@ -44,8 +44,6 @@ const TARGETS = {
   },
 };
 
-const LINUX_DMABUF_FAILURE_PATTERNS = [/Failed to create GBM buffer/i, /GLXBadWindow/i, /dmabuf/i];
-
 function readJsonIfPresent(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -218,122 +216,17 @@ function spawnLauncherProcess(executablePath, options = {}) {
   });
 }
 
-function killDetachedProcess(child) {
-  if (!child.pid) {
-    return;
-  }
-
-  try {
-    if (process.platform !== "win32") {
-      process.kill(-child.pid, "SIGTERM");
-      return;
-    }
-  } catch {}
-
-  try {
-    child.kill("SIGTERM");
-  } catch {}
-}
-
-function hasLinuxDmabufFailure(output) {
-  return LINUX_DMABUF_FAILURE_PATTERNS.some((pattern) => pattern.test(output));
-}
-
-function trimLauncherLog(output) {
-  return output.trim().split(/\r?\n/).slice(-10).join("\n");
-}
-
 async function launch(executablePath) {
-  if (process.platform !== "linux" || process.env.WEBKIT_DISABLE_DMABUF_RENDERER === "1") {
-    const child = spawnLauncherProcess(executablePath);
-    child.unref();
-    return;
-  }
-
   const child = spawnLauncherProcess(executablePath, {
-    stdio: ["ignore", "pipe", "pipe"],
+    env:
+      process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER
+        ? {
+            WEBKIT_DISABLE_DMABUF_RENDERER: "1",
+          }
+        : undefined,
   });
 
-  let output = "";
-  const appendOutput = (chunk) => {
-    output += chunk.toString();
-    if (output.length > 32_000) {
-      output = output.slice(-32_000);
-    }
-  };
-
-  child.stdout?.on("data", appendOutput);
-  child.stderr?.on("data", appendOutput);
-
-  const outcome = await new Promise((resolve) => {
-    let settled = false;
-
-    const finish = (value) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timer);
-      resolve(value);
-    };
-
-    const checkForFallback = () => {
-      if (hasLinuxDmabufFailure(output)) {
-        finish({ type: "fallback" });
-      }
-    };
-
-    const timer = setTimeout(() => finish({ type: "ok" }), 4_000);
-
-    child.stdout?.on("data", checkForFallback);
-    child.stderr?.on("data", checkForFallback);
-    child.once("error", (error) => finish({ type: "error", error }));
-    child.once("exit", (code, signal) => {
-      if (hasLinuxDmabufFailure(output)) {
-        finish({ type: "fallback" });
-        return;
-      }
-
-      finish({ type: "exit", code, signal });
-    });
-  });
-
-  child.stdout?.destroy();
-  child.stderr?.destroy();
   child.unref();
-
-  if (outcome.type === "fallback") {
-    killDetachedProcess(child);
-
-    const fallbackChild = spawnLauncherProcess(executablePath, {
-      env: {
-        WEBKIT_DISABLE_DMABUF_RENDERER: "1",
-      },
-    });
-
-    fallbackChild.unref();
-    return;
-  }
-
-  if (outcome.type === "ok") {
-    return;
-  }
-
-  if (outcome.type === "error") {
-    throw outcome.error;
-  }
-
-  if (outcome.code === 0) {
-    return;
-  }
-
-  const logTail = trimLauncherLog(output);
-  throw new Error(
-    logTail
-      ? `Desktop launcher exited early.\n${logTail}`
-      : `Desktop launcher exited early with code ${outcome.code ?? "unknown"}.`,
-  );
 }
 
 async function main() {

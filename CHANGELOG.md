@@ -13,7 +13,7 @@ See `docs/roadmap.md` for the broader product direction.
 
 - bundle the Pi runtime into packaged desktop builds
 - ship launcher archives with the real extracted app payload
-- retry Linux launches with `WEBKIT_DISABLE_DMABUF_RENDERER=1` when GBM / DMABUF startup fails
+- launch Linux builds with `WEBKIT_DISABLE_DMABUF_RENDERER=1` by default from the npm launcher
 - document the Linux white-screen workaround for direct asset launches
 
 ## 0.1.0 - Initial release

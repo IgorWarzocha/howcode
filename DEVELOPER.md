@@ -65,7 +65,7 @@ It is a thin launcher that:
 3. caches it locally
 4. launches the packaged desktop app
 
-On Linux, the npm launcher also watches early launcher output for DMABUF / GBM renderer failures and retries once with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+On Linux, the npm launcher now sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` up front before starting the app. The previous detect-and-retry approach was too unreliable because the renderer failure can happen after the detached launcher exits or without matching the watched output.
 
 If you launch Linux release assets directly outside the npm launcher, document this manual workaround:
 
