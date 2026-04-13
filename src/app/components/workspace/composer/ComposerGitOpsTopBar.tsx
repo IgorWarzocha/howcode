@@ -6,7 +6,6 @@ import {
   diffPanelTurnChipSelectedClass,
 } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
-import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import type { GitOpsCommentCard } from "./composer-git-ops.helpers";
 
 type ComposerGitOpsTopBarProps = {
@@ -95,8 +94,6 @@ export function ComposerGitOpsTopBar({
             <span>{projectGitState?.branch ?? "Detached"}</span>
           </button>
         ) : null}
-
-        <FeatureStatusBadge statusId="feature:composer.git-ops" />
       </div>
 
       <div className="absolute top-4 right-4 flex items-center gap-1.5">

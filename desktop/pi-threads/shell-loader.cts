@@ -1,6 +1,8 @@
 import type {
   ComposerState,
   ComposerStateRequest,
+  ProjectCommitEntry,
+  ProjectDiffStatsResult,
   ShellState,
 } from "../../shared/desktop-contracts.ts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
@@ -10,7 +12,13 @@ import {
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "../pi-desktop-runtime.cts";
 import { getPiModule } from "../pi-module.cts";
-import { loadProjectDiff, loadProjectGitState } from "../project-git.cts";
+import {
+  captureProjectDiffBaseline,
+  listProjectCommits,
+  loadProjectDiff,
+  loadProjectDiffStats,
+  loadProjectGitState,
+} from "../project-git.cts";
 import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
 import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
@@ -89,8 +97,18 @@ export async function loadComposerState(
   return getComposerState(request);
 }
 
+export async function loadProjectCommitHistory(
+  projectId: string,
+  limit?: number | null,
+): Promise<ProjectCommitEntry[]> {
+  return listProjectCommits(projectId, limit ?? null);
+}
+
 export { loadProjectGitState };
 export { loadProjectDiff };
+export { loadProjectDiffStats };
+export { captureProjectDiffBaseline };
+export { listProjectCommits };
 export { setWatchedSessionPath };
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents;

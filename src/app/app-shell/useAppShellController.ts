@@ -143,6 +143,18 @@ export function useAppShellController() {
     skillsProjectScopeActive,
   });
 
+  const resetProjectDiffCaches = (projectId: string) => {
+    queryClient.removeQueries({
+      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
+    });
+  };
+
   useEffect(() => {
     if (!inboxQuery.isSuccess) {
       return;
@@ -260,6 +272,10 @@ export function useAppShellController() {
   };
 
   const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
+    if (composerProjectId) {
+      resetProjectDiffCaches(composerProjectId);
+    }
+
     dispatch({
       type: "open-diff",
       checkpointTurnCount,
@@ -268,6 +284,10 @@ export function useAppShellController() {
   };
 
   const handleOpenWorktreeDiffFile = (filePath: string) => {
+    if (composerProjectId) {
+      resetProjectDiffCaches(composerProjectId);
+    }
+
     dispatch({
       type: "open-diff",
       checkpointTurnCount: null,
@@ -281,6 +301,10 @@ export function useAppShellController() {
 
   const handleToggleDiffPanel = () => {
     if (!state.diffVisible) {
+      if (composerProjectId) {
+        resetProjectDiffCaches(composerProjectId);
+      }
+
       dispatch({
         type: "open-diff",
         checkpointTurnCount: null,

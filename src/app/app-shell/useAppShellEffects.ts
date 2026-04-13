@@ -155,6 +155,28 @@ export function useAppShellEffects({
   }, [composerProjectId, loadProjectGitState, setProjectGitState]);
 
   useEffect(() => {
+    if (!workspaceState.diffVisible || !composerProjectId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void loadProjectGitState(composerProjectId)
+      .then((nextProjectGitState) => {
+        if (!cancelled) {
+          setProjectGitState(nextProjectGitState);
+        }
+      })
+      .catch((error) => {
+        console.warn("Failed to refresh project git state for the diff panel.", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [composerProjectId, loadProjectGitState, setProjectGitState, workspaceState.diffVisible]);
+
+  useEffect(() => {
     if (!window.piDesktop?.watchSession) {
       return;
     }
@@ -230,8 +252,18 @@ export function useAppShellEffects({
       }
 
       if (event.reason === "end" || event.reason === "external") {
+        if (workspaceState.diffVisible) {
+          void queryClient.invalidateQueries({
+            queryKey: desktopQueryKeys.projectDiffPrefix(event.projectId),
+          });
+        }
+
         void queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.projectDiff(event.projectId),
+          queryKey: desktopQueryKeys.projectDiffStatsPrefix(event.projectId),
+        });
+
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectCommitsPrefix(event.projectId),
         });
 
         if (event.projectId === composerProjectId) {
@@ -253,6 +285,7 @@ export function useAppShellEffects({
     setComposerState,
     setProjectGitState,
     workspaceState.activeView,
+    workspaceState.diffVisible,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);

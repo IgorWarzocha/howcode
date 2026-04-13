@@ -13,8 +13,11 @@ export {
 } from "./pi-threads/thread-loader.cts";
 export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader.cts";
 export {
+  captureProjectDiffBaseline,
   loadComposerState,
+  listProjectCommits,
   loadProjectDiff,
+  loadProjectDiffStats,
   loadProjectGitState,
   loadShellState,
   setWatchedSessionPath,

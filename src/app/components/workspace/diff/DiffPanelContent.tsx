@@ -1,9 +1,11 @@
 import type { DiffLineAnnotation, FileDiffMetadata } from "@pierre/diffs/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ProjectDiffBaseline } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
+import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from "../composer/diff-baseline";
 import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
 import { DiffPanelFileList } from "./DiffPanelFileList";
@@ -23,6 +25,7 @@ import { useDiffPanelScrollAlignment } from "./useDiffPanelScrollAlignment";
 type DiffPanelContentProps = {
   projectId: string;
   isGitRepo: boolean;
+  baseline: ProjectDiffBaseline | null;
   selectedFilePath: string | null;
   selectedCommentId: string | null;
   selectedCommentJumpKey: number;
@@ -33,6 +36,7 @@ type DiffPanelContentProps = {
 export function DiffPanelContent({
   projectId,
   isGitRepo,
+  baseline,
   selectedFilePath,
   selectedCommentId,
   selectedCommentJumpKey,
@@ -42,7 +46,7 @@ export function DiffPanelContent({
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
-  const { diff, isLoading, error } = useDesktopDiff(projectId, isGitRepo);
+  const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo);
 
   const selectedPatch = diff?.diff;
   const hasResolvedPatch = typeof selectedPatch === "string";
@@ -175,7 +179,7 @@ export function DiffPanelContent({
                   {isLoading
                     ? "Loading diff..."
                     : hasNoNetChanges
-                      ? "No net changes in this worktree."
+                      ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
                       : "No patch available for this worktree."}
                 </p>
               </div>

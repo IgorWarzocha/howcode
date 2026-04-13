@@ -469,6 +469,17 @@ export async function runPostDesktopActionEffects({
     const projectId = getPayloadProjectId(contextualPayload);
 
     if (projectId && actionResult?.result?.committed === true) {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
+        }),
+      ]);
       setProjectGitState(await loadProjectGitState(projectId));
     }
   }

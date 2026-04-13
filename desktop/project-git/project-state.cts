@@ -1,5 +1,5 @@
 import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
-import { hasHeadCommit, runGit } from "./git-runner.cts";
+import { hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
 
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
@@ -58,7 +58,10 @@ export async function isGitRepository(projectId: string) {
 
 async function getStatusSummary(projectId: string) {
   try {
-    const { stdout } = await runGit(projectId, ["status", "--short", "--branch"]);
+    const { stdout } = await runGitWithOptions(projectId, ["status", "--short", "--branch"], {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024 * 4,
+    });
     return parseStatusSummary(stdout);
   } catch {
     return {
@@ -118,7 +121,10 @@ async function getDiffStats(projectId: string) {
     const args = (await hasHeadCommit(projectId))
       ? ["diff", "--shortstat", "HEAD", "--"]
       : ["diff", "--cached", "--shortstat", "--root", "--"];
-    const { stdout } = await runGit(projectId, args);
+    const { stdout } = await runGitWithOptions(projectId, args, {
+      timeout: 10_000,
+      maxBuffer: 1024 * 1024 * 4,
+    });
     return parseShortStat(stdout);
   } catch {
     return { insertions: 0, deletions: 0 };
@@ -142,11 +148,11 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     };
   }
 
-  const [branch, stats, statusSummary, originUrl] = await Promise.all([
+  const [branch, statusSummary, originUrl, stats] = await Promise.all([
     getBranch(projectId),
-    getDiffStats(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
+    getDiffStats(projectId),
   ]);
 
   return {

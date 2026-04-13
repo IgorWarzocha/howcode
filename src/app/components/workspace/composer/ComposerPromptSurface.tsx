@@ -1,4 +1,5 @@
 import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
+import type { RefObject } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -7,22 +8,28 @@ import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import type { ComposerProps } from "../Composer";
 import { AttachmentChips } from "./AttachmentChips";
+import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
 import { ComposerFilePicker } from "./ComposerFilePicker";
 import { ComposerModelPopover } from "./ComposerModelPopover";
 import { ComposerTextField } from "./ComposerTextField";
-import { formatGitCount, getGitOpsEntryButtonClass } from "./git-ops";
+import { getGitOpsEntryButtonClass } from "./git-ops";
 import { useComposerController } from "./useComposerController";
 
-type ComposerPromptSurfaceProps = ComposerProps & { onOpenGitOps: () => void };
+type ComposerPromptSurfaceProps = ComposerProps & {
+  composerPanelRef: RefObject<HTMLDivElement | null>;
+  onOpenGitOps: () => void;
+};
 
 export function ComposerPromptSurface({
   activeView,
+  composerPanelRef,
   model,
   availableModels,
   thinkingLevel,
   availableThinkingLevels,
   projectId,
   projectGitState,
+  diffBaseline,
   sessionPath,
   favoriteFolders,
   onOpenTakeoverTerminal,
@@ -31,6 +38,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  onSetDiffBaseline,
   onOpenGitOps,
   onLayoutChange,
 }: ComposerPromptSurfaceProps) {
@@ -244,30 +252,15 @@ export function ComposerPromptSurface({
           ) : null}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <FeatureStatusBadge statusId="feature:composer.git-ops" />
-          <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[color:var(--muted)]">
-              {formatGitCount(projectGitState?.fileCount ?? 0)} files
-            </span>
-            <span
-              className={
-                (projectGitState?.insertions ?? 0) > 0
-                  ? "text-[#7ee0bb]"
-                  : "text-[color:var(--muted)]"
-              }
-            >
-              +{formatGitCount(projectGitState?.insertions ?? 0)}
-            </span>
-            <span
-              className={
-                (projectGitState?.deletions ?? 0) > 0
-                  ? "text-[#ff9c9c]"
-                  : "text-[color:var(--muted)]"
-              }
-            >
-              -{formatGitCount(projectGitState?.deletions ?? 0)}
-            </span>
-          </div>
+          {projectGitState?.isGitRepo ? (
+            <ComposerDiffBaselineSelector
+              composerPanelRef={composerPanelRef}
+              projectId={projectId}
+              projectGitState={projectGitState}
+              selectedBaseline={diffBaseline}
+              onSelectBaseline={onSetDiffBaseline}
+            />
+          ) : null}
           <button
             type="button"
             className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}

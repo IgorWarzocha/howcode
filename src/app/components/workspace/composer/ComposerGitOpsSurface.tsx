@@ -1,5 +1,9 @@
-import { useMemo } from "react";
-import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
+import { type RefObject, useMemo } from "react";
+import type {
+  DesktopActionInvoker,
+  ProjectDiffBaseline,
+  ProjectGitState,
+} from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { cn } from "../../../utils/cn";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
@@ -9,12 +13,15 @@ import { ComposerGitOpsTopBar } from "./ComposerGitOpsTopBar";
 import { useComposerGitOpsState } from "./useComposerGitOpsState";
 
 type ComposerGitOpsSurfaceProps = {
+  composerPanelRef: RefObject<HTMLDivElement | null>;
   projectGitState: ProjectGitState | null;
+  diffBaseline: ProjectDiffBaseline;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
@@ -24,12 +31,15 @@ type ComposerGitOpsSurfaceProps = {
 };
 
 export function ComposerGitOpsSurface({
+  composerPanelRef,
   projectGitState,
+  diffBaseline,
   diffRenderMode,
   diffComments,
   diffCommentCount,
   diffCommentsSending,
   diffCommentError,
+  onSetDiffBaseline,
   onSetDiffRenderMode,
   onSendDiffComments,
   onSelectDiffComment,
@@ -133,7 +143,9 @@ export function ComposerGitOpsSurface({
 
       {/* Footer row structure here is mirrored by the prompt composer footer. */}
       <ComposerGitOpsFooter
+        composerPanelRef={composerPanelRef}
         canCommit={canCommit}
+        diffBaseline={diffBaseline}
         diffCommentsSending={diffCommentsSending}
         hasDiffComments={hasDiffComments}
         hasOrigin={hasOrigin}
@@ -141,6 +153,7 @@ export function ComposerGitOpsSurface({
         isGitRepo={isGitRepo}
         onBack={onBack}
         onPrimaryAction={handlePrimaryAction}
+        onSetDiffBaseline={onSetDiffBaseline}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}

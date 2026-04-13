@@ -11,7 +11,11 @@ import type {
   PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
+  ProjectCommitEntry,
+  ProjectDiffBaseline,
+  ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -33,7 +37,16 @@ export const desktopQueryKeys = {
   composerState: (request: ComposerStateRequest) =>
     ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
-  projectDiff: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
+  projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
+  projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
+    ["desktop", "projectDiff", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
+  projectDiffStatsPrefix: (projectId: string) =>
+    ["desktop", "projectDiffStats", projectId] as const,
+  projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
+    ["desktop", "projectDiffStats", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
+  projectCommitsPrefix: (projectId: string) => ["desktop", "projectCommits", projectId] as const,
+  projectCommits: (projectId: string, limit = 50) =>
+    ["desktop", "projectCommits", projectId, limit] as const,
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ["desktop", "thread", sessionPath, refreshKey, historyCompactions] as const,
 };
@@ -64,8 +77,31 @@ export async function getProjectGitStateQuery(projectId: string): Promise<Projec
   return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null;
 }
 
-export async function getProjectDiffQuery(projectId: string): Promise<ProjectDiffResult | null> {
-  return (await window.piDesktop?.getProjectDiff?.(projectId)) ?? null;
+export async function getProjectDiffQuery(
+  projectId: string,
+  baseline: ProjectDiffBaseline | null = null,
+): Promise<ProjectDiffResult | null> {
+  return (await window.piDesktop?.getProjectDiff?.(projectId, baseline)) ?? null;
+}
+
+export async function getProjectDiffStatsQuery(
+  projectId: string,
+  baseline: ProjectDiffBaseline | null = null,
+): Promise<ProjectDiffStatsResult | null> {
+  return (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline)) ?? null;
+}
+
+export async function captureProjectDiffBaselineQuery(
+  projectId: string,
+): Promise<ProjectDiffResolvedBaseline | null> {
+  return (await window.piDesktop?.captureProjectDiffBaseline?.(projectId)) ?? null;
+}
+
+export async function listProjectCommitsQuery(
+  projectId: string,
+  limit = 50,
+): Promise<ProjectCommitEntry[]> {
+  return (await window.piDesktop?.listProjectCommits?.(projectId, limit)) ?? [];
 }
 
 export async function searchPiPackagesQuery(

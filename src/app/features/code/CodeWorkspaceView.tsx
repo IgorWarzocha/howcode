@@ -3,12 +3,14 @@ import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { TerminalPanel } from "../../components/workspace/TerminalPanel";
+import { defaultDiffBaseline } from "../../components/workspace/composer/diff-baseline";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
   type SavedDiffComment,
   diffCommentStore,
   getDiffCommentContextId,
 } from "../../components/workspace/diff/diffCommentStore";
+import type { ProjectDiffBaseline } from "../../desktop/types";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 
@@ -24,6 +26,11 @@ type CodeWorkspaceViewProps = {
 };
 
 const WORKSPACE_FOOTER_OVERLAP_PX = 20;
+
+type ProjectScopedDiffBaseline = {
+  projectId: string;
+  baseline: ProjectDiffBaseline;
+};
 
 export function CodeWorkspaceView({
   controller,
@@ -45,6 +52,10 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
+  const [diffBaselineState, setDiffBaselineState] = useState<ProjectScopedDiffBaseline>({
+    projectId: composerProjectId,
+    baseline: defaultDiffBaseline,
+  });
   const footerContentRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
@@ -62,6 +73,10 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
+  const diffBaseline =
+    diffBaselineState.projectId === composerProjectId
+      ? diffBaselineState.baseline
+      : defaultDiffBaseline;
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -69,6 +84,19 @@ export function CodeWorkspaceView({
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
+
+  useEffect(() => {
+    setDiffBaselineState((current) => {
+      if (current.projectId === composerProjectId && current.baseline.kind === "head") {
+        return current;
+      }
+
+      return {
+        projectId: composerProjectId,
+        baseline: defaultDiffBaseline,
+      };
+    });
+  }, [composerProjectId]);
 
   useLayoutEffect(() => {
     const footerContent = footerContentRef.current;
@@ -163,6 +191,7 @@ export function CodeWorkspaceView({
             <DiffPanel
               projectId={composerProjectId}
               isGitRepo={projectGitState?.isGitRepo ?? false}
+              baseline={diffBaseline}
               selectedFilePath={state.selectedDiffFilePath}
               selectedCommentId={selectedDiffCommentId}
               selectedCommentJumpKey={selectedDiffCommentJumpKey}
@@ -218,6 +247,7 @@ export function CodeWorkspaceView({
                 availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 projectId={composerProjectId}
                 projectGitState={projectGitState}
+                diffBaseline={diffBaseline}
                 sessionPath={terminalSessionPath}
                 favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                 onSetDiffPanelVisible={(visible) => {
@@ -232,6 +262,12 @@ export function CodeWorkspaceView({
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
+                onSetDiffBaseline={(baseline) => {
+                  setDiffBaselineState({
+                    projectId: composerProjectId,
+                    baseline,
+                  });
+                }}
                 onSetDiffRenderMode={setDiffRenderMode}
                 onSendDiffComments={(message) => {
                   void handleSendDiffComments(message);
