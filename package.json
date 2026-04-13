@@ -1,6 +1,6 @@
 {
   "name": "pi-desktop-mock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Codex-inspired desktop UI mock for Pi",
   "packageManager": "bun@1.3.9",

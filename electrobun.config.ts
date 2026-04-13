@@ -4,7 +4,7 @@ export default {
   app: {
     name: "howcode",
     identifier: "howcode.desktop.local",
-    version: "0.1.0",
+    version: "0.1.1",
     description: "Desktop shell for Pi focused on fast local coding workflows.",
   },
   build: {
