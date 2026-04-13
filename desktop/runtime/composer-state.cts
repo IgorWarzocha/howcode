@@ -97,9 +97,41 @@ function resolveCurrentModel(
 }
 
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
+  const { cwd, session } = await createComposerSnapshotSession(request);
+
+  try {
+    const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[];
+    const currentModel = resolveCurrentModel(
+      availableModels,
+      session.model ? { provider: session.model.provider, id: session.model.id } : null,
+    );
+    const availableThinkingLevels = mapThinkingLevels(session.getAvailableThinkingLevels());
+
+    return {
+      cwd,
+      availableModels,
+      currentModel,
+      currentThinkingLevel: clampThinkingLevel(
+        session.thinkingLevel as ComposerThinkingLevel,
+        availableThinkingLevels,
+      ),
+      availableThinkingLevels,
+    };
+  } finally {
+    session.dispose();
+  }
+}
+
+export async function createComposerSnapshotSession(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const { AuthStorage, ModelRegistry, SessionManager, SettingsManager, getAgentDir } =
-    await getPiModule();
+  const {
+    AuthStorage,
+    ModelRegistry,
+    SessionManager,
+    SettingsManager,
+    createAgentSession,
+    getAgentDir,
+  } = await getPiModule();
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
     : (request.projectId ?? process.cwd());
@@ -107,43 +139,33 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  const availableModels = await modelRegistry.getAvailable();
-
-  let selectedModel: { provider: string; id: string } | null = null;
-  let selectedThinkingLevel: ComposerThinkingLevel | null = null;
-
-  if (persistedSessionPath) {
-    const sessionContext = SessionManager.open(persistedSessionPath).buildSessionContext();
-    selectedModel = sessionContext.model
-      ? { provider: sessionContext.model.provider, id: sessionContext.model.modelId }
-      : null;
-    selectedThinkingLevel = sessionContext.thinkingLevel as ComposerThinkingLevel;
-  } else {
-    const provider = settingsManager.getDefaultProvider();
-    const modelId = settingsManager.getDefaultModel();
-    selectedModel = provider && modelId ? { provider, id: modelId } : null;
-    selectedThinkingLevel =
-      (settingsManager.getDefaultThinkingLevel() as ComposerThinkingLevel | undefined) ??
-      DEFAULT_COMPOSER_THINKING_LEVEL;
-  }
-
-  const currentModel = resolveCurrentModel(availableModels, selectedModel);
-  const availableThinkingLevels = getAvailableThinkingLevelsForModel(currentModel);
+  const sessionManager = persistedSessionPath
+    ? SessionManager.open(persistedSessionPath)
+    : SessionManager.inMemory();
+  const { session } = await createAgentSession({
+    cwd,
+    agentDir,
+    authStorage,
+    modelRegistry,
+    settingsManager,
+    sessionManager,
+    tools: [],
+  });
 
   return {
     cwd,
-    availableModels,
-    currentModel,
-    currentThinkingLevel: clampThinkingLevel(
-      selectedThinkingLevel ?? DEFAULT_COMPOSER_THINKING_LEVEL,
-      availableThinkingLevels,
-    ),
-    availableThinkingLevels,
+    session,
   };
 }
 
 export async function resolveComposerModel(request: ComposerStateRequest = {}) {
-  return (await resolveComposerStateSnapshot(request)).currentModel;
+  const { session } = await createComposerSnapshotSession(request);
+
+  try {
+    return (session.model as ComposerSourceModel | null | undefined) ?? null;
+  } finally {
+    session.dispose();
+  }
 }
 
 export async function buildComposerStateSnapshot(

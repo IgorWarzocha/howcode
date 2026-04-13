@@ -4,7 +4,7 @@ import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
 import type { CommitMessageContext } from "./project-git.cts";
-import { resolveComposerModel } from "./runtime/composer-state.cts";
+import { createComposerSnapshotSession } from "./runtime/composer-state.cts";
 
 const MAX_FILE_SECTION_CHARS = 12_000;
 const MAX_PATCH_CHARS = 48_000;
@@ -152,8 +152,6 @@ function getLastAssistantText(messages: AgentMessage[]) {
 
 async function createCommitMessageServices() {
   const {
-    AuthStorage,
-    ModelRegistry,
     SessionManager,
     SettingsManager,
     createAgentSession,
@@ -161,14 +159,10 @@ async function createCommitMessageServices() {
     getAgentDir,
   } = await getPiModule();
   const agentDir = getAgentDir();
-  const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
 
   return {
     agentDir,
-    authStorage,
     createAgentSession,
-    modelRegistry,
     resourceLoader: {
       getExtensions: () => ({
         extensions: [],
@@ -206,56 +200,71 @@ async function getServices() {
 
 async function resolveCommitMessageModel(request: ComposerStateRequest) {
   const selectedModel = loadAppSettings().gitCommitMessageModel;
+  const snapshot = await createComposerSnapshotSession(request);
 
-  const { AuthStorage, ModelRegistry, getAgentDir } = await getPiModule();
-  const agentDir = getAgentDir();
-  const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  try {
+    if (selectedModel) {
+      const availableModels = await snapshot.session.modelRegistry.getAvailable();
+      const configuredModel = availableModels.find(
+        (model) => model.provider === selectedModel.provider && model.id === selectedModel.id,
+      );
 
-  if (selectedModel) {
-    const availableModels = await modelRegistry.getAvailable();
-    const configuredModel = availableModels.find(
-      (model) => model.provider === selectedModel.provider && model.id === selectedModel.id,
-    );
-
-    if (configuredModel) {
-      return configuredModel;
+      if (configuredModel) {
+        return {
+          model: configuredModel,
+          modelRegistry: snapshot.session.modelRegistry,
+          dispose: () => snapshot.session.dispose(),
+        };
+      }
     }
-  }
 
-  return await resolveComposerModel(request);
+    return {
+      model: snapshot.session.model,
+      modelRegistry: snapshot.session.modelRegistry,
+      dispose: () => snapshot.session.dispose(),
+    };
+  } catch (error) {
+    snapshot.session.dispose();
+    throw error;
+  }
 }
 
 export async function generateGitCommitMessage(
   request: ComposerStateRequest,
   context: CommitMessageContext,
 ) {
-  const model = await resolveCommitMessageModel(request);
+  const resolvedModel = await resolveCommitMessageModel(request);
+  const model = resolvedModel.model;
   if (!model) {
+    resolvedModel.dispose();
     return null;
   }
 
   const services = await getServices();
-  const { session } = await services.createAgentSession({
-    cwd: context.projectId,
-    agentDir: services.agentDir,
-    model,
-    thinkingLevel: "off",
-    authStorage: services.authStorage,
-    modelRegistry: services.modelRegistry,
-    resourceLoader: services.resourceLoader,
-    tools: [],
-    sessionManager: services.SessionManager.inMemory(),
-    settingsManager: services.SettingsManager.inMemory(),
-  });
+  let session: Awaited<ReturnType<(typeof services)["createAgentSession"]>>["session"] | null =
+    null;
 
   try {
+    const createdSession = await services.createAgentSession({
+      cwd: context.projectId,
+      agentDir: services.agentDir,
+      model,
+      thinkingLevel: "off",
+      modelRegistry: resolvedModel.modelRegistry,
+      resourceLoader: services.resourceLoader,
+      tools: [],
+      sessionManager: services.SessionManager.inMemory(),
+      settingsManager: services.SettingsManager.inMemory(),
+    });
+    session = createdSession.session;
+
     await session.prompt(buildPrompt(context));
     const message = getLastAssistantText(session.messages as AgentMessage[]);
     return message.length > 0 ? message : null;
   } catch {
     return null;
   } finally {
-    session.dispose();
+    session?.dispose();
+    resolvedModel.dispose();
   }
 }
