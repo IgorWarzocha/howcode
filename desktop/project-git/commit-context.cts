@@ -185,6 +185,9 @@ export async function loadProjectDiff(
     return {
       projectId,
       diff: snapshot.patch,
+      fileCount: snapshot.fileCount,
+      insertions: snapshot.insertions,
+      deletions: snapshot.deletions,
       baseline: baseline ?? { kind: "head" },
       resolvedBaseline,
     };

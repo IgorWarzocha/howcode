@@ -15,14 +15,10 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
+import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { desktopQueryKeys, listProjectCommitsQuery } from "../../../query/desktop-query";
-import {
-  compactCardClass,
-  popoverPanelClass,
-  settingsInputClass,
-  toolbarButtonClass,
-} from "../../../ui/classes";
+import { popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 import { getDiffBaselineLabel } from "./diff-baseline";
@@ -39,11 +35,11 @@ type ComposerDiffBaselineSelectorProps = {
 const baselineOptions = [
   { key: "head", label: "last commit", baseline: { kind: "head" } },
   { key: "main-branch", label: "main branch", baseline: { kind: "main-branch" } },
-  { key: "before-today", label: "yesterday", baseline: { kind: "before-today" } },
+  { key: "yesterday", label: "yesterday", baseline: { kind: "yesterday" } },
 ] as const satisfies ReadonlyArray<{
   key: ProjectDiffBaseline["kind"];
   label: string;
-  baseline: Extract<ProjectDiffBaseline, { kind: "head" | "main-branch" | "before-today" }>;
+  baseline: Extract<ProjectDiffBaseline, { kind: "head" | "main-branch" | "yesterday" }>;
 }>;
 
 function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
@@ -91,6 +87,32 @@ function CommitOption({
   );
 }
 
+function BaselineOption({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+        selected && "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+      )}
+      onClick={onSelect}
+    >
+      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+        {selected ? <Check size={14} /> : null}
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
 export function ComposerDiffBaselineSelector({
   composerPanelRef,
   projectId,
@@ -112,6 +134,11 @@ export function ComposerDiffBaselineSelector({
     enabled: open && projectId.length > 0,
     staleTime: Number.POSITIVE_INFINITY,
   });
+  const baselineDiff = useDesktopDiff(
+    projectId,
+    selectedBaseline,
+    projectId.length > 0 && selectedBaseline.kind !== "head",
+  );
 
   const commits = commitsQuery.data ?? [];
   const selectedCommitSha = selectedBaseline.kind === "commit" ? selectedBaseline.sha : null;
@@ -127,6 +154,30 @@ export function ComposerDiffBaselineSelector({
 
     return nextCommits.slice(0, 10);
   }, [commits, searchQuery]);
+
+  const counts = useMemo(() => {
+    if (selectedBaseline.kind === "head") {
+      if (!projectGitState) {
+        return null;
+      }
+
+      return {
+        fileCount: projectGitState.fileCount,
+        insertions: projectGitState.insertions,
+        deletions: projectGitState.deletions,
+      };
+    }
+
+    if (!baselineDiff.diff) {
+      return null;
+    }
+
+    return {
+      fileCount: baselineDiff.diff.fileCount,
+      insertions: baselineDiff.diff.insertions,
+      deletions: baselineDiff.diff.deletions,
+    };
+  }, [baselineDiff.diff, projectGitState, selectedBaseline.kind]);
 
   useDismissibleLayer({
     open,
@@ -170,6 +221,10 @@ export function ComposerDiffBaselineSelector({
     };
   }, [composerPanelRef, open]);
 
+  const fileCountLabel = counts ? formatGitCount(counts.fileCount) : "…";
+  const insertionCountLabel = counts ? formatGitCount(counts.insertions) : "…";
+  const deletionCountLabel = counts ? formatGitCount(counts.deletions) : "…";
+
   return (
     <>
       <button
@@ -179,9 +234,8 @@ export function ComposerDiffBaselineSelector({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          compactCardClass,
-          "group relative inline-flex min-w-[9.5rem] items-center justify-end overflow-hidden px-2.5 py-1.5 text-right text-[12px] text-[color:var(--muted)]",
-          open && "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+          "group relative inline-flex min-w-[9.5rem] items-center justify-end overflow-hidden text-right text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+          open && "text-[color:var(--text)]",
         )}
         onClick={() => setOpen((current) => !current)}
       >
@@ -191,24 +245,20 @@ export function ComposerDiffBaselineSelector({
             open ? "opacity-0" : "group-hover:opacity-0",
           )}
         >
-          <span className="text-[color:var(--muted)]">
-            {formatGitCount(projectGitState?.fileCount ?? 0)} files
+          <span className="text-[color:var(--muted)]">{fileCountLabel} files</span>
+          <span
+            className={
+              counts && counts.insertions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"
+            }
+          >
+            +{insertionCountLabel}
           </span>
           <span
             className={
-              (projectGitState?.insertions ?? 0) > 0
-                ? "text-[#7ee0bb]"
-                : "text-[color:var(--muted)]"
+              counts && counts.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"
             }
           >
-            +{formatGitCount(projectGitState?.insertions ?? 0)}
-          </span>
-          <span
-            className={
-              (projectGitState?.deletions ?? 0) > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"
-            }
-          >
-            -{formatGitCount(projectGitState?.deletions ?? 0)}
+            -{deletionCountLabel}
           </span>
         </span>
         <span
@@ -275,23 +325,15 @@ export function ComposerDiffBaselineSelector({
               </label>
 
               {baselineOptions.map((option) => (
-                <button
+                <BaselineOption
                   key={option.key}
-                  type="button"
-                  className={cn(
-                    toolbarButtonClass,
-                    "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-                    selectedBaseline.kind === option.key &&
-                      "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-                  )}
-                  onClick={() => {
+                  label={option.label}
+                  selected={selectedBaseline.kind === option.key}
+                  onSelect={() => {
                     onSelectBaseline(option.baseline);
                     setOpen(false);
                   }}
-                >
-                  <span>{option.label}</span>
-                  {selectedBaseline.kind === option.key ? <Check size={14} /> : null}
-                </button>
+                />
               ))}
             </SurfacePanel>,
             document.body,

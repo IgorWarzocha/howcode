@@ -270,7 +270,7 @@ export type ProjectGitState = {
 export type ProjectDiffBaseline =
   | { kind: "head" }
   | { kind: "last-opened"; rev: string; capturedAt?: string | null }
-  | { kind: "before-today" }
+  | { kind: "yesterday" }
   | { kind: "main-branch" }
   | { kind: "commit"; sha: string };
 
@@ -325,6 +325,9 @@ export type TurnDiffResult = {
 export type ProjectDiffResult = {
   projectId: string;
   diff: string;
+  fileCount: number;
+  insertions: number;
+  deletions: number;
   baseline: ProjectDiffBaseline;
   resolvedBaseline: ProjectDiffResolvedBaseline;
 };

@@ -35,7 +35,7 @@ function formatLocalMidnightGitTimestamp(date = new Date()) {
 }
 
 function toResolvedCommitBaseline(
-  kind: Extract<ProjectDiffBaseline["kind"], "head" | "before-today" | "main-branch" | "commit">,
+  kind: Extract<ProjectDiffBaseline["kind"], "head" | "yesterday" | "main-branch" | "commit">,
   entry: Awaited<ReturnType<typeof getProjectCommitEntry>>,
 ): ProjectDiffResolvedBaseline {
   return {
@@ -68,10 +68,10 @@ async function resolveHeadBaseline(projectId: string): Promise<ProjectDiffResolv
   return toResolvedCommitBaseline("head", entry);
 }
 
-async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
+async function resolveYesterdayBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
   if (!(await hasHeadCommit(projectId))) {
     return {
-      kind: "before-today",
+      kind: "yesterday",
       rev: EMPTY_TREE_OID,
       label: "Initial state",
       commitSha: null,
@@ -100,7 +100,7 @@ async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDif
   const commitSha = stdout.trim();
   if (commitSha.length === 0) {
     return {
-      kind: "before-today",
+      kind: "yesterday",
       rev: EMPTY_TREE_OID,
       label: "Initial state",
       commitSha: null,
@@ -113,10 +113,10 @@ async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDif
 
   const entry = await getProjectCommitEntry(projectId, commitSha);
   if (!entry) {
-    throw new Error("Could not resolve the commit from before today.");
+    throw new Error("Could not resolve the commit for yesterday.");
   }
 
-  return toResolvedCommitBaseline("before-today", entry);
+  return toResolvedCommitBaseline("yesterday", entry);
 }
 
 async function resolveMainBranchBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
@@ -294,8 +294,8 @@ export async function resolveProjectDiffBaseline(
       return resolveHeadBaseline(projectId);
     case "last-opened":
       return resolveLastOpenedBaseline(projectId, requestedBaseline);
-    case "before-today":
-      return resolveBeforeTodayBaseline(projectId);
+    case "yesterday":
+      return resolveYesterdayBaseline(projectId);
     case "main-branch":
       return resolveMainBranchBaseline(projectId);
     case "commit":
