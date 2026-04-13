@@ -11,7 +11,7 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import type { PiRuntime } from "./types.cts";
 
-const DEFAULT_THINKING_LEVEL: ComposerThinkingLevel = "medium";
+export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
 
 type ComposerSourceModel = NonNullable<AgentSession["model"]>;
 
@@ -35,7 +35,7 @@ function mapThinkingLevels(levels: ThinkingLevel[]) {
   return levels as ComposerThinkingLevel[];
 }
 
-function getAvailableThinkingLevelsForModel(
+export function getAvailableThinkingLevelsForModel(
   model: ComposerSourceModel | null,
 ): ComposerThinkingLevel[] {
   if (!model?.reasoning) {
@@ -47,7 +47,7 @@ function getAvailableThinkingLevelsForModel(
     : (["off", "minimal", "low", "medium", "high"] as ComposerThinkingLevel[]);
 }
 
-function clampThinkingLevel(
+export function clampThinkingLevel(
   level: ComposerThinkingLevel,
   availableLevels: ComposerThinkingLevel[],
 ): ComposerThinkingLevel {
@@ -124,7 +124,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
     selectedModel = provider && modelId ? { provider, id: modelId } : null;
     selectedThinkingLevel =
       (settingsManager.getDefaultThinkingLevel() as ComposerThinkingLevel | undefined) ??
-      DEFAULT_THINKING_LEVEL;
+      DEFAULT_COMPOSER_THINKING_LEVEL;
   }
 
   const currentModel = resolveCurrentModel(availableModels, selectedModel);
@@ -135,7 +135,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
     availableModels,
     currentModel,
     currentThinkingLevel: clampThinkingLevel(
-      selectedThinkingLevel ?? DEFAULT_THINKING_LEVEL,
+      selectedThinkingLevel ?? DEFAULT_COMPOSER_THINKING_LEVEL,
       availableThinkingLevels,
     ),
     availableThinkingLevels,

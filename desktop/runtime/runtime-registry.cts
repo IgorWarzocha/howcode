@@ -24,7 +24,7 @@ function clearRuntimeDisposeTimeout(runtimeKey: string) {
   record.disposeTimeout = null;
 }
 
-function touchRuntime(runtimeKey: string) {
+function suspendRuntimeDisposal(runtimeKey: string) {
   clearRuntimeDisposeTimeout(runtimeKey);
 }
 
@@ -99,7 +99,7 @@ async function createRuntime(options: {
   session.subscribe((event) => {
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
     if (runtimeKey) {
-      touchRuntime(runtimeKey);
+      suspendRuntimeDisposal(runtimeKey);
     }
 
     if (event.type === "message_end") {
@@ -140,7 +140,6 @@ function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>)
   };
 
   runtimeRecords.set(runtimeKey, record);
-  touchRuntime(runtimeKey);
   return record;
 }
 
@@ -155,11 +154,13 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
     return null;
   }
 
-  touchRuntime(persistedSessionPath);
   return record.runtimePromise;
 }
 
-export async function getOrCreateRuntimeForSessionPath(sessionPath: string) {
+export async function getOrCreateRuntimeForSessionPath(
+  sessionPath: string,
+  options: { suspendDisposal?: boolean } = {},
+) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   if (!persistedSessionPath) {
     throw new Error("A persisted session path is required to open a live runtime.");
@@ -167,7 +168,10 @@ export async function getOrCreateRuntimeForSessionPath(sessionPath: string) {
 
   const existingRuntime = runtimeRecords.get(persistedSessionPath);
   if (existingRuntime) {
-    touchRuntime(persistedSessionPath);
+    if (options.suspendDisposal) {
+      suspendRuntimeDisposal(persistedSessionPath);
+    }
+
     return existingRuntime.runtimePromise;
   }
 
@@ -196,7 +200,7 @@ export async function createRuntimeForNewSession(cwd: string) {
   if (runtimeKey) {
     const existingRuntime = runtimeRecords.get(runtimeKey);
     if (existingRuntime) {
-      touchRuntime(runtimeKey);
+      suspendRuntimeDisposal(runtimeKey);
       runtime.session.dispose();
       return await existingRuntime.runtimePromise;
     }

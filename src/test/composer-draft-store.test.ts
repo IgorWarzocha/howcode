@@ -130,6 +130,9 @@ describe("composerDraftStore", () => {
     expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: "/repo/thread.json" })).toBe(
       "session:/repo/thread.json",
     );
+    expect(
+      getComposerDraftThreadId({ projectId: "/repo", sessionPath: "local://%2Frepo/new-thread" }),
+    ).toBe("project:/repo:new-thread");
     expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: null })).toBe(
       "project:/repo:new-thread",
     );

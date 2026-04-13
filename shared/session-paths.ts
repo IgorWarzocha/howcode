@@ -1,8 +1,5 @@
 const LOCAL_SESSION_PREFIX = "local://";
-
-function buildLocalSessionToken() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+const DEFAULT_LOCAL_DRAFT_TOKEN = "new-thread";
 
 export function isLocalSessionPath(sessionPath: string | null | undefined) {
   return typeof sessionPath === "string" && sessionPath.startsWith(LOCAL_SESSION_PREFIX);
@@ -16,7 +13,7 @@ export function getPersistedSessionPath(sessionPath: string | null | undefined) 
     : null;
 }
 
-export function createLocalThreadDraft(projectId: string, token = buildLocalSessionToken()) {
+export function createLocalThreadDraft(projectId: string, token = DEFAULT_LOCAL_DRAFT_TOKEN) {
   const encodedProjectId = encodeURIComponent(projectId);
 
   return {

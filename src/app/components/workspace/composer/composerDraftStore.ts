@@ -1,3 +1,5 @@
+import { isLocalSessionPath } from "../../../../../shared/session-paths";
+
 import type { ComposerAttachment } from "../../../desktop/types";
 
 type ComposerDraft = {
@@ -158,7 +160,11 @@ export function getComposerDraftThreadId({
   projectId: string;
   sessionPath: string | null;
 }) {
-  if (typeof sessionPath === "string" && sessionPath.length > 0) {
+  if (
+    typeof sessionPath === "string" &&
+    sessionPath.length > 0 &&
+    !isLocalSessionPath(sessionPath)
+  ) {
     return `session:${sessionPath}`;
   }
 

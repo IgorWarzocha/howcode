@@ -8,7 +8,12 @@ import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/se
 import { prepareTurnDiffCapture } from "../diff/query.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
-import { buildComposerState, buildComposerStateSnapshot } from "./composer-state.cts";
+import {
+  buildComposerState,
+  buildComposerStateSnapshot,
+  clampThinkingLevel,
+  getAvailableThinkingLevelsForModel,
+} from "./composer-state.cts";
 import {
   createRuntimeForNewSession,
   getCachedRuntimeForSessionPath,
@@ -56,12 +61,23 @@ async function setDraftComposerModel(cwd: string, provider: string, modelId: str
     throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
   }
 
-  SettingsManager.create(cwd, agentDir).setDefaultModelAndProvider(provider, modelId);
+  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });
+  const nextThinkingLevel = clampThinkingLevel(
+    currentComposer.currentThinkingLevel,
+    getAvailableThinkingLevelsForModel(model),
+  );
+  const settingsManager = SettingsManager.create(cwd, agentDir);
+
+  settingsManager.setDefaultModelAndProvider(provider, modelId);
+  settingsManager.setDefaultThinkingLevel(nextThinkingLevel);
 }
 
 async function setDraftComposerThinkingLevel(cwd: string, level: ComposerThinkingLevel) {
   const { SettingsManager, getAgentDir } = await getPiModule();
-  SettingsManager.create(cwd, getAgentDir()).setDefaultThinkingLevel(level);
+  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });
+  SettingsManager.create(cwd, getAgentDir()).setDefaultThinkingLevel(
+    clampThinkingLevel(level, currentComposer.availableThinkingLevels),
+  );
 }
 
 export { getLiveThread, subscribeDesktopEvents };
@@ -91,7 +107,9 @@ export async function setComposerModel(
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath);
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
   const model = runtime.session.modelRegistry.find(provider, modelId);
 
   if (!model) {
@@ -114,7 +132,9 @@ export async function setComposerThinkingLevel(
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath);
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
   runtime.session.setThinkingLevel(level);
   scheduleRuntimeDisposalForRuntime(runtime);
   return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
@@ -125,7 +145,7 @@ export async function sendComposerPrompt(
 ): Promise<void> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const runtime = persistedSessionPath
-    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath)
+    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true })
     : await createRuntimeForNewSession(request.projectId ?? process.cwd());
   const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
   const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
