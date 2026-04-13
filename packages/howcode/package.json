@@ -1,7 +1,7 @@
 {
   "name": "howcode",
   "version": "0.1.1",
-  "description": "Launch the Howcode desktop app from npm or npx.",
+  "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
   "author": "Igor Warzocha",
   "homepage": "https://github.com/IgorWarzocha/howcode",
@@ -19,7 +19,7 @@
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["desktop", "launcher", "pi", "coding"],
+  "keywords": ["desktop", "coding", "ai", "terminal", "git", "diff", "assistant"],
   "howcode": {
     "appName": "howcode",
     "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/latest/download"

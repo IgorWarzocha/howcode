@@ -1,8 +1,16 @@
 # howcode
 
-Launch the Howcode desktop app from npm.
+Howcode is a desktop app for coding with Pi.
 
-## Use
+It gives you:
+
+- threaded Pi chats tied to your projects
+- a built-in terminal
+- project and inbox sidebars
+- git and diff workflows in the app
+- local desktop performance instead of a browser tab
+
+## Install / run
 
 ```bash
 npx howcode
@@ -11,7 +19,20 @@ npm i -g howcode
 howcode
 ```
 
-On first run, the launcher downloads the matching desktop build from GitHub Releases and caches it locally.
+This npm package is a small launcher.
+
+On first run, it downloads the matching desktop app for your platform from GitHub Releases and caches it locally.
+
+## What you actually get
+
+- macOS, Linux, and Windows desktop builds
+- local cached installs after first download
+- automatic Linux DMABUF workaround in the npm launcher
+
+## Project
+
+- App repo: https://github.com/IgorWarzocha/howcode
+- Issues: https://github.com/IgorWarzocha/howcode/issues
 
 ## Linux note
 
