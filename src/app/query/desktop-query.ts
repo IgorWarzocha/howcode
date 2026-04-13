@@ -1,3 +1,4 @@
+import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type {
   ArchivedThread,
   ComposerAttachment,
@@ -35,7 +36,12 @@ export const desktopQueryKeys = {
   inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
-    ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
+    [
+      "desktop",
+      "composerState",
+      request.projectId ?? null,
+      getPersistedSessionPath(request.sessionPath),
+    ] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
   projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>

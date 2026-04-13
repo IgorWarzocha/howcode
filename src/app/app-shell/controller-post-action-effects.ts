@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch } from "react";
+import { createLocalThreadDraft } from "../../../shared/session-paths";
 import type { DesktopAction } from "../desktop/actions";
 import type {
   AnyDesktopActionPayload,
@@ -61,12 +62,7 @@ function hasElectrobunDesktopBridge() {
 }
 
 function buildLocalThreadFallback(projectId: string) {
-  const timestamp = Date.now();
-  return {
-    projectId,
-    threadId: `local-thread-${timestamp}`,
-    sessionPath: `local://${encodeURIComponent(projectId)}/${timestamp}`,
-  };
+  return createLocalThreadDraft(projectId);
 }
 
 export function getOptimisticallyUpdatedShellState(

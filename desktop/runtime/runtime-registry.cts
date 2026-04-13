@@ -1,13 +1,71 @@
-import type { ComposerStateRequest } from "../../shared/desktop-contracts.ts";
+import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { captureCompletedTurnDiff } from "../diff/query.cts";
 import { getPiModule } from "../pi-module.cts";
-import { getMappedCwd, rememberSessionPath } from "./session-path-index.cts";
+import { rememberSessionPath } from "./session-path-index.cts";
 import { publishThreadUpdate } from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
 
-const runtimePromises = new Map<string, Promise<PiRuntime>>();
+const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
 
-async function createRuntime(cwd: string): Promise<PiRuntime> {
+type RuntimeRecord = {
+  runtimePromise: Promise<PiRuntime>;
+  disposeTimeout: ReturnType<typeof setTimeout> | null;
+};
+
+const runtimeRecords = new Map<string, RuntimeRecord>();
+
+function clearRuntimeDisposeTimeout(runtimeKey: string) {
+  const record = runtimeRecords.get(runtimeKey);
+  if (!record?.disposeTimeout) {
+    return;
+  }
+
+  clearTimeout(record.disposeTimeout);
+  record.disposeTimeout = null;
+}
+
+function suspendRuntimeDisposal(runtimeKey: string) {
+  clearRuntimeDisposeTimeout(runtimeKey);
+}
+
+function scheduleRuntimeDisposal(runtimeKey: string) {
+  const record = runtimeRecords.get(runtimeKey);
+  if (!record) {
+    return;
+  }
+
+  clearRuntimeDisposeTimeout(runtimeKey);
+
+  record.disposeTimeout = setTimeout(() => {
+    void (async () => {
+      const currentRecord = runtimeRecords.get(runtimeKey);
+      if (!currentRecord || currentRecord !== record) {
+        return;
+      }
+
+      try {
+        const runtime = await record.runtimePromise;
+        if (runtime.session.isStreaming) {
+          scheduleRuntimeDisposal(runtimeKey);
+          return;
+        }
+
+        runtime.session.dispose();
+      } catch {
+        // Ignore runtime disposal races after failed creation.
+      } finally {
+        if (runtimeRecords.get(runtimeKey) === record) {
+          runtimeRecords.delete(runtimeKey);
+        }
+      }
+    })();
+  }, RUNTIME_IDLE_TIMEOUT_MS);
+}
+
+async function createRuntime(options: {
+  cwd: string;
+  sessionManager?: PiRuntime["session"]["sessionManager"];
+}): Promise<PiRuntime> {
   const {
     AuthStorage,
     ModelRegistry,
@@ -19,26 +77,31 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(cwd, agentDir);
+  const settingsManager = SettingsManager.create(options.cwd, agentDir);
   const sessionDir = settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
-    cwd,
+    cwd: options.cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
-    sessionManager: SessionManager.create(cwd, sessionDir),
+    sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
 
   const runtime = {
-    cwd,
+    cwd: options.cwd,
     session,
     pendingTurnCount: null,
-  };
+  } satisfies PiRuntime;
 
-  rememberSessionPath(session.sessionFile, cwd);
+  rememberSessionPath(session.sessionFile, options.cwd);
 
   session.subscribe((event) => {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+    if (runtimeKey) {
+      suspendRuntimeDisposal(runtimeKey);
+    }
+
     if (event.type === "message_end") {
       if (event.message.role === "user") {
         void publishThreadUpdate(runtime, "start");
@@ -54,6 +117,11 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
           await publishThreadUpdate(runtime, "end");
         })();
       }
+
+      if (runtimeKey) {
+        scheduleRuntimeDisposal(runtimeKey);
+      }
+
       return;
     }
 
@@ -65,53 +133,87 @@ async function createRuntime(cwd: string): Promise<PiRuntime> {
   return runtime;
 }
 
-async function getRuntime(cwd: string) {
-  const existingRuntime = runtimePromises.get(cwd);
-  if (existingRuntime) {
-    return existingRuntime;
+function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
+  const record: RuntimeRecord = {
+    runtimePromise,
+    disposeTimeout: null,
+  };
+
+  runtimeRecords.set(runtimeKey, record);
+  return record;
+}
+
+export function getCachedRuntimeForSessionPath(sessionPath: string) {
+  const persistedSessionPath = getPersistedSessionPath(sessionPath);
+  if (!persistedSessionPath) {
+    return null;
   }
 
-  const runtimePromise = createRuntime(cwd);
-  runtimePromises.set(cwd, runtimePromise);
+  const record = runtimeRecords.get(persistedSessionPath);
+  if (!record) {
+    return null;
+  }
+
+  return record.runtimePromise;
+}
+
+export async function getOrCreateRuntimeForSessionPath(
+  sessionPath: string,
+  options: { suspendDisposal?: boolean } = {},
+) {
+  const persistedSessionPath = getPersistedSessionPath(sessionPath);
+  if (!persistedSessionPath) {
+    throw new Error("A persisted session path is required to open a live runtime.");
+  }
+
+  const existingRuntime = runtimeRecords.get(persistedSessionPath);
+  if (existingRuntime) {
+    if (options.suspendDisposal) {
+      suspendRuntimeDisposal(persistedSessionPath);
+    }
+
+    return existingRuntime.runtimePromise;
+  }
+
+  const { SessionManager } = await getPiModule();
+  const sessionManager = SessionManager.open(persistedSessionPath);
+  let record: RuntimeRecord | null = null;
+  const runtimePromise = createRuntime({
+    cwd: sessionManager.getCwd(),
+    sessionManager,
+  }).catch((error) => {
+    if (record && runtimeRecords.get(persistedSessionPath) === record) {
+      runtimeRecords.delete(persistedSessionPath);
+    }
+
+    throw error;
+  });
+
+  record = registerRuntime(persistedSessionPath, runtimePromise);
   return runtimePromise;
 }
 
-async function resolveCwd(request: ComposerStateRequest = {}) {
-  if (request.sessionPath) {
-    const mappedCwd = getMappedCwd(request.sessionPath);
-    if (mappedCwd) {
-      return mappedCwd;
+export async function createRuntimeForNewSession(cwd: string) {
+  const runtime = await createRuntime({ cwd });
+  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+
+  if (runtimeKey) {
+    const existingRuntime = runtimeRecords.get(runtimeKey);
+    if (existingRuntime) {
+      suspendRuntimeDisposal(runtimeKey);
+      runtime.session.dispose();
+      return await existingRuntime.runtimePromise;
     }
 
-    const { SessionManager } = await getPiModule();
-    return SessionManager.open(request.sessionPath).getCwd();
-  }
-
-  if (request.projectId) {
-    return request.projectId;
-  }
-
-  return process.cwd();
-}
-
-async function activateSession(runtime: PiRuntime, request: ComposerStateRequest = {}) {
-  if (request.sessionPath && runtime.session.sessionFile !== request.sessionPath) {
-    await runtime.session.switchSession(request.sessionPath);
-    rememberSessionPath(runtime.session.sessionFile, runtime.cwd);
+    registerRuntime(runtimeKey, Promise.resolve(runtime));
   }
 
   return runtime;
 }
 
-export async function getRuntimeForRequest(request: ComposerStateRequest = {}) {
-  const cwd = await resolveCwd(request);
-  const runtime = await getRuntime(cwd);
-  return activateSession(runtime, request);
-}
-
-export async function createFreshThreadIfNeeded(runtime: PiRuntime) {
-  if (runtime.session.messages.length > 0) {
-    await runtime.session.newSession();
-    rememberSessionPath(runtime.session.sessionFile, runtime.cwd);
+export function scheduleRuntimeDisposalForRuntime(runtime: PiRuntime) {
+  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+  if (runtimeKey) {
+    scheduleRuntimeDisposal(runtimeKey);
   }
 }

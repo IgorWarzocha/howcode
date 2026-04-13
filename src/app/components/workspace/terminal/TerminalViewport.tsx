@@ -1,6 +1,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { type ITheme, Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
+import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
   closeDesktopTerminal,
@@ -77,6 +78,9 @@ export function TerminalViewport({
   const lastSizeRef = useRef<{ width: number; height: number; cols: number; rows: number } | null>(
     null,
   );
+  const persistedSessionPath = getPersistedSessionPath(sessionPath);
+  const effectiveLaunchMode =
+    launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
 
   useEffect(() => {
     const mount = containerRef.current;
@@ -264,8 +268,8 @@ export function TerminalViewport({
       fitAddon.fit();
       const snapshot = await openDesktopTerminal({
         projectId,
-        sessionPath,
-        launchMode,
+        sessionPath: persistedSessionPath,
+        launchMode: effectiveLaunchMode,
         cols: Math.max(terminal.cols, 20),
         rows: Math.max(terminal.rows, 5),
       });
@@ -314,7 +318,7 @@ export function TerminalViewport({
         void closeDesktopTerminal({ sessionId });
       }
     };
-  }, [launchMode, preserveSessionOnUnmount, projectId, sessionPath]);
+  }, [effectiveLaunchMode, persistedSessionPath, preserveSessionOnUnmount, projectId]);
 
   return (
     <div

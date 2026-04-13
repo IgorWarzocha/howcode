@@ -6,7 +6,7 @@ import type { Message, SkillCreatorSessionState } from "../shared/desktop-contra
 import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
-import { getRuntimeForRequest } from "./runtime/runtime-registry.cts";
+import { createComposerSnapshotSession } from "./runtime/composer-state.cts";
 import {
   getActiveGlobalSkillsRoot,
   getActiveProjectSkillsRoot,
@@ -141,21 +141,25 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   await resourceLoader.reload();
 
   const selectedModel = loadAppSettings().skillCreatorModel;
+  const snapshot = await createComposerSnapshotSession({ projectId: projectPath ?? cwd });
   let model = null as Awaited<ReturnType<typeof modelRegistry.getAvailable>>[number] | null;
 
-  if (selectedModel) {
-    const availableModels = await modelRegistry.getAvailable();
-    model =
-      availableModels.find(
-        (availableModel) =>
-          availableModel.provider === selectedModel.provider &&
-          availableModel.id === selectedModel.id,
-      ) ?? null;
-  }
+  try {
+    if (selectedModel) {
+      const availableModels = await snapshot.session.modelRegistry.getAvailable();
+      model =
+        availableModels.find(
+          (availableModel) =>
+            availableModel.provider === selectedModel.provider &&
+            availableModel.id === selectedModel.id,
+        ) ?? null;
+    }
 
-  if (!model) {
-    const runtime = await getRuntimeForRequest(projectPath ? { projectId: projectPath } : {});
-    model = runtime.session.model ?? null;
+    if (!model) {
+      model = snapshot.session.model ?? null;
+    }
+  } finally {
+    snapshot.session.dispose();
   }
 
   if (!model) {

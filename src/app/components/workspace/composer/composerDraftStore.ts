@@ -1,3 +1,5 @@
+import { getLocalDraftProjectId } from "../../../../../shared/session-paths";
+
 import type { ComposerAttachment } from "../../../desktop/types";
 
 type ComposerDraft = {
@@ -213,13 +215,38 @@ export function createComposerDraftStore({
     }, debounceMs);
   };
 
+  const getMirroredProjectDraftThreadId = (threadId: string) => {
+    if (!threadId.startsWith("session:")) {
+      return null;
+    }
+
+    const projectId = getLocalDraftProjectId(threadId.slice("session:".length));
+    return projectId ? `project:${projectId}:new-thread` : null;
+  };
+
+  const areDraftsEqual = (left: ComposerDraft | undefined, right: ComposerDraft | undefined) => {
+    if (!left || !right) {
+      return false;
+    }
+
+    return JSON.stringify(left) === JSON.stringify(right);
+  };
+
   const writeDraft = (threadId: string, nextDraft: ComposerDraft) => {
+    const mirroredThreadId = getMirroredProjectDraftThreadId(threadId);
+    const previousDraft = draftsByThreadId[threadId];
+
     if (nextDraft.prompt.length === 0 && nextDraft.attachments.length === 0) {
       delete draftsByThreadId[threadId];
+
+      if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
+        delete draftsByThreadId[mirroredThreadId];
+      }
     } else {
       draftsByThreadId = {
         ...draftsByThreadId,
         [threadId]: cloneDraft(nextDraft),
+        ...(mirroredThreadId ? { [mirroredThreadId]: cloneDraft(nextDraft) } : {}),
       };
     }
 
@@ -269,9 +296,18 @@ export function createComposerDraftStore({
         return;
       }
 
+      const mirroredThreadId = getMirroredProjectDraftThreadId(threadId);
+      const previousDraft = draftsByThreadId[threadId];
+
       draftsByThreadId = Object.fromEntries(
         Object.entries(draftsByThreadId).filter(
-          ([currentThreadId]) => currentThreadId !== threadId,
+          ([currentThreadId, currentDraft]) =>
+            currentThreadId !== threadId &&
+            !(
+              mirroredThreadId &&
+              currentThreadId === mirroredThreadId &&
+              areDraftsEqual(currentDraft, previousDraft)
+            ),
         ),
       );
       schedulePersist();

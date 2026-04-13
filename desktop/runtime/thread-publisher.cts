@@ -227,8 +227,16 @@ export async function publishExternalThreadUpdate({
   });
 }
 
-export function publishComposerUpdate(composer: ComposerState) {
-  emitDesktopEvent({ type: "composer-update", composer });
+export function publishComposerUpdate(
+  composer: ComposerState,
+  context: { projectId?: string | null; sessionPath?: string | null } = {},
+) {
+  emitDesktopEvent({
+    type: "composer-update",
+    composer,
+    projectId: context.projectId ?? null,
+    sessionPath: context.sessionPath ?? null,
+  });
 }
 
 export { getLiveThread, shouldSuppressExternalThreadUpdate, subscribeDesktopEvents };

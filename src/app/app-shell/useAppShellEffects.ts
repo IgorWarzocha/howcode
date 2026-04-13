@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type {
   ArchivedThread,
   ComposerState,
@@ -182,7 +183,9 @@ export function useAppShellEffects({
     }
 
     const watchedSessionPath =
-      workspaceState.activeView === "thread" ? (workspaceState.selectedSessionPath ?? null) : null;
+      workspaceState.activeView === "thread"
+        ? getPersistedSessionPath(workspaceState.selectedSessionPath)
+        : null;
 
     void window.piDesktop.watchSession(watchedSessionPath).catch((error) => {
       console.warn("Failed to update watched Pi session.", error);
@@ -196,14 +199,22 @@ export function useAppShellEffects({
 
     const visibleSessionPath =
       workspaceState.activeView === "thread"
-        ? (workspaceState.selectedSessionPath ?? null)
+        ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : workspaceState.activeView === "inbox"
           ? (workspaceState.selectedInboxSessionPath ?? null)
           : null;
 
     const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
       if (event.type === "composer-update") {
-        setComposerState(event.composer);
+        const shouldApplyComposerUpdate = event.sessionPath
+          ? event.sessionPath === visibleSessionPath
+          : event.projectId === composerProjectId &&
+            (workspaceState.activeView !== "thread" || visibleSessionPath === null);
+
+        if (shouldApplyComposerUpdate) {
+          setComposerState(event.composer);
+        }
+
         return;
       }
 
@@ -212,7 +223,7 @@ export function useAppShellEffects({
         event.thread,
       );
 
-      if (event.composer) {
+      if (event.composer && event.sessionPath === visibleSessionPath) {
         setComposerState(event.composer);
       }
 
@@ -242,7 +253,12 @@ export function useAppShellEffects({
           });
       }
 
-      if (event.reason === "start" && workspaceState.activeView !== "inbox") {
+      const shouldAutoOpenStartedThread =
+        event.reason === "start" &&
+        (workspaceState.activeView === "code" ||
+          (workspaceState.activeView === "thread" && visibleSessionPath === null));
+
+      if (shouldAutoOpenStartedThread) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,

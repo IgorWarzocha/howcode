@@ -4,23 +4,45 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
+import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { prepareTurnDiffCapture } from "../diff/query.cts";
-import { upsertThreadSummary } from "../thread-state-db.cts";
+import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
-import { buildComposerState } from "./composer-state.cts";
-import { createFreshThreadIfNeeded, getRuntimeForRequest } from "./runtime-registry.cts";
-import { rememberSessionPath } from "./session-path-index.cts";
+import {
+  buildComposerState,
+  buildComposerStateSnapshot,
+  clampThinkingLevel,
+  getAvailableThinkingLevelsForModel,
+} from "./composer-state.cts";
+import {
+  createRuntimeForNewSession,
+  getCachedRuntimeForSessionPath,
+  getOrCreateRuntimeForSessionPath,
+  scheduleRuntimeDisposalForRuntime,
+} from "./runtime-registry.cts";
 import {
   getLiveThread,
   publishComposerUpdate,
-  publishThreadUpdate,
   subscribeDesktopEvents,
 } from "./thread-publisher.cts";
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
-  const runtime = await getRuntimeForRequest(request);
-  const composer = await buildComposerState(runtime);
-  publishComposerUpdate(composer);
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  const runtimePromise = persistedSessionPath
+    ? getCachedRuntimeForSessionPath(persistedSessionPath)
+    : null;
+  const runtime = runtimePromise ? await runtimePromise : null;
+  const composer = runtime
+    ? await buildComposerState(runtime)
+    : await buildComposerStateSnapshot({
+        ...request,
+        sessionPath: persistedSessionPath,
+      });
+
+  publishComposerUpdate(composer, {
+    projectId: request.projectId ?? null,
+    sessionPath: persistedSessionPath,
+  });
 
   return {
     composer,
@@ -28,14 +50,49 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   };
 }
 
+async function setDraftComposerModel(cwd: string, provider: string, modelId: string) {
+  const { AuthStorage, ModelRegistry, SettingsManager, getAgentDir } = await getPiModule();
+  const agentDir = getAgentDir();
+  const authStorage = AuthStorage.create();
+  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const model = modelRegistry.find(provider, modelId);
+
+  if (!model) {
+    throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
+  }
+
+  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });
+  const nextThinkingLevel = clampThinkingLevel(
+    currentComposer.currentThinkingLevel,
+    getAvailableThinkingLevelsForModel(model),
+  );
+  const settingsManager = SettingsManager.create(cwd, agentDir);
+
+  settingsManager.setDefaultModelAndProvider(provider, modelId);
+  settingsManager.setDefaultThinkingLevel(nextThinkingLevel);
+}
+
+async function setDraftComposerThinkingLevel(cwd: string, level: ComposerThinkingLevel) {
+  const { SettingsManager, getAgentDir } = await getPiModule();
+  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });
+  SettingsManager.create(cwd, getAgentDir()).setDefaultThinkingLevel(
+    clampThinkingLevel(level, currentComposer.availableThinkingLevels),
+  );
+}
+
 export { getLiveThread, subscribeDesktopEvents };
 
 export async function getComposerState(request: ComposerStateRequest = {}): Promise<ComposerState> {
-  const runtime = await getRuntimeForRequest(request);
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  const runtimePromise = persistedSessionPath
+    ? getCachedRuntimeForSessionPath(persistedSessionPath)
+    : null;
 
   // Reads should reflect the current in-memory runtime state. Reloading or publishing here can
   // race with just-applied composer mutations and re-broadcast stale snapshots back into the UI.
-  return await buildComposerState(runtime);
+  return runtimePromise
+    ? await buildComposerState(await runtimePromise)
+    : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function setComposerModel(
@@ -43,7 +100,16 @@ export async function setComposerModel(
   provider: string,
   modelId: string,
 ) {
-  const runtime = await getRuntimeForRequest(request);
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+
+  if (!persistedSessionPath) {
+    await setDraftComposerModel(request.projectId ?? process.cwd(), provider, modelId);
+    return emitComposerUpdate({ ...request, sessionPath: null });
+  }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
   const model = runtime.session.modelRegistry.find(provider, modelId);
 
   if (!model) {
@@ -51,26 +117,36 @@ export async function setComposerModel(
   }
 
   await runtime.session.setModel(model);
-  return emitComposerUpdate(request);
+  scheduleRuntimeDisposalForRuntime(runtime);
+  return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function setComposerThinkingLevel(
   request: ComposerStateRequest,
   level: ComposerThinkingLevel,
 ) {
-  const runtime = await getRuntimeForRequest(request);
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+
+  if (!persistedSessionPath) {
+    await setDraftComposerThinkingLevel(request.projectId ?? process.cwd(), level);
+    return emitComposerUpdate({ ...request, sessionPath: null });
+  }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
   runtime.session.setThinkingLevel(level);
-  return emitComposerUpdate(request);
+  scheduleRuntimeDisposalForRuntime(runtime);
+  return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function sendComposerPrompt(
   request: ComposerStateRequest & { text: string; attachments?: ComposerAttachment[] },
 ): Promise<void> {
-  const runtime = await getRuntimeForRequest(request);
-  if (!request.sessionPath) {
-    await createFreshThreadIfNeeded(runtime);
-  }
-
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  const runtime = persistedSessionPath
+    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true })
+    : await createRuntimeForNewSession(request.projectId ?? process.cwd());
   const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
   const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
 
@@ -85,33 +161,23 @@ export async function sendComposerPrompt(
     await runtime.session.prompt(message);
   } catch (error) {
     runtime.pendingTurnCount = null;
+    scheduleRuntimeDisposalForRuntime(runtime);
     throw error;
   }
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
-  const runtime = await getRuntimeForRequest(request);
-  await runtime.session.newSession();
-  rememberSessionPath(runtime.session.sessionFile, runtime.cwd);
+  const projectId = request.projectId ?? process.cwd();
+  const composer = await buildComposerStateSnapshot({ projectId, sessionPath: null });
+  const draft = createLocalThreadDraft(projectId);
 
-  if (runtime.session.sessionFile) {
-    upsertThreadSummary({
-      id: runtime.session.sessionId,
-      cwd: runtime.cwd,
-      sessionPath: runtime.session.sessionFile,
-      title: "New thread",
-      lastModifiedMs: Date.now(),
-    });
-    await publishThreadUpdate(runtime, "start");
-  }
+  publishComposerUpdate(composer, { projectId, sessionPath: null });
 
-  const composer = await buildComposerState(runtime);
-  publishComposerUpdate(composer);
   return {
     composer,
-    projectId: runtime.cwd,
-    sessionPath: runtime.session.sessionFile,
-    threadId: runtime.session.sessionId,
+    projectId,
+    sessionPath: draft.sessionPath,
+    threadId: draft.threadId,
   };
 }
 
@@ -123,6 +189,9 @@ export async function selectProjectRuntime(
 }
 
 export async function openThreadRuntime(request: ComposerStateRequest): Promise<ComposerState> {
-  const { composer } = await emitComposerUpdate(request);
+  const { composer } = await emitComposerUpdate({
+    ...request,
+    sessionPath: getPersistedSessionPath(request.sessionPath),
+  });
   return composer;
 }

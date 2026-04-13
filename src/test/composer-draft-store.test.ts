@@ -130,10 +130,52 @@ describe("composerDraftStore", () => {
     expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: "/repo/thread.json" })).toBe(
       "session:/repo/thread.json",
     );
+    expect(
+      getComposerDraftThreadId({ projectId: "/repo", sessionPath: "local://%2Frepo/new-thread" }),
+    ).toBe("session:local://%2Frepo/new-thread");
     expect(getComposerDraftThreadId({ projectId: "/repo", sessionPath: null })).toBe(
       "project:/repo:new-thread",
     );
     expect(getComposerDraftThreadId({ projectId: "", sessionPath: null })).toBeNull();
+  });
+
+  it("keeps local drafts separate while mirroring the latest project draft", () => {
+    const storage = createMemoryStorage();
+    const store = createComposerDraftStore({
+      storage,
+      storageKey: composerDraftStorageKey,
+      debounceMs: 300,
+      beforeUnloadTarget: null,
+    });
+
+    const firstLocalThreadId = "session:local://%2Frepo/first";
+    const secondLocalThreadId = "session:local://%2Frepo/second";
+    const projectDraftThreadId = "project:/repo:new-thread";
+
+    store.setDraft(firstLocalThreadId, { prompt: "first draft", attachments: [] });
+    store.setDraft(secondLocalThreadId, { prompt: "second draft", attachments: [] });
+
+    expect(store.getDraft(firstLocalThreadId)).toEqual({
+      prompt: "first draft",
+      attachments: [],
+    });
+    expect(store.getDraft(secondLocalThreadId)).toEqual({
+      prompt: "second draft",
+      attachments: [],
+    });
+    expect(store.getDraft(projectDraftThreadId)).toEqual({
+      prompt: "second draft",
+      attachments: [],
+    });
+
+    store.clearThreadDraft(firstLocalThreadId);
+    expect(store.getDraft(projectDraftThreadId)).toEqual({
+      prompt: "second draft",
+      attachments: [],
+    });
+
+    store.clearThreadDraft(secondLocalThreadId);
+    expect(store.getDraft(projectDraftThreadId)).toBeNull();
   });
 
   it("returns cloned drafts so callers cannot mutate store state", () => {
