@@ -20,7 +20,7 @@ export function useDesktopThread(
         : Promise.resolve(null),
     enabled: Boolean(persistedSessionPath),
     staleTime: Number.POSITIVE_INFINITY,
-    placeholderData: keepPreviousData,
+    placeholderData: persistedSessionPath ? keepPreviousData : undefined,
   });
 
   return query.data ?? null;
