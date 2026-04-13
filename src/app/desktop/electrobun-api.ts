@@ -22,6 +22,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -106,6 +107,11 @@ export const piDesktopApi = {
       projectId,
       baseline,
     }) as Promise<ProjectDiffResult | null>,
+  getProjectDiffStats: async (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
+    (await getRpc()).request.getProjectDiffStats({
+      projectId,
+      baseline,
+    }) as Promise<ProjectDiffStatsResult | null>,
   captureProjectDiffBaseline: async (projectId: string) =>
     (await getRpc()).request.captureProjectDiffBaseline({
       projectId,

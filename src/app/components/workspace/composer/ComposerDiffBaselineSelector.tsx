@@ -13,11 +13,15 @@ import { createPortal } from "react-dom";
 import type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffStatsResult,
   ProjectGitState,
 } from "../../../desktop/types";
-import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
-import { desktopQueryKeys, listProjectCommitsQuery } from "../../../query/desktop-query";
+import {
+  desktopQueryKeys,
+  getProjectDiffStatsQuery,
+  listProjectCommitsQuery,
+} from "../../../query/desktop-query";
 import { popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
@@ -139,11 +143,15 @@ export function ComposerDiffBaselineSelector({
     enabled: open && projectId.length > 0,
     staleTime: Number.POSITIVE_INFINITY,
   });
-  const baselineDiff = useDesktopDiff(
-    projectId,
-    selectedBaseline,
-    projectId.length > 0 && selectedBaseline.kind !== "head",
-  );
+  const baselineStatsQuery = useQuery<ProjectDiffStatsResult | null, Error>({
+    queryKey: projectId
+      ? desktopQueryKeys.projectDiffStats(projectId, selectedBaseline)
+      : ["desktop", "projectDiffStats", null],
+    queryFn: () =>
+      projectId ? getProjectDiffStatsQuery(projectId, selectedBaseline) : Promise.resolve(null),
+    enabled: projectId.length > 0 && selectedBaseline.kind !== "head",
+    staleTime: Number.POSITIVE_INFINITY,
+  });
 
   const commits = commitsQuery.data ?? [];
   const selectedCommitSha = selectedBaseline.kind === "commit" ? selectedBaseline.sha : null;
@@ -174,24 +182,16 @@ export function ComposerDiffBaselineSelector({
       };
     }
 
-    if (!baselineDiff.diff) {
-      if (selectedBaseline.kind === "dev-branch" && baselineDiff.error) {
-        return {
-          fileCount: Number.NaN,
-          insertions: Number.NaN,
-          deletions: Number.NaN,
-        };
-      }
-
+    if (!baselineStatsQuery.data) {
       return null;
     }
 
     return {
-      fileCount: baselineDiff.diff.fileCount,
-      insertions: baselineDiff.diff.insertions,
-      deletions: baselineDiff.diff.deletions,
+      fileCount: baselineStatsQuery.data.fileCount,
+      insertions: baselineStatsQuery.data.insertions,
+      deletions: baselineStatsQuery.data.deletions,
     };
-  }, [baselineDiff.diff, baselineDiff.error, projectGitState, selectedBaseline.kind]);
+  }, [baselineStatsQuery.data, projectGitState, selectedBaseline.kind]);
 
   useDismissibleLayer({
     open,

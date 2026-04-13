@@ -474,6 +474,9 @@ export async function runPostDesktopActionEffects({
           queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
         }),
         queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+        }),
+        queryClient.invalidateQueries({
           queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
         }),
       ]);

@@ -21,6 +21,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -45,6 +46,10 @@ export type PiDesktopRpc = {
       getProjectDiff: {
         params: { projectId: string; baseline?: ProjectDiffBaseline | null };
         response: ProjectDiffResult | null;
+      };
+      getProjectDiffStats: {
+        params: { projectId: string; baseline?: ProjectDiffBaseline | null };
+        response: ProjectDiffStatsResult | null;
       };
       captureProjectDiffBaseline: {
         params: { projectId: string };

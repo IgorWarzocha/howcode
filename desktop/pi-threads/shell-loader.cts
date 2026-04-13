@@ -2,6 +2,7 @@ import type {
   ComposerState,
   ComposerStateRequest,
   ProjectCommitEntry,
+  ProjectDiffStatsResult,
   ShellState,
 } from "../../shared/desktop-contracts.ts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
@@ -15,6 +16,7 @@ import {
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,
+  loadProjectDiffStats,
   loadProjectGitState,
 } from "../project-git.cts";
 import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
@@ -104,6 +106,7 @@ export async function loadProjectCommitHistory(
 
 export { loadProjectGitState };
 export { loadProjectDiff };
+export { loadProjectDiffStats };
 export { captureProjectDiffBaseline };
 export { listProjectCommits };
 export { setWatchedSessionPath };

@@ -17,6 +17,7 @@ export {
   loadComposerState,
   listProjectCommits,
   loadProjectDiff,
+  loadProjectDiffStats,
   loadProjectGitState,
   loadShellState,
   setWatchedSessionPath,

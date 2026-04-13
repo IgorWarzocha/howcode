@@ -4,7 +4,11 @@ export {
   resolveProjectDiffBaseline,
 } from "./project-git/project-diff-baselines.cts";
 export { getProjectCommitEntry, listProjectCommits } from "./project-git/project-commits.cts";
-export { loadProjectDiff, prepareCommitMessageContext } from "./project-git/commit-context.cts";
+export {
+  loadProjectDiff,
+  loadProjectDiffStats,
+  prepareCommitMessageContext,
+} from "./project-git/commit-context.cts";
 export {
   commitProjectChanges,
   initializeProjectGit,

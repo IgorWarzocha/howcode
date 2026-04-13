@@ -259,6 +259,10 @@ export function useAppShellEffects({
         }
 
         void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.projectDiffStatsPrefix(event.projectId),
+        });
+
+        void queryClient.invalidateQueries({
           queryKey: desktopQueryKeys.projectCommitsPrefix(event.projectId),
         });
 

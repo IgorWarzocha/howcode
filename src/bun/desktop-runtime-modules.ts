@@ -17,6 +17,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -62,6 +63,10 @@ export type PiThreadsModule = {
     projectId: string,
     baseline?: ProjectDiffBaseline | null,
   ) => Promise<ProjectDiffResult | null>;
+  loadProjectDiffStats: (
+    projectId: string,
+    baseline?: ProjectDiffBaseline | null,
+  ) => Promise<ProjectDiffStatsResult | null>;
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>;
   listProjectCommits: (projectId: string, limit?: number | null) => Promise<ProjectCommitEntry[]>;
   loadProjectThreads: (projectId: string) => Promise<Thread[]>;

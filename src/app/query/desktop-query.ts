@@ -15,6 +15,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -39,6 +40,10 @@ export const desktopQueryKeys = {
   projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ["desktop", "projectDiff", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
+  projectDiffStatsPrefix: (projectId: string) =>
+    ["desktop", "projectDiffStats", projectId] as const,
+  projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
+    ["desktop", "projectDiffStats", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
   projectCommitsPrefix: (projectId: string) => ["desktop", "projectCommits", projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ["desktop", "projectCommits", projectId, limit] as const,
@@ -77,6 +82,13 @@ export async function getProjectDiffQuery(
   baseline: ProjectDiffBaseline | null = null,
 ): Promise<ProjectDiffResult | null> {
   return (await window.piDesktop?.getProjectDiff?.(projectId, baseline)) ?? null;
+}
+
+export async function getProjectDiffStatsQuery(
+  projectId: string,
+  baseline: ProjectDiffBaseline | null = null,
+): Promise<ProjectDiffStatsResult | null> {
+  return (await window.piDesktop?.getProjectDiffStats?.(projectId, baseline)) ?? null;
 }
 
 export async function captureProjectDiffBaselineQuery(

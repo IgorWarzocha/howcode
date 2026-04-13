@@ -18,6 +18,7 @@ import type {
   ProjectCommitEntry,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -49,6 +50,11 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId, baseline }) =>
         (await piThreads.loadProjectDiff(projectId, baseline ?? null)) as ProjectDiffResult | null,
+      getProjectDiffStats: async ({ projectId, baseline }) =>
+        (await piThreads.loadProjectDiffStats(
+          projectId,
+          baseline ?? null,
+        )) as ProjectDiffStatsResult | null,
       captureProjectDiffBaseline: async ({ projectId }) =>
         (await piThreads.captureProjectDiffBaseline(
           projectId,

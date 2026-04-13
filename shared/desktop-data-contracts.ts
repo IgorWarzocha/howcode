@@ -334,6 +334,15 @@ export type ProjectDiffResult = {
   resolvedBaseline: ProjectDiffResolvedBaseline;
 };
 
+export type ProjectDiffStatsResult = {
+  projectId: string;
+  fileCount: number;
+  insertions: number;
+  deletions: number;
+  baseline: ProjectDiffBaseline;
+  resolvedBaseline: ProjectDiffResolvedBaseline;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;

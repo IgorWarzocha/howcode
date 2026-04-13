@@ -30,6 +30,7 @@ export type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ProjectImportCandidate,
   ShellState,

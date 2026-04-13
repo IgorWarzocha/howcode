@@ -20,6 +20,7 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
+  ProjectDiffStatsResult,
   ProjectGitState,
   ShellState,
   SkillCreatorSessionState,
@@ -42,6 +43,10 @@ declare global {
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
       ) => Promise<ProjectDiffResult | null>;
+      getProjectDiffStats?: (
+        projectId: string,
+        baseline?: ProjectDiffBaseline | null,
+      ) => Promise<ProjectDiffStatsResult | null>;
       captureProjectDiffBaseline?: (
         projectId: string,
       ) => Promise<ProjectDiffResolvedBaseline | null>;

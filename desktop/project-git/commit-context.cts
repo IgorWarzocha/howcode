@@ -1,4 +1,8 @@
-import type { ProjectDiffBaseline, ProjectDiffResult } from "../../shared/desktop-contracts.ts";
+import type {
+  ProjectDiffBaseline,
+  ProjectDiffResult,
+  ProjectDiffStatsResult,
+} from "../../shared/desktop-contracts.ts";
 import {
   formatGitCommandError,
   hasHeadCommit,
@@ -8,7 +12,7 @@ import {
 import { resolveProjectDiffBaseline } from "./project-diff-baselines.cts";
 import { getBranch, getOriginUrl, isGitRepository } from "./project-state.cts";
 import type { CommitMessageContext } from "./types.cts";
-import { loadWorktreeSnapshot } from "./worktree-snapshot.cts";
+import { loadWorktreeSnapshot, loadWorktreeStats } from "./worktree-snapshot.cts";
 
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
@@ -193,5 +197,32 @@ export async function loadProjectDiff(
     };
   } catch (error) {
     throw new Error(`Could not load worktree diff: ${formatGitCommandError(error)}`);
+  }
+}
+
+export async function loadProjectDiffStats(
+  projectId: string,
+  baseline?: ProjectDiffBaseline | null,
+): Promise<ProjectDiffStatsResult | null> {
+  if (!(await isGitRepository(projectId))) {
+    return null;
+  }
+
+  try {
+    const resolvedBaseline = await resolveProjectDiffBaseline(projectId, baseline);
+    const stats = await loadWorktreeStats(projectId, {
+      baselineRev: resolvedBaseline.rev,
+    });
+
+    return {
+      projectId,
+      fileCount: stats.fileCount,
+      insertions: stats.insertions,
+      deletions: stats.deletions,
+      baseline: baseline ?? { kind: "head" },
+      resolvedBaseline,
+    };
+  } catch (error) {
+    throw new Error(`Could not load worktree diff stats: ${formatGitCommandError(error)}`);
   }
 }
