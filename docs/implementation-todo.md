@@ -57,7 +57,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Implement `workspace.handoff`
 - [x] Implement `workspace.commit`
 - [x] Implement `workspace.commit-options`
-  - branch control in the composer git surface is still display-only for now
+  - branch control in the composer git surface is still display-only
   - [ ] Feed pre-commit hook / formatter / lint errors back into the main Pi agent flow instead of treating them as opaque git failures
   - files: `src/app/components/workspace/composer/ComposerGitOpsSurface.tsx`, `desktop/pi-threads/action-router.cts`
 
@@ -79,7 +79,7 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `src/app/components/workspace/DiffPanel.tsx`, `src/app/components/workspace/diff/*`, `desktop/diff/*`, `shared/desktop-contracts.ts`
 - [x] Split the composer surface into smaller prompt-vs-git-ops mock states before reworking git UX
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
-- [ ] Mock a composer-adjacent git ops replacement surface before backend wiring
+- [ ] Finish the composer-adjacent git ops replacement surface and align it with the current backend wiring
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
 - [ ] Replace per-turn checkpoint diff ownership with a git-native project/worktree diff model if the mock lands well
   - files: `desktop/diff/*`, `desktop/project-git.cts`, `src/app/components/workspace/diff/*`, `src/app/components/workspace/composer/*`, `shared/desktop-contracts.ts`

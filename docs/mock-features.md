@@ -57,7 +57,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Still stubbed in this area:
   - `composer.dictate`
   - `composer.host`
-  - composer-adjacent git ops surface is mock-only and intentionally unwired for now
+  - composer-adjacent git ops is still partial: commit actions exist, but the overall git UX is not finished and branch control is still display-only
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
 **Expansion direction:**
