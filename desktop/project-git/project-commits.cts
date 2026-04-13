@@ -19,7 +19,7 @@ function parseCommitEntry(record: string): ProjectCommitEntry | null {
   const [sha, shortSha, authorName, authorEmail, authoredAt, committedAt, rawDecorations, subject] =
     record.split(FIELD_SEPARATOR);
 
-  if (!sha || !shortSha || !subject) {
+  if (!sha || !shortSha) {
     return null;
   }
 
@@ -28,7 +28,7 @@ function parseCommitEntry(record: string): ProjectCommitEntry | null {
   return {
     sha,
     shortSha,
-    subject,
+    subject: subject ?? "",
     authorName: authorName ?? "",
     authorEmail: authorEmail ?? "",
     authoredAt: authoredAt ?? "",

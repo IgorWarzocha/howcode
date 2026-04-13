@@ -12,6 +12,8 @@ export type WorktreeSnapshot = {
   patch: string;
 };
 
+export type WorktreeStats = Omit<WorktreeSnapshot, "patch">;
+
 function parseShortStat(output: string) {
   const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
   const deletionsMatch = output.match(/(\d+)\s+deletions?\(-\)/);
@@ -69,38 +71,70 @@ export async function loadWorktreeSnapshot(
       "--",
     ];
 
-    const [shortStatOutput, diffStatOutput, nameStatusOutput, numStatOutput, patchOutput] =
-      await Promise.all([
-        runGitWithOptions(projectId, diffArguments(["--shortstat"]), {
+    const [stats, patchOutput] = await Promise.all([
+      loadWorktreeStats(projectId, { baselineRev, env, hasHead }),
+      runGitWithOptions(
+        projectId,
+        diffArguments(["--unified=1", "--no-color", "--no-ext-diff", "--find-renames"]),
+        {
           env,
           timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 4,
-        }).then(({ stdout }) => stdout.trim()),
-        runGitWithOptions(projectId, diffArguments(["--stat=200,200", "--find-renames"]), {
-          env,
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 4,
-        }).then(({ stdout }) => stdout.trim()),
-        runGitWithOptions(projectId, diffArguments(["--name-status", "--find-renames"]), {
-          env,
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 4,
-        }).then(({ stdout }) => stdout.trim()),
-        runGitWithOptions(projectId, diffArguments(["--numstat", "--find-renames"]), {
-          env,
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 4,
-        }).then(({ stdout }) => stdout.trim()),
-        runGitWithOptions(
-          projectId,
-          diffArguments(["--unified=1", "--no-color", "--no-ext-diff", "--find-renames"]),
-          {
-            env,
-            timeout: 20_000,
-            maxBuffer: 1024 * 1024 * 24,
-          },
-        ).then(({ stdout }) => stdout.trim()),
-      ]);
+          maxBuffer: 1024 * 1024 * 24,
+        },
+      ).then(({ stdout }) => stdout.trim()),
+    ]);
+
+    return {
+      ...stats,
+      patch: patchOutput,
+    };
+  });
+}
+
+export async function loadWorktreeStats(
+  projectId: string,
+  options: {
+    baselineRev?: string | null;
+    env?: NodeJS.ProcessEnv;
+    hasHead?: boolean;
+  } = {},
+): Promise<WorktreeStats> {
+  const loadStats = async (context?: { env?: NodeJS.ProcessEnv; hasHead?: boolean }) => {
+    const hasHead = context?.hasHead ?? true;
+    const baselineRev =
+      context?.hasHead === false
+        ? options.baselineRev?.trim() || EMPTY_TREE_OID
+        : options.baselineRev?.trim() || (hasHead ? "HEAD" : EMPTY_TREE_OID);
+    const diffArguments = (extraArgs: string[]) => [
+      "diff",
+      "--cached",
+      ...extraArgs,
+      baselineRev,
+      "--",
+    ];
+
+    const [shortStatOutput, diffStatOutput, nameStatusOutput, numStatOutput] = await Promise.all([
+      runGitWithOptions(projectId, diffArguments(["--shortstat"]), {
+        env: context?.env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 4,
+      }).then(({ stdout }) => stdout.trim()),
+      runGitWithOptions(projectId, diffArguments(["--stat=200,200", "--find-renames"]), {
+        env: context?.env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 4,
+      }).then(({ stdout }) => stdout.trim()),
+      runGitWithOptions(projectId, diffArguments(["--name-status", "--find-renames"]), {
+        env: context?.env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 4,
+      }).then(({ stdout }) => stdout.trim()),
+      runGitWithOptions(projectId, diffArguments(["--numstat", "--find-renames"]), {
+        env: context?.env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 4,
+      }).then(({ stdout }) => stdout.trim()),
+    ]);
 
     const shortStat = parseShortStat(shortStatOutput);
 
@@ -111,7 +145,20 @@ export async function loadWorktreeSnapshot(
       diffStat: diffStatOutput,
       nameStatus: nameStatusOutput,
       numStat: numStatOutput,
-      patch: patchOutput,
     };
+  };
+
+  if (options.env) {
+    return loadStats({ env: options.env, hasHead: options.hasHead ?? true });
+  }
+
+  return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
+    await runGitWithOptions(projectId, ["add", "-A", "--", "."], {
+      env,
+      timeout: 20_000,
+      maxBuffer: 1024 * 1024 * 8,
+    });
+
+    return loadStats({ env, hasHead });
   });
 }

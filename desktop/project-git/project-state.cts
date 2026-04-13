@@ -1,6 +1,6 @@
 import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
 import { formatGitCommandError, hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
-import { loadWorktreeSnapshot } from "./worktree-snapshot.cts";
+import { loadWorktreeStats } from "./worktree-snapshot.cts";
 
 function parseStatusSummary(output: string) {
   let fileCount = 0;
@@ -124,21 +124,21 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     };
   }
 
-  const [branch, statusSummary, originUrl, snapshot] = await Promise.all([
+  const [branch, statusSummary, originUrl, stats] = await Promise.all([
     getBranch(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
-    loadWorktreeSnapshot(projectId).catch((error) => {
+    loadWorktreeStats(projectId).catch((error) => {
       console.warn(
-        `Failed to load worktree snapshot for ${projectId}: ${formatGitCommandError(error)}`,
+        `Failed to load worktree stats for ${projectId}: ${formatGitCommandError(error)}`,
       );
       return null;
     }),
   ]);
 
-  const fileCount = snapshot?.fileCount ?? statusSummary.fileCount;
-  const insertions = snapshot?.insertions ?? 0;
-  const deletions = snapshot?.deletions ?? 0;
+  const fileCount = stats?.fileCount ?? statusSummary.fileCount;
+  const insertions = stats?.insertions ?? 0;
+  const deletions = stats?.deletions ?? 0;
 
   return {
     projectId,

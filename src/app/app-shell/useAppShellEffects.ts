@@ -252,6 +252,12 @@ export function useAppShellEffects({
       }
 
       if (event.reason === "end" || event.reason === "external") {
+        if (workspaceState.diffVisible) {
+          void queryClient.invalidateQueries({
+            queryKey: desktopQueryKeys.projectDiff(event.projectId),
+          });
+        }
+
         if (event.projectId === composerProjectId) {
           void loadProjectGitState(event.projectId).then((nextProjectGitState) => {
             setProjectGitState(nextProjectGitState);
@@ -271,6 +277,7 @@ export function useAppShellEffects({
     setComposerState,
     setProjectGitState,
     workspaceState.activeView,
+    workspaceState.diffVisible,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
