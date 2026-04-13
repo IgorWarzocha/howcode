@@ -27,6 +27,11 @@ type CodeWorkspaceViewProps = {
 
 const WORKSPACE_FOOTER_OVERLAP_PX = 20;
 
+type ProjectScopedDiffBaseline = {
+  projectId: string;
+  baseline: ProjectDiffBaseline;
+};
+
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
@@ -47,7 +52,10 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const [diffBaseline, setDiffBaseline] = useState<ProjectDiffBaseline>(defaultDiffBaseline);
+  const [diffBaselineState, setDiffBaselineState] = useState<ProjectScopedDiffBaseline>({
+    projectId: composerProjectId,
+    baseline: defaultDiffBaseline,
+  });
   const footerContentRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
@@ -65,6 +73,10 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
+  const diffBaseline =
+    diffBaselineState.projectId === composerProjectId
+      ? diffBaselineState.baseline
+      : defaultDiffBaseline;
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -74,12 +86,16 @@ export function CodeWorkspaceView({
   );
 
   useEffect(() => {
-    if (!composerProjectId) {
-      setDiffBaseline(defaultDiffBaseline);
-      return;
-    }
+    setDiffBaselineState((current) => {
+      if (current.projectId === composerProjectId && current.baseline.kind === "head") {
+        return current;
+      }
 
-    setDiffBaseline(defaultDiffBaseline);
+      return {
+        projectId: composerProjectId,
+        baseline: defaultDiffBaseline,
+      };
+    });
   }, [composerProjectId]);
 
   useLayoutEffect(() => {
@@ -246,7 +262,12 @@ export function CodeWorkspaceView({
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
-                onSetDiffBaseline={setDiffBaseline}
+                onSetDiffBaseline={(baseline) => {
+                  setDiffBaselineState({
+                    projectId: composerProjectId,
+                    baseline,
+                  });
+                }}
                 onSetDiffRenderMode={setDiffRenderMode}
                 onSendDiffComments={(message) => {
                   void handleSendDiffComments(message);
