@@ -21,6 +21,16 @@ howcode
 
 On first run, the launcher downloads the matching desktop build for your platform and caches it locally.
 
+### Linux note
+
+If WebKit GPU buffer allocation fails, the npm launcher now retries with:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1
+```
+
+If you run a downloaded Linux release asset directly and see a white window, launch it with that env var yourself.
+
 ## Current status
 
 Howcode is early, but already useful.

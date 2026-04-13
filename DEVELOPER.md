@@ -65,6 +65,14 @@ It is a thin launcher that:
 3. caches it locally
 4. launches the packaged desktop app
 
+On Linux, the npm launcher also watches early launcher output for DMABUF / GBM renderer failures and retries once with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+
+If you launch Linux release assets directly outside the npm launcher, document this manual workaround:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 ./howcode/bin/launcher
+```
+
 ## Repo map
 
 - `src/app/*` — renderer app

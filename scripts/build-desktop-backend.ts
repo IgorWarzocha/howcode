@@ -29,7 +29,6 @@ for (const build of builds) {
     target: "bun",
     format: "esm",
     sourcemap: "linked",
-    external: ["@mariozechner/pi-coding-agent"],
     throw: false,
   });
 

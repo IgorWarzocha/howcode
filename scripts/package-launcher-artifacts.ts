@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const appName = "howcode";
@@ -28,10 +29,39 @@ for (const target of targets) {
     continue;
   }
 
-  const archivePath = path.join(outputRoot, `${appName}-${target.os}-${target.arch}.tar.gz`);
-  const result = spawnSync("tar", ["-czf", archivePath, "-C", buildDir, bundleName], {
+  const metadataPath = path.join(bundlePath, "Resources", "metadata.json");
+  const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as { hash?: string };
+  if (!metadata.hash) {
+    throw new Error(`Missing release hash in ${metadataPath}.`);
+  }
+
+  const payloadPath = path.join(bundlePath, "Resources", `${metadata.hash}.tar.zst`);
+  if (!existsSync(payloadPath)) {
+    throw new Error(`Missing packaged payload for ${target.os}-${target.arch}: ${payloadPath}`);
+  }
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
+  const extractResult = spawnSync("tar", ["--zstd", "-xf", payloadPath, "-C", tempRoot], {
     stdio: "inherit",
   });
+
+  if (extractResult.status !== 0) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error(`Failed to extract payload for ${target.os}-${target.arch}.`);
+  }
+
+  const extractedBundlePath = path.join(tempRoot, bundleName);
+  if (!existsSync(extractedBundlePath)) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error(`Extracted payload missing ${bundleName} for ${target.os}-${target.arch}.`);
+  }
+
+  const archivePath = path.join(outputRoot, `${appName}-${target.os}-${target.arch}.tar.gz`);
+  const result = spawnSync("tar", ["-czf", archivePath, "-C", tempRoot, bundleName], {
+    stdio: "inherit",
+  });
+
+  rmSync(tempRoot, { recursive: true, force: true });
 
   if (result.status !== 0) {
     throw new Error(`Failed to create launcher archive for ${target.os}-${target.arch}.`);
