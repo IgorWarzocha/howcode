@@ -5,8 +5,10 @@ export default {
     name: "howcode",
     identifier: "howcode.desktop.local",
     version: "0.1.0",
+    description: "Desktop shell for Pi focused on fast local coding workflows.",
   },
   build: {
+    artifactFolder: "artifacts",
     copy: {
       "dist/index.html": "views/mainview/index.html",
       "dist/assets": "views/mainview/assets",
@@ -23,5 +25,8 @@ export default {
     win: {
       bundleCEF: false,
     },
+  },
+  release: {
+    baseUrl: "https://github.com/IgorWarzocha/howcode/releases/latest/download",
   },
 } satisfies ElectrobunConfig;

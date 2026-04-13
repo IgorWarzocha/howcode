@@ -46,6 +46,49 @@ bun install
 bun run dev
 ```
 
+## CLI distribution
+
+The user-facing launcher package lives in `packages/howcode`.
+
+Intended user flows:
+
+```bash
+npx howcode
+# or
+npm i -g howcode
+howcode
+```
+
+The npm package is a thin launcher. On first run it downloads the matching desktop build from GitHub Releases and then starts the app.
+
+## Release packaging
+
+Build release artifacts for the current version:
+
+```bash
+bun run release:prepare
+```
+
+That produces:
+
+- Electrobun release artifacts in `artifacts/`
+- launcher-friendly archives in `artifacts/npm-launcher/`
+
+For a GitHub release, upload both sets of artifacts. The launcher package expects:
+
+- `stable-<os>-<arch>-update.json` from Electrobun
+- `howcode-<os>-<arch>.tar.gz` from `artifacts/npm-launcher/`
+
+The launcher resolves releases from:
+
+- `https://github.com/IgorWarzocha/howcode/releases/latest/download`
+
+Dry-run the npm package from the repo root with:
+
+```bash
+bun run publish:howcode:dry-run
+```
+
 ## Checks
 
 ```bash

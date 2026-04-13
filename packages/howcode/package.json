@@ -1,0 +1,27 @@
+{
+  "name": "howcode",
+  "version": "0.1.0",
+  "description": "Launch the Howcode desktop app from npm or npx.",
+  "license": "MIT",
+  "author": "Igor Warzocha",
+  "homepage": "https://github.com/IgorWarzocha/howcode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorWarzocha/howcode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IgorWarzocha/howcode/issues"
+  },
+  "bin": {
+    "howcode": "./bin/howcode.js"
+  },
+  "files": ["bin", "lib", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["desktop", "launcher", "pi", "coding"],
+  "howcode": {
+    "appName": "howcode",
+    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/latest/download"
+  }
+}

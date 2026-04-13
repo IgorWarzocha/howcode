@@ -3,6 +3,7 @@ package-lock.json
 vendor/electrobun/
 dist/
 build/
+artifacts/
 .DS_Store
 *.log
 coverage/
