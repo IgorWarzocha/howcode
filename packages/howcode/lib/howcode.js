@@ -34,7 +34,7 @@ const TARGETS = {
   },
   "win32:arm64": {
     os: "win",
-    arch: "arm64",
+    arch: "x64",
     executable: `${APP_NAME}/bin/launcher.exe`,
   },
   "win32:x64": {

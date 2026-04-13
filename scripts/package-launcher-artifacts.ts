@@ -12,7 +12,6 @@ const targets = [
   { os: "linux", arch: "x64" },
   { os: "linux", arch: "arm64" },
   { os: "win", arch: "x64" },
-  { os: "win", arch: "arm64" },
 ] as const;
 
 rmSync(outputRoot, { recursive: true, force: true });
