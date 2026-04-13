@@ -17,6 +17,27 @@ function getElectrobunZstdPath() {
   return path.join(electrobunRoot, `dist-${targetOs}-${targetArch}`, `zig-zstd${binExt}`);
 }
 
+function getBundleZstdPath(bundlePath: string) {
+  const binaryName = process.platform === "win32" ? "zig-zstd.exe" : "zig-zstd";
+
+  if (process.platform === "darwin") {
+    return path.join(bundlePath, "Contents", "MacOS", binaryName);
+  }
+
+  return path.join(bundlePath, "bin", binaryName);
+}
+
+function resolveZstdPath(bundlePath: string) {
+  const candidates = [getBundleZstdPath(bundlePath), getElectrobunZstdPath()];
+  const foundPath = candidates.find((candidatePath) => existsSync(candidatePath));
+
+  if (!foundPath) {
+    throw new Error(`Unable to find zig-zstd. Checked: ${candidates.join(", ")}`);
+  }
+
+  return foundPath;
+}
+
 const targets = [
   { os: "macos", arch: "arm64" },
   { os: "macos", arch: "x64" },
@@ -24,8 +45,6 @@ const targets = [
   { os: "linux", arch: "arm64" },
   { os: "win", arch: "x64" },
 ] as const;
-
-const zstdPath = getElectrobunZstdPath();
 
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(outputRoot, { recursive: true });
@@ -53,6 +72,7 @@ for (const target of targets) {
   }
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
+  const zstdPath = resolveZstdPath(bundlePath);
   const tarPath = path.join(tempRoot, `${appName}-${target.os}-${target.arch}.tar`);
   const decompressResult = spawnSync(
     zstdPath,
