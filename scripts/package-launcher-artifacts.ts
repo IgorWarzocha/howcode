@@ -55,18 +55,22 @@ for (const target of targets) {
   const buildDir = path.join(buildRoot, `stable-${target.os}-${target.arch}`);
   const bundleName = target.os === "macos" ? `${appName}.app` : appName;
   const bundlePath = path.join(buildDir, bundleName);
+  const resourcesPath =
+    target.os === "macos"
+      ? path.join(bundlePath, "Contents", "Resources")
+      : path.join(bundlePath, "Resources");
 
   if (!existsSync(bundlePath)) {
     continue;
   }
 
-  const metadataPath = path.join(bundlePath, "Resources", "metadata.json");
+  const metadataPath = path.join(resourcesPath, "metadata.json");
   const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as { hash?: string };
   if (!metadata.hash) {
     throw new Error(`Missing release hash in ${metadataPath}.`);
   }
 
-  const payloadPath = path.join(bundlePath, "Resources", `${metadata.hash}.tar.zst`);
+  const payloadPath = path.join(resourcesPath, `${metadata.hash}.tar.zst`);
   if (!existsSync(payloadPath)) {
     throw new Error(`Missing packaged payload for ${target.os}-${target.arch}: ${payloadPath}`);
   }
