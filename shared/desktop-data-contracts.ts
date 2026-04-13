@@ -267,6 +267,35 @@ export type ProjectGitState = {
   originUrl: string | null;
 };
 
+export type ProjectDiffBaseline =
+  | { kind: "head" }
+  | { kind: "last-opened" }
+  | { kind: "before-today" }
+  | { kind: "commit"; sha: string };
+
+export type ProjectDiffResolvedBaseline = {
+  kind: ProjectDiffBaseline["kind"];
+  rev: string;
+  label: string;
+  commitSha: string | null;
+  shortSha: string | null;
+  subject: string | null;
+  committedAt: string | null;
+  capturedAt: string | null;
+};
+
+export type ProjectCommitEntry = {
+  sha: string;
+  shortSha: string;
+  subject: string;
+  authorName: string;
+  authorEmail: string;
+  authoredAt: string;
+  committedAt: string;
+  decorations: string[];
+  isHead: boolean;
+};
+
 export type TurnDiffStatus = "ready" | "missing" | "error";
 
 export type TurnDiffFile = {
@@ -295,6 +324,8 @@ export type TurnDiffResult = {
 export type ProjectDiffResult = {
   projectId: string;
   diff: string;
+  baseline: ProjectDiffBaseline;
+  resolvedBaseline: ProjectDiffResolvedBaseline;
 };
 
 export type ShellState = {

@@ -17,6 +17,8 @@ import type {
   PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
+  ProjectCommitEntry,
+  ProjectDiffBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -39,7 +41,18 @@ export type PiDesktopRpc = {
     requests: {
       getShellState: { params: Record<string, never>; response: ShellState };
       getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null };
-      getProjectDiff: { params: { projectId: string }; response: ProjectDiffResult | null };
+      getProjectDiff: {
+        params: { projectId: string; baseline?: ProjectDiffBaseline | null };
+        response: ProjectDiffResult | null;
+      };
+      captureProjectDiffBaseline: {
+        params: { projectId: string };
+        response: { ok: boolean };
+      };
+      listProjectCommits: {
+        params: { projectId: string; limit?: number | null };
+        response: ProjectCommitEntry[];
+      };
       searchPiPackages: {
         params: { query?: string | null; cursor?: number | null; pageSize?: number | null };
         response: PiPackageCatalogPage;

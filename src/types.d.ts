@@ -16,6 +16,8 @@ import type {
   PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
+  ProjectCommitEntry,
+  ProjectDiffBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -35,7 +37,15 @@ declare global {
     piDesktop?: {
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
-      getProjectDiff?: (projectId: string) => Promise<ProjectDiffResult | null>;
+      getProjectDiff?: (
+        projectId: string,
+        baseline?: ProjectDiffBaseline | null,
+      ) => Promise<ProjectDiffResult | null>;
+      captureProjectDiffBaseline?: (projectId: string) => Promise<void>;
+      listProjectCommits?: (
+        projectId: string,
+        limit?: number | null,
+      ) => Promise<ProjectCommitEntry[]>;
       searchPiPackages?: (request?: {
         query?: string | null;
         cursor?: number | null;

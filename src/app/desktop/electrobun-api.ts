@@ -18,6 +18,8 @@ import type {
   PiPackageMutationResult,
   PiSkillCatalogPage,
   PiSkillMutationResult,
+  ProjectCommitEntry,
+  ProjectDiffBaseline,
   ProjectDiffResult,
   ProjectGitState,
   ShellState,
@@ -98,8 +100,18 @@ export const piDesktopApi = {
   getShellState: async () => (await getRpc()).request.getShellState({}) as Promise<ShellState>,
   getProjectGitState: async (projectId: string) =>
     (await getRpc()).request.getProjectGitState({ projectId }) as Promise<ProjectGitState | null>,
-  getProjectDiff: async (projectId: string) =>
-    (await getRpc()).request.getProjectDiff({ projectId }) as Promise<ProjectDiffResult | null>,
+  getProjectDiff: async (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
+    (await getRpc()).request.getProjectDiff({
+      projectId,
+      baseline,
+    }) as Promise<ProjectDiffResult | null>,
+  captureProjectDiffBaseline: async (projectId: string) => {
+    await (await getRpc()).request.captureProjectDiffBaseline({ projectId });
+  },
+  listProjectCommits: async (projectId: string, limit: number | null = null) =>
+    (await getRpc()).request.listProjectCommits({ projectId, limit }) as Promise<
+      ProjectCommitEntry[]
+    >,
   searchPiPackages: async (
     request: { query?: string | null; cursor?: number | null; pageSize?: number | null } = {},
   ) => (await getRpc()).request.searchPiPackages(request) as Promise<PiPackageCatalogPage>,

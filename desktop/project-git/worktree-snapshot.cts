@@ -1,5 +1,7 @@
 import { runGitWithOptions, withTemporaryIndex } from "./git-runner.cts";
 
+export const EMPTY_TREE_OID = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
 export type WorktreeSnapshot = {
   fileCount: number;
   insertions: number;
@@ -27,21 +29,45 @@ function countNonEmptyLines(output: string) {
     .filter(Boolean).length;
 }
 
-export async function loadWorktreeSnapshot(projectId: string): Promise<WorktreeSnapshot> {
+async function withStagedWorktree<T>(
+  projectId: string,
+  callback: (context: { env: NodeJS.ProcessEnv; hasHead: boolean; treeOid: string }) => Promise<T>,
+) {
   return withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-    const diffArguments = (extraArgs: string[]) => [
-      "diff",
-      "--cached",
-      ...(hasHead ? [] : ["--root"]),
-      ...extraArgs,
-      "--",
-    ];
-
     await runGitWithOptions(projectId, ["add", "-A", "--", "."], {
       env,
       timeout: 20_000,
       maxBuffer: 1024 * 1024 * 8,
     });
+
+    const { stdout } = await runGitWithOptions(projectId, ["write-tree"], {
+      env,
+      timeout: 20_000,
+      maxBuffer: 1024 * 128,
+    });
+
+    const treeOid = stdout.trim() || (hasHead ? "HEAD^{tree}" : EMPTY_TREE_OID);
+    return callback({ env, hasHead, treeOid });
+  });
+}
+
+export async function captureWorktreeTree(projectId: string): Promise<string> {
+  return withStagedWorktree(projectId, async ({ treeOid }) => treeOid);
+}
+
+export async function loadWorktreeSnapshot(
+  projectId: string,
+  options: { baselineRev?: string | null } = {},
+): Promise<WorktreeSnapshot> {
+  return withStagedWorktree(projectId, async ({ env, hasHead }) => {
+    const baselineRev = options.baselineRev?.trim() || (hasHead ? "HEAD" : EMPTY_TREE_OID);
+    const diffArguments = (extraArgs: string[]) => [
+      "diff",
+      "--cached",
+      ...extraArgs,
+      baselineRev,
+      "--",
+    ];
 
     const [shortStatOutput, diffStatOutput, nameStatusOutput, numStatOutput, patchOutput] =
       await Promise.all([
