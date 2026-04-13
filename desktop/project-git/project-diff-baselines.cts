@@ -1,11 +1,19 @@
+import { createHash } from "node:crypto";
 import type {
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
 } from "../../shared/desktop-contracts.ts";
 import { runGitWithOptions } from "./git-runner.cts";
+import { hasHeadCommit, runGit } from "./git-runner.cts";
 import { getProjectCommitEntry, resolveCommitRevision } from "./project-commits.cts";
 import { isGitRepository } from "./project-state.cts";
 import { EMPTY_TREE_OID, captureWorktreeTree } from "./worktree-snapshot.cts";
+
+function getLastOpenedBaselineRef(projectId: string, capturedAt: string) {
+  const projectHash = createHash("sha1").update(projectId).digest("hex");
+  const baselineHash = createHash("sha1").update(`${projectId}:${capturedAt}`).digest("hex");
+  return `refs/howcode/diff-baselines/${projectHash}/${baselineHash}`;
+}
 
 function formatLocalMidnightGitTimestamp(date = new Date()) {
   const localMidnight = new Date(date);
@@ -61,14 +69,33 @@ async function resolveHeadBaseline(projectId: string): Promise<ProjectDiffResolv
 }
 
 async function resolveBeforeTodayBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
-  const { stdout } = await runGitWithOptions(
-    projectId,
-    ["rev-list", "-1", `--before=${formatLocalMidnightGitTimestamp()}`, "HEAD"],
-    {
-      timeout: 10_000,
-      maxBuffer: 1024 * 128,
-    },
-  );
+  if (!(await hasHeadCommit(projectId))) {
+    return {
+      kind: "before-today",
+      rev: EMPTY_TREE_OID,
+      label: "Initial state",
+      commitSha: null,
+      shortSha: null,
+      subject: null,
+      committedAt: null,
+      capturedAt: null,
+    };
+  }
+
+  let stdout = "";
+
+  try {
+    ({ stdout } = await runGitWithOptions(
+      projectId,
+      ["rev-list", "-1", `--before=${formatLocalMidnightGitTimestamp()}`, "HEAD"],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 128,
+      },
+    ));
+  } catch {
+    stdout = "";
+  }
 
   const commitSha = stdout.trim();
   if (commitSha.length === 0) {
@@ -96,29 +123,54 @@ async function resolveChosenCommitBaseline(
   projectId: string,
   sha: string,
 ): Promise<ProjectDiffResolvedBaseline> {
-  const resolvedSha = await resolveCommitRevision(projectId, sha);
+  const trimmedSha = sha.trim();
+  if (trimmedSha.length === 0) {
+    throw new Error("Could not find the selected commit.");
+  }
+
+  const resolvedSha = await resolveCommitRevision(projectId, trimmedSha);
   if (!resolvedSha) {
-    throw new Error(`Could not find commit ${sha}.`);
+    throw new Error(`Could not find commit ${trimmedSha}.`);
   }
 
   const entry = await getProjectCommitEntry(projectId, resolvedSha);
   if (!entry) {
-    throw new Error(`Could not load commit ${sha}.`);
+    throw new Error(`Could not load commit ${trimmedSha}.`);
   }
 
   return toResolvedCommitBaseline("commit", entry);
 }
 
-function resolveLastOpenedBaseline(
+async function resolveLastOpenedBaseline(
+  projectId: string,
   baseline: Extract<ProjectDiffBaseline, { kind: "last-opened" }>,
-): ProjectDiffResolvedBaseline {
+): Promise<ProjectDiffResolvedBaseline> {
   if (baseline.rev.trim().length === 0) {
     throw new Error("No diff baseline has been captured for this project yet.");
   }
 
+  let resolvedRev = "";
+
+  try {
+    ({ stdout: resolvedRev } = await runGitWithOptions(
+      projectId,
+      ["rev-parse", "--verify", baseline.rev],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 128,
+      },
+    ));
+  } catch {
+    resolvedRev = "";
+  }
+
+  if (resolvedRev.trim().length === 0) {
+    return resolveHeadBaseline(projectId);
+  }
+
   return {
     kind: "last-opened",
-    rev: baseline.rev,
+    rev: resolvedRev.trim(),
     label: "Last opened",
     commitSha: null,
     shortSha: null,
@@ -135,12 +187,32 @@ export async function captureProjectDiffBaseline(
     return null;
   }
 
-  const rev = await captureWorktreeTree(projectId);
+  const treeRev = await captureWorktreeTree(projectId);
   const capturedAt = new Date().toISOString();
+  const baselineRef = getLastOpenedBaselineRef(projectId, capturedAt);
+  const repositoryHasHead = await hasHeadCommit(projectId);
+
+  const commitArgs = [
+    "commit-tree",
+    treeRev,
+    ...(repositoryHasHead ? ["-p", "HEAD"] : []),
+    "-m",
+    `howcode diff baseline capturedAt=${capturedAt}`,
+  ];
+
+  const { stdout } = await runGitWithOptions(projectId, commitArgs, {
+    timeout: 10_000,
+    maxBuffer: 1024 * 128,
+  });
+  const commitRev = stdout.trim();
+
+  if (commitRev.length > 0) {
+    await runGit(projectId, ["update-ref", baselineRef, commitRev]);
+  }
 
   return {
     kind: "last-opened",
-    rev,
+    rev: commitRev.length > 0 ? baselineRef : EMPTY_TREE_OID,
     label: "Last opened",
     commitSha: null,
     shortSha: null,
@@ -164,7 +236,7 @@ export async function resolveProjectDiffBaseline(
     case "head":
       return resolveHeadBaseline(projectId);
     case "last-opened":
-      return resolveLastOpenedBaseline(requestedBaseline);
+      return resolveLastOpenedBaseline(projectId, requestedBaseline);
     case "before-today":
       return resolveBeforeTodayBaseline(projectId);
     case "commit":

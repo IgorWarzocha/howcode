@@ -36,6 +36,7 @@ export const desktopQueryKeys = {
   composerState: (request: ComposerStateRequest) =>
     ["desktop", "composerState", request.projectId ?? null, request.sessionPath ?? null] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
+  projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ["desktop", "projectDiff", projectId, baseline?.kind ?? "head", baseline ?? null] as const,
   projectCommits: (projectId: string, limit = 50) =>

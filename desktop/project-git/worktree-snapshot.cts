@@ -71,18 +71,26 @@ export async function loadWorktreeSnapshot(
       "--",
     ];
 
-    const [stats, patchOutput] = await Promise.all([
-      loadWorktreeStats(projectId, { baselineRev, env, hasHead }),
-      runGitWithOptions(
-        projectId,
-        diffArguments(["--unified=1", "--no-color", "--no-ext-diff", "--find-renames"]),
-        {
-          env,
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024 * 24,
-        },
-      ).then(({ stdout }) => stdout.trim()),
-    ]);
+    const patchPromise = runGitWithOptions(
+      projectId,
+      diffArguments(["--unified=1", "--no-color", "--no-ext-diff", "--find-renames"]),
+      {
+        env,
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024 * 24,
+      },
+    ).then(({ stdout }) => stdout.trim());
+
+    const statsPromise = loadWorktreeStats(projectId, { baselineRev, env, hasHead }).catch(() => ({
+      fileCount: 0,
+      insertions: 0,
+      deletions: 0,
+      diffStat: "",
+      nameStatus: "",
+      numStat: "",
+    }));
+
+    const [stats, patchOutput] = await Promise.all([statsPromise, patchPromise]);
 
     return {
       ...stats,
@@ -100,7 +108,7 @@ export async function loadWorktreeStats(
   } = {},
 ): Promise<WorktreeStats> {
   const loadStats = async (context?: { env?: NodeJS.ProcessEnv; hasHead?: boolean }) => {
-    const hasHead = context?.hasHead ?? true;
+    const hasHead = context?.hasHead ?? false;
     const baselineRev =
       context?.hasHead === false
         ? options.baselineRev?.trim() || EMPTY_TREE_OID
@@ -118,22 +126,34 @@ export async function loadWorktreeStats(
         env: context?.env,
         timeout: 20_000,
         maxBuffer: 1024 * 1024 * 4,
-      }).then(({ stdout }) => stdout.trim()),
+      }).then(
+        ({ stdout }) => stdout.trim(),
+        () => "",
+      ),
       runGitWithOptions(projectId, diffArguments(["--stat=200,200", "--find-renames"]), {
         env: context?.env,
         timeout: 20_000,
         maxBuffer: 1024 * 1024 * 4,
-      }).then(({ stdout }) => stdout.trim()),
+      }).then(
+        ({ stdout }) => stdout.trim(),
+        () => "",
+      ),
       runGitWithOptions(projectId, diffArguments(["--name-status", "--find-renames"]), {
         env: context?.env,
         timeout: 20_000,
         maxBuffer: 1024 * 1024 * 4,
-      }).then(({ stdout }) => stdout.trim()),
+      }).then(
+        ({ stdout }) => stdout.trim(),
+        () => "",
+      ),
       runGitWithOptions(projectId, diffArguments(["--numstat", "--find-renames"]), {
         env: context?.env,
         timeout: 20_000,
         maxBuffer: 1024 * 1024 * 4,
-      }).then(({ stdout }) => stdout.trim()),
+      }).then(
+        ({ stdout }) => stdout.trim(),
+        () => "",
+      ),
     ]);
 
     const shortStat = parseShortStat(shortStatOutput);
@@ -149,7 +169,7 @@ export async function loadWorktreeStats(
   };
 
   if (options.env) {
-    return loadStats({ env: options.env, hasHead: options.hasHead ?? true });
+    return loadStats({ env: options.env, hasHead: options.hasHead ?? false });
   }
 
   return withTemporaryIndex(projectId, async ({ env, hasHead }) => {

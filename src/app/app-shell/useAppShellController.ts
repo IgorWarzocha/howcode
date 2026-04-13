@@ -261,7 +261,9 @@ export function useAppShellController() {
 
   const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
     if (composerProjectId) {
-      queryClient.removeQueries({ queryKey: desktopQueryKeys.projectDiff(composerProjectId) });
+      queryClient.removeQueries({
+        queryKey: desktopQueryKeys.projectDiffPrefix(composerProjectId),
+      });
     }
 
     dispatch({
@@ -273,7 +275,9 @@ export function useAppShellController() {
 
   const handleOpenWorktreeDiffFile = (filePath: string) => {
     if (composerProjectId) {
-      queryClient.removeQueries({ queryKey: desktopQueryKeys.projectDiff(composerProjectId) });
+      queryClient.removeQueries({
+        queryKey: desktopQueryKeys.projectDiffPrefix(composerProjectId),
+      });
     }
 
     dispatch({
@@ -290,7 +294,9 @@ export function useAppShellController() {
   const handleToggleDiffPanel = () => {
     if (!state.diffVisible) {
       if (composerProjectId) {
-        queryClient.removeQueries({ queryKey: desktopQueryKeys.projectDiff(composerProjectId) });
+        queryClient.removeQueries({
+          queryKey: desktopQueryKeys.projectDiffPrefix(composerProjectId),
+        });
       }
 
       dispatch({

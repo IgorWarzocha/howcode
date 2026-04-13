@@ -2,22 +2,18 @@ import type { ProjectCommitEntry } from "../../shared/desktop-contracts.ts";
 import { runGitWithOptions } from "./git-runner.cts";
 import { isGitRepository } from "./project-state.cts";
 
-const FIELD_SEPARATOR = "\u001f";
-const RECORD_SEPARATOR = "\u001e";
-const COMMIT_PRETTY_FORMAT = ["%H", "%h", "%an", "%ae", "%aI", "%cI", "%D", "%s"].join(
-  `%x${FIELD_SEPARATOR.charCodeAt(0).toString(16)}`,
-);
+const FIELD_SEPARATOR = "\0";
+const COMMIT_FIELD_COUNT = 8;
+const COMMIT_PRETTY_FORMAT = ["%H", "%h", "%an", "%ae", "%aI", "%cI", "%D", "%s", ""].join("%x00");
 
 function parseDecorations(rawDecorations: string) {
-  return rawDecorations
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
+  const value = rawDecorations.trim();
+  return value.length > 0 ? [value] : [];
 }
 
-function parseCommitEntry(record: string): ProjectCommitEntry | null {
+function parseCommitEntry(fields: string[]): ProjectCommitEntry | null {
   const [sha, shortSha, authorName, authorEmail, authoredAt, committedAt, rawDecorations, subject] =
-    record.split(FIELD_SEPARATOR);
+    fields;
 
   if (!sha || !shortSha) {
     return null;
@@ -34,8 +30,24 @@ function parseCommitEntry(record: string): ProjectCommitEntry | null {
     authoredAt: authoredAt ?? "",
     committedAt: committedAt ?? "",
     decorations,
-    isHead: decorations.some((entry) => entry === "HEAD" || entry.startsWith("HEAD -> ")),
+    isHead: /(^|,\s*)HEAD(?:\s*->\s*[^,]+)?(?:,|$)/.test(rawDecorations ?? ""),
   };
+}
+
+function parseCommitEntries(output: string) {
+  return output
+    .replace(/\n$/, "")
+    .split(FIELD_SEPARATOR)
+    .reduce<string[][]>((records, field, index) => {
+      const recordIndex = Math.floor(index / COMMIT_FIELD_COUNT);
+      const currentRecord = records[recordIndex] ?? [];
+      currentRecord.push(field);
+      records[recordIndex] = currentRecord;
+      return records;
+    }, [])
+    .filter((fields) => fields.length >= COMMIT_FIELD_COUNT)
+    .map((fields) => parseCommitEntry(fields.slice(0, COMMIT_FIELD_COUNT)))
+    .filter((record): record is ProjectCommitEntry => record !== null);
 }
 
 export async function resolveCommitRevision(
@@ -77,7 +89,7 @@ export async function getProjectCommitEntry(
     },
   );
 
-  return parseCommitEntry(stdout.trim());
+  return parseCommitEntries(stdout)[0] ?? null;
 }
 
 export async function listProjectCommits(
@@ -97,9 +109,10 @@ export async function listProjectCommits(
       projectId,
       [
         "log",
+        "-z",
         `--max-count=${normalizedLimit}`,
         "--decorate=short",
-        `--format=${COMMIT_PRETTY_FORMAT}%x${RECORD_SEPARATOR.charCodeAt(0).toString(16)}`,
+        `--format=${COMMIT_PRETTY_FORMAT}`,
       ],
       {
         timeout: 10_000,
@@ -110,10 +123,5 @@ export async function listProjectCommits(
     return [];
   }
 
-  return stdout
-    .split(RECORD_SEPARATOR)
-    .map((record) => record.trim())
-    .filter((record) => record.length > 0)
-    .map((record) => parseCommitEntry(record))
-    .filter((record): record is ProjectCommitEntry => record !== null);
+  return parseCommitEntries(stdout);
 }
