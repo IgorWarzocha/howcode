@@ -35,7 +35,10 @@ function formatLocalMidnightGitTimestamp(date = new Date()) {
 }
 
 function toResolvedCommitBaseline(
-  kind: Extract<ProjectDiffBaseline["kind"], "head" | "yesterday" | "main-branch" | "commit">,
+  kind: Extract<
+    ProjectDiffBaseline["kind"],
+    "head" | "previous" | "yesterday" | "main-branch" | "commit"
+  >,
   entry: Awaited<ReturnType<typeof getProjectCommitEntry>>,
 ): ProjectDiffResolvedBaseline {
   return {
@@ -66,6 +69,29 @@ async function resolveHeadBaseline(projectId: string): Promise<ProjectDiffResolv
   }
 
   return toResolvedCommitBaseline("head", entry);
+}
+
+async function resolvePreviousCommitBaseline(
+  projectId: string,
+): Promise<ProjectDiffResolvedBaseline> {
+  const entry = await getProjectCommitEntry(projectId, "HEAD^");
+  if (!entry) {
+    return {
+      kind: "previous",
+      rev: EMPTY_TREE_OID,
+      label: "Initial state",
+      commitSha: null,
+      shortSha: null,
+      subject: null,
+      committedAt: null,
+      capturedAt: null,
+    };
+  }
+
+  return {
+    ...toResolvedCommitBaseline("previous", entry),
+    label: "Previous commit",
+  };
 }
 
 async function resolveYesterdayBaseline(projectId: string): Promise<ProjectDiffResolvedBaseline> {
@@ -292,6 +318,8 @@ export async function resolveProjectDiffBaseline(
   switch (requestedBaseline.kind) {
     case "head":
       return resolveHeadBaseline(projectId);
+    case "previous":
+      return resolvePreviousCommitBaseline(projectId);
     case "last-opened":
       return resolveLastOpenedBaseline(projectId, requestedBaseline);
     case "yesterday":

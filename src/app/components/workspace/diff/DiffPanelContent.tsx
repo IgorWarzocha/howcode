@@ -5,7 +5,7 @@ import type { ProjectDiffBaseline } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
 import { useDesktopDiff } from "../../../hooks/useDesktopDiff";
 import { cn } from "../../../utils/cn";
-import { getResolvedDiffBaselineLabel } from "../composer/diff-baseline";
+import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from "../composer/diff-baseline";
 import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
 import { DiffPanelFileList } from "./DiffPanelFileList";
@@ -179,7 +179,7 @@ export function DiffPanelContent({
                   {isLoading
                     ? "Loading diff..."
                     : hasNoNetChanges
-                      ? `No net changes since ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
+                      ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
                       : "No patch available for this worktree."}
                 </p>
               </div>

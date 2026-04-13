@@ -21,7 +21,7 @@ import { desktopQueryKeys, listProjectCommitsQuery } from "../../../query/deskto
 import { popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
-import { getDiffBaselineLabel } from "./diff-baseline";
+import { getDiffBaselineLabel, getDiffBaselinePrefix } from "./diff-baseline";
 import { formatGitCount } from "./git-ops";
 
 type ComposerDiffBaselineSelectorProps = {
@@ -33,13 +33,17 @@ type ComposerDiffBaselineSelectorProps = {
 };
 
 const baselineOptions = [
+  { key: "previous", label: "prev commit", baseline: { kind: "previous" } },
   { key: "head", label: "last commit", baseline: { kind: "head" } },
   { key: "main-branch", label: "main branch", baseline: { kind: "main-branch" } },
   { key: "yesterday", label: "yesterday", baseline: { kind: "yesterday" } },
 ] as const satisfies ReadonlyArray<{
   key: ProjectDiffBaseline["kind"];
   label: string;
-  baseline: Extract<ProjectDiffBaseline, { kind: "head" | "main-branch" | "yesterday" }>;
+  baseline: Extract<
+    ProjectDiffBaseline,
+    { kind: "head" | "previous" | "main-branch" | "yesterday" }
+  >;
 }>;
 
 function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
@@ -146,6 +150,7 @@ export function ComposerDiffBaselineSelector({
     () => getDiffBaselineLabel(selectedBaseline, commits),
     [commits, selectedBaseline],
   );
+  const baselinePrefix = getDiffBaselinePrefix(selectedBaseline);
 
   const visibleCommits = useMemo(() => {
     const nextCommits = searchQuery.trim().length
@@ -267,7 +272,7 @@ export function ComposerDiffBaselineSelector({
             open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >
-          Since {baselineLabel}
+          {baselinePrefix} {baselineLabel}
         </span>
       </button>
 

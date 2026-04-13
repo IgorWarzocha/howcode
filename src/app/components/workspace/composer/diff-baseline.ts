@@ -6,10 +6,18 @@ import type {
 
 export const defaultDiffBaseline = { kind: "head" } as const satisfies ProjectDiffBaseline;
 
+export function getDiffBaselinePrefix(baseline: ProjectDiffBaseline | null | undefined) {
+  return baseline?.kind === "main-branch" ? "from" : "since";
+}
+
 export function getDiffBaselineLabel(
   baseline: ProjectDiffBaseline | null | undefined,
   commits: ProjectCommitEntry[] = [],
 ) {
+  if (baseline?.kind === "previous") {
+    return "prev commit";
+  }
+
   if (baseline?.kind === "yesterday") {
     return "yesterday";
   }
@@ -35,6 +43,8 @@ export function getResolvedDiffBaselineLabel(
   resolvedBaseline: ProjectDiffResolvedBaseline | null | undefined,
 ) {
   switch (baseline?.kind ?? "head") {
+    case "previous":
+      return "prev commit";
     case "yesterday":
       return "yesterday";
     case "main-branch":

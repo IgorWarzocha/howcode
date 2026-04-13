@@ -269,6 +269,7 @@ export type ProjectGitState = {
 
 export type ProjectDiffBaseline =
   | { kind: "head" }
+  | { kind: "previous" }
   | { kind: "last-opened"; rev: string; capturedAt?: string | null }
   | { kind: "yesterday" }
   | { kind: "main-branch" }
