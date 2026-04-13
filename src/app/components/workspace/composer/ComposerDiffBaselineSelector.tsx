@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Check, Search } from "lucide-react";
-import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type RefObject,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type {
   ProjectCommitEntry,
   ProjectDiffBaseline,
@@ -81,6 +90,8 @@ export function ComposerDiffBaselineSelector({
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [positionReady, setPositionReady] = useState(false);
+  const panelId = useId();
   const anchorRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelPosition, setPanelPosition] = useState({ right: 20, bottom: 20 });
@@ -120,6 +131,7 @@ export function ComposerDiffBaselineSelector({
 
   useLayoutEffect(() => {
     if (!open) {
+      setPositionReady(false);
       return;
     }
 
@@ -134,6 +146,7 @@ export function ComposerDiffBaselineSelector({
         right: Math.max(window.innerWidth - composerRect.right, 20),
         bottom: Math.max(window.innerHeight - anchorRect.top + 8, 20),
       });
+      setPositionReady(true);
     };
 
     updatePosition();
@@ -153,6 +166,7 @@ export function ComposerDiffBaselineSelector({
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         className={cn(
           compactCardClass,
           "group relative inline-flex min-w-[9.5rem] items-center justify-end overflow-hidden px-2.5 py-1.5 text-right text-[12px] text-[color:var(--muted)]",
@@ -196,107 +210,114 @@ export function ComposerDiffBaselineSelector({
         </span>
       </button>
 
-      {open ? (
-        <SurfacePanel
-          ref={panelRef}
-          aria-label="Diff baseline selector"
-          className={cn(
-            popoverPanelClass,
-            "motion-popover fixed z-[80] grid w-[min(28rem,calc(100vw-2rem))] origin-bottom-right gap-2 rounded-2xl p-2",
-          )}
-          style={{ right: `${panelPosition.right}px`, bottom: `${panelPosition.bottom}px` }}
-        >
-          <div className="px-2 pt-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-            Changes since
-          </div>
-
-          <button
-            type="button"
-            className={cn(
-              toolbarButtonClass,
-              "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-              selectedBaseline.kind === "before-today" &&
-                "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-            )}
-            onClick={() => {
-              onSelectBaseline({ kind: "before-today" });
-              setOpen(false);
-            }}
-          >
-            <span>today</span>
-            {selectedBaseline.kind === "before-today" ? <Check size={14} /> : null}
-          </button>
-
-          <button
-            type="button"
-            className={cn(
-              toolbarButtonClass,
-              "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-              selectedBaseline.kind === "main-branch" &&
-                "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-            )}
-            onClick={() => {
-              onSelectBaseline({ kind: "main-branch" });
-              setOpen(false);
-            }}
-          >
-            <span>main branch</span>
-            {selectedBaseline.kind === "main-branch" ? <Check size={14} /> : null}
-          </button>
-
-          <button
-            type="button"
-            className={cn(
-              toolbarButtonClass,
-              "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
-              selectedBaseline.kind === "head" &&
-                "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
-            )}
-            onClick={() => {
-              onSelectBaseline({ kind: "head" });
-              setOpen(false);
-            }}
-          >
-            <span>last commit</span>
-            {selectedBaseline.kind === "head" ? <Check size={14} /> : null}
-          </button>
-
-          <label className="relative block">
-            <Search
-              size={14}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
-            />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search commits"
-              className={cn(settingsInputClass, "w-full pl-9")}
-            />
-          </label>
-
-          <div className="grid max-h-64 gap-0.5 overflow-y-auto pb-0.5">
-            {visibleCommits.length > 0 ? (
-              visibleCommits.map((commit) => (
-                <CommitOption
-                  key={commit.sha}
-                  commit={commit}
-                  selected={
-                    selectedBaseline.kind === "commit" && selectedBaseline.sha === commit.sha
-                  }
-                  onSelect={() => {
-                    onSelectBaseline({ kind: "commit", sha: commit.sha });
-                    setOpen(false);
-                  }}
-                />
-              ))
-            ) : (
-              <div className="px-2.5 py-3 text-[12px] text-[color:var(--muted)]">
-                {commitsQuery.isLoading ? "Loading commits…" : "No commits found."}
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <SurfacePanel
+              id={panelId}
+              ref={panelRef}
+              aria-label="Diff baseline selector"
+              className={cn(
+                popoverPanelClass,
+                "motion-popover fixed z-[120] grid w-[min(28rem,calc(100vw-2rem))] origin-bottom-right gap-2 rounded-2xl p-2 transition-[opacity,transform] duration-150 ease-out",
+                positionReady
+                  ? "opacity-100 translate-y-0"
+                  : "pointer-events-none opacity-0 translate-y-1",
+              )}
+              style={{ right: `${panelPosition.right}px`, bottom: `${panelPosition.bottom}px` }}
+            >
+              <div className="px-2 pt-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+                Changes since
               </div>
-            )}
-          </div>
-        </SurfacePanel>
-      ) : null}
+
+              <button
+                type="button"
+                className={cn(
+                  toolbarButtonClass,
+                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
+                  selectedBaseline.kind === "before-today" &&
+                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+                )}
+                onClick={() => {
+                  onSelectBaseline({ kind: "before-today" });
+                  setOpen(false);
+                }}
+              >
+                <span>today</span>
+                {selectedBaseline.kind === "before-today" ? <Check size={14} /> : null}
+              </button>
+
+              <button
+                type="button"
+                className={cn(
+                  toolbarButtonClass,
+                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
+                  selectedBaseline.kind === "main-branch" &&
+                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+                )}
+                onClick={() => {
+                  onSelectBaseline({ kind: "main-branch" });
+                  setOpen(false);
+                }}
+              >
+                <span>main branch</span>
+                {selectedBaseline.kind === "main-branch" ? <Check size={14} /> : null}
+              </button>
+
+              <button
+                type="button"
+                className={cn(
+                  toolbarButtonClass,
+                  "w-full justify-between rounded-xl px-2.5 py-2 text-[13px]",
+                  selectedBaseline.kind === "head" &&
+                    "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
+                )}
+                onClick={() => {
+                  onSelectBaseline({ kind: "head" });
+                  setOpen(false);
+                }}
+              >
+                <span>last commit</span>
+                {selectedBaseline.kind === "head" ? <Check size={14} /> : null}
+              </button>
+
+              <label className="relative block">
+                <Search
+                  size={14}
+                  className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
+                />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search commits"
+                  className={cn(settingsInputClass, "w-full pl-9")}
+                />
+              </label>
+
+              <div className="grid max-h-64 gap-0.5 overflow-y-auto pb-0.5">
+                {visibleCommits.length > 0 ? (
+                  visibleCommits.map((commit) => (
+                    <CommitOption
+                      key={commit.sha}
+                      commit={commit}
+                      selected={
+                        selectedBaseline.kind === "commit" && selectedBaseline.sha === commit.sha
+                      }
+                      onSelect={() => {
+                        onSelectBaseline({ kind: "commit", sha: commit.sha });
+                        setOpen(false);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="px-2.5 py-3 text-[12px] text-[color:var(--muted)]">
+                    {commitsQuery.isLoading ? "Loading commits…" : "No commits found."}
+                  </div>
+                )}
+              </div>
+            </SurfacePanel>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
