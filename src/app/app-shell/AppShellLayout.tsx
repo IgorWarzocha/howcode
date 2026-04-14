@@ -14,6 +14,7 @@ type AppShellLayoutProps = {
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
+  const [composerOpenGitOpsRequestKey, setComposerOpenGitOpsRequestKey] = useState(0);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     baseline: ProjectDiffBaseline;
@@ -152,13 +153,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   activeComposerState={activeComposerState}
                   activeThreadData={activeThreadData}
                   composerProjectId={composerProjectId}
-                  composerSurface={state.composerSurface}
+                  composerOpenGitOpsRequestKey={composerOpenGitOpsRequestKey}
                   currentProjectName={currentProjectName}
                   diffBaseline={diffBaseline}
                   dockedTerminalVisible={dockedTerminalVisible}
                   terminalSessionPath={terminalSessionPath}
                   workspaceContentClass={workspaceContentClass}
-                  onSetComposerSurface={controller.handleSetComposerSurface}
                   onSetDiffBaseline={(baseline) => {
                     setDiffBaselineState({
                       projectId: composerProjectId,
@@ -177,7 +177,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}
               onOpenGitOps={async () => {
-                controller.handleSetComposerSurface("git-ops");
+                setComposerOpenGitOpsRequestKey((current) => current + 1);
                 await controller.handleCloseTakeoverTerminal();
               }}
               onSetDiffBaseline={(baseline) => {

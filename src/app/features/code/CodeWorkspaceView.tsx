@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
-import { Composer, type ComposerSurface } from "../../components/workspace/Composer";
+import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { TerminalPanel } from "../../components/workspace/TerminalPanel";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
@@ -18,13 +18,12 @@ type CodeWorkspaceViewProps = {
   activeComposerState: AppShellController["activeComposerState"];
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
-  composerSurface: ComposerSurface;
+  composerOpenGitOpsRequestKey: number;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
-  onSetComposerSurface: (surface: ComposerSurface) => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
@@ -35,13 +34,12 @@ export function CodeWorkspaceView({
   activeComposerState,
   activeThreadData,
   composerProjectId,
-  composerSurface,
+  composerOpenGitOpsRequestKey,
   currentProjectName,
   diffBaseline,
   dockedTerminalVisible,
   terminalSessionPath,
   workspaceContentClass,
-  onSetComposerSurface,
   onSetDiffBaseline,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
@@ -139,7 +137,6 @@ export function CodeWorkspaceView({
     setDiffCommentsSending(true);
     setDiffCommentError(null);
     setSelectedDiffCommentId(null);
-    onSetComposerSurface("prompt");
     setComposerPromptResetKey((current) => current + 1);
 
     try {
@@ -245,7 +242,7 @@ export function CodeWorkspaceView({
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
-                surface={composerSurface}
+                openGitOpsRequestKey={composerOpenGitOpsRequestKey}
                 onSetDiffBaseline={onSetDiffBaseline}
                 onSetDiffRenderMode={setDiffRenderMode}
                 onSendDiffComments={(message) => {
@@ -264,7 +261,6 @@ export function CodeWorkspaceView({
                 onPickAttachments={pickComposerAttachments}
                 onListAttachmentEntries={listComposerAttachmentEntries}
                 onAction={handleAction}
-                onSetSurface={onSetComposerSurface}
               />
             </div>
             {dockedTerminalVisible ? (

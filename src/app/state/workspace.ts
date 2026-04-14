@@ -8,7 +8,6 @@ export type WorkspaceState = {
   selectedSessionPath: string | null;
   terminalVisible: boolean;
   takeoverVisible: boolean;
-  composerSurface: "prompt" | "git-ops";
   diffVisible: boolean;
   selectedDiffTurnCount: number | null;
   selectedDiffFilePath: string | null;
@@ -30,7 +29,6 @@ export type WorkspaceAction =
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
   | { type: "set-takeover-visible"; visible: boolean }
-  | { type: "set-composer-surface"; surface: "prompt" | "git-ops" }
   | { type: "toggle-diff" }
   | { type: "open-diff"; checkpointTurnCount: number | null; filePath?: string | null }
   | { type: "set-diff-turn"; checkpointTurnCount: number | null }
@@ -53,7 +51,6 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedSessionPath: null,
     terminalVisible: false,
     takeoverVisible: false,
-    composerSurface: "prompt",
     diffVisible: false,
     selectedDiffTurnCount: null,
     selectedDiffFilePath: null,
@@ -110,7 +107,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
         takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
-        composerSurface: action.view === "thread" ? state.composerSurface : "prompt",
       };
     case "select-inbox-thread":
       return {
@@ -127,7 +123,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         takeoverVisible: false,
-        composerSurface: "prompt",
       };
     case "set-selected-project":
       return {
@@ -143,7 +138,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: action.sessionPath,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
-        composerSurface: "prompt",
         collapsedProjectIds: {
           ...state.collapsedProjectIds,
           [action.projectId]: false,
@@ -159,8 +153,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, takeoverVisible: false };
     case "set-takeover-visible":
       return { ...state, takeoverVisible: action.visible };
-    case "set-composer-surface":
-      return { ...state, composerSurface: action.surface };
     case "toggle-diff":
       return { ...state, diffVisible: !state.diffVisible };
     case "open-diff":
