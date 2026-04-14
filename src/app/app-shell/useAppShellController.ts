@@ -334,17 +334,15 @@ export function useAppShellController() {
     void persistPiTuiTakeover(true);
   };
 
-  const closeTakeover = () => {
+  const closeTakeover = async () => {
+    await persistPiTuiTakeover(false);
     dispatch({ type: "set-takeover-visible", visible: false });
     setThreadRefreshKey((current) => current + 1);
-    void persistPiTuiTakeover(false).then(() => {
-      void refreshShellState();
-    });
   };
 
   const handleOpenDockedTerminalFromTakeover = () => {
     dispatch({ type: "set-terminal-visible", visible: true });
-    closeTakeover();
+    void closeTakeover();
   };
 
   return {
