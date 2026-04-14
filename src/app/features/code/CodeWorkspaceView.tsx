@@ -164,61 +164,63 @@ export function CodeWorkspaceView({
       style={terminalDrawerPaddingStyle}
     >
       <div
-        className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
-        style={footerInset > 0 ? { paddingBottom: `${footerInset}px` } : undefined}
+        className="absolute inset-x-0 top-0 overflow-hidden px-5"
+        style={{ bottom: `${footerInset}px` }}
       >
-        <main
-          className={
-            state.activeView === "thread" || showDiffInMainView
-              ? "min-h-0 overflow-hidden pt-1.5"
-              : mainPanelClass
-          }
-        >
-          {showDiffInMainView ? (
-            <DiffPanel
-              projectId={composerProjectId}
-              isGitRepo={projectGitState?.isGitRepo ?? false}
-              baseline={diffBaseline}
-              selectedFilePath={state.selectedDiffFilePath}
-              selectedCommentId={selectedDiffCommentId}
-              selectedCommentJumpKey={selectedDiffCommentJumpKey}
-              diffRenderMode={diffRenderMode}
-              layoutMode="main"
-            />
-          ) : (
-            <CodeWorkspaceMainView
-              activeView={state.activeView}
-              appSettings={
-                shellState?.appSettings ?? {
-                  gitCommitMessageModel: null,
-                  skillCreatorModel: null,
-                  favoriteFolders: [],
-                  projectImportState: null,
-                  preferredProjectLocation: null,
-                  initializeGitOnProjectCreate: false,
-                  useAgentsSkillsPaths: false,
-                  piTuiTakeover: false,
+        <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">
+          <main
+            className={
+              state.activeView === "thread" || showDiffInMainView
+                ? "min-h-0 overflow-hidden pt-1.5"
+                : mainPanelClass
+            }
+          >
+            {showDiffInMainView ? (
+              <DiffPanel
+                projectId={composerProjectId}
+                isGitRepo={projectGitState?.isGitRepo ?? false}
+                baseline={diffBaseline}
+                selectedFilePath={state.selectedDiffFilePath}
+                selectedCommentId={selectedDiffCommentId}
+                selectedCommentJumpKey={selectedDiffCommentJumpKey}
+                diffRenderMode={diffRenderMode}
+                layoutMode="main"
+              />
+            ) : (
+              <CodeWorkspaceMainView
+                activeView={state.activeView}
+                appSettings={
+                  shellState?.appSettings ?? {
+                    gitCommitMessageModel: null,
+                    skillCreatorModel: null,
+                    favoriteFolders: [],
+                    projectImportState: null,
+                    preferredProjectLocation: null,
+                    initializeGitOnProjectCreate: false,
+                    useAgentsSkillsPaths: false,
+                    piTuiTakeover: false,
+                  }
                 }
-              }
-              availableModels={activeComposerState?.availableModels ?? []}
-              currentModel={activeComposerState?.currentModel ?? null}
-              currentProjectName={currentProjectName}
-              selectedInboxThread={controller.selectedInboxThread}
-              projects={controller.projects}
-              selectedProjectId={controller.state.selectedProjectId}
-              workspaceContentClass={workspaceContentClass}
-              threadData={activeThreadData}
-              composerLayoutVersion={composerLayoutVersion}
-              onAction={handleAction}
-              onDismissInboxThread={controller.handleDismissInboxThread}
-              onOpenThread={controller.handleThreadOpen}
-              onLoadEarlierMessages={handleLoadEarlierMessages}
-              onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
-              onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
-              onSelectProject={controller.handleProjectSelect}
-            />
-          )}
-        </main>
+                availableModels={activeComposerState?.availableModels ?? []}
+                currentModel={activeComposerState?.currentModel ?? null}
+                currentProjectName={currentProjectName}
+                selectedInboxThread={controller.selectedInboxThread}
+                projects={controller.projects}
+                selectedProjectId={controller.state.selectedProjectId}
+                workspaceContentClass={workspaceContentClass}
+                threadData={activeThreadData}
+                composerLayoutVersion={composerLayoutVersion}
+                onAction={handleAction}
+                onDismissInboxThread={controller.handleDismissInboxThread}
+                onOpenThread={controller.handleThreadOpen}
+                onLoadEarlierMessages={handleLoadEarlierMessages}
+                onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
+                onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
+                onSelectProject={controller.handleProjectSelect}
+              />
+            )}
+          </main>
+        </div>
       </div>
 
       {showWorkspaceFooter ? (
