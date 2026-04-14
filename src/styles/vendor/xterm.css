@@ -9,13 +9,13 @@
 
 .terminal-viewport--flush .xterm {
   padding: 0 0 0 14px;
-  background-color: var(--terminal-bg);
+  background-color: var(--workspace);
 }
 
 .terminal-viewport--flush .xterm-viewport,
 .terminal-viewport--flush .xterm-screen,
 .terminal-viewport--flush .xterm-scrollable-element {
-  background-color: var(--terminal-bg) !important;
+  background-color: var(--workspace) !important;
 }
 
 .terminal-viewport--flush,
