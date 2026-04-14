@@ -138,6 +138,8 @@ export function TerminalViewport({
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   const effectiveLaunchMode =
     launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
+  const terminalSessionPath =
+    effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
 
   useEffect(() => {
     const mount = containerRef.current;
@@ -326,7 +328,7 @@ export function TerminalViewport({
       fitAddon.fit();
       const snapshot = await openDesktopTerminal({
         projectId,
-        sessionPath: persistedSessionPath,
+        sessionPath: terminalSessionPath,
         launchMode: effectiveLaunchMode,
         cols: Math.max(terminal.cols, 20),
         rows: Math.max(terminal.rows, 5),
@@ -385,9 +387,9 @@ export function TerminalViewport({
     effectiveLaunchMode,
     keepAliveMsOnUnmount,
     backgroundCssVar,
-    persistedSessionPath,
     preserveSessionOnUnmount,
     projectId,
+    terminalSessionPath,
   ]);
 
   return (

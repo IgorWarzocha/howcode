@@ -24,6 +24,7 @@ type SidebarProps = {
   selectedThreadId: string | null;
   settingsOpen: boolean;
   projectScopeLockActive: boolean;
+  terminalRunningProjectIds: ReadonlySet<string>;
   terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
@@ -36,6 +37,7 @@ type SidebarProps = {
   onDismissInboxThread: (thread: InboxThread) => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
+  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
   onSelectInboxThread: (thread: InboxThread) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
@@ -60,6 +62,7 @@ export function Sidebar({
   selectedThreadId,
   settingsOpen,
   projectScopeLockActive,
+  terminalRunningProjectIds,
   terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
@@ -72,6 +75,7 @@ export function Sidebar({
   onDismissInboxThread,
   onProjectSelect,
   onProjectReorder,
+  onLoadProjectThreads,
   onSelectInboxThread,
   onThreadOpen,
   onToggleProjectCollapse,
@@ -180,9 +184,11 @@ export function Sidebar({
           projects={projects}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          terminalRunningProjectIds={terminalRunningProjectIds}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           collapsedProjectIds={collapsedProjectIds}
           onAction={onAction}
+          onLoadProjectThreads={onLoadProjectThreads}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onProjectSelect={onProjectSelect}
           onProjectReorder={onProjectReorder}

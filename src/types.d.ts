@@ -116,6 +116,7 @@ declare global {
         checkpointTurnCount: number,
       ) => Promise<TurnDiffResult | null>;
       getFullThreadDiff?: (sessionPath: string) => Promise<TurnDiffResult | null>;
+      listTerminals?: () => Promise<TerminalSessionSnapshot[]>;
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
       writeTerminal?: (sessionId: string, data: string) => Promise<void>;
       resizeTerminal?: (request: TerminalResizeRequest) => Promise<void>;

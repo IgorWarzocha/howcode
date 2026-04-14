@@ -1,5 +1,5 @@
 import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../../types";
@@ -21,9 +21,11 @@ type SidebarProjectsSectionProps = {
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
+  terminalRunningProjectIds: ReadonlySet<string>;
   terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
+  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
@@ -39,9 +41,11 @@ export function SidebarProjectsSection({
   projects,
   selectedProjectId,
   selectedThreadId,
+  terminalRunningProjectIds,
   terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
+  onLoadProjectThreads,
   onOpenSettingsPanel,
   onProjectSelect,
   onProjectReorder,
@@ -73,11 +77,33 @@ export function SidebarProjectsSection({
         projects,
         searchQuery,
         filterMode,
+        terminalRunningProjectIds,
         terminalRunningSessionPaths,
         appLaunchedAtMs,
       }),
-    [appLaunchedAtMs, filterMode, projects, searchQuery, terminalRunningSessionPaths],
+    [
+      appLaunchedAtMs,
+      filterMode,
+      projects,
+      searchQuery,
+      terminalRunningProjectIds,
+      terminalRunningSessionPaths,
+    ],
   );
+
+  useEffect(() => {
+    if (filterMode !== "terminal" && filterMode !== "recent") {
+      return;
+    }
+
+    for (const project of visibleProjects) {
+      if (project.threadsLoaded || (project.threadCount ?? 0) === 0) {
+        continue;
+      }
+
+      void onLoadProjectThreads(project.id);
+    }
+  }, [filterMode, onLoadProjectThreads, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {

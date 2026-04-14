@@ -100,6 +100,28 @@ describe("workspace state", () => {
     expect(backToFirstThread.terminalVisible).toBe(true);
   });
 
+  it("preserves terminal visibility when a draft thread gets a persisted session path", () => {
+    const draftThread = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "thread-a",
+      sessionPath: "local:/claw-phone/draft",
+    });
+    const withVisibleTerminal = workspaceReducer(draftThread, {
+      type: "set-terminal-visible",
+      visible: true,
+    });
+    const persistedThread = workspaceReducer(withVisibleTerminal, {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "thread-a",
+      sessionPath: "/tmp/thread-a.jsonl",
+    });
+
+    expect(persistedThread.terminalVisible).toBe(true);
+    expect(persistedThread.terminalVisibleBySession["/tmp/thread-a.jsonl"]).toBe(true);
+  });
+
   it("can change the selected project without leaving extensions", () => {
     const nextState = workspaceReducer(
       {

@@ -6,11 +6,12 @@ import type {
   InboxThread,
   ProjectGitState,
   ShellState,
+  TerminalSessionSnapshot,
 } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
-import { subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
+import { listDesktopTerminals, subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
@@ -29,8 +30,8 @@ export function useAppShellController() {
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
-  const [runningTerminalSessionPathById, setRunningTerminalSessionPathById] = useState<
-    Record<string, string>
+  const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
+    Record<string, { projectId: string; sessionPath: string | null }>
   >({});
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
@@ -72,28 +73,62 @@ export function useAppShellController() {
     [inboxThreads, state.selectedInboxSessionPath],
   );
   const terminalRunningSessionPaths = useMemo(
-    () => new Set(Object.values(runningTerminalSessionPathById)),
-    [runningTerminalSessionPathById],
+    () =>
+      new Set(
+        Object.values(runningTerminalSessionsById)
+          .map((session) => session.sessionPath)
+          .filter((sessionPath): sessionPath is string => typeof sessionPath === "string"),
+      ),
+    [runningTerminalSessionsById],
+  );
+  const terminalRunningProjectIds = useMemo(
+    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
+    [runningTerminalSessionsById],
   );
 
   useEffect(() => {
+    const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
+      setRunningTerminalSessionsById(
+        Object.fromEntries(
+          snapshots
+            .filter(
+              (snapshot) =>
+                snapshot.launchMode === "shell" &&
+                (snapshot.status === "starting" || snapshot.status === "running"),
+            )
+            .map((snapshot) => [
+              snapshot.sessionId,
+              {
+                projectId: snapshot.projectId,
+                sessionPath: snapshot.sessionPath,
+              },
+            ]),
+        ),
+      );
+    };
+
+    void listDesktopTerminals().then((snapshots) => {
+      applySnapshots(snapshots);
+    });
+
     return subscribeDesktopTerminal((event) => {
       if (event.type === "started" || event.type === "restarted") {
-        const sessionPath = event.snapshot.sessionPath;
-
-        if (event.snapshot.launchMode !== "shell" || !sessionPath) {
+        if (event.snapshot.launchMode !== "shell") {
           return;
         }
 
-        setRunningTerminalSessionPathById((current) => ({
+        setRunningTerminalSessionsById((current) => ({
           ...current,
-          [event.sessionId]: sessionPath,
+          [event.sessionId]: {
+            projectId: event.snapshot.projectId,
+            sessionPath: event.snapshot.sessionPath,
+          },
         }));
         return;
       }
 
-      if (event.type === "exited") {
-        setRunningTerminalSessionPathById((current) => {
+      if (event.type === "exited" || event.type === "error") {
+        setRunningTerminalSessionsById((current) => {
           if (!(event.sessionId in current)) {
             return current;
           }
@@ -386,10 +421,7 @@ export function useAppShellController() {
   };
 
   const handleReturnToDesktopFromTakeover = () => {
-    void closeTakeover({
-      preserveSessionOverride: true,
-      refreshThread: false,
-    });
+    void closeTakeover();
   };
 
   return {
@@ -433,6 +465,7 @@ export function useAppShellController() {
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
+    handleLoadProjectThreads: loadProjectThreads,
     listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
@@ -444,6 +477,7 @@ export function useAppShellController() {
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
+    terminalRunningProjectIds,
     terminalRunningSessionPaths,
   };
 }

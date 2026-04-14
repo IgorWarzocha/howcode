@@ -54,6 +54,7 @@ const projects: Project[] = [
 ];
 
 const emptyRunningSessionPaths = new Set<string>();
+const emptyRunningProjectIds = new Set<string>();
 
 describe("sidebar projects helpers", () => {
   it("filters by search query across project and thread names", () => {
@@ -61,6 +62,7 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "favourite",
       filterMode: "all",
+      terminalRunningProjectIds: emptyRunningProjectIds,
       terminalRunningSessionPaths: emptyRunningSessionPaths,
       appLaunchedAtMs: 0,
     });
@@ -77,6 +79,7 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "favourites",
+      terminalRunningProjectIds: emptyRunningProjectIds,
       terminalRunningSessionPaths: emptyRunningSessionPaths,
       appLaunchedAtMs: 0,
     });
@@ -91,6 +94,7 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "github",
+      terminalRunningProjectIds: emptyRunningProjectIds,
       terminalRunningSessionPaths: emptyRunningSessionPaths,
       appLaunchedAtMs: 0,
     });
@@ -103,6 +107,7 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "terminal",
+      terminalRunningProjectIds: new Set(["/alpha"]),
       terminalRunningSessionPaths: new Set(["/alpha/2"]),
       appLaunchedAtMs: 0,
     });
@@ -116,11 +121,52 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "recent",
+      terminalRunningProjectIds: emptyRunningProjectIds,
       terminalRunningSessionPaths: emptyRunningSessionPaths,
       appLaunchedAtMs: 300,
     });
 
     expect(result.projects.map((project) => project.id)).toEqual(["/beta"]);
     expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["b1"]);
+  });
+
+  it("keeps lazy projects visible for terminal and recent filters while threads load", () => {
+    const lazyProjects: Project[] = [
+      {
+        id: "/lazy-terminal",
+        name: "Lazy terminal",
+        threads: [],
+        threadsLoaded: false,
+        threadCount: 1,
+      },
+      {
+        id: "/lazy-recent",
+        name: "Lazy recent",
+        threads: [],
+        threadsLoaded: false,
+        threadCount: 1,
+        latestModifiedMs: 999,
+      },
+    ];
+
+    const terminalResult = getSidebarVisibleProjects({
+      projects: lazyProjects,
+      searchQuery: "",
+      filterMode: "terminal",
+      terminalRunningProjectIds: new Set(["/lazy-terminal"]),
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 0,
+    });
+    const recentResult = getSidebarVisibleProjects({
+      projects: lazyProjects,
+      searchQuery: "",
+      filterMode: "recent",
+      terminalRunningProjectIds: emptyRunningProjectIds,
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 500,
+    });
+
+    expect(terminalResult.projects.map((project) => project.id)).toEqual(["/lazy-terminal"]);
+    expect(recentResult.projects.map((project) => project.id)).toEqual(["/lazy-recent"]);
   });
 });

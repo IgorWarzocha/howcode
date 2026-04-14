@@ -201,6 +201,8 @@ export const piDesktopApi = {
       action,
       payload,
     }) as Promise<DesktopActionResult>,
+  listTerminals: async () =>
+    (await getRpc()).request.listTerminals({}) as Promise<TerminalSessionSnapshot[]>,
   openTerminal: async (request: TerminalOpenRequest) =>
     (await getRpc()).request.terminalOpen(request) as Promise<TerminalSessionSnapshot>,
   writeTerminal: async (sessionId: string, data: string) => {

@@ -29,6 +29,7 @@ export type Project = {
   id: string;
   name: string;
   threads: Thread[];
+  latestModifiedMs?: number;
   pinned?: boolean;
   collapsed?: boolean;
   threadsLoaded?: boolean;

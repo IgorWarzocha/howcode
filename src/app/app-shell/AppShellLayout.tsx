@@ -104,6 +104,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
             projectScopeLockActive={projectScopeLockActive}
+            terminalRunningProjectIds={controller.terminalRunningProjectIds}
             terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={handleAction}
@@ -136,6 +137,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onDismissInboxThread={controller.handleDismissInboxThread}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
+            onLoadProjectThreads={controller.handleLoadProjectThreads}
             onSelectInboxThread={controller.handleSelectInboxThread}
             onThreadOpen={handleThreadOpen}
             onToggleProjectCollapse={handleToggleProjectCollapse}

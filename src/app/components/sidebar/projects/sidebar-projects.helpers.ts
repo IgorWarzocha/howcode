@@ -5,6 +5,7 @@ export type SidebarProjectsFilterMode = "all" | "favourites" | "github" | "termi
 function projectMatchesFilter(
   project: Project,
   filterMode: SidebarProjectsFilterMode,
+  terminalRunningProjectIds: ReadonlySet<string>,
   terminalRunningSessionPaths: ReadonlySet<string>,
   appLaunchedAtMs: number,
 ) {
@@ -17,6 +18,10 @@ function projectMatchesFilter(
   }
 
   if (filterMode === "terminal") {
+    if (!project.threadsLoaded) {
+      return terminalRunningProjectIds.has(project.id);
+    }
+
     return project.threads.some(
       (thread) =>
         typeof thread.sessionPath === "string" &&
@@ -25,6 +30,10 @@ function projectMatchesFilter(
   }
 
   if (filterMode === "recent") {
+    if (!project.threadsLoaded) {
+      return (project.latestModifiedMs ?? 0) >= appLaunchedAtMs;
+    }
+
     return project.threads.some((thread) => (thread.lastModifiedMs ?? 0) >= appLaunchedAtMs);
   }
 
@@ -60,6 +69,7 @@ export function getSidebarVisibleProjects(input: {
   projects: Project[];
   searchQuery: string;
   filterMode: SidebarProjectsFilterMode;
+  terminalRunningProjectIds: ReadonlySet<string>;
   terminalRunningSessionPaths: ReadonlySet<string>;
   appLaunchedAtMs: number;
 }) {
@@ -71,6 +81,7 @@ export function getSidebarVisibleProjects(input: {
       !projectMatchesFilter(
         project,
         input.filterMode,
+        input.terminalRunningProjectIds,
         input.terminalRunningSessionPaths,
         input.appLaunchedAtMs,
       )

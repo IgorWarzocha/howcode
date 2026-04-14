@@ -187,7 +187,21 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         selectedProjectId: action.projectId,
       };
-    case "open-thread":
+    case "open-thread": {
+      const nextTerminalVisibleBySession =
+        state.activeView === "thread" &&
+        state.selectedThreadId === action.threadId &&
+        state.selectedSessionPath &&
+        state.selectedSessionPath !== action.sessionPath
+          ? {
+              ...state.terminalVisibleBySession,
+              [action.sessionPath]: getTerminalVisibilityForSession(
+                state.terminalVisibleBySession,
+                state.selectedSessionPath,
+              ),
+            }
+          : state.terminalVisibleBySession;
+
       return {
         ...state,
         activeView: "thread",
@@ -195,9 +209,10 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
         terminalVisible: getTerminalVisibilityForSession(
-          state.terminalVisibleBySession,
+          nextTerminalVisibleBySession,
           action.sessionPath,
         ),
+        terminalVisibleBySession: nextTerminalVisibleBySession,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         gitOpsReturnView: "thread",
@@ -206,6 +221,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           [action.projectId]: false,
         },
       };
+    }
     case "open-gitops":
       return {
         ...state,

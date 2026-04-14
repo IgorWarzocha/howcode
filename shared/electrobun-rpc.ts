@@ -137,6 +137,7 @@ export type PiDesktopRpc = {
         params: { action: DesktopAction; payload?: AnyDesktopActionPayload };
         response: DesktopActionResult;
       };
+      listTerminals: { params: Record<string, never>; response: TerminalSessionSnapshot[] };
       terminalOpen: { params: TerminalOpenRequest; response: TerminalSessionSnapshot };
       terminalWrite: { params: TerminalWriteRequest; response: { ok: boolean } };
       terminalResize: { params: TerminalResizeRequest; response: { ok: boolean } };

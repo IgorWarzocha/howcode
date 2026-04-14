@@ -31,7 +31,8 @@ export function AppShellOverlays({
 }: AppShellOverlaysProps) {
   const { handleReturnToDesktopFromTakeover, handleToggleTerminal, projectGitState, state } =
     controller;
-  const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const terminalDrawerVisible =
+    takeoverVisible && state.activeView === "thread" && state.terminalVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
 
   return (
