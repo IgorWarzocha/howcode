@@ -25,6 +25,7 @@ import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
+  const terminalEventTouchedSessionIdsRef = useRef(new Set<string>());
   const [appLaunchedAtMs] = useState(() => Date.now());
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
@@ -88,6 +89,8 @@ export function useAppShellController() {
 
   useEffect(() => {
     const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
+      const touchedSessionIds = terminalEventTouchedSessionIdsRef.current;
+
       setRunningTerminalSessionsById((current) => ({
         ...current,
         ...Object.fromEntries(
@@ -95,7 +98,8 @@ export function useAppShellController() {
             .filter(
               (snapshot) =>
                 snapshot.launchMode === "shell" &&
-                (snapshot.status === "starting" || snapshot.status === "running"),
+                (snapshot.status === "starting" || snapshot.status === "running") &&
+                !touchedSessionIds.has(snapshot.sessionId),
             )
             .map((snapshot) => [
               snapshot.sessionId,
@@ -113,6 +117,8 @@ export function useAppShellController() {
     });
 
     return subscribeDesktopTerminal((event) => {
+      terminalEventTouchedSessionIdsRef.current.add(event.sessionId);
+
       if (event.type === "started" || event.type === "restarted") {
         if (event.snapshot.launchMode !== "shell") {
           return;

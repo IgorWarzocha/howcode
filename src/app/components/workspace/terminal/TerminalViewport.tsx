@@ -25,6 +25,7 @@ type TerminalViewportProps = {
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 const XTERM_SCROLLBAR_VISIBILITY_VISIBLE = 3;
+const MAX_PENDING_TERMINAL_EVENTS = 200;
 
 type XtermPrivateTerminal = Terminal & {
   _core?: {
@@ -131,6 +132,7 @@ export function TerminalViewport({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const attachFailedRef = useRef(false);
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
   const replayingBufferedEventsRef = useRef(false);
   const resizeFrameRef = useRef<number | null>(null);
@@ -150,6 +152,7 @@ export function TerminalViewport({
     }
 
     let cancelled = false;
+    attachFailedRef.current = false;
     const fitAddon = new FitAddon();
     const terminal = new Terminal({
       cursorBlink: true,
@@ -177,6 +180,17 @@ export function TerminalViewport({
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
+
+    const bufferPendingEvent = (event: TerminalEvent) => {
+      pendingEventsRef.current.push(event);
+
+      if (pendingEventsRef.current.length > MAX_PENDING_TERMINAL_EVENTS) {
+        pendingEventsRef.current.splice(
+          0,
+          pendingEventsRef.current.length - MAX_PENDING_TERMINAL_EVENTS,
+        );
+      }
+    };
 
     const applyTerminalEvent = (event: TerminalEvent) => {
       switch (event.type) {
@@ -281,7 +295,9 @@ export function TerminalViewport({
       const sessionId = sessionIdRef.current;
 
       if (!sessionId || replayingBufferedEventsRef.current) {
-        pendingEventsRef.current.push(event);
+        if (!attachFailedRef.current) {
+          bufferPendingEvent(event);
+        }
         return;
       }
 
@@ -369,6 +385,7 @@ export function TerminalViewport({
         return;
       }
 
+      attachFailedRef.current = false;
       sessionIdRef.current = snapshot.sessionId;
       cancelScheduledTerminalClose(snapshot.sessionId);
       terminal.clear();
@@ -387,6 +404,8 @@ export function TerminalViewport({
     };
 
     void openSession().catch((error) => {
+      attachFailedRef.current = true;
+      pendingEventsRef.current = [];
       writeSystemMessage(
         terminal,
         error instanceof Error ? error.message : "Unable to open terminal.",
