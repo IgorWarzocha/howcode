@@ -1,3 +1,4 @@
+import { isLocalSessionPath } from "../../../shared/session-paths";
 import type { Project, Thread, View } from "../types";
 
 type NonGitOpsView = Exclude<View, "gitops">;
@@ -46,6 +47,30 @@ export type WorkspaceAction =
   | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
   | { type: "collapse-all-projects" };
+
+function migrateTakeoverOverride(
+  takeoverOverrides: Record<string, boolean>,
+  fromSessionPath: string | null,
+  toSessionPath: string,
+) {
+  if (!fromSessionPath || fromSessionPath === toSessionPath) {
+    return takeoverOverrides;
+  }
+
+  if (!isLocalSessionPath(fromSessionPath) || isLocalSessionPath(toSessionPath)) {
+    return takeoverOverrides;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(takeoverOverrides, fromSessionPath)) {
+    return takeoverOverrides;
+  }
+
+  const { [fromSessionPath]: override, ...remainingOverrides } = takeoverOverrides;
+  return {
+    ...remainingOverrides,
+    [toSessionPath]: override,
+  };
+}
 
 function getGitOpsReturnView(activeView: View, fallback: NonGitOpsView): NonGitOpsView {
   if (activeView === "gitops") {
@@ -157,6 +182,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
+        takeoverOverrides:
+          state.selectedThreadId === action.threadId
+            ? migrateTakeoverOverride(
+                state.takeoverOverrides,
+                state.selectedSessionPath,
+                action.sessionPath,
+              )
+            : state.takeoverOverrides,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         gitOpsReturnView: "thread",

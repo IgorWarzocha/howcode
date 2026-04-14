@@ -1,5 +1,6 @@
 import { constants, accessSync } from "node:fs";
 import path from "node:path";
+import { getPersistedSessionPath } from "../../shared/session-paths";
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
 
 export function findExecutable(name: string, pathValue = process.env.PATH ?? "") {
@@ -31,6 +32,7 @@ export function resolveTerminalCommand(
   const env = options?.env ?? process.env;
 
   if (request.launchMode === "pi-session") {
+    const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
     const executable =
       platform === "win32"
         ? findExecutable("pi.cmd", env.PATH ?? "")
@@ -38,7 +40,7 @@ export function resolveTerminalCommand(
 
     return {
       shell: executable,
-      args: request.sessionPath ? ["--session", request.sessionPath] : ["--continue"],
+      args: persistedSessionPath ? ["--session", persistedSessionPath] : [],
     };
   }
 
