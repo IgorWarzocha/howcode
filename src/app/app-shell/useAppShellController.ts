@@ -385,9 +385,19 @@ export function useAppShellController() {
     }
   };
 
+  const handleReturnToDesktopFromTakeover = () => {
+    void closeTakeover({
+      preserveSessionOverride: true,
+      refreshThread: false,
+    });
+  };
+
   const handleOpenTerminalDrawerFromTakeover = () => {
     dispatch({ type: "set-terminal-visible", visible: true });
-    void closeTakeover();
+    void closeTakeover({
+      preserveSessionOverride: true,
+      refreshThread: false,
+    });
   };
 
   return {
@@ -425,6 +435,7 @@ export function useAppShellController() {
     handleSelectInboxThread,
     handleThreadOpen,
     handleShowTakeoverTerminal,
+    handleReturnToDesktopFromTakeover,
     handleOpenTerminalDrawerFromTakeover,
     handleOpenGitOpsView,
     handleToggleProjectCollapse,
