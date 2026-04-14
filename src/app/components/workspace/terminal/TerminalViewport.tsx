@@ -1,6 +1,6 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { type ITheme, Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
@@ -18,7 +18,7 @@ type TerminalViewportProps = {
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
-  backgroundCssVar?: "--terminal-bg" | "--workspace";
+  backgroundCssVar?: "--terminal-bg" | "--workspace" | "--sidebar";
   className?: string;
 };
 
@@ -66,7 +66,9 @@ function forcePersistentTerminalScrollbar(terminal: Terminal) {
   scrollableElement?.updateOptions?.({ vertical: XTERM_SCROLLBAR_VISIBILITY_VISIBLE });
 }
 
-function terminalThemeFromApp(backgroundCssVar: "--terminal-bg" | "--workspace"): ITheme {
+function terminalThemeFromApp(
+  backgroundCssVar: "--terminal-bg" | "--workspace" | "--sidebar",
+): ITheme {
   const rootStyles = getComputedStyle(document.documentElement);
   const getToken = (name: string, fallback: string) =>
     rootStyles.getPropertyValue(name).trim() || fallback;
@@ -391,8 +393,9 @@ export function TerminalViewport({
   return (
     <div
       ref={containerRef}
+      style={{ "--terminal-surface": `var(${backgroundCssVar})` } as CSSProperties}
       className={cn(
-        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-bg)] text-[color:var(--text)]",
+        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
     />

@@ -125,22 +125,22 @@ export function TerminalPanel({
         </div>
         <button
           type="button"
-          className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
           aria-label="Hide terminal"
           title="Hide terminal"
           onClick={onClose}
         >
           <PanelRightClose size={14} />
-          <span>Hide</span>
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 bg-[color:var(--terminal-bg)]">
+      <div className="flex min-h-0 min-w-0 flex-1 bg-[color:var(--sidebar)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
           preserveSessionOnUnmount
-          className="terminal-viewport--flush h-full rounded-none bg-[color:var(--terminal-bg)]"
+          backgroundCssVar="--sidebar"
+          className="terminal-viewport--flush h-full rounded-none bg-[color:var(--sidebar)]"
         />
       </div>
     </section>

@@ -5,17 +5,24 @@
 .terminal-viewport .xterm {
   height: 100%;
   padding: 8px 10px;
+  background-color: var(--terminal-surface, var(--terminal-bg));
 }
 
 .terminal-viewport--flush .xterm {
   padding: 0 0 0 14px;
-  background-color: var(--workspace);
+  background-color: var(--terminal-surface, var(--workspace));
+}
+
+.terminal-viewport .xterm-viewport,
+.terminal-viewport .xterm-screen,
+.terminal-viewport .xterm-scrollable-element {
+  background-color: var(--terminal-surface, var(--terminal-bg)) !important;
 }
 
 .terminal-viewport--flush .xterm-viewport,
 .terminal-viewport--flush .xterm-screen,
 .terminal-viewport--flush .xterm-scrollable-element {
-  background-color: var(--workspace) !important;
+  background-color: var(--terminal-surface, var(--workspace)) !important;
 }
 
 .terminal-viewport--flush,
