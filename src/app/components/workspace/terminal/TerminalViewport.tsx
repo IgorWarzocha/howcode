@@ -384,12 +384,12 @@ export function TerminalViewport({
       }
     };
   }, [
-    effectiveLaunchMode,
     keepAliveMsOnUnmount,
     backgroundCssVar,
     preserveSessionOnUnmount,
     projectId,
     terminalSessionPath,
+    effectiveLaunchMode,
   ]);
 
   return (

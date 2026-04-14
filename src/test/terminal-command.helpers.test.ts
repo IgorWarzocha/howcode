@@ -35,6 +35,19 @@ describe("terminal command helpers", () => {
     expect(
       resolveTerminalCommand(
         {
+          projectId: "/repo",
+          sessionPath: "local://%2Frepo/first",
+          launchMode: "pi-session",
+          cols: 80,
+          rows: 24,
+        },
+        { platform: "linux", env: { PATH: "" } as NodeJS.ProcessEnv },
+      ),
+    ).toEqual({ shell: "pi", args: [] });
+
+    expect(
+      resolveTerminalCommand(
+        {
           projectId: "C:/repo",
           launchMode: "shell",
           cols: 80,

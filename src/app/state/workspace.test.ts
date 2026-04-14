@@ -327,6 +327,30 @@ describe("workspace state", () => {
     expect(withoutOverride.takeoverOverrides["/tmp/thread.jsonl"]).toBeUndefined();
   });
 
+  it("migrates a takeover override from a local draft to the persisted thread session", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        selectedProjectId: "pi-plugin-codex",
+        selectedThreadId: "thread-1",
+        selectedSessionPath: "local://%2Frepo/draft",
+        takeoverOverrides: {
+          "local://%2Frepo/draft": false,
+        },
+      },
+      {
+        type: "open-thread",
+        projectId: "pi-plugin-codex",
+        threadId: "thread-1",
+        sessionPath: "/repo/.pi/thread-1.json",
+      },
+    );
+
+    expect(nextState.takeoverOverrides["local://%2Frepo/draft"]).toBeUndefined();
+    expect(nextState.takeoverOverrides["/repo/.pi/thread-1.json"]).toBe(false);
+  });
+
   it("resolves fallback project and thread titles safely", () => {
     const project = selectProject(mockProjects, "missing-project");
     const thread = selectThread(project, "missing-thread");
