@@ -28,7 +28,6 @@ type CodeWorkspaceViewProps = {
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
-const WORKSPACE_FOOTER_BOTTOM_PADDING_PX = 16;
 
 export function CodeWorkspaceView({
   controller,
@@ -70,7 +69,7 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
-  const footerInset = showWorkspaceFooter ? footerHeight + WORKSPACE_FOOTER_BOTTOM_PADDING_PX : 0;
+  const footerInset = showWorkspaceFooter ? footerHeight : 0;
   const diffCommentContextId = useMemo(
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
