@@ -18,8 +18,18 @@ export function SettingsProjectDefaultsSection({
   setPreferredProjectLocationDraft: Dispatch<SetStateAction<string>>;
   toggleInitializeGitOnProjectCreate: () => void;
 }) {
+  const preferredProjectLocationMissing = !appSettings.preferredProjectLocation;
+
   return (
-    <section className={settingsSectionClass}>
+    <section
+      data-pulse-active={preferredProjectLocationMissing ? "true" : "false"}
+      className={cn(
+        settingsSectionClass,
+        "motion-surface-pulse motion-sidebar-selection-pulse",
+        preferredProjectLocationMissing &&
+          "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.06)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
+      )}
+    >
       <SectionIntro
         title="New projects"
         description="Set where new projects are created and whether git should be initialised for diffs."
