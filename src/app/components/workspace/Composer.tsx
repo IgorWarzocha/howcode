@@ -56,8 +56,14 @@ export type ComposerProps = {
 
 export function Composer(props: ComposerProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
+  const hasMountedRef = useRef(false);
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
     if (props.promptResetKey < 0) {
       return;
     }

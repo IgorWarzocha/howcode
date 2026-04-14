@@ -15,6 +15,8 @@ import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSel
 import { getGitOpsEntryButtonClass } from "./composer/git-ops";
 import { TerminalViewport } from "./terminal/TerminalViewport";
 
+const PI_TUI_KEEP_ALIVE_MS = 30_000;
+
 type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
@@ -59,6 +61,7 @@ export function TerminalPanel({
             projectId={projectId}
             sessionPath={sessionPath}
             launchMode="pi-session"
+            keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
             className="min-h-0 rounded-[16px] border-[rgba(137,146,183,0.08)] bg-[rgba(23,25,35,0.98)]"
           />
         </div>

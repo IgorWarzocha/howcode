@@ -17,8 +17,32 @@ type TerminalViewportProps = {
   sessionPath: string | null;
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
+  keepAliveMsOnUnmount?: number;
   className?: string;
 };
+
+const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function cancelScheduledTerminalClose(sessionId: string) {
+  const timer = pendingTerminalCloseTimers.get(sessionId);
+  if (!timer) {
+    return;
+  }
+
+  clearTimeout(timer);
+  pendingTerminalCloseTimers.delete(sessionId);
+}
+
+function scheduleTerminalClose(sessionId: string, delayMs: number) {
+  cancelScheduledTerminalClose(sessionId);
+
+  const timer = setTimeout(() => {
+    pendingTerminalCloseTimers.delete(sessionId);
+    void closeDesktopTerminal({ sessionId });
+  }, delayMs);
+
+  pendingTerminalCloseTimers.set(sessionId, timer);
+}
 
 function writeSystemMessage(terminal: Terminal, message: string) {
   terminal.write(`\r\n[terminal] ${message}\r\n`);
@@ -68,6 +92,7 @@ export function TerminalViewport({
   sessionPath,
   launchMode = "shell",
   preserveSessionOnUnmount = false,
+  keepAliveMsOnUnmount = 0,
   className,
 }: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -279,6 +304,7 @@ export function TerminalViewport({
       }
 
       sessionIdRef.current = snapshot.sessionId;
+      cancelScheduledTerminalClose(snapshot.sessionId);
       terminal.clear();
       if (snapshot.history) {
         terminal.write(snapshot.history);
@@ -315,10 +341,20 @@ export function TerminalViewport({
       terminal.dispose();
 
       if (sessionId && !preserveSessionOnUnmount) {
-        void closeDesktopTerminal({ sessionId });
+        if (keepAliveMsOnUnmount > 0) {
+          scheduleTerminalClose(sessionId, keepAliveMsOnUnmount);
+        } else {
+          void closeDesktopTerminal({ sessionId });
+        }
       }
     };
-  }, [effectiveLaunchMode, persistedSessionPath, preserveSessionOnUnmount, projectId]);
+  }, [
+    effectiveLaunchMode,
+    keepAliveMsOnUnmount,
+    persistedSessionPath,
+    preserveSessionOnUnmount,
+    projectId,
+  ]);
 
   return (
     <div
