@@ -323,6 +323,22 @@ export function useAppShellController() {
     scheduleShellStateRefresh();
   };
 
+  const handleOpenGitOpsSurface = () => {
+    dispatch({ type: "set-composer-surface", surface: "git-ops" });
+
+    if (!state.diffVisible) {
+      if (composerProjectId) {
+        resetProjectDiffCaches(composerProjectId);
+      }
+
+      dispatch({
+        type: "open-diff",
+        checkpointTurnCount: null,
+        filePath: null,
+      });
+    }
+  };
+
   const persistPiTuiTakeover = (visible: boolean) =>
     handleAction("settings.update", {
       key: "piTuiTakeover",
@@ -361,6 +377,7 @@ export function useAppShellController() {
     handleCloseArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: false }),
     handleCollapseAll,
     handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
+    handleOpenGitOpsSurface,
     handleOpenSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: true }),
     handleConfirmProjectAction,
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
