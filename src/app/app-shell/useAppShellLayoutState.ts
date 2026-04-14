@@ -9,12 +9,10 @@ type UseAppShellLayoutStateInput = {
 export function useAppShellLayoutState({ takeoverVisible }: UseAppShellLayoutStateInput) {
   const mainSectionRef = useRef<HTMLElement>(null);
   const takeoverPresent = useAnimatedPresence(takeoverVisible);
-  const desktopWorkspacePresent = useAnimatedPresence(!takeoverVisible);
 
   return {
     mainSectionRef,
     takeoverPresent,
-    desktopWorkspacePresent,
     workspaceContentClass: `mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS}`,
   };
 }

@@ -43,7 +43,7 @@ export function AppShellOverlays({
           className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)] px-5 pb-4"
         >
           <div
-            className="relative h-full min-h-0 overflow-hidden transition-[padding-right] duration-200 ease-out"
+            className="relative h-full min-h-0 overflow-hidden transition-[padding-right] duration-150 ease-out"
             style={terminalDrawerVisible ? { paddingRight: TERMINAL_DRAWER_OFFSET } : undefined}
           >
             <div className={`${workspaceContentClass} h-full min-h-0`}>

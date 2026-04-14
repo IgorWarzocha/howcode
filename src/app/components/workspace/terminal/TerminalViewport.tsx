@@ -1,6 +1,6 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { type ITheme, Terminal } from "@xterm/xterm";
-import { type CSSProperties, useEffect, useRef } from "react";
+import { type CSSProperties, useLayoutEffect, useRef } from "react";
 import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
@@ -141,7 +141,7 @@ export function TerminalViewport({
   const terminalSessionPath =
     effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = containerRef.current;
     if (!mount) {
       return;

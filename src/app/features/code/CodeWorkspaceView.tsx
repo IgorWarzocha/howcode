@@ -73,9 +73,9 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
-  const showDesktopTerminalDrawer =
-    state.activeView === "thread" && terminalDrawerVisible && !state.takeoverVisible;
-  const terminalDrawerPresent = useAnimatedPresence(showDesktopTerminalDrawer);
+  const desktopTerminalDrawerMounted = state.activeView === "thread" && terminalDrawerVisible;
+  const showDesktopTerminalDrawer = desktopTerminalDrawerMounted && !state.takeoverVisible;
+  const terminalDrawerPresent = useAnimatedPresence(desktopTerminalDrawerMounted);
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -162,7 +162,7 @@ export function CodeWorkspaceView({
 
   return (
     <div
-      className="relative min-h-0 flex-1 overflow-hidden transition-[padding-right] duration-200 ease-out"
+      className="relative min-h-0 flex-1 overflow-hidden transition-[padding-right] duration-150 ease-out"
       style={showDesktopTerminalDrawer ? { paddingRight: TERMINAL_DRAWER_OFFSET } : undefined}
     >
       <div
@@ -226,7 +226,7 @@ export function CodeWorkspaceView({
 
       {showWorkspaceFooter ? (
         <footer
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4 transition-[padding-right] duration-200 ease-out"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4 transition-[padding-right] duration-150 ease-out"
           style={
             showDesktopTerminalDrawer ? { paddingRight: TERMINAL_DRAWER_FOOTER_OFFSET } : undefined
           }
@@ -307,7 +307,7 @@ export function CodeWorkspaceView({
         >
           <div
             data-open={showDesktopTerminalDrawer ? "true" : "false"}
-            className="motion-terminal-drawer pointer-events-auto h-full"
+            className={`motion-terminal-drawer h-full ${showDesktopTerminalDrawer ? "pointer-events-auto" : "pointer-events-none"}`}
           >
             <TerminalPanel
               projectId={composerProjectId}

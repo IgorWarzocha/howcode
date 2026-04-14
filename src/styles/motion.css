@@ -92,9 +92,9 @@
 
 .motion-terminal-drawer {
   opacity: 0;
-  transform: translateX(18px);
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
-    var(--motion-duration-standard) var(--motion-ease-standard);
+  transform: translateX(12px);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard), transform
+    var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .motion-terminal-drawer[data-open="true"] {
@@ -104,8 +104,8 @@
 
 .motion-desktop-workspace,
 .motion-takeover-panel {
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
-    var(--motion-duration-standard) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard), transform
+    var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .motion-desktop-workspace {

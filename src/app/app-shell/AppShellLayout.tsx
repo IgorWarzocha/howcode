@@ -60,10 +60,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     diffBaselineState.projectId === composerProjectId
       ? diffBaselineState.baseline
       : defaultDiffBaseline;
-  const { mainSectionRef, takeoverPresent, desktopWorkspacePresent, workspaceContentClass } =
-    useAppShellLayoutState({
-      takeoverVisible,
-    });
+  const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
+    takeoverVisible,
+  });
 
   useEffect(() => {
     setDiffBaselineState((current) => {
@@ -149,30 +148,28 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           className="flex min-w-0 min-h-0 h-full flex-1 flex-col overflow-hidden bg-[color:var(--workspace)]"
         >
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            {desktopWorkspacePresent ? (
-              <div
-                data-open={!takeoverVisible ? "true" : "false"}
-                className="motion-desktop-workspace flex min-h-0 flex-1 flex-col overflow-hidden"
-              >
-                <AppShellWorkspace
-                  controller={controller}
-                  activeComposerState={activeComposerState}
-                  activeThreadData={activeThreadData}
-                  composerProjectId={composerProjectId}
-                  currentProjectName={currentProjectName}
-                  diffBaseline={diffBaseline}
-                  terminalDrawerVisible={terminalDrawerVisible}
-                  terminalSessionPath={terminalSessionPath}
-                  workspaceContentClass={workspaceContentClass}
-                  onSetDiffBaseline={(baseline) => {
-                    setDiffBaselineState({
-                      projectId: composerProjectId,
-                      baseline,
-                    });
-                  }}
-                />
-              </div>
-            ) : null}
+            <div
+              data-open={!takeoverVisible ? "true" : "false"}
+              className="motion-desktop-workspace flex min-h-0 flex-1 flex-col overflow-hidden"
+            >
+              <AppShellWorkspace
+                controller={controller}
+                activeComposerState={activeComposerState}
+                activeThreadData={activeThreadData}
+                composerProjectId={composerProjectId}
+                currentProjectName={currentProjectName}
+                diffBaseline={diffBaseline}
+                terminalDrawerVisible={terminalDrawerVisible}
+                terminalSessionPath={terminalSessionPath}
+                workspaceContentClass={workspaceContentClass}
+                onSetDiffBaseline={(baseline) => {
+                  setDiffBaselineState({
+                    projectId: composerProjectId,
+                    baseline,
+                  });
+                }}
+              />
+            </div>
 
             <AppShellOverlays
               controller={controller}
