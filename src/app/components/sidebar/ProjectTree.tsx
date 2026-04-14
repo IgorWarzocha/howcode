@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Plus } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import type { DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
@@ -55,6 +56,27 @@ function ProjectThreadsGroup({
     >
       <div className="motion-collapse-panel__inner">{children}</div>
     </div>
+  );
+}
+
+type NewSessionButtonProps = {
+  projectName: string;
+  onClick: () => void;
+};
+
+function NewSessionButton({ projectName, onClick }: NewSessionButtonProps) {
+  return (
+    <button
+      type="button"
+      className="group/new-session grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2 py-0.5 text-left text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-visible:bg-[rgba(255,255,255,0.04)] focus-visible:text-[color:var(--text)]"
+      onClick={onClick}
+      aria-label={`Start a new session in ${projectName}`}
+    >
+      <span className="inline-flex h-4 w-4 items-center justify-center text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover/new-session:text-[color:var(--text)] group-focus-visible/new-session:text-[color:var(--text)]">
+        <Plus size={12} />
+      </span>
+      <span>New session</span>
+    </button>
   );
 }
 
@@ -270,6 +292,15 @@ export function ProjectTree({
                         threadGroupId={threadGroupId}
                         projectName={project.name}
                       >
+                        <NewSessionButton
+                          projectName={project.name}
+                          onClick={() => {
+                            onProjectSelect(project.id);
+                            void onAction("thread.new", { projectId: project.id });
+                            setOpenProjectMenuId(null);
+                          }}
+                        />
+
                         {hasThreads ? (
                           project.threads.map((thread) => {
                             const isSelected =
