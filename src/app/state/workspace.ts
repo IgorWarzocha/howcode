@@ -182,14 +182,11 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
-        takeoverOverrides:
-          state.selectedThreadId === action.threadId
-            ? migrateTakeoverOverride(
-                state.takeoverOverrides,
-                state.selectedSessionPath,
-                action.sessionPath,
-              )
-            : state.takeoverOverrides,
+        takeoverOverrides: migrateTakeoverOverride(
+          state.takeoverOverrides,
+          state.selectedSessionPath,
+          action.sessionPath,
+        ),
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         gitOpsReturnView: "thread",
