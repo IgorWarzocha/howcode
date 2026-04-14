@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type {
@@ -104,7 +104,7 @@ export function useAppShellEffects({
 
   const lastAppliedThreadPreferenceKeyRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const visibleThreadKey =
       workspaceState.activeView === "thread" && workspaceState.selectedSessionPath
         ? workspaceState.selectedSessionPath
