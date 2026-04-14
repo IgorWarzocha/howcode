@@ -23,6 +23,18 @@ type TerminalViewportProps = {
 
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+const XTERM_SCROLLBAR_VISIBILITY_VISIBLE = 3;
+
+type XtermPrivateTerminal = Terminal & {
+  _core?: {
+    _viewport?: {
+      _scrollableElement?: {
+        updateOptions?: (options: { vertical?: number; horizontal?: number }) => void;
+      };
+    };
+  };
+};
+
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
   if (!timer) {
@@ -46,6 +58,11 @@ function scheduleTerminalClose(sessionId: string, delayMs: number) {
 
 function writeSystemMessage(terminal: Terminal, message: string) {
   terminal.write(`\r\n[terminal] ${message}\r\n`);
+}
+
+function forcePersistentTerminalScrollbar(terminal: Terminal) {
+  const scrollableElement = (terminal as XtermPrivateTerminal)._core?._viewport?._scrollableElement;
+  scrollableElement?.updateOptions?.({ vertical: XTERM_SCROLLBAR_VISIBILITY_VISIBLE });
 }
 
 function terminalThemeFromApp(): ITheme {
@@ -140,6 +157,7 @@ export function TerminalViewport({
 
     terminal.loadAddon(fitAddon);
     terminal.open(mount);
+    forcePersistentTerminalScrollbar(terminal);
     fitAddon.fit();
     terminal.focus();
     lastSizeRef.current = {
