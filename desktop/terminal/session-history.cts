@@ -1,12 +1,12 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { Utils } from "electrobun/bun";
+import { getDesktopUserDataPath } from "../user-data-path.cts";
 import { clampHistory } from "./session-history.helpers.ts";
 export { clampHistory } from "./session-history.helpers.ts";
 import type { TerminalSessionRecord } from "./session-record.cts";
 
 function getTranscriptDirectory() {
-  const transcriptDirectory = path.join(Utils.paths.userData, "state", "terminals");
+  const transcriptDirectory = path.join(getDesktopUserDataPath(), "state", "terminals");
   mkdirSync(transcriptDirectory, { recursive: true });
   return transcriptDirectory;
 }

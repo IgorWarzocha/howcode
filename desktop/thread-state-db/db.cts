@@ -1,13 +1,13 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { Utils } from "electrobun/bun";
+import { getDesktopUserDataPath } from "../user-data-path.cts";
 import { ensureThreadStateSchema } from "./schema.cts";
 
 let database: Database | null = null;
 
 function getDatabasePath() {
-  const databaseDir = path.join(Utils.paths.userData, "state");
+  const databaseDir = path.join(getDesktopUserDataPath(), "state");
   mkdirSync(databaseDir, { recursive: true });
   return path.join(databaseDir, "desktop.sqlite");
 }
