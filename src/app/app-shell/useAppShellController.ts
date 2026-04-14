@@ -88,8 +88,9 @@ export function useAppShellController() {
 
   useEffect(() => {
     const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
-      setRunningTerminalSessionsById(
-        Object.fromEntries(
+      setRunningTerminalSessionsById((current) => ({
+        ...current,
+        ...Object.fromEntries(
           snapshots
             .filter(
               (snapshot) =>
@@ -104,7 +105,7 @@ export function useAppShellController() {
               },
             ]),
         ),
-      );
+      }));
     };
 
     void listDesktopTerminals().then((snapshots) => {

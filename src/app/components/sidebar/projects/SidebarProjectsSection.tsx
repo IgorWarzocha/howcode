@@ -97,13 +97,15 @@ export function SidebarProjectsSection({
     }
 
     for (const project of visibleProjects) {
-      if (project.threadsLoaded || (project.threadCount ?? 0) === 0) {
+      const sourceProject = projects.find((candidate) => candidate.id === project.id);
+
+      if (project.threadsLoaded || (sourceProject?.threadCount ?? 0) === 0) {
         continue;
       }
 
       void onLoadProjectThreads(project.id);
     }
-  }, [filterMode, onLoadProjectThreads, visibleProjects]);
+  }, [filterMode, onLoadProjectThreads, projects, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {
