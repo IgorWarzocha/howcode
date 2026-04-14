@@ -51,7 +51,7 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const footerContentRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
@@ -76,14 +76,14 @@ export function CodeWorkspaceView({
   );
 
   useLayoutEffect(() => {
-    const footerContent = footerContentRef.current;
-    if (!showWorkspaceFooter || !footerContent) {
+    const footer = footerRef.current;
+    if (!showWorkspaceFooter || !footer) {
       setFooterHeight(0);
       return;
     }
 
     const updateFooterHeight = () => {
-      const nextHeight = Math.ceil(footerContent.getBoundingClientRect().height);
+      const nextHeight = Math.ceil(footer.getBoundingClientRect().height);
       setFooterHeight((current) => (current === nextHeight ? current : nextHeight));
     };
 
@@ -96,7 +96,7 @@ export function CodeWorkspaceView({
     const observer = new ResizeObserver(() => {
       updateFooterHeight();
     });
-    observer.observe(footerContent);
+    observer.observe(footer);
 
     return () => {
       observer.disconnect();
@@ -225,10 +225,11 @@ export function CodeWorkspaceView({
 
       {showWorkspaceFooter ? (
         <footer
+          ref={footerRef}
           className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
           style={terminalDrawerFooterPaddingStyle}
         >
-          <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
+          <div className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
               {state.activeView === "gitops" ? (
                 <GitOpsComposerPanel
