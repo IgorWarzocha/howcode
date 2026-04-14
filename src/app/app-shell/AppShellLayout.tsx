@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
-import type { ComposerSurface } from "../components/workspace/Composer";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
 import type { ProjectDiffBaseline } from "../desktop/types";
 import { AppShellOverlays } from "./AppShellOverlays";
@@ -15,7 +14,6 @@ type AppShellLayoutProps = {
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const [composerSurface, setComposerSurface] = useState<ComposerSurface>("prompt");
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     baseline: ProjectDiffBaseline;
@@ -154,13 +152,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   activeComposerState={activeComposerState}
                   activeThreadData={activeThreadData}
                   composerProjectId={composerProjectId}
-                  composerSurface={composerSurface}
+                  composerSurface={state.composerSurface}
                   currentProjectName={currentProjectName}
                   diffBaseline={diffBaseline}
                   dockedTerminalVisible={dockedTerminalVisible}
                   terminalSessionPath={terminalSessionPath}
                   workspaceContentClass={workspaceContentClass}
-                  onSetComposerSurface={setComposerSurface}
+                  onSetComposerSurface={controller.handleSetComposerSurface}
                   onSetDiffBaseline={(baseline) => {
                     setDiffBaselineState({
                       projectId: composerProjectId,
@@ -179,7 +177,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}
               onOpenGitOps={async () => {
-                setComposerSurface("git-ops");
+                controller.handleSetComposerSurface("git-ops");
                 if (!controller.state.diffVisible) {
                   controller.handleToggleDiff();
                 }

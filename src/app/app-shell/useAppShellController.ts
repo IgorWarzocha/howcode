@@ -334,6 +334,10 @@ export function useAppShellController() {
     void persistPiTuiTakeover(true);
   };
 
+  const handleSetComposerSurface = (surface: "prompt" | "git-ops") => {
+    dispatch({ type: "set-composer-surface", surface });
+  };
+
   const closeTakeover = async () => {
     await persistPiTuiTakeover(false);
     dispatch({ type: "set-takeover-visible", visible: false });
@@ -379,6 +383,7 @@ export function useAppShellController() {
     handleSelectInboxThread,
     handleThreadOpen,
     handleShowTakeoverTerminal,
+    handleSetComposerSurface,
     handleOpenDockedTerminalFromTakeover,
     handleToggleDiff: handleToggleDiffPanel,
     handleToggleProjectCollapse,

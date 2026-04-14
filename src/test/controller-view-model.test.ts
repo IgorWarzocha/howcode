@@ -29,6 +29,7 @@ describe("deriveControllerViewModel", () => {
         selectedSessionPath: "/repo/session.json",
         terminalVisible: false,
         takeoverVisible: false,
+        composerSurface: "prompt",
         diffVisible: false,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,

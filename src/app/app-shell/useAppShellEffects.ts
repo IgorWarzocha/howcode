@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type {
@@ -102,20 +102,33 @@ export function useAppShellEffects({
     setComposerState((current) => current ?? shellComposerState);
   }, [setComposerState, shellComposerState]);
 
-  useEffect(() => {
-    const shouldShowTakeover =
-      workspaceState.activeView === "thread" && (shellAppSettings?.piTuiTakeover ?? false);
+  const lastAppliedThreadPreferenceKeyRef = useRef<string | null>(null);
 
-    if (workspaceState.takeoverVisible === shouldShowTakeover) {
+  useEffect(() => {
+    const visibleThreadKey =
+      workspaceState.activeView === "thread" && workspaceState.selectedSessionPath
+        ? workspaceState.selectedSessionPath
+        : null;
+
+    if (!visibleThreadKey) {
+      lastAppliedThreadPreferenceKeyRef.current = null;
       return;
     }
 
-    dispatch({ type: "set-takeover-visible", visible: shouldShowTakeover });
+    if (lastAppliedThreadPreferenceKeyRef.current === visibleThreadKey) {
+      return;
+    }
+
+    lastAppliedThreadPreferenceKeyRef.current = visibleThreadKey;
+    dispatch({
+      type: "set-takeover-visible",
+      visible: shellAppSettings?.piTuiTakeover ?? false,
+    });
   }, [
     dispatch,
     shellAppSettings?.piTuiTakeover,
     workspaceState.activeView,
-    workspaceState.takeoverVisible,
+    workspaceState.selectedSessionPath,
   ]);
 
   useEffect(() => {

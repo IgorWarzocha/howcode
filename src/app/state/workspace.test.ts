@@ -199,7 +199,7 @@ describe("workspace state", () => {
     expect(nextState.takeoverVisible).toBe(false);
   });
 
-  it("can explicitly control docked terminal and takeover visibility", () => {
+  it("can explicitly control docked terminal, takeover, and composer surface", () => {
     const state = createInitialWorkspaceState(mockProjects);
     const withDockedTerminal = workspaceReducer(state, {
       type: "set-terminal-visible",
@@ -212,9 +212,14 @@ describe("workspace state", () => {
       },
       { type: "set-takeover-visible", visible: false },
     );
+    const withGitOpsSurface = workspaceReducer(withoutTakeover, {
+      type: "set-composer-surface",
+      surface: "git-ops",
+    });
 
     expect(withDockedTerminal.terminalVisible).toBe(true);
     expect(withoutTakeover.takeoverVisible).toBe(false);
+    expect(withGitOpsSurface.composerSurface).toBe("git-ops");
   });
 
   it("resolves fallback project and thread titles safely", () => {
