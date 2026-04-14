@@ -1,8 +1,14 @@
 import type { Project } from "../../../types";
 
-export type SidebarProjectsFilterMode = "all" | "favourites" | "github";
+export type SidebarProjectsFilterMode = "all" | "favourites" | "github" | "terminal" | "recent";
 
-function projectMatchesFilter(project: Project, filterMode: SidebarProjectsFilterMode) {
+function projectMatchesFilter(
+  project: Project,
+  filterMode: SidebarProjectsFilterMode,
+  terminalRunningProjectIds: ReadonlySet<string>,
+  terminalRunningSessionPaths: ReadonlySet<string>,
+  appLaunchedAtMs: number,
+) {
   if (filterMode === "github") {
     return Boolean(project.repoOriginUrl);
   }
@@ -11,10 +17,47 @@ function projectMatchesFilter(project: Project, filterMode: SidebarProjectsFilte
     return Boolean(project.pinned) || project.threads.some((thread) => Boolean(thread.pinned));
   }
 
+  if (filterMode === "terminal") {
+    if (!project.threadsLoaded) {
+      return terminalRunningProjectIds.has(project.id);
+    }
+
+    return project.threads.some(
+      (thread) =>
+        typeof thread.sessionPath === "string" &&
+        terminalRunningSessionPaths.has(thread.sessionPath),
+    );
+  }
+
+  if (filterMode === "recent") {
+    if (!project.threadsLoaded) {
+      return (project.latestModifiedMs ?? 0) >= appLaunchedAtMs;
+    }
+
+    return project.threads.some((thread) => (thread.lastModifiedMs ?? 0) >= appLaunchedAtMs);
+  }
+
   return true;
 }
 
-function getVisibleProjectThreads(project: Project, filterMode: SidebarProjectsFilterMode) {
+function getVisibleProjectThreads(
+  project: Project,
+  filterMode: SidebarProjectsFilterMode,
+  terminalRunningSessionPaths: ReadonlySet<string>,
+  appLaunchedAtMs: number,
+) {
+  if (filterMode === "terminal") {
+    return project.threads.filter(
+      (thread) =>
+        typeof thread.sessionPath === "string" &&
+        terminalRunningSessionPaths.has(thread.sessionPath),
+    );
+  }
+
+  if (filterMode === "recent") {
+    return project.threads.filter((thread) => (thread.lastModifiedMs ?? 0) >= appLaunchedAtMs);
+  }
+
   if (filterMode !== "favourites" || project.pinned) {
     return project.threads;
   }
@@ -26,16 +69,32 @@ export function getSidebarVisibleProjects(input: {
   projects: Project[];
   searchQuery: string;
   filterMode: SidebarProjectsFilterMode;
+  terminalRunningProjectIds: ReadonlySet<string>;
+  terminalRunningSessionPaths: ReadonlySet<string>;
+  appLaunchedAtMs: number;
 }) {
   const normalizedQuery = input.searchQuery.trim().toLowerCase();
   const autoExpandedProjectIds = new Set<string>();
 
   const projects = input.projects.flatMap((project) => {
-    if (!projectMatchesFilter(project, input.filterMode)) {
+    if (
+      !projectMatchesFilter(
+        project,
+        input.filterMode,
+        input.terminalRunningProjectIds,
+        input.terminalRunningSessionPaths,
+        input.appLaunchedAtMs,
+      )
+    ) {
       return [];
     }
 
-    const visibleThreads = getVisibleProjectThreads(project, input.filterMode);
+    const visibleThreads = getVisibleProjectThreads(
+      project,
+      input.filterMode,
+      input.terminalRunningSessionPaths,
+      input.appLaunchedAtMs,
+    );
 
     if (!normalizedQuery) {
       return [

@@ -1,18 +1,12 @@
-import { GitBranch, SquareTerminal, X } from "lucide-react";
+import { GitBranch, PanelRightClose, SquareTerminal } from "lucide-react";
 import { useRef } from "react";
 import type { ProjectDiffBaseline, ProjectGitState } from "../../desktop/types";
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
-import {
-  compactCardClass,
-  compactIconButtonClass,
-  iconButtonClass,
-  panelChromeClass,
-} from "../../ui/classes";
+import { compactCardClass, compactIconButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
-import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { PiLogoMark } from "../common/PiLogoMark";
 import { ToolbarButton } from "../common/ToolbarButton";
 import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSelector";
@@ -25,9 +19,9 @@ type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
-  onOpenDockedTerminal?: () => void;
+  onOpenDrawerTerminal?: () => void;
   onOpenGitOps?: () => void;
-  mode?: "docked" | "takeover";
+  mode?: "drawer" | "takeover";
   projectGitState?: ProjectGitState | null;
   diffBaseline?: ProjectDiffBaseline;
   onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
@@ -37,9 +31,9 @@ export function TerminalPanel({
   projectId,
   sessionPath,
   onClose,
-  onOpenDockedTerminal,
+  onOpenDrawerTerminal,
   onOpenGitOps,
-  mode = "docked",
+  mode = "drawer",
   projectGitState = null,
   diffBaseline,
   onSetDiffBaseline,
@@ -79,7 +73,7 @@ export function TerminalPanel({
             <ToolbarButton
               label="Terminal"
               icon={<SquareTerminal size={14} />}
-              onClick={onOpenDockedTerminal}
+              onClick={onOpenDrawerTerminal}
             />
             <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
               {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
@@ -118,37 +112,35 @@ export function TerminalPanel({
     );
   }
 
-  const panelClass = cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3");
-
   return (
     <section
-      aria-label="Terminal panel"
-      className={panelClass}
+      aria-label="Terminal drawer"
+      className="flex h-full min-h-0 flex-col overflow-hidden border-l border-[rgba(169,178,215,0.08)] bg-[color:var(--workspace)]"
       {...getFeatureStatusDataAttributes(statusId)}
     >
-      <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2 text-[12px] text-[color:var(--muted)]">
-          <SquareTerminal size={14} />
-          <span className="font-medium text-[color:var(--text)]/90">Terminal</span>
-          <FeatureStatusBadge statusId={statusId} />
+      <div className="flex h-11 items-center justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-3">
+        <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
+          <SquareTerminal size={15} className="shrink-0 text-[color:var(--muted)]" />
+          <span className="truncate font-medium">Terminal</span>
         </div>
         <button
           type="button"
-          className={iconButtonClass}
-          aria-label="Close terminal"
-          title="Close terminal"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          aria-label="Hide terminal"
+          title="Hide terminal"
           onClick={onClose}
         >
-          <X size={14} />
+          <PanelRightClose size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl bg-[color:var(--terminal-bg)]">
+      <div className="flex min-h-0 min-w-0 flex-1 bg-[color:var(--sidebar)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
           preserveSessionOnUnmount
-          className="bg-[color:var(--terminal-bg)]"
+          backgroundCssVar="--sidebar"
+          className="terminal-viewport--flush h-full rounded-none bg-[color:var(--sidebar)]"
         />
       </div>
     </section>

@@ -10,6 +10,7 @@ import type { TerminalSessionRecord } from "./session-record.cts";
 import {
   deleteTerminalSession,
   getTerminalSession,
+  listTerminalSessions,
   setTerminalSession,
   subscribeTerminalEvents,
 } from "./session-store.cts";
@@ -60,8 +61,8 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
   };
 
   setTerminalSession(sessionId, record);
-  await startProcess(record, "started");
-  return record.snapshot;
+  void startProcess(record, "started");
+  return snapshot;
 }
 
 export async function writeTerminal(sessionId: string, data: string) {
@@ -81,6 +82,10 @@ export async function resizeTerminal(sessionId: string, cols: number, rows: numb
 
   record.snapshot = { ...record.snapshot, cols, rows, updatedAt: nowIso() };
   record.process?.resize(cols, rows);
+}
+
+export async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
+  return listTerminalSessions().map((record) => record.snapshot);
 }
 
 export async function closeTerminal(request: TerminalCloseRequest) {

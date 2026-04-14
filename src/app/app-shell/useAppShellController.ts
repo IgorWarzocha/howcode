@@ -6,10 +6,12 @@ import type {
   InboxThread,
   ProjectGitState,
   ShellState,
+  TerminalSessionSnapshot,
 } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
+import { listDesktopTerminals, subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
@@ -23,10 +25,15 @@ import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
+  const terminalEventTouchedSessionIdsRef = useRef(new Set<string>());
+  const [appLaunchedAtMs] = useState(() => Date.now());
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
+    Record<string, { projectId: string; sessionPath: string | null }>
+  >({});
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
@@ -66,6 +73,80 @@ export function useAppShellController() {
       inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
     [inboxThreads, state.selectedInboxSessionPath],
   );
+  const terminalRunningSessionPaths = useMemo(
+    () =>
+      new Set(
+        Object.values(runningTerminalSessionsById)
+          .map((session) => session.sessionPath)
+          .filter((sessionPath): sessionPath is string => typeof sessionPath === "string"),
+      ),
+    [runningTerminalSessionsById],
+  );
+  const terminalRunningProjectIds = useMemo(
+    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
+    [runningTerminalSessionsById],
+  );
+
+  useEffect(() => {
+    const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
+      const touchedSessionIds = terminalEventTouchedSessionIdsRef.current;
+
+      setRunningTerminalSessionsById((current) => ({
+        ...current,
+        ...Object.fromEntries(
+          snapshots
+            .filter(
+              (snapshot) =>
+                snapshot.launchMode === "shell" &&
+                (snapshot.status === "starting" || snapshot.status === "running") &&
+                !touchedSessionIds.has(snapshot.sessionId),
+            )
+            .map((snapshot) => [
+              snapshot.sessionId,
+              {
+                projectId: snapshot.projectId,
+                sessionPath: snapshot.sessionPath,
+              },
+            ]),
+        ),
+      }));
+    };
+
+    void listDesktopTerminals().then((snapshots) => {
+      applySnapshots(snapshots);
+    });
+
+    return subscribeDesktopTerminal((event) => {
+      terminalEventTouchedSessionIdsRef.current.add(event.sessionId);
+
+      if (event.type === "started" || event.type === "restarted") {
+        if (event.snapshot.launchMode !== "shell") {
+          return;
+        }
+
+        setRunningTerminalSessionsById((current) => ({
+          ...current,
+          [event.sessionId]: {
+            projectId: event.snapshot.projectId,
+            sessionPath: event.snapshot.sessionPath,
+          },
+        }));
+        return;
+      }
+
+      if (event.type === "exited" || event.type === "error") {
+        setRunningTerminalSessionsById((current) => {
+          if (!(event.sessionId in current)) {
+            return current;
+          }
+
+          const next = { ...current };
+          delete next[event.sessionId];
+          return next;
+        });
+      }
+    });
+  }, []);
 
   const {
     activeComposerState,
@@ -346,8 +427,7 @@ export function useAppShellController() {
     }
   };
 
-  const handleOpenDockedTerminalFromTakeover = () => {
-    dispatch({ type: "set-terminal-visible", visible: true });
+  const handleReturnToDesktopFromTakeover = () => {
     void closeTakeover();
   };
 
@@ -386,22 +466,26 @@ export function useAppShellController() {
     handleSelectInboxThread,
     handleThreadOpen,
     handleShowTakeoverTerminal,
-    handleOpenDockedTerminalFromTakeover,
+    handleReturnToDesktopFromTakeover,
     handleOpenGitOpsView,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
+    handleLoadProjectThreads: loadProjectThreads,
     listComposerAttachmentEntries,
     pickComposerAttachments,
     pendingProjectAction,
     extensionsProjectScopeActive,
+    appLaunchedAtMs,
     projects,
     projectGitState,
     shellState,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
+    terminalRunningProjectIds,
+    terminalRunningSessionPaths,
   };
 }
 

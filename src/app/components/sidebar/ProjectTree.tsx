@@ -84,6 +84,7 @@ type ProjectTreeProps = {
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
+  terminalRunningSessionPaths: ReadonlySet<string>;
   activeView: View;
   selectionModeActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
@@ -133,6 +134,7 @@ export function ProjectTree({
   projects,
   selectedProjectId,
   selectedThreadId,
+  terminalRunningSessionPaths,
   activeView,
   selectionModeActive,
   collapsedProjectIds,
@@ -313,6 +315,10 @@ export function ProjectTree({
                                 age={thread.age}
                                 pinned={Boolean(thread.pinned)}
                                 running={Boolean(thread.running)}
+                                terminalRunning={Boolean(
+                                  thread.sessionPath &&
+                                    terminalRunningSessionPaths.has(thread.sessionPath),
+                                )}
                                 unread={Boolean(thread.unread)}
                                 isSelected={isSelected}
                                 title={thread.title}

@@ -1,6 +1,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { type ITheme, Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
+import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
   closeDesktopTerminal,
@@ -17,13 +18,14 @@ type TerminalViewportProps = {
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
-  backgroundCssVar?: "--terminal-bg" | "--workspace";
+  backgroundCssVar?: "--terminal-bg" | "--workspace" | "--sidebar";
   className?: string;
 };
 
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 const XTERM_SCROLLBAR_VISIBILITY_VISIBLE = 3;
+const MAX_PENDING_TERMINAL_EVENTS = 200;
 
 type XtermPrivateTerminal = Terminal & {
   _core?: {
@@ -65,7 +67,9 @@ function forcePersistentTerminalScrollbar(terminal: Terminal) {
   scrollableElement?.updateOptions?.({ vertical: XTERM_SCROLLBAR_VISIBILITY_VISIBLE });
 }
 
-function terminalThemeFromApp(backgroundCssVar: "--terminal-bg" | "--workspace"): ITheme {
+function terminalThemeFromApp(
+  backgroundCssVar: "--terminal-bg" | "--workspace" | "--sidebar",
+): ITheme {
   const rootStyles = getComputedStyle(document.documentElement);
   const getToken = (name: string, fallback: string) =>
     rootStyles.getPropertyValue(name).trim() || fallback;
@@ -128,10 +132,18 @@ export function TerminalViewport({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const attachFailedRef = useRef(false);
+  const pendingEventsRef = useRef<TerminalEvent[]>([]);
+  const replayingBufferedEventsRef = useRef(false);
   const resizeFrameRef = useRef<number | null>(null);
   const lastSizeRef = useRef<{ width: number; height: number; cols: number; rows: number } | null>(
     null,
   );
+  const persistedSessionPath = getPersistedSessionPath(sessionPath);
+  const effectiveLaunchMode =
+    launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
+  const terminalSessionPath =
+    effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
 
   useEffect(() => {
     const mount = containerRef.current;
@@ -140,6 +152,7 @@ export function TerminalViewport({
     }
 
     let cancelled = false;
+    attachFailedRef.current = false;
     const fitAddon = new FitAddon();
     const terminal = new Terminal({
       cursorBlink: true,
@@ -167,6 +180,62 @@ export function TerminalViewport({
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
+
+    const bufferPendingEvent = (event: TerminalEvent) => {
+      pendingEventsRef.current.push(event);
+
+      if (pendingEventsRef.current.length > MAX_PENDING_TERMINAL_EVENTS) {
+        pendingEventsRef.current.splice(
+          0,
+          pendingEventsRef.current.length - MAX_PENDING_TERMINAL_EVENTS,
+        );
+      }
+    };
+
+    const applyTerminalEvent = (event: TerminalEvent) => {
+      switch (event.type) {
+        case "output":
+          terminal.write(event.data);
+          break;
+        case "error":
+          writeSystemMessage(terminal, event.message);
+          break;
+        case "exited":
+          writeSystemMessage(
+            terminal,
+            `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
+          );
+          break;
+        case "cleared":
+          terminal.clear();
+          break;
+        case "started":
+        case "restarted":
+          terminal.clear();
+          if (event.snapshot.history) {
+            terminal.write(event.snapshot.history);
+          }
+          break;
+      }
+    };
+
+    const replayBufferedEvents = (sessionId: string) => {
+      replayingBufferedEventsRef.current = true;
+
+      while (pendingEventsRef.current.length > 0) {
+        const pendingEvents = pendingEventsRef.current.splice(0, pendingEventsRef.current.length);
+
+        for (const event of pendingEvents) {
+          if (event.sessionId !== sessionId) {
+            continue;
+          }
+
+          applyTerminalEvent(event);
+        }
+      }
+
+      replayingBufferedEventsRef.current = false;
+    };
 
     const linkDisposable = terminal.registerLinkProvider({
       provideLinks: (bufferLineNumber, callback) => {
@@ -223,34 +292,20 @@ export function TerminalViewport({
     });
 
     const unsubscribe = subscribeDesktopTerminal((event: TerminalEvent) => {
-      if (event.sessionId !== sessionIdRef.current) {
+      const sessionId = sessionIdRef.current;
+
+      if (!sessionId || replayingBufferedEventsRef.current) {
+        if (!attachFailedRef.current) {
+          bufferPendingEvent(event);
+        }
         return;
       }
 
-      switch (event.type) {
-        case "output":
-          terminal.write(event.data);
-          break;
-        case "error":
-          writeSystemMessage(terminal, event.message);
-          break;
-        case "exited":
-          writeSystemMessage(
-            terminal,
-            `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
-          );
-          break;
-        case "cleared":
-          terminal.clear();
-          break;
-        case "started":
-        case "restarted":
-          terminal.clear();
-          if (event.snapshot.history) {
-            terminal.write(event.snapshot.history);
-          }
-          break;
+      if (event.sessionId !== sessionId) {
+        return;
       }
+
+      applyTerminalEvent(event);
     });
 
     const themeObserver = new MutationObserver(() => {
@@ -320,8 +375,8 @@ export function TerminalViewport({
       fitAddon.fit();
       const snapshot = await openDesktopTerminal({
         projectId,
-        sessionPath,
-        launchMode,
+        sessionPath: terminalSessionPath,
+        launchMode: effectiveLaunchMode,
         cols: Math.max(terminal.cols, 20),
         rows: Math.max(terminal.rows, 5),
       });
@@ -330,6 +385,7 @@ export function TerminalViewport({
         return;
       }
 
+      attachFailedRef.current = false;
       sessionIdRef.current = snapshot.sessionId;
       cancelScheduledTerminalClose(snapshot.sessionId);
       terminal.clear();
@@ -343,9 +399,13 @@ export function TerminalViewport({
           `Process exited${snapshot.exitCode !== null ? ` (${snapshot.exitCode})` : ""}.`,
         );
       }
+
+      replayBufferedEvents(snapshot.sessionId);
     };
 
     void openSession().catch((error) => {
+      attachFailedRef.current = true;
+      pendingEventsRef.current = [];
       writeSystemMessage(
         terminal,
         error instanceof Error ? error.message : "Unable to open terminal.",
@@ -356,6 +416,8 @@ export function TerminalViewport({
       cancelled = true;
       const sessionId = sessionIdRef.current;
       sessionIdRef.current = null;
+      pendingEventsRef.current = [];
+      replayingBufferedEventsRef.current = false;
       resizeObserver.disconnect();
       if (resizeFrameRef.current !== null) {
         cancelAnimationFrame(resizeFrameRef.current);
@@ -376,19 +438,20 @@ export function TerminalViewport({
       }
     };
   }, [
-    launchMode,
     keepAliveMsOnUnmount,
     backgroundCssVar,
     preserveSessionOnUnmount,
     projectId,
-    sessionPath,
+    terminalSessionPath,
+    effectiveLaunchMode,
   ]);
 
   return (
     <div
       ref={containerRef}
+      style={{ "--terminal-surface": `var(${backgroundCssVar})` } as CSSProperties}
       className={cn(
-        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-bg)] text-[color:var(--text)]",
+        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
     />

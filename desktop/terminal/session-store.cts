@@ -18,6 +18,10 @@ export function setTerminalSession(sessionId: string, record: TerminalSessionRec
   terminalSessions.set(sessionId, record);
 }
 
+export function listTerminalSessions() {
+  return [...terminalSessions.values()];
+}
+
 export function deleteTerminalSession(sessionId: string) {
   terminalSessions.delete(sessionId);
 }

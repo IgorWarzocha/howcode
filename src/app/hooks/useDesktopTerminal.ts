@@ -6,6 +6,10 @@ import type {
   TerminalSessionSnapshot,
 } from "../desktop/types";
 
+export async function listDesktopTerminals() {
+  return (await window.piDesktop?.listTerminals?.()) ?? [];
+}
+
 export async function openDesktopTerminal(request: TerminalOpenRequest) {
   if (!window.piDesktop?.openTerminal) {
     return null as TerminalSessionSnapshot | null;

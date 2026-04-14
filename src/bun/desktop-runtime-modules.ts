@@ -86,6 +86,7 @@ export type PiThreadsModule = {
 
 export type TerminalManagerModule = {
   closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
+  listTerminals: () => Promise<TerminalSessionSnapshot[]>;
   openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>;
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void;

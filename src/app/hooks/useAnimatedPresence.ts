@@ -15,5 +15,5 @@ export function useAnimatedPresence(open: boolean, exitMs = DEFAULT_EXIT_MS) {
     return () => window.clearTimeout(timeoutId);
   }, [exitMs, open]);
 
-  return present;
+  return open || present;
 }

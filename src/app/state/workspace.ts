@@ -10,6 +10,8 @@ export type WorkspaceState = {
   selectedThreadId: string | null;
   selectedSessionPath: string | null;
   terminalVisible: boolean;
+  terminalVisibleBySession: Record<string, boolean>;
+  restoreTerminalVisibleOnGitOpsClose: boolean;
   takeoverVisible: boolean;
   takeoverOverrides: Record<string, boolean>;
   gitOpsReturnView: NonGitOpsView;
@@ -80,6 +82,40 @@ function getGitOpsReturnView(activeView: View, fallback: NonGitOpsView): NonGitO
   return activeView;
 }
 
+function getTerminalVisibilityForSession(
+  terminalVisibleBySession: Record<string, boolean>,
+  sessionPath: string | null,
+) {
+  return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false;
+}
+
+function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
+  if (state.activeView !== "gitops") {
+    return {
+      terminalVisible:
+        nextView === "thread"
+          ? getTerminalVisibilityForSession(
+              state.terminalVisibleBySession,
+              state.selectedSessionPath,
+            )
+          : state.terminalVisible,
+      restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
+    };
+  }
+
+  if (nextView === "gitops") {
+    return {
+      terminalVisible: false,
+      restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
+    };
+  }
+
+  return {
+    terminalVisible: nextView === "thread" && state.restoreTerminalVisibleOnGitOpsClose,
+    restoreTerminalVisibleOnGitOpsClose: false,
+  };
+}
+
 // The collapsed map is derived once from project metadata so the tree interaction
 // stays deterministic even before we add persisted desktop state.
 export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
@@ -92,6 +128,8 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
+    terminalVisibleBySession: {},
+    restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,
     takeoverOverrides: {},
     gitOpsReturnView: "code",
@@ -123,12 +161,15 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ]),
       );
 
+      const nextActiveView =
+        hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
+          ? state.activeView
+          : "code";
+
       return {
         ...state,
-        activeView:
-          hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
-            ? state.activeView
-            : "code",
+        ...getTerminalStateForNextView(state, nextActiveView),
+        activeView: nextActiveView,
         selectedProjectId,
         selectedThreadId:
           hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
@@ -146,6 +187,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "show-view":
       return {
         ...state,
+        ...getTerminalStateForNextView(state, action.view),
         activeView: action.view,
         selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
@@ -161,10 +203,12 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "select-project":
       return {
         ...state,
+        ...getTerminalStateForNextView(state, "code"),
         activeView: "code",
         selectedProjectId: action.projectId,
         selectedThreadId: null,
         selectedSessionPath: null,
+        terminalVisible: false,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         takeoverVisible: false,
@@ -175,13 +219,32 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         selectedProjectId: action.projectId,
       };
-    case "open-thread":
+    case "open-thread": {
+      const nextTerminalVisibleBySession =
+        state.activeView === "thread" &&
+        state.selectedThreadId === action.threadId &&
+        state.selectedSessionPath &&
+        state.selectedSessionPath !== action.sessionPath
+          ? {
+              ...state.terminalVisibleBySession,
+              [action.sessionPath]: getTerminalVisibilityForSession(
+                state.terminalVisibleBySession,
+                state.selectedSessionPath,
+              ),
+            }
+          : state.terminalVisibleBySession;
+
       return {
         ...state,
         activeView: "thread",
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
+        terminalVisible: getTerminalVisibilityForSession(
+          nextTerminalVisibleBySession,
+          action.sessionPath,
+        ),
+        terminalVisibleBySession: nextTerminalVisibleBySession,
         takeoverOverrides: migrateTakeoverOverride(
           state.takeoverOverrides,
           state.selectedSessionPath,
@@ -195,10 +258,16 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           [action.projectId]: false,
         },
       };
+    }
     case "open-gitops":
       return {
         ...state,
         activeView: "gitops",
+        terminalVisible: false,
+        restoreTerminalVisibleOnGitOpsClose:
+          state.activeView === "gitops"
+            ? state.restoreTerminalVisibleOnGitOpsClose
+            : state.activeView === "thread" && state.terminalVisible,
         takeoverVisible: false,
         gitOpsReturnView:
           action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
@@ -208,6 +277,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case "close-gitops":
       return {
         ...state,
+        ...getTerminalStateForNextView(state, state.gitOpsReturnView),
         activeView: state.gitOpsReturnView,
         selectedThreadId: state.gitOpsReturnView === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: state.gitOpsReturnView === "thread" ? state.selectedSessionPath : null,
@@ -215,9 +285,31 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedDiffFilePath: null,
       };
     case "toggle-terminal":
-      return { ...state, terminalVisible: !state.terminalVisible };
+      if (!state.selectedSessionPath) {
+        return { ...state, terminalVisible: !state.terminalVisible };
+      }
+
+      return {
+        ...state,
+        terminalVisible: !state.terminalVisible,
+        terminalVisibleBySession: {
+          ...state.terminalVisibleBySession,
+          [state.selectedSessionPath]: !state.terminalVisible,
+        },
+      };
     case "set-terminal-visible":
-      return { ...state, terminalVisible: action.visible };
+      if (!state.selectedSessionPath) {
+        return { ...state, terminalVisible: action.visible };
+      }
+
+      return {
+        ...state,
+        terminalVisible: action.visible,
+        terminalVisibleBySession: {
+          ...state.terminalVisibleBySession,
+          [state.selectedSessionPath]: action.visible,
+        },
+      };
     case "show-takeover":
       return { ...state, takeoverVisible: true };
     case "hide-takeover":

@@ -141,6 +141,8 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
           } as DesktopActionResult;
         }
       },
+      listTerminals: async () =>
+        terminalManager.listTerminals() as Promise<TerminalSessionSnapshot[]>,
       terminalOpen: async (request) =>
         terminalManager.openTerminal(request) as Promise<TerminalSessionSnapshot>,
       terminalWrite: async ({ sessionId, data }) => {

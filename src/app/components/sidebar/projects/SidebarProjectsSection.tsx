@@ -1,5 +1,5 @@
-import { FolderPlus, Github, ListFilter, Search, Star } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../../types";
@@ -15,13 +15,17 @@ import {
 
 type SidebarProjectsSectionProps = {
   activeView: View;
+  appLaunchedAtMs: number;
   appSettings: AppSettings;
   projectScopeLockActive: boolean;
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
+  terminalRunningProjectIds: ReadonlySet<string>;
+  terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
+  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
@@ -31,13 +35,17 @@ type SidebarProjectsSectionProps = {
 
 export function SidebarProjectsSection({
   activeView,
+  appLaunchedAtMs,
   appSettings,
   projectScopeLockActive,
   projects,
   selectedProjectId,
   selectedThreadId,
+  terminalRunningProjectIds,
+  terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
+  onLoadProjectThreads,
   onOpenSettingsPanel,
   onProjectSelect,
   onProjectReorder,
@@ -69,9 +77,35 @@ export function SidebarProjectsSection({
         projects,
         searchQuery,
         filterMode,
+        terminalRunningProjectIds,
+        terminalRunningSessionPaths,
+        appLaunchedAtMs,
       }),
-    [filterMode, projects, searchQuery],
+    [
+      appLaunchedAtMs,
+      filterMode,
+      projects,
+      searchQuery,
+      terminalRunningProjectIds,
+      terminalRunningSessionPaths,
+    ],
   );
+
+  useEffect(() => {
+    if (filterMode !== "terminal" && filterMode !== "recent") {
+      return;
+    }
+
+    for (const project of visibleProjects) {
+      const sourceProject = projects.find((candidate) => candidate.id === project.id);
+
+      if (project.threadsLoaded || (sourceProject?.threadCount ?? 0) === 0) {
+        continue;
+      }
+
+      void onLoadProjectThreads(project.id);
+    }
+  }, [filterMode, onLoadProjectThreads, projects, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {
@@ -94,9 +128,28 @@ export function SidebarProjectsSection({
         return "github";
       }
 
+      if (current === "github") {
+        return "terminal";
+      }
+
+      if (current === "terminal") {
+        return "recent";
+      }
+
       return "all";
     });
   };
+
+  const filterLabel =
+    filterMode === "favourites"
+      ? "Show favourites"
+      : filterMode === "github"
+        ? "Show GitHub projects"
+        : filterMode === "terminal"
+          ? "Show threads with running terminals"
+          : filterMode === "recent"
+            ? "Show threads active since launch"
+            : "Filter projects";
 
   const dismissCreate = useCallback(() => {
     setCreateOpen(false);
@@ -169,13 +222,17 @@ export function SidebarProjectsSection({
         {showProjects ? (
           <div className="relative flex items-center gap-1.5">
             <IconButton
-              label="Filter projects"
+              label={filterLabel}
               onClick={cycleFilterMode}
               icon={
                 filterMode === "favourites" ? (
                   <Star size={15} className="fill-current" />
                 ) : filterMode === "github" ? (
                   <Github size={15} />
+                ) : filterMode === "terminal" ? (
+                  <SquareTerminal size={15} />
+                ) : filterMode === "recent" ? (
+                  <Clock3 size={15} />
                 ) : (
                   <ListFilter size={15} />
                 )
@@ -232,6 +289,7 @@ export function SidebarProjectsSection({
           projects={visibleProjects}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
           activeView={activeView}
           selectionModeActive={selectionModeActive}
           collapsedProjectIds={effectiveCollapsedProjectIds}
