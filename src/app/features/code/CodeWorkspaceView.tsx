@@ -30,9 +30,8 @@ type CodeWorkspaceViewProps = {
 
 const WORKSPACE_FOOTER_OVERLAP_PX = 20;
 const TERMINAL_DRAWER_WIDTH = "min(28rem, calc(100% - 2.5rem))";
-const TERMINAL_DRAWER_GAP = "1rem";
-const TERMINAL_DRAWER_GUTTER = "1.25rem";
-const TERMINAL_DRAWER_OFFSET = `calc(${TERMINAL_DRAWER_WIDTH} + ${TERMINAL_DRAWER_GAP} + ${TERMINAL_DRAWER_GUTTER})`;
+const TERMINAL_DRAWER_OFFSET = TERMINAL_DRAWER_WIDTH;
+const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_WIDTH} + 1.25rem)`;
 
 export function CodeWorkspaceView({
   controller,
@@ -226,7 +225,12 @@ export function CodeWorkspaceView({
       </div>
 
       {showWorkspaceFooter ? (
-        <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
+        <footer
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4 transition-[padding-right] duration-200 ease-out"
+          style={
+            showDesktopTerminalDrawer ? { paddingRight: TERMINAL_DRAWER_FOOTER_OFFSET } : undefined
+          }
+        >
           <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
               {state.activeView === "gitops" ? (
@@ -298,7 +302,7 @@ export function CodeWorkspaceView({
 
       {terminalDrawerPresent ? (
         <div
-          className="pointer-events-none absolute inset-y-0 right-5 z-20 pt-1.5 pb-4"
+          className="pointer-events-none absolute inset-y-0 right-0 z-20"
           style={{ width: TERMINAL_DRAWER_WIDTH }}
         >
           <div
