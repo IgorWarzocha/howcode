@@ -1,6 +1,5 @@
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import type { ProjectDiffBaseline } from "../desktop/types";
-import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
 import type { AppShellController } from "./useAppShellController";
 
 type AppShellOverlaysProps = {
@@ -10,6 +9,7 @@ type AppShellOverlaysProps = {
   takeoverPresent: boolean;
   takeoverVisible: boolean;
   terminalSessionPath: string | null;
+  workspaceContentClass: string;
   onOpenGitOps: () => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
@@ -21,6 +21,7 @@ export function AppShellOverlays({
   takeoverPresent,
   takeoverVisible,
   terminalSessionPath,
+  workspaceContentClass,
   onOpenGitOps,
   onSetDiffBaseline,
 }: AppShellOverlaysProps) {
@@ -32,11 +33,9 @@ export function AppShellOverlays({
       {takeoverPresent ? (
         <div
           data-open={takeoverVisible ? "true" : "false"}
-          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)]"
+          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)] px-5 pt-1.5 pb-4"
         >
-          <div
-            className={`mx-auto min-h-0 h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-hidden px-5 pt-1.5 pb-4`}
-          >
+          <div className={`${workspaceContentClass} h-full min-h-0`}>
             <TerminalPanel
               projectId={composerProjectId}
               sessionPath={terminalSessionPath}

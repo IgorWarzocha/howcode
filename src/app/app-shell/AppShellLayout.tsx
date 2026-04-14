@@ -177,6 +177,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverPresent={takeoverPresent}
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}
+              workspaceContentClass={workspaceContentClass}
               onOpenGitOps={async () => {
                 controller.handleOpenGitOpsView();
                 await controller.handleCloseTakeoverTerminal();

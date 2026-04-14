@@ -67,7 +67,7 @@ export function TerminalPanel({
             sessionPath={sessionPath}
             launchMode="pi-session"
             keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
-            className="min-h-0 rounded-[16px] border-[rgba(137,146,183,0.08)] bg-[rgba(23,25,35,0.98)]"
+            className="min-h-0 rounded-[16px] bg-[color:var(--terminal-bg)]"
           />
         </div>
         <div className="h-px bg-[rgba(169,178,215,0.07)]" />
@@ -142,12 +142,13 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-[rgba(137,146,183,0.06)] bg-[rgba(23,25,35,0.98)] p-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl bg-[color:var(--terminal-bg)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
           preserveSessionOnUnmount
+          className="bg-[color:var(--terminal-bg)]"
         />
       </div>
     </section>
