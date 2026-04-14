@@ -57,7 +57,7 @@ export function TerminalPanel({
       <div
         ref={panelRef}
         aria-label="Pi terminal panel"
-        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-[color:var(--terminal-bg)]"
+        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] bg-transparent"
         {...getFeatureStatusDataAttributes(statusId)}
       >
         <TerminalViewport
@@ -67,47 +67,50 @@ export function TerminalPanel({
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--terminal-bg)]"
         />
-        <div className="flex items-center gap-1.5 bg-[rgba(31,34,48,0.94)] px-4 pt-2 pb-3 text-[color:var(--muted)] backdrop-blur-[18px] max-md:flex-wrap">
-          <ToolbarButton
-            label="Desktop"
-            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
-            onClick={onClose}
-          />
-          <ToolbarButton
-            label="Terminal"
-            icon={<SquareTerminal size={14} />}
-            onClick={onOpenDockedTerminal}
-          />
-          <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
-            {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
-              <ComposerDiffBaselineSelector
-                composerPanelRef={panelRef}
-                projectId={projectId}
-                projectGitState={projectGitState}
-                selectedBaseline={diffBaseline}
-                onSelectBaseline={onSetDiffBaseline}
-              />
-            ) : null}
-            {projectGitState?.isGitRepo ? (
-              <div
-                className={cn(
-                  compactCardClass,
-                  "inline-flex px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
-                )}
-                title={projectGitState.branch ?? "Detached"}
+        <div className="overflow-hidden rounded-b-[20px] border-x border-b border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none">
+          <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+          <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+            <ToolbarButton
+              label="Desktop"
+              icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+              onClick={onClose}
+            />
+            <ToolbarButton
+              label="Terminal"
+              icon={<SquareTerminal size={14} />}
+              onClick={onOpenDockedTerminal}
+            />
+            <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+              {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
+                <ComposerDiffBaselineSelector
+                  composerPanelRef={panelRef}
+                  projectId={projectId}
+                  projectGitState={projectGitState}
+                  selectedBaseline={diffBaseline}
+                  onSelectBaseline={onSetDiffBaseline}
+                />
+              ) : null}
+              {projectGitState?.isGitRepo ? (
+                <div
+                  className={cn(
+                    compactCardClass,
+                    "inline-flex px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+                  )}
+                  title={projectGitState.branch ?? "Detached"}
+                >
+                  <span>{projectGitState.branch ?? "Detached"}</span>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
+                onClick={onOpenGitOps}
+                aria-label="Open desktop git ops"
+                title="Open desktop git ops"
               >
-                <span>{projectGitState.branch ?? "Detached"}</span>
-              </div>
-            ) : null}
-            <button
-              type="button"
-              className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
-              onClick={onOpenGitOps}
-              aria-label="Open desktop git ops"
-              title="Open desktop git ops"
-            >
-              <GitBranch size={14} />
-            </button>
+                <GitBranch size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
