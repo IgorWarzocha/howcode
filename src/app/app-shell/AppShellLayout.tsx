@@ -181,6 +181,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               onOpenGitOps={() => {
                 controller.handleCloseTakeoverTerminal();
                 setComposerSurface("git-ops");
+                if (!controller.state.diffVisible) {
+                  controller.handleToggleDiff();
+                }
               }}
               onSetDiffBaseline={(baseline) => {
                 setDiffBaselineState({

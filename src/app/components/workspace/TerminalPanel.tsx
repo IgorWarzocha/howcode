@@ -5,7 +5,12 @@ import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
-import { compactIconButtonClass, iconButtonClass, panelChromeClass } from "../../ui/classes";
+import {
+  compactCardClass,
+  compactIconButtonClass,
+  iconButtonClass,
+  panelChromeClass,
+} from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { PiLogoMark } from "../common/PiLogoMark";
@@ -15,7 +20,7 @@ import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSel
 import { getGitOpsEntryButtonClass } from "./composer/git-ops";
 import { TerminalViewport } from "./terminal/TerminalViewport";
 
-const PI_TUI_KEEP_ALIVE_MS = 30_000;
+const PI_TUI_KEEP_ALIVE_MS = 300_000;
 
 type TerminalPanelProps = {
   projectId: string;
@@ -78,6 +83,18 @@ export function TerminalPanel({
             onClick={onOpenDockedTerminal}
           />
           <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+            {projectGitState?.isGitRepo ? (
+              <div
+                className={cn(
+                  compactCardClass,
+                  "inline-flex items-center gap-1 px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+                )}
+                title={projectGitState.branch ?? "Detached"}
+              >
+                <GitBranch size={12} />
+                <span>{projectGitState.branch ?? "Detached"}</span>
+              </div>
+            ) : null}
             {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
               <ComposerDiffBaselineSelector
                 composerPanelRef={panelRef}
