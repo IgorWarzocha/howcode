@@ -13,8 +13,22 @@ const projects: Project[] = [
     threadsLoaded: true,
     threadCount: 2,
     threads: [
-      { id: "a1", title: "First thread", age: "1m", pinned: false, sessionPath: "/alpha/1" },
-      { id: "a2", title: "Favourite task", age: "2m", pinned: true, sessionPath: "/alpha/2" },
+      {
+        id: "a1",
+        title: "First thread",
+        age: "1m",
+        pinned: false,
+        sessionPath: "/alpha/1",
+        lastModifiedMs: 100,
+      },
+      {
+        id: "a2",
+        title: "Favourite task",
+        age: "2m",
+        pinned: true,
+        sessionPath: "/alpha/2",
+        lastModifiedMs: 250,
+      },
     ],
   },
   {
@@ -26,9 +40,20 @@ const projects: Project[] = [
     collapsed: false,
     threadsLoaded: true,
     threadCount: 1,
-    threads: [{ id: "b1", title: "Build", age: "3m", pinned: false, sessionPath: "/beta/1" }],
+    threads: [
+      {
+        id: "b1",
+        title: "Build",
+        age: "3m",
+        pinned: false,
+        sessionPath: "/beta/1",
+        lastModifiedMs: 350,
+      },
+    ],
   },
 ];
+
+const emptyRunningSessionPaths = new Set<string>();
 
 describe("sidebar projects helpers", () => {
   it("filters by search query across project and thread names", () => {
@@ -36,6 +61,8 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "favourite",
       filterMode: "all",
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 0,
     });
 
     expect(result.projects).toHaveLength(1);
@@ -50,6 +77,8 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "favourites",
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 0,
     });
 
     expect(result.projects.map((project) => project.id)).toEqual(["/alpha", "/beta"]);
@@ -62,8 +91,36 @@ describe("sidebar projects helpers", () => {
       projects,
       searchQuery: "",
       filterMode: "github",
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 0,
     });
 
     expect(result.projects.map((project) => project.id)).toEqual(["/beta"]);
+  });
+
+  it("filters threads with running terminals only", () => {
+    const result = getSidebarVisibleProjects({
+      projects,
+      searchQuery: "",
+      filterMode: "terminal",
+      terminalRunningSessionPaths: new Set(["/alpha/2"]),
+      appLaunchedAtMs: 0,
+    });
+
+    expect(result.projects.map((project) => project.id)).toEqual(["/alpha"]);
+    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["a2"]);
+  });
+
+  it("filters threads active since app launch", () => {
+    const result = getSidebarVisibleProjects({
+      projects,
+      searchQuery: "",
+      filterMode: "recent",
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 300,
+    });
+
+    expect(result.projects.map((project) => project.id)).toEqual(["/beta"]);
+    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["b1"]);
   });
 });

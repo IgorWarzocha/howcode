@@ -1,4 +1,4 @@
-import { Check, Github, Star } from "lucide-react";
+import { Check, Clock3, Github, SquareTerminal, Star } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { menuOptionClass, popoverPanelClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -17,6 +17,8 @@ const items: Array<{ id: SidebarProjectsFilterMode; label: string; icon: ReactNo
   { id: "all", label: "All", icon: null },
   { id: "favourites", label: "Favourites", icon: <Star size={14} /> },
   { id: "github", label: "GitHub", icon: <Github size={14} /> },
+  { id: "terminal", label: "Terminals", icon: <SquareTerminal size={14} /> },
+  { id: "recent", label: "Since launch", icon: <Clock3 size={14} /> },
 ];
 
 export function SidebarProjectsFilterMenu({

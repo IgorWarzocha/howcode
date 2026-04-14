@@ -85,6 +85,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           <Sidebar
             projects={projects}
             inboxThreads={controller.inboxThreads}
+            appLaunchedAtMs={controller.appLaunchedAtMs}
             appSettings={
               controller.shellState?.appSettings ?? {
                 gitCommitMessageModel: null,
@@ -103,6 +104,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedThreadId={state.selectedThreadId}
             settingsOpen={state.settingsOpen}
             projectScopeLockActive={projectScopeLockActive}
+            terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
             collapsedProjectIds={effectiveCollapsedProjectIds}
             onAction={handleAction}
             onShowView={handleShowView}

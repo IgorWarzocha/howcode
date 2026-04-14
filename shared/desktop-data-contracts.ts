@@ -2,6 +2,7 @@ export type Thread = {
   id: string;
   title: string;
   age: string;
+  lastModifiedMs?: number;
   sessionPath?: string;
   summary?: string;
   running?: boolean;
@@ -16,6 +17,7 @@ export type InboxThread = {
   projectName: string;
   sessionPath: string;
   age: string;
+  lastActivityMs?: number;
   prompt: string | null;
   content: string[];
   preview: string | null;

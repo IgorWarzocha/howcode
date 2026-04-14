@@ -1,4 +1,4 @@
-import { ListFilter, Search } from "lucide-react";
+import { Clock3, ListFilter, Search, SquareTerminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { InboxThread } from "../../../desktop/types";
 import { sidebarSearchFieldClass } from "../../../ui/classes";
@@ -8,6 +8,8 @@ import { IconButton } from "../../common/IconButton";
 import { InboxThreadRow } from "./InboxThreadRow";
 
 type SidebarInboxSectionProps = {
+  appLaunchedAtMs: number;
+  terminalRunningSessionPaths: ReadonlySet<string>;
   threads: InboxThread[];
   selectedSessionPath: string | null;
   onDismissThread: (thread: InboxThread) => void;
@@ -15,6 +17,8 @@ type SidebarInboxSectionProps = {
 };
 
 export function SidebarInboxSection({
+  appLaunchedAtMs,
+  terminalRunningSessionPaths,
   threads,
   selectedSessionPath,
   onDismissThread,
@@ -22,6 +26,21 @@ export function SidebarInboxSection({
 }: SidebarInboxSectionProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [filterMode, setFilterMode] = useState<"all" | "terminal" | "recent">("all");
+
+  const cycleFilterMode = () => {
+    setFilterMode((current) => {
+      if (current === "all") {
+        return "terminal";
+      }
+
+      if (current === "terminal") {
+        return "recent";
+      }
+
+      return "all";
+    });
+  };
 
   const visibleThreads = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -32,15 +51,59 @@ export function SidebarInboxSection({
       }
 
       if (!normalizedQuery) {
+        if (filterMode === "terminal") {
+          return terminalRunningSessionPaths.has(thread.sessionPath);
+        }
+
+        if (filterMode === "recent") {
+          return (thread.lastActivityMs ?? 0) >= appLaunchedAtMs;
+        }
+
         return true;
       }
 
-      return [thread.title, thread.projectName, thread.preview ?? ""]
+      const matchesQuery = [thread.title, thread.projectName, thread.preview ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
+
+      if (!matchesQuery) {
+        return false;
+      }
+
+      if (filterMode === "terminal") {
+        return terminalRunningSessionPaths.has(thread.sessionPath);
+      }
+
+      if (filterMode === "recent") {
+        return (thread.lastActivityMs ?? 0) >= appLaunchedAtMs;
+      }
+
+      return true;
     });
-  }, [searchQuery, showUnreadOnly, threads]);
+  }, [
+    appLaunchedAtMs,
+    filterMode,
+    searchQuery,
+    showUnreadOnly,
+    terminalRunningSessionPaths,
+    threads,
+  ]);
+
+  const filterIcon =
+    filterMode === "terminal" ? (
+      <SquareTerminal size={15} />
+    ) : filterMode === "recent" ? (
+      <Clock3 size={15} />
+    ) : (
+      <ListFilter size={15} />
+    );
+  const filterLabel =
+    filterMode === "terminal"
+      ? "Show inbox threads with terminals"
+      : filterMode === "recent"
+        ? "Show inbox threads active since launch"
+        : "Filter inbox threads";
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-2.5">
@@ -61,12 +124,20 @@ export function SidebarInboxSection({
           />
         </label>
 
-        <IconButton
-          label="Show unread only"
-          icon={<ListFilter size={15} />}
-          active={showUnreadOnly}
-          onClick={() => setShowUnreadOnly((current) => !current)}
-        />
+        <div className="flex items-center gap-1.5">
+          <IconButton
+            label={filterLabel}
+            icon={filterIcon}
+            active={filterMode !== "all"}
+            onClick={cycleFilterMode}
+          />
+          <IconButton
+            label="Show unread only"
+            icon={<ListFilter size={15} />}
+            active={showUnreadOnly}
+            onClick={() => setShowUnreadOnly((current) => !current)}
+          />
+        </div>
       </div>
 
       {visibleThreads.length > 0 ? (
@@ -79,6 +150,7 @@ export function SidebarInboxSection({
                 preview={thread.preview}
                 projectName={thread.projectName}
                 running={thread.running}
+                terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
                 selected={selectedSessionPath === thread.sessionPath}
                 title={thread.title}
                 unread={thread.unread}
@@ -92,7 +164,13 @@ export function SidebarInboxSection({
         <EmptyStateCard className="grid gap-1.5 px-3 py-4 text-center text-[12.5px] text-[color:var(--muted)]">
           <div className="text-[13px] text-[color:var(--text)]">No inbox items</div>
           <div>
-            {showUnreadOnly ? "No unread threads right now." : "Nothing to catch up on yet."}
+            {showUnreadOnly
+              ? "No unread threads right now."
+              : filterMode === "terminal"
+                ? "No inbox threads have a running terminal."
+                : filterMode === "recent"
+                  ? "No inbox threads have been active since launch."
+                  : "Nothing to catch up on yet."}
           </div>
         </EmptyStateCard>
       )}

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { SquareTerminal, X } from "lucide-react";
 import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ActivitySpinner } from "../../common/ActivitySpinner";
@@ -8,6 +8,7 @@ type InboxThreadRowProps = {
   preview: string | null;
   projectName: string;
   running: boolean;
+  terminalRunning: boolean;
   selected: boolean;
   title: string;
   unread: boolean;
@@ -20,6 +21,7 @@ export function InboxThreadRow({
   preview,
   projectName,
   running,
+  terminalRunning,
   selected,
   title,
   unread,
@@ -46,7 +48,13 @@ export function InboxThreadRow({
         <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-[color:var(--muted-2)]">
           <span className="truncate">{projectName}</span>
           <span aria-hidden="true">•</span>
-          <span>{age}</span>
+          {terminalRunning ? (
+            <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+              <SquareTerminal size={12} />
+            </span>
+          ) : (
+            <span>{age}</span>
+          )}
         </div>
         <div
           className={cn(

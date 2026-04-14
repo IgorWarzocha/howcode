@@ -1,4 +1,4 @@
-import { FolderPlus, Github, ListFilter, Search, Star } from "lucide-react";
+import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
@@ -15,11 +15,13 @@ import {
 
 type SidebarProjectsSectionProps = {
   activeView: View;
+  appLaunchedAtMs: number;
   appSettings: AppSettings;
   projectScopeLockActive: boolean;
   projects: Project[];
   selectedProjectId: string;
   selectedThreadId: string | null;
+  terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
   onOpenSettingsPanel: () => void;
@@ -31,11 +33,13 @@ type SidebarProjectsSectionProps = {
 
 export function SidebarProjectsSection({
   activeView,
+  appLaunchedAtMs,
   appSettings,
   projectScopeLockActive,
   projects,
   selectedProjectId,
   selectedThreadId,
+  terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
   onOpenSettingsPanel,
@@ -69,8 +73,10 @@ export function SidebarProjectsSection({
         projects,
         searchQuery,
         filterMode,
+        terminalRunningSessionPaths,
+        appLaunchedAtMs,
       }),
-    [filterMode, projects, searchQuery],
+    [appLaunchedAtMs, filterMode, projects, searchQuery, terminalRunningSessionPaths],
   );
 
   const effectiveCollapsedProjectIds = useMemo(() => {
@@ -94,9 +100,28 @@ export function SidebarProjectsSection({
         return "github";
       }
 
+      if (current === "github") {
+        return "terminal";
+      }
+
+      if (current === "terminal") {
+        return "recent";
+      }
+
       return "all";
     });
   };
+
+  const filterLabel =
+    filterMode === "favourites"
+      ? "Show favourites"
+      : filterMode === "github"
+        ? "Show GitHub projects"
+        : filterMode === "terminal"
+          ? "Show threads with running terminals"
+          : filterMode === "recent"
+            ? "Show threads active since launch"
+            : "Filter projects";
 
   const dismissCreate = useCallback(() => {
     setCreateOpen(false);
@@ -169,13 +194,17 @@ export function SidebarProjectsSection({
         {showProjects ? (
           <div className="relative flex items-center gap-1.5">
             <IconButton
-              label="Filter projects"
+              label={filterLabel}
               onClick={cycleFilterMode}
               icon={
                 filterMode === "favourites" ? (
                   <Star size={15} className="fill-current" />
                 ) : filterMode === "github" ? (
                   <Github size={15} />
+                ) : filterMode === "terminal" ? (
+                  <SquareTerminal size={15} />
+                ) : filterMode === "recent" ? (
+                  <Clock3 size={15} />
                 ) : (
                   <ListFilter size={15} />
                 )
@@ -232,6 +261,7 @@ export function SidebarProjectsSection({
           projects={visibleProjects}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
           activeView={activeView}
           selectionModeActive={selectionModeActive}
           collapsedProjectIds={effectiveCollapsedProjectIds}

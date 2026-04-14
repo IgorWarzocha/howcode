@@ -16,6 +16,7 @@ import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 type SidebarProps = {
   projects: Project[];
   inboxThreads: InboxThread[];
+  appLaunchedAtMs: number;
   appSettings: AppSettings;
   activeView: View;
   selectedInboxSessionPath: string | null;
@@ -23,6 +24,7 @@ type SidebarProps = {
   selectedThreadId: string | null;
   settingsOpen: boolean;
   projectScopeLockActive: boolean;
+  terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
   onShowView: (view: SidebarNavigableView) => void;
@@ -50,6 +52,7 @@ function ComingSoonLabel() {
 export function Sidebar({
   projects,
   inboxThreads,
+  appLaunchedAtMs,
   appSettings,
   activeView,
   selectedInboxSessionPath,
@@ -57,6 +60,7 @@ export function Sidebar({
   selectedThreadId,
   settingsOpen,
   projectScopeLockActive,
+  terminalRunningSessionPaths,
   collapsedProjectIds,
   onAction,
   onShowView,
@@ -160,6 +164,8 @@ export function Sidebar({
 
       {activeView === "inbox" ? (
         <SidebarInboxSection
+          appLaunchedAtMs={appLaunchedAtMs}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
           threads={inboxThreads}
           selectedSessionPath={selectedInboxSessionPath}
           onDismissThread={onDismissInboxThread}
@@ -168,11 +174,13 @@ export function Sidebar({
       ) : (
         <SidebarProjectsSection
           activeView={activeView}
+          appLaunchedAtMs={appLaunchedAtMs}
           appSettings={appSettings}
           projectScopeLockActive={projectScopeLockActive}
           projects={projects}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
+          terminalRunningSessionPaths={terminalRunningSessionPaths}
           collapsedProjectIds={collapsedProjectIds}
           onAction={onAction}
           onOpenSettingsPanel={onOpenSettingsPanel}

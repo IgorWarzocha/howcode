@@ -10,6 +10,7 @@ import type {
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
+import { subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
@@ -23,10 +24,14 @@ import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
+  const [appLaunchedAtMs] = useState(() => Date.now());
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [runningTerminalSessionPathById, setRunningTerminalSessionPathById] = useState<
+    Record<string, string>
+  >({});
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
@@ -66,6 +71,40 @@ export function useAppShellController() {
       inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
     [inboxThreads, state.selectedInboxSessionPath],
   );
+  const terminalRunningSessionPaths = useMemo(
+    () => new Set(Object.values(runningTerminalSessionPathById)),
+    [runningTerminalSessionPathById],
+  );
+
+  useEffect(() => {
+    return subscribeDesktopTerminal((event) => {
+      if (event.type === "started" || event.type === "restarted") {
+        const sessionPath = event.snapshot.sessionPath;
+
+        if (event.snapshot.launchMode !== "shell" || !sessionPath) {
+          return;
+        }
+
+        setRunningTerminalSessionPathById((current) => ({
+          ...current,
+          [event.sessionId]: sessionPath,
+        }));
+        return;
+      }
+
+      if (event.type === "exited") {
+        setRunningTerminalSessionPathById((current) => {
+          if (!(event.sessionId in current)) {
+            return current;
+          }
+
+          const next = { ...current };
+          delete next[event.sessionId];
+          return next;
+        });
+      }
+    });
+  }, []);
 
   const {
     activeComposerState,
@@ -396,12 +435,14 @@ export function useAppShellController() {
     pickComposerAttachments,
     pendingProjectAction,
     extensionsProjectScopeActive,
+    appLaunchedAtMs,
     projects,
     projectGitState,
     shellState,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
+    terminalRunningSessionPaths,
   };
 }
 

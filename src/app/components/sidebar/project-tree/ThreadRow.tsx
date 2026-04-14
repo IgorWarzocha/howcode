@@ -1,4 +1,4 @@
-import { Archive, Star } from "lucide-react";
+import { Archive, SquareTerminal, Star } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ActivitySpinner } from "../../common/ActivitySpinner";
@@ -7,6 +7,7 @@ type ThreadRowProps = {
   age: string;
   pinned?: boolean;
   running?: boolean;
+  terminalRunning?: boolean;
   unread?: boolean;
   isSelected: boolean;
   title: string;
@@ -19,6 +20,7 @@ export function ThreadRow({
   age,
   pinned = false,
   running = false,
+  terminalRunning = false,
   unread = false,
   isSelected,
   title,
@@ -67,15 +69,21 @@ export function ThreadRow({
       </button>
 
       <span className="relative inline-flex h-4 w-7 shrink-0 items-center justify-end text-[color:var(--muted-2)]">
-        <span
-          className={cn(
-            "absolute right-0 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
-            isSelected && "opacity-0",
-          )}
-          aria-hidden="true"
-        >
-          {age}
-        </span>
+        {terminalRunning ? (
+          <span className="absolute right-0 inline-flex items-center justify-center text-[color:var(--muted)]">
+            <SquareTerminal size={12} />
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "absolute right-0 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
+              isSelected && "opacity-0",
+            )}
+            aria-hidden="true"
+          >
+            {age}
+          </span>
+        )}
         <button
           type="button"
           className={cn(
