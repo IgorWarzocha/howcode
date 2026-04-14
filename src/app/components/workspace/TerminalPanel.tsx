@@ -14,7 +14,6 @@ import {
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { PiLogoMark } from "../common/PiLogoMark";
-import { SurfacePanel } from "../common/SurfacePanel";
 import { ToolbarButton } from "../common/ToolbarButton";
 import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSelector";
 import { getGitOpsEntryButtonClass } from "./composer/git-ops";
@@ -55,23 +54,20 @@ export function TerminalPanel({
 
   if (mode === "takeover") {
     return (
-      <SurfacePanel
+      <div
         ref={panelRef}
         aria-label="Pi terminal panel"
-        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto_auto] gap-0 overflow-hidden border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-[color:var(--terminal-bg)]"
         {...getFeatureStatusDataAttributes(statusId)}
       >
-        <div className="min-h-0 px-4 pt-4 pb-3">
-          <TerminalViewport
-            projectId={projectId}
-            sessionPath={sessionPath}
-            launchMode="pi-session"
-            keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
-            className="min-h-0 rounded-[16px] bg-[color:var(--terminal-bg)]"
-          />
-        </div>
-        <div className="h-px bg-[rgba(169,178,215,0.07)]" />
-        <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+        <TerminalViewport
+          projectId={projectId}
+          sessionPath={sessionPath}
+          launchMode="pi-session"
+          keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
+          className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--terminal-bg)]"
+        />
+        <div className="flex items-center gap-1.5 bg-[rgba(31,34,48,0.94)] px-4 pt-2 pb-3 text-[color:var(--muted)] backdrop-blur-[18px] max-md:flex-wrap">
           <ToolbarButton
             label="Desktop"
             icon={<PiLogoMark className="h-[14px] w-[14px]" />}
@@ -114,7 +110,7 @@ export function TerminalPanel({
             </button>
           </div>
         </div>
-      </SurfacePanel>
+      </div>
     );
   }
 

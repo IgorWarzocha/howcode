@@ -33,7 +33,7 @@ export function AppShellOverlays({
       {takeoverPresent ? (
         <div
           data-open={takeoverVisible ? "true" : "false"}
-          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)] px-5 pt-1.5 pb-4"
+          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--terminal-bg)] px-5 pb-4"
         >
           <div className={`${workspaceContentClass} h-full min-h-0`}>
             <TerminalPanel
