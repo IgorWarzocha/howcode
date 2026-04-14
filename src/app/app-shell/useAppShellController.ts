@@ -392,6 +392,14 @@ export function useAppShellController() {
     });
   };
 
+  const handleOpenTerminalDrawerFromTakeover = () => {
+    dispatch({ type: "set-terminal-visible", visible: true });
+    void closeTakeover({
+      preserveSessionOverride: true,
+      refreshThread: false,
+    });
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -428,6 +436,7 @@ export function useAppShellController() {
     handleThreadOpen,
     handleShowTakeoverTerminal,
     handleReturnToDesktopFromTakeover,
+    handleOpenTerminalDrawerFromTakeover,
     handleOpenGitOpsView,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),

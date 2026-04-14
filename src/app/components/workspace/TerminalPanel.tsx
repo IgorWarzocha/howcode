@@ -19,6 +19,7 @@ type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
+  onOpenDrawerTerminal?: () => void;
   onOpenGitOps?: () => void;
   mode?: "drawer" | "takeover";
   projectGitState?: ProjectGitState | null;
@@ -30,6 +31,7 @@ export function TerminalPanel({
   projectId,
   sessionPath,
   onClose,
+  onOpenDrawerTerminal,
   onOpenGitOps,
   mode = "drawer",
   projectGitState = null,
@@ -67,6 +69,11 @@ export function TerminalPanel({
               label="Desktop"
               icon={<PiLogoMark className="h-[14px] w-[14px]" />}
               onClick={onClose}
+            />
+            <ToolbarButton
+              label="Terminal"
+              icon={<SquareTerminal size={14} />}
+              onClick={onOpenDrawerTerminal}
             />
             <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
               {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
