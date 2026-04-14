@@ -70,14 +70,19 @@ export function ThreadRow({
 
       <span className="relative inline-flex h-4 w-7 shrink-0 items-center justify-end text-[color:var(--muted-2)]">
         {terminalRunning ? (
-          <span className="absolute right-0 inline-flex items-center justify-center text-[color:var(--muted)]">
+          <span
+            className={cn(
+              "absolute right-0 inline-flex items-center justify-center text-[color:var(--muted)] transition-opacity duration-150 ease-out",
+              isSelected && "group-hover:opacity-0 group-focus-within:opacity-0",
+            )}
+          >
             <SquareTerminal size={12} />
           </span>
         ) : (
           <span
             className={cn(
-              "absolute right-0 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
-              isSelected && "opacity-0",
+              "absolute right-0 transition-opacity duration-150 ease-out",
+              isSelected && "group-hover:opacity-0 group-focus-within:opacity-0",
             )}
             aria-hidden="true"
           >
@@ -88,8 +93,8 @@ export function ThreadRow({
           type="button"
           className={cn(
             compactIconButtonClass,
-            "absolute right-0 h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
-            isSelected && "opacity-100",
+            "absolute right-0 h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent",
+            isSelected && "group-hover:opacity-100 group-focus-within:opacity-100",
           )}
           onClick={onArchive}
           aria-label="Archive thread"
