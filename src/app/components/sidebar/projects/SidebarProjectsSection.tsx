@@ -8,7 +8,6 @@ import { cn } from "../../../utils/cn";
 import { IconButton } from "../../common/IconButton";
 import { ProjectTree } from "../ProjectTree";
 import { SidebarProjectsCreatePopover } from "./SidebarProjectsCreatePopover";
-import { SidebarProjectsPlaceholder } from "./SidebarProjectsPlaceholder";
 import {
   type SidebarProjectsFilterMode,
   getSidebarVisibleProjects,
@@ -144,6 +143,10 @@ export function SidebarProjectsSection({
     }
   };
 
+  if (!showProjects) {
+    return <section className="flex min-h-0 flex-1" aria-hidden="true" />;
+  }
+
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-2.5">
       <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
@@ -223,33 +226,29 @@ export function SidebarProjectsSection({
         ) : null}
       </div>
 
-      {showProjects ? (
-        visibleProjects.length > 0 ? (
-          <ProjectTree
-            projects={visibleProjects}
-            selectedProjectId={selectedProjectId}
-            selectedThreadId={selectedThreadId}
-            activeView={activeView}
-            selectionModeActive={selectionModeActive}
-            collapsedProjectIds={effectiveCollapsedProjectIds}
-            onAction={onAction}
-            onProjectSelect={onProjectSelect}
-            onProjectReorder={onProjectReorder}
-            onThreadOpen={onThreadOpen}
-            onToggleProjectCollapse={onToggleProjectCollapse}
-          />
-        ) : (
-          <div
-            className={cn(
-              "px-2.5 py-2 text-[13px] text-[color:var(--muted-2)]",
-              searchQuery.trim().length > 0 || filterMode !== "all" ? "" : "hidden",
-            )}
-          >
-            No matching projects
-          </div>
-        )
+      {visibleProjects.length > 0 ? (
+        <ProjectTree
+          projects={visibleProjects}
+          selectedProjectId={selectedProjectId}
+          selectedThreadId={selectedThreadId}
+          activeView={activeView}
+          selectionModeActive={selectionModeActive}
+          collapsedProjectIds={effectiveCollapsedProjectIds}
+          onAction={onAction}
+          onProjectSelect={onProjectSelect}
+          onProjectReorder={onProjectReorder}
+          onThreadOpen={onThreadOpen}
+          onToggleProjectCollapse={onToggleProjectCollapse}
+        />
       ) : (
-        <SidebarProjectsPlaceholder />
+        <div
+          className={cn(
+            "px-2.5 py-2 text-[13px] text-[color:var(--muted-2)]",
+            searchQuery.trim().length > 0 || filterMode !== "all" ? "" : "hidden",
+          )}
+        >
+          No matching projects
+        </div>
       )}
     </section>
   );

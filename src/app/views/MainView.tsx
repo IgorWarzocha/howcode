@@ -19,9 +19,7 @@ export function MainView({ activeView }: MainViewProps) {
     <ViewShell maxWidthClassName="max-w-[760px]">
       <ViewHeader title={content.title} subtitle={content.subtitle} />
 
-      <section className="grid gap-4 rounded-[18px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-4">
-        <MarkdownContent markdown={content.markdown} className="gap-3 text-[15px]" />
-      </section>
+      <MarkdownContent markdown={content.markdown} className="gap-3 text-[15px]" />
     </ViewShell>
   );
 }
