@@ -131,6 +131,8 @@ export function TerminalViewport({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const pendingEventsRef = useRef<TerminalEvent[]>([]);
+  const replayingBufferedEventsRef = useRef(false);
   const resizeFrameRef = useRef<number | null>(null);
   const lastSizeRef = useRef<{ width: number; height: number; cols: number; rows: number } | null>(
     null,
@@ -175,6 +177,51 @@ export function TerminalViewport({
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
+
+    const applyTerminalEvent = (event: TerminalEvent) => {
+      switch (event.type) {
+        case "output":
+          terminal.write(event.data);
+          break;
+        case "error":
+          writeSystemMessage(terminal, event.message);
+          break;
+        case "exited":
+          writeSystemMessage(
+            terminal,
+            `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
+          );
+          break;
+        case "cleared":
+          terminal.clear();
+          break;
+        case "started":
+        case "restarted":
+          terminal.clear();
+          if (event.snapshot.history) {
+            terminal.write(event.snapshot.history);
+          }
+          break;
+      }
+    };
+
+    const replayBufferedEvents = (sessionId: string) => {
+      replayingBufferedEventsRef.current = true;
+
+      while (pendingEventsRef.current.length > 0) {
+        const pendingEvents = pendingEventsRef.current.splice(0, pendingEventsRef.current.length);
+
+        for (const event of pendingEvents) {
+          if (event.sessionId !== sessionId) {
+            continue;
+          }
+
+          applyTerminalEvent(event);
+        }
+      }
+
+      replayingBufferedEventsRef.current = false;
+    };
 
     const linkDisposable = terminal.registerLinkProvider({
       provideLinks: (bufferLineNumber, callback) => {
@@ -231,34 +278,18 @@ export function TerminalViewport({
     });
 
     const unsubscribe = subscribeDesktopTerminal((event: TerminalEvent) => {
-      if (event.sessionId !== sessionIdRef.current) {
+      const sessionId = sessionIdRef.current;
+
+      if (!sessionId || replayingBufferedEventsRef.current) {
+        pendingEventsRef.current.push(event);
         return;
       }
 
-      switch (event.type) {
-        case "output":
-          terminal.write(event.data);
-          break;
-        case "error":
-          writeSystemMessage(terminal, event.message);
-          break;
-        case "exited":
-          writeSystemMessage(
-            terminal,
-            `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
-          );
-          break;
-        case "cleared":
-          terminal.clear();
-          break;
-        case "started":
-        case "restarted":
-          terminal.clear();
-          if (event.snapshot.history) {
-            terminal.write(event.snapshot.history);
-          }
-          break;
+      if (event.sessionId !== sessionId) {
+        return;
       }
+
+      applyTerminalEvent(event);
     });
 
     const themeObserver = new MutationObserver(() => {
@@ -351,6 +382,8 @@ export function TerminalViewport({
           `Process exited${snapshot.exitCode !== null ? ` (${snapshot.exitCode})` : ""}.`,
         );
       }
+
+      replayBufferedEvents(snapshot.sessionId);
     };
 
     void openSession().catch((error) => {
@@ -364,6 +397,8 @@ export function TerminalViewport({
       cancelled = true;
       const sessionId = sessionIdRef.current;
       sessionIdRef.current = null;
+      pendingEventsRef.current = [];
+      replayingBufferedEventsRef.current = false;
       resizeObserver.disconnect();
       if (resizeFrameRef.current !== null) {
         cancelAnimationFrame(resizeFrameRef.current);
