@@ -201,10 +201,7 @@ export function ComposerPromptSurface({
           label="Terminal"
           icon={<Terminal size={14} />}
           onClick={onToggleTerminal}
-          className={cn(
-            getFeatureStatusButtonClass("feature:composer.terminal-toggle"),
-            terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-          )}
+          className={cn(terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]")}
         />
         <div className="relative">
           <ToolbarButton
