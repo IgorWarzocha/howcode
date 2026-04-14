@@ -25,11 +25,7 @@ export function AppShellOverlays({
   onOpenGitOps,
   onSetDiffBaseline,
 }: AppShellOverlaysProps) {
-  const {
-    handleReturnToDesktopFromTakeover,
-    handleOpenTerminalDrawerFromTakeover,
-    projectGitState,
-  } = controller;
+  const { handleReturnToDesktopFromTakeover, projectGitState } = controller;
 
   return (
     <>
@@ -43,7 +39,6 @@ export function AppShellOverlays({
               projectId={composerProjectId}
               sessionPath={terminalSessionPath}
               onClose={handleReturnToDesktopFromTakeover}
-              onOpenDrawerTerminal={handleOpenTerminalDrawerFromTakeover}
               onOpenGitOps={onOpenGitOps}
               mode="takeover"
               projectGitState={projectGitState}
