@@ -19,12 +19,12 @@ const comingSoonViewContent: Record<ComingSoonView, ComingSoonViewContent> = {
   },
   claw: {
     title: "Claw roadmap",
-    subtitle: "Coming soon. This surface will grow into the automation and workflow lane.",
+    subtitle: "Coming soon. This surface will grow into an OpenClaw-style personal assistant lane.",
     markdown: clawRoadmapMarkdown,
   },
   work: {
     title: "Work roadmap",
-    subtitle: "Coming soon. This surface will become the deeper workspace and inspection lane.",
+    subtitle: "Coming soon. This surface will become a Claude Cowork-style knowledge work lane.",
     markdown: workRoadmapMarkdown,
   },
 };
