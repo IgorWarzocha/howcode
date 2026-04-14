@@ -59,7 +59,6 @@ export function CodeWorkspaceView({
     handleAction,
     handleLoadEarlierMessages,
     handleOpenDiffSelection,
-    handleOpenGitOpsSurface,
     handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
     handleToggleDiff,
@@ -265,7 +264,6 @@ export function CodeWorkspaceView({
                 onPickAttachments={pickComposerAttachments}
                 onListAttachmentEntries={listComposerAttachmentEntries}
                 onAction={handleAction}
-                onOpenGitOpsSurface={handleOpenGitOpsSurface}
                 onSetSurface={onSetComposerSurface}
               />
             </div>

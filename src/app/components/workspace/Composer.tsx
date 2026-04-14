@@ -51,7 +51,6 @@ export type ComposerProps = {
     rootPath?: string | null;
   }) => Promise<ComposerFilePickerState | null>;
   onAction: DesktopActionInvoker;
-  onOpenGitOpsSurface: () => void;
   onSetSurface: (surface: ComposerSurface) => void;
 };
 
@@ -104,7 +103,7 @@ export function Composer(props: ComposerProps) {
         <ComposerPromptSurface
           {...props}
           composerPanelRef={composerPanelRef}
-          onOpenGitOps={props.onOpenGitOpsSurface}
+          onOpenGitOps={() => props.onSetSurface("git-ops")}
         />
       )}
     </SurfacePanel>
