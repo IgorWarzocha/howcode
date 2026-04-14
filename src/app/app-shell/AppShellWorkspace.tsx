@@ -24,13 +24,13 @@ export function AppShellWorkspace({
   terminalSessionPath,
   workspaceContentClass,
 }: AppShellWorkspaceProps) {
-  const { handleAction, state } = controller;
+  const { state } = controller;
 
   if (state.activeView === "chat" || state.activeView === "claw" || state.activeView === "work") {
     return (
       <div className="relative min-h-0 flex-1 px-5 pt-1.5">
         <main className={mainPanelClass}>
-          <MainView activeView={state.activeView} onAction={handleAction} />
+          <MainView activeView={state.activeView} />
         </main>
       </div>
     );
