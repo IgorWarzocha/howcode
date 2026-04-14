@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
+import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
 import type { ProjectDiffBaseline } from "../desktop/types";
+import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
 import { useAppShellLayoutState } from "./useAppShellLayoutState";
+
+const TERMINAL_DRAWER_WIDTH = "min(28rem, calc(100% - 2.5rem))";
 
 type AppShellLayoutProps = {
   controller: AppShellController;
@@ -55,7 +59,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       ? state.selectedSessionPath
       : null;
   const takeoverVisible = state.takeoverVisible;
-  const terminalDrawerVisible = state.terminalVisible;
+  const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId
       ? diffBaselineState.baseline
@@ -177,6 +182,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               diffBaseline={diffBaseline}
               takeoverPresent={takeoverPresent}
               takeoverVisible={takeoverVisible}
+              terminalDrawerVisible={terminalDrawerVisible}
               terminalSessionPath={terminalSessionPath}
               workspaceContentClass={workspaceContentClass}
               onOpenGitOps={async () => {
@@ -193,6 +199,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 });
               }}
             />
+
+            {terminalDrawerPresent ? (
+              <div
+                className="pointer-events-none absolute inset-y-0 right-0 z-20"
+                style={{ width: TERMINAL_DRAWER_WIDTH }}
+              >
+                <div
+                  data-open={terminalDrawerVisible ? "true" : "false"}
+                  className={`motion-terminal-drawer h-full ${terminalDrawerVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+                >
+                  <TerminalPanel
+                    projectId={composerProjectId}
+                    sessionPath={terminalSessionPath}
+                    onClose={controller.handleToggleTerminal}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>

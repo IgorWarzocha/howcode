@@ -1,11 +1,11 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const DEFAULT_EXIT_MS = 180;
 
 export function useAnimatedPresence(open: boolean, exitMs = DEFAULT_EXIT_MS) {
   const [present, setPresent] = useState(open);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (open) {
       setPresent(true);
       return;
@@ -15,5 +15,5 @@ export function useAnimatedPresence(open: boolean, exitMs = DEFAULT_EXIT_MS) {
     return () => window.clearTimeout(timeoutId);
   }, [exitMs, open]);
 
-  return present;
+  return open || present;
 }

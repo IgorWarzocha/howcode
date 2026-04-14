@@ -3,7 +3,6 @@ import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
-import { TerminalPanel } from "../../components/workspace/TerminalPanel";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
   type SavedDiffComment,
@@ -11,7 +10,6 @@ import {
   getDiffCommentContextId,
 } from "../../components/workspace/diff/diffCommentStore";
 import type { ProjectDiffBaseline } from "../../desktop/types";
-import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 
@@ -29,9 +27,8 @@ type CodeWorkspaceViewProps = {
 };
 
 const WORKSPACE_FOOTER_OVERLAP_PX = 20;
-const TERMINAL_DRAWER_WIDTH = "min(28rem, calc(100% - 2.5rem))";
-const TERMINAL_DRAWER_OFFSET = TERMINAL_DRAWER_WIDTH;
-const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_WIDTH} + 1.25rem)`;
+const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
+const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
 
 export function CodeWorkspaceView({
   controller,
@@ -73,9 +70,7 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
-  const desktopTerminalDrawerMounted = state.activeView === "thread" && terminalDrawerVisible;
-  const showDesktopTerminalDrawer = desktopTerminalDrawerMounted && !state.takeoverVisible;
-  const terminalDrawerPresent = useAnimatedPresence(desktopTerminalDrawerMounted);
+  const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -160,10 +155,17 @@ export function CodeWorkspaceView({
     }
   };
 
+  const terminalDrawerPaddingStyle = showDesktopTerminalDrawer
+    ? { paddingRight: TERMINAL_DRAWER_OFFSET }
+    : undefined;
+  const terminalDrawerFooterPaddingStyle = showDesktopTerminalDrawer
+    ? { paddingRight: TERMINAL_DRAWER_FOOTER_OFFSET }
+    : undefined;
+
   return (
     <div
-      className="relative min-h-0 flex-1 overflow-hidden transition-[padding-right] duration-150 ease-out"
-      style={showDesktopTerminalDrawer ? { paddingRight: TERMINAL_DRAWER_OFFSET } : undefined}
+      className="motion-terminal-drawer-offset relative min-h-0 flex-1 overflow-hidden"
+      style={terminalDrawerPaddingStyle}
     >
       <div
         className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
@@ -226,10 +228,8 @@ export function CodeWorkspaceView({
 
       {showWorkspaceFooter ? (
         <footer
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4 transition-[padding-right] duration-150 ease-out"
-          style={
-            showDesktopTerminalDrawer ? { paddingRight: TERMINAL_DRAWER_FOOTER_OFFSET } : undefined
-          }
+          className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
+          style={terminalDrawerFooterPaddingStyle}
         >
           <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
@@ -298,24 +298,6 @@ export function CodeWorkspaceView({
             </div>
           </div>
         </footer>
-      ) : null}
-
-      {terminalDrawerPresent ? (
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-20"
-          style={{ width: TERMINAL_DRAWER_WIDTH }}
-        >
-          <div
-            data-open={showDesktopTerminalDrawer ? "true" : "false"}
-            className={`motion-terminal-drawer h-full ${showDesktopTerminalDrawer ? "pointer-events-auto" : "pointer-events-none"}`}
-          >
-            <TerminalPanel
-              projectId={composerProjectId}
-              sessionPath={terminalSessionPath}
-              onClose={handleToggleTerminal}
-            />
-          </div>
-        </div>
       ) : null}
     </div>
   );
