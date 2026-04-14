@@ -198,12 +198,7 @@ export function ComposerPromptSurface({
           onClick={onOpenTakeoverTerminal}
         />
         <ToolbarButton
-          label={
-            <span className="inline-flex items-center gap-2">
-              <span>Terminal</span>
-              <FeatureStatusBadge statusId="feature:composer.terminal-toggle" />
-            </span>
-          }
+          label="Terminal"
           icon={<Terminal size={14} />}
           onClick={onToggleTerminal}
           className={cn(
