@@ -346,7 +346,7 @@ export function useAppShellController() {
     }
   };
 
-  const handleOpenDockedTerminalFromTakeover = () => {
+  const handleOpenTerminalDrawerFromTakeover = () => {
     dispatch({ type: "set-terminal-visible", visible: true });
     void closeTakeover();
   };
@@ -386,7 +386,7 @@ export function useAppShellController() {
     handleSelectInboxThread,
     handleThreadOpen,
     handleShowTakeoverTerminal,
-    handleOpenDockedTerminalFromTakeover,
+    handleOpenTerminalDrawerFromTakeover,
     handleOpenGitOpsView,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),

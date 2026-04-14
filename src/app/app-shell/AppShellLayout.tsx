@@ -55,7 +55,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       ? state.selectedSessionPath
       : null;
   const takeoverVisible = state.takeoverVisible;
-  const dockedTerminalVisible = state.terminalVisible;
+  const terminalDrawerVisible = state.terminalVisible;
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId
       ? diffBaselineState.baseline
@@ -157,7 +157,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   composerProjectId={composerProjectId}
                   currentProjectName={currentProjectName}
                   diffBaseline={diffBaseline}
-                  dockedTerminalVisible={dockedTerminalVisible}
+                  terminalDrawerVisible={terminalDrawerVisible}
                   terminalSessionPath={terminalSessionPath}
                   workspaceContentClass={workspaceContentClass}
                   onSetDiffBaseline={(baseline) => {

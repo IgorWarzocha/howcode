@@ -96,6 +96,47 @@ describe("workspace state", () => {
     expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
 
+  it("hides the terminal while git ops is open and restores it on return", () => {
+    const gitOpsState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        terminalVisible: true,
+      },
+      {
+        type: "open-gitops",
+        checkpointTurnCount: null,
+      },
+    );
+    const restoredState = workspaceReducer(gitOpsState, { type: "close-gitops" });
+
+    expect(gitOpsState.activeView).toBe("gitops");
+    expect(gitOpsState.terminalVisible).toBe(false);
+    expect(gitOpsState.restoreTerminalVisibleOnGitOpsClose).toBe(true);
+    expect(restoredState.activeView).toBe("thread");
+    expect(restoredState.terminalVisible).toBe(true);
+    expect(restoredState.restoreTerminalVisibleOnGitOpsClose).toBe(false);
+  });
+
+  it("restores the terminal when leaving git ops straight back to thread view", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "gitops",
+        terminalVisible: false,
+        restoreTerminalVisibleOnGitOpsClose: true,
+      },
+      {
+        type: "show-view",
+        view: "thread",
+      },
+    );
+
+    expect(nextState.activeView).toBe("thread");
+    expect(nextState.terminalVisible).toBe(true);
+    expect(nextState.restoreTerminalVisibleOnGitOpsClose).toBe(false);
+  });
+
   it("can swap the selected project without leaving a non-code view", () => {
     const nextState = workspaceReducer(
       {
@@ -199,21 +240,21 @@ describe("workspace state", () => {
     expect(nextState.takeoverVisible).toBe(false);
   });
 
-  it("can explicitly control docked terminal and takeover visibility", () => {
+  it("can explicitly control terminal drawer and takeover visibility", () => {
     const state = createInitialWorkspaceState(mockProjects);
-    const withDockedTerminal = workspaceReducer(state, {
+    const withTerminalDrawer = workspaceReducer(state, {
       type: "set-terminal-visible",
       visible: true,
     });
     const withoutTakeover = workspaceReducer(
       {
-        ...withDockedTerminal,
+        ...withTerminalDrawer,
         takeoverVisible: true,
       },
       { type: "set-takeover-visible", visible: false },
     );
 
-    expect(withDockedTerminal.terminalVisible).toBe(true);
+    expect(withTerminalDrawer.terminalVisible).toBe(true);
     expect(withoutTakeover.takeoverVisible).toBe(false);
   });
 

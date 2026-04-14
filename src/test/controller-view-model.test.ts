@@ -28,6 +28,7 @@ describe("deriveControllerViewModel", () => {
         selectedThreadId: "thread-1",
         selectedSessionPath: "/repo/session.json",
         terminalVisible: false,
+        restoreTerminalVisibleOnGitOpsClose: false,
         takeoverVisible: false,
         takeoverOverrides: {},
         gitOpsReturnView: "code",

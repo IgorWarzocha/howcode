@@ -90,6 +90,18 @@
   transform: translateY(0);
 }
 
+.motion-terminal-drawer {
+  opacity: 0;
+  transform: translateX(18px);
+  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
+    var(--motion-duration-standard) var(--motion-ease-standard);
+}
+
+.motion-terminal-drawer[data-open="true"] {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 .motion-desktop-workspace,
 .motion-takeover-panel {
   transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
@@ -120,6 +132,7 @@
   .motion-collapse-panel,
   .motion-popover,
   .motion-overlay-panel,
+  .motion-terminal-drawer,
   .motion-desktop-workspace,
   .motion-takeover-panel {
     transition: none;

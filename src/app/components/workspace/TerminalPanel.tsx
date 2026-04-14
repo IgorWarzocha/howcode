@@ -25,9 +25,9 @@ type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
-  onOpenDockedTerminal?: () => void;
+  onOpenDrawerTerminal?: () => void;
   onOpenGitOps?: () => void;
-  mode?: "docked" | "takeover";
+  mode?: "drawer" | "takeover";
   projectGitState?: ProjectGitState | null;
   diffBaseline?: ProjectDiffBaseline;
   onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
@@ -37,9 +37,9 @@ export function TerminalPanel({
   projectId,
   sessionPath,
   onClose,
-  onOpenDockedTerminal,
+  onOpenDrawerTerminal,
   onOpenGitOps,
-  mode = "docked",
+  mode = "drawer",
   projectGitState = null,
   diffBaseline,
   onSetDiffBaseline,
@@ -79,7 +79,7 @@ export function TerminalPanel({
             <ToolbarButton
               label="Terminal"
               icon={<SquareTerminal size={14} />}
-              onClick={onOpenDockedTerminal}
+              onClick={onOpenDrawerTerminal}
             />
             <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
               {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
@@ -118,19 +118,31 @@ export function TerminalPanel({
     );
   }
 
-  const panelClass = cn(panelChromeClass, "flex h-full min-h-0 flex-col gap-2.5 p-3");
-
   return (
     <section
-      aria-label="Terminal panel"
-      className={panelClass}
+      aria-label="Terminal drawer"
+      className={cn(
+        panelChromeClass,
+        "flex h-full min-h-0 flex-col overflow-hidden bg-[rgba(34,37,50,0.94)]",
+      )}
       {...getFeatureStatusDataAttributes(statusId)}
     >
-      <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2 text-[12px] text-[color:var(--muted)]">
-          <SquareTerminal size={14} />
-          <span className="font-medium text-[color:var(--text)]/90">Terminal</span>
-          <FeatureStatusBadge statusId={statusId} />
+      <div className="flex items-start justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-[13px] text-[color:var(--muted)]">
+            <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)]">
+              <SquareTerminal size={15} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[color:var(--text)]">Terminal</span>
+                <FeatureStatusBadge statusId={statusId} />
+              </div>
+              {sessionPath ? (
+                <p className="truncate text-[11px] text-[color:var(--muted)]">{sessionPath}</p>
+              ) : null}
+            </div>
+          </div>
         </div>
         <button
           type="button"
@@ -142,14 +154,16 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl bg-[color:var(--terminal-bg)]">
-        <TerminalViewport
-          projectId={projectId}
-          sessionPath={sessionPath}
-          launchMode="shell"
-          preserveSessionOnUnmount
-          className="bg-[color:var(--terminal-bg)]"
-        />
+      <div className="flex min-h-0 min-w-0 flex-1 p-3 pt-3">
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[16px] border border-[rgba(137,146,183,0.08)] bg-[color:var(--terminal-bg)]">
+          <TerminalViewport
+            projectId={projectId}
+            sessionPath={sessionPath}
+            launchMode="shell"
+            preserveSessionOnUnmount
+            className="h-full rounded-none bg-[color:var(--terminal-bg)]"
+          />
+        </div>
       </div>
     </section>
   );

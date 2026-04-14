@@ -11,7 +11,7 @@ type AppShellWorkspaceProps = {
   composerProjectId: string;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
-  dockedTerminalVisible: boolean;
+  terminalDrawerVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
@@ -24,7 +24,7 @@ export function AppShellWorkspace({
   composerProjectId,
   currentProjectName,
   diffBaseline,
-  dockedTerminalVisible,
+  terminalDrawerVisible,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
@@ -49,7 +49,7 @@ export function AppShellWorkspace({
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}
       diffBaseline={diffBaseline}
-      dockedTerminalVisible={dockedTerminalVisible}
+      terminalDrawerVisible={terminalDrawerVisible}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
