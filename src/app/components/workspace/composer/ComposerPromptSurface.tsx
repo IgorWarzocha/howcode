@@ -252,6 +252,15 @@ export function ComposerPromptSurface({
           ) : null}
         </div>
         <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
+            onClick={onOpenGitOps}
+            aria-label="Open git ops"
+            title="Open git ops"
+          >
+            <GitBranch size={14} />
+          </button>
           {projectGitState?.isGitRepo ? (
             <div
               className={cn(
@@ -273,15 +282,6 @@ export function ComposerPromptSurface({
               onSelectBaseline={onSetDiffBaseline}
             />
           ) : null}
-          <button
-            type="button"
-            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
-            onClick={onOpenGitOps}
-            aria-label="Open git ops"
-            title="Open git ops"
-          >
-            <GitBranch size={14} />
-          </button>
         </div>
       </div>
     </div>
