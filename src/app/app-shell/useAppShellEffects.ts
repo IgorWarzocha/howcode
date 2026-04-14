@@ -115,11 +115,13 @@ export function useAppShellEffects({
       return;
     }
 
-    if (lastAppliedThreadPreferenceKeyRef.current === visibleThreadKey) {
+    const visibleThreadPreferenceKey = `${visibleThreadKey}:${shellAppSettings?.piTuiTakeover ?? false}`;
+
+    if (lastAppliedThreadPreferenceKeyRef.current === visibleThreadPreferenceKey) {
       return;
     }
 
-    lastAppliedThreadPreferenceKeyRef.current = visibleThreadKey;
+    lastAppliedThreadPreferenceKeyRef.current = visibleThreadPreferenceKey;
     dispatch({
       type: "set-takeover-visible",
       visible: shellAppSettings?.piTuiTakeover ?? false,
