@@ -366,7 +366,6 @@ export type ThreadData = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
-  turnDiffSummaries: TurnDiffSummary[];
 };
 
 export type DesktopEvent =

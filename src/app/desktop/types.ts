@@ -38,10 +38,6 @@ export type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
-  TurnDiffFile,
-  TurnDiffResult,
-  TurnDiffSummary,
-  TurnDiffStatus,
 } from "../../../shared/desktop-contracts.js";
 
 export type {

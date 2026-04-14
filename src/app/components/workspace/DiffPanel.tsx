@@ -10,6 +10,7 @@ type DiffPanelProps = {
   selectedCommentId: string | null;
   selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
+  bottomInset?: number;
   layoutMode?: "split" | "overlay" | "main";
 };
 
@@ -21,6 +22,7 @@ export function DiffPanel({
   selectedCommentId,
   selectedCommentJumpKey,
   diffRenderMode,
+  bottomInset = 0,
   layoutMode = "split",
 }: DiffPanelProps) {
   return (
@@ -33,6 +35,7 @@ export function DiffPanel({
         selectedCommentId={selectedCommentId}
         selectedCommentJumpKey={selectedCommentJumpKey}
         diffRenderMode={diffRenderMode}
+        bottomInset={bottomInset}
         layoutMode={layoutMode}
       />
     </DiffWorkerPoolProvider>

@@ -1,5 +1,5 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ThreadData, TurnDiffSummary } from "./desktop-contracts";
+import type { ThreadData } from "./desktop-contracts";
 import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from "./pi-message-mapper";
 
 type BuildThreadDataInput = {
@@ -7,7 +7,6 @@ type BuildThreadDataInput = {
   sourceMessages: readonly AgentMessage[];
   previousMessageCount: number;
   isStreaming: boolean;
-  turnDiffSummaries: TurnDiffSummary[];
 };
 
 export function buildThreadData({
@@ -15,7 +14,6 @@ export function buildThreadData({
   sourceMessages,
   previousMessageCount,
   isStreaming,
-  turnDiffSummaries,
 }: BuildThreadDataInput): ThreadData {
   const messages = mapAgentMessagesToUiMessages([...sourceMessages]);
 
@@ -25,6 +23,5 @@ export function buildThreadData({
     messages,
     previousMessageCount,
     isStreaming,
-    turnDiffSummaries,
   };
 }

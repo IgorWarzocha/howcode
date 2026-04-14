@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
@@ -12,9 +11,8 @@ type ThreadTimelineProps = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
-  turnDiffSummaries: TurnDiffSummary[];
   composerLayoutVersion: number;
-  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
+  bottomInset: number;
   onLoadEarlierMessages: () => void;
 };
 
@@ -22,12 +20,10 @@ export function ThreadTimeline({
   messages,
   previousMessageCount,
   isStreaming,
-  turnDiffSummaries,
   composerLayoutVersion,
-  onOpenTurnDiff,
+  bottomInset,
   onLoadEarlierMessages,
 }: ThreadTimelineProps) {
-  const [expandedDiffTrees, setExpandedDiffTrees] = useState<Record<number, boolean>>({});
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,8 +32,8 @@ export function ThreadTimeline({
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
 
   const rows = useMemo<TimelineRow[]>(
-    () => buildTimelineRows({ messages, previousMessageCount, turnDiffSummaries }),
-    [messages, previousMessageCount, turnDiffSummaries],
+    () => buildTimelineRows({ messages, previousMessageCount }),
+    [messages, previousMessageCount],
   );
 
   const {
@@ -57,9 +53,8 @@ export function ThreadTimeline({
         isStreaming,
         collapsedRowIds,
         expandedToolGroupIds,
-        expandedDiffTrees,
       }),
-    [collapsedRowIds, expandedDiffTrees, expandedToolGroupIds, isStreaming, messages, rows],
+    [collapsedRowIds, expandedToolGroupIds, isStreaming, messages, rows],
   );
 
   useEffect(() => {
@@ -183,14 +178,6 @@ export function ThreadTimeline({
     [streamingToolGroupId],
   );
 
-  const handleToggleDiffTree = useCallback((checkpointTurnCount: number) => {
-    shouldStickToBottomRef.current = false;
-    setExpandedDiffTrees((current) => ({
-      ...current,
-      [checkpointTurnCount]: current[checkpointTurnCount] === false,
-    }));
-  }, []);
-
   const handleJumpToEarlierMessages = useCallback(() => {
     const container = containerRef.current;
     if (container) {
@@ -213,26 +200,20 @@ export function ThreadTimeline({
           streamingAssistantMessageId={streamingAssistantMessageId}
           streamingToolGroupId={streamingToolGroupId}
           expandedToolGroupIds={expandedToolGroupIds}
-          expandedDiffTrees={expandedDiffTrees}
           onToggleRowCollapse={handleToggleRowCollapse}
           onToggleToolCallExpansion={handleToggleToolCallExpansion}
           onToggleToolGroupExpansion={handleToggleToolGroupExpansion}
-          onToggleDiffTree={handleToggleDiffTree}
-          onOpenTurnDiff={onOpenTurnDiff}
           onJumpToEarlierMessages={handleJumpToEarlierMessages}
         />
       </div>
     ),
     [
       effectiveCollapsedRowIds,
-      expandedDiffTrees,
       expandedToolGroupIds,
       handleJumpToEarlierMessages,
-      handleToggleDiffTree,
       handleToggleRowCollapse,
       handleToggleToolCallExpansion,
       handleToggleToolGroupExpansion,
-      onOpenTurnDiff,
       streamingAssistantMessageId,
       streamingToolGroupId,
     ],
@@ -241,7 +222,10 @@ export function ThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8">
+        <div
+          className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4"
+          style={{ paddingBottom: `${bottomInset + 32}px` }}
+        >
           {rows.map(renderRow)}
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>

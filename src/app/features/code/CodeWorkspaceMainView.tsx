@@ -34,10 +34,10 @@ type CodeWorkspaceMainViewProps = {
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
+  mainViewportBottomInset: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
-  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
   onSetSkillsProjectScopeActive: (active: boolean) => void;
@@ -56,10 +56,10 @@ export function CodeWorkspaceMainView({
   workspaceContentClass,
   threadData,
   composerLayoutVersion,
+  mainViewportBottomInset,
   onAction,
   onDismissInboxThread,
   onOpenThread,
-  onOpenTurnDiff,
   onLoadEarlierMessages,
   onSetExtensionsProjectScopeActive,
   onSetSkillsProjectScopeActive,
@@ -72,9 +72,8 @@ export function CodeWorkspaceMainView({
         messages={threadData?.messages ?? []}
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
-        turnDiffSummaries={threadData?.turnDiffSummaries ?? []}
         composerLayoutVersion={composerLayoutVersion}
-        onOpenTurnDiff={onOpenTurnDiff}
+        bottomInset={mainViewportBottomInset}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     );

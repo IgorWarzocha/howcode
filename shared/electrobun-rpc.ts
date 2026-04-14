@@ -7,7 +7,6 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
-  DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
   InboxThread,
@@ -27,7 +26,6 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "./desktop-contracts";
 import type {
   TerminalCloseRequest,
@@ -125,14 +123,6 @@ export type PiDesktopRpc = {
         response: ThreadData | null;
       };
       watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } };
-      getTurnDiff: {
-        params: { sessionPath: string; checkpointTurnCount: number };
-        response: TurnDiffResult | null;
-      };
-      getFullThreadDiff: {
-        params: { sessionPath: string };
-        response: TurnDiffResult | null;
-      };
       invokeAction: {
         params: { action: DesktopAction; payload?: AnyDesktopActionPayload };
         response: DesktopActionResult;

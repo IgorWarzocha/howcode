@@ -33,7 +33,6 @@ describe("deriveControllerViewModel", () => {
         takeoverVisible: false,
         takeoverOverrides: {},
         gitOpsReturnView: "code",
-        selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         settingsOpen: false,
         settingsPanelOpen: false,
@@ -54,7 +53,6 @@ describe("deriveControllerViewModel", () => {
       messages: [],
       previousMessageCount: 0,
       isStreaming: false,
-      turnDiffSummaries: [],
     });
   });
 });

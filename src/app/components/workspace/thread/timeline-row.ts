@@ -1,4 +1,3 @@
-import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 
 export type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
@@ -13,7 +12,6 @@ export type TimelineTurnItem =
       kind: "message";
       id: string;
       message: Message;
-      turnSummary?: TurnDiffSummary;
     };
 
 export type TimelineRow =

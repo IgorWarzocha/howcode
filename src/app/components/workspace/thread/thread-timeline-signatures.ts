@@ -100,7 +100,7 @@ export function getRowStructureSignature(
         return `${row.id}:${row.messages.length}`;
       }
 
-      return `${row.id}:${row.turnSummary?.files.length ?? 0}`;
+      return `${row.id}:${row.message.id}`;
     })
     .join("||");
 }

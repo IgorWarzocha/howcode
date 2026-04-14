@@ -15,7 +15,6 @@ export type WorkspaceState = {
   takeoverVisible: boolean;
   takeoverOverrides: Record<string, boolean>;
   gitOpsReturnView: NonGitOpsView;
-  selectedDiffTurnCount: number | null;
   selectedDiffFilePath: string | null;
   settingsOpen: boolean;
   settingsPanelOpen: boolean;
@@ -32,7 +31,6 @@ export type WorkspaceAction =
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | {
       type: "open-gitops";
-      checkpointTurnCount: number | null;
       filePath?: string | null;
       returnView?: NonGitOpsView;
     }
@@ -43,7 +41,6 @@ export type WorkspaceAction =
   | { type: "hide-takeover" }
   | { type: "set-takeover-visible"; visible: boolean }
   | { type: "set-session-takeover-override"; sessionPath: string; visible: boolean | null }
-  | { type: "set-diff-turn"; checkpointTurnCount: number | null }
   | { type: "toggle-settings" }
   | { type: "set-settings-panel-open"; open: boolean }
   | { type: "set-archived-threads-open"; open: boolean }
@@ -133,7 +130,6 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     takeoverVisible: false,
     takeoverOverrides: {},
     gitOpsReturnView: "code",
-    selectedDiffTurnCount: null,
     selectedDiffFilePath: null,
     settingsOpen: false,
     settingsPanelOpen: false,
@@ -175,8 +171,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
         selectedSessionPath:
           hasSelectedProject || !state.selectedProjectId ? state.selectedSessionPath : null,
-        selectedDiffTurnCount:
-          hasSelectedProject || !state.selectedProjectId ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath:
           hasSelectedProject || !state.selectedProjectId ? state.selectedDiffFilePath : null,
         gitOpsReturnView:
@@ -191,7 +185,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: action.view,
         selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
-        selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
         takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
       };
@@ -209,7 +202,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedThreadId: null,
         selectedSessionPath: null,
         terminalVisible: false,
-        selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         takeoverVisible: false,
         gitOpsReturnView: "code",
@@ -250,7 +242,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           state.selectedSessionPath,
           action.sessionPath,
         ),
-        selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
         gitOpsReturnView: "thread",
         collapsedProjectIds: {
@@ -271,7 +262,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         takeoverVisible: false,
         gitOpsReturnView:
           action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
-        selectedDiffTurnCount: action.checkpointTurnCount,
         selectedDiffFilePath: action.filePath ?? null,
       };
     case "close-gitops":
@@ -281,7 +271,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: state.gitOpsReturnView,
         selectedThreadId: state.gitOpsReturnView === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: state.gitOpsReturnView === "thread" ? state.selectedSessionPath : null,
-        selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
       };
     case "toggle-terminal":
@@ -334,12 +323,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         },
       };
     }
-    case "set-diff-turn":
-      return {
-        ...state,
-        selectedDiffTurnCount: action.checkpointTurnCount,
-        selectedDiffFilePath: null,
-      };
     case "toggle-settings":
       return { ...state, settingsOpen: !state.settingsOpen };
     case "set-settings-panel-open":

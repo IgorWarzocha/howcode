@@ -33,7 +33,6 @@ function buildFallbackThreadData(
     messages: [],
     previousMessageCount: 0,
     isStreaming: false,
-    turnDiffSummaries: [],
   };
 }
 

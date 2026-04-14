@@ -30,6 +30,7 @@ type DiffPanelContentProps = {
   selectedCommentId: string | null;
   selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
+  bottomInset?: number;
   layoutMode?: "split" | "overlay" | "main";
 };
 
@@ -41,6 +42,7 @@ export function DiffPanelContent({
   selectedCommentId,
   selectedCommentJumpKey,
   diffRenderMode,
+  bottomInset = 0,
   layoutMode = "split",
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
@@ -187,6 +189,7 @@ export function DiffPanelContent({
               <div
                 ref={scrollContainerRef}
                 className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
+                style={bottomInset > 0 ? { paddingBottom: `${bottomInset}px` } : undefined}
               >
                 <DiffPanelFileList
                   collapsedFiles={collapsedFiles}
@@ -207,7 +210,10 @@ export function DiffPanelContent({
                 />
               </div>
             ) : (
-              <div className="h-full overflow-auto p-3">
+              <div
+                className="h-full overflow-auto p-3"
+                style={bottomInset > 0 ? { paddingBottom: `${bottomInset + 12}px` } : undefined}
+              >
                 <div className="space-y-2">
                   <p className="text-[11px] text-[color:var(--muted)]">{renderablePatch.reason}</p>
                   <pre className="max-h-[70vh] overflow-auto rounded-xl border border-[color:var(--border)] bg-[rgba(18,20,28,0.7)] p-3 font-mono text-[11px] leading-relaxed text-[color:var(--text)]/90">

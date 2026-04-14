@@ -1,4 +1,3 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type {
   ArchivedThread,
   InboxThread,
@@ -15,7 +14,6 @@ import {
   listArchivedThreads,
   listInboxThreads,
   listProjectThreads,
-  listTurnDiffSummaries,
   upsertInboxThreadPrompt,
 } from "../thread-state-db.cts";
 
@@ -87,7 +85,6 @@ export async function loadThreadSnapshot(
       sourceMessages: historySlice.sourceMessages,
       previousMessageCount: historySlice.previousMessageCount,
       isStreaming: false,
-      turnDiffSummaries: listTurnDiffSummaries(sessionPath),
     }),
   };
 }

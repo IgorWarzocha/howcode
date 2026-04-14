@@ -55,14 +55,12 @@ export function buildThreadTimelineState({
   isStreaming,
   collapsedRowIds,
   expandedToolGroupIds,
-  expandedDiffTrees,
 }: {
   rows: TimelineRow[];
   messages: Message[];
   isStreaming: boolean;
   collapsedRowIds: Record<string, boolean>;
   expandedToolGroupIds: Record<string, boolean>;
-  expandedDiffTrees: Record<number, boolean>;
 }) {
   const bottomAnchorKey = `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? "streaming" : "idle"}`;
   const streamingAssistantMessageId = getStreamingAssistantMessageId(messages, isStreaming);
@@ -81,17 +79,10 @@ export function buildThreadTimelineState({
   });
   const rowStructureSignature = getRowStructureSignature(rows, effectiveCollapsedRowIds);
   const expandedToolGroupSignature = getExpandedStateSignature(expandedToolGroupIds);
-  const expandedDiffTreeSignature = getExpandedStateSignature(
-    Object.fromEntries(
-      Object.entries(expandedDiffTrees).map(([key, value]) => [String(key), value]),
-    ),
-    (left, right) => Number(left) - Number(right),
-  );
 
   return {
     bottomAnchorKey,
     effectiveCollapsedRowIds,
-    expandedDiffTreeSignature,
     expandedToolGroupSignature,
     firstUnvirtualizedRowIndex: 0,
     foldableRows,
@@ -100,12 +91,7 @@ export function buildThreadTimelineState({
     streamingAssistantMessageId,
     streamingToolGroupId,
     streamingTurnRowId,
-    virtualMeasureSignature: [
-      expandedDiffTreeSignature,
-      expandedToolGroupSignature,
-      rowStructureSignature,
-      0,
-    ].join("@@"),
+    virtualMeasureSignature: [expandedToolGroupSignature, rowStructureSignature, 0].join("@@"),
     virtualizedRowCount: 0,
   };
 }

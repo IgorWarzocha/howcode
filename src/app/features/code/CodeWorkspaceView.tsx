@@ -26,7 +26,6 @@ type CodeWorkspaceViewProps = {
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
-const WORKSPACE_FOOTER_OVERLAP_PX = 20;
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
 
@@ -57,7 +56,6 @@ export function CodeWorkspaceView({
     handleAction,
     handleLoadEarlierMessages,
     handleCloseGitOpsView,
-    handleOpenDiffSelection,
     handleOpenGitOpsView,
     handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
@@ -71,9 +69,7 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
-  const footerInset = showWorkspaceFooter
-    ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
-    : 0;
+  const footerInset = showWorkspaceFooter ? footerHeight : 0;
   const diffCommentContextId = useMemo(
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
@@ -167,10 +163,7 @@ export function CodeWorkspaceView({
       className="motion-terminal-drawer-offset relative min-h-0 flex-1 overflow-hidden"
       style={terminalDrawerPaddingStyle}
     >
-      <div
-        className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
-        style={footerInset > 0 ? { paddingBottom: `${footerInset}px` } : undefined}
-      >
+      <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5">
         <main
           className={
             state.activeView === "thread" || showDiffInMainView
@@ -187,6 +180,7 @@ export function CodeWorkspaceView({
               selectedCommentId={selectedDiffCommentId}
               selectedCommentJumpKey={selectedDiffCommentJumpKey}
               diffRenderMode={diffRenderMode}
+              bottomInset={footerInset}
               layoutMode="main"
             />
           ) : (
@@ -213,11 +207,11 @@ export function CodeWorkspaceView({
               workspaceContentClass={workspaceContentClass}
               threadData={activeThreadData}
               composerLayoutVersion={composerLayoutVersion}
+              mainViewportBottomInset={footerInset}
               onAction={handleAction}
               onDismissInboxThread={controller.handleDismissInboxThread}
               onOpenThread={controller.handleThreadOpen}
               onLoadEarlierMessages={handleLoadEarlierMessages}
-              onOpenTurnDiff={handleOpenDiffSelection}
               onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
               onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
               onSelectProject={controller.handleProjectSelect}

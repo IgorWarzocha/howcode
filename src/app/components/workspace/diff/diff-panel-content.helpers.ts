@@ -19,13 +19,11 @@ export { resolvePointerLineTarget } from "./diff-panel-content.pointer";
 export {
   buildFileDiffRenderKey,
   describeCollapsedLines,
-  formatTurnChipTimestamp,
   getFileChangeCounts,
   getFileHeaderContextLabel,
   getRenderablePatch,
   joinProjectFilePath,
   orderRenderableFiles,
-  orderTurnDiffSummaries,
   resolveFileDiffPath,
 } from "./diff-panel-content.rendering";
 export type { DiffCommentMetadata, RenderablePatch } from "./diff-panel-content.types";

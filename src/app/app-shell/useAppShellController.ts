@@ -353,16 +353,13 @@ export function useAppShellController() {
     setThreadHistoryCompactions((current) => current + 1);
   };
 
-  const handleOpenGitOpsView = (
-    options: { checkpointTurnCount?: number | null; filePath?: string | null } = {},
-  ) => {
+  const handleOpenGitOpsView = (options: { filePath?: string | null } = {}) => {
     if (composerProjectId) {
       resetProjectDiffCaches(composerProjectId);
     }
 
     dispatch({
       type: "open-gitops",
-      checkpointTurnCount: options.checkpointTurnCount ?? null,
       filePath: options.filePath ?? null,
     });
   };
@@ -371,16 +368,8 @@ export function useAppShellController() {
     dispatch({ type: "close-gitops" });
   };
 
-  const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
-    handleOpenGitOpsView({ checkpointTurnCount, filePath: filePath ?? null });
-  };
-
   const handleOpenWorktreeDiffFile = (filePath: string) => {
-    handleOpenGitOpsView({ checkpointTurnCount: null, filePath });
-  };
-
-  const handleSelectDiffTurn = (checkpointTurnCount: number | null) => {
-    dispatch({ type: "set-diff-turn", checkpointTurnCount });
+    handleOpenGitOpsView({ filePath });
   };
 
   const handleProjectReorder = async (projectIds: string[]) => {
@@ -449,7 +438,6 @@ export function useAppShellController() {
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: closeTakeover,
     handleCloseGitOpsView,
-    handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
     handleDismissInboxThread,
@@ -461,7 +449,6 @@ export function useAppShellController() {
       }),
     handleProjectReorder,
     handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
-    handleSelectDiffTurn,
     handleShowView,
     handleSelectInboxThread,
     handleThreadOpen,

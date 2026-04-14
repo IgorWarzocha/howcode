@@ -48,13 +48,6 @@ export function buildFileDiffRenderKey(fileDiff: FileDiffMetadata): string {
   return fileDiff.cacheKey ?? `${fileDiff.prevName ?? "none"}:${fileDiff.name}`;
 }
 
-export function formatTurnChipTimestamp(isoDate: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(isoDate));
-}
-
 export function joinProjectFilePath(projectId: string, filePath: string) {
   const normalizedProjectId = projectId.replace(/\/$/, "");
   const normalizedFilePath = filePath.replace(/^\.\//, "");
@@ -80,18 +73,6 @@ export function getFileChangeCounts(fileDiff: FileDiffMetadata) {
   }
 
   return { additions, deletions };
-}
-
-export function orderTurnDiffSummaries<
-  T extends { checkpointTurnCount: number; completedAt: string },
->(summaries: readonly T[]) {
-  return [...summaries].sort((left, right) => {
-    if (left.checkpointTurnCount !== right.checkpointTurnCount) {
-      return right.checkpointTurnCount - left.checkpointTurnCount;
-    }
-
-    return right.completedAt.localeCompare(left.completedAt);
-  });
 }
 
 export function orderRenderableFiles(fileDiffs: readonly FileDiffMetadata[]) {
