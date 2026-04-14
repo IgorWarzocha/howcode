@@ -37,6 +37,14 @@ type SidebarProps = {
   onToggleProjectCollapse: (projectId: string) => void;
 };
 
+function ComingSoonLabel() {
+  return (
+    <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.08em] text-[color:var(--muted-2)]">
+      Coming soon
+    </span>
+  );
+}
+
 export function Sidebar({
   projects,
   inboxThreads,
@@ -108,9 +116,9 @@ export function Sidebar({
           <NavButton
             icon={<MessageSquare size={16} />}
             label={
-              <span className="inline-flex items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span>Chat</span>
-                <FeatureStatusBadge statusId="feature:sidebar.plugins" />
+                <ComingSoonLabel />
               </span>
             }
             active={activeView === "chat"}
@@ -119,9 +127,9 @@ export function Sidebar({
           <NavButton
             icon={<PawPrint size={16} />}
             label={
-              <span className="inline-flex items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span>Claw</span>
-                <FeatureStatusBadge statusId="feature:sidebar.automations" />
+                <ComingSoonLabel />
               </span>
             }
             active={activeView === "claw"}
@@ -130,9 +138,9 @@ export function Sidebar({
           <NavButton
             icon={<BriefcaseBusiness size={16} />}
             label={
-              <span className="inline-flex items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span>Work</span>
-                <FeatureStatusBadge statusId="feature:sidebar.debug" />
+                <ComingSoonLabel />
               </span>
             }
             active={activeView === "work"}

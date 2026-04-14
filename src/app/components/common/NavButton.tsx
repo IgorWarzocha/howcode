@@ -31,7 +31,7 @@ export function NavButton({
       {...buttonProps}
     >
       {icon}
-      <span>{label}</span>
+      <span className="flex min-w-0 flex-1">{label}</span>
     </button>
   );
 }
