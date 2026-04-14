@@ -191,7 +191,7 @@ export function ThreadTimeline({
 
   const renderRow = useCallback(
     (row: TimelineRow) => (
-      <div key={row.id} className="min-w-0 pb-4" data-timeline-row-id={row.id}>
+      <div key={row.id} className="min-w-0" data-timeline-row-id={row.id}>
         <ThreadTimelineRow
           row={row}
           collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
@@ -220,8 +220,8 @@ export function ThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8">
-          {rows.map(renderRow)}
+        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-0">
+          <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
       </div>
