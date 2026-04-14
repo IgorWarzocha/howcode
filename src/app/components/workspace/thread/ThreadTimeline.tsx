@@ -220,7 +220,7 @@ export function ThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-0">
+        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-4">
           <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
