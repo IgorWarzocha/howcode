@@ -1,7 +1,7 @@
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
 import { clampHistory, flushSession, nowIso, persistSession } from "./session-history.cts";
 import type { TerminalSessionRecord } from "./session-record.cts";
-import { emitTerminalEvent } from "./session-store.cts";
+import { emitTerminalEvent, getTerminalSession } from "./session-store.cts";
 import { getTerminalAdapter, resolveTerminalCommand } from "./terminal-command.cts";
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
@@ -33,6 +33,11 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
       rows: record.snapshot.rows,
       env: { ...process.env, TERM: "xterm-256color" },
     });
+
+    if (getTerminalSession(record.snapshot.sessionId) !== record) {
+      processHandle.kill();
+      return;
+    }
 
     record.process = processHandle;
     record.snapshot = {
@@ -92,6 +97,10 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
       createdAt: nowIso(),
     });
   } catch (error) {
+    if (getTerminalSession(record.snapshot.sessionId) !== record) {
+      return;
+    }
+
     record.process = null;
     record.snapshot = {
       ...record.snapshot,

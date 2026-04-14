@@ -61,8 +61,8 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
   };
 
   setTerminalSession(sessionId, record);
-  await startProcess(record, "started");
-  return record.snapshot;
+  void startProcess(record, "started");
+  return snapshot;
 }
 
 export async function writeTerminal(sessionId: string, data: string) {
