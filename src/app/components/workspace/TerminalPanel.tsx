@@ -65,7 +65,8 @@ export function TerminalPanel({
           sessionPath={sessionPath}
           launchMode="pi-session"
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
-          className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--terminal-bg)]"
+          backgroundCssVar="--workspace"
+          className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
         <div className="overflow-hidden rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
           <div className="h-px bg-[rgba(169,178,215,0.07)]" />

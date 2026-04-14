@@ -115,7 +115,10 @@ export function useAppShellEffects({
       return;
     }
 
-    const visibleThreadPreferenceKey = `${visibleThreadKey}:${shellAppSettings?.piTuiTakeover ?? false}`;
+    const globalTakeoverVisible = shellAppSettings?.piTuiTakeover ?? false;
+    const sessionOverrideVisible = workspaceState.takeoverOverrides[visibleThreadKey];
+    const effectiveTakeoverVisible = sessionOverrideVisible ?? globalTakeoverVisible;
+    const visibleThreadPreferenceKey = `${visibleThreadKey}:${effectiveTakeoverVisible}`;
 
     if (lastAppliedThreadPreferenceKeyRef.current === visibleThreadPreferenceKey) {
       return;
@@ -124,12 +127,13 @@ export function useAppShellEffects({
     lastAppliedThreadPreferenceKeyRef.current = visibleThreadPreferenceKey;
     dispatch({
       type: "set-takeover-visible",
-      visible: shellAppSettings?.piTuiTakeover ?? false,
+      visible: effectiveTakeoverVisible,
     });
   }, [
     dispatch,
     shellAppSettings?.piTuiTakeover,
     workspaceState.activeView,
+    workspaceState.takeoverOverrides,
     workspaceState.selectedSessionPath,
   ]);
 

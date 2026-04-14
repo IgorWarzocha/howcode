@@ -29,6 +29,7 @@ describe("deriveControllerViewModel", () => {
         selectedSessionPath: "/repo/session.json",
         terminalVisible: false,
         takeoverVisible: false,
+        takeoverOverrides: {},
         gitOpsReturnView: "code",
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,

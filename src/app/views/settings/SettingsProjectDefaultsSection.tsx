@@ -11,12 +11,14 @@ export function SettingsProjectDefaultsSection({
   savePreferredProjectLocation,
   setPreferredProjectLocationDraft,
   toggleInitializeGitOnProjectCreate,
+  togglePiTuiTakeover,
 }: {
   appSettings: AppSettings;
   preferredProjectLocationDraft: string;
   savePreferredProjectLocation: () => void;
   setPreferredProjectLocationDraft: Dispatch<SetStateAction<string>>;
   toggleInitializeGitOnProjectCreate: () => void;
+  togglePiTuiTakeover: () => void;
 }) {
   const preferredProjectLocationMissing = !appSettings.preferredProjectLocation;
 
@@ -31,8 +33,8 @@ export function SettingsProjectDefaultsSection({
       )}
     >
       <SectionIntro
-        title="New projects"
-        description="Set where new projects are created and whether git should be initialised for diffs."
+        title="Defaults"
+        description="Set project creation defaults and whether conversations should open in Pi TUI by default."
       />
 
       <div className="grid gap-2">
@@ -78,6 +80,29 @@ export function SettingsProjectDefaultsSection({
             onClick={toggleInitializeGitOnProjectCreate}
             aria-label="Initialise git for new projects"
             aria-pressed={appSettings.initializeGitOnProjectCreate}
+          >
+            <Check size={13} />
+          </button>
+        </div>
+
+        <div className={settingsListRowClass}>
+          <div className="grid gap-0.5">
+            <div className="text-[13px] text-[color:var(--text)]">Open conversations in Pi TUI</div>
+            <div className="text-[12px] text-[color:var(--muted)]">
+              Uses Pi takeover by default until a conversation is overridden for this app session.
+            </div>
+          </div>
+          <button
+            type="button"
+            className={cn(
+              "inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors",
+              appSettings.piTuiTakeover
+                ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+                : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
+            )}
+            onClick={togglePiTuiTakeover}
+            aria-label="Open conversations in Pi TUI"
+            aria-pressed={appSettings.piTuiTakeover}
           >
             <Check size={13} />
           </button>

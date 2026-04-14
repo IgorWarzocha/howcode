@@ -14,7 +14,6 @@ import { useDesktopThread } from "../hooks/useDesktopThread";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
-import { applyOptimisticSettingsUpdate } from "./controller-post-action-effects";
 import { deriveControllerViewModel } from "./controller-view-model";
 import { getProjectSelectionAction } from "./scoped-project-view";
 import { useAppShellEffects } from "./useAppShellEffects";
@@ -309,39 +308,29 @@ export function useAppShellController() {
     scheduleShellStateRefresh();
   };
 
-  const takeoverPreferenceWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
+    const sessionPath = state.selectedSessionPath;
+    if (!sessionPath) {
+      return;
+    }
 
-  const persistPiTuiTakeover = (visible: boolean) => {
-    const payload = {
-      key: "piTuiTakeover",
-      value: visible,
-    } as const;
-
-    applyOptimisticSettingsUpdate(queryClient, payload);
-
-    const nextWrite = takeoverPreferenceWriteQueueRef.current
-      .catch(() => undefined)
-      .then(async () => {
-        try {
-          await runDesktopAction("settings.update", payload);
-        } catch (error) {
-          console.warn("Failed to persist Pi TUI takeover preference.", error);
-        }
-      });
-
-    takeoverPreferenceWriteQueueRef.current = nextWrite;
-    return nextWrite;
+    const globalTakeoverVisible = shellState?.appSettings.piTuiTakeover ?? false;
+    dispatch({
+      type: "set-session-takeover-override",
+      sessionPath,
+      visible: visible === globalTakeoverVisible ? null : visible,
+    });
   };
 
   const handleShowTakeoverTerminal = () => {
     dispatch({ type: "set-takeover-visible", visible: true });
-    void persistPiTuiTakeover(true);
+    setTakeoverOverrideForSelectedSession(true);
   };
 
   const closeTakeover = () => {
     dispatch({ type: "set-takeover-visible", visible: false });
+    setTakeoverOverrideForSelectedSession(false);
     setThreadRefreshKey((current) => current + 1);
-    return persistPiTuiTakeover(false);
   };
 
   const handleOpenDockedTerminalFromTakeover = () => {

@@ -18,6 +18,7 @@ type TerminalViewportProps = {
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
+  backgroundCssVar?: "--terminal-bg" | "--workspace";
   className?: string;
 };
 
@@ -65,12 +66,12 @@ function forcePersistentTerminalScrollbar(terminal: Terminal) {
   scrollableElement?.updateOptions?.({ vertical: XTERM_SCROLLBAR_VISIBILITY_VISIBLE });
 }
 
-function terminalThemeFromApp(): ITheme {
+function terminalThemeFromApp(backgroundCssVar: "--terminal-bg" | "--workspace"): ITheme {
   const rootStyles = getComputedStyle(document.documentElement);
   const getToken = (name: string, fallback: string) =>
     rootStyles.getPropertyValue(name).trim() || fallback;
 
-  const background = getToken("--terminal-bg", "#171923");
+  const background = getToken(backgroundCssVar, "#171923");
   const foreground = getToken("--text", "#d5daed");
   const accent = getToken("--accent", "#b9bff3");
   const muted = getToken("--muted", "#969db7");
@@ -121,6 +122,7 @@ export function TerminalViewport({
   launchMode = "shell",
   preserveSessionOnUnmount = false,
   keepAliveMsOnUnmount = 0,
+  backgroundCssVar = "--terminal-bg",
   className,
 }: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,7 +154,7 @@ export function TerminalViewport({
       fontWeight: "400",
       fontWeightBold: "600",
       letterSpacing: 0,
-      theme: terminalThemeFromApp(),
+      theme: terminalThemeFromApp(backgroundCssVar),
     });
 
     terminal.loadAddon(fitAddon);
@@ -256,7 +258,7 @@ export function TerminalViewport({
     });
 
     const themeObserver = new MutationObserver(() => {
-      terminal.options.theme = terminalThemeFromApp();
+      terminal.options.theme = terminalThemeFromApp(backgroundCssVar);
     });
 
     themeObserver.observe(document.documentElement, {
@@ -380,6 +382,7 @@ export function TerminalViewport({
   }, [
     effectiveLaunchMode,
     keepAliveMsOnUnmount,
+    backgroundCssVar,
     persistedSessionPath,
     preserveSessionOnUnmount,
     projectId,

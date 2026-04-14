@@ -217,6 +217,23 @@ describe("workspace state", () => {
     expect(withoutTakeover.takeoverVisible).toBe(false);
   });
 
+  it("can store and clear per-session takeover overrides", () => {
+    const state = createInitialWorkspaceState(mockProjects);
+    const withOverride = workspaceReducer(state, {
+      type: "set-session-takeover-override",
+      sessionPath: "/tmp/thread.jsonl",
+      visible: true,
+    });
+    const withoutOverride = workspaceReducer(withOverride, {
+      type: "set-session-takeover-override",
+      sessionPath: "/tmp/thread.jsonl",
+      visible: null,
+    });
+
+    expect(withOverride.takeoverOverrides["/tmp/thread.jsonl"]).toBe(true);
+    expect(withoutOverride.takeoverOverrides["/tmp/thread.jsonl"]).toBeUndefined();
+  });
+
   it("resolves fallback project and thread titles safely", () => {
     const project = selectProject(mockProjects, "missing-project");
     const thread = selectThread(project, "missing-thread");

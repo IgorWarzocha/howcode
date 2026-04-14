@@ -10,6 +10,7 @@ export type WorkspaceState = {
   selectedSessionPath: string | null;
   terminalVisible: boolean;
   takeoverVisible: boolean;
+  takeoverOverrides: Record<string, boolean>;
   gitOpsReturnView: NonGitOpsView;
   selectedDiffTurnCount: number | null;
   selectedDiffFilePath: string | null;
@@ -38,6 +39,7 @@ export type WorkspaceAction =
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
   | { type: "set-takeover-visible"; visible: boolean }
+  | { type: "set-session-takeover-override"; sessionPath: string; visible: boolean | null }
   | { type: "set-diff-turn"; checkpointTurnCount: number | null }
   | { type: "toggle-settings" }
   | { type: "set-settings-panel-open"; open: boolean }
@@ -66,6 +68,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedSessionPath: null,
     terminalVisible: false,
     takeoverVisible: false,
+    takeoverOverrides: {},
     gitOpsReturnView: "code",
     selectedDiffTurnCount: null,
     selectedDiffFilePath: null,
@@ -191,6 +194,24 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, takeoverVisible: false };
     case "set-takeover-visible":
       return { ...state, takeoverVisible: action.visible };
+    case "set-session-takeover-override": {
+      if (action.visible === null) {
+        const { [action.sessionPath]: _removedOverride, ...remainingOverrides } =
+          state.takeoverOverrides;
+        return {
+          ...state,
+          takeoverOverrides: remainingOverrides,
+        };
+      }
+
+      return {
+        ...state,
+        takeoverOverrides: {
+          ...state.takeoverOverrides,
+          [action.sessionPath]: action.visible,
+        },
+      };
+    }
     case "set-diff-turn":
       return {
         ...state,
