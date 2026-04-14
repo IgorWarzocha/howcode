@@ -10,7 +10,6 @@ type ThreadViewProps = {
   previousMessageCount: number;
   isStreaming: boolean;
   composerLayoutVersion: number;
-  bottomInset: number;
   onLoadEarlierMessages: () => void;
 };
 
@@ -19,7 +18,6 @@ export function ThreadView({
   previousMessageCount,
   isStreaming,
   composerLayoutVersion,
-  bottomInset,
   onLoadEarlierMessages,
 }: ThreadViewProps) {
   if (messages.length === 0) {
@@ -38,7 +36,6 @@ export function ThreadView({
       previousMessageCount={previousMessageCount}
       isStreaming={isStreaming}
       composerLayoutVersion={composerLayoutVersion}
-      bottomInset={bottomInset}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {
           return;

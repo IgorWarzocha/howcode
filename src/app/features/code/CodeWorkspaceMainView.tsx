@@ -34,7 +34,6 @@ type CodeWorkspaceMainViewProps = {
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
-  mainViewportBottomInset: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
@@ -56,7 +55,6 @@ export function CodeWorkspaceMainView({
   workspaceContentClass,
   threadData,
   composerLayoutVersion,
-  mainViewportBottomInset,
   onAction,
   onDismissInboxThread,
   onOpenThread,
@@ -73,7 +71,6 @@ export function CodeWorkspaceMainView({
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
         composerLayoutVersion={composerLayoutVersion}
-        bottomInset={mainViewportBottomInset}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     );

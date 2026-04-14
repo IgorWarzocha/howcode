@@ -12,7 +12,6 @@ type ThreadTimelineProps = {
   previousMessageCount: number;
   isStreaming: boolean;
   composerLayoutVersion: number;
-  bottomInset: number;
   onLoadEarlierMessages: () => void;
 };
 
@@ -21,7 +20,6 @@ export function ThreadTimeline({
   previousMessageCount,
   isStreaming,
   composerLayoutVersion,
-  bottomInset,
   onLoadEarlierMessages,
 }: ThreadTimelineProps) {
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
@@ -222,10 +220,7 @@ export function ThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div
-          className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4"
-          style={{ paddingBottom: `${bottomInset + 32}px` }}
-        >
+        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-8">
           {rows.map(renderRow)}
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
