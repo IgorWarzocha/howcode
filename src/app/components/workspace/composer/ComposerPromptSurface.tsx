@@ -252,27 +252,6 @@ export function ComposerPromptSurface({
           ) : null}
         </div>
         <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
-          <button
-            type="button"
-            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
-            onClick={onOpenGitOps}
-            aria-label="Open git ops"
-            title="Open git ops"
-          >
-            <GitBranch size={14} />
-          </button>
-          {projectGitState?.isGitRepo ? (
-            <div
-              className={cn(
-                compactCardClass,
-                "inline-flex items-center gap-1 px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
-              )}
-              title={projectGitState.branch ?? "Detached"}
-            >
-              <GitBranch size={12} />
-              <span>{projectGitState.branch ?? "Detached"}</span>
-            </div>
-          ) : null}
           {projectGitState?.isGitRepo ? (
             <ComposerDiffBaselineSelector
               composerPanelRef={composerPanelRef}
@@ -282,6 +261,26 @@ export function ComposerPromptSurface({
               onSelectBaseline={onSetDiffBaseline}
             />
           ) : null}
+          {projectGitState?.isGitRepo ? (
+            <div
+              className={cn(
+                compactCardClass,
+                "inline-flex px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+              )}
+              title={projectGitState.branch ?? "Detached"}
+            >
+              <span>{projectGitState.branch ?? "Detached"}</span>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
+            onClick={onOpenGitOps}
+            aria-label="Open git ops"
+            title="Open git ops"
+          >
+            <GitBranch size={14} />
+          </button>
         </div>
       </div>
     </div>

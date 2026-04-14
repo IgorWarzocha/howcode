@@ -83,18 +83,6 @@ export function TerminalPanel({
             onClick={onOpenDockedTerminal}
           />
           <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
-            {projectGitState?.isGitRepo ? (
-              <div
-                className={cn(
-                  compactCardClass,
-                  "inline-flex items-center gap-1 px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
-                )}
-                title={projectGitState.branch ?? "Detached"}
-              >
-                <GitBranch size={12} />
-                <span>{projectGitState.branch ?? "Detached"}</span>
-              </div>
-            ) : null}
             {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
               <ComposerDiffBaselineSelector
                 composerPanelRef={panelRef}
@@ -103,6 +91,17 @@ export function TerminalPanel({
                 selectedBaseline={diffBaseline}
                 onSelectBaseline={onSetDiffBaseline}
               />
+            ) : null}
+            {projectGitState?.isGitRepo ? (
+              <div
+                className={cn(
+                  compactCardClass,
+                  "inline-flex px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+                )}
+                title={projectGitState.branch ?? "Detached"}
+              >
+                <span>{projectGitState.branch ?? "Detached"}</span>
+              </div>
             ) : null}
             <button
               type="button"
