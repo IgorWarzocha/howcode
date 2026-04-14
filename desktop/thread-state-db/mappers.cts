@@ -3,15 +3,8 @@ import type {
   InboxThread,
   Project,
   Thread,
-  TurnDiffSummary,
 } from "../../shared/desktop-contracts.ts";
-import type {
-  ArchivedThreadRow,
-  InboxThreadRow,
-  ProjectRow,
-  ThreadRow,
-  TurnDiffRow,
-} from "./types.cts";
+import type { ArchivedThreadRow, InboxThreadRow, ProjectRow, ThreadRow } from "./types.cts";
 
 function parseStringArrayJson(value: string | null, context: string) {
   if (!value) {
@@ -115,16 +108,5 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     projectId: row.projectId,
     projectName: row.projectName,
     sessionPath: row.sessionPath,
-  };
-}
-
-export function mapTurnDiffRow(row: TurnDiffRow): TurnDiffSummary {
-  return {
-    checkpointTurnCount: row.checkpointTurnCount,
-    checkpointRef: row.checkpointRef,
-    status: row.status,
-    assistantMessageId: row.assistantMessageId ?? undefined,
-    files: JSON.parse(row.filesJson),
-    completedAt: row.completedAt,
   };
 }

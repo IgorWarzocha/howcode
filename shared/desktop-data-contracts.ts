@@ -303,31 +303,6 @@ export type ProjectCommitEntry = {
   isHead: boolean;
 };
 
-export type TurnDiffStatus = "ready" | "missing" | "error";
-
-export type TurnDiffFile = {
-  path: string;
-  kind: string;
-  additions: number;
-  deletions: number;
-};
-
-export type TurnDiffSummary = {
-  checkpointTurnCount: number;
-  checkpointRef: string;
-  status: TurnDiffStatus;
-  files: TurnDiffFile[];
-  assistantMessageId?: string;
-  completedAt: string;
-};
-
-export type TurnDiffResult = {
-  sessionPath: string;
-  fromTurnCount: number;
-  toTurnCount: number;
-  diff: string;
-};
-
 export type ProjectDiffResult = {
   projectId: string;
   diff: string;

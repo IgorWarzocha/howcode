@@ -1,10 +1,6 @@
 import path from "node:path";
 import { getThreadStateDatabase } from "./db.cts";
-import type {
-  SessionSummaryRecord,
-  ThreadInboxMessageRecord,
-  TurnDiffSummaryRecord,
-} from "./types.cts";
+import type { SessionSummaryRecord, ThreadInboxMessageRecord } from "./types.cts";
 
 export function ensureProject(cwd: string) {
   const db = getThreadStateDatabase();
@@ -386,36 +382,4 @@ export function deleteThreadRecord(threadId: string) {
       WHERE id = ?
     `,
   ).run(threadId);
-}
-
-export function upsertTurnDiffSummary(summary: TurnDiffSummaryRecord) {
-  const db = getThreadStateDatabase();
-  db.prepare(
-    `
-      INSERT INTO thread_turn_diffs (
-        session_path,
-        checkpoint_turn_count,
-        checkpoint_ref,
-        status,
-        assistant_message_id,
-        files_json,
-        completed_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(session_path, checkpoint_turn_count) DO UPDATE SET
-        checkpoint_ref = excluded.checkpoint_ref,
-        status = excluded.status,
-        assistant_message_id = excluded.assistant_message_id,
-        files_json = excluded.files_json,
-        completed_at = excluded.completed_at
-    `,
-  ).run(
-    summary.sessionPath,
-    summary.checkpointTurnCount,
-    summary.checkpointRef,
-    summary.status,
-    summary.assistantMessageId ?? null,
-    JSON.stringify(summary.files),
-    summary.completedAt,
-  );
 }

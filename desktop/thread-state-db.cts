@@ -1,7 +1,6 @@
 export type { SessionSummaryRecord } from "./thread-state-db/types.cts";
 export {
   getThreadAssistantSnapshot,
-  getLatestTurnDiffSummary,
   getThreadCwd,
   getThreadSessionPath,
   hasInboxItem,
@@ -9,7 +8,6 @@ export {
   listArchivedThreads,
   listProjectThreads,
   listProjects,
-  listTurnDiffSummaries,
 } from "./thread-state-db/queries.cts";
 export {
   archiveProjectThreads,
@@ -34,5 +32,4 @@ export {
   upsertInboxThreadPrompt,
   upsertInboxThreadMessage,
   upsertThreadSummary,
-  upsertTurnDiffSummary,
 } from "./thread-state-db/writes.cts";

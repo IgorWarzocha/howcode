@@ -3,7 +3,6 @@ import type {
   InboxThread,
   Project,
   Thread,
-  TurnDiffSummary,
 } from "../../shared/desktop-contracts.ts";
 import { getThreadStateDatabase } from "./db.cts";
 import {
@@ -11,7 +10,6 @@ import {
   mapInboxThreadRow,
   mapProjectRow,
   mapThreadRow,
-  mapTurnDiffRow,
 } from "./mappers.cts";
 import type {
   ArchivedThreadRow,
@@ -22,7 +20,6 @@ import type {
   ThreadCwdRow,
   ThreadPathRow,
   ThreadRow,
-  TurnDiffRow,
 } from "./types.cts";
 import { ensureProject } from "./writes.cts";
 
@@ -215,51 +212,4 @@ export function getThreadAssistantSnapshot(sessionPath: string) {
   }
 
   return row;
-}
-
-export function listTurnDiffSummaries(sessionPath: string): TurnDiffSummary[] {
-  const db = getThreadStateDatabase();
-  const rows = db
-    .prepare(
-      `
-        SELECT
-          session_path AS sessionPath,
-          checkpoint_turn_count AS checkpointTurnCount,
-          checkpoint_ref AS checkpointRef,
-          status,
-          assistant_message_id AS assistantMessageId,
-          files_json AS filesJson,
-          completed_at AS completedAt
-        FROM thread_turn_diffs
-        WHERE session_path = ?
-        ORDER BY checkpoint_turn_count ASC
-      `,
-    )
-    .all(sessionPath) as TurnDiffRow[];
-
-  return rows.map(mapTurnDiffRow);
-}
-
-export function getLatestTurnDiffSummary(sessionPath: string): TurnDiffSummary | null {
-  const db = getThreadStateDatabase();
-  const row = db
-    .prepare(
-      `
-        SELECT
-          session_path AS sessionPath,
-          checkpoint_turn_count AS checkpointTurnCount,
-          checkpoint_ref AS checkpointRef,
-          status,
-          assistant_message_id AS assistantMessageId,
-          files_json AS filesJson,
-          completed_at AS completedAt
-        FROM thread_turn_diffs
-        WHERE session_path = ?
-        ORDER BY checkpoint_turn_count DESC
-        LIMIT 1
-      `,
-    )
-    .get(sessionPath) as TurnDiffRow | undefined;
-
-  return row ? mapTurnDiffRow(row) : null;
 }
