@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
-import { Composer } from "../../components/workspace/Composer";
+import { Composer, type ComposerSurface } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { TerminalPanel } from "../../components/workspace/TerminalPanel";
-import { defaultDiffBaseline } from "../../components/workspace/composer/diff-baseline";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
   type SavedDiffComment,
@@ -19,28 +18,31 @@ type CodeWorkspaceViewProps = {
   activeComposerState: AppShellController["activeComposerState"];
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
+  composerSurface: ComposerSurface;
   currentProjectName: string;
+  diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
+  onSetComposerSurface: (surface: ComposerSurface) => void;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
 const WORKSPACE_FOOTER_OVERLAP_PX = 20;
-
-type ProjectScopedDiffBaseline = {
-  projectId: string;
-  baseline: ProjectDiffBaseline;
-};
 
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
   activeThreadData,
   composerProjectId,
+  composerSurface,
   currentProjectName,
+  diffBaseline,
   dockedTerminalVisible,
   terminalSessionPath,
   workspaceContentClass,
+  onSetComposerSurface,
+  onSetDiffBaseline,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
@@ -52,10 +54,6 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const [diffBaselineState, setDiffBaselineState] = useState<ProjectScopedDiffBaseline>({
-    projectId: composerProjectId,
-    baseline: defaultDiffBaseline,
-  });
   const footerContentRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
@@ -73,10 +71,6 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread";
   const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
-  const diffBaseline =
-    diffBaselineState.projectId === composerProjectId
-      ? diffBaselineState.baseline
-      : defaultDiffBaseline;
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -84,19 +78,6 @@ export function CodeWorkspaceView({
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
-
-  useEffect(() => {
-    setDiffBaselineState((current) => {
-      if (current.projectId === composerProjectId && current.baseline.kind === "head") {
-        return current;
-      }
-
-      return {
-        projectId: composerProjectId,
-        baseline: defaultDiffBaseline,
-      };
-    });
-  }, [composerProjectId]);
 
   useLayoutEffect(() => {
     const footerContent = footerContentRef.current;
@@ -158,6 +139,7 @@ export function CodeWorkspaceView({
     setDiffCommentsSending(true);
     setDiffCommentError(null);
     setSelectedDiffCommentId(null);
+    onSetComposerSurface("prompt");
     setComposerPromptResetKey((current) => current + 1);
 
     try {
@@ -210,6 +192,7 @@ export function CodeWorkspaceView({
                   preferredProjectLocation: null,
                   initializeGitOnProjectCreate: false,
                   useAgentsSkillsPaths: false,
+                  piTuiTakeover: false,
                 }
               }
               availableModels={activeComposerState?.availableModels ?? []}
@@ -262,12 +245,8 @@ export function CodeWorkspaceView({
                 diffCommentCount={diffCommentCount}
                 diffCommentsSending={diffCommentsSending}
                 diffCommentError={diffCommentError}
-                onSetDiffBaseline={(baseline) => {
-                  setDiffBaselineState({
-                    projectId: composerProjectId,
-                    baseline,
-                  });
-                }}
+                surface={composerSurface}
+                onSetDiffBaseline={onSetDiffBaseline}
                 onSetDiffRenderMode={setDiffRenderMode}
                 onSendDiffComments={(message) => {
                   void handleSendDiffComments(message);
@@ -285,6 +264,7 @@ export function CodeWorkspaceView({
                 onPickAttachments={pickComposerAttachments}
                 onListAttachmentEntries={listComposerAttachmentEntries}
                 onAction={handleAction}
+                onSetSurface={onSetComposerSurface}
               />
             </div>
             {dockedTerminalVisible ? (
@@ -294,7 +274,6 @@ export function CodeWorkspaceView({
                   sessionPath={terminalSessionPath}
                   onClose={handleToggleTerminal}
                   mode="docked"
-                  onAction={handleAction}
                 />
               </div>
             ) : null}

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type {
+  AppSettings,
   ArchivedThread,
   ComposerState,
   DesktopEvent,
@@ -22,6 +23,7 @@ export function useAppShellEffects({
   workspaceState,
   composerProjectId,
   shellComposerState,
+  shellAppSettings,
   loadProjectThreads,
   loadArchivedThreads,
   loadComposerState,
@@ -38,6 +40,7 @@ export function useAppShellEffects({
   workspaceState: WorkspaceState;
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
+  shellAppSettings: AppSettings | null | undefined;
   loadProjectThreads: (projectId: string) => Promise<unknown>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   loadComposerState: (request?: {
@@ -98,6 +101,22 @@ export function useAppShellEffects({
 
     setComposerState((current) => current ?? shellComposerState);
   }, [setComposerState, shellComposerState]);
+
+  useEffect(() => {
+    const shouldShowTakeover =
+      workspaceState.activeView === "thread" && (shellAppSettings?.piTuiTakeover ?? false);
+
+    if (workspaceState.takeoverVisible === shouldShowTakeover) {
+      return;
+    }
+
+    dispatch({ type: "set-takeover-visible", visible: shouldShowTakeover });
+  }, [
+    dispatch,
+    shellAppSettings?.piTuiTakeover,
+    workspaceState.activeView,
+    workspaceState.takeoverVisible,
+  ]);
 
   useEffect(() => {
     if (!composerProjectId) {

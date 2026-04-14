@@ -46,7 +46,8 @@ export type DesktopSettingsUpdatePayload =
   | { key: "projectImportState"; imported: boolean | null }
   | { key: "preferredProjectLocation"; value: string | null }
   | { key: "initializeGitOnProjectCreate"; value: boolean }
-  | { key: "useAgentsSkillsPaths"; value: boolean };
+  | { key: "useAgentsSkillsPaths"; value: boolean }
+  | { key: "piTuiTakeover"; value: boolean };
 
 export type DesktopActionPayloadMap = {
   "threads.collapse-all": EmptyActionPayload;

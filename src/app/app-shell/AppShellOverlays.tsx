@@ -1,23 +1,31 @@
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
+import type { ProjectDiffBaseline } from "../desktop/types";
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
 import type { AppShellController } from "./useAppShellController";
 
 type AppShellOverlaysProps = {
   controller: AppShellController;
   composerProjectId: string;
+  diffBaseline: ProjectDiffBaseline;
   takeoverPresent: boolean;
   takeoverVisible: boolean;
   terminalSessionPath: string | null;
+  onOpenGitOps: () => void;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
 export function AppShellOverlays({
   controller,
   composerProjectId,
+  diffBaseline,
   takeoverPresent,
   takeoverVisible,
   terminalSessionPath,
+  onOpenGitOps,
+  onSetDiffBaseline,
 }: AppShellOverlaysProps) {
-  const { handleAction, handleCloseTakeoverTerminal, shellState } = controller;
+  const { handleCloseTakeoverTerminal, handleOpenDockedTerminalFromTakeover, projectGitState } =
+    controller;
 
   return (
     <>
@@ -33,9 +41,12 @@ export function AppShellOverlays({
               projectId={composerProjectId}
               sessionPath={terminalSessionPath}
               onClose={handleCloseTakeoverTerminal}
+              onOpenDockedTerminal={handleOpenDockedTerminalFromTakeover}
+              onOpenGitOps={onOpenGitOps}
               mode="takeover"
-              hostLabel={shellState?.availableHosts[0] ?? "Local"}
-              onAction={handleAction}
+              projectGitState={projectGitState}
+              diffBaseline={diffBaseline}
+              onSetDiffBaseline={onSetDiffBaseline}
             />
           </div>
         </div>

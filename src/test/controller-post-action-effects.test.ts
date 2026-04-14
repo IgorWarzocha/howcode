@@ -22,6 +22,7 @@ function buildShellState(): ShellState {
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
       useAgentsSkillsPaths: false,
+      piTuiTakeover: false,
     },
     availableHosts: [],
     composer: {
@@ -145,6 +146,17 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         useAgentsSkillsPaths: true,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "piTuiTakeover",
+        value: true,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        piTuiTakeover: true,
       },
     });
   });

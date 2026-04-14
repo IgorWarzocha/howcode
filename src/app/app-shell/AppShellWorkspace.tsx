@@ -1,3 +1,5 @@
+import type { ComposerSurface } from "../components/workspace/Composer";
+import type { ProjectDiffBaseline } from "../desktop/types";
 import { CodeWorkspaceView } from "../features/code/CodeWorkspaceView";
 import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
@@ -8,10 +10,14 @@ type AppShellWorkspaceProps = {
   activeComposerState: AppShellController["activeComposerState"];
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
+  composerSurface: ComposerSurface;
   currentProjectName: string;
+  diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
+  onSetComposerSurface: (surface: ComposerSurface) => void;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
 export function AppShellWorkspace({
@@ -19,10 +25,14 @@ export function AppShellWorkspace({
   activeComposerState,
   activeThreadData,
   composerProjectId,
+  composerSurface,
   currentProjectName,
+  diffBaseline,
   dockedTerminalVisible,
   terminalSessionPath,
   workspaceContentClass,
+  onSetComposerSurface,
+  onSetDiffBaseline,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
 
@@ -42,10 +52,14 @@ export function AppShellWorkspace({
       activeComposerState={activeComposerState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
+      composerSurface={composerSurface}
       currentProjectName={currentProjectName}
+      diffBaseline={diffBaseline}
       dockedTerminalVisible={dockedTerminalVisible}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
+      onSetComposerSurface={onSetComposerSurface}
+      onSetDiffBaseline={onSetDiffBaseline}
     />
   );
 }

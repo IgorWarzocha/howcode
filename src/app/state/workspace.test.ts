@@ -199,6 +199,24 @@ describe("workspace state", () => {
     expect(nextState.takeoverVisible).toBe(false);
   });
 
+  it("can explicitly control docked terminal and takeover visibility", () => {
+    const state = createInitialWorkspaceState(mockProjects);
+    const withDockedTerminal = workspaceReducer(state, {
+      type: "set-terminal-visible",
+      visible: true,
+    });
+    const withoutTakeover = workspaceReducer(
+      {
+        ...withDockedTerminal,
+        takeoverVisible: true,
+      },
+      { type: "set-takeover-visible", visible: false },
+    );
+
+    expect(withDockedTerminal.terminalVisible).toBe(true);
+    expect(withoutTakeover.takeoverVisible).toBe(false);
+  });
+
   it("resolves fallback project and thread titles safely", () => {
     const project = selectProject(mockProjects, "missing-project");
     const thread = selectThread(project, "missing-thread");

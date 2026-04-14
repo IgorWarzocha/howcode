@@ -25,8 +25,10 @@ export type WorkspaceAction =
   | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
   | { type: "toggle-terminal" }
+  | { type: "set-terminal-visible"; visible: boolean }
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
+  | { type: "set-takeover-visible"; visible: boolean }
   | { type: "toggle-diff" }
   | { type: "open-diff"; checkpointTurnCount: number | null; filePath?: string | null }
   | { type: "set-diff-turn"; checkpointTurnCount: number | null }
@@ -104,6 +106,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
         selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
+        takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
       };
     case "select-inbox-thread":
       return {
@@ -119,6 +122,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: null,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
+        takeoverVisible: false,
       };
     case "set-selected-project":
       return {
@@ -141,10 +145,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       };
     case "toggle-terminal":
       return { ...state, terminalVisible: !state.terminalVisible };
+    case "set-terminal-visible":
+      return { ...state, terminalVisible: action.visible };
     case "show-takeover":
       return { ...state, takeoverVisible: true };
     case "hide-takeover":
       return { ...state, takeoverVisible: false };
+    case "set-takeover-visible":
+      return { ...state, takeoverVisible: action.visible };
     case "toggle-diff":
       return { ...state, diffVisible: !state.diffVisible };
     case "open-diff":

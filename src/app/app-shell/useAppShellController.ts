@@ -93,6 +93,7 @@ export function useAppShellController() {
     workspaceState: state,
     composerProjectId,
     shellComposerState: shellState?.composer,
+    shellAppSettings: shellState?.appSettings,
     loadProjectThreads,
     loadArchivedThreads,
     loadComposerState,
@@ -322,6 +323,30 @@ export function useAppShellController() {
     scheduleShellStateRefresh();
   };
 
+  const persistPiTuiTakeover = (visible: boolean) =>
+    handleAction("settings.update", {
+      key: "piTuiTakeover",
+      value: visible,
+    });
+
+  const handleShowTakeoverTerminal = () => {
+    dispatch({ type: "set-takeover-visible", visible: true });
+    void persistPiTuiTakeover(true);
+  };
+
+  const closeTakeover = () => {
+    dispatch({ type: "set-takeover-visible", visible: false });
+    setThreadRefreshKey((current) => current + 1);
+    void persistPiTuiTakeover(false).then(() => {
+      void refreshShellState();
+    });
+  };
+
+  const handleOpenDockedTerminalFromTakeover = () => {
+    dispatch({ type: "set-terminal-visible", visible: true });
+    closeTakeover();
+  };
+
   return {
     activeComposerState,
     activeThreadData,
@@ -338,11 +363,7 @@ export function useAppShellController() {
     handleConfirmProjectAction,
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
-    handleCloseTakeoverTerminal: () => {
-      dispatch({ type: "hide-takeover" });
-      setThreadRefreshKey((current) => current + 1);
-      void refreshShellState();
-    },
+    handleCloseTakeoverTerminal: closeTakeover,
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
@@ -359,7 +380,8 @@ export function useAppShellController() {
     handleShowView,
     handleSelectInboxThread,
     handleThreadOpen,
-    handleShowTakeoverTerminal: () => dispatch({ type: "show-takeover" }),
+    handleShowTakeoverTerminal,
+    handleOpenDockedTerminalFromTakeover,
     handleToggleDiff: handleToggleDiffPanel,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
