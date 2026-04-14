@@ -41,6 +41,21 @@
   background-clip: padding-box;
 }
 
+.terminal-viewport .xterm-scrollable-element > .visible,
+.terminal-viewport .xterm-scrollable-element > .invisible {
+  opacity: 1;
+  pointer-events: auto;
+  transition: none;
+}
+
+.terminal-viewport .xterm-scrollable-element > .scrollbar {
+  z-index: 12;
+}
+
+.terminal-viewport .xterm-scrollable-element > .scrollbar > .slider {
+  opacity: 1;
+}
+
 .terminal-viewport--flush .xterm-viewport,
 .terminal-viewport--flush .xterm-screen {
   border-radius: 0;
