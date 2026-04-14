@@ -152,6 +152,11 @@ export function useSettingsController({
         key: "initializeGitOnProjectCreate",
         value: !appSettings.initializeGitOnProjectCreate,
       }),
+    togglePiTuiTakeover: () =>
+      void onAction("settings.update", {
+        key: "piTuiTakeover",
+        value: !appSettings.piTuiTakeover,
+      }),
     updateFavoriteFolders,
     handleImportProjectUi,
     showFirstLaunchReminderAgain: () =>

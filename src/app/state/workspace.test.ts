@@ -84,14 +84,14 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
   });
 
-  it("can open the diff panel with a selected turn and file", () => {
+  it("can open git ops with a selected turn and file", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
-      type: "open-diff",
+      type: "open-gitops",
       checkpointTurnCount: 3,
       filePath: "src/app/AppShell.tsx",
     });
 
-    expect(nextState.diffVisible).toBe(true);
+    expect(nextState.activeView).toBe("gitops");
     expect(nextState.selectedDiffTurnCount).toBe(3);
     expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
@@ -199,6 +199,41 @@ describe("workspace state", () => {
     expect(nextState.takeoverVisible).toBe(false);
   });
 
+  it("can explicitly control docked terminal and takeover visibility", () => {
+    const state = createInitialWorkspaceState(mockProjects);
+    const withDockedTerminal = workspaceReducer(state, {
+      type: "set-terminal-visible",
+      visible: true,
+    });
+    const withoutTakeover = workspaceReducer(
+      {
+        ...withDockedTerminal,
+        takeoverVisible: true,
+      },
+      { type: "set-takeover-visible", visible: false },
+    );
+
+    expect(withDockedTerminal.terminalVisible).toBe(true);
+    expect(withoutTakeover.takeoverVisible).toBe(false);
+  });
+
+  it("can store and clear per-session takeover overrides", () => {
+    const state = createInitialWorkspaceState(mockProjects);
+    const withOverride = workspaceReducer(state, {
+      type: "set-session-takeover-override",
+      sessionPath: "/tmp/thread.jsonl",
+      visible: true,
+    });
+    const withoutOverride = workspaceReducer(withOverride, {
+      type: "set-session-takeover-override",
+      sessionPath: "/tmp/thread.jsonl",
+      visible: null,
+    });
+
+    expect(withOverride.takeoverOverrides["/tmp/thread.jsonl"]).toBe(true);
+    expect(withoutOverride.takeoverOverrides["/tmp/thread.jsonl"]).toBeUndefined();
+  });
+
   it("resolves fallback project and thread titles safely", () => {
     const project = selectProject(mockProjects, "missing-project");
     const thread = selectThread(project, "missing-thread");
@@ -206,6 +241,7 @@ describe("workspace state", () => {
     expect(getProjectName(project)).toBe("pi-plugin-codex");
     expect(thread).toBeUndefined();
     expect(getCurrentTitle("thread", thread)).toBe("New thread");
+    expect(getCurrentTitle("gitops", thread)).toBe("Git ops");
     expect(getCurrentTitle("code", thread)).toBe("New thread");
   });
 });

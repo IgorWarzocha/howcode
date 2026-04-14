@@ -24,7 +24,8 @@ export function buildContextualActionPayload({
     action === "workspace.commit-options"
     ? {
         projectId: composerProjectId,
-        sessionPath: activeView === "thread" ? selectedSessionPath : null,
+        sessionPath:
+          activeView === "thread" || activeView === "gitops" ? selectedSessionPath : null,
         ...payload,
       }
     : payload;

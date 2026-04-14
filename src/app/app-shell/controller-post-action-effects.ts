@@ -80,7 +80,8 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
     payload.key !== "initializeGitOnProjectCreate" &&
-    payload.key !== "useAgentsSkillsPaths"
+    payload.key !== "useAgentsSkillsPaths" &&
+    payload.key !== "piTuiTakeover"
   ) {
     return currentState;
   }
@@ -138,6 +139,11 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.useAgentsSkillsPaths;
 
+  const nextPiTuiTakeover =
+    payload.key === "piTuiTakeover" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.piTuiTakeover;
+
   return {
     ...currentState,
     appSettings: {
@@ -149,6 +155,7 @@ export function getOptimisticallyUpdatedShellState(
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
+      piTuiTakeover: nextPiTuiTakeover,
     },
   } satisfies ShellState;
 }

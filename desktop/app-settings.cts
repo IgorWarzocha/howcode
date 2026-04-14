@@ -8,6 +8,7 @@ const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
 const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
+const piTuiTakeoverKey = "piTuiTakeover";
 
 type PreferenceRow = {
   valueJson: string;
@@ -164,6 +165,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(useAgentsSkillsPathsKey) as PreferenceRow | undefined;
+  const piTuiTakeoverRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(piTuiTakeoverKey) as PreferenceRow | undefined;
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
@@ -174,6 +184,7 @@ export function loadAppSettings(): AppSettings {
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
+    piTuiTakeover: parseBooleanPreference(piTuiTakeoverRow?.valueJson) ?? false,
   };
 }
 
@@ -233,4 +244,8 @@ export function setInitializeGitOnProjectCreate(enabled: boolean) {
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {
   writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled));
+}
+
+export function setPiTuiTakeover(enabled: boolean) {
+  writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled));
 }

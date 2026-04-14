@@ -12,6 +12,7 @@ export type View =
   | "inbox"
   | "code"
   | "thread"
+  | "gitops"
   | "chat"
   | "claw"
   | "work"

@@ -1,3 +1,4 @@
+import type { ProjectDiffBaseline } from "../desktop/types";
 import { CodeWorkspaceView } from "../features/code/CodeWorkspaceView";
 import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
@@ -9,9 +10,11 @@ type AppShellWorkspaceProps = {
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
   currentProjectName: string;
+  diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
 export function AppShellWorkspace({
@@ -20,9 +23,11 @@ export function AppShellWorkspace({
   activeThreadData,
   composerProjectId,
   currentProjectName,
+  diffBaseline,
   dockedTerminalVisible,
   terminalSessionPath,
   workspaceContentClass,
+  onSetDiffBaseline,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
 
@@ -43,9 +48,11 @@ export function AppShellWorkspace({
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}
+      diffBaseline={diffBaseline}
       dockedTerminalVisible={dockedTerminalVisible}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
+      onSetDiffBaseline={onSetDiffBaseline}
     />
   );
 }

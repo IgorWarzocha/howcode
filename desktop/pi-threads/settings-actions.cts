@@ -13,6 +13,7 @@ import {
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setInitializeGitOnProjectCreate,
+  setPiTuiTakeover,
   setPreferredProjectLocation,
   setProjectImportState,
   setSkillCreatorModelSelection,
@@ -46,6 +47,11 @@ export function handleSettingsDesktopAction(
 
   if (key === "useAgentsSkillsPaths") {
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false);
+    return handledAction();
+  }
+
+  if (key === "piTuiTakeover") {
+    setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false);
     return handledAction();
   }
 

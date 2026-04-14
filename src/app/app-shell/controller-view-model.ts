@@ -1,5 +1,5 @@
 import type { ThreadData } from "../desktop/types";
-import { getProjectName, selectProject, selectThread } from "../state/workspace";
+import { getCurrentTitle, getProjectName, selectProject, selectThread } from "../state/workspace";
 import type { WorkspaceState } from "../state/workspace";
 import type { Project, Thread } from "../types";
 
@@ -65,7 +65,7 @@ export function deriveControllerViewModel({
     currentTitle:
       workspaceState.activeView === "thread"
         ? (activeThreadData?.title ?? selectedThread?.title ?? "New thread")
-        : "New thread",
+        : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getProjectName(selectedProject),
     composerProjectId: selectedProject?.id ?? shellCwd ?? "",
     activeComposerState: composerState ?? shellComposerState ?? null,

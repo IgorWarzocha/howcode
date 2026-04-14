@@ -1,7 +1,7 @@
 import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
 import type { RefObject } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
-import { compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
+import { compactCardClass, compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { FeatureStatusBadge } from "../../common/FeatureStatusBadge";
 import { PiLogoMark } from "../../common/PiLogoMark";
@@ -251,7 +251,7 @@ export function ComposerPromptSurface({
             />
           ) : null}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
           {projectGitState?.isGitRepo ? (
             <ComposerDiffBaselineSelector
               composerPanelRef={composerPanelRef}
@@ -260,6 +260,17 @@ export function ComposerPromptSurface({
               selectedBaseline={diffBaseline}
               onSelectBaseline={onSetDiffBaseline}
             />
+          ) : null}
+          {projectGitState?.isGitRepo ? (
+            <div
+              className={cn(
+                compactCardClass,
+                "inline-flex max-w-[12rem] px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+              )}
+              title={projectGitState.branch ?? "Detached"}
+            >
+              <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
+            </div>
           ) : null}
           <button
             type="button"

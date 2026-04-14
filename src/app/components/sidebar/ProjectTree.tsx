@@ -304,7 +304,8 @@ export function ProjectTree({
                         {hasThreads ? (
                           project.threads.map((thread) => {
                             const isSelected =
-                              selectedThreadId === thread.id && activeView === "thread";
+                              selectedThreadId === thread.id &&
+                              (activeView === "thread" || activeView === "gitops");
 
                             return (
                               <ThreadRow

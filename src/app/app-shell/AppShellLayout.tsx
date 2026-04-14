@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
+import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
+import type { ProjectDiffBaseline } from "../desktop/types";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import type { AppShellController } from "./useAppShellController";
@@ -11,6 +14,13 @@ type AppShellLayoutProps = {
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
+  const [diffBaselineState, setDiffBaselineState] = useState<{
+    projectId: string;
+    baseline: ProjectDiffBaseline;
+  }>({
+    projectId: "",
+    baseline: defaultDiffBaseline,
+  });
   const {
     activeComposerState,
     activeThreadData,
@@ -40,13 +50,33 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     ? Object.fromEntries(projects.map((project) => [project.id, true]))
     : collapsedProjectIds;
 
-  const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
+  const terminalSessionPath =
+    state.activeView === "thread" || state.activeView === "gitops"
+      ? state.selectedSessionPath
+      : null;
   const takeoverVisible = state.takeoverVisible;
   const dockedTerminalVisible = state.terminalVisible;
+  const diffBaseline =
+    diffBaselineState.projectId === composerProjectId
+      ? diffBaselineState.baseline
+      : defaultDiffBaseline;
   const { mainSectionRef, takeoverPresent, desktopWorkspacePresent, workspaceContentClass } =
     useAppShellLayoutState({
       takeoverVisible,
     });
+
+  useEffect(() => {
+    setDiffBaselineState((current) => {
+      if (current.projectId === composerProjectId && current.baseline.kind === "head") {
+        return current;
+      }
+
+      return {
+        projectId: composerProjectId,
+        baseline: defaultDiffBaseline,
+      };
+    });
+  }, [composerProjectId]);
 
   return (
     <>
@@ -64,6 +94,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
                 useAgentsSkillsPaths: false,
+                piTuiTakeover: false,
               }
             }
             activeView={state.activeView}
@@ -125,9 +156,16 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   activeThreadData={activeThreadData}
                   composerProjectId={composerProjectId}
                   currentProjectName={currentProjectName}
+                  diffBaseline={diffBaseline}
                   dockedTerminalVisible={dockedTerminalVisible}
                   terminalSessionPath={terminalSessionPath}
                   workspaceContentClass={workspaceContentClass}
+                  onSetDiffBaseline={(baseline) => {
+                    setDiffBaselineState({
+                      projectId: composerProjectId,
+                      baseline,
+                    });
+                  }}
                 />
               </div>
             ) : null}
@@ -135,9 +173,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             <AppShellOverlays
               controller={controller}
               composerProjectId={composerProjectId}
+              diffBaseline={diffBaseline}
               takeoverPresent={takeoverPresent}
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}
+              workspaceContentClass={workspaceContentClass}
+              onOpenGitOps={async () => {
+                controller.handleOpenGitOpsView();
+                await controller.handleCloseTakeoverTerminal({
+                  preserveSessionOverride: true,
+                  refreshThread: false,
+                });
+              }}
+              onSetDiffBaseline={(baseline) => {
+                setDiffBaselineState({
+                  projectId: composerProjectId,
+                  baseline,
+                });
+              }}
             />
           </div>
         </section>

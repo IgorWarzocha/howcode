@@ -115,7 +115,8 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
     payload.key === "initializeGitOnProjectCreate" ||
-    payload.key === "useAgentsSkillsPaths"
+    payload.key === "useAgentsSkillsPaths" ||
+    payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
     : null;
 }

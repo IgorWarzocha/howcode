@@ -1,73 +1,120 @@
-import { SquareTerminal, X } from "lucide-react";
-import type { DesktopActionInvoker } from "../../desktop/types";
+import { GitBranch, SquareTerminal, X } from "lucide-react";
+import { useRef } from "react";
+import type { ProjectDiffBaseline, ProjectGitState } from "../../desktop/types";
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
-import { iconButtonClass, panelChromeClass } from "../../ui/classes";
+import {
+  compactCardClass,
+  compactIconButtonClass,
+  iconButtonClass,
+  panelChromeClass,
+} from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
-import { SurfacePanel } from "../common/SurfacePanel";
+import { PiLogoMark } from "../common/PiLogoMark";
 import { ToolbarButton } from "../common/ToolbarButton";
+import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSelector";
+import { getGitOpsEntryButtonClass } from "./composer/git-ops";
 import { TerminalViewport } from "./terminal/TerminalViewport";
+
+const PI_TUI_KEEP_ALIVE_MS = 300_000;
 
 type TerminalPanelProps = {
   projectId: string;
   sessionPath: string | null;
   onClose: () => void;
+  onOpenDockedTerminal?: () => void;
+  onOpenGitOps?: () => void;
   mode?: "docked" | "takeover";
-  hostLabel?: string;
-  onAction?: DesktopActionInvoker;
+  projectGitState?: ProjectGitState | null;
+  diffBaseline?: ProjectDiffBaseline;
+  onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
 };
 
 export function TerminalPanel({
   projectId,
   sessionPath,
   onClose,
+  onOpenDockedTerminal,
+  onOpenGitOps,
   mode = "docked",
-  hostLabel = "Local",
-  onAction,
+  projectGitState = null,
+  diffBaseline,
+  onSetDiffBaseline,
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
+  const panelRef = useRef<HTMLDivElement>(null);
+  const gitVisualMode = !projectGitState?.isGitRepo
+    ? "not-git"
+    : projectGitState.fileCount > 0
+      ? "dirty"
+      : "clean";
 
   if (mode === "takeover") {
     return (
-      <SurfacePanel
+      <div
+        ref={panelRef}
         aria-label="Pi terminal panel"
-        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+        className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] bg-transparent"
         {...getFeatureStatusDataAttributes(statusId)}
       >
-        <div className="flex min-h-0 min-w-0 overflow-hidden px-2.5 pt-2.5">
-          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-t-2xl rounded-b-none bg-[color:var(--terminal-bg)]">
-            <TerminalViewport
-              projectId={projectId}
-              sessionPath={sessionPath}
-              launchMode="pi-session"
-              className="terminal-viewport--flush min-h-0 rounded-none border-0 bg-transparent"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
-          <div className="flex items-center gap-1.5 text-[color:var(--muted)] max-md:flex-wrap">
+        <TerminalViewport
+          projectId={projectId}
+          sessionPath={sessionPath}
+          launchMode="pi-session"
+          keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
+          backgroundCssVar="--workspace"
+          className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--workspace)]"
+        />
+        <div className="overflow-hidden rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
+          <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+          <div className="flex items-center gap-1.5 rounded-b-[20px] px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
             <ToolbarButton
-              label={
-                <span className="inline-flex items-center gap-2">
-                  <span>Pi desktop</span>
-                  <FeatureStatusBadge statusId={statusId} />
-                </span>
-              }
-              icon={<SquareTerminal size={14} />}
+              label="Desktop"
+              icon={<PiLogoMark className="h-[14px] w-[14px]" />}
               onClick={onClose}
             />
             <ToolbarButton
-              label={hostLabel}
+              label="Terminal"
               icon={<SquareTerminal size={14} />}
-              onClick={() => void onAction?.("composer.host")}
-              trailing
+              onClick={onOpenDockedTerminal}
             />
+            <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+              {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
+                <ComposerDiffBaselineSelector
+                  composerPanelRef={panelRef}
+                  projectId={projectId}
+                  projectGitState={projectGitState}
+                  selectedBaseline={diffBaseline}
+                  onSelectBaseline={onSetDiffBaseline}
+                />
+              ) : null}
+              {projectGitState?.isGitRepo ? (
+                <div
+                  className={cn(
+                    compactCardClass,
+                    "inline-flex max-w-[12rem] px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+                  )}
+                  title={projectGitState.branch ?? "Detached"}
+                >
+                  <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
+                onClick={onOpenGitOps}
+                aria-label="Open desktop git ops"
+                title="Open desktop git ops"
+              >
+                <GitBranch size={14} />
+              </button>
+            </div>
           </div>
         </div>
-      </SurfacePanel>
+      </div>
     );
   }
 
@@ -95,12 +142,13 @@ export function TerminalPanel({
           <X size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-[rgba(137,146,183,0.06)] bg-[rgba(23,25,35,0.98)] p-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl bg-[color:var(--terminal-bg)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
           preserveSessionOnUnmount
+          className="bg-[color:var(--terminal-bg)]"
         />
       </div>
     </section>

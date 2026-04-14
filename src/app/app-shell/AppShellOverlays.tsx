@@ -1,41 +1,51 @@
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
-import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
+import type { ProjectDiffBaseline } from "../desktop/types";
 import type { AppShellController } from "./useAppShellController";
 
 type AppShellOverlaysProps = {
   controller: AppShellController;
   composerProjectId: string;
+  diffBaseline: ProjectDiffBaseline;
   takeoverPresent: boolean;
   takeoverVisible: boolean;
   terminalSessionPath: string | null;
+  workspaceContentClass: string;
+  onOpenGitOps: () => void;
+  onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
 export function AppShellOverlays({
   controller,
   composerProjectId,
+  diffBaseline,
   takeoverPresent,
   takeoverVisible,
   terminalSessionPath,
+  workspaceContentClass,
+  onOpenGitOps,
+  onSetDiffBaseline,
 }: AppShellOverlaysProps) {
-  const { handleAction, handleCloseTakeoverTerminal, shellState } = controller;
+  const { handleCloseTakeoverTerminal, handleOpenDockedTerminalFromTakeover, projectGitState } =
+    controller;
 
   return (
     <>
       {takeoverPresent ? (
         <div
           data-open={takeoverVisible ? "true" : "false"}
-          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)]"
+          className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)] px-5 pb-4"
         >
-          <div
-            className={`mx-auto min-h-0 h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-hidden px-5 pt-1.5 pb-4`}
-          >
+          <div className={`${workspaceContentClass} h-full min-h-0`}>
             <TerminalPanel
               projectId={composerProjectId}
               sessionPath={terminalSessionPath}
               onClose={handleCloseTakeoverTerminal}
+              onOpenDockedTerminal={handleOpenDockedTerminalFromTakeover}
+              onOpenGitOps={onOpenGitOps}
               mode="takeover"
-              hostLabel={shellState?.availableHosts[0] ?? "Local"}
-              onAction={handleAction}
+              projectGitState={projectGitState}
+              diffBaseline={diffBaseline}
+              onSetDiffBaseline={onSetDiffBaseline}
             />
           </div>
         </div>

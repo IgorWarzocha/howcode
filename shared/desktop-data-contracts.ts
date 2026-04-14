@@ -246,6 +246,7 @@ export type AppSettings = {
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
   useAgentsSkillsPaths: boolean;
+  piTuiTakeover: boolean;
 };
 
 export type ComposerStateRequest = {

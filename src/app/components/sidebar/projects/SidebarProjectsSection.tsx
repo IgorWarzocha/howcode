@@ -47,6 +47,7 @@ export function SidebarProjectsSection({
   const showProjects =
     activeView === "code" ||
     activeView === "thread" ||
+    activeView === "gitops" ||
     activeView === "settings" ||
     activeView === "extensions" ||
     activeView === "skills";

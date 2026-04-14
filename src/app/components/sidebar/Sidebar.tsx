@@ -4,6 +4,8 @@ import type { AppSettings, DesktopActionInvoker, InboxThread } from "../../deskt
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
+
+type SidebarNavigableView = Exclude<View, "gitops">;
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { NavButton } from "../common/NavButton";
@@ -23,7 +25,7 @@ type SidebarProps = {
   projectScopeLockActive: boolean;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
-  onShowView: (view: View) => void;
+  onShowView: (view: SidebarNavigableView) => void;
   onToggleSettings: () => void;
   onOpenExtensionsView: () => void;
   onOpenSkillsView: () => void;
@@ -78,6 +80,7 @@ export function Sidebar({
     activeView === "inbox" ||
     activeView === "code" ||
     activeView === "thread" ||
+    activeView === "gitops" ||
     activeView === "settings" ||
     activeView === "extensions" ||
     activeView === "skills";

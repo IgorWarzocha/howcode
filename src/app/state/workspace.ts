@@ -1,5 +1,7 @@
 import type { Project, Thread, View } from "../types";
 
+type NonGitOpsView = Exclude<View, "gitops">;
+
 export type WorkspaceState = {
   activeView: View;
   selectedProjectId: string;
@@ -8,7 +10,8 @@ export type WorkspaceState = {
   selectedSessionPath: string | null;
   terminalVisible: boolean;
   takeoverVisible: boolean;
-  diffVisible: boolean;
+  takeoverOverrides: Record<string, boolean>;
+  gitOpsReturnView: NonGitOpsView;
   selectedDiffTurnCount: number | null;
   selectedDiffFilePath: string | null;
   settingsOpen: boolean;
@@ -19,22 +22,38 @@ export type WorkspaceState = {
 
 export type WorkspaceAction =
   | { type: "sync-projects"; projects: Project[] }
-  | { type: "show-view"; view: View }
+  | { type: "show-view"; view: NonGitOpsView }
   | { type: "select-inbox-thread"; sessionPath: string | null }
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
+  | {
+      type: "open-gitops";
+      checkpointTurnCount: number | null;
+      filePath?: string | null;
+      returnView?: NonGitOpsView;
+    }
+  | { type: "close-gitops" }
   | { type: "toggle-terminal" }
+  | { type: "set-terminal-visible"; visible: boolean }
   | { type: "show-takeover" }
   | { type: "hide-takeover" }
-  | { type: "toggle-diff" }
-  | { type: "open-diff"; checkpointTurnCount: number | null; filePath?: string | null }
+  | { type: "set-takeover-visible"; visible: boolean }
+  | { type: "set-session-takeover-override"; sessionPath: string; visible: boolean | null }
   | { type: "set-diff-turn"; checkpointTurnCount: number | null }
   | { type: "toggle-settings" }
   | { type: "set-settings-panel-open"; open: boolean }
   | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
   | { type: "collapse-all-projects" };
+
+function getGitOpsReturnView(activeView: View, fallback: NonGitOpsView): NonGitOpsView {
+  if (activeView === "gitops") {
+    return fallback;
+  }
+
+  return activeView;
+}
 
 // The collapsed map is derived once from project metadata so the tree interaction
 // stays deterministic even before we add persisted desktop state.
@@ -49,7 +68,8 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedSessionPath: null,
     terminalVisible: false,
     takeoverVisible: false,
-    diffVisible: false,
+    takeoverOverrides: {},
+    gitOpsReturnView: "code",
     selectedDiffTurnCount: null,
     selectedDiffFilePath: null,
     settingsOpen: false,
@@ -93,6 +113,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
           hasSelectedProject || !state.selectedProjectId ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath:
           hasSelectedProject || !state.selectedProjectId ? state.selectedDiffFilePath : null,
+        gitOpsReturnView:
+          hasSelectedProject || !state.selectedProjectId ? state.gitOpsReturnView : "code",
         collapsedProjectIds,
       };
     }
@@ -104,6 +126,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
         selectedDiffTurnCount: action.view === "thread" ? state.selectedDiffTurnCount : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
+        takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
       };
     case "select-inbox-thread":
       return {
@@ -119,6 +142,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: null,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
+        takeoverVisible: false,
+        gitOpsReturnView: "code",
       };
     case "set-selected-project":
       return {
@@ -134,26 +159,59 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedSessionPath: action.sessionPath,
         selectedDiffTurnCount: null,
         selectedDiffFilePath: null,
+        gitOpsReturnView: "thread",
         collapsedProjectIds: {
           ...state.collapsedProjectIds,
           [action.projectId]: false,
         },
       };
+    case "open-gitops":
+      return {
+        ...state,
+        activeView: "gitops",
+        takeoverVisible: false,
+        gitOpsReturnView:
+          action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
+        selectedDiffTurnCount: action.checkpointTurnCount,
+        selectedDiffFilePath: action.filePath ?? null,
+      };
+    case "close-gitops":
+      return {
+        ...state,
+        activeView: state.gitOpsReturnView,
+        selectedThreadId: state.gitOpsReturnView === "thread" ? state.selectedThreadId : null,
+        selectedSessionPath: state.gitOpsReturnView === "thread" ? state.selectedSessionPath : null,
+        selectedDiffTurnCount: null,
+        selectedDiffFilePath: null,
+      };
     case "toggle-terminal":
       return { ...state, terminalVisible: !state.terminalVisible };
+    case "set-terminal-visible":
+      return { ...state, terminalVisible: action.visible };
     case "show-takeover":
       return { ...state, takeoverVisible: true };
     case "hide-takeover":
       return { ...state, takeoverVisible: false };
-    case "toggle-diff":
-      return { ...state, diffVisible: !state.diffVisible };
-    case "open-diff":
+    case "set-takeover-visible":
+      return { ...state, takeoverVisible: action.visible };
+    case "set-session-takeover-override": {
+      if (action.visible === null) {
+        const { [action.sessionPath]: _removedOverride, ...remainingOverrides } =
+          state.takeoverOverrides;
+        return {
+          ...state,
+          takeoverOverrides: remainingOverrides,
+        };
+      }
+
       return {
         ...state,
-        diffVisible: true,
-        selectedDiffTurnCount: action.checkpointTurnCount,
-        selectedDiffFilePath: action.filePath ?? null,
+        takeoverOverrides: {
+          ...state.takeoverOverrides,
+          [action.sessionPath]: action.visible,
+        },
       };
+    }
     case "set-diff-turn":
       return {
         ...state,
@@ -212,6 +270,10 @@ export function selectThread(
 }
 
 export function getCurrentTitle(activeView: View, selectedThread: Thread | undefined): string {
+  if (activeView === "gitops") {
+    return "Git ops";
+  }
+
   return activeView === "thread" && selectedThread ? selectedThread.title : "New thread";
 }
 
