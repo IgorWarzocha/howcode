@@ -310,11 +310,12 @@ export function useAppShellController() {
 
   const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
     const sessionPath = state.selectedSessionPath;
-    if (!sessionPath) {
+    const globalTakeoverVisible = shellState?.appSettings?.piTuiTakeover;
+
+    if (!sessionPath || typeof globalTakeoverVisible !== "boolean") {
       return;
     }
 
-    const globalTakeoverVisible = shellState?.appSettings.piTuiTakeover ?? false;
     dispatch({
       type: "set-session-takeover-override",
       sessionPath,
@@ -327,10 +328,22 @@ export function useAppShellController() {
     setTakeoverOverrideForSelectedSession(true);
   };
 
-  const closeTakeover = () => {
+  const closeTakeover = ({
+    preserveSessionOverride = false,
+    refreshThread = true,
+  }: {
+    preserveSessionOverride?: boolean;
+    refreshThread?: boolean;
+  } = {}) => {
     dispatch({ type: "set-takeover-visible", visible: false });
-    setTakeoverOverrideForSelectedSession(false);
-    setThreadRefreshKey((current) => current + 1);
+
+    if (!preserveSessionOverride) {
+      setTakeoverOverrideForSelectedSession(false);
+    }
+
+    if (refreshThread) {
+      setThreadRefreshKey((current) => current + 1);
+    }
   };
 
   const handleOpenDockedTerminalFromTakeover = () => {

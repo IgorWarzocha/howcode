@@ -180,7 +180,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               workspaceContentClass={workspaceContentClass}
               onOpenGitOps={async () => {
                 controller.handleOpenGitOpsView();
-                await controller.handleCloseTakeoverTerminal();
+                await controller.handleCloseTakeoverTerminal({
+                  preserveSessionOverride: true,
+                  refreshThread: false,
+                });
               }}
               onSetDiffBaseline={(baseline) => {
                 setDiffBaselineState({

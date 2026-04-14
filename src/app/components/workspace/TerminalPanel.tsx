@@ -95,11 +95,11 @@ export function TerminalPanel({
                 <div
                   className={cn(
                     compactCardClass,
-                    "inline-flex px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+                    "inline-flex max-w-[12rem] px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
                   )}
                   title={projectGitState.branch ?? "Detached"}
                 >
-                  <span>{projectGitState.branch ?? "Detached"}</span>
+                  <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
                 </div>
               ) : null}
               <button

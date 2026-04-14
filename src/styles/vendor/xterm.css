@@ -30,6 +30,25 @@
   border-radius: 10px;
 }
 
+/* Public CSS fallback in case xterm internal scrollbar visibility hooks change. */
+.terminal-viewport .xterm-viewport {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.terminal-viewport .xterm-viewport::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.terminal-viewport .xterm-viewport::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(140, 148, 181, 0.22);
+  background-clip: padding-box;
+}
+
 .terminal-viewport--flush .xterm-viewport,
 .terminal-viewport--flush .xterm-screen {
   border-radius: 0;
