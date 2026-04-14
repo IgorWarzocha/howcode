@@ -103,6 +103,13 @@ function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
     };
   }
 
+  if (nextView === "gitops") {
+    return {
+      terminalVisible: false,
+      restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
+    };
+  }
+
   return {
     terminalVisible: nextView === "thread" && state.restoreTerminalVisibleOnGitOpsClose,
     restoreTerminalVisibleOnGitOpsClose: false,
