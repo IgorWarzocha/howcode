@@ -229,7 +229,7 @@ export function useAppShellController() {
     inboxQuery.isSuccess,
   ]);
 
-  const handleShowView = (view: View) => {
+  const handleShowView = (view: Exclude<View, "gitops">) => {
     dispatch({ type: "show-view", view });
   };
 
@@ -272,49 +272,34 @@ export function useAppShellController() {
     setThreadHistoryCompactions((current) => current + 1);
   };
 
-  const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
+  const handleOpenGitOpsView = (
+    options: { checkpointTurnCount?: number | null; filePath?: string | null } = {},
+  ) => {
     if (composerProjectId) {
       resetProjectDiffCaches(composerProjectId);
     }
 
     dispatch({
-      type: "open-diff",
-      checkpointTurnCount,
-      filePath: filePath ?? null,
+      type: "open-gitops",
+      checkpointTurnCount: options.checkpointTurnCount ?? null,
+      filePath: options.filePath ?? null,
     });
   };
 
-  const handleOpenWorktreeDiffFile = (filePath: string) => {
-    if (composerProjectId) {
-      resetProjectDiffCaches(composerProjectId);
-    }
+  const handleCloseGitOpsView = () => {
+    dispatch({ type: "close-gitops" });
+  };
 
-    dispatch({
-      type: "open-diff",
-      checkpointTurnCount: null,
-      filePath,
-    });
+  const handleOpenDiffSelection = (checkpointTurnCount: number, filePath?: string) => {
+    handleOpenGitOpsView({ checkpointTurnCount, filePath: filePath ?? null });
+  };
+
+  const handleOpenWorktreeDiffFile = (filePath: string) => {
+    handleOpenGitOpsView({ checkpointTurnCount: null, filePath });
   };
 
   const handleSelectDiffTurn = (checkpointTurnCount: number | null) => {
     dispatch({ type: "set-diff-turn", checkpointTurnCount });
-  };
-
-  const handleToggleDiffPanel = () => {
-    if (!state.diffVisible) {
-      if (composerProjectId) {
-        resetProjectDiffCaches(composerProjectId);
-      }
-
-      dispatch({
-        type: "open-diff",
-        checkpointTurnCount: null,
-        filePath: null,
-      });
-      return;
-    }
-
-    dispatch({ type: "toggle-diff" });
   };
 
   const handleProjectReorder = async (projectIds: string[]) => {
@@ -362,6 +347,7 @@ export function useAppShellController() {
     handleCloseProjectActionDialog: () => setPendingProjectAction(null),
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: closeTakeover,
+    handleCloseGitOpsView,
     handleOpenDiffSelection,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
@@ -380,7 +366,7 @@ export function useAppShellController() {
     handleThreadOpen,
     handleShowTakeoverTerminal,
     handleOpenDockedTerminalFromTakeover,
-    handleToggleDiff: handleToggleDiffPanel,
+    handleOpenGitOpsView,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),

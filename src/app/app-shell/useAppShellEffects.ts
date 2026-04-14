@@ -142,7 +142,9 @@ export function useAppShellEffects({
       const nextComposerState = await loadComposerState({
         projectId: composerProjectId,
         sessionPath:
-          workspaceState.activeView === "thread" ? workspaceState.selectedSessionPath : null,
+          workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+            ? workspaceState.selectedSessionPath
+            : null,
       });
 
       if (!cancelled && nextComposerState) {
@@ -188,7 +190,7 @@ export function useAppShellEffects({
   }, [composerProjectId, loadProjectGitState, setProjectGitState]);
 
   useEffect(() => {
-    if (!workspaceState.diffVisible || !composerProjectId) {
+    if (workspaceState.activeView !== "gitops" || !composerProjectId) {
       return;
     }
 
@@ -207,7 +209,7 @@ export function useAppShellEffects({
     return () => {
       cancelled = true;
     };
-  }, [composerProjectId, loadProjectGitState, setProjectGitState, workspaceState.diffVisible]);
+  }, [composerProjectId, loadProjectGitState, setProjectGitState, workspaceState.activeView]);
 
   useEffect(() => {
     if (!window.piDesktop?.watchSession) {
@@ -215,7 +217,7 @@ export function useAppShellEffects({
     }
 
     const watchedSessionPath =
-      workspaceState.activeView === "thread"
+      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
         ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : null;
 
@@ -230,7 +232,7 @@ export function useAppShellEffects({
     }
 
     const visibleSessionPath =
-      workspaceState.activeView === "thread"
+      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
         ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : workspaceState.activeView === "inbox"
           ? (workspaceState.selectedInboxSessionPath ?? null)
@@ -241,7 +243,8 @@ export function useAppShellEffects({
         const shouldApplyComposerUpdate = event.sessionPath
           ? event.sessionPath === visibleSessionPath
           : event.projectId === composerProjectId &&
-            (workspaceState.activeView !== "thread" || visibleSessionPath === null);
+            ((workspaceState.activeView !== "thread" && workspaceState.activeView !== "gitops") ||
+              visibleSessionPath === null);
 
         if (shouldApplyComposerUpdate) {
           setComposerState(event.composer);
@@ -300,7 +303,7 @@ export function useAppShellEffects({
       }
 
       if (event.reason === "end" || event.reason === "external") {
-        if (workspaceState.diffVisible) {
+        if (workspaceState.activeView === "gitops") {
           void queryClient.invalidateQueries({
             queryKey: desktopQueryKeys.projectDiffPrefix(event.projectId),
           });
@@ -333,7 +336,6 @@ export function useAppShellEffects({
     setComposerState,
     setProjectGitState,
     workspaceState.activeView,
-    workspaceState.diffVisible,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);

@@ -9,7 +9,6 @@ type AppShellWorkspaceProps = {
   activeComposerState: AppShellController["activeComposerState"];
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
-  composerOpenGitOpsRequestKey: number;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
@@ -23,7 +22,6 @@ export function AppShellWorkspace({
   activeComposerState,
   activeThreadData,
   composerProjectId,
-  composerOpenGitOpsRequestKey,
   currentProjectName,
   diffBaseline,
   dockedTerminalVisible,
@@ -49,7 +47,6 @@ export function AppShellWorkspace({
       activeComposerState={activeComposerState}
       activeThreadData={activeThreadData}
       composerProjectId={composerProjectId}
-      composerOpenGitOpsRequestKey={composerOpenGitOpsRequestKey}
       currentProjectName={currentProjectName}
       diffBaseline={diffBaseline}
       dockedTerminalVisible={dockedTerminalVisible}

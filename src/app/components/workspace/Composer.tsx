@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import type {
   ComposerAttachment,
   ComposerFilePickerState,
@@ -10,7 +10,6 @@ import type {
 } from "../../desktop/types";
 import type { View } from "../../types";
 import { SurfacePanel } from "../common/SurfacePanel";
-import { ComposerGitOpsSurface } from "./composer/ComposerGitOpsSurface";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
@@ -26,8 +25,6 @@ export type ComposerProps = {
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
   favoriteFolders: string[];
-  openGitOpsRequestKey: number;
-  onSetDiffPanelVisible: (visible: boolean) => void;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
@@ -39,6 +36,7 @@ export type ComposerProps = {
   onSelectDiffComment: (filePath: string, commentId: string) => void;
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
+  onOpenGitOpsView: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;
@@ -52,33 +50,7 @@ export type ComposerProps = {
 };
 
 export function Composer(props: ComposerProps) {
-  const [surface, setSurface] = useState<"prompt" | "git-ops">("prompt");
   const composerPanelRef = useRef<HTMLDivElement>(null);
-  const lastAppliedOpenGitOpsRequestKeyRef = useRef(0);
-
-  useEffect(() => {
-    if (props.promptResetKey < 0) {
-      return;
-    }
-
-    setSurface("prompt");
-  }, [props.promptResetKey]);
-
-  useEffect(() => {
-    if (
-      props.openGitOpsRequestKey <= 0 ||
-      props.openGitOpsRequestKey === lastAppliedOpenGitOpsRequestKeyRef.current
-    ) {
-      return;
-    }
-
-    lastAppliedOpenGitOpsRequestKeyRef.current = props.openGitOpsRequestKey;
-    setSurface("git-ops");
-  }, [props.openGitOpsRequestKey]);
-
-  useEffect(() => {
-    props.onSetDiffPanelVisible(surface === "git-ops");
-  }, [props.onSetDiffPanelVisible, surface]);
 
   return (
     <SurfacePanel
@@ -86,31 +58,11 @@ export function Composer(props: ComposerProps) {
       className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
       aria-label="Composer panel"
     >
-      {surface === "git-ops" ? (
-        <ComposerGitOpsSurface
-          composerPanelRef={composerPanelRef}
-          projectGitState={props.projectGitState}
-          diffBaseline={props.diffBaseline}
-          diffRenderMode={props.diffRenderMode}
-          diffComments={props.diffComments}
-          diffCommentCount={props.diffCommentCount}
-          diffCommentsSending={props.diffCommentsSending}
-          diffCommentError={props.diffCommentError}
-          onSetDiffBaseline={props.onSetDiffBaseline}
-          onSetDiffRenderMode={props.onSetDiffRenderMode}
-          onSendDiffComments={props.onSendDiffComments}
-          onSelectDiffComment={props.onSelectDiffComment}
-          onAction={props.onAction}
-          onLayoutChange={props.onLayoutChange}
-          onBack={() => setSurface("prompt")}
-        />
-      ) : (
-        <ComposerPromptSurface
-          {...props}
-          composerPanelRef={composerPanelRef}
-          onOpenGitOps={() => setSurface("git-ops")}
-        />
-      )}
+      <ComposerPromptSurface
+        {...props}
+        composerPanelRef={composerPanelRef}
+        onOpenGitOps={props.onOpenGitOpsView}
+      />
     </SurfacePanel>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
+import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { TerminalPanel } from "../../components/workspace/TerminalPanel";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
@@ -18,7 +19,6 @@ type CodeWorkspaceViewProps = {
   activeComposerState: AppShellController["activeComposerState"];
   activeThreadData: AppShellController["activeThreadData"];
   composerProjectId: string;
-  composerOpenGitOpsRequestKey: number;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
   dockedTerminalVisible: boolean;
@@ -34,7 +34,6 @@ export function CodeWorkspaceView({
   activeComposerState,
   activeThreadData,
   composerProjectId,
-  composerOpenGitOpsRequestKey,
   currentProjectName,
   diffBaseline,
   dockedTerminalVisible,
@@ -56,10 +55,11 @@ export function CodeWorkspaceView({
   const {
     handleAction,
     handleLoadEarlierMessages,
+    handleCloseGitOpsView,
     handleOpenDiffSelection,
+    handleOpenGitOpsView,
     handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
-    handleToggleDiff,
     handleToggleTerminal,
     listComposerAttachmentEntries,
     pickComposerAttachments,
@@ -67,8 +67,8 @@ export function CodeWorkspaceView({
     shellState,
     state,
   } = controller;
-  const showWorkspaceFooter = state.activeView === "thread";
-  const showDiffInMainView = state.diffVisible && showWorkspaceFooter;
+  const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
+  const showDiffInMainView = state.activeView === "gitops";
   const footerInset = showWorkspaceFooter
     ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
     : 0;
@@ -218,50 +218,68 @@ export function CodeWorkspaceView({
         <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
           <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
-              <Composer
-                activeView={state.activeView}
-                hostLabel={shellState?.availableHosts[0] ?? "Local"}
-                model={activeComposerState?.currentModel ?? null}
-                availableModels={activeComposerState?.availableModels ?? []}
-                thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
-                projectId={composerProjectId}
-                projectGitState={projectGitState}
-                diffBaseline={diffBaseline}
-                sessionPath={terminalSessionPath}
-                favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
-                onSetDiffPanelVisible={(visible) => {
-                  if (visible === state.diffVisible) {
-                    return;
-                  }
-
-                  handleToggleDiff();
-                }}
-                diffRenderMode={diffRenderMode}
-                diffComments={diffComments}
-                diffCommentCount={diffCommentCount}
-                diffCommentsSending={diffCommentsSending}
-                diffCommentError={diffCommentError}
-                openGitOpsRequestKey={composerOpenGitOpsRequestKey}
-                onSetDiffBaseline={onSetDiffBaseline}
-                onSetDiffRenderMode={setDiffRenderMode}
-                onSendDiffComments={(message) => {
-                  void handleSendDiffComments(message);
-                }}
-                onSelectDiffComment={(filePath, commentId) => {
-                  setSelectedDiffCommentId(commentId);
-                  setSelectedDiffCommentJumpKey((current) => current + 1);
-                  handleOpenWorktreeDiffFile(filePath);
-                }}
-                promptResetKey={composerPromptResetKey}
-                onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
-                onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-                onToggleTerminal={handleToggleTerminal}
-                terminalVisible={state.terminalVisible}
-                onPickAttachments={pickComposerAttachments}
-                onListAttachmentEntries={listComposerAttachmentEntries}
-                onAction={handleAction}
-              />
+              {state.activeView === "gitops" ? (
+                <GitOpsComposerPanel
+                  projectGitState={projectGitState}
+                  diffBaseline={diffBaseline}
+                  diffRenderMode={diffRenderMode}
+                  diffComments={diffComments}
+                  diffCommentCount={diffCommentCount}
+                  diffCommentsSending={diffCommentsSending}
+                  diffCommentError={diffCommentError}
+                  onSetDiffBaseline={onSetDiffBaseline}
+                  onSetDiffRenderMode={setDiffRenderMode}
+                  onSendDiffComments={(message) => {
+                    void handleSendDiffComments(message);
+                  }}
+                  onSelectDiffComment={(filePath, commentId) => {
+                    setSelectedDiffCommentId(commentId);
+                    setSelectedDiffCommentJumpKey((current) => current + 1);
+                    handleOpenWorktreeDiffFile(filePath);
+                  }}
+                  onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                  onAction={handleAction}
+                  onBack={handleCloseGitOpsView}
+                />
+              ) : (
+                <Composer
+                  activeView={state.activeView}
+                  hostLabel={shellState?.availableHosts[0] ?? "Local"}
+                  model={activeComposerState?.currentModel ?? null}
+                  availableModels={activeComposerState?.availableModels ?? []}
+                  thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                  availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
+                  projectId={composerProjectId}
+                  projectGitState={projectGitState}
+                  diffBaseline={diffBaseline}
+                  sessionPath={terminalSessionPath}
+                  favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                  diffRenderMode={diffRenderMode}
+                  diffComments={diffComments}
+                  diffCommentCount={diffCommentCount}
+                  diffCommentsSending={diffCommentsSending}
+                  diffCommentError={diffCommentError}
+                  onSetDiffBaseline={onSetDiffBaseline}
+                  onSetDiffRenderMode={setDiffRenderMode}
+                  onSendDiffComments={(message) => {
+                    void handleSendDiffComments(message);
+                  }}
+                  onSelectDiffComment={(filePath, commentId) => {
+                    setSelectedDiffCommentId(commentId);
+                    setSelectedDiffCommentJumpKey((current) => current + 1);
+                    handleOpenWorktreeDiffFile(filePath);
+                  }}
+                  promptResetKey={composerPromptResetKey}
+                  onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                  onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                  onOpenGitOpsView={handleOpenGitOpsView}
+                  onToggleTerminal={handleToggleTerminal}
+                  terminalVisible={state.terminalVisible}
+                  onPickAttachments={pickComposerAttachments}
+                  onListAttachmentEntries={listComposerAttachmentEntries}
+                  onAction={handleAction}
+                />
+              )}
             </div>
             {dockedTerminalVisible ? (
               <div className={workspaceContentClass}>

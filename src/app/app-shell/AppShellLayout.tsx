@@ -14,7 +14,6 @@ type AppShellLayoutProps = {
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
-  const [composerOpenGitOpsRequestKey, setComposerOpenGitOpsRequestKey] = useState(0);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     baseline: ProjectDiffBaseline;
@@ -51,7 +50,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     ? Object.fromEntries(projects.map((project) => [project.id, true]))
     : collapsedProjectIds;
 
-  const terminalSessionPath = state.activeView === "thread" ? state.selectedSessionPath : null;
+  const terminalSessionPath =
+    state.activeView === "thread" || state.activeView === "gitops"
+      ? state.selectedSessionPath
+      : null;
   const takeoverVisible = state.takeoverVisible;
   const dockedTerminalVisible = state.terminalVisible;
   const diffBaseline =
@@ -153,7 +155,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   activeComposerState={activeComposerState}
                   activeThreadData={activeThreadData}
                   composerProjectId={composerProjectId}
-                  composerOpenGitOpsRequestKey={composerOpenGitOpsRequestKey}
                   currentProjectName={currentProjectName}
                   diffBaseline={diffBaseline}
                   dockedTerminalVisible={dockedTerminalVisible}
@@ -177,7 +178,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverVisible={takeoverVisible}
               terminalSessionPath={terminalSessionPath}
               onOpenGitOps={async () => {
-                setComposerOpenGitOpsRequestKey((current) => current + 1);
+                controller.handleOpenGitOpsView();
                 await controller.handleCloseTakeoverTerminal();
               }}
               onSetDiffBaseline={(baseline) => {

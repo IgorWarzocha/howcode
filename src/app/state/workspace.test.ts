@@ -84,14 +84,14 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
   });
 
-  it("can open the diff panel with a selected turn and file", () => {
+  it("can open git ops with a selected turn and file", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
-      type: "open-diff",
+      type: "open-gitops",
       checkpointTurnCount: 3,
       filePath: "src/app/AppShell.tsx",
     });
 
-    expect(nextState.diffVisible).toBe(true);
+    expect(nextState.activeView).toBe("gitops");
     expect(nextState.selectedDiffTurnCount).toBe(3);
     expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
@@ -224,6 +224,7 @@ describe("workspace state", () => {
     expect(getProjectName(project)).toBe("pi-plugin-codex");
     expect(thread).toBeUndefined();
     expect(getCurrentTitle("thread", thread)).toBe("New thread");
+    expect(getCurrentTitle("gitops", thread)).toBe("Git ops");
     expect(getCurrentTitle("code", thread)).toBe("New thread");
   });
 });
