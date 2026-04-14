@@ -12,6 +12,12 @@
   background-color: var(--terminal-bg);
 }
 
+.terminal-viewport--flush .xterm-viewport,
+.terminal-viewport--flush .xterm-screen,
+.terminal-viewport--flush .xterm-scrollable-element {
+  background-color: var(--terminal-bg) !important;
+}
+
 .terminal-viewport--flush,
 .terminal-viewport--flush .xterm,
 .terminal-viewport--flush .xterm-viewport,
