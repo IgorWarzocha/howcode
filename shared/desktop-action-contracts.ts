@@ -72,9 +72,9 @@ export type DesktopActionPayloadMap = {
   "thread.archive": { threadId: string };
   "thread.archive-many": { projectId?: string | null; threadIds: string[] };
   "thread.restore": { threadId: string };
-  "thread.restore-many": { threadIds: string[] };
+  "thread.restore-many": { threadIds: string[]; projectIds?: string[] };
   "thread.delete": { threadId: string };
-  "thread.delete-many": { threadIds: string[] };
+  "thread.delete-many": { threadIds: string[]; projectIds?: string[] };
   "thread.pin": { threadId: string; projectId?: string | null };
   "thread.actions": EmptyActionPayload;
   "thread.run-action": EmptyActionPayload;
@@ -139,7 +139,10 @@ export type DesktopActionResultData = {
   checkedProjectCount?: number;
   committed?: boolean;
   composer?: ComposerState;
+  deletedThreadIds?: string[];
+  didMutate?: boolean;
   error?: string;
+  failedThreadIds?: string[];
   importedProjectIds?: string[];
   message?: string | null;
   originProjectCount?: number;

@@ -45,8 +45,21 @@ type UseDesktopActionHandlersArgs = {
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  showToast: (message: string) => void;
   workspaceState: WorkspaceState;
 };
+
+function getActionErrorMessage(actionResult: DesktopActionResult | null) {
+  if (!actionResult) {
+    return null;
+  }
+
+  if (actionResult.ok === false && typeof actionResult.result?.error === "string") {
+    return actionResult.result.error;
+  }
+
+  return typeof actionResult.result?.error === "string" ? actionResult.result.error : null;
+}
 
 export function useDesktopActionHandlers({
   activeView,
@@ -63,6 +76,7 @@ export function useDesktopActionHandlers({
   setArchivedThreads,
   setComposerState,
   setProjectGitState,
+  showToast,
   workspaceState,
 }: UseDesktopActionHandlersArgs) {
   const queryClient = useQueryClient();
@@ -105,6 +119,11 @@ export function useDesktopActionHandlers({
         queryClient,
       });
 
+      const actionErrorMessage = getActionErrorMessage(actionResult);
+      if (actionErrorMessage) {
+        showToast(actionErrorMessage);
+      }
+
       return actionResult;
     },
     [
@@ -121,6 +140,7 @@ export function useDesktopActionHandlers({
       setArchivedThreads,
       setComposerState,
       setProjectGitState,
+      showToast,
       workspaceState,
       queryClient,
     ],

@@ -68,11 +68,17 @@ async function resolveProjectPathForComparison(projectId: string) {
   try {
     return await realpath(resolvedProjectId);
   } catch (error) {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
-      return resolvedProjectId;
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof error.code === "string" &&
+      error.code !== "ENOENT"
+    ) {
+      console.warn(`Failed to resolve project path for shell state: ${resolvedProjectId}`, error);
     }
 
-    throw error;
+    return resolvedProjectId;
   }
 }
 

@@ -30,6 +30,18 @@ function getPayloadThreadIds(payload: ActionPayload) {
     : [];
 }
 
+function getPayloadProjectIds(payload: ActionPayload) {
+  return Array.isArray(payload.projectIds)
+    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === "string")
+    : [];
+}
+
+function getResultThreadIds(threadIds: unknown) {
+  return Array.isArray(threadIds)
+    ? threadIds.filter((threadId): threadId is string => typeof threadId === "string")
+    : [];
+}
+
 function hasActionError(actionResult: DesktopActionResult | null | undefined) {
   return actionResult?.ok === false || typeof actionResult?.result?.error === "string";
 }
@@ -359,17 +371,26 @@ export async function runPostDesktopActionEffects({
     const projectId = getPayloadProjectId(contextualPayload);
     if (isBatchThreadMutation) {
       await refreshShellState();
+      const projectIds = [...new Set(getPayloadProjectIds(contextualPayload))];
+
+      if (projectIds.length > 0) {
+        await Promise.all(projectIds.map((batchProjectId) => loadProjectThreads(batchProjectId)));
+      }
     } else if (projectId) {
       await loadProjectThreads(projectId);
     }
 
     setArchivedThreads(await loadArchivedThreads());
 
+    const deletedBatchThreadIds = getResultThreadIds(actionResult?.result?.deletedThreadIds);
+
     const deletedThreadIds =
       action === "thread.delete"
         ? [contextualPayload.threadId]
         : action === "thread.delete-many"
-          ? getPayloadThreadIds(contextualPayload)
+          ? deletedBatchThreadIds.length > 0
+            ? deletedBatchThreadIds
+            : getPayloadThreadIds(contextualPayload)
           : [];
 
     if (deletedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
@@ -429,6 +450,18 @@ export async function runPostDesktopActionEffects({
 
   if (action === "project.remove-project") {
     if (hasActionError(actionResult)) {
+      if (actionResult?.result?.didMutate !== true) {
+        return;
+      }
+
+      await refreshShellState();
+      await refreshArchivedThreadsIfOpen({
+        archivedThreadsVisible: workspaceState.activeView === "archived",
+        loadArchivedThreads,
+        setArchivedThreads,
+      });
+
+      await invalidateInboxThreads();
       return;
     }
 

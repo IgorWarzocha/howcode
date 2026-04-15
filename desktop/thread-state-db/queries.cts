@@ -65,6 +65,21 @@ export function listProjects(cwd: string): Project[] {
   return rows.map(mapProjectRow);
 }
 
+export function hasProject(projectId: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT cwd AS id
+        FROM projects
+        WHERE cwd = ? AND hidden = 0
+      `,
+    )
+    .get(projectId) as { id?: string } | undefined;
+
+  return row?.id === projectId;
+}
+
 export function listProjectThreads(projectId: string): Thread[] {
   const db = getThreadStateDatabase();
   const rows = db

@@ -430,3 +430,30 @@ export function deleteThreadRecord(threadId: string) {
     `,
   ).run(threadId);
 }
+
+export function deleteThreadRecordsBySessionPaths(sessionPaths: string[]) {
+  if (sessionPaths.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const deleteThreadBySessionPath = db.prepare(
+    `
+      DELETE FROM threads
+      WHERE session_path = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    for (const sessionPath of sessionPaths) {
+      deleteThreadBySessionPath.run(sessionPath);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}

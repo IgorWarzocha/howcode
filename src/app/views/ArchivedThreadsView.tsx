@@ -49,11 +49,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
     busyState,
     threadIds,
     projectId,
+    projectIds,
   }: {
     action: "thread.restore" | "thread.restore-many" | "thread.delete" | "thread.delete-many";
     busyState: "restore" | "delete";
     threadIds: string[];
     projectId?: string;
+    projectIds?: string[];
   }) => {
     if (threadIds.length === 0 || busyAction) {
       return;
@@ -63,21 +65,39 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
     setOptimisticallyHiddenThreadIds((current) => [...new Set([...current, ...threadIds])]);
     setSelectedThreadIds((current) => current.filter((threadId) => !threadIds.includes(threadId)));
 
-    let failed = false;
-
     try {
       const result = await onAction(
         action,
         action === "thread.restore" || action === "thread.delete"
           ? { projectId, threadId: threadIds[0] }
-          : { threadIds },
+          : { projectIds, threadIds },
       );
-      failed = result === null || result.ok === false || typeof result.result?.error === "string";
-    } catch {
-      failed = true;
-    }
+      const failed =
+        result === null || result.ok === false || typeof result.result?.error === "string";
 
-    if (failed) {
+      if (failed) {
+        const deletedThreadIds = Array.isArray(result?.result?.deletedThreadIds)
+          ? result.result.deletedThreadIds.filter(
+              (threadId): threadId is string => typeof threadId === "string",
+            )
+          : [];
+        const failedThreadIds = Array.isArray(result?.result?.failedThreadIds)
+          ? result.result.failedThreadIds.filter(
+              (threadId): threadId is string => typeof threadId === "string",
+            )
+          : [];
+        const restoredThreadIds =
+          failedThreadIds.length > 0
+            ? failedThreadIds
+            : deletedThreadIds.length > 0
+              ? threadIds.filter((threadId) => !deletedThreadIds.includes(threadId))
+              : threadIds;
+
+        setOptimisticallyHiddenThreadIds((current) =>
+          current.filter((threadId) => !restoredThreadIds.includes(threadId)),
+        );
+      }
+    } catch {
       setOptimisticallyHiddenThreadIds((current) =>
         current.filter((threadId) => !threadIds.includes(threadId)),
       );
@@ -100,6 +120,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                 void runArchivedThreadMutation({
                   action: "thread.delete-many",
                   busyState: "delete",
+                  projectIds: [...new Set(visibleThreads.map((thread) => thread.projectId))],
                   threadIds: visibleThreadIds,
                 });
               }}
@@ -138,6 +159,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.restore-many",
                     busyState: "restore",
+                    projectIds: [
+                      ...new Set(
+                        visibleThreads
+                          .filter((thread) => selectedThreadIds.includes(thread.id))
+                          .map((thread) => thread.projectId),
+                      ),
+                    ],
                     threadIds: selectedThreadIds,
                   });
                 }}
@@ -152,6 +180,13 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.delete-many",
                     busyState: "delete",
+                    projectIds: [
+                      ...new Set(
+                        visibleThreads
+                          .filter((thread) => selectedThreadIds.includes(thread.id))
+                          .map((thread) => thread.projectId),
+                      ),
+                    ],
                     threadIds: selectedThreadIds,
                   });
                 }}

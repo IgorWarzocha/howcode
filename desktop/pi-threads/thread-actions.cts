@@ -43,9 +43,23 @@ async function deletePersistedThread(threadId: string) {
 }
 
 async function deletePersistedThreads(threadIds: string[]) {
+  const deletedThreadIds: string[] = [];
+  const failedThreadIds: string[] = [];
+
   for (const threadId of threadIds) {
-    await deletePersistedThread(threadId);
+    try {
+      await deletePersistedThread(threadId);
+      deletedThreadIds.push(threadId);
+    } catch (error) {
+      console.warn(`Failed to delete persisted thread: ${threadId}`, error);
+      failedThreadIds.push(threadId);
+    }
   }
+
+  return {
+    deletedThreadIds,
+    failedThreadIds,
+  };
 }
 
 export async function handleThreadDesktopAction(
@@ -113,7 +127,18 @@ export async function handleThreadDesktopAction(
     case "thread.delete-many": {
       const threadIds = getThreadIds(payload);
       if (threadIds.length > 0) {
-        await deletePersistedThreads(threadIds);
+        const deleteResult = await deletePersistedThreads(threadIds);
+
+        if (deleteResult.failedThreadIds.length > 0) {
+          return handledAction({
+            deletedThreadIds: deleteResult.deletedThreadIds,
+            didMutate: deleteResult.deletedThreadIds.length > 0,
+            error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
+            failedThreadIds: deleteResult.failedThreadIds,
+          });
+        }
+
+        return handledAction({ deletedThreadIds: deleteResult.deletedThreadIds });
       }
       return handledAction();
     }

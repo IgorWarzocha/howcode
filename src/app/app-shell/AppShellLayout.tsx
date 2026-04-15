@@ -216,6 +216,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         onClose={handleCloseProjectActionDialog}
         onConfirm={handleConfirmProjectAction}
       />
+
+      {controller.toast ? (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 text-[13px] text-[color:var(--text)] shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm">
+          {controller.toast}
+        </div>
+      ) : null}
     </>
   );
 }

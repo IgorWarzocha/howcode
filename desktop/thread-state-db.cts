@@ -2,6 +2,7 @@ export type { SessionSummaryRecord } from "./thread-state-db/types.cts";
 export {
   getThreadAssistantSnapshot,
   getThreadCwd,
+  hasProject,
   listProjectSessionPaths,
   getThreadSessionPath,
   hasInboxItem,
@@ -18,6 +19,7 @@ export {
   collapseAllProjects,
   deleteProject,
   deleteThreadRecord,
+  deleteThreadRecordsBySessionPaths,
   dismissInboxThread,
   ensureProject,
   hideProject,

@@ -18,6 +18,8 @@ import {
   archiveProjectThreads,
   collapseAllProjects,
   deleteProject,
+  deleteThreadRecordsBySessionPaths,
+  hasProject,
   listProjectSessionPaths,
   renameProject,
   reorderProjects,
@@ -69,9 +71,18 @@ async function deleteProjectPiFiles(projectId: string) {
   const sessionPaths = listProjectSessionPaths(projectId);
   const resolvedProjectId = path.resolve(projectId);
   const removableDirectories = new Set<string>();
+  const deletedSessionPaths: string[] = [];
+  const failedSessionPaths: string[] = [];
 
   for (const sessionPath of sessionPaths) {
-    await unlinkIfPresent(sessionPath);
+    try {
+      await unlinkIfPresent(sessionPath);
+      deletedSessionPaths.push(sessionPath);
+    } catch (error) {
+      console.warn(`Failed to remove Pi session file for ${projectId}: ${sessionPath}`, error);
+      failedSessionPaths.push(sessionPath);
+      continue;
+    }
 
     let currentDirectory = path.dirname(path.resolve(sessionPath));
     while (currentDirectory.startsWith(`${resolvedProjectId}${path.sep}`)) {
@@ -87,8 +98,20 @@ async function deleteProjectPiFiles(projectId: string) {
   for (const directoryPath of [...removableDirectories].sort(
     (left, right) => right.length - left.length,
   )) {
-    await removeDirectoryIfEmpty(directoryPath);
+    try {
+      await removeDirectoryIfEmpty(directoryPath);
+    } catch (error) {
+      console.warn(
+        `Failed to remove empty Pi session directory for ${projectId}: ${directoryPath}`,
+        error,
+      );
+    }
   }
+
+  return {
+    deletedSessionPaths,
+    failedSessionPaths,
+  };
 }
 
 async function resolveProjectPathForComparison(projectId: string) {
@@ -97,11 +120,17 @@ async function resolveProjectPathForComparison(projectId: string) {
   try {
     return await realpath(resolvedProjectId);
   } catch (error) {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
-      return resolvedProjectId;
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof error.code === "string" &&
+      error.code !== "ENOENT"
+    ) {
+      console.warn(`Failed to resolve project path for comparison: ${resolvedProjectId}`, error);
     }
 
-    throw error;
+    return resolvedProjectId;
   }
 }
 
@@ -215,6 +244,12 @@ export async function handleProjectDesktopAction(
     case "project.remove-project": {
       const projectId = getProjectId(payload);
       if (projectId) {
+        if (!hasProject(projectId)) {
+          return handledAction({
+            error: "Cannot delete a project that is not managed by Pi.",
+          });
+        }
+
         if (await isProtectedProjectDeletionTarget(projectId, process.cwd())) {
           return handledAction({
             error: "Cannot delete the active shell project.",
@@ -225,11 +260,23 @@ export async function handleProjectDesktopAction(
 
         if (appSettings.projectDeletionMode === "full-clean") {
           await rm(projectId, { recursive: true, force: true });
+          deleteProject(projectId);
         } else {
-          await deleteProjectPiFiles(projectId);
-        }
+          const cleanupResult = await deleteProjectPiFiles(projectId);
 
-        deleteProject(projectId);
+          if (cleanupResult.failedSessionPaths.length > 0) {
+            deleteThreadRecordsBySessionPaths(cleanupResult.deletedSessionPaths);
+
+            return handledAction({
+              didMutate: cleanupResult.deletedSessionPaths.length > 0,
+              error:
+                `Deleted ${cleanupResult.deletedSessionPaths.length} Pi session file(s), ` +
+                `but ${cleanupResult.failedSessionPaths.length} could not be removed.`,
+            });
+          }
+
+          deleteProject(projectId);
+        }
       }
       return handledAction();
     }
