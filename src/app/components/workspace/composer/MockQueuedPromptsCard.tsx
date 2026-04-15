@@ -23,8 +23,12 @@ export function MockQueuedPromptsCard({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[664px] gap-1.5">
-      <div className="px-1 text-[12px] text-[color:var(--muted)]">
+    <div
+      className={cn(
+        "relative -left-1 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-2.5 py-2",
+      )}
+    >
+      <div className="pl-3.5 text-[12px] text-[color:var(--muted)]">
         Queued messages. Click to edit.
       </div>
 
@@ -34,7 +38,7 @@ export function MockQueuedPromptsCard({
             key={prompt.id}
             className={cn(
               compactCardClass,
-              "group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-xl border-transparent bg-transparent px-1 py-0 text-[12px] shadow-none hover:border-[color:var(--border)] hover:bg-[rgba(255,255,255,0.03)]",
+              "group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-xl border-transparent px-1 py-0 text-[12px] shadow-none hover:border-[color:var(--border)]",
             )}
           >
             <button
