@@ -30,6 +30,10 @@ function getPayloadThreadIds(payload: ActionPayload) {
     : [];
 }
 
+function hasActionError(actionResult: DesktopActionResult | null | undefined) {
+  return actionResult?.ok === false || typeof actionResult?.result?.error === "string";
+}
+
 function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
   return [...threads].sort((left, right) => {
     const leftPinned = Boolean(left.pinned);
@@ -410,6 +414,10 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "project.remove-project") {
+    if (hasActionError(actionResult)) {
+      return;
+    }
+
     if (contextualPayload.projectId === workspaceState.selectedProjectId) {
       dispatch({ type: "show-view", view: "code" });
     }

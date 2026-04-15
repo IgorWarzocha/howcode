@@ -28,6 +28,7 @@ import { ProjectActionMenu } from "./ProjectActionMenu";
 import { EmptyThreadsState } from "./project-tree/EmptyThreadsState";
 import { ProjectRow } from "./project-tree/ProjectRow";
 import { ThreadRow } from "./project-tree/ThreadRow";
+import { isProtectedProjectDeletionTarget } from "./project-tree/project-tree-paths";
 import { useProjectMenuDismiss } from "./project-tree/useProjectMenuDismiss";
 
 const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
@@ -352,7 +353,9 @@ export function ProjectTree({
                       !selectionModeActive ? (
                         <ProjectActionMenu
                           menuId={actionMenuId}
-                          canDelete={project.id !== protectedProjectId}
+                          canDelete={
+                            !isProtectedProjectDeletionTarget(project.id, protectedProjectId)
+                          }
                           projectId={project.id}
                           projectName={project.name}
                           pinned={Boolean(project.pinned)}

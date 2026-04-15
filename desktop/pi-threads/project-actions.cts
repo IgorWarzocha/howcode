@@ -1,4 +1,4 @@
-import { readdir, rm, unlink } from "node:fs/promises";
+import { readdir, realpath, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 import { Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
@@ -89,6 +89,32 @@ async function deleteProjectPiFiles(projectId: string) {
   )) {
     await removeDirectoryIfEmpty(directoryPath);
   }
+}
+
+async function resolveProjectPathForComparison(projectId: string) {
+  const resolvedProjectId = path.resolve(projectId);
+
+  try {
+    return await realpath(resolvedProjectId);
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return resolvedProjectId;
+    }
+
+    throw error;
+  }
+}
+
+async function isProtectedProjectDeletionTarget(projectId: string, activeProjectId: string) {
+  const [resolvedProjectId, resolvedActiveProjectId] = await Promise.all([
+    resolveProjectPathForComparison(projectId),
+    resolveProjectPathForComparison(activeProjectId),
+  ]);
+  const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId);
+
+  return (
+    relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
 }
 
 export async function handleProjectDesktopAction(
@@ -187,7 +213,7 @@ export async function handleProjectDesktopAction(
     case "project.remove-project": {
       const projectId = getProjectId(payload);
       if (projectId) {
-        if (projectId === process.cwd()) {
+        if (await isProtectedProjectDeletionTarget(projectId, process.cwd())) {
           return handledAction({
             error: "Cannot delete the active shell project.",
           });
