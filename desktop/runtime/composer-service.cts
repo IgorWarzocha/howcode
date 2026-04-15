@@ -5,7 +5,6 @@ import type {
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
-import { prepareTurnDiffCapture } from "../diff/query.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
 import {
@@ -151,16 +150,8 @@ export async function sendComposerPrompt(
   const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
 
   try {
-    await prepareTurnDiffCapture(runtime);
-  } catch (error) {
-    runtime.pendingTurnCount = null;
-    console.warn("Failed to prepare turn diff capture.", error);
-  }
-
-  try {
     await runtime.session.prompt(message);
   } catch (error) {
-    runtime.pendingTurnCount = null;
     scheduleRuntimeDisposalForRuntime(runtime);
     throw error;
   }

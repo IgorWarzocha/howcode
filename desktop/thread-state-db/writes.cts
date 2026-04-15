@@ -357,25 +357,6 @@ export function restoreThread(threadId: string) {
 
 export function deleteThreadRecord(threadId: string) {
   const db = getThreadStateDatabase();
-  const row = db
-    .prepare(
-      `
-        SELECT session_path AS sessionPath
-        FROM threads
-        WHERE id = ?
-      `,
-    )
-    .get(threadId) as { sessionPath?: string } | undefined;
-
-  if (row?.sessionPath) {
-    db.prepare(
-      `
-        DELETE FROM thread_turn_diffs
-        WHERE session_path = ?
-      `,
-    ).run(row.sessionPath);
-  }
-
   db.prepare(
     `
       DELETE FROM threads
