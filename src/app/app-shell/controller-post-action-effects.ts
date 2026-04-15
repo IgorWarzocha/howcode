@@ -9,6 +9,7 @@ import type {
   DesktopActionResult,
   ProjectGitState,
   ShellState,
+  Thread,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
@@ -22,6 +23,32 @@ function getPayloadProjectId(payload: ActionPayload) {
 
 function getPayloadThreadId(payload: ActionPayload) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
+}
+
+function getPayloadThreadIds(payload: ActionPayload) {
+  return Array.isArray(payload.threadIds)
+    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === "string")
+    : [];
+}
+
+function getPayloadProjectIds(payload: ActionPayload) {
+  return Array.isArray(payload.projectIds)
+    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === "string")
+    : [];
+}
+
+function getResultThreadIds(threadIds: unknown) {
+  return Array.isArray(threadIds)
+    ? threadIds.filter((threadId): threadId is string => typeof threadId === "string")
+    : [];
+}
+
+function isThreadList(value: unknown): value is Thread[] {
+  return Array.isArray(value);
+}
+
+function hasActionError(actionResult: DesktopActionResult | null | undefined) {
+  return actionResult?.ok === false || typeof actionResult?.result?.error === "string";
 }
 
 function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
@@ -80,6 +107,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
     payload.key !== "initializeGitOnProjectCreate" &&
+    payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "piTuiTakeover"
   ) {
@@ -134,6 +162,12 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.initializeGitOnProjectCreate;
 
+  const nextProjectDeletionMode =
+    payload.key === "projectDeletionMode" &&
+    (payload.value === "pi-only" || payload.value === "full-clean")
+      ? payload.value
+      : currentState.appSettings.projectDeletionMode;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
@@ -154,6 +188,7 @@ export function getOptimisticallyUpdatedShellState(
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
+      projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       piTuiTakeover: nextPiTuiTakeover,
     },
@@ -301,42 +336,69 @@ export async function runPostDesktopActionEffects({
   const invalidateInboxThreads = () =>
     queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
 
-  if (action === "thread.pin" || action === "thread.archive") {
+  if (action === "thread.pin" || action === "thread.archive" || action === "thread.archive-many") {
     const projectId = getPayloadProjectId(contextualPayload);
     if (projectId) {
       await loadProjectThreads(projectId);
     }
 
-    if (action === "thread.archive") {
+    if (action === "thread.archive" || action === "thread.archive-many") {
       await refreshArchivedThreadsIfOpen({
-        archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+        archivedThreadsVisible: workspaceState.activeView === "archived",
         loadArchivedThreads,
         setArchivedThreads,
       });
     }
 
-    if (
-      action === "thread.archive" &&
-      contextualPayload.threadId === workspaceState.selectedThreadId
-    ) {
+    const archivedThreadIds =
+      action === "thread.archive"
+        ? [contextualPayload.threadId]
+        : action === "thread.archive-many"
+          ? getPayloadThreadIds(contextualPayload)
+          : [];
+
+    if (archivedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
       dispatch({ type: "show-view", view: "code" });
     }
 
     await invalidateInboxThreads();
   }
 
-  if (action === "thread.restore" || action === "thread.delete") {
-    setArchivedThreads(await loadArchivedThreads());
+  if (
+    action === "thread.restore" ||
+    action === "thread.restore-many" ||
+    action === "thread.delete" ||
+    action === "thread.delete-many"
+  ) {
+    const isBatchThreadMutation =
+      action === "thread.restore-many" || action === "thread.delete-many";
 
     const projectId = getPayloadProjectId(contextualPayload);
-    if (projectId) {
+    if (isBatchThreadMutation) {
+      await refreshShellState();
+      const projectIds = [...new Set(getPayloadProjectIds(contextualPayload))];
+
+      if (projectIds.length > 0) {
+        await Promise.all(projectIds.map((batchProjectId) => loadProjectThreads(batchProjectId)));
+      }
+    } else if (projectId) {
       await loadProjectThreads(projectId);
     }
 
-    if (
-      action === "thread.delete" &&
-      contextualPayload.threadId === workspaceState.selectedThreadId
-    ) {
+    setArchivedThreads(await loadArchivedThreads());
+
+    const deletedBatchThreadIds = getResultThreadIds(actionResult?.result?.deletedThreadIds);
+
+    const deletedThreadIds =
+      action === "thread.delete"
+        ? [contextualPayload.threadId]
+        : action === "thread.delete-many"
+          ? deletedBatchThreadIds.length > 0
+            ? deletedBatchThreadIds
+            : getPayloadThreadIds(contextualPayload)
+          : [];
+
+    if (deletedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
       dispatch({ type: "show-view", view: "code" });
     }
 
@@ -356,7 +418,7 @@ export async function runPostDesktopActionEffects({
   if (action === "project.edit-name") {
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });
@@ -379,7 +441,7 @@ export async function runPostDesktopActionEffects({
 
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });
@@ -392,13 +454,41 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "project.remove-project") {
+    if (hasActionError(actionResult)) {
+      if (actionResult?.result?.didMutate !== true) {
+        return;
+      }
+
+      const projectId = getPayloadProjectId(contextualPayload);
+      await refreshShellState();
+      const refreshedThreads = projectId ? await loadProjectThreads(projectId) : null;
+
+      if (
+        projectId === workspaceState.selectedProjectId &&
+        workspaceState.selectedThreadId &&
+        isThreadList(refreshedThreads) &&
+        !refreshedThreads.some((thread) => thread.id === workspaceState.selectedThreadId)
+      ) {
+        dispatch({ type: "show-view", view: "code" });
+      }
+
+      await refreshArchivedThreadsIfOpen({
+        archivedThreadsVisible: workspaceState.activeView === "archived",
+        loadArchivedThreads,
+        setArchivedThreads,
+      });
+
+      await invalidateInboxThreads();
+      return;
+    }
+
     if (contextualPayload.projectId === workspaceState.selectedProjectId) {
       dispatch({ type: "show-view", view: "code" });
     }
 
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });

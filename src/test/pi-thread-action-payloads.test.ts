@@ -9,6 +9,7 @@ import {
   getProjectIds,
   getProjectName,
   getThreadId,
+  getThreadIds,
 } from "../../shared/pi-thread-action-payloads";
 
 describe("pi thread action payloads", () => {
@@ -17,6 +18,10 @@ describe("pi thread action payloads", () => {
     expect(getProjectId({ projectId: 12 })).toBeNull();
     expect(getProjectIds({ projectIds: ["a", 12, "b", null] })).toEqual(["a", "b"]);
     expect(getThreadId({ threadId: "thread-1" })).toBe("thread-1");
+    expect(getThreadIds({ threadIds: ["thread-1", 2, "thread-2"] })).toEqual([
+      "thread-1",
+      "thread-2",
+    ]);
     expect(getThreadId({})).toBeNull();
   });
 

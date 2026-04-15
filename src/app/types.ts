@@ -7,6 +7,7 @@ export type View =
   | "code"
   | "thread"
   | "gitops"
+  | "archived"
   | "chat"
   | "claw"
   | "work"

@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
-import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
@@ -33,17 +31,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     composerProjectId,
     currentProjectName,
     handleAction,
-    handleCloseArchivedThreads,
-    handleCloseProjectActionDialog,
-    handleConfirmProjectAction,
-    handleOpenArchivedThreads,
     handleProjectReorder,
     handleProjectSelect,
     handleShowView,
     handleThreadOpen,
     handleToggleProjectCollapse,
     handleToggleSettings,
-    pendingProjectAction,
     projects,
     extensionsProjectScopeActive,
     skillsProjectScopeActive,
@@ -98,11 +91,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 projectImportState: null,
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
+                projectDeletionMode: "pi-only",
                 useAgentsSkillsPaths: false,
                 piTuiTakeover: false,
               }
             }
             activeView={state.activeView}
+            protectedProjectId={
+              controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
+            }
             selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
@@ -116,27 +113,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onToggleSettings={handleToggleSettings}
             onOpenExtensionsView={() => {
               handleShowView("extensions");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenSkillsView={() => {
               handleShowView("skills");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenSettingsPanel={() => {
               handleShowView("settings");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenArchivedThreads={() => {
-              handleOpenArchivedThreads();
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
+              handleShowView("archived");
             }}
             onDismissInboxThread={controller.handleDismissInboxThread}
             onProjectSelect={handleProjectSelect}
@@ -220,18 +205,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           </div>
         </section>
       </div>
-
-      <ArchivedThreadsPanel
-        open={state.archivedThreadsOpen}
-        threads={archivedThreads}
-        onClose={handleCloseArchivedThreads}
-        onAction={handleAction}
-      />
-      <ProjectActionDialog
-        pendingAction={pendingProjectAction}
-        onClose={handleCloseProjectActionDialog}
-        onConfirm={handleConfirmProjectAction}
-      />
+      {controller.toast ? (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 text-[13px] text-[color:var(--text)] shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm">
+          {controller.toast}
+        </div>
+      ) : null}
     </>
   );
 }

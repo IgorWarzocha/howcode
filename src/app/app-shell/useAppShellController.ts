@@ -13,6 +13,7 @@ import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { listDesktopTerminals, subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 import { useDesktopThread } from "../hooks/useDesktopThread";
+import { useToast } from "../hooks/useToast";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import type { View } from "../types";
@@ -38,6 +39,7 @@ export function useAppShellController() {
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
+  const { toast, showToast } = useToast();
   const {
     shellState,
     loadArchivedThreads,
@@ -187,13 +189,7 @@ export function useAppShellController() {
     setProjectGitState,
   });
 
-  const {
-    handleAction,
-    handleConfirmProjectAction,
-    pendingProjectAction,
-    runDesktopAction,
-    setPendingProjectAction,
-  } = useDesktopActionHandlers({
+  const { handleAction, runDesktopAction } = useDesktopActionHandlers({
     activeView: state.activeView,
     composerProjectId,
     dispatch,
@@ -202,12 +198,12 @@ export function useAppShellController() {
     loadComposerState,
     loadProjectGitState,
     loadProjectThreads,
-    projects,
     refreshShellState,
     selectedSessionPath: state.selectedSessionPath,
     setArchivedThreads,
     setComposerState,
     setProjectGitState,
+    showToast,
     workspaceState: state,
   });
 
@@ -429,12 +425,8 @@ export function useAppShellController() {
     currentProjectName,
     currentTitle,
     handleAction,
-    handleCloseArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: false }),
     handleCollapseAll,
-    handleOpenArchivedThreads: () => dispatch({ type: "set-archived-threads-open", open: true }),
     handleOpenSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: true }),
-    handleConfirmProjectAction,
-    handleCloseProjectActionDialog: () => setPendingProjectAction(null),
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: closeTakeover,
     handleCloseGitOpsView,
@@ -462,7 +454,6 @@ export function useAppShellController() {
     handleLoadProjectThreads: loadProjectThreads,
     listComposerAttachmentEntries,
     pickComposerAttachments,
-    pendingProjectAction,
     extensionsProjectScopeActive,
     appLaunchedAtMs,
     projects,
@@ -473,6 +464,7 @@ export function useAppShellController() {
     selectedInboxThread,
     terminalRunningProjectIds,
     terminalRunningSessionPaths,
+    toast,
   };
 }
 

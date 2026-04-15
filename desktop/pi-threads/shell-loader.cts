@@ -1,6 +1,9 @@
+import { realpath } from "node:fs/promises";
+import path from "node:path";
 import type {
   ComposerState,
   ComposerStateRequest,
+  Project,
   ProjectCommitEntry,
   ProjectDiffStatsResult,
   ShellState,
@@ -59,6 +62,35 @@ async function getSessionStorage(cwd: string): Promise<SessionStorage> {
   };
 }
 
+async function resolveProjectPathForComparison(projectId: string) {
+  const resolvedProjectId = path.resolve(projectId);
+
+  try {
+    return await realpath(resolvedProjectId);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof error.code === "string" &&
+      error.code !== "ENOENT"
+    ) {
+      console.warn(`Failed to resolve project path for shell state: ${resolvedProjectId}`, error);
+    }
+
+    return resolvedProjectId;
+  }
+}
+
+async function enrichProjectsWithResolvedIds(projects: Project[]) {
+  return Promise.all(
+    projects.map(async (project) => ({
+      ...project,
+      resolvedId: await resolveProjectPathForComparison(project.id),
+    })),
+  );
+}
+
 async function syncShellIndex(cwd: string) {
   const { SessionManager } = await getPiModule();
   const sessions = (await SessionManager.listAll()) as SessionSummary[];
@@ -76,18 +108,23 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
   await syncShellIndex(cwd);
   const composer = await getComposerState({ projectId: cwd });
   const appSettings = loadAppSettings();
+  const [resolvedCwd, projects] = await Promise.all([
+    resolveProjectPathForComparison(cwd),
+    enrichProjectsWithResolvedIds(listProjects(cwd)),
+  ]);
 
   return {
     platform: process.platform,
     mockMode: false,
     productName: "Pi Desktop Mock",
     cwd,
+    resolvedCwd,
     agentDir,
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
     appSettings,
     availableHosts: ["Local"],
     composer,
-    projects: listProjects(cwd),
+    projects,
   };
 }
 

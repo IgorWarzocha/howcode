@@ -5,15 +5,18 @@ import {
   getComposerRequest,
   getSessionPath,
   getThreadId,
+  getThreadIds,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
 import {
   archiveThread,
+  archiveThreads,
   deleteThreadRecord,
   dismissInboxThread,
   getThreadSessionPath,
   markInboxThreadRead,
   restoreThread,
+  restoreThreads,
   toggleThreadPinned,
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
@@ -37,6 +40,26 @@ async function deletePersistedThread(threadId: string) {
   }
 
   deleteThreadRecord(threadId);
+}
+
+async function deletePersistedThreads(threadIds: string[]) {
+  const deletedThreadIds: string[] = [];
+  const failedThreadIds: string[] = [];
+
+  for (const threadId of threadIds) {
+    try {
+      await deletePersistedThread(threadId);
+      deletedThreadIds.push(threadId);
+    } catch (error) {
+      console.warn(`Failed to delete persisted thread: ${threadId}`, error);
+      failedThreadIds.push(threadId);
+    }
+  }
+
+  return {
+    deletedThreadIds,
+    failedThreadIds,
+  };
 }
 
 export async function handleThreadDesktopAction(
@@ -69,6 +92,14 @@ export async function handleThreadDesktopAction(
       return handledAction();
     }
 
+    case "thread.archive-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        archiveThreads(threadIds);
+      }
+      return handledAction();
+    }
+
     case "thread.restore": {
       const threadId = getThreadId(payload);
       if (threadId) {
@@ -77,10 +108,37 @@ export async function handleThreadDesktopAction(
       return handledAction();
     }
 
+    case "thread.restore-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        restoreThreads(threadIds);
+      }
+      return handledAction();
+    }
+
     case "thread.delete": {
       const threadId = getThreadId(payload);
       if (threadId) {
         await deletePersistedThread(threadId);
+      }
+      return handledAction();
+    }
+
+    case "thread.delete-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        const deleteResult = await deletePersistedThreads(threadIds);
+
+        if (deleteResult.failedThreadIds.length > 0) {
+          return handledAction({
+            deletedThreadIds: deleteResult.deletedThreadIds,
+            didMutate: deleteResult.deletedThreadIds.length > 0,
+            error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
+            failedThreadIds: deleteResult.failedThreadIds,
+          });
+        }
+
+        return handledAction({ deletedThreadIds: deleteResult.deletedThreadIds });
       }
       return handledAction();
     }

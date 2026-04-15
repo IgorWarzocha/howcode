@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { PendingProjectDialog } from "../components/sidebar/ProjectActionDialog";
 import type { DesktopAction } from "../desktop/actions";
 import type {
   AnyDesktopActionPayload,
@@ -12,12 +11,8 @@ import type {
   ProjectGitState,
 } from "../desktop/types";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
-import type { Project, View } from "../types";
-import {
-  buildContextualActionPayload,
-  buildPendingProjectAction,
-  shouldConfirmProjectAction,
-} from "./controller-action-helpers";
+import type { View } from "../types";
+import { buildContextualActionPayload } from "./controller-action-helpers";
 import {
   applyOptimisticPinUpdate,
   applyOptimisticProjectRename,
@@ -39,14 +34,26 @@ type UseDesktopActionHandlersArgs = {
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectThreads: (projectId: string) => Promise<unknown>;
-  projects: Project[];
   refreshShellState: () => Promise<unknown>;
   selectedSessionPath: string | null;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  showToast: (message: string) => void;
   workspaceState: WorkspaceState;
 };
+
+function getActionErrorMessage(actionResult: DesktopActionResult | null) {
+  if (!actionResult) {
+    return null;
+  }
+
+  if (actionResult.ok === false && typeof actionResult.result?.error === "string") {
+    return actionResult.result.error;
+  }
+
+  return typeof actionResult.result?.error === "string" ? actionResult.result.error : null;
+}
 
 export function useDesktopActionHandlers({
   activeView,
@@ -57,18 +64,15 @@ export function useDesktopActionHandlers({
   loadComposerState,
   loadProjectGitState,
   loadProjectThreads,
-  projects,
   refreshShellState,
   selectedSessionPath,
   setArchivedThreads,
   setComposerState,
   setProjectGitState,
+  showToast,
   workspaceState,
 }: UseDesktopActionHandlersArgs) {
   const queryClient = useQueryClient();
-  const [pendingProjectAction, setPendingProjectAction] = useState<PendingProjectDialog | null>(
-    null,
-  );
 
   const runDesktopAction = useCallback(
     async (
@@ -105,6 +109,11 @@ export function useDesktopActionHandlers({
         queryClient,
       });
 
+      const actionErrorMessage = getActionErrorMessage(actionResult);
+      if (actionErrorMessage) {
+        showToast(actionErrorMessage);
+      }
+
       return actionResult;
     },
     [
@@ -121,6 +130,7 @@ export function useDesktopActionHandlers({
       setArchivedThreads,
       setComposerState,
       setProjectGitState,
+      showToast,
       workspaceState,
       queryClient,
     ],
@@ -133,16 +143,6 @@ export function useDesktopActionHandlers({
     ): Promise<DesktopActionResult | null> => {
       // Optimistic updates happen before the desktop call so the renderer stays stable
       // while the background write and refresh pipeline converges.
-      if (shouldConfirmProjectAction(action)) {
-        const nextPendingProjectAction = buildPendingProjectAction(action, payload, projects);
-        if (!nextPendingProjectAction) {
-          return null;
-        }
-
-        setPendingProjectAction(nextPendingProjectAction);
-        return null;
-      }
-
       if (action === "settings.update") {
         applyOptimisticSettingsUpdate(queryClient, payload);
       }
@@ -157,32 +157,11 @@ export function useDesktopActionHandlers({
 
       return await runDesktopAction(action, payload);
     },
-    [projects, queryClient, runDesktopAction],
-  );
-
-  const handleConfirmProjectAction = useCallback(
-    async (payload: ActionPayload = {}) => {
-      if (!pendingProjectAction) {
-        return;
-      }
-
-      const nextAction = pendingProjectAction;
-      setPendingProjectAction(null);
-
-      await runDesktopAction(nextAction.action, {
-        projectId: nextAction.projectId,
-        projectName: nextAction.projectName,
-        ...payload,
-      });
-    },
-    [pendingProjectAction, runDesktopAction],
+    [queryClient, runDesktopAction],
   );
 
   return {
     handleAction,
-    handleConfirmProjectAction,
-    pendingProjectAction,
     runDesktopAction,
-    setPendingProjectAction,
   };
 }

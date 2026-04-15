@@ -5,6 +5,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionPayloadInput,
   ModelSelection,
+  ProjectDeletionMode,
 } from "./desktop-contracts";
 import { getPersistedSessionPath } from "./session-paths";
 
@@ -36,6 +37,14 @@ export function getSessionPath(payload: DesktopActionPayloadInput) {
 
 export function getThreadId(payload: DesktopActionPayloadInput) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
+}
+
+export function getThreadIds(payload: DesktopActionPayloadInput) {
+  return Array.isArray(payload.threadIds)
+    ? payload.threadIds.filter(
+        (threadId: unknown): threadId is string => typeof threadId === "string",
+      )
+    : [];
 }
 
 export function getProjectName(payload: DesktopActionPayloadInput) {
@@ -115,6 +124,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
     payload.key === "initializeGitOnProjectCreate" ||
+    payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
@@ -159,4 +169,10 @@ export function getSettingsPreferredProjectLocation(payload: DesktopActionPayloa
 
 export function getSettingsBooleanValue(payload: DesktopActionPayloadInput) {
   return typeof payload.value === "boolean" ? payload.value : null;
+}
+
+export function getSettingsProjectDeletionMode(
+  payload: DesktopActionPayloadInput,
+): ProjectDeletionMode | null {
+  return payload.value === "pi-only" || payload.value === "full-clean" ? payload.value : null;
 }

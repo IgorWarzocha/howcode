@@ -27,6 +27,7 @@ export type InboxThread = {
 
 export type Project = {
   id: string;
+  resolvedId?: string;
   name: string;
   threads: Thread[];
   latestModifiedMs?: number;
@@ -241,6 +242,8 @@ export type ModelSelection = {
   id: string;
 };
 
+export type ProjectDeletionMode = "pi-only" | "full-clean";
+
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   skillCreatorModel: ModelSelection | null;
@@ -248,6 +251,7 @@ export type AppSettings = {
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
+  projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
   piTuiTakeover: boolean;
 };
@@ -327,6 +331,7 @@ export type ShellState = {
   mockMode: boolean;
   productName: string;
   cwd: string;
+  resolvedCwd?: string;
   agentDir: string;
   sessionDir: string;
   projects: Project[];

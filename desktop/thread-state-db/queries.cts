@@ -65,6 +65,37 @@ export function listProjects(cwd: string): Project[] {
   return rows.map(mapProjectRow);
 }
 
+export function hasProject(projectId: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT cwd AS id
+        FROM projects
+        WHERE cwd = ? AND hidden = 0
+      `,
+    )
+    .get(projectId) as { id?: string } | undefined;
+
+  return row?.id === projectId;
+}
+
+export function hasRunningProjectThread(projectId: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT id
+        FROM threads
+        WHERE cwd = ? AND running = 1
+        LIMIT 1
+      `,
+    )
+    .get(projectId) as { id?: string } | undefined;
+
+  return typeof row?.id === "string";
+}
+
 export function listProjectThreads(projectId: string): Thread[] {
   const db = getThreadStateDatabase();
   const rows = db
@@ -146,6 +177,21 @@ export function listArchivedThreads(): ArchivedThread[] {
     .all() as ArchivedThreadRow[];
 
   return rows.map(mapArchivedThreadRow);
+}
+
+export function listProjectSessionPaths(projectId: string) {
+  const db = getThreadStateDatabase();
+  const rows = db
+    .prepare(
+      `
+        SELECT session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ?
+      `,
+    )
+    .all(projectId) as ThreadPathRow[];
+
+  return rows.map((row) => row.sessionPath);
 }
 
 export function getThreadSessionPath(threadId: string) {

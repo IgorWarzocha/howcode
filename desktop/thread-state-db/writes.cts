@@ -249,6 +249,62 @@ export function archiveThread(threadId: string) {
   ).run(threadId);
 }
 
+export function archiveThreads(threadIds: string[]) {
+  if (threadIds.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const archiveThreadStatement = db.prepare(
+    `
+      UPDATE threads
+      SET archived = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    for (const threadId of threadIds) {
+      archiveThreadStatement.run(threadId);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+export function restoreThreads(threadIds: string[]) {
+  if (threadIds.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const restoreThreadStatement = db.prepare(
+    `
+      UPDATE threads
+      SET archived = 0, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    for (const threadId of threadIds) {
+      restoreThreadStatement.run(threadId);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 export function archiveProjectThreads(projectId: string) {
   const db = getThreadStateDatabase();
   db.prepare(
@@ -344,6 +400,16 @@ export function hideProject(projectId: string) {
   ).run(projectId);
 }
 
+export function deleteProject(projectId: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      DELETE FROM projects
+      WHERE cwd = ?
+    `,
+  ).run(projectId);
+}
+
 export function restoreThread(threadId: string) {
   const db = getThreadStateDatabase();
   db.prepare(
@@ -363,4 +429,31 @@ export function deleteThreadRecord(threadId: string) {
       WHERE id = ?
     `,
   ).run(threadId);
+}
+
+export function deleteThreadRecordsBySessionPaths(sessionPaths: string[]) {
+  if (sessionPaths.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const deleteThreadBySessionPath = db.prepare(
+    `
+      DELETE FROM threads
+      WHERE session_path = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    for (const sessionPath of sessionPaths) {
+      deleteThreadBySessionPath.run(sessionPath);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }

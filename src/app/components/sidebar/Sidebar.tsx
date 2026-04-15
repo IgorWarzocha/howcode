@@ -18,6 +18,7 @@ type SidebarProps = {
   inboxThreads: InboxThread[];
   appLaunchedAtMs: number;
   appSettings: AppSettings;
+  protectedProjectId?: string | null;
   activeView: View;
   selectedInboxSessionPath: string | null;
   selectedProjectId: string;
@@ -56,6 +57,7 @@ export function Sidebar({
   inboxThreads,
   appLaunchedAtMs,
   appSettings,
+  protectedProjectId = null,
   activeView,
   selectedInboxSessionPath,
   selectedProjectId,
@@ -89,6 +91,7 @@ export function Sidebar({
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "gitops" ||
+    activeView === "archived" ||
     activeView === "settings" ||
     activeView === "extensions" ||
     activeView === "skills";
@@ -180,6 +183,7 @@ export function Sidebar({
           activeView={activeView}
           appLaunchedAtMs={appLaunchedAtMs}
           appSettings={appSettings}
+          protectedProjectId={protectedProjectId}
           projectScopeLockActive={projectScopeLockActive}
           projects={projects}
           selectedProjectId={selectedProjectId}

@@ -6,6 +6,7 @@ import {
   getSettingsKey,
   getSettingsModelSelection,
   getSettingsPreferredProjectLocation,
+  getSettingsProjectDeletionMode,
   getSettingsProjectImportState,
   getSettingsReset,
 } from "../../shared/pi-thread-action-payloads.ts";
@@ -15,6 +16,7 @@ import {
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
+  setProjectDeletionMode,
   setProjectImportState,
   setSkillCreatorModelSelection,
   setUseAgentsSkillsPaths,
@@ -64,6 +66,14 @@ export function handleSettingsDesktopAction(
     const value = getSettingsBooleanValue(payload);
     if (value !== null) {
       setInitializeGitOnProjectCreate(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "projectDeletionMode") {
+    const value = getSettingsProjectDeletionMode(payload);
+    if (value) {
+      setProjectDeletionMode(value);
     }
     return handledAction();
   }

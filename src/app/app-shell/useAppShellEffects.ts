@@ -74,7 +74,7 @@ export function useAppShellEffects({
   }, [collapsedProjectIds, loadProjectThreads, projects]);
 
   useEffect(() => {
-    if (!workspaceState.archivedThreadsOpen) {
+    if (workspaceState.activeView !== "archived") {
       return;
     }
 
@@ -92,7 +92,7 @@ export function useAppShellEffects({
     return () => {
       cancelled = true;
     };
-  }, [loadArchivedThreads, setArchivedThreads, workspaceState.archivedThreadsOpen]);
+  }, [loadArchivedThreads, setArchivedThreads, workspaceState.activeView]);
 
   useEffect(() => {
     if (!shellComposerState) {
