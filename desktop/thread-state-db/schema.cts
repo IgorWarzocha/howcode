@@ -1,6 +1,15 @@
 import type { Database } from "bun:sqlite";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { formatGitCommandError, getNonInteractiveGitEnv } from "../project-git/git-runner.cts";
 
 let schemaReady = false;
+
+const legacyCheckpointRefPrefix = "refs/howcode/checkpoints";
+
+type ProjectPathRow = {
+  cwd: string;
+};
 
 function hasColumn(database: Database, tableName: string, columnName: string) {
   const columns = database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
@@ -8,6 +17,109 @@ function hasColumn(database: Database, tableName: string, columnName: string) {
   }>;
 
   return columns.some((column) => column.name === columnName);
+}
+
+function hasTable(database: Database, tableName: string) {
+  const row = database
+    .prepare(
+      `
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table' AND name = ?
+      `,
+    )
+    .get(tableName) as { name?: string } | undefined;
+
+  return row?.name === tableName;
+}
+
+function runGitSync(projectId: string, args: string[], input?: string) {
+  return execFileSync("git", args, {
+    cwd: projectId,
+    env: getNonInteractiveGitEnv(),
+    encoding: "utf8",
+    timeout: 10_000,
+    maxBuffer: 1024 * 1024 * 4,
+    ...(input ? { input } : {}),
+  });
+}
+
+function isGitRepositorySync(projectId: string) {
+  if (!existsSync(projectId)) {
+    return false;
+  }
+
+  try {
+    return runGitSync(projectId, ["rev-parse", "--is-inside-work-tree"]).trim() === "true";
+  } catch {
+    return false;
+  }
+}
+
+function listLegacyCheckpointRefs(database: Database) {
+  const rows = database
+    .prepare(
+      `
+        SELECT cwd
+        FROM projects
+      `,
+    )
+    .all() as ProjectPathRow[];
+
+  return [...new Set(rows.map((row) => row.cwd.trim()).filter(Boolean))];
+}
+
+function purgeLegacyCheckpointRefsForProject(projectId: string) {
+  if (!isGitRepositorySync(projectId)) {
+    return true;
+  }
+
+  try {
+    const stdout = runGitSync(projectId, [
+      "for-each-ref",
+      "--format=%(refname)",
+      legacyCheckpointRefPrefix,
+    ]);
+    const refs = stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (refs.length === 0) {
+      return true;
+    }
+
+    runGitSync(
+      projectId,
+      ["update-ref", "--stdin"],
+      `start\n${refs.map((ref) => `delete ${ref}`).join("\n")}\ncommit\n`,
+    );
+    return true;
+  } catch (error) {
+    console.warn(
+      `Failed to purge legacy checkpoint refs for ${projectId}: ${formatGitCommandError(error)}`,
+    );
+    return false;
+  }
+}
+
+function purgeLegacyCheckpointRefsMigration(database: Database) {
+  if (!hasTable(database, "thread_turn_diffs")) {
+    return;
+  }
+
+  const didPurgeEveryProject = listLegacyCheckpointRefs(database).every((projectId) =>
+    purgeLegacyCheckpointRefsForProject(projectId),
+  );
+
+  if (!didPurgeEveryProject) {
+    return;
+  }
+
+  database.exec(`
+    DROP INDEX IF EXISTS thread_turn_diffs_by_path_idx;
+    DROP TABLE IF EXISTS thread_turn_diffs;
+  `);
 }
 
 export function ensureThreadStateSchema(database: Database) {
@@ -53,9 +165,6 @@ export function ensureThreadStateSchema(database: Database) {
     CREATE INDEX IF NOT EXISTS threads_by_cwd_idx ON threads(cwd, pinned DESC, last_modified_ms DESC);
     CREATE INDEX IF NOT EXISTS threads_by_path_idx ON threads(session_path);
 
-    DROP INDEX IF EXISTS thread_turn_diffs_by_path_idx;
-    DROP TABLE IF EXISTS thread_turn_diffs;
-
     CREATE TABLE IF NOT EXISTS inbox_items (
       session_path TEXT PRIMARY KEY,
       unread INTEGER NOT NULL DEFAULT 1,
@@ -76,6 +185,8 @@ export function ensureThreadStateSchema(database: Database) {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  purgeLegacyCheckpointRefsMigration(database);
 
   if (!hasColumn(database, "projects", "custom_name")) {
     database.exec("ALTER TABLE projects ADD COLUMN custom_name TEXT");
