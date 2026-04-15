@@ -26,6 +26,7 @@ export type {
   PiSkillCatalogItem,
   PiSkillCatalogPage,
   PiSkillMutationResult,
+  ProjectDeletionMode,
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,

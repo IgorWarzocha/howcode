@@ -89,6 +89,7 @@ export function Sidebar({
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "gitops" ||
+    activeView === "archived" ||
     activeView === "settings" ||
     activeView === "extensions" ||
     activeView === "skills";

@@ -1,4 +1,4 @@
-import { Archive, FolderOpen, Star } from "lucide-react";
+import { Archive, FolderOpen, Star, Trash2 } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { DesktopActionInvoker } from "../../desktop/types";
@@ -59,6 +59,13 @@ export function ProjectActionMenu({
       icon: <Archive size={14} />,
       title: "Archive all",
       action: "project.archive-threads",
+    },
+    {
+      icon: <Trash2 size={14} />,
+      title: "Delete project",
+      action: "project.remove-project",
+      className:
+        "text-[#f2a7a7] hover:text-[#ffd1d1] [&>span:first-child]:text-[#f2a7a7] [&:hover>span:first-child]:text-[#ffd1d1]",
     },
   ];
 

@@ -1,3 +1,5 @@
+import { readdir, rm, unlink } from "node:fs/promises";
+import path from "node:path";
 import { Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
@@ -15,7 +17,8 @@ import { importProjects, scanKnownProjects } from "../project-import.cts";
 import {
   archiveProjectThreads,
   collapseAllProjects,
-  hideProject,
+  deleteProject,
+  listProjectSessionPaths,
   renameProject,
   reorderProjects,
   setProjectCollapsed,
@@ -24,6 +27,69 @@ import {
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
+
+async function unlinkIfPresent(filePath: string) {
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    if (
+      typeof error !== "object" ||
+      error === null ||
+      !("code" in error) ||
+      error.code !== "ENOENT"
+    ) {
+      throw error;
+    }
+  }
+}
+
+async function removeDirectoryIfEmpty(directoryPath: string) {
+  try {
+    const entries = await readdir(directoryPath);
+    if (entries.length > 0) {
+      return;
+    }
+
+    await rm(directoryPath, { recursive: true, force: true });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTEMPTY" || error.code === "ENOTDIR")
+    ) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function deleteProjectPiFiles(projectId: string) {
+  const sessionPaths = listProjectSessionPaths(projectId);
+  const resolvedProjectId = path.resolve(projectId);
+  const removableDirectories = new Set<string>();
+
+  for (const sessionPath of sessionPaths) {
+    await unlinkIfPresent(sessionPath);
+
+    let currentDirectory = path.dirname(path.resolve(sessionPath));
+    while (currentDirectory.startsWith(`${resolvedProjectId}${path.sep}`)) {
+      removableDirectories.add(currentDirectory);
+      const parentDirectory = path.dirname(currentDirectory);
+      if (parentDirectory === currentDirectory) {
+        break;
+      }
+      currentDirectory = parentDirectory;
+    }
+  }
+
+  for (const directoryPath of [...removableDirectories].sort(
+    (left, right) => right.length - left.length,
+  )) {
+    await removeDirectoryIfEmpty(directoryPath);
+  }
+}
 
 export async function handleProjectDesktopAction(
   action: DesktopAction,
@@ -121,7 +187,15 @@ export async function handleProjectDesktopAction(
     case "project.remove-project": {
       const projectId = getProjectId(payload);
       if (projectId) {
-        hideProject(projectId);
+        const appSettings = loadAppSettings();
+
+        if (appSettings.projectDeletionMode === "full-clean") {
+          await rm(projectId, { recursive: true, force: true });
+        } else {
+          await deleteProjectPiFiles(projectId);
+        }
+
+        deleteProject(projectId);
       }
       return handledAction();
     }

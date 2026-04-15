@@ -80,6 +80,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
     payload.key !== "initializeGitOnProjectCreate" &&
+    payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "piTuiTakeover"
   ) {
@@ -134,6 +135,12 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.initializeGitOnProjectCreate;
 
+  const nextProjectDeletionMode =
+    payload.key === "projectDeletionMode" &&
+    (payload.value === "pi-only" || payload.value === "full-clean")
+      ? payload.value
+      : currentState.appSettings.projectDeletionMode;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
@@ -154,6 +161,7 @@ export function getOptimisticallyUpdatedShellState(
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
+      projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       piTuiTakeover: nextPiTuiTakeover,
     },
@@ -309,7 +317,7 @@ export async function runPostDesktopActionEffects({
 
     if (action === "thread.archive") {
       await refreshArchivedThreadsIfOpen({
-        archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+        archivedThreadsVisible: workspaceState.activeView === "archived",
         loadArchivedThreads,
         setArchivedThreads,
       });
@@ -356,7 +364,7 @@ export async function runPostDesktopActionEffects({
   if (action === "project.edit-name") {
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });
@@ -379,7 +387,7 @@ export async function runPostDesktopActionEffects({
 
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });
@@ -398,7 +406,7 @@ export async function runPostDesktopActionEffects({
 
     await refreshShellState();
     await refreshArchivedThreadsIfOpen({
-      archivedThreadsOpen: workspaceState.archivedThreadsOpen,
+      archivedThreadsVisible: workspaceState.activeView === "archived",
       loadArchivedThreads,
       setArchivedThreads,
     });

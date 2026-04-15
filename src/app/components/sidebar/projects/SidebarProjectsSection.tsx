@@ -56,6 +56,7 @@ export function SidebarProjectsSection({
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "gitops" ||
+    activeView === "archived" ||
     activeView === "settings" ||
     activeView === "extensions" ||
     activeView === "skills";
@@ -292,6 +293,7 @@ export function SidebarProjectsSection({
           terminalRunningSessionPaths={terminalRunningSessionPaths}
           activeView={activeView}
           selectionModeActive={selectionModeActive}
+          revealOldThreads={searchQuery.trim().length > 0}
           collapsedProjectIds={effectiveCollapsedProjectIds}
           onAction={onAction}
           onProjectSelect={onProjectSelect}

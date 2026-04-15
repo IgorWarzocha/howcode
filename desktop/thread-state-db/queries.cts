@@ -148,6 +148,21 @@ export function listArchivedThreads(): ArchivedThread[] {
   return rows.map(mapArchivedThreadRow);
 }
 
+export function listProjectSessionPaths(projectId: string) {
+  const db = getThreadStateDatabase();
+  const rows = db
+    .prepare(
+      `
+        SELECT session_path AS sessionPath
+        FROM threads
+        WHERE cwd = ?
+      `,
+    )
+    .all(projectId) as ThreadPathRow[];
+
+  return rows.map((row) => row.sessionPath);
+}
+
 export function getThreadSessionPath(threadId: string) {
   const db = getThreadStateDatabase();
   const row = db

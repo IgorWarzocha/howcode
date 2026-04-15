@@ -18,7 +18,6 @@ export type WorkspaceState = {
   selectedDiffFilePath: string | null;
   settingsOpen: boolean;
   settingsPanelOpen: boolean;
-  archivedThreadsOpen: boolean;
   collapsedProjectIds: Record<string, boolean>;
 };
 
@@ -43,7 +42,6 @@ export type WorkspaceAction =
   | { type: "set-session-takeover-override"; sessionPath: string; visible: boolean | null }
   | { type: "toggle-settings" }
   | { type: "set-settings-panel-open"; open: boolean }
-  | { type: "set-archived-threads-open"; open: boolean }
   | { type: "toggle-project-collapse"; projectId: string }
   | { type: "collapse-all-projects" };
 
@@ -133,7 +131,6 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedDiffFilePath: null,
     settingsOpen: false,
     settingsPanelOpen: false,
-    archivedThreadsOpen: false,
     collapsedProjectIds: Object.fromEntries(
       projects.map((project) => [project.id, project.collapsed ?? true]),
     ),
@@ -183,6 +180,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         ...getTerminalStateForNextView(state, action.view),
         activeView: action.view,
+        settingsOpen: false,
+        settingsPanelOpen: false,
         selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
         selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
@@ -330,14 +329,6 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         settingsPanelOpen: action.open,
         settingsOpen: action.open ? false : state.settingsOpen,
-        archivedThreadsOpen: action.open ? false : state.archivedThreadsOpen,
-      };
-    case "set-archived-threads-open":
-      return {
-        ...state,
-        archivedThreadsOpen: action.open,
-        settingsOpen: action.open ? false : state.settingsOpen,
-        settingsPanelOpen: action.open ? false : state.settingsPanelOpen,
       };
     case "toggle-project-collapse":
       return {
@@ -377,6 +368,10 @@ export function selectThread(
 export function getCurrentTitle(activeView: View, selectedThread: Thread | undefined): string {
   if (activeView === "gitops") {
     return "Git ops";
+  }
+
+  if (activeView === "archived") {
+    return "Archived threads";
   }
 
   return activeView === "thread" && selectedThread ? selectedThread.title : "New thread";

@@ -103,7 +103,7 @@ export function ProjectRow({
     <div
       className={cn(
         sidebarRowClass,
-        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2 py-0.5",
+        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-0.5",
         (isActive || actionMenuOpen) && "bg-[rgba(183,186,245,0.08)]",
         isDragging && "ring-1 ring-[rgba(183,186,245,0.24)]",
       )}

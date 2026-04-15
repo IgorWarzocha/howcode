@@ -31,7 +31,7 @@ export function ThreadRow({
   return (
     <div
       className={cn(
-        "group grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
+        "group grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
         isSelected &&
           "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
       )}
@@ -72,7 +72,7 @@ export function ThreadRow({
         {terminalRunning ? (
           <span
             className={cn(
-              "absolute right-0 inline-flex items-center justify-center text-[color:var(--muted)] transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
+              "absolute right-0.5 inline-flex items-center justify-center text-[color:var(--muted)] transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
             )}
           >
             <SquareTerminal size={12} />
@@ -80,7 +80,7 @@ export function ThreadRow({
         ) : (
           <span
             className={cn(
-              "absolute right-0 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
+              "absolute right-0.5 transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
             )}
             aria-hidden="true"
           >
@@ -91,7 +91,7 @@ export function ThreadRow({
           type="button"
           className={cn(
             compactIconButtonClass,
-            "absolute right-0 h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
+            "absolute right-0.5 h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
           )}
           onClick={onArchive}
           aria-label="Archive thread"

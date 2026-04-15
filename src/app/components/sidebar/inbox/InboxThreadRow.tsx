@@ -32,7 +32,7 @@ export function InboxThreadRow({
     <div
       className={cn(
         sidebarRowClass,
-        "group grid grid-cols-[16px_minmax(0,1fr)_18px] items-start gap-2 px-2 py-2",
+        "group grid grid-cols-[16px_minmax(0,1fr)_18px] items-start gap-2 px-2.5 py-2",
         selected && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
       )}
     >

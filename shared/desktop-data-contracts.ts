@@ -241,6 +241,8 @@ export type ModelSelection = {
   id: string;
 };
 
+export type ProjectDeletionMode = "pi-only" | "full-clean";
+
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   skillCreatorModel: ModelSelection | null;
@@ -248,6 +250,7 @@ export type AppSettings = {
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
+  projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
   piTuiTakeover: boolean;
 };

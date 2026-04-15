@@ -344,6 +344,16 @@ export function hideProject(projectId: string) {
   ).run(projectId);
 }
 
+export function deleteProject(projectId: string) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      DELETE FROM projects
+      WHERE cwd = ?
+    `,
+  ).run(projectId);
+}
+
 export function restoreThread(threadId: string) {
   const db = getThreadStateDatabase();
   db.prepare(

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ArchivedThreadsPanel } from "../components/settings/ArchivedThreadsPanel";
 import { ProjectActionDialog } from "../components/sidebar/ProjectActionDialog";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -33,10 +32,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     composerProjectId,
     currentProjectName,
     handleAction,
-    handleCloseArchivedThreads,
     handleCloseProjectActionDialog,
     handleConfirmProjectAction,
-    handleOpenArchivedThreads,
     handleProjectReorder,
     handleProjectSelect,
     handleShowView,
@@ -98,6 +95,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 projectImportState: null,
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
+                projectDeletionMode: "pi-only",
                 useAgentsSkillsPaths: false,
                 piTuiTakeover: false,
               }
@@ -133,7 +131,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               }
             }}
             onOpenArchivedThreads={() => {
-              handleOpenArchivedThreads();
+              handleShowView("archived");
               if (state.settingsOpen) {
                 handleToggleSettings();
               }
@@ -221,14 +219,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         </section>
       </div>
 
-      <ArchivedThreadsPanel
-        open={state.archivedThreadsOpen}
-        threads={archivedThreads}
-        onClose={handleCloseArchivedThreads}
-        onAction={handleAction}
-      />
       <ProjectActionDialog
         pendingAction={pendingProjectAction}
+        projectDeletionMode={controller.shellState?.appSettings?.projectDeletionMode ?? "pi-only"}
         onClose={handleCloseProjectActionDialog}
         onConfirm={handleConfirmProjectAction}
       />

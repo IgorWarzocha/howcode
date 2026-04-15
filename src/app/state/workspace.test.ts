@@ -222,32 +222,28 @@ describe("workspace state", () => {
     expect(nextState.selectedDiffFilePath).toBeNull();
   });
 
-  it("keeps settings and archived panels mutually exclusive", () => {
+  it("opens the archived threads view like any other main view", () => {
     const settingsState = workspaceReducer(
       {
         ...createInitialWorkspaceState(mockProjects),
         settingsOpen: true,
-        archivedThreadsOpen: true,
       },
       { type: "set-settings-panel-open", open: true },
     );
 
     expect(settingsState.settingsPanelOpen).toBe(true);
     expect(settingsState.settingsOpen).toBe(false);
-    expect(settingsState.archivedThreadsOpen).toBe(false);
 
     const archivedState = workspaceReducer(
       {
         ...createInitialWorkspaceState(mockProjects),
         settingsOpen: true,
-        settingsPanelOpen: true,
       },
-      { type: "set-archived-threads-open", open: true },
+      { type: "show-view", view: "archived" },
     );
 
-    expect(archivedState.archivedThreadsOpen).toBe(true);
+    expect(archivedState.activeView).toBe("archived");
     expect(archivedState.settingsOpen).toBe(false);
-    expect(archivedState.settingsPanelOpen).toBe(false);
   });
 
   it("toggles and collapses all project groups", () => {
@@ -352,6 +348,7 @@ describe("workspace state", () => {
     expect(thread).toBeUndefined();
     expect(getCurrentTitle("thread", thread)).toBe("New thread");
     expect(getCurrentTitle("gitops", thread)).toBe("Git ops");
+    expect(getCurrentTitle("archived", thread)).toBe("Archived threads");
     expect(getCurrentTitle("code", thread)).toBe("New thread");
   });
 });

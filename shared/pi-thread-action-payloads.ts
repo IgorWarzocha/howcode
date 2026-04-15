@@ -5,6 +5,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionPayloadInput,
   ModelSelection,
+  ProjectDeletionMode,
 } from "./desktop-contracts";
 import { getPersistedSessionPath } from "./session-paths";
 
@@ -115,6 +116,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
     payload.key === "initializeGitOnProjectCreate" ||
+    payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
@@ -159,4 +161,10 @@ export function getSettingsPreferredProjectLocation(payload: DesktopActionPayloa
 
 export function getSettingsBooleanValue(payload: DesktopActionPayloadInput) {
   return typeof payload.value === "boolean" ? payload.value : null;
+}
+
+export function getSettingsProjectDeletionMode(
+  payload: DesktopActionPayloadInput,
+): ProjectDeletionMode | null {
+  return payload.value === "pi-only" || payload.value === "full-clean" ? payload.value : null;
 }

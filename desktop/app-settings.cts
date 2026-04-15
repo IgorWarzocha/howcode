@@ -1,4 +1,8 @@
-import type { AppSettings, ModelSelection } from "../shared/desktop-contracts.ts";
+import type {
+  AppSettings,
+  ModelSelection,
+  ProjectDeletionMode,
+} from "../shared/desktop-contracts.ts";
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
@@ -7,6 +11,7 @@ const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
+const projectDeletionModeKey = "projectDeletionMode";
 const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 const piTuiTakeoverKey = "piTuiTakeover";
 
@@ -72,6 +77,21 @@ function parseStringPreference(valueJson: string | null | undefined): string | n
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return typeof parsed === "string" && parsed.trim().length > 0 ? parsed.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseProjectDeletionModePreference(
+  valueJson: string | null | undefined,
+): ProjectDeletionMode | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "pi-only" || parsed === "full-clean" ? parsed : null;
   } catch {
     return null;
   }
@@ -156,6 +176,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(initializeGitOnProjectCreateKey) as PreferenceRow | undefined;
+  const projectDeletionModeRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(projectDeletionModeKey) as PreferenceRow | undefined;
   const useAgentsSkillsPathsRow = db
     .prepare(
       `
@@ -183,6 +212,8 @@ export function loadAppSettings(): AppSettings {
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
+    projectDeletionMode:
+      parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
     piTuiTakeover: parseBooleanPreference(piTuiTakeoverRow?.valueJson) ?? false,
   };
@@ -240,6 +271,10 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled));
+}
+
+export function setProjectDeletionMode(mode: ProjectDeletionMode) {
+  writeAppPreference(projectDeletionModeKey, JSON.stringify(mode));
 }
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {

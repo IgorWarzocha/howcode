@@ -197,10 +197,12 @@ export function CodeWorkspaceView({
                     projectImportState: null,
                     preferredProjectLocation: null,
                     initializeGitOnProjectCreate: false,
+                    projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
                     piTuiTakeover: false,
                   }
                 }
+                archivedThreads={controller.archivedThreads}
                 availableModels={activeComposerState?.availableModels ?? []}
                 currentModel={activeComposerState?.currentModel ?? null}
                 currentProjectName={currentProjectName}

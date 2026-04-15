@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  AppSettings,
-  ComposerModel,
-  DesktopActionInvoker,
-  ModelSelection,
-} from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project } from "../../types";
@@ -151,6 +146,11 @@ export function useSettingsController({
       void onAction("settings.update", {
         key: "initializeGitOnProjectCreate",
         value: !appSettings.initializeGitOnProjectCreate,
+      }),
+    setProjectDeletionMode: (value: AppSettings["projectDeletionMode"]) =>
+      void onAction("settings.update", {
+        key: "projectDeletionMode",
+        value,
       }),
     togglePiTuiTakeover: () =>
       void onAction("settings.update", {

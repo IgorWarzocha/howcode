@@ -1,12 +1,14 @@
 import { Suspense, lazy } from "react";
 import type {
   AppSettings,
+  ArchivedThread,
   ComposerModel,
   DesktopActionInvoker,
   InboxThread,
   ThreadData,
 } from "../../desktop/types";
 import type { Project, View } from "../../types";
+import { ArchivedThreadsView } from "../../views/ArchivedThreadsView";
 import { InboxView } from "../../views/InboxView";
 import { LandingView } from "../../views/LandingView";
 import { SettingsView } from "../../views/SettingsView";
@@ -25,6 +27,7 @@ const SkillsView = lazy(async () => {
 type CodeWorkspaceMainViewProps = {
   activeView: View;
   appSettings: AppSettings;
+  archivedThreads: ArchivedThread[];
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
   currentProjectName: string;
@@ -46,6 +49,7 @@ type CodeWorkspaceMainViewProps = {
 export function CodeWorkspaceMainView({
   activeView,
   appSettings,
+  archivedThreads,
   availableModels,
   currentModel,
   currentProjectName,
@@ -98,6 +102,10 @@ export function CodeWorkspaceMainView({
         onAction={onAction}
       />
     );
+  }
+
+  if (activeView === "archived") {
+    return <ArchivedThreadsView threads={archivedThreads} onAction={onAction} />;
   }
 
   if (activeView === "extensions") {

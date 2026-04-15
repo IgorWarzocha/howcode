@@ -1,6 +1,7 @@
 import { Check, FolderPlus } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionIntro } from "../../components/common/SectionIntro";
+import { SegmentedToggle } from "../../components/common/SegmentedToggle";
 import type { AppSettings } from "../../desktop/types";
 import { settingsInputClass, settingsListRowClass, settingsSectionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
@@ -10,6 +11,7 @@ export function SettingsProjectDefaultsSection({
   preferredProjectLocationDraft,
   savePreferredProjectLocation,
   setPreferredProjectLocationDraft,
+  setProjectDeletionMode,
   toggleInitializeGitOnProjectCreate,
   togglePiTuiTakeover,
 }: {
@@ -17,6 +19,7 @@ export function SettingsProjectDefaultsSection({
   preferredProjectLocationDraft: string;
   savePreferredProjectLocation: () => void;
   setPreferredProjectLocationDraft: Dispatch<SetStateAction<string>>;
+  setProjectDeletionMode: (value: AppSettings["projectDeletionMode"]) => void;
   toggleInitializeGitOnProjectCreate: () => void;
   togglePiTuiTakeover: () => void;
 }) {
@@ -83,6 +86,25 @@ export function SettingsProjectDefaultsSection({
           >
             <Check size={13} />
           </button>
+        </div>
+
+        <div className={settingsListRowClass}>
+          <div className="grid gap-0.5">
+            <div className="text-[13px] text-[color:var(--text)]">Project deletion cleanup</div>
+            <div className="text-[12px] text-[color:var(--muted)]">
+              Delete only Pi session files, or nuke the full project folder from disk.
+            </div>
+          </div>
+          <SegmentedToggle
+            value={appSettings.projectDeletionMode}
+            options={
+              [
+                { value: "pi-only", label: "Pi only" },
+                { value: "full-clean", label: "Full clean" },
+              ] as const
+            }
+            onChange={setProjectDeletionMode}
+          />
         </div>
 
         <div className={settingsListRowClass}>

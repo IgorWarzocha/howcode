@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react";
-import type { AnyDesktopActionPayload } from "../../desktop/types";
+import type { AnyDesktopActionPayload, ProjectDeletionMode } from "../../desktop/types";
 import { modalPanelClass, panelChromeClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { PrimaryButton } from "../common/PrimaryButton";
@@ -15,11 +15,15 @@ export type PendingProjectDialog = {
 
 type ProjectActionDialogProps = {
   pendingAction: PendingProjectDialog | null;
+  projectDeletionMode: ProjectDeletionMode;
   onClose: () => void;
   onConfirm: (payload?: AnyDesktopActionPayload) => Promise<void>;
 };
 
-function getDialogCopy(pendingAction: PendingProjectDialog) {
+function getDialogCopy(
+  pendingAction: PendingProjectDialog,
+  projectDeletionMode: ProjectDeletionMode,
+) {
   switch (pendingAction.action) {
     case "project.archive-threads":
       return {
@@ -30,16 +34,20 @@ function getDialogCopy(pendingAction: PendingProjectDialog) {
       };
     case "project.remove-project":
       return {
-        confirmLabel: "Remove project",
-        description: `Hide ${pendingAction.projectName} from the sidebar without deleting its Pi session files from disk.`,
+        confirmLabel: "Delete project",
+        description:
+          projectDeletionMode === "full-clean"
+            ? `Delete ${pendingAction.projectName} and everything inside its project folder from disk.`
+            : `Delete ${pendingAction.projectName}'s Pi session files from disk and remove the project from the sidebar.`,
         inputLabel: null,
-        title: "Remove project from sidebar",
+        title: "Delete project",
       };
   }
 }
 
 export function ProjectActionDialog({
   pendingAction,
+  projectDeletionMode,
   onClose,
   onConfirm,
 }: ProjectActionDialogProps) {
@@ -68,7 +76,7 @@ export function ProjectActionDialog({
     return null;
   }
 
-  const copy = getDialogCopy(pendingAction);
+  const copy = getDialogCopy(pendingAction, projectDeletionMode);
 
   return (
     <div

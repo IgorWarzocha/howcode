@@ -59,15 +59,15 @@ export function buildPendingProjectAction(
 }
 
 export async function refreshArchivedThreadsIfOpen({
-  archivedThreadsOpen,
+  archivedThreadsVisible,
   loadArchivedThreads,
   setArchivedThreads,
 }: {
-  archivedThreadsOpen: boolean;
+  archivedThreadsVisible: boolean;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   setArchivedThreads: (threads: ArchivedThread[]) => void;
 }) {
-  if (!archivedThreadsOpen) {
+  if (!archivedThreadsVisible) {
     return;
   }
 

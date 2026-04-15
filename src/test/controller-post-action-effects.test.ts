@@ -21,6 +21,7 @@ function buildShellState(): ShellState {
       projectImportState: null,
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
+      projectDeletionMode: "pi-only",
       useAgentsSkillsPaths: false,
       piTuiTakeover: false,
     },
@@ -146,6 +147,17 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         useAgentsSkillsPaths: true,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "projectDeletionMode",
+        value: "full-clean",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        projectDeletionMode: "full-clean",
       },
     });
 

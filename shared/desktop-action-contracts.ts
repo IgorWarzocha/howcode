@@ -4,6 +4,7 @@ import type {
   ComposerAttachment,
   ComposerState,
   ComposerThinkingLevel,
+  ProjectDeletionMode,
   ProjectImportCandidate,
 } from "./desktop-data-contracts";
 
@@ -46,6 +47,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "projectImportState"; imported: boolean | null }
   | { key: "preferredProjectLocation"; value: string | null }
   | { key: "initializeGitOnProjectCreate"; value: boolean }
+  | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
   | { key: "piTuiTakeover"; value: boolean };
 
