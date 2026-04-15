@@ -80,6 +80,22 @@ export function hasProject(projectId: string) {
   return row?.id === projectId;
 }
 
+export function hasRunningProjectThread(projectId: string) {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT id
+        FROM threads
+        WHERE cwd = ? AND running = 1
+        LIMIT 1
+      `,
+    )
+    .get(projectId) as { id?: string } | undefined;
+
+  return typeof row?.id === "string";
+}
+
 export function listProjectThreads(projectId: string): Thread[] {
   const db = getThreadStateDatabase();
   const rows = db

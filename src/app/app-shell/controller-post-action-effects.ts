@@ -9,6 +9,7 @@ import type {
   DesktopActionResult,
   ProjectGitState,
   ShellState,
+  Thread,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
@@ -40,6 +41,10 @@ function getResultThreadIds(threadIds: unknown) {
   return Array.isArray(threadIds)
     ? threadIds.filter((threadId): threadId is string => typeof threadId === "string")
     : [];
+}
+
+function isThreadList(value: unknown): value is Thread[] {
+  return Array.isArray(value);
 }
 
 function hasActionError(actionResult: DesktopActionResult | null | undefined) {
@@ -454,7 +459,19 @@ export async function runPostDesktopActionEffects({
         return;
       }
 
+      const projectId = getPayloadProjectId(contextualPayload);
       await refreshShellState();
+      const refreshedThreads = projectId ? await loadProjectThreads(projectId) : null;
+
+      if (
+        projectId === workspaceState.selectedProjectId &&
+        workspaceState.selectedThreadId &&
+        isThreadList(refreshedThreads) &&
+        !refreshedThreads.some((thread) => thread.id === workspaceState.selectedThreadId)
+      ) {
+        dispatch({ type: "show-view", view: "code" });
+      }
+
       await refreshArchivedThreadsIfOpen({
         archivedThreadsVisible: workspaceState.activeView === "archived",
         loadArchivedThreads,

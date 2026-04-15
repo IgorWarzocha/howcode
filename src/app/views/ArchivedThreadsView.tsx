@@ -1,5 +1,6 @@
 import { ArchiveRestore, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ConfirmPopover } from "../components/common/ConfirmPopover";
 import { PrimaryButton } from "../components/common/PrimaryButton";
 import { TextButton } from "../components/common/TextButton";
 import { ViewHeader } from "../components/common/ViewHeader";
@@ -15,6 +16,11 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   const [selectedThreadIds, setSelectedThreadIds] = useState<string[]>([]);
   const [optimisticallyHiddenThreadIds, setOptimisticallyHiddenThreadIds] = useState<string[]>([]);
   const [busyAction, setBusyAction] = useState<"restore" | "delete" | null>(null);
+  const [confirmBulkDeleteTarget, setConfirmBulkDeleteTarget] = useState<"all" | "selected" | null>(
+    null,
+  );
+  const deleteAllButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteSelectedButtonRef = useRef<HTMLButtonElement>(null);
 
   const visibleThreads = useMemo(
     () => threads.filter((thread) => !optimisticallyHiddenThreadIds.includes(thread.id)),
@@ -23,6 +29,14 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   const visibleThreadIds = useMemo(
     () => visibleThreads.map((thread) => thread.id),
     [visibleThreads],
+  );
+  const selectedVisibleThreads = useMemo(
+    () => visibleThreads.filter((thread) => selectedThreadIds.includes(thread.id)),
+    [selectedThreadIds, visibleThreads],
+  );
+  const selectedVisibleProjectIds = useMemo(
+    () => [...new Set(selectedVisibleThreads.map((thread) => thread.projectId))],
+    [selectedVisibleThreads],
   );
 
   useEffect(() => {
@@ -40,6 +54,12 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
       current.filter((threadId) => nextVisibleThreadIds.has(threadId)),
     );
   }, [visibleThreadIds]);
+
+  useEffect(() => {
+    if (busyAction !== null) {
+      setConfirmBulkDeleteTarget(null);
+    }
+  }, [busyAction]);
 
   const allVisibleSelected =
     visibleThreadIds.length > 0 && selectedThreadIds.length === visibleThreadIds.length;
@@ -113,21 +133,35 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
         subtitle="Restore archived threads back into the sidebar or delete them permanently from the app and disk."
         actions={
           visibleThreads.length > 0 ? (
-            <TextButton
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
-              disabled={busyAction !== null}
-              onClick={() => {
-                void runArchivedThreadMutation({
-                  action: "thread.delete-many",
-                  busyState: "delete",
-                  projectIds: [...new Set(visibleThreads.map((thread) => thread.projectId))],
-                  threadIds: visibleThreadIds,
-                });
-              }}
-            >
-              <Trash2 size={14} />
-              Delete all
-            </TextButton>
+            <div className="relative">
+              <TextButton
+                ref={deleteAllButtonRef}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                disabled={busyAction !== null}
+                onClick={() => {
+                  setConfirmBulkDeleteTarget((current) => (current === "all" ? null : "all"));
+                }}
+              >
+                <Trash2 size={14} />
+                Delete all
+              </TextButton>
+
+              <ConfirmPopover
+                open={confirmBulkDeleteTarget === "all"}
+                anchorRef={deleteAllButtonRef}
+                confirmLabel="Delete"
+                onClose={() => setConfirmBulkDeleteTarget(null)}
+                onConfirm={() => {
+                  setConfirmBulkDeleteTarget(null);
+                  void runArchivedThreadMutation({
+                    action: "thread.delete-many",
+                    busyState: "delete",
+                    projectIds: [...new Set(visibleThreads.map((thread) => thread.projectId))],
+                    threadIds: visibleThreadIds,
+                  });
+                }}
+              />
+            </div>
           ) : null
         }
       />
@@ -173,27 +207,37 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                 <ArchiveRestore size={14} />
                 Restore selected
               </PrimaryButton>
-              <TextButton
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
-                disabled={selectedThreadIds.length === 0 || busyAction !== null}
-                onClick={() => {
-                  void runArchivedThreadMutation({
-                    action: "thread.delete-many",
-                    busyState: "delete",
-                    projectIds: [
-                      ...new Set(
-                        visibleThreads
-                          .filter((thread) => selectedThreadIds.includes(thread.id))
-                          .map((thread) => thread.projectId),
-                      ),
-                    ],
-                    threadIds: selectedThreadIds,
-                  });
-                }}
-              >
-                <Trash2 size={14} />
-                Delete selected
-              </TextButton>
+              <div className="relative">
+                <TextButton
+                  ref={deleteSelectedButtonRef}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                  disabled={selectedThreadIds.length === 0 || busyAction !== null}
+                  onClick={() => {
+                    setConfirmBulkDeleteTarget((current) =>
+                      current === "selected" ? null : "selected",
+                    );
+                  }}
+                >
+                  <Trash2 size={14} />
+                  Delete selected
+                </TextButton>
+
+                <ConfirmPopover
+                  open={confirmBulkDeleteTarget === "selected"}
+                  anchorRef={deleteSelectedButtonRef}
+                  confirmLabel="Delete"
+                  onClose={() => setConfirmBulkDeleteTarget(null)}
+                  onConfirm={() => {
+                    setConfirmBulkDeleteTarget(null);
+                    void runArchivedThreadMutation({
+                      action: "thread.delete-many",
+                      busyState: "delete",
+                      projectIds: selectedVisibleProjectIds,
+                      threadIds: selectedThreadIds,
+                    });
+                  }}
+                />
+              </div>
             </div>
           </div>
 

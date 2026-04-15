@@ -3,6 +3,7 @@ export {
   getThreadAssistantSnapshot,
   getThreadCwd,
   hasProject,
+  hasRunningProjectThread,
   listProjectSessionPaths,
   getThreadSessionPath,
   hasInboxItem,

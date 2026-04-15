@@ -14,12 +14,14 @@ import { selectProjectRuntime } from "../pi-desktop-runtime.cts";
 import { createProject } from "../project-create.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
 import { importProjects, scanKnownProjects } from "../project-import.cts";
+import { listTerminals } from "../terminal/manager.cts";
 import {
   archiveProjectThreads,
   collapseAllProjects,
   deleteProject,
   deleteThreadRecordsBySessionPaths,
   hasProject,
+  hasRunningProjectThread,
   listProjectSessionPaths,
   renameProject,
   reorderProjects,
@@ -148,6 +150,19 @@ async function isProtectedProjectDeletionTarget(projectId: string, activeProject
   return relativePath.length === 0 || !isOutsideCandidate;
 }
 
+async function isBusyProjectDeletionTarget(projectId: string) {
+  if (hasRunningProjectThread(projectId)) {
+    return true;
+  }
+
+  const terminalSnapshots = await listTerminals();
+  return terminalSnapshots.some(
+    (snapshot) =>
+      snapshot.projectId === projectId &&
+      (snapshot.status === "starting" || snapshot.status === "running"),
+  );
+}
+
 export async function handleProjectDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
@@ -253,6 +268,12 @@ export async function handleProjectDesktopAction(
         if (await isProtectedProjectDeletionTarget(projectId, process.cwd())) {
           return handledAction({
             error: "Cannot delete the active shell project.",
+          });
+        }
+
+        if (await isBusyProjectDeletionTarget(projectId)) {
+          return handledAction({
+            error: "Cannot delete a project while Pi or a terminal is still running in it.",
           });
         }
 
