@@ -353,8 +353,6 @@ export async function runPostDesktopActionEffects({
     action === "thread.delete" ||
     action === "thread.delete-many"
   ) {
-    setArchivedThreads(await loadArchivedThreads());
-
     const isBatchThreadMutation =
       action === "thread.restore-many" || action === "thread.delete-many";
 
@@ -364,6 +362,8 @@ export async function runPostDesktopActionEffects({
     } else if (projectId) {
       await loadProjectThreads(projectId);
     }
+
+    setArchivedThreads(await loadArchivedThreads());
 
     const deletedThreadIds =
       action === "thread.delete"

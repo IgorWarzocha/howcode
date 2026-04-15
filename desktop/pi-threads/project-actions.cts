@@ -50,7 +50,7 @@ async function removeDirectoryIfEmpty(directoryPath: string) {
       return;
     }
 
-    await rm(directoryPath, { recursive: true, force: true });
+    await rm(directoryPath);
   } catch (error) {
     if (
       typeof error === "object" &&
@@ -111,10 +111,12 @@ async function isProtectedProjectDeletionTarget(projectId: string, activeProject
     resolveProjectPathForComparison(activeProjectId),
   ]);
   const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId);
+  const isOutsideCandidate =
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath);
 
-  return (
-    relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-  );
+  return relativePath.length === 0 || !isOutsideCandidate;
 }
 
 export async function handleProjectDesktopAction(

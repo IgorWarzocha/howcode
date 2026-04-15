@@ -72,7 +72,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
           ? { projectId, threadId: threadIds[0] }
           : { threadIds },
       );
-      failed = result?.ok === false || typeof result?.result?.error === "string";
+      failed = result === null || result.ok === false || typeof result.result?.error === "string";
     } catch {
       failed = true;
     }

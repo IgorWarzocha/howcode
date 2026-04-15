@@ -27,6 +27,7 @@ export type InboxThread = {
 
 export type Project = {
   id: string;
+  resolvedId?: string;
   name: string;
   threads: Thread[];
   latestModifiedMs?: number;
@@ -330,6 +331,7 @@ export type ShellState = {
   mockMode: boolean;
   productName: string;
   cwd: string;
+  resolvedCwd?: string;
   agentDir: string;
   sessionDir: string;
   projects: Project[];

@@ -6,7 +6,7 @@ description: Runs this repo's GitHub workflow with gh from issue intake through 
 # GH Issue PR Flow
 
 ## Purpose
-Use GitHub issues as the working brief for this repo. Read the referenced issue and comments, decide whether it is actionable now, branch from `dev`, implement the work, iterate through the user's `/review` loop, open a squash-ready PR with strong GitHub hygiene, request Codex review, wait 10 minutes, then triage the review results.
+Use GitHub issues as the working brief for this repo. Read the referenced issue and comments, decide whether it is actionable now, branch from `dev`, implement the work, iterate through the user's `/review` loop, open a squash-ready PR with strong GitHub hygiene, request Codex review, then return the PR link. Only triage review results when the user explicitly asks.
 
 ## Critical rules
 - Treat the issue body as the initial problem statement or prompt.
@@ -123,15 +123,14 @@ Useful command:
 gh pr comment <pr-number-or-url> --body "@codex please review this PR and give me 10-20 issues if any"
 ```
 
-### 8. Wait and check back
-1. Wait 10 minutes before checking for a reply.
-2. Then inspect new PR comments or review events.
-3. If Codex has not replied yet, report that clearly and ask whether to wait longer or check again later.
+### 8. Triage Codex feedback on request
+1. Do not wait by default after posting the Codex review request.
+2. Return the PR link to the user once the PR and comment are up.
+3. Only inspect new PR comments or review events when the user explicitly asks you to check feedback.
 
-Useful commands:
+Useful command:
 
 ```bash
-sleep 600
 gh pr view <pr-number-or-url> --comments
 ```
 
@@ -149,7 +148,8 @@ gh pr view <pr-number-or-url> --comments
 - The PR body clearly distinguishes `Closes` from `Refs`.
 - The user's `/review` findings were addressed or explicitly called out.
 - Codex was asked for review.
-- Codex feedback was triaged instead of accepted blindly.
+- The PR link was returned to the user after posting the review request.
+- Codex feedback was triaged instead of accepted blindly when the user asked for feedback handling.
 
 ## Error handling
 ### Error: issue is not actionable yet
@@ -161,8 +161,8 @@ Action: sync `dev` first. Do not branch from stale state.
 ### Error: PR accidentally points to `main`
 Action: correct the PR base to `dev` immediately.
 
-### Error: Codex does not reply after 10 minutes
-Action: report no reply yet, then wait longer only if the user wants that.
+### Error: Codex does not reply yet
+Action: only check when the user asks. If there is still no reply, report that clearly.
 
 ### Error: Codex reports low-value issues
 Action: do not churn on them. Fix the real ones, then note why the others were dismissed.
@@ -173,7 +173,8 @@ The completed flow should leave:
 - a PR targeting `dev`
 - a detailed PR description with correct closing references
 - a Codex review request comment on the PR
-- a short triage summary of which review findings were fixed and which were dismissed
+- the PR link returned to the user
+- a short triage summary of which review findings were fixed and which were dismissed when feedback triage was requested
 
 ## Examples
 ### Example 1

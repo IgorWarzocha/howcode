@@ -354,7 +354,10 @@ export function ProjectTree({
                         <ProjectActionMenu
                           menuId={actionMenuId}
                           canDelete={
-                            !isProtectedProjectDeletionTarget(project.id, protectedProjectId)
+                            !isProtectedProjectDeletionTarget(
+                              project.resolvedId ?? project.id,
+                              protectedProjectId,
+                            )
                           }
                           projectId={project.id}
                           projectName={project.name}

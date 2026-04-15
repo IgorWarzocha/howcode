@@ -101,7 +101,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               }
             }
             activeView={state.activeView}
-            protectedProjectId={controller.shellState?.cwd ?? null}
+            protectedProjectId={
+              controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
+            }
             selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
@@ -115,27 +117,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onToggleSettings={handleToggleSettings}
             onOpenExtensionsView={() => {
               handleShowView("extensions");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenSkillsView={() => {
               handleShowView("skills");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenSettingsPanel={() => {
               handleShowView("settings");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onOpenArchivedThreads={() => {
               handleShowView("archived");
-              if (state.settingsOpen) {
-                handleToggleSettings();
-              }
             }}
             onDismissInboxThread={controller.handleDismissInboxThread}
             onProjectSelect={handleProjectSelect}
