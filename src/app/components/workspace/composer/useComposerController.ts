@@ -220,6 +220,7 @@ export function useComposerController({
       return;
     }
 
+    setIsSending(true);
     setErrorMessage(null);
 
     try {
@@ -234,6 +235,8 @@ export function useComposerController({
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
+    } finally {
+      setIsSending(false);
     }
   };
 

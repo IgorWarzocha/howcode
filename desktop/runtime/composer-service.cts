@@ -9,7 +9,11 @@ import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/se
 import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
-import { findQueuedPromptIndexById, replayComposerQueue } from "./composer-queue";
+import {
+  findQueuedPromptIndexById,
+  removeQueuedPromptById,
+  replayComposerQueue,
+} from "./composer-queue";
 import {
   buildComposerState,
   buildComposerStateSnapshot,
@@ -212,25 +216,40 @@ export async function dequeueComposerPrompt(
       request.queueMode === "steer"
         ? runtime.session.getSteeringMessages()
         : runtime.session.getFollowUpMessages();
-    const queueIndex = findQueuedPromptIndexById(
-      request.queueMode,
-      [...currentQueue],
-      request.queueId,
-    );
-
-    if (queueIndex === null || queueIndex < 0 || queueIndex >= currentQueue.length) {
+    if (findQueuedPromptIndexById(request.queueMode, [...currentQueue], request.queueId) === null) {
+      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
       return null;
     }
 
     const clearedQueue = runtime.session.clearQueue();
-    const targetQueue =
-      request.queueMode === "steer" ? clearedQueue.steering : clearedQueue.followUp;
+    const dequeueResult = removeQueuedPromptById(clearedQueue, request.queueMode, request.queueId);
 
-    const [dequeuedText] = targetQueue.splice(queueIndex, 1);
+    if (!dequeueResult) {
+      await replayComposerQueue(runtime.session, clearedQueue);
+      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+      return null;
+    }
 
-    await replayComposerQueue(runtime.session, clearedQueue);
-    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-    return dequeuedText ?? null;
+    try {
+      await replayComposerQueue(runtime.session, dequeueResult.nextQueue);
+      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+      return dequeueResult.dequeuedText;
+    } catch (error) {
+      runtime.session.clearQueue();
+
+      try {
+        await replayComposerQueue(runtime.session, clearedQueue);
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+      } catch (rollbackError) {
+        throw new Error(
+          rollbackError instanceof Error
+            ? `Could not restore queued prompts after dequeue replay failure: ${rollbackError.message}`
+            : "Could not restore queued prompts after dequeue replay failure.",
+        );
+      }
+
+      throw error;
+    }
   } finally {
     scheduleRuntimeDisposalForRuntime(runtime);
   }

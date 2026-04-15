@@ -122,12 +122,21 @@ async function createRuntime(options: {
     }
 
     if (event.type === "queue_update") {
-      void buildComposerState(runtime).then((composer) => {
-        publishComposerUpdate(composer, {
-          projectId: runtime.cwd,
-          sessionPath: runtime.session.sessionFile,
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        })
+        .finally(() => {
+          if (runtimeKey && !runtime.session.isStreaming) {
+            scheduleRuntimeDisposal(runtimeKey);
+          }
         });
-      });
     }
   });
 

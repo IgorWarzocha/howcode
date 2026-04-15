@@ -82,9 +82,20 @@ export function CodeWorkspaceView({
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
   const footerInset = showWorkspaceFooter ? footerHeight : 0;
+  const pendingQueueScopeKey = `${composerProjectId}:${terminalSessionPath ?? ""}`;
+  const pendingQueueScopePrefix = `${pendingQueueScopeKey}:`;
   const diffCommentContextId = useMemo(
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
+  );
+  const pendingQueuedPromptIdsForSession = useMemo(
+    () =>
+      pendingQueuedPromptIds.flatMap((pendingKey) =>
+        pendingKey.startsWith(pendingQueueScopePrefix)
+          ? [pendingKey.slice(pendingQueueScopePrefix.length)]
+          : [],
+      ),
+    [pendingQueueScopePrefix, pendingQueuedPromptIds],
   );
 
   const scopedRestoredQueuedPrompt =
@@ -187,12 +198,14 @@ export function CodeWorkspaceView({
   };
 
   const handleEditQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
-    if (pendingQueuedPromptIdsRef.current.has(prompt.id)) {
+    const pendingKey = `${pendingQueueScopeKey}:${prompt.id}`;
+
+    if (pendingQueuedPromptIdsRef.current.has(pendingKey)) {
       return;
     }
 
-    pendingQueuedPromptIdsRef.current.add(prompt.id);
-    setPendingQueuedPromptIds((current) => [...current, prompt.id]);
+    pendingQueuedPromptIdsRef.current.add(pendingKey);
+    setPendingQueuedPromptIds((current) => [...current, pendingKey]);
 
     try {
       const result = await handleAction("composer.dequeue", {
@@ -210,18 +223,20 @@ export function CodeWorkspaceView({
         });
       }
     } finally {
-      pendingQueuedPromptIdsRef.current.delete(prompt.id);
-      setPendingQueuedPromptIds((current) => current.filter((id) => id !== prompt.id));
+      pendingQueuedPromptIdsRef.current.delete(pendingKey);
+      setPendingQueuedPromptIds((current) => current.filter((id) => id !== pendingKey));
     }
   };
 
   const handleRemoveQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
-    if (pendingQueuedPromptIdsRef.current.has(prompt.id)) {
+    const pendingKey = `${pendingQueueScopeKey}:${prompt.id}`;
+
+    if (pendingQueuedPromptIdsRef.current.has(pendingKey)) {
       return;
     }
 
-    pendingQueuedPromptIdsRef.current.add(prompt.id);
-    setPendingQueuedPromptIds((current) => [...current, prompt.id]);
+    pendingQueuedPromptIdsRef.current.add(pendingKey);
+    setPendingQueuedPromptIds((current) => [...current, pendingKey]);
 
     try {
       await handleAction("composer.dequeue", {
@@ -231,8 +246,8 @@ export function CodeWorkspaceView({
         queueMode: prompt.mode,
       });
     } finally {
-      pendingQueuedPromptIdsRef.current.delete(prompt.id);
-      setPendingQueuedPromptIds((current) => current.filter((id) => id !== prompt.id));
+      pendingQueuedPromptIdsRef.current.delete(pendingKey);
+      setPendingQueuedPromptIds((current) => current.filter((id) => id !== pendingKey));
     }
   };
 
@@ -348,7 +363,7 @@ export function CodeWorkspaceView({
                 <div className="grid gap-0">
                   <QueuedPromptsCard
                     prompts={activeComposerState?.queuedPrompts ?? []}
-                    pendingPromptIds={pendingQueuedPromptIds}
+                    pendingPromptIds={pendingQueuedPromptIdsForSession}
                     onEditPrompt={(prompt) => {
                       void handleEditQueuedPrompt(prompt);
                     }}

@@ -9,6 +9,7 @@ export type ComposerQueueSession = {
 };
 
 type ComposerQueueMode = Exclude<ComposerStreamingBehavior, "stop">;
+export type ComposerQueueSnapshot = { steering: string[]; followUp: string[] };
 
 function buildQueuedPromptId(mode: ComposerQueueMode, text: string, duplicateIndex: number) {
   return `${mode}:${duplicateIndex}:${text}`;
@@ -33,11 +34,18 @@ function buildQueuedPromptsForMode(
   });
 }
 
-export function buildQueuedPrompts(queue: { steering: string[]; followUp: string[] }) {
+export function buildQueuedPrompts(queue: ComposerQueueSnapshot) {
   return [
     ...buildQueuedPromptsForMode("steer", queue.steering),
     ...buildQueuedPromptsForMode("followUp", queue.followUp),
   ];
+}
+
+export function cloneComposerQueue(queue: ComposerQueueSnapshot): ComposerQueueSnapshot {
+  return {
+    steering: [...queue.steering],
+    followUp: [...queue.followUp],
+  };
 }
 
 export function findQueuedPromptIndexById(
@@ -51,9 +59,29 @@ export function findQueuedPromptIndexById(
   );
 }
 
+export function removeQueuedPromptById(
+  queue: ComposerQueueSnapshot,
+  mode: ComposerQueueMode,
+  queueId: string,
+) {
+  const nextQueue = cloneComposerQueue(queue);
+  const targetQueue = mode === "steer" ? nextQueue.steering : nextQueue.followUp;
+  const queueIndex = findQueuedPromptIndexById(mode, targetQueue, queueId);
+
+  if (queueIndex === null || queueIndex < 0 || queueIndex >= targetQueue.length) {
+    return null;
+  }
+
+  const [dequeuedText] = targetQueue.splice(queueIndex, 1);
+  return {
+    dequeuedText: dequeuedText ?? null,
+    nextQueue,
+  };
+}
+
 export async function replayComposerQueue(
   session: ComposerQueueSession,
-  queue: { steering: string[]; followUp: string[] },
+  queue: ComposerQueueSnapshot,
 ) {
   for (const queuedText of queue.steering) {
     await session.steer(queuedText);
