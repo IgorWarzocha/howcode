@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
+import { getDesktopActionErrorMessage } from "../../desktop/action-results";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
@@ -10,7 +11,7 @@ import {
   diffCommentStore,
   getDiffCommentContextId,
 } from "../../components/workspace/diff/diffCommentStore";
-import type { ProjectDiffBaseline } from "../../desktop/types";
+import type { ComposerQueuedPrompt, ProjectDiffBaseline } from "../../desktop/types";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 
@@ -29,6 +30,12 @@ type CodeWorkspaceViewProps = {
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
+
+type RestoredQueuedPromptState = {
+  projectId: string;
+  sessionPath: string | null;
+  text: string;
+};
 
 export function CodeWorkspaceView({
   controller,
@@ -52,8 +59,11 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const [restoredQueuedPrompt, setRestoredQueuedPrompt] = useState<string | null>(null);
-  const footerRef = useRef<HTMLDivElement>(null);
+  const [restoredQueuedPrompt, setRestoredQueuedPrompt] =
+    useState<RestoredQueuedPromptState | null>(null);
+  const [pendingQueuedPromptIds, setPendingQueuedPromptIds] = useState<string[]>([]);
+  const pendingQueuedPromptIdsRef = useRef(new Set<string>());
+  const footerRef = useRef<HTMLElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
@@ -76,6 +86,12 @@ export function CodeWorkspaceView({
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
+
+  const scopedRestoredQueuedPrompt =
+    restoredQueuedPrompt?.projectId === composerProjectId &&
+    restoredQueuedPrompt.sessionPath === terminalSessionPath
+      ? restoredQueuedPrompt.text
+      : null;
 
   useLayoutEffect(() => {
     const footer = footerRef.current;
@@ -142,16 +158,24 @@ export function CodeWorkspaceView({
     try {
       const streamingBehaviorPreference =
         shellState?.appSettings.composerStreamingBehavior ?? "followUp";
-
-      if (activeThreadData?.isStreaming && streamingBehaviorPreference === "stop") {
-        await handleAction("composer.stop");
-        return;
-      }
-
-      await handleAction("composer.send", {
+      const result = await handleAction("composer.send", {
         text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
         streamingBehavior: streamingBehaviorPreference,
       });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(
+        result,
+        "Could not send comments to the agent.",
+      );
+      if (actionErrorMessage) {
+        setDiffCommentError(actionErrorMessage);
+        return;
+      }
+
+      if (result?.result?.composerSendOutcome === "stopped") {
+        return;
+      }
+
       diffCommentStore.clearContext(diffCommentContextId);
     } catch (error) {
       setDiffCommentError(
@@ -159,6 +183,56 @@ export function CodeWorkspaceView({
       );
     } finally {
       setDiffCommentsSending(false);
+    }
+  };
+
+  const handleEditQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
+    if (pendingQueuedPromptIdsRef.current.has(prompt.id)) {
+      return;
+    }
+
+    pendingQueuedPromptIdsRef.current.add(prompt.id);
+    setPendingQueuedPromptIds((current) => [...current, prompt.id]);
+
+    try {
+      const result = await handleAction("composer.dequeue", {
+        projectId: composerProjectId,
+        sessionPath: terminalSessionPath,
+        queueMode: prompt.mode,
+        queueIndex: prompt.queueIndex,
+      });
+
+      if (typeof result?.result?.dequeuedText === "string") {
+        setRestoredQueuedPrompt({
+          projectId: composerProjectId,
+          sessionPath: terminalSessionPath,
+          text: result.result.dequeuedText,
+        });
+      }
+    } finally {
+      pendingQueuedPromptIdsRef.current.delete(prompt.id);
+      setPendingQueuedPromptIds((current) => current.filter((id) => id !== prompt.id));
+    }
+  };
+
+  const handleRemoveQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
+    if (pendingQueuedPromptIdsRef.current.has(prompt.id)) {
+      return;
+    }
+
+    pendingQueuedPromptIdsRef.current.add(prompt.id);
+    setPendingQueuedPromptIds((current) => [...current, prompt.id]);
+
+    try {
+      await handleAction("composer.dequeue", {
+        projectId: composerProjectId,
+        sessionPath: terminalSessionPath,
+        queueMode: prompt.mode,
+        queueIndex: prompt.queueIndex,
+      });
+    } finally {
+      pendingQueuedPromptIdsRef.current.delete(prompt.id);
+      setPendingQueuedPromptIds((current) => current.filter((id) => id !== prompt.id));
     }
   };
 
@@ -239,13 +313,14 @@ export function CodeWorkspaceView({
 
       {showWorkspaceFooter ? (
         <footer
+          ref={footerRef}
           className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
           style={terminalDrawerFooterPaddingStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
               {state.activeView === "gitops" ? (
-                <div ref={footerRef}>
+                <div>
                   <GitOpsComposerPanel
                     projectGitState={projectGitState}
                     diffBaseline={diffBaseline}
@@ -273,27 +348,15 @@ export function CodeWorkspaceView({
                 <div className="grid gap-0">
                   <QueuedPromptsCard
                     prompts={activeComposerState?.queuedPrompts ?? []}
-                    onEditPrompt={async (prompt) => {
-                      const result = await handleAction("composer.dequeue", {
-                        projectId: composerProjectId,
-                        sessionPath: terminalSessionPath,
-                        queueMode: prompt.mode,
-                        queueIndex: prompt.queueIndex,
-                      });
-                      if (typeof result?.result?.dequeuedText === "string") {
-                        setRestoredQueuedPrompt(result.result.dequeuedText);
-                      }
+                    pendingPromptIds={pendingQueuedPromptIds}
+                    onEditPrompt={(prompt) => {
+                      void handleEditQueuedPrompt(prompt);
                     }}
                     onRemovePrompt={(prompt) => {
-                      void handleAction("composer.dequeue", {
-                        projectId: composerProjectId,
-                        sessionPath: terminalSessionPath,
-                        queueMode: prompt.mode,
-                        queueIndex: prompt.queueIndex,
-                      });
+                      void handleRemoveQueuedPrompt(prompt);
                     }}
                   />
-                  <div ref={footerRef}>
+                  <div>
                     <Composer
                       activeView={state.activeView}
                       hostLabel={shellState?.availableHosts[0] ?? "Local"}
@@ -301,7 +364,7 @@ export function CodeWorkspaceView({
                       availableModels={activeComposerState?.availableModels ?? []}
                       isStreaming={activeThreadData?.isStreaming ?? false}
                       thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                      restoredQueuedPrompt={restoredQueuedPrompt}
+                      restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                       streamingBehaviorPreference={
                         shellState?.appSettings.composerStreamingBehavior ?? "followUp"
                       }
@@ -332,7 +395,14 @@ export function CodeWorkspaceView({
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
-                      onRestoredQueuedPromptApplied={() => setRestoredQueuedPrompt(null)}
+                      onRestoredQueuedPromptApplied={() => {
+                        setRestoredQueuedPrompt((current) =>
+                          current?.projectId === composerProjectId &&
+                          current.sessionPath === terminalSessionPath
+                            ? null
+                            : current,
+                        );
+                      }}
                       onToggleTerminal={handleToggleTerminal}
                       terminalVisible={state.terminalVisible}
                       onPickAttachments={pickComposerAttachments}

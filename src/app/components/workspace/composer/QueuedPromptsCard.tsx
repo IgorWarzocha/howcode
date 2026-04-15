@@ -5,12 +5,14 @@ import { cn } from "../../../utils/cn";
 
 type QueuedPromptsCardProps = {
   prompts: ComposerQueuedPrompt[];
+  pendingPromptIds?: string[];
   onEditPrompt: (prompt: ComposerQueuedPrompt) => void;
   onRemovePrompt: (prompt: ComposerQueuedPrompt) => void;
 };
 
 export function QueuedPromptsCard({
   prompts,
+  pendingPromptIds = [],
   onEditPrompt,
   onRemovePrompt,
 }: QueuedPromptsCardProps) {
@@ -29,32 +31,39 @@ export function QueuedPromptsCard({
       </div>
 
       <div className="grid gap-1">
-        {prompts.map((prompt) => (
-          <div
-            key={prompt.id}
-            className={cn(
-              compactCardClass,
-              "group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-xl border-transparent px-1 py-0 text-[12px] shadow-none hover:border-[color:var(--border)]",
-            )}
-          >
-            <button
-              type="button"
-              className="min-w-0 px-2.5 py-1 text-left text-[12px] leading-5 text-[color:var(--text)]/88"
-              onClick={() => onEditPrompt(prompt)}
-            >
-              <span className="block truncate">{prompt.text}</span>
-            </button>
+        {prompts.map((prompt) => {
+          const isPending = pendingPromptIds.includes(prompt.id);
 
-            <button
-              type="button"
-              className={cn(compactIconButtonClass, "mr-1 shrink-0")}
-              onClick={() => onRemovePrompt(prompt)}
-              aria-label="Remove queued message"
+          return (
+            <div
+              key={prompt.id}
+              className={cn(
+                compactCardClass,
+                "group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-xl border-transparent px-1 py-0 text-[12px] shadow-none hover:border-[color:var(--border)]",
+                isPending && "opacity-60",
+              )}
             >
-              <X size={12} />
-            </button>
-          </div>
-        ))}
+              <button
+                type="button"
+                className="min-w-0 px-2.5 py-1 text-left text-[12px] leading-5 text-[color:var(--text)]/88 disabled:cursor-default"
+                onClick={() => onEditPrompt(prompt)}
+                disabled={isPending}
+              >
+                <span className="block truncate">{prompt.text}</span>
+              </button>
+
+              <button
+                type="button"
+                className={cn(compactIconButtonClass, "mr-1 shrink-0")}
+                onClick={() => onRemovePrompt(prompt)}
+                aria-label="Remove queued message"
+                disabled={isPending}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

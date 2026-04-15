@@ -2,8 +2,8 @@ import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
   DesktopActionInvoker,
-  DesktopActionResult,
 } from "../../../desktop/types";
+import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 
 type SubmitComposerDraftResult =
   | { status: "skipped" }
@@ -16,7 +16,6 @@ type SubmitComposerDraftOptions = {
   attachments: ComposerAttachment[];
   draftThreadId: string | null;
   isSending: boolean;
-  isStreaming: boolean;
   projectId: string;
   sessionPath: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -24,24 +23,11 @@ type SubmitComposerDraftOptions = {
   clearStoredDraft: (threadId: string) => void;
 };
 
-function getDesktopActionErrorMessage(actionResult: DesktopActionResult | null) {
-  if (actionResult?.ok === false && typeof actionResult.result?.error === "string") {
-    return actionResult.result.error;
-  }
-
-  if (typeof actionResult?.result?.error === "string") {
-    return actionResult.result.error;
-  }
-
-  return actionResult?.ok === false ? "Could not send prompt." : null;
-}
-
 export async function submitComposerDraft({
   draft,
   attachments,
   draftThreadId,
   isSending,
-  isStreaming,
   projectId,
   sessionPath,
   streamingBehaviorPreference,
@@ -54,24 +40,6 @@ export async function submitComposerDraft({
   }
 
   try {
-    if (isStreaming && streamingBehaviorPreference === "stop") {
-      const actionResult = await onAction("composer.stop", {
-        projectId,
-        sessionPath,
-      });
-
-      const actionErrorMessage = getDesktopActionErrorMessage(actionResult);
-      if (actionErrorMessage) {
-        return {
-          status: "error",
-          errorMessage: actionErrorMessage,
-          text,
-        };
-      }
-
-      return { status: "stopped", text };
-    }
-
     const actionResult = await onAction("composer.send", {
       text,
       attachments,
@@ -80,13 +48,17 @@ export async function submitComposerDraft({
       streamingBehavior: streamingBehaviorPreference,
     });
 
-    const actionErrorMessage = getDesktopActionErrorMessage(actionResult);
+    const actionErrorMessage = getDesktopActionErrorMessage(actionResult, "Could not send prompt.");
     if (actionErrorMessage) {
       return {
         status: "error",
         errorMessage: actionErrorMessage,
         text,
       };
+    }
+
+    if (actionResult?.result?.composerSendOutcome === "stopped") {
+      return { status: "stopped", text };
     }
 
     if (draftThreadId) {

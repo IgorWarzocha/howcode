@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getDesktopActionErrorMessage } from "../desktop/action-results";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
@@ -35,19 +36,12 @@ export function InboxView({
     let result: Awaited<ReturnType<DesktopActionInvoker>> | null = null;
 
     try {
-      if (thread.running && appSettings.composerStreamingBehavior === "stop") {
-        result = await onAction("composer.stop", {
-          projectId: thread.projectId,
-          sessionPath: thread.sessionPath,
-        });
-      } else {
-        result = await onAction("composer.send", {
-          projectId: thread.projectId,
-          sessionPath: thread.sessionPath,
-          text: nextDraft,
-          streamingBehavior: appSettings.composerStreamingBehavior,
-        });
-      }
+      result = await onAction("composer.send", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+        text: nextDraft,
+        streamingBehavior: appSettings.composerStreamingBehavior,
+      });
     } catch {
       setErrorMessage("Could not send follow-up.");
       return;
@@ -55,12 +49,13 @@ export function InboxView({
       setIsSending(false);
     }
 
-    if (!result?.ok || result.result?.error) {
-      setErrorMessage(result?.result?.error ?? "Could not send follow-up.");
+    const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not send follow-up.");
+    if (actionErrorMessage) {
+      setErrorMessage(actionErrorMessage);
       return;
     }
 
-    if (!thread.running || appSettings.composerStreamingBehavior !== "stop") {
+    if (result?.result?.composerSendOutcome !== "stopped") {
       setDraft("");
       onDismissThread(thread);
     }
@@ -75,10 +70,15 @@ export function InboxView({
     setErrorMessage(null);
 
     try {
-      await onAction("composer.stop", {
+      const result = await onAction("composer.stop", {
         projectId: thread.projectId,
         sessionPath: thread.sessionPath,
       });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+      }
     } catch {
       setErrorMessage("Could not stop Pi.");
     } finally {

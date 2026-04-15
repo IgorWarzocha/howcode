@@ -8,6 +8,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from "../../../desktop/types";
+import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
@@ -191,7 +192,6 @@ export function useComposerController({
       attachments: submittedAttachments,
       draftThreadId: submittedDraftThreadId,
       isSending,
-      isStreaming,
       projectId,
       sessionPath,
       streamingBehaviorPreference,
@@ -218,10 +218,15 @@ export function useComposerController({
     setErrorMessage(null);
 
     try {
-      await onAction("composer.stop", {
+      const result = await onAction("composer.stop", {
         projectId,
         sessionPath,
       });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
     }

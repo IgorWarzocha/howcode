@@ -148,7 +148,7 @@ export async function sendComposerPrompt(
     attachments?: ComposerAttachment[];
     streamingBehavior?: ComposerStreamingBehavior | null;
   },
-): Promise<void> {
+): Promise<"sent" | "stopped"> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const runtime = persistedSessionPath
     ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true })
@@ -163,13 +163,15 @@ export async function sendComposerPrompt(
       if (streamingBehavior === "stop") {
         await runtime.session.abort();
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-        return;
+        return "stopped";
       }
 
       await runtime.session.prompt(message, { streamingBehavior });
     } else {
       await runtime.session.prompt(message);
     }
+
+    return "sent";
   } catch (error) {
     scheduleRuntimeDisposalForRuntime(runtime);
     throw error;

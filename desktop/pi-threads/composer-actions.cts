@@ -47,13 +47,13 @@ export async function handleComposerDesktopAction(
         return handledAction();
       }
 
-      await sendComposerPrompt({
+      const composerSendOutcome = await sendComposerPrompt({
         ...getComposerRequest(payload),
         text,
         attachments: getComposerAttachments(payload),
         streamingBehavior: getComposerStreamingBehavior(payload),
       });
-      return handledAction();
+      return handledAction({ composerSendOutcome });
     }
 
     case "composer.stop": {

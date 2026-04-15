@@ -152,6 +152,7 @@ export type DesktopActionResultData = {
   checkedProjectCount?: number;
   committed?: boolean;
   composer?: ComposerState;
+  composerSendOutcome?: "sent" | "stopped";
   dequeuedText?: string | null;
   deletedThreadIds?: string[];
   didMutate?: boolean;
