@@ -9,7 +9,6 @@ import type {
   ProjectGitState,
 } from "../../desktop/types";
 import type { View } from "../../types";
-import { SurfacePanel } from "../common/SurfacePanel";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
@@ -53,9 +52,9 @@ export function Composer(props: ComposerProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <SurfacePanel
+    <div
       ref={composerPanelRef}
-      className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
       aria-label="Composer panel"
     >
       <ComposerPromptSurface
@@ -63,6 +62,6 @@ export function Composer(props: ComposerProps) {
         composerPanelRef={composerPanelRef}
         onOpenGitOps={props.onOpenGitOpsView}
       />
-    </SurfacePanel>
+    </div>
   );
 }
