@@ -1,9 +1,10 @@
 import { Archive, FolderOpen, Star, Trash2 } from "lucide-react";
-import type { ReactNode, RefObject } from "react";
+import { type ReactNode, type RefObject, useRef, useState } from "react";
 import type { DesktopAction } from "../../desktop/actions";
 import type { DesktopActionInvoker } from "../../desktop/types";
 import { popoverPanelClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+import { ConfirmPopover } from "../common/ConfirmPopover";
 import { SurfacePanel } from "../common/SurfacePanel";
 
 type ProjectMenuEntry = {
@@ -12,6 +13,11 @@ type ProjectMenuEntry = {
   action: DesktopAction;
   className?: string;
 };
+
+type DangerousProjectAction = Extract<
+  DesktopAction,
+  "project.archive-threads" | "project.remove-project"
+>;
 
 type ProjectActionMenuProps = {
   menuId: string;
@@ -34,7 +40,17 @@ export function ProjectActionMenu({
   onAction,
   onClose,
 }: ProjectActionMenuProps) {
+  const [confirmAction, setConfirmAction] = useState<DangerousProjectAction | null>(null);
+  const archiveButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleClick = (action: DesktopAction) => {
+    if (action === "project.archive-threads" || action === "project.remove-project") {
+      setConfirmAction((current) => (current === action ? null : action));
+      return;
+    }
+
+    setConfirmAction(null);
     onAction(action, { projectId, projectName });
     onClose();
   };
@@ -87,22 +103,48 @@ export function ProjectActionMenu({
     >
       <div className="grid">
         {items.map((item, index) => (
-          <button
-            key={item.action}
-            className={cn(
-              "grid min-h-8 grid-cols-[16px_minmax(0,1fr)] items-center gap-2 px-2 py-1.5 text-left text-[13px] text-[color:var(--text)] transition-colors hover:bg-[rgba(183,186,245,0.08)]",
-              index > 0 && "border-t border-[rgba(169,178,215,0.08)]",
-              item.className,
-            )}
-            onClick={() => handleClick(item.action)}
-            role="menuitem"
-            type="button"
-          >
-            <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-              {item.icon}
-            </span>
-            <span className="truncate text-left">{item.title}</span>
-          </button>
+          <div key={item.action} className="relative">
+            <button
+              ref={
+                item.action === "project.archive-threads"
+                  ? archiveButtonRef
+                  : item.action === "project.remove-project"
+                    ? deleteButtonRef
+                    : undefined
+              }
+              className={cn(
+                "grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 px-2 py-1.5 text-left text-[13px] text-[color:var(--text)] transition-colors hover:bg-[rgba(183,186,245,0.08)]",
+                index > 0 && "border-t border-[rgba(169,178,215,0.08)]",
+                item.className,
+              )}
+              onClick={() => handleClick(item.action)}
+              role="menuitem"
+              type="button"
+            >
+              <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+                {item.icon}
+              </span>
+              <span className="truncate text-left">{item.title}</span>
+            </button>
+
+            {item.action === "project.archive-threads" ||
+            item.action === "project.remove-project" ? (
+              <ConfirmPopover
+                open={confirmAction === item.action}
+                anchorRef={
+                  item.action === "project.archive-threads" ? archiveButtonRef : deleteButtonRef
+                }
+                message="Click to confirm"
+                confirmLabel={item.action === "project.archive-threads" ? "Archive" : "Delete"}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={() => {
+                  setConfirmAction(null);
+                  onAction(item.action, { projectId, projectName });
+                  onClose();
+                }}
+              />
+            ) : null}
+          </div>
         ))}
       </div>
     </SurfacePanel>

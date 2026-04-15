@@ -189,13 +189,7 @@ export function useAppShellController() {
     setProjectGitState,
   });
 
-  const {
-    handleAction,
-    handleConfirmProjectAction,
-    pendingProjectAction,
-    runDesktopAction,
-    setPendingProjectAction,
-  } = useDesktopActionHandlers({
+  const { handleAction, runDesktopAction } = useDesktopActionHandlers({
     activeView: state.activeView,
     composerProjectId,
     dispatch,
@@ -204,7 +198,6 @@ export function useAppShellController() {
     loadComposerState,
     loadProjectGitState,
     loadProjectThreads,
-    projects,
     refreshShellState,
     selectedSessionPath: state.selectedSessionPath,
     setArchivedThreads,
@@ -434,8 +427,6 @@ export function useAppShellController() {
     handleAction,
     handleCollapseAll,
     handleOpenSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: true }),
-    handleConfirmProjectAction,
-    handleCloseProjectActionDialog: () => setPendingProjectAction(null),
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: closeTakeover,
     handleCloseGitOpsView,
@@ -463,7 +454,6 @@ export function useAppShellController() {
     handleLoadProjectThreads: loadProjectThreads,
     listComposerAttachmentEntries,
     pickComposerAttachments,
-    pendingProjectAction,
     extensionsProjectScopeActive,
     appLaunchedAtMs,
     projects,

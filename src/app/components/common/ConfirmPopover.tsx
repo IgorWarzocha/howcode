@@ -10,6 +10,7 @@ type ConfirmPopoverProps = {
   anchorRef: RefObject<HTMLElement | null>;
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
+  message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   className?: string;
@@ -20,6 +21,7 @@ export function ConfirmPopover({
   anchorRef,
   onClose,
   onConfirm,
+  message,
   confirmLabel = "Yes",
   cancelLabel = "No",
   className,
@@ -42,6 +44,9 @@ export function ConfirmPopover({
       className={cn(confirmPopoverClass, popoverPanelClass, className)}
       data-open="true"
     >
+      {message ? (
+        <span className="px-1.5 text-[10.5px] text-[color:var(--muted)]">{message}</span>
+      ) : null}
       <button
         type="button"
         className="rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-[#ffb4b4] transition-colors hover:bg-[rgba(255,120,120,0.14)]"
