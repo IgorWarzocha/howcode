@@ -504,9 +504,9 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-  if (action === "settings.update") {
-    await refreshShellState();
-  }
+  // Settings writes are local and already applied optimistically in the renderer.
+  // Refreshing shell state here can race against that optimistic update and briefly
+  // snap controls back to stale values before the next state load lands.
 
   if (action === "thread.new" || action === "project.add") {
     const projectId = getPayloadProjectId(contextualPayload) ?? composerProjectId;
