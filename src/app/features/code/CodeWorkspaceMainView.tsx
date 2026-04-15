@@ -84,6 +84,7 @@ export function CodeWorkspaceMainView({
     return (
       <InboxView
         key={selectedInboxThread?.sessionPath ?? "inbox-empty"}
+        appSettings={appSettings}
         thread={selectedInboxThread}
         onAction={onAction}
         onDismissThread={onDismissInboxThread}

@@ -107,6 +107,16 @@ export type Message =
 
 export type ComposerThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
+export type ComposerStreamingBehavior = "steer" | "followUp" | "stop";
+
+export type ComposerQueuedPrompt = {
+  id: string;
+  mode: Exclude<ComposerStreamingBehavior, "stop">;
+  queueIndex: number;
+  queueSnapshotKey: string;
+  text: string;
+};
+
 export type ComposerModel = {
   provider: string;
   id: string;
@@ -120,6 +130,7 @@ export type ComposerState = {
   availableModels: ComposerModel[];
   currentThinkingLevel: ComposerThinkingLevel;
   availableThinkingLevels: ComposerThinkingLevel[];
+  queuedPrompts: ComposerQueuedPrompt[];
 };
 
 export type ComposerAttachment = {
@@ -247,6 +258,7 @@ export type ProjectDeletionMode = "pi-only" | "full-clean";
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   skillCreatorModel: ModelSelection | null;
+  composerStreamingBehavior: ComposerStreamingBehavior;
   favoriteFolders: string[];
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;

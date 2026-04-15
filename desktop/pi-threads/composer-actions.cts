@@ -3,14 +3,20 @@ import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts"
 import {
   getComposerAttachments,
   getComposerModelSelection,
+  getComposerQueueId,
+  getComposerQueueMode,
+  getComposerQueueSnapshotKey,
   getComposerRequest,
+  getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
+  dequeueComposerPrompt,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
+  stopComposerRun,
 } from "../pi-desktop-runtime.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
@@ -42,12 +48,37 @@ export async function handleComposerDesktopAction(
         return handledAction();
       }
 
-      await sendComposerPrompt({
+      const composerSendOutcome = await sendComposerPrompt({
         ...getComposerRequest(payload),
         text,
         attachments: getComposerAttachments(payload),
+        streamingBehavior: getComposerStreamingBehavior(payload),
       });
+      return handledAction({ composerSendOutcome });
+    }
+
+    case "composer.stop": {
+      await stopComposerRun(getComposerRequest(payload));
       return handledAction();
+    }
+
+    case "composer.dequeue": {
+      const queueId = getComposerQueueId(payload);
+      const queueMode = getComposerQueueMode(payload);
+      const queueSnapshotKey = getComposerQueueSnapshotKey(payload);
+
+      if (!queueId || !queueMode || !queueSnapshotKey) {
+        return handledAction();
+      }
+
+      const dequeuedText = await dequeueComposerPrompt({
+        ...getComposerRequest(payload),
+        queueId,
+        queueSnapshotKey,
+        queueMode,
+      });
+
+      return handledAction({ dequeuedText });
     }
 
     default:

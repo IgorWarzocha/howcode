@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  ComposerStreamingBehavior,
   ModelSelection,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
@@ -7,6 +8,7 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const skillCreatorModelKey = "skillCreatorModel";
+const composerStreamingBehaviorKey = "composerStreamingBehavior";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
@@ -97,6 +99,21 @@ function parseProjectDeletionModePreference(
   }
 }
 
+function parseComposerStreamingBehaviorPreference(
+  valueJson: string | null | undefined,
+): ComposerStreamingBehavior | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "steer" || parsed === "followUp" || parsed === "stop" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function writeAppPreference(key: string, valueJson: string) {
   const db = getThreadStateDatabase();
   db.prepare(
@@ -149,6 +166,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(skillCreatorModelKey) as PreferenceRow | undefined;
+  const composerStreamingBehaviorRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(composerStreamingBehaviorKey) as PreferenceRow | undefined;
   const projectImportStateRow = db
     .prepare(
       `
@@ -207,6 +233,9 @@ export function loadAppSettings(): AppSettings {
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
+    composerStreamingBehavior:
+      parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
+      "followUp",
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
@@ -235,6 +264,10 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
   }
 
   writeAppPreference(skillCreatorModelKey, JSON.stringify(selection));
+}
+
+export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
+  writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior));
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {

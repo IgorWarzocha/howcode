@@ -1,17 +1,25 @@
 import { useState } from "react";
+import { getDesktopActionErrorMessage } from "../desktop/action-results";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
-import type { DesktopActionInvoker, InboxThread } from "../desktop/types";
+import type { AppSettings, DesktopActionInvoker, InboxThread } from "../desktop/types";
 
 type InboxViewProps = {
+  appSettings: AppSettings;
   thread: InboxThread | null;
   onAction: DesktopActionInvoker;
   onDismissThread: (thread: InboxThread) => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
 };
 
-export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: InboxViewProps) {
+export function InboxView({
+  appSettings,
+  thread,
+  onAction,
+  onDismissThread,
+  onOpenThread,
+}: InboxViewProps) {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,6 +40,7 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
         projectId: thread.projectId,
         sessionPath: thread.sessionPath,
         text: nextDraft,
+        streamingBehavior: appSettings.composerStreamingBehavior,
       });
     } catch {
       setErrorMessage("Could not send follow-up.");
@@ -40,13 +49,41 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
       setIsSending(false);
     }
 
-    if (!result?.ok || result.result?.error) {
-      setErrorMessage(result?.result?.error ?? "Could not send follow-up.");
+    const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not send follow-up.");
+    if (actionErrorMessage) {
+      setErrorMessage(actionErrorMessage);
       return;
     }
 
-    setDraft("");
-    onDismissThread(thread);
+    if (result?.result?.composerSendOutcome !== "stopped") {
+      setDraft("");
+      onDismissThread(thread);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!thread?.running || isSending) {
+      return;
+    }
+
+    setIsSending(true);
+    setErrorMessage(null);
+
+    try {
+      const result = await onAction("composer.stop", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+      });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+      }
+    } catch {
+      setErrorMessage("Could not stop Pi.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (!thread) {
@@ -93,11 +130,13 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
           <InboxComposer
             draft={draft}
             errorMessage={errorMessage}
+            isStreaming={thread.running}
             isSending={isSending}
             onChangeDraft={setDraft}
             onDismiss={() => onDismissThread(thread)}
             onOpenThread={() => onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)}
             onSend={handleSend}
+            onStop={handleStop}
           />
         </div>
       </div>

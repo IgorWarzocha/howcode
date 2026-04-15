@@ -2,6 +2,7 @@ import type {
   AppSettings,
   ComposerAttachment,
   ComposerStateRequest,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionPayloadInput,
   ModelSelection,
@@ -81,6 +82,38 @@ export function getComposerAttachments(payload: DesktopActionPayloadInput): Comp
     : [];
 }
 
+export function getComposerStreamingBehavior(
+  payload: DesktopActionPayloadInput,
+): ComposerStreamingBehavior | null {
+  return payload.streamingBehavior === "steer" ||
+    payload.streamingBehavior === "followUp" ||
+    payload.streamingBehavior === "stop"
+    ? payload.streamingBehavior
+    : null;
+}
+
+export function getComposerQueueMode(payload: DesktopActionPayloadInput) {
+  return payload.queueMode === "steer" || payload.queueMode === "followUp"
+    ? payload.queueMode
+    : null;
+}
+
+export function getComposerQueueId(payload: DesktopActionPayloadInput) {
+  return typeof payload.queueId === "string" && payload.queueId.length > 0 ? payload.queueId : null;
+}
+
+export function getComposerQueueSnapshotKey(payload: DesktopActionPayloadInput) {
+  return typeof payload.queueSnapshotKey === "string" && payload.queueSnapshotKey.length > 0
+    ? payload.queueSnapshotKey
+    : null;
+}
+
+export function getComposerQueueIndex(payload: DesktopActionPayloadInput) {
+  return typeof payload.queueIndex === "number" && Number.isInteger(payload.queueIndex)
+    ? payload.queueIndex
+    : null;
+}
+
 export function getComposerModelSelection(payload: DesktopActionPayloadInput) {
   const provider = typeof payload.provider === "string" ? payload.provider : null;
   const modelId = typeof payload.modelId === "string" ? payload.modelId : null;
@@ -120,6 +153,7 @@ export function getGitRepoUrl(payload: DesktopActionPayloadInput) {
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "skillCreatorModel" ||
+    payload.key === "composerStreamingBehavior" ||
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
@@ -169,6 +203,14 @@ export function getSettingsPreferredProjectLocation(payload: DesktopActionPayloa
 
 export function getSettingsBooleanValue(payload: DesktopActionPayloadInput) {
   return typeof payload.value === "boolean" ? payload.value : null;
+}
+
+export function getSettingsComposerStreamingBehavior(
+  payload: DesktopActionPayloadInput,
+): ComposerStreamingBehavior | null {
+  return payload.value === "steer" || payload.value === "followUp" || payload.value === "stop"
+    ? payload.value
+    : null;
 }
 
 export function getSettingsProjectDeletionMode(

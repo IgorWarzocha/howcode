@@ -1,4 +1,4 @@
-import { ArrowUpRight, Send, X } from "lucide-react";
+import { ArrowUpRight, Send, Square, X } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { IconButton } from "../../common/IconButton";
@@ -9,21 +9,25 @@ import { ComposerTextField } from "../composer/ComposerTextField";
 type InboxComposerProps = {
   draft: string;
   errorMessage: string | null;
+  isStreaming: boolean;
   isSending: boolean;
   onChangeDraft: (value: string) => void;
   onDismiss: () => void;
   onOpenThread: () => void;
   onSend: () => void;
+  onStop: () => void;
 };
 
 export function InboxComposer({
   draft,
   errorMessage,
+  isStreaming,
   isSending,
   onChangeDraft,
   onDismiss,
   onOpenThread,
   onSend,
+  onStop,
 }: InboxComposerProps) {
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -55,11 +59,25 @@ export function InboxComposer({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
+                )}
+                onClick={onStop}
+                disabled={!isStreaming || isSending}
+                aria-label="Stop Pi"
+                title="Stop Pi"
+              >
+                <Square size={11} fill="currentColor" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={onSend}
                 disabled={!canSend}
                 aria-label="Send"
+                title="Send"
               >
                 <Send size={14} />
               </button>

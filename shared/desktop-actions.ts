@@ -37,6 +37,8 @@ export const desktopActions = [
   "composer.thinking",
   "composer.dictate",
   "composer.send",
+  "composer.stop",
+  "composer.dequeue",
   "composer.host",
   "inbox.mark-read",
   "inbox.dismiss",

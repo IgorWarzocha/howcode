@@ -10,6 +10,7 @@ export function SettingsProjectDefaultsSection({
   appSettings,
   preferredProjectLocationDraft,
   savePreferredProjectLocation,
+  setComposerStreamingBehavior,
   setPreferredProjectLocationDraft,
   setProjectDeletionMode,
   toggleInitializeGitOnProjectCreate,
@@ -18,6 +19,7 @@ export function SettingsProjectDefaultsSection({
   appSettings: AppSettings;
   preferredProjectLocationDraft: string;
   savePreferredProjectLocation: () => void;
+  setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) => void;
   setPreferredProjectLocationDraft: Dispatch<SetStateAction<string>>;
   setProjectDeletionMode: (value: AppSettings["projectDeletionMode"]) => void;
   toggleInitializeGitOnProjectCreate: () => void;
@@ -37,7 +39,7 @@ export function SettingsProjectDefaultsSection({
     >
       <SectionIntro
         title="Defaults"
-        description="Set project creation defaults and whether conversations should open in Pi TUI by default."
+        description="Set project creation defaults, streaming send behavior, and whether conversations should open in Pi TUI by default."
       />
 
       <div className="grid gap-2">
@@ -60,6 +62,27 @@ export function SettingsProjectDefaultsSection({
             className={settingsInputClass}
             placeholder="Paste an absolute folder path"
             aria-label="Default project location"
+          />
+        </div>
+
+        <div className={settingsListRowClass}>
+          <div className="grid gap-0.5">
+            <div className="text-[13px] text-[color:var(--text)]">Send while Pi is responding</div>
+            <div className="text-[12px] text-[color:var(--muted)]">
+              Steer interrupts immediately, Queue waits for the current turn, Stop aborts without
+              sending the draft.
+            </div>
+          </div>
+          <SegmentedToggle
+            value={appSettings.composerStreamingBehavior}
+            options={
+              [
+                { value: "steer", label: "Steer" },
+                { value: "followUp", label: "Queue" },
+                { value: "stop", label: "Stop" },
+              ] as const
+            }
+            onChange={setComposerStreamingBehavior}
           />
         </div>
 

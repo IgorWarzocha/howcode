@@ -4,10 +4,13 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from "../../../desktop/types";
+import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { submitComposerDraft } from "./submitComposerDraft";
 
@@ -32,7 +35,11 @@ type UseComposerControllerProps = {
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
+  isStreaming: boolean;
+  restoredQueuedPrompt: string | null;
+  streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
+  onRestoredQueuedPromptApplied: () => void;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
@@ -45,7 +52,11 @@ export function useComposerController({
   model,
   projectId,
   sessionPath,
+  isStreaming,
+  restoredQueuedPrompt,
+  streamingBehaviorPreference,
   onAction,
+  onRestoredQueuedPromptApplied,
   onPickAttachments,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
@@ -93,6 +104,19 @@ export function useComposerController({
 
     composerDraftStore.setDraft(draftThreadId, { prompt: draft, attachments });
   }, [attachments, draft, draftThreadId]);
+
+  useEffect(() => {
+    if (!restoredQueuedPrompt) {
+      return;
+    }
+
+    setDraft((currentDraft) =>
+      mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
+    );
+    setOpenMenu(null);
+    setErrorMessage(null);
+    onRestoredQueuedPromptApplied();
+  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt]);
 
   useDismissibleLayer({
     open: openMenu !== null,
@@ -152,6 +176,7 @@ export function useComposerController({
     }
 
     const submittedAttachments = attachments;
+    const submittedDraft = draft;
     const submittedDraftThreadId = draftThreadId;
 
     setIsSending(true);
@@ -161,12 +186,13 @@ export function useComposerController({
     setAttachments([]);
 
     const result = await submitComposerDraft({
-      draft,
+      draft: submittedDraft,
       attachments: submittedAttachments,
       draftThreadId: submittedDraftThreadId,
       isSending,
       projectId,
       sessionPath,
+      streamingBehaviorPreference,
       onAction,
       clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
     });
@@ -179,7 +205,39 @@ export function useComposerController({
       setErrorMessage(result.errorMessage);
     }
 
+    if (result.status === "stopped" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
+      setDraft((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+      setAttachments((currentAttachments) =>
+        currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
+      );
+    }
+
     setIsSending(false);
+  };
+
+  const stop = async () => {
+    if (!isStreaming || isSending) {
+      return;
+    }
+
+    setIsSending(true);
+    setErrorMessage(null);
+
+    try {
+      const result = await onAction("composer.stop", {
+        projectId,
+        sessionPath,
+      });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const pickAttachments = async () => {
@@ -256,6 +314,7 @@ export function useComposerController({
     modelLabel,
     modelMenuOpen: openMenu === "model",
     modelMenuRef,
+    isStreaming,
     pendingPickerAttachments,
     pickAttachments,
     openPickerDirectory,
@@ -266,6 +325,7 @@ export function useComposerController({
     send,
     setDraft,
     setOpenMenu,
+    stop,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,

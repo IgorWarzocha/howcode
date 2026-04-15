@@ -3,13 +3,13 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../desktop/types";
 import type { View } from "../../types";
-import { SurfacePanel } from "../common/SurfacePanel";
 import { ComposerPromptSurface } from "./composer/ComposerPromptSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
@@ -18,7 +18,10 @@ export type ComposerProps = {
   hostLabel: string;
   model: ComposerModel | null;
   availableModels: ComposerModel[];
+  isStreaming: boolean;
   thinkingLevel: ComposerThinkingLevel;
+  restoredQueuedPrompt: string | null;
+  streamingBehaviorPreference: ComposerStreamingBehavior;
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
   projectGitState: ProjectGitState | null;
@@ -37,6 +40,7 @@ export type ComposerProps = {
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onOpenGitOpsView: () => void;
+  onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;
@@ -53,9 +57,9 @@ export function Composer(props: ComposerProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <SurfacePanel
+    <div
       ref={composerPanelRef}
-      className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
       aria-label="Composer panel"
     >
       <ComposerPromptSurface
@@ -63,6 +67,6 @@ export function Composer(props: ComposerProps) {
         composerPanelRef={composerPanelRef}
         onOpenGitOps={props.onOpenGitOpsView}
       />
-    </SurfacePanel>
+    </div>
   );
 }

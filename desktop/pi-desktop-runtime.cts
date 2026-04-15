@@ -1,4 +1,5 @@
 export {
+  dequeueComposerPrompt,
   getComposerState,
   getLiveThread,
   openThreadRuntime,
@@ -7,5 +8,6 @@ export {
   setComposerModel,
   setComposerThinkingLevel,
   startNewThread,
+  stopComposerRun,
   subscribeDesktopEvents,
 } from "./runtime/composer-service.cts";

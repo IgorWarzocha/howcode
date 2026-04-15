@@ -128,6 +128,11 @@ export function useSettingsController({
     importStatusMessage,
     preferredProjectLocationDraft,
     savePreferredProjectLocation,
+    setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) =>
+      void onAction("settings.update", {
+        key: "composerStreamingBehavior",
+        value,
+      }),
     selectGitCommitModel: (id: string) =>
       selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>

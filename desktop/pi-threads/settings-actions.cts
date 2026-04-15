@@ -2,6 +2,7 @@ import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import {
   getSettingsBooleanValue,
+  getSettingsComposerStreamingBehavior,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
@@ -11,6 +12,7 @@ import {
   getSettingsReset,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
+  setComposerStreamingBehavior,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setInitializeGitOnProjectCreate,
@@ -39,6 +41,14 @@ export function handleSettingsDesktopAction(
 
   if (key === "favoriteFolders") {
     setFavoriteFolders(getSettingsFavoriteFolders(payload));
+    return handledAction();
+  }
+
+  if (key === "composerStreamingBehavior") {
+    const value = getSettingsComposerStreamingBehavior(payload);
+    if (value) {
+      setComposerStreamingBehavior(value);
+    }
     return handledAction();
   }
 

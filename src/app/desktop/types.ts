@@ -6,6 +6,8 @@ export type {
   ComposerFilePickerEntry,
   ComposerFilePickerState,
   ComposerModel,
+  ComposerQueuedPrompt,
+  ComposerStreamingBehavior,
   ComposerState,
   ComposerStateRequest,
   ComposerThinkingLevel,

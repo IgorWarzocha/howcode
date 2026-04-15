@@ -103,6 +103,7 @@ export function getOptimisticallyUpdatedShellState(
   if (
     payload.key !== "gitCommitMessageModel" &&
     payload.key !== "skillCreatorModel" &&
+    payload.key !== "composerStreamingBehavior" &&
     payload.key !== "favoriteFolders" &&
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
@@ -131,6 +132,12 @@ export function getOptimisticallyUpdatedShellState(
           ? { provider: payload.provider, id: payload.modelId }
           : currentState.appSettings.skillCreatorModel
       : currentState.appSettings.skillCreatorModel;
+
+  const nextComposerStreamingBehavior =
+    payload.key === "composerStreamingBehavior" &&
+    (payload.value === "steer" || payload.value === "followUp" || payload.value === "stop")
+      ? payload.value
+      : currentState.appSettings.composerStreamingBehavior;
 
   const nextFavoriteFolders =
     payload.key === "favoriteFolders" && Array.isArray(payload.folders)
@@ -184,6 +191,7 @@ export function getOptimisticallyUpdatedShellState(
       ...currentState.appSettings,
       gitCommitMessageModel: nextSelection,
       skillCreatorModel: nextSkillCreatorSelection,
+      composerStreamingBehavior: nextComposerStreamingBehavior,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,
@@ -496,9 +504,9 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-  if (action === "settings.update") {
-    await refreshShellState();
-  }
+  // Settings writes are local and already applied optimistically in the renderer.
+  // Refreshing shell state here can race against that optimistic update and briefly
+  // snap controls back to stale values before the next state load lands.
 
   if (action === "thread.new" || action === "project.add") {
     const projectId = getPayloadProjectId(contextualPayload) ?? composerProjectId;

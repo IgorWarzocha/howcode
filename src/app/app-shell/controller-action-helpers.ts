@@ -16,7 +16,9 @@ export function buildContextualActionPayload({
   selectedSessionPath: string | null;
 }) {
   return action === "composer.model" ||
+    action === "composer.dequeue" ||
     action === "composer.send" ||
+    action === "composer.stop" ||
     action === "composer.thinking" ||
     action === "workspace.commit" ||
     action === "workspace.commit-options"

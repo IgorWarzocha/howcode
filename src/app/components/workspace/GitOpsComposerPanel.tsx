@@ -4,7 +4,6 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../desktop/types";
-import { SurfacePanel } from "../common/SurfacePanel";
 import { ComposerGitOpsSurface } from "./composer/ComposerGitOpsSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
@@ -44,9 +43,9 @@ export function GitOpsComposerPanel({
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <SurfacePanel
+    <div
       ref={composerPanelRef}
-      className="grid gap-0 overflow-visible border-[rgba(169,178,215,0.06)] bg-[rgba(39,42,57,0.94)] shadow-none"
+      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
       aria-label="Git ops composer panel"
     >
       <ComposerGitOpsSurface
@@ -66,6 +65,6 @@ export function GitOpsComposerPanel({
         onLayoutChange={onLayoutChange}
         onBack={onBack}
       />
-    </SurfacePanel>
+    </div>
   );
 }

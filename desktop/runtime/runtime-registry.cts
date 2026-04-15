@@ -1,7 +1,8 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { buildComposerState } from "./composer-state.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
-import { publishThreadUpdate } from "./thread-publisher.cts";
+import { publishComposerUpdate, publishThreadUpdate } from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
 
 const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
@@ -12,6 +13,7 @@ type RuntimeRecord = {
 };
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
+const runtimeMutationTails = new Map<string, Promise<void>>();
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -117,6 +119,25 @@ async function createRuntime(options: {
 
     if (event.type === "message_update" && event.message.role === "assistant") {
       void publishThreadUpdate(runtime, "update");
+      return;
+    }
+
+    if (event.type === "queue_update") {
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        })
+        .finally(() => {
+          if (runtimeKey && !runtime.session.isStreaming) {
+            scheduleRuntimeDisposal(runtimeKey);
+          }
+        });
     }
   });
 
@@ -205,5 +226,29 @@ export function scheduleRuntimeDisposalForRuntime(runtime: PiRuntime) {
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
   if (runtimeKey) {
     scheduleRuntimeDisposal(runtimeKey);
+  }
+}
+
+export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () => Promise<T>) {
+  const previousTail = runtimeMutationTails.get(runtimeKey) ?? Promise.resolve();
+  let releaseCurrentTail: (() => void) | undefined;
+  const currentTail = new Promise<void>((resolve) => {
+    releaseCurrentTail = resolve;
+  });
+
+  const nextTail = previousTail.then(() => currentTail);
+  runtimeMutationTails.set(runtimeKey, nextTail);
+
+  await previousTail;
+
+  try {
+    return await task();
+  } finally {
+    if (releaseCurrentTail) {
+      releaseCurrentTail();
+    }
+    if (runtimeMutationTails.get(runtimeKey) === nextTail) {
+      runtimeMutationTails.delete(runtimeKey);
+    }
   }
 }

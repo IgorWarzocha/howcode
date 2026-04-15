@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Message } from "../../../types";
+import { CHAT_TEXT_MAX_WIDTH_CLASS } from "../../../ui/layout";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
@@ -220,7 +221,9 @@ export function ThreadTimeline({
   return (
     <div className={chatViewportClass}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
-        <div className="mx-auto w-full min-w-0 max-w-[744px] overflow-x-hidden px-4 pt-4 pb-4">
+        <div
+          className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+        >
           <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
