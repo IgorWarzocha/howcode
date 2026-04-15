@@ -112,7 +112,6 @@ export function useComposerController({
     setDraft((currentDraft) =>
       mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
     );
-    setAttachments([]);
     setOpenMenu(null);
     setErrorMessage(null);
     onRestoredQueuedPromptApplied();
@@ -206,11 +205,6 @@ export function useComposerController({
         currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
       );
       setErrorMessage(result.errorMessage);
-    }
-
-    if (result.status === "sent" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
-      setDraft("");
-      setAttachments([]);
     }
 
     setIsSending(false);

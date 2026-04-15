@@ -9,6 +9,7 @@ import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/se
 import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
+import { replayComposerQueue } from "./composer-queue";
 import {
   buildComposerState,
   buildComposerStateSnapshot,
@@ -204,33 +205,28 @@ export async function dequeueComposerPrompt(
   const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
     suspendDisposal: true,
   });
-  const currentQueue =
-    request.queueMode === "steer"
-      ? runtime.session.getSteeringMessages()
-      : runtime.session.getFollowUpMessages();
+  try {
+    const currentQueue =
+      request.queueMode === "steer"
+        ? runtime.session.getSteeringMessages()
+        : runtime.session.getFollowUpMessages();
 
-  if (request.queueIndex < 0 || request.queueIndex >= currentQueue.length) {
-    return null;
-  }
-
-  const clearedQueue = runtime.session.clearQueue();
-  const targetQueue = request.queueMode === "steer" ? clearedQueue.steering : clearedQueue.followUp;
-
-  const [dequeuedText] = targetQueue.splice(request.queueIndex, 1);
-
-  if (runtime.session.isStreaming) {
-    for (const queuedText of clearedQueue.steering) {
-      await runtime.session.steer(queuedText);
+    if (request.queueIndex < 0 || request.queueIndex >= currentQueue.length) {
+      return null;
     }
 
-    for (const queuedText of clearedQueue.followUp) {
-      await runtime.session.followUp(queuedText);
-    }
-  }
+    const clearedQueue = runtime.session.clearQueue();
+    const targetQueue =
+      request.queueMode === "steer" ? clearedQueue.steering : clearedQueue.followUp;
 
-  scheduleRuntimeDisposalForRuntime(runtime);
-  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-  return dequeuedText ?? null;
+    const [dequeuedText] = targetQueue.splice(request.queueIndex, 1);
+
+    await replayComposerQueue(runtime.session, clearedQueue);
+    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+    return dequeuedText ?? null;
+  } finally {
+    scheduleRuntimeDisposalForRuntime(runtime);
+  }
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
