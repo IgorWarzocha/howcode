@@ -11,6 +11,10 @@ export type ComposerQueueSession = {
 type ComposerQueueMode = Exclude<ComposerStreamingBehavior, "stop">;
 export type ComposerQueueSnapshot = { steering: string[]; followUp: string[] };
 
+export function buildComposerQueueSnapshotKey(queue: ComposerQueueSnapshot) {
+  return JSON.stringify([queue.steering, queue.followUp]);
+}
+
 function buildQueuedPromptId(mode: ComposerQueueMode, text: string, duplicateIndex: number) {
   return `${mode}:${duplicateIndex}:${text}`;
 }
@@ -18,7 +22,7 @@ function buildQueuedPromptId(mode: ComposerQueueMode, text: string, duplicateInd
 function buildQueuedPromptsForMode(
   mode: ComposerQueueMode,
   prompts: string[],
-): ComposerQueuedPrompt[] {
+): Array<Omit<ComposerQueuedPrompt, "queueSnapshotKey">> {
   const duplicateCounts = new Map<string, number>();
 
   return prompts.map((text, queueIndex) => {
@@ -35,9 +39,17 @@ function buildQueuedPromptsForMode(
 }
 
 export function buildQueuedPrompts(queue: ComposerQueueSnapshot) {
+  const queueSnapshotKey = buildComposerQueueSnapshotKey(queue);
+
   return [
-    ...buildQueuedPromptsForMode("steer", queue.steering),
-    ...buildQueuedPromptsForMode("followUp", queue.followUp),
+    ...buildQueuedPromptsForMode("steer", queue.steering).map((prompt) => ({
+      ...prompt,
+      queueSnapshotKey,
+    })),
+    ...buildQueuedPromptsForMode("followUp", queue.followUp).map((prompt) => ({
+      ...prompt,
+      queueSnapshotKey,
+    })),
   ];
 }
 

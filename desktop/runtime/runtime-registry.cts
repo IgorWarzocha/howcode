@@ -13,6 +13,7 @@ type RuntimeRecord = {
 };
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
+const runtimeMutationTails = new Map<string, Promise<void>>();
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -225,5 +226,29 @@ export function scheduleRuntimeDisposalForRuntime(runtime: PiRuntime) {
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
   if (runtimeKey) {
     scheduleRuntimeDisposal(runtimeKey);
+  }
+}
+
+export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () => Promise<T>) {
+  const previousTail = runtimeMutationTails.get(runtimeKey) ?? Promise.resolve();
+  let releaseCurrentTail: (() => void) | undefined;
+  const currentTail = new Promise<void>((resolve) => {
+    releaseCurrentTail = resolve;
+  });
+
+  const nextTail = previousTail.then(() => currentTail);
+  runtimeMutationTails.set(runtimeKey, nextTail);
+
+  await previousTail;
+
+  try {
+    return await task();
+  } finally {
+    if (releaseCurrentTail) {
+      releaseCurrentTail();
+    }
+    if (runtimeMutationTails.get(runtimeKey) === nextTail) {
+      runtimeMutationTails.delete(runtimeKey);
+    }
   }
 }

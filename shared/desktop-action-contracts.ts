@@ -26,6 +26,7 @@ export type DesktopActionPayloadFields = {
   projectName?: string;
   provider?: string;
   queueId?: string;
+  queueSnapshotKey?: string;
   push?: boolean;
   queueIndex?: number;
   queueMode?: Exclude<ComposerStreamingBehavior, "stop">;
@@ -128,6 +129,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | null;
     sessionPath?: string | null;
     queueId: string;
+    queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };

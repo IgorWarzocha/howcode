@@ -5,6 +5,7 @@ import {
   getComposerModelSelection,
   getComposerQueueId,
   getComposerQueueMode,
+  getComposerQueueSnapshotKey,
   getComposerRequest,
   getComposerStreamingBehavior,
   getComposerText,
@@ -64,14 +65,16 @@ export async function handleComposerDesktopAction(
     case "composer.dequeue": {
       const queueId = getComposerQueueId(payload);
       const queueMode = getComposerQueueMode(payload);
+      const queueSnapshotKey = getComposerQueueSnapshotKey(payload);
 
-      if (!queueId || !queueMode) {
+      if (!queueId || !queueMode || !queueSnapshotKey) {
         return handledAction();
       }
 
       const dequeuedText = await dequeueComposerPrompt({
         ...getComposerRequest(payload),
         queueId,
+        queueSnapshotKey,
         queueMode,
       });
 

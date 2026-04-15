@@ -212,6 +212,7 @@ export function CodeWorkspaceView({
         projectId: composerProjectId,
         sessionPath: terminalSessionPath,
         queueId: prompt.id,
+        queueSnapshotKey: prompt.queueSnapshotKey,
         queueMode: prompt.mode,
       });
 
@@ -243,6 +244,7 @@ export function CodeWorkspaceView({
         projectId: composerProjectId,
         sessionPath: terminalSessionPath,
         queueId: prompt.id,
+        queueSnapshotKey: prompt.queueSnapshotKey,
         queueMode: prompt.mode,
       });
     } finally {

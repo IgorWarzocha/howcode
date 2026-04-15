@@ -113,6 +113,7 @@ export type ComposerQueuedPrompt = {
   id: string;
   mode: Exclude<ComposerStreamingBehavior, "stop">;
   queueIndex: number;
+  queueSnapshotKey: string;
   text: string;
 };
 

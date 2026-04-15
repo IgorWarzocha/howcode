@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildComposerQueueSnapshotKey,
   buildQueuedPrompts,
   cloneComposerQueue,
   findQueuedPromptIndexById,
@@ -26,6 +27,20 @@ describe("replayComposerQueue", () => {
 });
 
 describe("composer queue helpers", () => {
+  it("adds the same snapshot key to every prompt in a queue snapshot", () => {
+    const queue = {
+      steering: ["first", "dup", "dup"],
+      followUp: ["later"],
+    };
+
+    expect(buildQueuedPrompts(queue).map((prompt) => prompt.queueSnapshotKey)).toEqual([
+      buildComposerQueueSnapshotKey(queue),
+      buildComposerQueueSnapshotKey(queue),
+      buildComposerQueueSnapshotKey(queue),
+      buildComposerQueueSnapshotKey(queue),
+    ]);
+  });
+
   it("builds stable ids that do not depend on unrelated queue positions", () => {
     expect(
       buildQueuedPrompts({
@@ -45,6 +60,20 @@ describe("composer queue helpers", () => {
   it("finds the current queue index from a stable queue id", () => {
     expect(findQueuedPromptIndexById("steer", ["dup", "dup", "other"], "steer:1:dup")).toBe(1);
     expect(findQueuedPromptIndexById("followUp", ["other"], "followUp:0:missing")).toBeNull();
+  });
+
+  it("changes the snapshot key when identical duplicates shift, so stale actions can be rejected", () => {
+    expect(
+      buildComposerQueueSnapshotKey({
+        steering: [],
+        followUp: ["dup", "dup"],
+      }),
+    ).not.toBe(
+      buildComposerQueueSnapshotKey({
+        steering: [],
+        followUp: ["dup"],
+      }),
+    );
   });
 
   it("removes a queued prompt by stable id without mutating the original queue", () => {

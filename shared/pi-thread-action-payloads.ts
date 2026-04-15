@@ -102,6 +102,12 @@ export function getComposerQueueId(payload: DesktopActionPayloadInput) {
   return typeof payload.queueId === "string" && payload.queueId.length > 0 ? payload.queueId : null;
 }
 
+export function getComposerQueueSnapshotKey(payload: DesktopActionPayloadInput) {
+  return typeof payload.queueSnapshotKey === "string" && payload.queueSnapshotKey.length > 0
+    ? payload.queueSnapshotKey
+    : null;
+}
+
 export function getComposerQueueIndex(payload: DesktopActionPayloadInput) {
   return typeof payload.queueIndex === "number" && Number.isInteger(payload.queueIndex)
     ? payload.queueIndex

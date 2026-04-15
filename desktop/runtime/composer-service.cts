@@ -10,6 +10,7 @@ import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
 import {
+  buildComposerQueueSnapshotKey,
   findQueuedPromptIndexById,
   removeQueuedPromptById,
   replayComposerQueue,
@@ -25,6 +26,7 @@ import {
   getCachedRuntimeForSessionPath,
   getOrCreateRuntimeForSessionPath,
   scheduleRuntimeDisposalForRuntime,
+  withRuntimeMutationLock,
 } from "./runtime-registry.cts";
 import {
   getLiveThread,
@@ -154,32 +156,44 @@ export async function sendComposerPrompt(
   },
 ): Promise<"sent" | "stopped"> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const runtime = persistedSessionPath
-    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true })
-    : await createRuntimeForNewSession(request.projectId ?? process.cwd());
-  const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
-  const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
-  const streamingBehavior =
-    request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
 
-  try {
-    if (runtime.session.isStreaming) {
-      if (streamingBehavior === "stop") {
-        await runtime.session.abort();
-        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-        return "stopped";
+  const runSend = async (runtime: Awaited<ReturnType<typeof getOrCreateRuntimeForSessionPath>>) => {
+    const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
+    const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
+    const streamingBehavior =
+      request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
+
+    try {
+      if (runtime.session.isStreaming) {
+        if (streamingBehavior === "stop") {
+          await runtime.session.abort();
+          await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+          return "stopped";
+        }
+
+        await runtime.session.prompt(message, { streamingBehavior });
+      } else {
+        await runtime.session.prompt(message);
       }
 
-      await runtime.session.prompt(message, { streamingBehavior });
-    } else {
-      await runtime.session.prompt(message);
+      return "sent";
+    } catch (error) {
+      scheduleRuntimeDisposalForRuntime(runtime);
+      throw error;
     }
+  };
 
-    return "sent";
-  } catch (error) {
-    scheduleRuntimeDisposalForRuntime(runtime);
-    throw error;
+  if (!persistedSessionPath) {
+    return await runSend(await createRuntimeForNewSession(request.projectId ?? process.cwd()));
   }
+
+  return await withRuntimeMutationLock(
+    persistedSessionPath,
+    async () =>
+      await runSend(
+        await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true }),
+      ),
+  );
 }
 
 export async function stopComposerRun(request: ComposerStateRequest): Promise<void> {
@@ -188,18 +202,21 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
     return;
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-    suspendDisposal: true,
-  });
+  await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
 
-  await runtime.session.abort();
-  scheduleRuntimeDisposalForRuntime(runtime);
-  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+    await runtime.session.abort();
+    scheduleRuntimeDisposalForRuntime(runtime);
+    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+  });
 }
 
 export async function dequeueComposerPrompt(
   request: ComposerStateRequest & {
     queueId: string;
+    queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   },
 ): Promise<string | null> {
@@ -208,51 +225,68 @@ export async function dequeueComposerPrompt(
     return null;
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-    suspendDisposal: true,
-  });
-  try {
-    const currentQueue =
-      request.queueMode === "steer"
-        ? runtime.session.getSteeringMessages()
-        : runtime.session.getFollowUpMessages();
-    if (findQueuedPromptIndexById(request.queueMode, [...currentQueue], request.queueId) === null) {
-      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-      return null;
-    }
-
-    const clearedQueue = runtime.session.clearQueue();
-    const dequeueResult = removeQueuedPromptById(clearedQueue, request.queueMode, request.queueId);
-
-    if (!dequeueResult) {
-      await replayComposerQueue(runtime.session, clearedQueue);
-      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-      return null;
-    }
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
 
     try {
-      await replayComposerQueue(runtime.session, dequeueResult.nextQueue);
-      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-      return dequeueResult.dequeuedText;
-    } catch (error) {
-      runtime.session.clearQueue();
+      const currentQueueSnapshot = {
+        steering: [...runtime.session.getSteeringMessages()],
+        followUp: [...runtime.session.getFollowUpMessages()],
+      };
 
-      try {
-        await replayComposerQueue(runtime.session, clearedQueue);
+      if (buildComposerQueueSnapshotKey(currentQueueSnapshot) !== request.queueSnapshotKey) {
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-      } catch (rollbackError) {
-        throw new Error(
-          rollbackError instanceof Error
-            ? `Could not restore queued prompts after dequeue replay failure: ${rollbackError.message}`
-            : "Could not restore queued prompts after dequeue replay failure.",
-        );
+        return null;
       }
 
-      throw error;
+      const currentQueue =
+        request.queueMode === "steer"
+          ? currentQueueSnapshot.steering
+          : currentQueueSnapshot.followUp;
+      if (findQueuedPromptIndexById(request.queueMode, currentQueue, request.queueId) === null) {
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return null;
+      }
+
+      const clearedQueue = runtime.session.clearQueue();
+      const dequeueResult = removeQueuedPromptById(
+        clearedQueue,
+        request.queueMode,
+        request.queueId,
+      );
+
+      if (!dequeueResult) {
+        await replayComposerQueue(runtime.session, clearedQueue);
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return null;
+      }
+
+      try {
+        await replayComposerQueue(runtime.session, dequeueResult.nextQueue);
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return dequeueResult.dequeuedText;
+      } catch (error) {
+        runtime.session.clearQueue();
+
+        try {
+          await replayComposerQueue(runtime.session, clearedQueue);
+          await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        } catch (rollbackError) {
+          throw new Error(
+            rollbackError instanceof Error
+              ? `Could not restore queued prompts after dequeue replay failure: ${rollbackError.message}`
+              : "Could not restore queued prompts after dequeue replay failure.",
+          );
+        }
+
+        throw error;
+      }
+    } finally {
+      scheduleRuntimeDisposalForRuntime(runtime);
     }
-  } finally {
-    scheduleRuntimeDisposalForRuntime(runtime);
-  }
+  });
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
