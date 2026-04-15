@@ -5,10 +5,12 @@ import {
   getComposerRequest,
   getSessionPath,
   getThreadId,
+  getThreadIds,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
 import {
   archiveThread,
+  archiveThreads,
   deleteThreadRecord,
   dismissInboxThread,
   getThreadSessionPath,
@@ -65,6 +67,14 @@ export async function handleThreadDesktopAction(
       const threadId = getThreadId(payload);
       if (threadId) {
         archiveThread(threadId);
+      }
+      return handledAction();
+    }
+
+    case "thread.archive-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        archiveThreads(threadIds);
       }
       return handledAction();
     }

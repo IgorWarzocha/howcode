@@ -101,6 +101,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               }
             }
             activeView={state.activeView}
+            protectedProjectId={controller.shellState?.cwd ?? null}
             selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}

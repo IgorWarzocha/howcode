@@ -39,6 +39,14 @@ export function getThreadId(payload: DesktopActionPayloadInput) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
 }
 
+export function getThreadIds(payload: DesktopActionPayloadInput) {
+  return Array.isArray(payload.threadIds)
+    ? payload.threadIds.filter(
+        (threadId: unknown): threadId is string => typeof threadId === "string",
+      )
+    : [];
+}
+
 export function getProjectName(payload: DesktopActionPayloadInput) {
   const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
   return projectName.length > 0 ? projectName : null;

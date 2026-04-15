@@ -187,6 +187,12 @@ export async function handleProjectDesktopAction(
     case "project.remove-project": {
       const projectId = getProjectId(payload);
       if (projectId) {
+        if (projectId === process.cwd()) {
+          return handledAction({
+            error: "Cannot delete the active shell project.",
+          });
+        }
+
         const appSettings = loadAppSettings();
 
         if (appSettings.projectDeletionMode === "full-clean") {

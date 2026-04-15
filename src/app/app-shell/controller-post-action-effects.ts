@@ -24,6 +24,12 @@ function getPayloadThreadId(payload: ActionPayload) {
   return typeof payload.threadId === "string" ? payload.threadId : null;
 }
 
+function getPayloadThreadIds(payload: ActionPayload) {
+  return Array.isArray(payload.threadIds)
+    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === "string")
+    : [];
+}
+
 function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
   return [...threads].sort((left, right) => {
     const leftPinned = Boolean(left.pinned);
@@ -309,13 +315,13 @@ export async function runPostDesktopActionEffects({
   const invalidateInboxThreads = () =>
     queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
 
-  if (action === "thread.pin" || action === "thread.archive") {
+  if (action === "thread.pin" || action === "thread.archive" || action === "thread.archive-many") {
     const projectId = getPayloadProjectId(contextualPayload);
     if (projectId) {
       await loadProjectThreads(projectId);
     }
 
-    if (action === "thread.archive") {
+    if (action === "thread.archive" || action === "thread.archive-many") {
       await refreshArchivedThreadsIfOpen({
         archivedThreadsVisible: workspaceState.activeView === "archived",
         loadArchivedThreads,
@@ -323,10 +329,14 @@ export async function runPostDesktopActionEffects({
       });
     }
 
-    if (
-      action === "thread.archive" &&
-      contextualPayload.threadId === workspaceState.selectedThreadId
-    ) {
+    const archivedThreadIds =
+      action === "thread.archive"
+        ? [contextualPayload.threadId]
+        : action === "thread.archive-many"
+          ? getPayloadThreadIds(contextualPayload)
+          : [];
+
+    if (archivedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
       dispatch({ type: "show-view", view: "code" });
     }
 

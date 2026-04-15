@@ -17,6 +17,7 @@ type SidebarProjectsSectionProps = {
   activeView: View;
   appLaunchedAtMs: number;
   appSettings: AppSettings;
+  protectedProjectId?: string | null;
   projectScopeLockActive: boolean;
   projects: Project[];
   selectedProjectId: string;
@@ -37,6 +38,7 @@ export function SidebarProjectsSection({
   activeView,
   appLaunchedAtMs,
   appSettings,
+  protectedProjectId = null,
   projectScopeLockActive,
   projects,
   selectedProjectId,
@@ -288,6 +290,7 @@ export function SidebarProjectsSection({
       {visibleProjects.length > 0 ? (
         <ProjectTree
           projects={visibleProjects}
+          protectedProjectId={protectedProjectId}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
           terminalRunningSessionPaths={terminalRunningSessionPaths}

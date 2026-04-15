@@ -16,6 +16,7 @@ export const desktopActions = [
   "thread.new",
   "thread.open",
   "thread.archive",
+  "thread.archive-many",
   "thread.restore",
   "thread.delete",
   "thread.pin",

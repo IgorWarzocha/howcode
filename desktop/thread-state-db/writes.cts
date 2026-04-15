@@ -249,6 +249,34 @@ export function archiveThread(threadId: string) {
   ).run(threadId);
 }
 
+export function archiveThreads(threadIds: string[]) {
+  if (threadIds.length === 0) {
+    return;
+  }
+
+  const db = getThreadStateDatabase();
+  const archiveThreadStatement = db.prepare(
+    `
+      UPDATE threads
+      SET archived = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    for (const threadId of threadIds) {
+      archiveThreadStatement.run(threadId);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 export function archiveProjectThreads(projectId: string) {
   const db = getThreadStateDatabase();
   db.prepare(

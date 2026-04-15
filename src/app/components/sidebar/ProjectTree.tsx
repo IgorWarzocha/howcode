@@ -142,6 +142,7 @@ function OldSessionsRow({ expanded, onArchiveAll, onToggle }: OldSessionsRowProp
 
 type ProjectTreeProps = {
   projects: Project[];
+  protectedProjectId?: string | null;
   selectedProjectId: string;
   selectedThreadId: string | null;
   terminalRunningSessionPaths: ReadonlySet<string>;
@@ -193,6 +194,7 @@ function SortableProjectItem({ projectId, disabled = false, children }: Sortable
 
 export function ProjectTree({
   projects,
+  protectedProjectId = null,
   selectedProjectId,
   selectedThreadId,
   terminalRunningSessionPaths,
@@ -350,6 +352,7 @@ export function ProjectTree({
                       !selectionModeActive ? (
                         <ProjectActionMenu
                           menuId={actionMenuId}
+                          canDelete={project.id !== protectedProjectId}
                           projectId={project.id}
                           projectName={project.name}
                           pinned={Boolean(project.pinned)}
@@ -431,14 +434,10 @@ export function ProjectTree({
                                 }))
                               }
                               onArchiveAll={() => {
-                                void Promise.all(
-                                  oldThreads.map((thread) =>
-                                    onAction("thread.archive", {
-                                      projectId: project.id,
-                                      threadId: thread.id,
-                                    }),
-                                  ),
-                                );
+                                void onAction("thread.archive-many", {
+                                  projectId: project.id,
+                                  threadIds: oldThreads.map((thread) => thread.id),
+                                });
                               }}
                             />
 

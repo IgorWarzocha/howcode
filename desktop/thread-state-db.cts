@@ -13,6 +13,7 @@ export {
 export {
   archiveProjectThreads,
   archiveThread,
+  archiveThreads,
   beginInboxThreadTurn,
   collapseAllProjects,
   deleteProject,

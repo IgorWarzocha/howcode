@@ -30,6 +30,7 @@ export type DesktopActionPayloadFields = {
   sessionPath?: string | null;
   text?: string;
   threadId?: string;
+  threadIds?: string[];
   title?: string;
   value?: string | boolean | null;
 };
@@ -69,6 +70,7 @@ export type DesktopActionPayloadMap = {
   "thread.new": { projectId?: string | null; sessionPath?: string | null };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };
+  "thread.archive-many": { projectId?: string | null; threadIds: string[] };
   "thread.restore": { threadId: string };
   "thread.delete": { threadId: string };
   "thread.pin": { threadId: string; projectId?: string | null };

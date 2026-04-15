@@ -17,6 +17,7 @@ type ProjectActionMenuProps = {
   menuId: string;
   projectId: string;
   projectName: string;
+  canDelete?: boolean;
   pinned?: boolean;
   panelRef?: RefObject<HTMLDivElement | null>;
   onAction: DesktopActionInvoker;
@@ -27,6 +28,7 @@ export function ProjectActionMenu({
   menuId,
   projectId,
   projectName,
+  canDelete = true,
   pinned = false,
   panelRef,
   onAction,
@@ -60,14 +62,17 @@ export function ProjectActionMenu({
       title: "Archive all",
       action: "project.archive-threads",
     },
-    {
+  ];
+
+  if (canDelete) {
+    items.push({
       icon: <Trash2 size={14} />,
       title: "Delete project",
       action: "project.remove-project",
       className:
         "text-[#f2a7a7] hover:text-[#ffd1d1] [&>span:first-child]:text-[#f2a7a7] [&:hover>span:first-child]:text-[#ffd1d1]",
-    },
-  ];
+    });
+  }
 
   return (
     <SurfacePanel

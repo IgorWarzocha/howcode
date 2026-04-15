@@ -16,6 +16,7 @@ export const implementedDesktopActions = [
   "thread.pin",
   "thread.open",
   "thread.archive",
+  "thread.archive-many",
   "thread.restore",
   "thread.delete",
   "thread.new",
