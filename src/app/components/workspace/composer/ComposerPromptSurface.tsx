@@ -1,4 +1,4 @@
-import { Bot, GitBranch, Mic, Plus, Send, Terminal } from "lucide-react";
+import { Bot, GitBranch, Mic, Plus, Send, Square, Terminal } from "lucide-react";
 import type { RefObject } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { compactCardClass, compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
@@ -169,11 +169,24 @@ export function ComposerPromptSurface({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1]",
+                )}
+                onClick={() => undefined}
+                aria-label="Stop Pi"
+                title="Stop Pi"
+              >
+                <Square size={11} fill="currentColor" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={() => void send()}
                 disabled={!canSend}
                 aria-label="Send"
+                title="Send"
               >
                 <Send size={14} />
               </button>
