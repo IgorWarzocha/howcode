@@ -1,5 +1,4 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
-import { captureCompletedTurnDiff } from "../diff/query.cts";
 import { getPiModule } from "../pi-module.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { publishThreadUpdate } from "./thread-publisher.cts";
@@ -91,7 +90,6 @@ async function createRuntime(options: {
   const runtime = {
     cwd: options.cwd,
     session,
-    pendingTurnCount: null,
   } satisfies PiRuntime;
 
   rememberSessionPath(session.sessionFile, options.cwd);
@@ -107,15 +105,7 @@ async function createRuntime(options: {
         void publishThreadUpdate(runtime, "start");
       }
       if (event.message.role === "assistant") {
-        void (async () => {
-          try {
-            await captureCompletedTurnDiff(runtime);
-          } catch (error) {
-            console.warn("Failed to capture turn diff.", error);
-          }
-
-          await publishThreadUpdate(runtime, "end");
-        })();
+        void publishThreadUpdate(runtime, "end");
       }
 
       if (runtimeKey) {

@@ -26,7 +26,6 @@ type CodeWorkspaceViewProps = {
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
 };
 
-const WORKSPACE_FOOTER_OVERLAP_PX = 20;
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
 
@@ -52,12 +51,11 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const footerContentRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
     handleCloseGitOpsView,
-    handleOpenDiffSelection,
     handleOpenGitOpsView,
     handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
@@ -71,23 +69,21 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
-  const footerInset = showWorkspaceFooter
-    ? Math.max(footerHeight - WORKSPACE_FOOTER_OVERLAP_PX, 0)
-    : 0;
+  const footerInset = showWorkspaceFooter ? footerHeight : 0;
   const diffCommentContextId = useMemo(
     () => getDiffCommentContextId({ projectId: composerProjectId }),
     [composerProjectId],
   );
 
   useLayoutEffect(() => {
-    const footerContent = footerContentRef.current;
-    if (!showWorkspaceFooter || !footerContent) {
+    const footer = footerRef.current;
+    if (!showWorkspaceFooter || !footer) {
       setFooterHeight(0);
       return;
     }
 
     const updateFooterHeight = () => {
-      const nextHeight = Math.ceil(footerContent.getBoundingClientRect().height);
+      const nextHeight = Math.ceil(footer.getBoundingClientRect().height);
       setFooterHeight((current) => (current === nextHeight ? current : nextHeight));
     };
 
@@ -100,7 +96,7 @@ export function CodeWorkspaceView({
     const observer = new ResizeObserver(() => {
       updateFooterHeight();
     });
-    observer.observe(footerContent);
+    observer.observe(footer);
 
     return () => {
       observer.disconnect();
@@ -168,70 +164,72 @@ export function CodeWorkspaceView({
       style={terminalDrawerPaddingStyle}
     >
       <div
-        className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden px-5"
-        style={footerInset > 0 ? { paddingBottom: `${footerInset}px` } : undefined}
+        className="absolute inset-x-0 top-0 overflow-hidden px-5"
+        style={{ bottom: `${footerInset}px` }}
       >
-        <main
-          className={
-            state.activeView === "thread" || showDiffInMainView
-              ? "min-h-0 overflow-hidden pt-1.5"
-              : mainPanelClass
-          }
-        >
-          {showDiffInMainView ? (
-            <DiffPanel
-              projectId={composerProjectId}
-              isGitRepo={projectGitState?.isGitRepo ?? false}
-              baseline={diffBaseline}
-              selectedFilePath={state.selectedDiffFilePath}
-              selectedCommentId={selectedDiffCommentId}
-              selectedCommentJumpKey={selectedDiffCommentJumpKey}
-              diffRenderMode={diffRenderMode}
-              layoutMode="main"
-            />
-          ) : (
-            <CodeWorkspaceMainView
-              activeView={state.activeView}
-              appSettings={
-                shellState?.appSettings ?? {
-                  gitCommitMessageModel: null,
-                  skillCreatorModel: null,
-                  favoriteFolders: [],
-                  projectImportState: null,
-                  preferredProjectLocation: null,
-                  initializeGitOnProjectCreate: false,
-                  useAgentsSkillsPaths: false,
-                  piTuiTakeover: false,
+        <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">
+          <main
+            className={
+              state.activeView === "thread" || showDiffInMainView
+                ? "min-h-0 overflow-hidden pt-1.5"
+                : mainPanelClass
+            }
+          >
+            {showDiffInMainView ? (
+              <DiffPanel
+                projectId={composerProjectId}
+                isGitRepo={projectGitState?.isGitRepo ?? false}
+                baseline={diffBaseline}
+                selectedFilePath={state.selectedDiffFilePath}
+                selectedCommentId={selectedDiffCommentId}
+                selectedCommentJumpKey={selectedDiffCommentJumpKey}
+                diffRenderMode={diffRenderMode}
+                layoutMode="main"
+              />
+            ) : (
+              <CodeWorkspaceMainView
+                activeView={state.activeView}
+                appSettings={
+                  shellState?.appSettings ?? {
+                    gitCommitMessageModel: null,
+                    skillCreatorModel: null,
+                    favoriteFolders: [],
+                    projectImportState: null,
+                    preferredProjectLocation: null,
+                    initializeGitOnProjectCreate: false,
+                    useAgentsSkillsPaths: false,
+                    piTuiTakeover: false,
+                  }
                 }
-              }
-              availableModels={activeComposerState?.availableModels ?? []}
-              currentModel={activeComposerState?.currentModel ?? null}
-              currentProjectName={currentProjectName}
-              selectedInboxThread={controller.selectedInboxThread}
-              projects={controller.projects}
-              selectedProjectId={controller.state.selectedProjectId}
-              workspaceContentClass={workspaceContentClass}
-              threadData={activeThreadData}
-              composerLayoutVersion={composerLayoutVersion}
-              onAction={handleAction}
-              onDismissInboxThread={controller.handleDismissInboxThread}
-              onOpenThread={controller.handleThreadOpen}
-              onLoadEarlierMessages={handleLoadEarlierMessages}
-              onOpenTurnDiff={handleOpenDiffSelection}
-              onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
-              onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
-              onSelectProject={controller.handleProjectSelect}
-            />
-          )}
-        </main>
+                availableModels={activeComposerState?.availableModels ?? []}
+                currentModel={activeComposerState?.currentModel ?? null}
+                currentProjectName={currentProjectName}
+                selectedInboxThread={controller.selectedInboxThread}
+                projects={controller.projects}
+                selectedProjectId={controller.state.selectedProjectId}
+                workspaceContentClass={workspaceContentClass}
+                threadData={activeThreadData}
+                composerLayoutVersion={composerLayoutVersion}
+                onAction={handleAction}
+                onDismissInboxThread={controller.handleDismissInboxThread}
+                onOpenThread={controller.handleThreadOpen}
+                onLoadEarlierMessages={handleLoadEarlierMessages}
+                onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
+                onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
+                onSelectProject={controller.handleProjectSelect}
+              />
+            )}
+          </main>
+        </div>
       </div>
 
       {showWorkspaceFooter ? (
         <footer
+          ref={footerRef}
           className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
           style={terminalDrawerFooterPaddingStyle}
         >
-          <div ref={footerContentRef} className="pointer-events-auto grid gap-2.5">
+          <div className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
               {state.activeView === "gitops" ? (
                 <GitOpsComposerPanel

@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useRef } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 type ComposerTextFieldProps = {
   value: string;
@@ -29,12 +29,18 @@ export function ComposerTextField({
 }: ComposerTextFieldProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastReportedHeightRef = useRef<number | null>(null);
+  const [reservedHeight, setReservedHeight] = useState<number | null>(null);
 
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
       return;
     }
+
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+    const reservedHeight = Math.ceil(lineHeight * reservedLineCount);
+    setReservedHeight((current) => (current === reservedHeight ? current : reservedHeight));
 
     textarea.style.height = "0px";
     const nextHeight = Math.max(textarea.scrollHeight, 24);
@@ -44,9 +50,6 @@ export function ComposerTextField({
       onHeightChange?.(nextHeight);
     }
 
-    const computedStyle = window.getComputedStyle(textarea);
-    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
-    const reservedHeight = Math.ceil(lineHeight * reservedLineCount);
     onExpandedChange?.(nextHeight > reservedHeight + 1);
 
     if (value.length === 0) {
@@ -55,18 +58,38 @@ export function ComposerTextField({
   }, [onExpandedChange, onHeightChange, reservedLineCount, value]);
 
   return (
-    <textarea
-      ref={textareaRef}
-      rows={1}
-      className="m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      onInput={onInput}
-      onKeyDown={onKeyDown}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      aria-label={ariaLabel}
-      placeholder={placeholder}
-    />
+    <div
+      className="flex min-w-0 items-end"
+      style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
+      onPointerDown={(event) => {
+        if (event.target === textareaRef.current) {
+          return;
+        }
+
+        event.preventDefault();
+        const textarea = textareaRef.current;
+        if (!textarea) {
+          return;
+        }
+
+        textarea.focus();
+        const cursorPosition = textarea.value.length;
+        textarea.setSelectionRange(cursorPosition, cursorPosition);
+      }}
+    >
+      <textarea
+        ref={textareaRef}
+        rows={1}
+        className="m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onInput={onInput}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        aria-label={ariaLabel}
+        placeholder={placeholder}
+      />
+    </div>
   );
 }

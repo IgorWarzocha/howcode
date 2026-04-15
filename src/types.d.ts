@@ -6,7 +6,6 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
-  DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
   InboxThread,
@@ -31,7 +30,6 @@ import type {
   TerminalSessionSnapshot,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "./app/desktop/types";
 
 declare global {
@@ -111,11 +109,6 @@ declare global {
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;
       watchSession?: (sessionPath: string | null) => Promise<void>;
-      getTurnDiff?: (
-        sessionPath: string,
-        checkpointTurnCount: number,
-      ) => Promise<TurnDiffResult | null>;
-      getFullThreadDiff?: (sessionPath: string) => Promise<TurnDiffResult | null>;
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>;
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
       writeTerminal?: (sessionId: string, data: string) => Promise<void>;

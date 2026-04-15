@@ -8,7 +8,6 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
-  DesktopActionPayload,
   DesktopActionResult,
   DesktopEvent,
   InboxThread,
@@ -33,7 +32,6 @@ import type {
   TerminalSessionSnapshot,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "./types";
 
 const desktopListeners = new Set<(event: DesktopEvent) => void>();
@@ -189,13 +187,6 @@ export const piDesktopApi = {
   watchSession: async (sessionPath: string | null) => {
     await (await getRpc()).request.watchSession({ sessionPath });
   },
-  getTurnDiff: async (sessionPath: string, checkpointTurnCount: number) =>
-    (await getRpc()).request.getTurnDiff({
-      sessionPath,
-      checkpointTurnCount,
-    }) as Promise<TurnDiffResult | null>,
-  getFullThreadDiff: async (sessionPath: string) =>
-    (await getRpc()).request.getFullThreadDiff({ sessionPath }) as Promise<TurnDiffResult | null>,
   invokeAction: async (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
     (await getRpc()).request.invokeAction({
       action,

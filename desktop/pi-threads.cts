@@ -11,7 +11,6 @@ export {
   loadProjectThreads,
   loadThread,
 } from "./pi-threads/thread-loader.cts";
-export { loadFullThreadDiff, loadTurnDiff } from "./pi-threads/diff-loader.cts";
 export {
   captureProjectDiffBaseline,
   loadComposerState,

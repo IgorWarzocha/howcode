@@ -23,7 +23,6 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "../../shared/desktop-contracts";
 import type {
   TerminalEvent,
@@ -76,11 +75,6 @@ export type PiThreadsModule = {
     options?: { historyCompactions?: number },
   ) => Promise<ThreadData | null>;
   setWatchedSessionPath: (sessionPath: string | null) => Promise<void>;
-  loadTurnDiff: (
-    sessionPath: string,
-    checkpointTurnCount: number,
-  ) => Promise<TurnDiffResult | null>;
-  loadFullThreadDiff: (sessionPath: string) => Promise<TurnDiffResult | null>;
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void;
 };
 

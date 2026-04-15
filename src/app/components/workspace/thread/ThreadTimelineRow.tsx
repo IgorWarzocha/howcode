@@ -1,6 +1,4 @@
-import { Fragment, type MouseEvent } from "react";
 import { ThreadMessage } from "../../common/ThreadMessage";
-import { ThreadInlineDiffCard } from "./ThreadInlineDiffCard";
 import {
   FoldedTimelineRow,
   RowLeadToggleSurface,
@@ -16,12 +14,9 @@ type ThreadTimelineRowProps = {
   streamingAssistantMessageId: string | null;
   streamingToolGroupId: string | null;
   expandedToolGroupIds: Record<string, boolean>;
-  expandedDiffTrees: Record<number, boolean>;
   onToggleRowCollapse: (rowId: string) => void;
   onToggleToolCallExpansion: () => void;
   onToggleToolGroupExpansion: (groupId: string) => void;
-  onToggleDiffTree: (checkpointTurnCount: number) => void;
-  onOpenTurnDiff: (checkpointTurnCount: number, filePath?: string) => void;
   onJumpToEarlierMessages: () => void;
 };
 
@@ -31,12 +26,9 @@ export function ThreadTimelineRow({
   streamingAssistantMessageId,
   streamingToolGroupId,
   expandedToolGroupIds,
-  expandedDiffTrees,
   onToggleRowCollapse,
   onToggleToolCallExpansion,
   onToggleToolGroupExpansion,
-  onToggleDiffTree,
-  onOpenTurnDiff,
   onJumpToEarlierMessages,
 }: ThreadTimelineRowProps) {
   const renderTurnItem = (item: TimelineTurnItem) => {
@@ -54,26 +46,13 @@ export function ThreadTimelineRow({
       );
     }
 
-    const { message, turnSummary } = item;
-    const allDirectoriesExpanded =
-      turnSummary && expandedDiffTrees[turnSummary.checkpointTurnCount] !== false;
-
     return (
-      <Fragment key={item.id}>
-        <ThreadMessage
-          message={message}
-          autoExpandThinking={message.id === streamingAssistantMessageId}
-          onToggleExpanded={onToggleToolCallExpansion}
-        />
-        {turnSummary && turnSummary.files.length > 0 ? (
-          <ThreadInlineDiffCard
-            turnSummary={turnSummary}
-            allDirectoriesExpanded={Boolean(allDirectoriesExpanded)}
-            onToggleExpanded={() => onToggleDiffTree(turnSummary.checkpointTurnCount)}
-            onOpenTurnDiff={onOpenTurnDiff}
-          />
-        ) : null}
-      </Fragment>
+      <ThreadMessage
+        key={item.id}
+        message={item.message}
+        autoExpandThinking={item.message.id === streamingAssistantMessageId}
+        onToggleExpanded={onToggleToolCallExpansion}
+      />
     );
   };
 

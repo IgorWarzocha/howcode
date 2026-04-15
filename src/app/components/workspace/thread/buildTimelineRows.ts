@@ -1,4 +1,3 @@
-import type { TurnDiffSummary } from "../../../desktop/types";
 import type { Message } from "../../../types";
 import {
   type TimelineRow,
@@ -10,20 +9,13 @@ import {
 type BuildTimelineRowsInput = {
   messages: Message[];
   previousMessageCount: number;
-  turnDiffSummaries: TurnDiffSummary[];
 };
 
 export function buildTimelineRows({
   messages,
   previousMessageCount,
-  turnDiffSummaries,
 }: BuildTimelineRowsInput): TimelineRow[] {
   const nextRows: TimelineRow[] = [];
-  const turnDiffSummaryByAssistantMessageId = new Map(
-    turnDiffSummaries
-      .filter((summary) => summary.assistantMessageId)
-      .map((summary) => [summary.assistantMessageId as string, summary]),
-  );
   let pendingToolMessages: ToolCallMessage[] = [];
   let currentTurn: Extract<TimelineRow, { kind: "turn" }> | null = null;
   let pendingImplicitTurnId: string | null = null;
@@ -85,10 +77,6 @@ export function buildTimelineRows({
       kind: "message",
       id: message.id,
       message,
-      turnSummary:
-        message.role === "assistant"
-          ? turnDiffSummaryByAssistantMessageId.get(message.id)
-          : undefined,
     };
 
     if (message.role === "user") {

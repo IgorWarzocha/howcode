@@ -51,7 +51,6 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("alpha");
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
-    expect(nextState.selectedDiffTurnCount).toBeNull();
   });
 
   it("opens a thread and forces its project expanded", () => {
@@ -68,7 +67,6 @@ describe("workspace state", () => {
     expect(nextState.selectedSessionPath).toBe("/tmp/missing-thread.jsonl");
     expect(nextState.terminalVisible).toBe(false);
     expect(nextState.collapsedProjectIds["claw-phone"]).toBe(false);
-    expect(nextState.selectedDiffTurnCount).toBeNull();
   });
 
   it("restores terminal visibility per thread session", () => {
@@ -136,15 +134,13 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
   });
 
-  it("can open git ops with a selected turn and file", () => {
+  it("can open git ops with a selected file", () => {
     const nextState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
       type: "open-gitops",
-      checkpointTurnCount: 3,
       filePath: "src/app/AppShell.tsx",
     });
 
     expect(nextState.activeView).toBe("gitops");
-    expect(nextState.selectedDiffTurnCount).toBe(3);
     expect(nextState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
   });
 
@@ -157,7 +153,6 @@ describe("workspace state", () => {
       },
       {
         type: "open-gitops",
-        checkpointTurnCount: null,
       },
     );
     const restoredState = workspaceReducer(gitOpsState, { type: "close-gitops" });
@@ -213,7 +208,6 @@ describe("workspace state", () => {
         activeView: "thread",
         selectedThreadId: "thread-1",
         selectedSessionPath: "/tmp/thread.jsonl",
-        selectedDiffTurnCount: 3,
         selectedDiffFilePath: "src/app.ts",
       },
       {
@@ -225,7 +219,6 @@ describe("workspace state", () => {
     expect(nextState.activeView).toBe("code");
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
-    expect(nextState.selectedDiffTurnCount).toBeNull();
     expect(nextState.selectedDiffFilePath).toBeNull();
   });
 

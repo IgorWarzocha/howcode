@@ -1,12 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type {
-  ArchivedThread,
-  Message,
-  Project,
-  Thread,
-  TurnDiffSummary,
-} from "../../shared/desktop-contracts.js";
+export type { ArchivedThread, Message, Project, Thread } from "../../shared/desktop-contracts.js";
 
 export type View =
   | "inbox"

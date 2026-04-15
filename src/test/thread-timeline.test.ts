@@ -9,10 +9,10 @@ import {
 import { buildThreadTimelineState } from "../app/components/workspace/thread/thread-timeline-state";
 import type { TimelineRow } from "../app/components/workspace/thread/timeline-row";
 import { isTurnRowCollapsible } from "../app/components/workspace/thread/timeline-row";
-import type { Message, TurnDiffSummary } from "../app/types";
+import type { Message } from "../app/types";
 
 describe("thread timeline", () => {
-  it("groups tool calls into turns, keeps summaries separate, and annotates assistant turn summaries", () => {
+  it("groups tool calls into turns and keeps summaries separate", () => {
     const messages: Message[] = [
       { id: "user-1", role: "user", content: ["Investigate the chat window"] },
       {
@@ -33,18 +33,7 @@ describe("thread timeline", () => {
         content: ["Kept the timeline split plan."],
       },
     ];
-    const turnDiffSummaries: TurnDiffSummary[] = [
-      {
-        checkpointTurnCount: 2,
-        checkpointRef: "ref-2",
-        status: "ready",
-        files: [{ path: "src/app/chat.tsx", kind: "modified", additions: 3, deletions: 1 }],
-        assistantMessageId: "assistant-1",
-        completedAt: new Date(0).toISOString(),
-      },
-    ];
-
-    expect(buildTimelineRows({ messages, previousMessageCount: 4, turnDiffSummaries })).toEqual([
+    expect(buildTimelineRows({ messages, previousMessageCount: 4 })).toEqual([
       { kind: "history-divider", id: "history-divider:4", hiddenCount: 4 },
       {
         kind: "turn",
@@ -60,7 +49,6 @@ describe("thread timeline", () => {
             kind: "message",
             id: "assistant-1",
             message: messages[2],
-            turnSummary: turnDiffSummaries[0],
           },
         ],
       },
@@ -99,46 +87,42 @@ describe("thread timeline", () => {
       },
     ];
 
-    expect(buildTimelineRows({ messages, previousMessageCount: 0, turnDiffSummaries: [] })).toEqual(
-      [
-        {
-          kind: "turn",
-          id: "turn:user-1",
-          userMessage: messages[0],
-          items: [
-            {
-              kind: "message",
-              id: "assistant-1",
-              message: messages[1],
-              turnSummary: undefined,
-            },
-          ],
-        },
-        {
-          kind: "summary",
-          id: "summary:summary-1",
-          message: messages[2],
-        },
-        {
-          kind: "turn",
-          id: "turn:post-summary:summary-1",
-          userMessage: null,
-          items: [
-            {
-              kind: "tool-group",
-              id: "tool-group:tool-2:tool-2:1",
-              messages: [messages[3]],
-            },
-            {
-              kind: "message",
-              id: "assistant-2",
-              message: messages[4],
-              turnSummary: undefined,
-            },
-          ],
-        },
-      ],
-    );
+    expect(buildTimelineRows({ messages, previousMessageCount: 0 })).toEqual([
+      {
+        kind: "turn",
+        id: "turn:user-1",
+        userMessage: messages[0],
+        items: [
+          {
+            kind: "message",
+            id: "assistant-1",
+            message: messages[1],
+          },
+        ],
+      },
+      {
+        kind: "summary",
+        id: "summary:summary-1",
+        message: messages[2],
+      },
+      {
+        kind: "turn",
+        id: "turn:post-summary:summary-1",
+        userMessage: null,
+        items: [
+          {
+            kind: "tool-group",
+            id: "tool-group:tool-2:tool-2:1",
+            messages: [messages[3]],
+          },
+          {
+            kind: "message",
+            id: "assistant-2",
+            message: messages[4],
+          },
+        ],
+      },
+    ]);
   });
 
   it("derives streaming state, signatures, and virtualized row markers from timeline rows", () => {
@@ -198,7 +182,6 @@ describe("thread timeline", () => {
         "turn-2": true,
       },
       expandedToolGroupIds: {},
-      expandedDiffTrees: {},
     });
 
     expect(result.streamingAssistantMessageId).toBe("assistant-1");
@@ -235,14 +218,13 @@ describe("thread timeline", () => {
         isError: false,
       },
     ];
-    const rows = buildTimelineRows({ messages, previousMessageCount: 0, turnDiffSummaries: [] });
+    const rows = buildTimelineRows({ messages, previousMessageCount: 0 });
     const result = buildThreadTimelineState({
       rows,
       messages,
       isStreaming: true,
       collapsedRowIds: {},
       expandedToolGroupIds: {},
-      expandedDiffTrees: {},
     });
 
     expect(result.streamingToolGroupId).toBe("tool-group:tool-1:tool-2:2");

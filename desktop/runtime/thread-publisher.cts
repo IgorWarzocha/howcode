@@ -3,7 +3,6 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
 import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
 import { buildThreadData } from "../../shared/thread-data.ts";
-import { getTurnDiffSummaries } from "../diff/query.cts";
 import {
   beginInboxThreadTurn,
   getThreadAssistantSnapshot,
@@ -41,7 +40,6 @@ function buildLiveThreadData(runtime: PiRuntime) {
     sourceMessages,
     previousMessageCount,
     isStreaming: runtime.session.isStreaming,
-    turnDiffSummaries: getTurnDiffSummaries(sessionPath),
   });
 }
 

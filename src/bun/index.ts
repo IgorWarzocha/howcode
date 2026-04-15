@@ -24,7 +24,6 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
-  TurnDiffResult,
 } from "../../shared/desktop-contracts";
 import type { PiDesktopRpc } from "../../shared/electrobun-rpc";
 import type { TerminalEvent, TerminalSessionSnapshot } from "../../shared/terminal-contracts";
@@ -116,10 +115,6 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         await piThreads.setWatchedSessionPath(sessionPath);
         return { ok: true };
       },
-      getTurnDiff: async ({ sessionPath, checkpointTurnCount }) =>
-        piThreads.loadTurnDiff(sessionPath, checkpointTurnCount) as Promise<TurnDiffResult | null>,
-      getFullThreadDiff: async ({ sessionPath }) =>
-        piThreads.loadFullThreadDiff(sessionPath) as Promise<TurnDiffResult | null>,
       invokeAction: async ({ action, payload = {} }) => {
         try {
           const result = await piThreads.handleDesktopAction(action, payload);
