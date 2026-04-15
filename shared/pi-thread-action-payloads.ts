@@ -98,6 +98,10 @@ export function getComposerQueueMode(payload: DesktopActionPayloadInput) {
     : null;
 }
 
+export function getComposerQueueId(payload: DesktopActionPayloadInput) {
+  return typeof payload.queueId === "string" && payload.queueId.length > 0 ? payload.queueId : null;
+}
+
 export function getComposerQueueIndex(payload: DesktopActionPayloadInput) {
   return typeof payload.queueIndex === "number" && Number.isInteger(payload.queueIndex)
     ? payload.queueIndex

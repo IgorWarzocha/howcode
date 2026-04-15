@@ -9,7 +9,7 @@ import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/se
 import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
-import { replayComposerQueue } from "./composer-queue";
+import { findQueuedPromptIndexById, replayComposerQueue } from "./composer-queue";
 import {
   buildComposerState,
   buildComposerStateSnapshot,
@@ -195,8 +195,8 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
 
 export async function dequeueComposerPrompt(
   request: ComposerStateRequest & {
+    queueId: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
-    queueIndex: number;
   },
 ): Promise<string | null> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
@@ -212,8 +212,13 @@ export async function dequeueComposerPrompt(
       request.queueMode === "steer"
         ? runtime.session.getSteeringMessages()
         : runtime.session.getFollowUpMessages();
+    const queueIndex = findQueuedPromptIndexById(
+      request.queueMode,
+      [...currentQueue],
+      request.queueId,
+    );
 
-    if (request.queueIndex < 0 || request.queueIndex >= currentQueue.length) {
+    if (queueIndex === null || queueIndex < 0 || queueIndex >= currentQueue.length) {
       return null;
     }
 
@@ -221,7 +226,7 @@ export async function dequeueComposerPrompt(
     const targetQueue =
       request.queueMode === "steer" ? clearedQueue.steering : clearedQueue.followUp;
 
-    const [dequeuedText] = targetQueue.splice(request.queueIndex, 1);
+    const [dequeuedText] = targetQueue.splice(queueIndex, 1);
 
     await replayComposerQueue(runtime.session, clearedQueue);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });

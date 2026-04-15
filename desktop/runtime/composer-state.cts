@@ -10,6 +10,7 @@ import type {
 } from "../../shared/desktop-contracts.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { buildQueuedPrompts } from "./composer-queue";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -36,21 +37,11 @@ function mapThinkingLevels(levels: ThinkingLevel[]) {
   return levels as ComposerThinkingLevel[];
 }
 
-function buildQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
-  return [
-    ...session.getSteeringMessages().map((text, queueIndex) => ({
-      id: `steer:${queueIndex}:${text}`,
-      mode: "steer" as const,
-      queueIndex,
-      text,
-    })),
-    ...session.getFollowUpMessages().map((text, queueIndex) => ({
-      id: `followUp:${queueIndex}:${text}`,
-      mode: "followUp" as const,
-      queueIndex,
-      text,
-    })),
-  ];
+function buildSessionQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
+  return buildQueuedPrompts({
+    steering: [...session.getSteeringMessages()],
+    followUp: [...session.getFollowUpMessages()],
+  });
 }
 
 export function getAvailableThinkingLevelsForModel(
@@ -220,6 +211,6 @@ export async function buildComposerState(runtime: PiRuntime): Promise<ComposerSt
     availableModels,
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
-    queuedPrompts: buildQueuedPrompts(runtime.session),
+    queuedPrompts: buildSessionQueuedPrompts(runtime.session),
   };
 }

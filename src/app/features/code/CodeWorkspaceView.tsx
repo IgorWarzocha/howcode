@@ -198,8 +198,8 @@ export function CodeWorkspaceView({
       const result = await handleAction("composer.dequeue", {
         projectId: composerProjectId,
         sessionPath: terminalSessionPath,
+        queueId: prompt.id,
         queueMode: prompt.mode,
-        queueIndex: prompt.queueIndex,
       });
 
       if (typeof result?.result?.dequeuedText === "string") {
@@ -227,8 +227,8 @@ export function CodeWorkspaceView({
       await handleAction("composer.dequeue", {
         projectId: composerProjectId,
         sessionPath: terminalSessionPath,
+        queueId: prompt.id,
         queueMode: prompt.mode,
-        queueIndex: prompt.queueIndex,
       });
     } finally {
       pendingQueuedPromptIdsRef.current.delete(prompt.id);

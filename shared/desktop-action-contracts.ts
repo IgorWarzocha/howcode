@@ -25,6 +25,7 @@ export type DesktopActionPayloadFields = {
   projectIds?: string[];
   projectName?: string;
   provider?: string;
+  queueId?: string;
   push?: boolean;
   queueIndex?: number;
   queueMode?: Exclude<ComposerStreamingBehavior, "stop">;
@@ -126,8 +127,8 @@ export type DesktopActionPayloadMap = {
   "composer.dequeue": {
     projectId?: string | null;
     sessionPath?: string | null;
+    queueId: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
-    queueIndex: number;
   };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };

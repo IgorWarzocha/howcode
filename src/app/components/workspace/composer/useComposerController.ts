@@ -176,19 +176,17 @@ export function useComposerController({
     }
 
     const submittedAttachments = attachments;
+    const submittedDraft = draft;
     const submittedDraftThreadId = draftThreadId;
-    const shouldClearComposer = !isStreaming || streamingBehaviorPreference !== "stop";
 
     setIsSending(true);
     setErrorMessage(null);
-    if (shouldClearComposer) {
-      skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-      setDraft("");
-      setAttachments([]);
-    }
+    skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+    setDraft("");
+    setAttachments([]);
 
     const result = await submitComposerDraft({
-      draft,
+      draft: submittedDraft,
       attachments: submittedAttachments,
       draftThreadId: submittedDraftThreadId,
       isSending,
@@ -205,6 +203,13 @@ export function useComposerController({
         currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
       );
       setErrorMessage(result.errorMessage);
+    }
+
+    if (result.status === "stopped" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
+      setDraft((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+      setAttachments((currentAttachments) =>
+        currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
+      );
     }
 
     setIsSending(false);

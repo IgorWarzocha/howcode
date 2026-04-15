@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { replayComposerQueue } from "../../desktop/runtime/composer-queue";
+import {
+  buildQueuedPrompts,
+  findQueuedPromptIndexById,
+  replayComposerQueue,
+} from "../../desktop/runtime/composer-queue";
 
 describe("replayComposerQueue", () => {
   it("requeues steering and follow-up messages in order", async () => {
@@ -16,5 +20,28 @@ describe("replayComposerQueue", () => {
 
     expect(steer.mock.calls).toEqual([["steer-1"], ["steer-2"]]);
     expect(followUp.mock.calls).toEqual([["follow-1"], ["follow-2"]]);
+  });
+});
+
+describe("composer queue helpers", () => {
+  it("builds stable ids that do not depend on unrelated queue positions", () => {
+    expect(
+      buildQueuedPrompts({
+        steering: ["first", "dup", "dup"],
+        followUp: ["later"],
+      }).map((prompt) => prompt.id),
+    ).toEqual(["steer:0:first", "steer:0:dup", "steer:1:dup", "followUp:0:later"]);
+
+    expect(
+      buildQueuedPrompts({
+        steering: ["dup", "dup"],
+        followUp: ["later"],
+      }).map((prompt) => prompt.id),
+    ).toEqual(["steer:0:dup", "steer:1:dup", "followUp:0:later"]);
+  });
+
+  it("finds the current queue index from a stable queue id", () => {
+    expect(findQueuedPromptIndexById("steer", ["dup", "dup", "other"], "steer:1:dup")).toBe(1);
+    expect(findQueuedPromptIndexById("followUp", ["other"], "followUp:0:missing")).toBeNull();
   });
 });

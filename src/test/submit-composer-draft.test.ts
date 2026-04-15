@@ -106,6 +106,29 @@ describe("submitComposerDraft", () => {
     expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
+  it("treats null action results as errors", async () => {
+    const clearStoredDraft = vi.fn();
+
+    const result = await submitComposerDraft({
+      draft: "retry me",
+      attachments: [],
+      draftThreadId: "session:/repo/thread.json",
+      isSending: false,
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
+      onAction: vi.fn(async () => null),
+      clearStoredDraft,
+    });
+
+    expect(result).toEqual({
+      status: "error",
+      errorMessage: "Could not send prompt.",
+      text: "retry me",
+    });
+    expect(clearStoredDraft).not.toHaveBeenCalled();
+  });
+
   it("treats non-throwing stop-mode send failures as errors", async () => {
     const clearStoredDraft = vi.fn();
 

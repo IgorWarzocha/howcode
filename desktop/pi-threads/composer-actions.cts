@@ -3,7 +3,7 @@ import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts"
 import {
   getComposerAttachments,
   getComposerModelSelection,
-  getComposerQueueIndex,
+  getComposerQueueId,
   getComposerQueueMode,
   getComposerRequest,
   getComposerStreamingBehavior,
@@ -62,17 +62,17 @@ export async function handleComposerDesktopAction(
     }
 
     case "composer.dequeue": {
+      const queueId = getComposerQueueId(payload);
       const queueMode = getComposerQueueMode(payload);
-      const queueIndex = getComposerQueueIndex(payload);
 
-      if (!queueMode || queueIndex === null) {
+      if (!queueId || !queueMode) {
         return handledAction();
       }
 
       const dequeuedText = await dequeueComposerPrompt({
         ...getComposerRequest(payload),
+        queueId,
         queueMode,
-        queueIndex,
       });
 
       return handledAction({ dequeuedText });
