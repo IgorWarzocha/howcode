@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import { submitComposerDraft } from "../app/components/workspace/composer/submitComposerDraft";
+import type { DesktopActionResult } from "../app/desktop/types";
+
+function buildActionFailureResult(action: "composer.send" | "composer.stop", error: string) {
+  return {
+    ok: false,
+    at: new Date().toISOString(),
+    payload: {
+      action,
+      payload: {},
+    },
+    result: {
+      error,
+    },
+  } satisfies DesktopActionResult;
+}
 
 describe("submitComposerDraft", () => {
   it("clears the stored draft after a successful send", async () => {
@@ -52,6 +67,54 @@ describe("submitComposerDraft", () => {
       status: "error",
       errorMessage: "network down",
       text: "retry me",
+    });
+    expect(clearStoredDraft).not.toHaveBeenCalled();
+  });
+
+  it("treats non-throwing send failures as errors", async () => {
+    const clearStoredDraft = vi.fn();
+
+    const result = await submitComposerDraft({
+      draft: "retry me",
+      attachments: [],
+      draftThreadId: "session:/repo/thread.json",
+      isSending: false,
+      isStreaming: false,
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
+      onAction: vi.fn(async () => buildActionFailureResult("composer.send", "bridge failed")),
+      clearStoredDraft,
+    });
+
+    expect(result).toEqual({
+      status: "error",
+      errorMessage: "bridge failed",
+      text: "retry me",
+    });
+    expect(clearStoredDraft).not.toHaveBeenCalled();
+  });
+
+  it("treats non-throwing stop failures as errors", async () => {
+    const clearStoredDraft = vi.fn();
+
+    const result = await submitComposerDraft({
+      draft: "stop me",
+      attachments: [],
+      draftThreadId: "session:/repo/thread.json",
+      isSending: false,
+      isStreaming: true,
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "stop",
+      onAction: vi.fn(async () => buildActionFailureResult("composer.stop", "stop failed")),
+      clearStoredDraft,
+    });
+
+    expect(result).toEqual({
+      status: "error",
+      errorMessage: "stop failed",
+      text: "stop me",
     });
     expect(clearStoredDraft).not.toHaveBeenCalled();
   });

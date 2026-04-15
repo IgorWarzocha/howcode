@@ -9,6 +9,7 @@ import type {
   DesktopActionInvoker,
 } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { submitComposerDraft } from "./submitComposerDraft";
 
@@ -108,7 +109,10 @@ export function useComposerController({
       return;
     }
 
-    setDraft(restoredQueuedPrompt);
+    setDraft((currentDraft) =>
+      mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
+    );
+    setAttachments([]);
     setOpenMenu(null);
     setErrorMessage(null);
     onRestoredQueuedPromptApplied();

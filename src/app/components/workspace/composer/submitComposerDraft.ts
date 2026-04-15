@@ -2,6 +2,7 @@ import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
   DesktopActionInvoker,
+  DesktopActionResult,
 } from "../../../desktop/types";
 
 type SubmitComposerDraftResult =
@@ -23,6 +24,18 @@ type SubmitComposerDraftOptions = {
   clearStoredDraft: (threadId: string) => void;
 };
 
+function getDesktopActionErrorMessage(actionResult: DesktopActionResult | null) {
+  if (actionResult?.ok === false && typeof actionResult.result?.error === "string") {
+    return actionResult.result.error;
+  }
+
+  if (typeof actionResult?.result?.error === "string") {
+    return actionResult.result.error;
+  }
+
+  return actionResult?.ok === false ? "Could not send prompt." : null;
+}
+
 export async function submitComposerDraft({
   draft,
   attachments,
@@ -42,21 +55,39 @@ export async function submitComposerDraft({
 
   try {
     if (isStreaming && streamingBehaviorPreference === "stop") {
-      await onAction("composer.stop", {
+      const actionResult = await onAction("composer.stop", {
         projectId,
         sessionPath,
       });
 
+      const actionErrorMessage = getDesktopActionErrorMessage(actionResult);
+      if (actionErrorMessage) {
+        return {
+          status: "error",
+          errorMessage: actionErrorMessage,
+          text,
+        };
+      }
+
       return { status: "stopped", text };
     }
 
-    await onAction("composer.send", {
+    const actionResult = await onAction("composer.send", {
       text,
       attachments,
       projectId,
       sessionPath,
       streamingBehavior: streamingBehaviorPreference,
     });
+
+    const actionErrorMessage = getDesktopActionErrorMessage(actionResult);
+    if (actionErrorMessage) {
+      return {
+        status: "error",
+        errorMessage: actionErrorMessage,
+        text,
+      };
+    }
 
     if (draftThreadId) {
       clearStoredDraft(draftThreadId);
