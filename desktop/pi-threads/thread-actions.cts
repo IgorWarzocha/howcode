@@ -16,6 +16,7 @@ import {
   getThreadSessionPath,
   markInboxThreadRead,
   restoreThread,
+  restoreThreads,
   toggleThreadPinned,
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
@@ -39,6 +40,12 @@ async function deletePersistedThread(threadId: string) {
   }
 
   deleteThreadRecord(threadId);
+}
+
+async function deletePersistedThreads(threadIds: string[]) {
+  for (const threadId of threadIds) {
+    await deletePersistedThread(threadId);
+  }
 }
 
 export async function handleThreadDesktopAction(
@@ -87,10 +94,26 @@ export async function handleThreadDesktopAction(
       return handledAction();
     }
 
+    case "thread.restore-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        restoreThreads(threadIds);
+      }
+      return handledAction();
+    }
+
     case "thread.delete": {
       const threadId = getThreadId(payload);
       if (threadId) {
         await deletePersistedThread(threadId);
+      }
+      return handledAction();
+    }
+
+    case "thread.delete-many": {
+      const threadIds = getThreadIds(payload);
+      if (threadIds.length > 0) {
+        await deletePersistedThreads(threadIds);
       }
       return handledAction();
     }

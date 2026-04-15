@@ -25,6 +25,7 @@ export {
   moveProjectToTop,
   reorderProjects,
   renameProject,
+  restoreThreads,
   restoreThread,
   setProjectRepoOrigin,
   setProjectCollapsed,

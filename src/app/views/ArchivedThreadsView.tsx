@@ -1,4 +1,5 @@
 import { ArchiveRestore, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { PrimaryButton } from "../components/common/PrimaryButton";
 import { TextButton } from "../components/common/TextButton";
 import { ViewHeader } from "../components/common/ViewHeader";
@@ -11,20 +12,176 @@ type ArchivedThreadsViewProps = {
 };
 
 export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewProps) {
+  const [selectedThreadIds, setSelectedThreadIds] = useState<string[]>([]);
+  const [optimisticallyHiddenThreadIds, setOptimisticallyHiddenThreadIds] = useState<string[]>([]);
+  const [busyAction, setBusyAction] = useState<"restore" | "delete" | null>(null);
+
+  const visibleThreads = useMemo(
+    () => threads.filter((thread) => !optimisticallyHiddenThreadIds.includes(thread.id)),
+    [optimisticallyHiddenThreadIds, threads],
+  );
+  const visibleThreadIds = useMemo(
+    () => visibleThreads.map((thread) => thread.id),
+    [visibleThreads],
+  );
+
+  useEffect(() => {
+    const threadIds = new Set(threads.map((thread) => thread.id));
+
+    setOptimisticallyHiddenThreadIds((current) =>
+      current.filter((threadId) => threadIds.has(threadId)),
+    );
+  }, [threads]);
+
+  useEffect(() => {
+    const nextVisibleThreadIds = new Set(visibleThreadIds);
+
+    setSelectedThreadIds((current) =>
+      current.filter((threadId) => nextVisibleThreadIds.has(threadId)),
+    );
+  }, [visibleThreadIds]);
+
+  const allVisibleSelected =
+    visibleThreadIds.length > 0 && selectedThreadIds.length === visibleThreadIds.length;
+
+  const runArchivedThreadMutation = async ({
+    action,
+    busyState,
+    threadIds,
+    projectId,
+  }: {
+    action: "thread.restore" | "thread.restore-many" | "thread.delete" | "thread.delete-many";
+    busyState: "restore" | "delete";
+    threadIds: string[];
+    projectId?: string;
+  }) => {
+    if (threadIds.length === 0 || busyAction) {
+      return;
+    }
+
+    setBusyAction(busyState);
+    setOptimisticallyHiddenThreadIds((current) => [...new Set([...current, ...threadIds])]);
+    setSelectedThreadIds((current) => current.filter((threadId) => !threadIds.includes(threadId)));
+
+    let failed = false;
+
+    try {
+      const result = await onAction(
+        action,
+        action === "thread.restore" || action === "thread.delete"
+          ? { projectId, threadId: threadIds[0] }
+          : { threadIds },
+      );
+      failed = result?.ok === false || typeof result?.result?.error === "string";
+    } catch {
+      failed = true;
+    }
+
+    if (failed) {
+      setOptimisticallyHiddenThreadIds((current) =>
+        current.filter((threadId) => !threadIds.includes(threadId)),
+      );
+    }
+
+    setBusyAction(null);
+  };
+
   return (
     <ViewShell maxWidthClassName="max-w-[880px]">
       <ViewHeader
         title="Archived threads"
         subtitle="Restore archived threads back into the sidebar or delete them permanently from the app and disk."
+        actions={
+          visibleThreads.length > 0 ? (
+            <TextButton
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+              disabled={busyAction !== null}
+              onClick={() => {
+                void runArchivedThreadMutation({
+                  action: "thread.delete-many",
+                  busyState: "delete",
+                  threadIds: visibleThreadIds,
+                });
+              }}
+            >
+              <Trash2 size={14} />
+              Delete all
+            </TextButton>
+          ) : null
+        }
       />
 
-      {threads.length > 0 ? (
+      {visibleThreads.length > 0 ? (
         <div className="grid gap-2">
-          {threads.map((thread) => (
+          <div className="flex items-center justify-between rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-[13px] text-[color:var(--muted)]">
+            <label className="inline-flex items-center gap-2 text-[color:var(--text)]">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[color:var(--accent)]"
+                checked={allVisibleSelected}
+                onChange={() => setSelectedThreadIds(allVisibleSelected ? [] : visibleThreadIds)}
+                disabled={busyAction !== null}
+                aria-label="Select all archived threads"
+              />
+              <span>
+                {selectedThreadIds.length > 0
+                  ? `${selectedThreadIds.length} selected`
+                  : "Select archived threads"}
+              </span>
+            </label>
+
+            <div className="flex items-center gap-2">
+              <PrimaryButton
+                className="inline-flex items-center gap-1.5 px-3"
+                disabled={selectedThreadIds.length === 0 || busyAction !== null}
+                onClick={() => {
+                  void runArchivedThreadMutation({
+                    action: "thread.restore-many",
+                    busyState: "restore",
+                    threadIds: selectedThreadIds,
+                  });
+                }}
+              >
+                <ArchiveRestore size={14} />
+                Restore selected
+              </PrimaryButton>
+              <TextButton
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                disabled={selectedThreadIds.length === 0 || busyAction !== null}
+                onClick={() => {
+                  void runArchivedThreadMutation({
+                    action: "thread.delete-many",
+                    busyState: "delete",
+                    threadIds: selectedThreadIds,
+                  });
+                }}
+              >
+                <Trash2 size={14} />
+                Delete selected
+              </TextButton>
+            </div>
+          </div>
+
+          {visibleThreads.map((thread) => (
             <div
               key={thread.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
             >
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[color:var(--accent)]"
+                checked={selectedThreadIds.includes(thread.id)}
+                onChange={() =>
+                  setSelectedThreadIds((current) =>
+                    current.includes(thread.id)
+                      ? current.filter((threadId) => threadId !== thread.id)
+                      : [...current, thread.id],
+                  )
+                }
+                disabled={busyAction !== null}
+                aria-label={`Select ${thread.title}`}
+              />
+
               <div className="min-w-0">
                 <div className="truncate text-[14px] text-[color:var(--text)]">{thread.title}</div>
                 <div className="mt-1 flex items-center gap-2 text-[12px] text-[color:var(--muted)]">
@@ -37,24 +194,30 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
               <div className="flex items-center gap-2">
                 <PrimaryButton
                   className="inline-flex items-center gap-1.5 px-3"
-                  onClick={() =>
-                    onAction("thread.restore", {
+                  disabled={busyAction !== null}
+                  onClick={() => {
+                    void runArchivedThreadMutation({
+                      action: "thread.restore",
+                      busyState: "restore",
+                      threadIds: [thread.id],
                       projectId: thread.projectId,
-                      threadId: thread.id,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <ArchiveRestore size={14} />
                   Restore
                 </PrimaryButton>
                 <TextButton
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
-                  onClick={() =>
-                    onAction("thread.delete", {
+                  disabled={busyAction !== null}
+                  onClick={() => {
+                    void runArchivedThreadMutation({
+                      action: "thread.delete",
+                      busyState: "delete",
+                      threadIds: [thread.id],
                       projectId: thread.projectId,
-                      threadId: thread.id,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <Trash2 size={14} />
                   Delete permanently

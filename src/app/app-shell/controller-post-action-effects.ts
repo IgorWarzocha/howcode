@@ -347,18 +347,32 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-  if (action === "thread.restore" || action === "thread.delete") {
+  if (
+    action === "thread.restore" ||
+    action === "thread.restore-many" ||
+    action === "thread.delete" ||
+    action === "thread.delete-many"
+  ) {
     setArchivedThreads(await loadArchivedThreads());
 
+    const isBatchThreadMutation =
+      action === "thread.restore-many" || action === "thread.delete-many";
+
     const projectId = getPayloadProjectId(contextualPayload);
-    if (projectId) {
+    if (isBatchThreadMutation) {
+      await refreshShellState();
+    } else if (projectId) {
       await loadProjectThreads(projectId);
     }
 
-    if (
-      action === "thread.delete" &&
-      contextualPayload.threadId === workspaceState.selectedThreadId
-    ) {
+    const deletedThreadIds =
+      action === "thread.delete"
+        ? [contextualPayload.threadId]
+        : action === "thread.delete-many"
+          ? getPayloadThreadIds(contextualPayload)
+          : [];
+
+    if (deletedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
       dispatch({ type: "show-view", view: "code" });
     }
 

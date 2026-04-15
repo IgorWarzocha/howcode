@@ -72,7 +72,9 @@ export type DesktopActionPayloadMap = {
   "thread.archive": { threadId: string };
   "thread.archive-many": { projectId?: string | null; threadIds: string[] };
   "thread.restore": { threadId: string };
+  "thread.restore-many": { threadIds: string[] };
   "thread.delete": { threadId: string };
+  "thread.delete-many": { threadIds: string[] };
   "thread.pin": { threadId: string; projectId?: string | null };
   "thread.actions": EmptyActionPayload;
   "thread.run-action": EmptyActionPayload;
