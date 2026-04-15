@@ -3,6 +3,7 @@ import { type Model, supportsXhigh } from "@mariozechner/pi-ai";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
   ComposerModel,
+  ComposerQueuedPrompt,
   ComposerState,
   ComposerStateRequest,
   ComposerThinkingLevel,
@@ -33,6 +34,23 @@ function mapComposerModel(
 
 function mapThinkingLevels(levels: ThinkingLevel[]) {
   return levels as ComposerThinkingLevel[];
+}
+
+function buildQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[] {
+  return [
+    ...session.getSteeringMessages().map((text, queueIndex) => ({
+      id: `steer:${queueIndex}:${text}`,
+      mode: "steer" as const,
+      queueIndex,
+      text,
+    })),
+    ...session.getFollowUpMessages().map((text, queueIndex) => ({
+      id: `followUp:${queueIndex}:${text}`,
+      mode: "followUp" as const,
+      queueIndex,
+      text,
+    })),
+  ];
 }
 
 export function getAvailableThinkingLevelsForModel(
@@ -184,6 +202,7 @@ export async function buildComposerStateSnapshot(
     })),
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
+    queuedPrompts: [],
   };
 }
 
@@ -201,5 +220,6 @@ export async function buildComposerState(runtime: PiRuntime): Promise<ComposerSt
     availableModels,
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
+    queuedPrompts: buildQueuedPrompts(runtime.session),
   };
 }

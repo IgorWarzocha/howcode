@@ -3,6 +3,7 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
   ProjectDiffBaseline,
@@ -17,7 +18,10 @@ export type ComposerProps = {
   hostLabel: string;
   model: ComposerModel | null;
   availableModels: ComposerModel[];
+  isStreaming: boolean;
   thinkingLevel: ComposerThinkingLevel;
+  restoredQueuedPrompt: string | null;
+  streamingBehaviorPreference: ComposerStreamingBehavior;
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
   projectGitState: ProjectGitState | null;
@@ -36,6 +40,7 @@ export type ComposerProps = {
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onOpenGitOpsView: () => void;
+  onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;

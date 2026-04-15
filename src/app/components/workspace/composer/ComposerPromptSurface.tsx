@@ -25,7 +25,10 @@ export function ComposerPromptSurface({
   composerPanelRef,
   model,
   availableModels,
+  isStreaming,
   thinkingLevel,
+  restoredQueuedPrompt,
+  streamingBehaviorPreference,
   availableThinkingLevels,
   projectId,
   projectGitState,
@@ -34,6 +37,7 @@ export function ComposerPromptSurface({
   favoriteFolders,
   onOpenTakeoverTerminal,
   onToggleTerminal,
+  onRestoredQueuedPromptApplied,
   onPickAttachments,
   onListAttachmentEntries,
   onAction,
@@ -53,6 +57,7 @@ export function ComposerPromptSurface({
     clearError,
     draft,
     errorMessage,
+    isStreaming: composerIsStreaming,
     pickerButtonRef,
     pickerLoading,
     pickerOpen,
@@ -71,6 +76,7 @@ export function ComposerPromptSurface({
     send,
     setDraft,
     setOpenMenu,
+    stop,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
@@ -78,7 +84,11 @@ export function ComposerPromptSurface({
     model,
     projectId,
     sessionPath,
+    isStreaming,
+    restoredQueuedPrompt,
+    streamingBehaviorPreference,
     onAction,
+    onRestoredQueuedPromptApplied,
     onPickAttachments,
     onListAttachmentEntries,
   });
@@ -169,9 +179,10 @@ export function ComposerPromptSurface({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
-                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1]",
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
-                onClick={() => undefined}
+                onClick={() => void stop()}
+                disabled={!composerIsStreaming}
                 aria-label="Stop Pi"
                 title="Stop Pi"
               >

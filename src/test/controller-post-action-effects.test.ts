@@ -17,6 +17,7 @@ function buildShellState(): ShellState {
     appSettings: {
       gitCommitMessageModel: null,
       skillCreatorModel: null,
+      composerStreamingBehavior: "followUp",
       favoriteFolders: ["/existing"],
       projectImportState: null,
       preferredProjectLocation: null,
@@ -31,6 +32,7 @@ function buildShellState(): ShellState {
       availableModels: [],
       currentThinkingLevel: "medium",
       availableThinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh"],
+      queuedPrompts: [],
     },
     projects: [
       {
@@ -117,6 +119,17 @@ describe("controller post action effects", () => {
   });
 
   it("updates project creation settings optimistically", () => {
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "composerStreamingBehavior",
+        value: "steer",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        composerStreamingBehavior: "steer",
+      },
+    });
+
     expect(
       getOptimisticallyUpdatedShellState(buildShellState(), {
         key: "preferredProjectLocation",

@@ -29,7 +29,7 @@ export function SettingsView({
     <ViewShell maxWidthClassName="max-w-[760px]">
       <ViewHeader
         title="App settings"
-        subtitle="Git commit model, skill creator model, project cleanup defaults, Pi TUI defaults, project UI import, and favorite folders."
+        subtitle="Git commit model, skill creator model, streaming send behavior, project cleanup defaults, Pi TUI defaults, project UI import, and favorite folders."
       />
 
       <SettingsModelSection
@@ -59,6 +59,7 @@ export function SettingsView({
         appSettings={appSettings}
         preferredProjectLocationDraft={controller.preferredProjectLocationDraft}
         savePreferredProjectLocation={controller.savePreferredProjectLocation}
+        setComposerStreamingBehavior={controller.setComposerStreamingBehavior}
         setPreferredProjectLocationDraft={controller.setPreferredProjectLocationDraft}
         setProjectDeletionMode={controller.setProjectDeletionMode}
         toggleInitializeGitOnProjectCreate={controller.toggleInitializeGitOnProjectCreate}

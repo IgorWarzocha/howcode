@@ -4,6 +4,7 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from "../../../desktop/types";
@@ -32,7 +33,11 @@ type UseComposerControllerProps = {
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
+  isStreaming: boolean;
+  restoredQueuedPrompt: string | null;
+  streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
+  onRestoredQueuedPromptApplied: () => void;
   onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
@@ -45,7 +50,11 @@ export function useComposerController({
   model,
   projectId,
   sessionPath,
+  isStreaming,
+  restoredQueuedPrompt,
+  streamingBehaviorPreference,
   onAction,
+  onRestoredQueuedPromptApplied,
   onPickAttachments,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
@@ -93,6 +102,17 @@ export function useComposerController({
 
     composerDraftStore.setDraft(draftThreadId, { prompt: draft, attachments });
   }, [attachments, draft, draftThreadId]);
+
+  useEffect(() => {
+    if (!restoredQueuedPrompt) {
+      return;
+    }
+
+    setDraft(restoredQueuedPrompt);
+    setOpenMenu(null);
+    setErrorMessage(null);
+    onRestoredQueuedPromptApplied();
+  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt]);
 
   useDismissibleLayer({
     open: openMenu !== null,
@@ -153,20 +173,25 @@ export function useComposerController({
 
     const submittedAttachments = attachments;
     const submittedDraftThreadId = draftThreadId;
+    const shouldClearComposer = !isStreaming || streamingBehaviorPreference !== "stop";
 
     setIsSending(true);
     setErrorMessage(null);
-    skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-    setDraft("");
-    setAttachments([]);
+    if (shouldClearComposer) {
+      skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+      setDraft("");
+      setAttachments([]);
+    }
 
     const result = await submitComposerDraft({
       draft,
       attachments: submittedAttachments,
       draftThreadId: submittedDraftThreadId,
       isSending,
+      isStreaming,
       projectId,
       sessionPath,
+      streamingBehaviorPreference,
       onAction,
       clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
     });
@@ -179,7 +204,29 @@ export function useComposerController({
       setErrorMessage(result.errorMessage);
     }
 
+    if (result.status === "sent" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
+      setDraft("");
+      setAttachments([]);
+    }
+
     setIsSending(false);
+  };
+
+  const stop = async () => {
+    if (!isStreaming || isSending) {
+      return;
+    }
+
+    setErrorMessage(null);
+
+    try {
+      await onAction("composer.stop", {
+        projectId,
+        sessionPath,
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
+    }
   };
 
   const pickAttachments = async () => {
@@ -256,6 +303,7 @@ export function useComposerController({
     modelLabel,
     modelMenuOpen: openMenu === "model",
     modelMenuRef,
+    isStreaming,
     pendingPickerAttachments,
     pickAttachments,
     openPickerDirectory,
@@ -266,6 +314,7 @@ export function useComposerController({
     send,
     setDraft,
     setOpenMenu,
+    stop,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,

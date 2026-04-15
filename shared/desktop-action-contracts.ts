@@ -3,6 +3,7 @@ import type {
   AppSettings,
   ComposerAttachment,
   ComposerState,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
   ProjectDeletionMode,
   ProjectImportCandidate,
@@ -25,9 +26,12 @@ export type DesktopActionPayloadFields = {
   projectName?: string;
   provider?: string;
   push?: boolean;
+  queueIndex?: number;
+  queueMode?: Exclude<ComposerStreamingBehavior, "stop">;
   repoUrl?: string | null;
   reset?: boolean;
   sessionPath?: string | null;
+  streamingBehavior?: ComposerStreamingBehavior;
   text?: string;
   threadId?: string;
   threadIds?: string[];
@@ -44,6 +48,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "gitCommitMessageModel"; reset: true }
   | { key: "skillCreatorModel"; provider: string; modelId: string; reset?: false }
   | { key: "skillCreatorModel"; reset: true }
+  | { key: "composerStreamingBehavior"; value: ComposerStreamingBehavior }
   | { key: "favoriteFolders"; folders: string[] }
   | { key: "projectImportState"; imported: boolean | null }
   | { key: "preferredProjectLocation"; value: string | null }
@@ -115,6 +120,14 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | null;
     text: string;
     attachments?: ComposerAttachment[];
+    streamingBehavior?: ComposerStreamingBehavior;
+  };
+  "composer.stop": { projectId?: string | null; sessionPath?: string | null };
+  "composer.dequeue": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    queueMode: Exclude<ComposerStreamingBehavior, "stop">;
+    queueIndex: number;
   };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
@@ -139,6 +152,7 @@ export type DesktopActionResultData = {
   checkedProjectCount?: number;
   committed?: boolean;
   composer?: ComposerState;
+  dequeuedText?: string | null;
   deletedThreadIds?: string[];
   didMutate?: boolean;
   error?: string;

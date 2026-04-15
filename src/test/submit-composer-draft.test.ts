@@ -11,8 +11,10 @@ describe("submitComposerDraft", () => {
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
       draftThreadId: "session:/repo/thread.json",
       isSending: false,
+      isStreaming: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
       onAction,
       clearStoredDraft,
     });
@@ -23,6 +25,7 @@ describe("submitComposerDraft", () => {
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
+      streamingBehavior: "followUp",
     });
     expect(clearStoredDraft).toHaveBeenCalledWith("session:/repo/thread.json");
   });
@@ -35,8 +38,10 @@ describe("submitComposerDraft", () => {
       attachments: [],
       draftThreadId: "session:/repo/thread.json",
       isSending: false,
+      isStreaming: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
       onAction: vi.fn(async () => {
         throw new Error("network down");
       }),
@@ -61,8 +66,10 @@ describe("submitComposerDraft", () => {
         attachments: [],
         draftThreadId: "session:/repo/thread.json",
         isSending: false,
+        isStreaming: false,
         projectId: "/repo",
         sessionPath: "/repo/thread.json",
+        streamingBehaviorPreference: "followUp",
         onAction,
         clearStoredDraft,
       }),
@@ -81,8 +88,10 @@ describe("submitComposerDraft", () => {
         attachments: [],
         draftThreadId: "session:/repo/thread.json",
         isSending: true,
+        isStreaming: false,
         projectId: "/repo",
         sessionPath: "/repo/thread.json",
+        streamingBehaviorPreference: "followUp",
         onAction,
         clearStoredDraft: vi.fn(),
       }),

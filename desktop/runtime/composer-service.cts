@@ -2,9 +2,11 @@ import type {
   ComposerAttachment,
   ComposerState,
   ComposerStateRequest,
+  ComposerStreamingBehavior,
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
+import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
 import {
@@ -140,7 +142,11 @@ export async function setComposerThinkingLevel(
 }
 
 export async function sendComposerPrompt(
-  request: ComposerStateRequest & { text: string; attachments?: ComposerAttachment[] },
+  request: ComposerStateRequest & {
+    text: string;
+    attachments?: ComposerAttachment[];
+    streamingBehavior?: ComposerStreamingBehavior | null;
+  },
 ): Promise<void> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const runtime = persistedSessionPath
@@ -148,13 +154,83 @@ export async function sendComposerPrompt(
     : await createRuntimeForNewSession(request.projectId ?? process.cwd());
   const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
   const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
+  const streamingBehavior =
+    request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
 
   try {
-    await runtime.session.prompt(message);
+    if (runtime.session.isStreaming) {
+      if (streamingBehavior === "stop") {
+        await runtime.session.abort();
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return;
+      }
+
+      await runtime.session.prompt(message, { streamingBehavior });
+    } else {
+      await runtime.session.prompt(message);
+    }
   } catch (error) {
     scheduleRuntimeDisposalForRuntime(runtime);
     throw error;
   }
+}
+
+export async function stopComposerRun(request: ComposerStateRequest): Promise<void> {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  if (!persistedSessionPath) {
+    return;
+  }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
+
+  await runtime.session.abort();
+  scheduleRuntimeDisposalForRuntime(runtime);
+  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+}
+
+export async function dequeueComposerPrompt(
+  request: ComposerStateRequest & {
+    queueMode: Exclude<ComposerStreamingBehavior, "stop">;
+    queueIndex: number;
+  },
+): Promise<string | null> {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  if (!persistedSessionPath) {
+    return null;
+  }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+  });
+  const currentQueue =
+    request.queueMode === "steer"
+      ? runtime.session.getSteeringMessages()
+      : runtime.session.getFollowUpMessages();
+
+  if (request.queueIndex < 0 || request.queueIndex >= currentQueue.length) {
+    return null;
+  }
+
+  const clearedQueue = runtime.session.clearQueue();
+  const targetQueue = request.queueMode === "steer" ? clearedQueue.steering : clearedQueue.followUp;
+
+  const [dequeuedText] = targetQueue.splice(request.queueIndex, 1);
+
+  if (runtime.session.isStreaming) {
+    for (const queuedText of clearedQueue.steering) {
+      await runtime.session.steer(queuedText);
+    }
+
+    for (const queuedText of clearedQueue.followUp) {
+      await runtime.session.followUp(queuedText);
+    }
+  }
+
+  scheduleRuntimeDisposalForRuntime(runtime);
+  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+  return dequeuedText ?? null;
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {

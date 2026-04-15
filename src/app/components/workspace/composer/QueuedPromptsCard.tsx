@@ -1,23 +1,19 @@
 import { X } from "lucide-react";
+import type { ComposerQueuedPrompt } from "../../../desktop/types";
 import { compactCardClass, compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
-export type MockQueuedPrompt = {
-  id: string;
-  text: string;
+type QueuedPromptsCardProps = {
+  prompts: ComposerQueuedPrompt[];
+  onEditPrompt: (prompt: ComposerQueuedPrompt) => void;
+  onRemovePrompt: (prompt: ComposerQueuedPrompt) => void;
 };
 
-type MockQueuedPromptsCardProps = {
-  prompts: MockQueuedPrompt[];
-  onEditPrompt: (promptId: string) => void;
-  onRemovePrompt: (promptId: string) => void;
-};
-
-export function MockQueuedPromptsCard({
+export function QueuedPromptsCard({
   prompts,
   onEditPrompt,
   onRemovePrompt,
-}: MockQueuedPromptsCardProps) {
+}: QueuedPromptsCardProps) {
   if (prompts.length === 0) {
     return null;
   }
@@ -44,8 +40,7 @@ export function MockQueuedPromptsCard({
             <button
               type="button"
               className="min-w-0 px-2.5 py-1 text-left text-[12px] leading-5 text-[color:var(--text)]/88"
-              onClick={() => onEditPrompt(prompt.id)}
-              title={prompt.text}
+              onClick={() => onEditPrompt(prompt)}
             >
               <span className="block truncate">{prompt.text}</span>
             </button>
@@ -53,9 +48,8 @@ export function MockQueuedPromptsCard({
             <button
               type="button"
               className={cn(compactIconButtonClass, "mr-1 shrink-0")}
-              onClick={() => onRemovePrompt(prompt.id)}
+              onClick={() => onRemovePrompt(prompt)}
               aria-label="Remove queued message"
-              title="Remove queued message"
             >
               <X size={12} />
             </button>

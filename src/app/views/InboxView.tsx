@@ -2,16 +2,23 @@ import { useState } from "react";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
-import type { DesktopActionInvoker, InboxThread } from "../desktop/types";
+import type { AppSettings, DesktopActionInvoker, InboxThread } from "../desktop/types";
 
 type InboxViewProps = {
+  appSettings: AppSettings;
   thread: InboxThread | null;
   onAction: DesktopActionInvoker;
   onDismissThread: (thread: InboxThread) => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
 };
 
-export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: InboxViewProps) {
+export function InboxView({
+  appSettings,
+  thread,
+  onAction,
+  onDismissThread,
+  onOpenThread,
+}: InboxViewProps) {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,11 +35,19 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
     let result: Awaited<ReturnType<DesktopActionInvoker>> | null = null;
 
     try {
-      result = await onAction("composer.send", {
-        projectId: thread.projectId,
-        sessionPath: thread.sessionPath,
-        text: nextDraft,
-      });
+      if (thread.running && appSettings.composerStreamingBehavior === "stop") {
+        result = await onAction("composer.stop", {
+          projectId: thread.projectId,
+          sessionPath: thread.sessionPath,
+        });
+      } else {
+        result = await onAction("composer.send", {
+          projectId: thread.projectId,
+          sessionPath: thread.sessionPath,
+          text: nextDraft,
+          streamingBehavior: appSettings.composerStreamingBehavior,
+        });
+      }
     } catch {
       setErrorMessage("Could not send follow-up.");
       return;
@@ -45,8 +60,30 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
       return;
     }
 
-    setDraft("");
-    onDismissThread(thread);
+    if (!thread.running || appSettings.composerStreamingBehavior !== "stop") {
+      setDraft("");
+      onDismissThread(thread);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!thread?.running || isSending) {
+      return;
+    }
+
+    setIsSending(true);
+    setErrorMessage(null);
+
+    try {
+      await onAction("composer.stop", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+      });
+    } catch {
+      setErrorMessage("Could not stop Pi.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (!thread) {
@@ -93,11 +130,13 @@ export function InboxView({ thread, onAction, onDismissThread, onOpenThread }: I
           <InboxComposer
             draft={draft}
             errorMessage={errorMessage}
+            isStreaming={thread.running}
             isSending={isSending}
             onChangeDraft={setDraft}
             onDismiss={() => onDismissThread(thread)}
             onOpenThread={() => onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)}
             onSend={handleSend}
+            onStop={handleStop}
           />
         </div>
       </div>

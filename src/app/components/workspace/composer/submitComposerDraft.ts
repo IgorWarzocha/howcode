@@ -1,9 +1,13 @@
-import type { DesktopAction } from "../../../desktop/actions";
-import type { ComposerAttachment, DesktopActionInvoker } from "../../../desktop/types";
+import type {
+  ComposerAttachment,
+  ComposerStreamingBehavior,
+  DesktopActionInvoker,
+} from "../../../desktop/types";
 
 type SubmitComposerDraftResult =
   | { status: "skipped" }
   | { status: "sent"; text: string }
+  | { status: "stopped"; text: string }
   | { status: "error"; errorMessage: string; text: string };
 
 type SubmitComposerDraftOptions = {
@@ -11,8 +15,10 @@ type SubmitComposerDraftOptions = {
   attachments: ComposerAttachment[];
   draftThreadId: string | null;
   isSending: boolean;
+  isStreaming: boolean;
   projectId: string;
   sessionPath: string | null;
+  streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
   clearStoredDraft: (threadId: string) => void;
 };
@@ -22,8 +28,10 @@ export async function submitComposerDraft({
   attachments,
   draftThreadId,
   isSending,
+  isStreaming,
   projectId,
   sessionPath,
+  streamingBehaviorPreference,
   onAction,
   clearStoredDraft,
 }: SubmitComposerDraftOptions): Promise<SubmitComposerDraftResult> {
@@ -33,11 +41,21 @@ export async function submitComposerDraft({
   }
 
   try {
+    if (isStreaming && streamingBehaviorPreference === "stop") {
+      await onAction("composer.stop", {
+        projectId,
+        sessionPath,
+      });
+
+      return { status: "stopped", text };
+    }
+
     await onAction("composer.send", {
       text,
       attachments,
       projectId,
       sessionPath,
+      streamingBehavior: streamingBehaviorPreference,
     });
 
     if (draftThreadId) {

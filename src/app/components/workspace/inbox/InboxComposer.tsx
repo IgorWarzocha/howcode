@@ -9,21 +9,25 @@ import { ComposerTextField } from "../composer/ComposerTextField";
 type InboxComposerProps = {
   draft: string;
   errorMessage: string | null;
+  isStreaming: boolean;
   isSending: boolean;
   onChangeDraft: (value: string) => void;
   onDismiss: () => void;
   onOpenThread: () => void;
   onSend: () => void;
+  onStop: () => void;
 };
 
 export function InboxComposer({
   draft,
   errorMessage,
+  isStreaming,
   isSending,
   onChangeDraft,
   onDismiss,
   onOpenThread,
   onSend,
+  onStop,
 }: InboxComposerProps) {
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -55,9 +59,10 @@ export function InboxComposer({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
-                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1]",
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
-                onClick={() => undefined}
+                onClick={onStop}
+                disabled={!isStreaming || isSending}
                 aria-label="Stop Pi"
                 title="Stop Pi"
               >

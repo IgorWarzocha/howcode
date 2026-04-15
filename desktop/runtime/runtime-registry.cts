@@ -1,7 +1,8 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { buildComposerState } from "./composer-state.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
-import { publishThreadUpdate } from "./thread-publisher.cts";
+import { publishComposerUpdate, publishThreadUpdate } from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
 
 const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
@@ -117,6 +118,16 @@ async function createRuntime(options: {
 
     if (event.type === "message_update" && event.message.role === "assistant") {
       void publishThreadUpdate(runtime, "update");
+      return;
+    }
+
+    if (event.type === "queue_update") {
+      void buildComposerState(runtime).then((composer) => {
+        publishComposerUpdate(composer, {
+          projectId: runtime.cwd,
+          sessionPath: runtime.session.sessionFile,
+        });
+      });
     }
   });
 

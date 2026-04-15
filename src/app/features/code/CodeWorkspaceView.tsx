@@ -3,10 +3,7 @@ import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
-import {
-  type MockQueuedPrompt,
-  MockQueuedPromptsCard,
-} from "../../components/workspace/composer/MockQueuedPromptsCard";
+import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
 import {
   type SavedDiffComment,
@@ -32,20 +29,6 @@ type CodeWorkspaceViewProps = {
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
-const mockQueuedPromptsSeed: MockQueuedPrompt[] = [
-  {
-    id: "queued-1",
-    text: "After this finishes, tighten the composer spacing and make the stop action feel more intentional.",
-  },
-  {
-    id: "queued-2",
-    text: "Then add a quick empty state for queued prompts so the transition feels natural when the list clears.",
-  },
-  {
-    id: "queued-3",
-    text: "Finally, revisit whether queued follow-ups should stack newest-first or stay in the order they were added.",
-  },
-];
 
 export function CodeWorkspaceView({
   controller,
@@ -69,8 +52,7 @@ export function CodeWorkspaceView({
   const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
   const [diffCommentsSending, setDiffCommentsSending] = useState(false);
   const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const [mockQueuedPrompts, setMockQueuedPrompts] =
-    useState<MockQueuedPrompt[]>(mockQueuedPromptsSeed);
+  const [restoredQueuedPrompt, setRestoredQueuedPrompt] = useState<string | null>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const {
     handleAction,
@@ -158,8 +140,17 @@ export function CodeWorkspaceView({
     setComposerPromptResetKey((current) => current + 1);
 
     try {
+      const streamingBehaviorPreference =
+        shellState?.appSettings.composerStreamingBehavior ?? "followUp";
+
+      if (activeThreadData?.isStreaming && streamingBehaviorPreference === "stop") {
+        await handleAction("composer.stop");
+        return;
+      }
+
       await handleAction("composer.send", {
         text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
+        streamingBehavior: streamingBehaviorPreference,
       });
       diffCommentStore.clearContext(diffCommentContextId);
     } catch (error) {
@@ -213,6 +204,7 @@ export function CodeWorkspaceView({
                   shellState?.appSettings ?? {
                     gitCommitMessageModel: null,
                     skillCreatorModel: null,
+                    composerStreamingBehavior: "followUp",
                     favoriteFolders: [],
                     projectImportState: null,
                     preferredProjectLocation: null,
@@ -279,14 +271,26 @@ export function CodeWorkspaceView({
                 </div>
               ) : (
                 <div className="grid gap-0">
-                  <MockQueuedPromptsCard
-                    prompts={mockQueuedPrompts}
-                    onEditPrompt={() => undefined}
-                    onRemovePrompt={(promptId) => {
-                      setMockQueuedPrompts((current) =>
-                        current.filter((prompt) => prompt.id !== promptId),
-                      );
-                      setComposerLayoutVersion((current) => current + 1);
+                  <QueuedPromptsCard
+                    prompts={activeComposerState?.queuedPrompts ?? []}
+                    onEditPrompt={async (prompt) => {
+                      const result = await handleAction("composer.dequeue", {
+                        projectId: composerProjectId,
+                        sessionPath: terminalSessionPath,
+                        queueMode: prompt.mode,
+                        queueIndex: prompt.queueIndex,
+                      });
+                      if (typeof result?.result?.dequeuedText === "string") {
+                        setRestoredQueuedPrompt(result.result.dequeuedText);
+                      }
+                    }}
+                    onRemovePrompt={(prompt) => {
+                      void handleAction("composer.dequeue", {
+                        projectId: composerProjectId,
+                        sessionPath: terminalSessionPath,
+                        queueMode: prompt.mode,
+                        queueIndex: prompt.queueIndex,
+                      });
                     }}
                   />
                   <div ref={footerRef}>
@@ -295,7 +299,12 @@ export function CodeWorkspaceView({
                       hostLabel={shellState?.availableHosts[0] ?? "Local"}
                       model={activeComposerState?.currentModel ?? null}
                       availableModels={activeComposerState?.availableModels ?? []}
+                      isStreaming={activeThreadData?.isStreaming ?? false}
                       thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                      restoredQueuedPrompt={restoredQueuedPrompt}
+                      streamingBehaviorPreference={
+                        shellState?.appSettings.composerStreamingBehavior ?? "followUp"
+                      }
                       availableThinkingLevels={
                         activeComposerState?.availableThinkingLevels ?? ["off"]
                       }
@@ -323,6 +332,7 @@ export function CodeWorkspaceView({
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
+                      onRestoredQueuedPromptApplied={() => setRestoredQueuedPrompt(null)}
                       onToggleTerminal={handleToggleTerminal}
                       terminalVisible={state.terminalVisible}
                       onPickAttachments={pickComposerAttachments}
