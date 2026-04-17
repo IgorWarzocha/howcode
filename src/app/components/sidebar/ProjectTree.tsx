@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Archive, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import type { DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
@@ -57,31 +57,10 @@ function ProjectThreadsGroup({
       id={threadGroupId}
       aria-label={`Threads in ${projectName}`}
       data-open={isExpanded ? "true" : "false"}
-      className="motion-collapse-panel mt-0.5"
+      className="motion-collapse-panel"
     >
       <div className="motion-collapse-panel__inner">{children}</div>
     </div>
-  );
-}
-
-type NewSessionButtonProps = {
-  projectName: string;
-  onClick: () => void;
-};
-
-function NewSessionButton({ projectName, onClick }: NewSessionButtonProps) {
-  return (
-    <button
-      type="button"
-      className="group/new-session grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-0.5 text-left text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-visible:bg-[rgba(255,255,255,0.04)] focus-visible:text-[color:var(--text)]"
-      onClick={onClick}
-      aria-label={`Start a new session in ${projectName}`}
-    >
-      <span className="inline-flex h-4 w-4 items-center justify-center text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover/new-session:text-[color:var(--text)] group-focus-visible/new-session:text-[color:var(--text)]">
-        <Plus size={12} />
-      </span>
-      <span>New session</span>
-    </button>
   );
 }
 
@@ -110,7 +89,7 @@ type OldSessionsRowProps = {
 
 function OldSessionsRow({ expanded, onArchiveAll, onToggle }: OldSessionsRowProps) {
   return (
-    <div className="group grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]">
+    <div className="group grid min-h-7 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-px text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]">
       <button
         type="button"
         className="inline-flex h-4 w-4 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
@@ -312,7 +291,7 @@ export function ProjectTree({
                 disabled={selectionModeActive}
               >
                 {({ dragHandleProps, isDragging }) => (
-                  <div className="mb-2">
+                  <div className="mb-0.5">
                     <div className="relative">
                       <ProjectRow
                         actionMenuId={actionMenuId}
@@ -340,6 +319,11 @@ export function ProjectTree({
                           setOpenProjectMenuId(null);
                         }}
                         onSubmitEdit={() => handleSubmitEdit(project.id)}
+                        onCreateSession={() => {
+                          onProjectSelect(project.id);
+                          void onAction("thread.new", { projectId: project.id });
+                          setOpenProjectMenuId(null);
+                        }}
                         onToggleActions={() =>
                           setOpenProjectMenuId((current) =>
                             current === project.id ? null : project.id,
@@ -374,15 +358,6 @@ export function ProjectTree({
                         threadGroupId={threadGroupId}
                         projectName={project.name}
                       >
-                        <NewSessionButton
-                          projectName={project.name}
-                          onClick={() => {
-                            onProjectSelect(project.id);
-                            void onAction("thread.new", { projectId: project.id });
-                            setOpenProjectMenuId(null);
-                          }}
-                        />
-
                         {hasThreads ? (
                           recentThreads.map((thread) => {
                             const isSelected =

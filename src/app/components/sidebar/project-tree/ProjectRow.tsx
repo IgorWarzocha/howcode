@@ -1,5 +1,5 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -25,6 +25,7 @@ type ProjectRowProps = {
   onCancelEdit: () => void;
   onChangeRenameDraft: (value: string) => void;
   onEdit: () => void;
+  onCreateSession: () => void;
   onSelect: () => void;
   onSubmitEdit: () => void;
   onToggleActions: () => void;
@@ -49,6 +50,7 @@ export function ProjectRow({
   onCancelEdit,
   onChangeRenameDraft,
   onEdit,
+  onCreateSession,
   onSelect,
   onSubmitEdit,
   onToggleActions,
@@ -103,7 +105,7 @@ export function ProjectRow({
     <div
       className={cn(
         sidebarRowClass,
-        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-0.5",
+        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-px",
         (isActive || actionMenuOpen) && "bg-[rgba(183,186,245,0.08)]",
         isDragging && "ring-1 ring-[rgba(183,186,245,0.24)]",
       )}
@@ -145,7 +147,7 @@ export function ProjectRow({
       </button>
 
       {isEditing ? (
-        <div className="flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13.5px] leading-5 font-medium text-[color:var(--text)]/92">
+        <div className="flex min-h-7 min-w-0 items-center rounded-xl py-1 text-left text-[13.5px] leading-5 font-medium text-[color:var(--text)]/92">
           <input
             ref={inputRef}
             value={renameDraft}
@@ -171,7 +173,7 @@ export function ProjectRow({
         <button
           type="button"
           className={cn(
-            "flex min-h-8 min-w-0 items-center rounded-xl py-1.5 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
+            "flex min-h-7 min-w-0 items-center rounded-xl py-1 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
             dragHandleProps ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
             isActive && "text-[color:var(--text)]",
           )}
@@ -196,6 +198,16 @@ export function ProjectRow({
           !showActions && "pointer-events-none opacity-0",
         )}
       >
+        <button
+          type="button"
+          className={compactIconButtonClass}
+          onClick={onCreateSession}
+          aria-label={`Start a new session in ${name}`}
+          title="New session"
+        >
+          <Plus size={14} />
+        </button>
+
         <button
           type="button"
           className={cn(

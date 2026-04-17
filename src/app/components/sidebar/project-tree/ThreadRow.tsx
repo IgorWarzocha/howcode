@@ -31,7 +31,7 @@ export function ThreadRow({
   return (
     <div
       className={cn(
-        "group grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-0.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
+        "group grid min-h-7 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-px text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
         isSelected &&
           "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
       )}
@@ -58,7 +58,7 @@ export function ThreadRow({
 
       <button
         type="button"
-        className="flex min-w-0 items-center gap-1.5 py-1 text-left"
+        className="flex min-w-0 items-center gap-1.5 py-0.5 text-left"
         onClick={onOpen}
         aria-current={isSelected ? "page" : undefined}
       >
