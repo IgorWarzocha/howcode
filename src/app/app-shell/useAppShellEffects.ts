@@ -17,6 +17,32 @@ type QueryClientLike = {
   invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown;
 };
 
+type DesktopEventSelectionState = Pick<
+  WorkspaceState,
+  "activeView" | "selectedSessionPath" | "selectedInboxSessionPath"
+>;
+
+export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
+  return workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+    ? getPersistedSessionPath(workspaceState.selectedSessionPath)
+    : workspaceState.activeView === "inbox"
+      ? (workspaceState.selectedInboxSessionPath ?? null)
+      : null;
+}
+
+export function shouldAutoOpenStartedThread(
+  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"],
+  workspaceState: DesktopEventSelectionState,
+) {
+  const visibleSessionPath = getVisibleDesktopSessionPath(workspaceState);
+
+  return (
+    reason === "start" &&
+    (workspaceState.activeView === "code" ||
+      (workspaceState.activeView === "thread" && visibleSessionPath === null))
+  );
+}
+
 export function useAppShellEffects({
   projects,
   collapsedProjectIds,
@@ -232,24 +258,50 @@ export function useAppShellEffects({
     });
   }, [workspaceState.activeView, workspaceState.selectedSessionPath]);
 
+  const desktopEventStateRef = useRef({
+    composerProjectId,
+    workspaceState: {
+      activeView: workspaceState.activeView,
+      selectedSessionPath: workspaceState.selectedSessionPath,
+      selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+    } satisfies DesktopEventSelectionState,
+  });
+
+  useEffect(() => {
+    desktopEventStateRef.current = {
+      composerProjectId,
+      workspaceState: {
+        activeView: workspaceState.activeView,
+        selectedSessionPath: workspaceState.selectedSessionPath,
+        selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
+      },
+    };
+  }, [
+    composerProjectId,
+    workspaceState.activeView,
+    workspaceState.selectedInboxSessionPath,
+    workspaceState.selectedSessionPath,
+  ]);
+
   useEffect(() => {
     if (!window.piDesktop?.subscribe) {
       return;
     }
 
-    const visibleSessionPath =
-      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
-        ? getPersistedSessionPath(workspaceState.selectedSessionPath)
-        : workspaceState.activeView === "inbox"
-          ? (workspaceState.selectedInboxSessionPath ?? null)
-          : null;
-
+    // Keep the desktop event subscription stable. Re-subscribing on every selection change can
+    // drop in-flight thread updates exactly when a GUI-started thread flips from a local draft
+    // path to a persisted session path, which makes the live stream appear stuck.
     const unsubscribe = window.piDesktop.subscribe((event: DesktopEvent) => {
+      const { composerProjectId: latestComposerProjectId, workspaceState: latestWorkspaceState } =
+        desktopEventStateRef.current;
+      const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState);
+
       if (event.type === "composer-update") {
         const shouldApplyComposerUpdate = event.sessionPath
           ? event.sessionPath === visibleSessionPath
-          : event.projectId === composerProjectId &&
-            ((workspaceState.activeView !== "thread" && workspaceState.activeView !== "gitops") ||
+          : event.projectId === latestComposerProjectId &&
+            ((latestWorkspaceState.activeView !== "thread" &&
+              latestWorkspaceState.activeView !== "gitops") ||
               visibleSessionPath === null);
 
         if (shouldApplyComposerUpdate) {
@@ -294,12 +346,7 @@ export function useAppShellEffects({
           });
       }
 
-      const shouldAutoOpenStartedThread =
-        event.reason === "start" &&
-        (workspaceState.activeView === "code" ||
-          (workspaceState.activeView === "thread" && visibleSessionPath === null));
-
-      if (shouldAutoOpenStartedThread) {
+      if (shouldAutoOpenStartedThread(event.reason, latestWorkspaceState)) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
@@ -309,7 +356,7 @@ export function useAppShellEffects({
       }
 
       if (event.reason === "end" || event.reason === "external") {
-        if (workspaceState.activeView === "gitops") {
+        if (latestWorkspaceState.activeView === "gitops") {
           void queryClient.invalidateQueries({
             queryKey: desktopQueryKeys.projectDiffPrefix(event.projectId),
           });
@@ -323,7 +370,7 @@ export function useAppShellEffects({
           queryKey: desktopQueryKeys.projectCommitsPrefix(event.projectId),
         });
 
-        if (event.projectId === composerProjectId) {
+        if (event.projectId === latestComposerProjectId) {
           void loadProjectGitState(event.projectId).then((nextProjectGitState) => {
             setProjectGitState(nextProjectGitState);
           });
@@ -333,7 +380,6 @@ export function useAppShellEffects({
 
     return unsubscribe;
   }, [
-    composerProjectId,
     dispatch,
     loadProjectGitState,
     loadProjectThreads,
@@ -341,8 +387,5 @@ export function useAppShellEffects({
     scheduleShellStateRefresh,
     setComposerState,
     setProjectGitState,
-    workspaceState.activeView,
-    workspaceState.selectedInboxSessionPath,
-    workspaceState.selectedSessionPath,
   ]);
 }
