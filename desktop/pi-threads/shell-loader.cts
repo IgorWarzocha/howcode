@@ -22,9 +22,13 @@ import {
   loadProjectDiffStats,
   loadProjectGitState,
 } from "../project-git.cts";
+import { emitDesktopEvent } from "../runtime/desktop-events.cts";
 import { ensureProject, listProjects, syncSessionSummaries } from "../thread-state-db.cts";
 import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
+
+const syncedShellIndexes = new Set<string>();
+const inFlightShellIndexSyncs = new Map<string, Promise<void>>();
 
 type SessionSummary = {
   id: string;
@@ -102,11 +106,23 @@ async function syncShellIndex(cwd: string) {
 }
 
 function scheduleShellIndexSync(cwd: string) {
-  // Session discovery can be slow on Windows when the agent storage contains many
-  // folders. Keep shell-state reads responsive and converge the DB in the background.
-  void syncShellIndex(cwd).catch((error) => {
-    console.warn("Failed to sync shell index.", error);
-  });
+  if (syncedShellIndexes.has(cwd) || inFlightShellIndexSyncs.has(cwd)) {
+    return;
+  }
+
+  const syncPromise = syncShellIndex(cwd)
+    .then(() => {
+      syncedShellIndexes.add(cwd);
+      emitDesktopEvent({ type: "shell-state-refresh" });
+    })
+    .catch((error) => {
+      console.warn("Failed to sync shell index.", error);
+    })
+    .finally(() => {
+      inFlightShellIndexSyncs.delete(cwd);
+    });
+
+  inFlightShellIndexSyncs.set(cwd, syncPromise);
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
