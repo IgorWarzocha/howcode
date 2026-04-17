@@ -23,6 +23,7 @@ function ExtensionsScopeToggle({
 }) {
   return (
     <SegmentedToggle
+      size="compact"
       value={installScope}
       options={[
         { value: "global", label: `Global (${globalInstalledCount})` },

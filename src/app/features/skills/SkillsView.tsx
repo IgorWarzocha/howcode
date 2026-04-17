@@ -72,6 +72,7 @@ export function SkillsView({
         closeLabel="Close skills"
         actions={
           <SegmentedToggle
+            size="compact"
             value={controller.installScope}
             options={[
               { value: "global", label: `Global (${controller.globalSkillCount})` },
