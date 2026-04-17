@@ -1,6 +1,6 @@
 {
   "name": "pi-desktop-mock",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Codex-inspired desktop UI mock for Pi",
   "packageManager": "bun@1.3.9",
@@ -9,7 +9,7 @@
     "dev:clean": "rm -rf build/dev-linux-x64 build/desktop build/dev-server.json",
     "dev:web": "bun run ./scripts/dev-web.ts",
     "dev:desktop:build": "bun --watch ./scripts/build-desktop-backend.ts",
-    "dev:desktop": "sh -c 'until [ -f build/desktop/pi-threads.mjs ] && [ -f build/desktop/terminal-manager.mjs ] && [ -f build/dev-server.json ]; do sleep 0.2; done; WEBKIT_DISABLE_DMABUF_RENDERER=1 electrobun dev --watch'",
+    "dev:desktop": "sh -c 'until [ -f build/desktop/pi-threads.mjs ] && [ -f build/desktop/terminal-manager.mjs ] && [ -f build/dev-server.json ]; do sleep 0.2; done; electrobun dev --watch'",
     "build": "vite build && bun run build:desktop && electrobun build",
     "build:release": "vite build && bun run build:desktop && electrobun build --env=stable",
     "build:desktop": "bun run ./scripts/build-desktop-backend.ts",
