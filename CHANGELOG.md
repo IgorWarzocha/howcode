@@ -9,11 +9,11 @@
 
 See `docs/roadmap.md` for the broader product direction.
 
-## 0.1.2 - Linux CEF renderer release
+## 0.1.2 - CEF renderer rollout
 
-- ship Linux builds with bundled CEF and default to the CEF renderer
+- ship macOS, Linux, and Windows builds with bundled CEF and default to the CEF renderer
 - remove the old Linux DMABUF workaround from app startup and the npm launcher
-- document the Linux renderer change and the larger bundle-size tradeoff
+- document the renderer change and the larger bundle-size tradeoff
 
 ## 0.1.1 - Packaging fix release
 

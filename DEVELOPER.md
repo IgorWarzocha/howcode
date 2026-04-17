@@ -65,7 +65,7 @@ It is a thin launcher that:
 3. caches it locally
 4. launches the packaged desktop app
 
-Linux release builds now bundle CEF and default to the CEF renderer in Electrobun. That removes the old runtime dependence on the `WEBKIT_DISABLE_DMABUF_RENDERER` workaround, but increases Linux artifact size.
+Desktop release builds now bundle CEF and default to the CEF renderer in Electrobun on macOS, Linux, and Windows. That removes the old Linux runtime dependence on the `WEBKIT_DISABLE_DMABUF_RENDERER` workaround, but increases artifact size.
 
 ## Repo map
 
