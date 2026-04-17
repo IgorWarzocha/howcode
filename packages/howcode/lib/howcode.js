@@ -10,6 +10,7 @@ const packageJson = require("../package.json");
 
 const APP_NAME = packageJson.howcode.appName;
 const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl;
+const LINUX_CEF_MIN_VERSION = "0.1.2";
 
 const TARGETS = {
   "darwin:arm64": {
@@ -50,6 +51,48 @@ function readJsonIfPresent(filePath) {
   } catch {
     return null;
   }
+}
+
+function parseSemver(version) {
+  if (typeof version !== "string") {
+    return null;
+  }
+
+  const match = version.trim().match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!match) {
+    return null;
+  }
+
+  return match.slice(1).map((part) => Number.parseInt(part, 10));
+}
+
+function isVersionAtLeast(version, minimumVersion) {
+  const parsedVersion = parseSemver(version);
+  const parsedMinimumVersion = parseSemver(minimumVersion);
+
+  if (!parsedVersion || !parsedMinimumVersion) {
+    return false;
+  }
+
+  for (let index = 0; index < parsedMinimumVersion.length; index += 1) {
+    if (parsedVersion[index] > parsedMinimumVersion[index]) {
+      return true;
+    }
+
+    if (parsedVersion[index] < parsedMinimumVersion[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function shouldInjectLegacyLinuxWebkitWorkaround(target, version) {
+  return (
+    target.os === "linux" &&
+    !process.env.WEBKIT_DISABLE_DMABUF_RENDERER &&
+    !isVersionAtLeast(version, LINUX_CEF_MIN_VERSION)
+  );
 }
 
 function getTarget() {
@@ -216,8 +259,14 @@ function spawnLauncherProcess(executablePath, options = {}) {
   });
 }
 
-async function launch(executablePath) {
-  const child = spawnLauncherProcess(executablePath);
+async function launch(target, executablePath, version) {
+  const child = spawnLauncherProcess(executablePath, {
+    env: shouldInjectLegacyLinuxWebkitWorkaround(target, version)
+      ? {
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1",
+        }
+      : undefined,
+  });
 
   child.unref();
 }
@@ -234,7 +283,7 @@ async function main() {
     releaseInfo = await resolveLatestRelease(target);
   } catch (error) {
     if (current?.executablePath && fs.existsSync(current.executablePath)) {
-      await launch(current.executablePath);
+      await launch(target, current.executablePath, current.version);
       return;
     }
 
@@ -247,7 +296,7 @@ async function main() {
   }
 
   await pruneOldVersions(cacheRoot, paths.installDir);
-  await launch(paths.executablePath);
+  await launch(target, paths.executablePath, releaseInfo.version);
 }
 
 module.exports = {
