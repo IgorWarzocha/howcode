@@ -4,7 +4,10 @@ import type {
   Project,
   Thread,
 } from "../../shared/desktop-contracts.ts";
-import { getEffectiveThreadRunningState } from "../../shared/thread-running-state.ts";
+import {
+  getEffectiveThreadRunningState,
+  sortInboxThreadsByPriority,
+} from "../../shared/thread-running-state.ts";
 import { getThreadStateDatabase } from "./db.cts";
 import {
   mapArchivedThreadRow,
@@ -91,7 +94,7 @@ export function hasRunningProjectThread(projectId: string) {
           session_path AS sessionPath,
           running AS running
         FROM threads
-        WHERE cwd = ? AND archived = 0
+        WHERE cwd = ?
       `,
     )
     .all(projectId) as Array<{ sessionPath: string; running: number }>;
@@ -163,11 +166,15 @@ export function listInboxThreads(): InboxThread[] {
     )
     .all() as InboxThreadRow[];
 
-  return rows.map((row) =>
-    mapInboxThreadRow({
-      ...row,
-      running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)) ? 1 : 0,
-    }),
+  return sortInboxThreadsByPriority(
+    rows.map((row) =>
+      mapInboxThreadRow({
+        ...row,
+        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+          ? 1
+          : 0,
+      }),
+    ),
   );
 }
 
