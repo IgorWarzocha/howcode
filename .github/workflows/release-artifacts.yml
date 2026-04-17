@@ -5,9 +5,15 @@ on:
     branches:
       - dev
   push:
+    branches:
+      - dev
     tags:
       - "v*"
   workflow_dispatch:
+
+concurrency:
+  group: release-artifacts-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -83,15 +89,87 @@ jobs:
       - name: Build launcher archives
         run: bun run build:launcher-artifacts
 
-      - name: Upload release files
+      - name: Upload dev artifacts
+        if: github.event_name == 'push' && github.ref_name == 'dev'
         uses: actions/upload-artifact@v6
         with:
-          name: release-${{ matrix.name }}
+          name: dev-${{ matrix.name }}
+          retention-days: 1
           if-no-files-found: error
           path: |
             artifacts/*
             !artifacts/npm-launcher
             artifacts/npm-launcher/*
+
+      - name: Upload manual preview artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v6
+        with:
+          name: preview-${{ github.ref_name }}-${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            artifacts/*
+            !artifacts/npm-launcher
+            artifacts/npm-launcher/*
+
+      - name: Upload release files
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            artifacts/*
+            !artifacts/npm-launcher
+            artifacts/npm-launcher/*
+
+  cleanup-dev-artifacts:
+    name: Cleanup old dev artifacts
+    if: github.event_name == 'push' && github.ref_name == 'dev'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete artifacts from older dev runs
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const currentRunId = context.runId;
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            for (const artifact of artifacts) {
+              const workflowRun = artifact.workflow_run;
+              if (!workflowRun) {
+                continue;
+              }
+
+              if (workflowRun.head_branch !== "dev") {
+                continue;
+              }
+
+              if (workflowRun.id === currentRunId) {
+                continue;
+              }
+
+              core.info(
+                `Deleting artifact ${artifact.name} (${artifact.id}) from dev run ${workflowRun.id}`,
+              );
+              await github.rest.actions.deleteArtifact({
+                owner,
+                repo,
+                artifact_id: artifact.id,
+              });
+            }
 
   publish-release:
     name: Publish GitHub release
