@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
-import { compactRoundIconButtonClass, viewSubtitleClass, viewTitleClass } from "../../ui/classes";
+import { ghostButtonClass, viewSubtitleClass, viewTitleClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
 type ViewHeaderProps = {
@@ -37,12 +37,16 @@ export function ViewHeader({
           {onClose ? (
             <button
               type="button"
-              className={compactRoundIconButtonClass}
+              className={cn(
+                ghostButtonClass,
+                "inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[13px] text-[color:var(--text)]",
+              )}
               onClick={onClose}
               aria-label={closeLabel}
               title={closeLabel}
             >
               <X size={14} />
+              <span>Close</span>
             </button>
           ) : null}
         </div>
