@@ -43,7 +43,7 @@ export function ExtensionsView(props: ExtensionsViewProps) {
   if (!controller.desktopPackagesAvailable) {
     return (
       <ViewShell>
-        <ViewHeader title="Extensions" />
+        <ViewHeader title="Extensions" onClose={props.onClose} closeLabel="Close extensions" />
         <EmptyStateCard>Desktop build required.</EmptyStateCard>
       </ViewShell>
     );
@@ -53,6 +53,8 @@ export function ExtensionsView(props: ExtensionsViewProps) {
     <ViewShell>
       <ViewHeader
         title="Extensions"
+        onClose={props.onClose}
+        closeLabel="Close extensions"
         actions={
           <ExtensionsScopeToggle
             globalInstalledCount={controller.globalInstalledCount}

@@ -9,6 +9,7 @@ import type {
   ProjectGitState,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
+import { isUtilityView } from "../state/workspace";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import type { Project } from "../types";
 
@@ -41,6 +42,13 @@ export function shouldAutoOpenStartedThread(
     (workspaceState.activeView === "code" ||
       (workspaceState.activeView === "thread" && visibleSessionPath === null))
   );
+}
+
+export function shouldCloseUtilityViewOnEscape(
+  activeView: WorkspaceState["activeView"],
+  event: Pick<KeyboardEvent, "key" | "defaultPrevented">,
+) {
+  return isUtilityView(activeView) && event.key === "Escape" && !event.defaultPrevented;
 }
 
 export function useAppShellEffects({
@@ -257,6 +265,25 @@ export function useAppShellEffects({
       console.warn("Failed to update watched Pi session.", error);
     });
   }, [workspaceState.activeView, workspaceState.selectedSessionPath]);
+
+  useEffect(() => {
+    if (!isUtilityView(workspaceState.activeView)) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!shouldCloseUtilityViewOnEscape(workspaceState.activeView, event)) {
+        return;
+      }
+
+      dispatch({ type: "close-utility-view" });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dispatch, workspaceState.activeView]);
 
   const desktopEventStateRef = useRef({
     composerProjectId,

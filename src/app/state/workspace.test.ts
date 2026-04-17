@@ -201,6 +201,82 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("claw-phone");
   });
 
+  it("restores the previous thread context when closing a utility view", () => {
+    const threadState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "thread-1",
+      sessionPath: "/tmp/thread.jsonl",
+    });
+    const settingsState = workspaceReducer(threadState, {
+      type: "show-view",
+      view: "settings",
+    });
+    const restoredState = workspaceReducer(settingsState, {
+      type: "close-utility-view",
+    });
+
+    expect(settingsState.activeView).toBe("settings");
+    expect(settingsState.selectedThreadId).toBeNull();
+    expect(settingsState.selectedSessionPath).toBeNull();
+    expect(settingsState.utilityViewReturnState?.activeView).toBe("thread");
+
+    expect(restoredState.activeView).toBe("thread");
+    expect(restoredState.selectedProjectId).toBe("claw-phone");
+    expect(restoredState.selectedThreadId).toBe("thread-1");
+    expect(restoredState.selectedSessionPath).toBe("/tmp/thread.jsonl");
+    expect(restoredState.utilityViewReturnState).toBeNull();
+  });
+
+  it("keeps the original return target when switching between utility views", () => {
+    const threadState = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "thread-1",
+      sessionPath: "/tmp/thread.jsonl",
+    });
+    const settingsState = workspaceReducer(threadState, {
+      type: "show-view",
+      view: "settings",
+    });
+    const skillsState = workspaceReducer(settingsState, {
+      type: "show-view",
+      view: "skills",
+    });
+    const restoredState = workspaceReducer(skillsState, {
+      type: "close-utility-view",
+    });
+
+    expect(skillsState.utilityViewReturnState?.activeView).toBe("thread");
+    expect(restoredState.activeView).toBe("thread");
+    expect(restoredState.selectedSessionPath).toBe("/tmp/thread.jsonl");
+  });
+
+  it("restores the previous git ops context when closing a utility view", () => {
+    const gitOpsState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        selectedThreadId: "thread-1",
+        selectedSessionPath: "/tmp/thread.jsonl",
+      },
+      {
+        type: "open-gitops",
+        filePath: "src/app/AppShell.tsx",
+      },
+    );
+    const extensionsState = workspaceReducer(gitOpsState, {
+      type: "show-view",
+      view: "extensions",
+    });
+    const restoredState = workspaceReducer(extensionsState, {
+      type: "close-utility-view",
+    });
+
+    expect(restoredState.activeView).toBe("gitops");
+    expect(restoredState.selectedDiffFilePath).toBe("src/app/AppShell.tsx");
+  });
+
   it("clears thread-specific state when leaving thread view", () => {
     const nextState = workspaceReducer(
       {
@@ -220,6 +296,7 @@ describe("workspace state", () => {
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
     expect(nextState.selectedDiffFilePath).toBeNull();
+    expect(nextState.utilityViewReturnState).toBeNull();
   });
 
   it("opens the archived threads view like any other main view", () => {

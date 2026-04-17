@@ -33,10 +33,15 @@ function SkillsMetaLink() {
   );
 }
 
-function DesktopRequiredState() {
+function DesktopRequiredState({ onClose }: { onClose: () => void }) {
   return (
     <ViewShell className="gap-8">
-      <ViewHeader title="Skills" meta={<SkillsMetaLink />} />
+      <ViewHeader
+        title="Skills"
+        meta={<SkillsMetaLink />}
+        onClose={onClose}
+        closeLabel="Close skills"
+      />
       <EmptyStateCard>Desktop build required.</EmptyStateCard>
     </ViewShell>
   );
@@ -47,6 +52,7 @@ export function SkillsView({
   projectPath,
   onSetProjectScopeActive,
   onAction,
+  onClose,
 }: SkillsViewProps) {
   const controller = useSkillsController({
     projectPath,
@@ -54,7 +60,7 @@ export function SkillsView({
   });
 
   if (!controller.desktopSkillsAvailable) {
-    return <DesktopRequiredState />;
+    return <DesktopRequiredState onClose={onClose} />;
   }
 
   return (
@@ -62,6 +68,8 @@ export function SkillsView({
       <ViewHeader
         title="Skills"
         meta={<SkillsMetaLink />}
+        onClose={onClose}
+        closeLabel="Close skills"
         actions={
           <SegmentedToggle
             value={controller.installScope}

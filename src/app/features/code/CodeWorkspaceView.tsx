@@ -318,6 +318,7 @@ export function CodeWorkspaceView({
                 onAction={handleAction}
                 onDismissInboxThread={controller.handleDismissInboxThread}
                 onOpenThread={controller.handleThreadOpen}
+                onCloseUtilityView={controller.handleCloseUtilityView}
                 onLoadEarlierMessages={handleLoadEarlierMessages}
                 onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
                 onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
