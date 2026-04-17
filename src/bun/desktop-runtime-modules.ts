@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DesktopAction } from "../../shared/desktop-actions";
 import type {
   AnyDesktopActionPayload,
@@ -29,6 +31,20 @@ import type {
   TerminalOpenRequest,
   TerminalSessionSnapshot,
 } from "../../shared/terminal-contracts";
+
+function isBundledDesktopRuntime(moduleUrl: string) {
+  const modulePath = fileURLToPath(moduleUrl);
+  const bundledRuntimePathSegment = `${path.sep}Resources${path.sep}app${path.sep}bun${path.sep}`;
+
+  return modulePath.includes(bundledRuntimePathSegment);
+}
+
+// Electrobun dev and stable desktop bundles both run from the packaged Resources/app layout.
+// That layout imports our prebuilt desktop backend .mjs files, so Pi's filesystem aliases do not
+// point at a real package tree. Force bundled desktop runtimes onto Pi's virtual module path.
+if (isBundledDesktopRuntime(import.meta.url)) {
+  process.env.HOWCODE_FORCE_PI_VIRTUAL_MODULES = "1";
+}
 
 export type PiThreadsModule = {
   handleDesktopAction: (

@@ -28,10 +28,10 @@ function buildLiveThreadData(runtime: PiRuntime) {
     return null;
   }
 
-  const streamMessage = runtime.session.state.streamMessage;
+  const streamingMessage = runtime.session.state.streamingMessage;
   const sourceMessages = [
     ...runtime.session.messages,
-    ...(streamMessage ? [streamMessage] : []),
+    ...(streamingMessage ? [streamingMessage] : []),
   ] as AgentMessage[];
   const previousMessageCount = getPreviousMessageCount(runtime.session.sessionManager.getBranch());
 
