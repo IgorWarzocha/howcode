@@ -14,6 +14,7 @@ type SettingsViewProps = {
   currentModel: ComposerModel | null;
   projects: Project[];
   onAction: DesktopActionInvoker;
+  onClose: () => void;
 };
 
 export function SettingsView({
@@ -22,6 +23,7 @@ export function SettingsView({
   currentModel,
   projects,
   onAction,
+  onClose,
 }: SettingsViewProps) {
   const controller = useSettingsController({ appSettings, projects, onAction });
 
@@ -30,6 +32,8 @@ export function SettingsView({
       <ViewHeader
         title="App settings"
         subtitle="Git commit model, skill creator model, streaming send behavior, project cleanup defaults, Pi TUI defaults, project UI import, and favorite folders."
+        onClose={onClose}
+        closeLabel="Close app settings"
       />
 
       <SettingsModelSection

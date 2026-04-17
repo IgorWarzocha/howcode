@@ -39,6 +39,7 @@ type CodeWorkspaceMainViewProps = {
   composerLayoutVersion: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
+  onCloseUtilityView: () => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
@@ -61,6 +62,7 @@ export function CodeWorkspaceMainView({
   composerLayoutVersion,
   onAction,
   onDismissInboxThread,
+  onCloseUtilityView,
   onOpenThread,
   onLoadEarlierMessages,
   onSetExtensionsProjectScopeActive,
@@ -101,6 +103,7 @@ export function CodeWorkspaceMainView({
         currentModel={currentModel}
         projects={projects}
         onAction={onAction}
+        onClose={onCloseUtilityView}
       />
     );
   }
@@ -124,6 +127,7 @@ export function CodeWorkspaceMainView({
         <ExtensionsView
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetExtensionsProjectScopeActive}
+          onClose={onCloseUtilityView}
         />
       </Suspense>
     );
@@ -146,6 +150,7 @@ export function CodeWorkspaceMainView({
           projectPath={selectedProjectId || null}
           onSetProjectScopeActive={onSetSkillsProjectScopeActive}
           onAction={onAction}
+          onClose={onCloseUtilityView}
         />
       </Suspense>
     );

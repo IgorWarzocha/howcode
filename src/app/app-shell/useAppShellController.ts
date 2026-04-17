@@ -310,6 +310,10 @@ export function useAppShellController() {
     dispatch({ type: "show-view", view });
   };
 
+  const handleCloseUtilityView = () => {
+    dispatch({ type: "close-utility-view" });
+  };
+
   const handleCollapseAll = () => {
     dispatch({ type: "collapse-all-projects" });
     void handleAction("threads.collapse-all");
@@ -430,6 +434,7 @@ export function useAppShellController() {
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
     handleCloseTakeoverTerminal: closeTakeover,
     handleCloseGitOpsView,
+    handleCloseUtilityView,
     handleOpenWorktreeDiffFile,
     handleLoadEarlierMessages,
     handleDismissInboxThread,

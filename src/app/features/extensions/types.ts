@@ -1,6 +1,7 @@
 export type ExtensionsViewProps = {
   projectPath: string | null;
   onSetProjectScopeActive: (active: boolean) => void;
+  onClose: () => void;
 };
 
 export type InstallScope = "global" | "project";

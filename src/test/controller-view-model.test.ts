@@ -34,6 +34,7 @@ describe("deriveControllerViewModel", () => {
         takeoverOverrides: {},
         gitOpsReturnView: "code",
         selectedDiffFilePath: null,
+        utilityViewReturnState: null,
         settingsOpen: false,
         settingsPanelOpen: false,
         collapsedProjectIds: {},

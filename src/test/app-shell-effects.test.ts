@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getVisibleDesktopSessionPath,
+  shouldCloseUtilityViewOnEscape,
   shouldAutoOpenStartedThread,
 } from "../app/app-shell/useAppShellEffects";
 
@@ -50,6 +51,27 @@ describe("app shell effects", () => {
         selectedSessionPath: "/repo/.pi/sessions/thread.jsonl",
         selectedInboxSessionPath: null,
       }),
+    ).toBe(false);
+  });
+
+  it("closes settings, skills, and extensions with Escape", () => {
+    expect(
+      shouldCloseUtilityViewOnEscape("settings", { key: "Escape", defaultPrevented: false }),
+    ).toBe(true);
+    expect(
+      shouldCloseUtilityViewOnEscape("extensions", {
+        key: "Escape",
+        defaultPrevented: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldCloseUtilityViewOnEscape("skills", { key: "Escape", defaultPrevented: false }),
+    ).toBe(true);
+    expect(
+      shouldCloseUtilityViewOnEscape("thread", { key: "Escape", defaultPrevented: false }),
+    ).toBe(false);
+    expect(
+      shouldCloseUtilityViewOnEscape("settings", { key: "Escape", defaultPrevented: true }),
     ).toBe(false);
   });
 });

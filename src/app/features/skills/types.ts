@@ -5,6 +5,7 @@ export type SkillsViewProps = {
   projectPath: string | null;
   onSetProjectScopeActive: (active: boolean) => void;
   onAction: DesktopActionInvoker;
+  onClose: () => void;
 };
 
 export type InstallScope = "global" | "project";
