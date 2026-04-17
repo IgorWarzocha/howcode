@@ -10,6 +10,7 @@ const packageJson = require("../package.json");
 
 const APP_NAME = packageJson.howcode.appName;
 const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl;
+const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 
 const TARGETS = {
   "darwin:arm64": {
@@ -108,9 +109,9 @@ async function fetchJson(url) {
   }
 }
 
-async function downloadFile(url, filePath) {
+async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, { signal: controller.signal });
