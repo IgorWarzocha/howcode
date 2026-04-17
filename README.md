@@ -21,11 +21,11 @@ howcode
 
 On first run, the launcher downloads the matching desktop build for your platform and caches it locally.
 
-### Linux note
+### Renderer note
 
-Linux release builds now ship with bundled CEF by default, so they no longer depend on the old WebKit DMABUF workaround.
+Release builds now ship with bundled CEF by default on macOS, Linux, and Windows.
 
-The tradeoff is a larger Linux download in exchange for a more consistent renderer.
+The tradeoff is larger downloads in exchange for a more consistent renderer.
 
 ## Current status
 

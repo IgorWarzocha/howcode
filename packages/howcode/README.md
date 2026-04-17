@@ -27,18 +27,18 @@ On first run, it downloads the matching desktop app for your platform from GitHu
 
 - macOS, Linux, and Windows desktop builds
 - local cached installs after first download
-- Linux builds that bundle CEF for a more consistent renderer
+- desktop builds that bundle CEF for a more consistent renderer
 
 ## Project
 
 - App repo: https://github.com/IgorWarzocha/howcode
 - Issues: https://github.com/IgorWarzocha/howcode/issues
 
-## Linux note
+## Renderer note
 
-Linux release builds now bundle CEF, so the launcher does not need to inject the old `WEBKIT_DISABLE_DMABUF_RENDERER` workaround anymore.
+Release builds now bundle CEF on macOS, Linux, and Windows. The launcher no longer needs to inject the old Linux `WEBKIT_DISABLE_DMABUF_RENDERER` workaround.
 
-Expect Linux downloads to be larger than the native-webview builds in exchange for more consistent rendering behavior.
+Expect downloads to be larger than the native-webview builds in exchange for more consistent rendering behavior.
 
 ## Cache location
 
