@@ -3,3 +3,6 @@
 - Prefer `src/bun/index.ts` + `shared/*` contracts over ad-hoc desktop IPC shims.
 - Keep UI changes optimistic and reuse existing patterns over one-offs.
 - For major changes, validate with a commit and leave the repo committed.
+- This repository uses nested AGENTS.md files to flag folder-specific guidelines.
+- Consider creating new, small AGENTS.md files whenever patterns are observed.
+- AGENTS.md files are here to help you - if they are confusing, they should be edited to suit.
