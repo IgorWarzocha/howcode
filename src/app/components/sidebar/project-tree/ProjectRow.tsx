@@ -1,7 +1,7 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
 type ProjectRowProps = {
@@ -103,51 +103,34 @@ export function ProjectRow({
 
   return (
     <div
-      className={cn(
-        sidebarRowClass,
-        "group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-px",
-        (isActive || actionMenuOpen) && "bg-[rgba(183,186,245,0.08)]",
-        isDragging && "ring-1 ring-[rgba(183,186,245,0.24)]",
-      )}
+      className="sidebar-row-surface sidebar-project-row"
+      data-highlighted={isActive || actionMenuOpen ? "true" : "false"}
+      data-dragging={isDragging ? "true" : "false"}
     >
       <button
         type="button"
-        className={cn(
-          "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out",
-          canToggleExpanded ? "hover:text-[color:var(--text)]" : "cursor-default",
-        )}
+        className="sidebar-project-toggle"
         onClick={canToggleExpanded ? onToggleExpanded : undefined}
+        data-can-toggle={canToggleExpanded ? "true" : "false"}
         aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         aria-expanded={isExpanded}
         aria-controls={threadGroupId}
         disabled={!canToggleExpanded}
       >
         {hasRepoOrigin ? (
-          <Github
-            size={12}
-            className="absolute inset-0 m-auto transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
-          />
+          <Github size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
         ) : (
-          <Folder
-            size={12}
-            className="absolute inset-0 m-auto transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0"
-          />
+          <Folder size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
         )}
         {isExpanded ? (
-          <ChevronDown
-            size={12}
-            className="absolute inset-0 m-auto opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
-          />
+          <ChevronDown size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
         ) : (
-          <ChevronRight
-            size={12}
-            className="absolute inset-0 m-auto opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"
-          />
+          <ChevronRight size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
         )}
       </button>
 
       {isEditing ? (
-        <div className="flex min-h-7 min-w-0 items-center rounded-xl py-1 text-left text-[13.5px] leading-5 font-medium text-[color:var(--text)]/92">
+        <div className="sidebar-project-edit">
           <input
             ref={inputRef}
             value={renameDraft}
@@ -165,7 +148,7 @@ export function ProjectRow({
                 onCancelEdit();
               }
             }}
-            className="w-full min-w-0 bg-transparent p-0 text-[inherit] text-[color:inherit] [font:inherit] outline-none"
+            className="sidebar-project-input"
             aria-label={`Rename ${name}`}
           />
         </div>
@@ -173,30 +156,26 @@ export function ProjectRow({
         <button
           type="button"
           className={cn(
-            "flex min-h-7 min-w-0 items-center rounded-xl py-1 text-left text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]",
+            "sidebar-project-button",
             dragHandleProps ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
-            isActive && "text-[color:var(--text)]",
           )}
           {...dragHandleProps?.attributes}
           {...dragHandleProps?.listeners}
           onClick={handleRowClick}
           onDoubleClick={canEdit ? handleRowDoubleClick : undefined}
+          data-active={isActive ? "true" : "false"}
           aria-current={isActive ? "page" : undefined}
         >
-          <span className="truncate font-medium text-[13.5px] text-[color:var(--text)]/92">
-            {name}
-          </span>
+          <span className="sidebar-project-title">{name}</span>
         </button>
       )}
 
       <div
-        className={cn(
-          "flex shrink-0 items-center gap-0.5 pr-0.5 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100",
-          actionMenuOpen && "opacity-100",
-          isDragging && "opacity-100",
-          isEditing && "pointer-events-none opacity-0",
-          !showActions && "pointer-events-none opacity-0",
-        )}
+        className="sidebar-project-actions"
+        data-open={actionMenuOpen ? "true" : "false"}
+        data-dragging={isDragging ? "true" : "false"}
+        data-editing={isEditing ? "true" : "false"}
+        data-visible={showActions ? "true" : "false"}
       >
         <button
           type="button"

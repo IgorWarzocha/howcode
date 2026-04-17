@@ -1,6 +1,5 @@
 import { SquareTerminal, X } from "lucide-react";
-import { compactIconButtonClass, sidebarRowClass } from "../../../ui/classes";
-import { cn } from "../../../utils/cn";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { ActivitySpinner } from "../../common/ActivitySpinner";
 
 type InboxThreadRowProps = {
@@ -30,13 +29,10 @@ export function InboxThreadRow({
 }: InboxThreadRowProps) {
   return (
     <div
-      className={cn(
-        sidebarRowClass,
-        "group grid grid-cols-[16px_minmax(0,1fr)_18px] items-start gap-2 px-2.5 py-2",
-        selected && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
-      )}
+      className="sidebar-row-surface sidebar-inbox-row"
+      data-selected={selected ? "true" : "false"}
     >
-      <div className="flex h-5 items-center justify-center pt-0.5">
+      <div className="sidebar-inbox-leading">
         {running ? (
           <ActivitySpinner className="h-3.5 w-3.5 text-[color:var(--text)]" />
         ) : unread ? (
@@ -44,40 +40,31 @@ export function InboxThreadRow({
         ) : null}
       </div>
 
-      <button type="button" className="grid min-w-0 gap-1 text-left" onClick={onSelect}>
-        <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-[color:var(--muted-2)]">
+      <button type="button" className="sidebar-inbox-content" onClick={onSelect}>
+        <div className="sidebar-inbox-meta">
           <span className="truncate">{projectName}</span>
           <span aria-hidden="true">•</span>
           {terminalRunning ? (
-            <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+            <span className="sidebar-inbox-terminal">
               <SquareTerminal size={12} />
             </span>
           ) : (
             <span>{age}</span>
           )}
         </div>
-        <div
-          className={cn(
-            "truncate text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--text)]",
-            unread && "font-medium text-[color:var(--text)]",
-            selected && "text-[color:var(--text)]",
-          )}
-        >
+        <div className="sidebar-inbox-title" data-unread={unread ? "true" : "false"}>
           {title}
         </div>
-        <div className="line-clamp-2 text-[12px] leading-4.5 text-[color:var(--muted-2)]">
+        <div className="sidebar-inbox-preview">
           {preview ?? (running ? "Working…" : "No final message yet")}
         </div>
       </button>
 
       <button
         type="button"
-        className={cn(
-          compactIconButtonClass,
-          "mt-0.5 h-4 w-4 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
-          selected && "opacity-100",
-        )}
+        className={`${compactIconButtonClass} sidebar-inbox-dismiss hover:bg-transparent`}
         onClick={onDismiss}
+        data-visible={selected ? "true" : "false"}
         aria-label="Dismiss inbox item"
       >
         <X size={12} />

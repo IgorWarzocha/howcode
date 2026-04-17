@@ -30,25 +30,20 @@ export function ThreadRow({
 }: ThreadRowProps) {
   return (
     <div
-      className={cn(
-        "group grid min-h-7 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-px text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]",
-        isSelected &&
-          "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
-      )}
+      className="sidebar-row-surface sidebar-thread-row"
+      data-selected={isSelected ? "true" : "false"}
     >
       {running ? (
-        <span className="inline-flex h-4 w-4 items-center justify-center text-[color:var(--text)]">
+        <span className="sidebar-thread-leading-icon">
           <ActivitySpinner />
         </span>
       ) : (
         <button
           type="button"
-          className={cn(
-            "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)] group-hover:opacity-100 group-focus-within:opacity-100",
-            pinned ? "opacity-100 text-[color:var(--text)]" : "opacity-0",
-            isSelected && "opacity-100",
-          )}
+          className="sidebar-thread-pin"
           onClick={onPin}
+          data-pinned={pinned ? "true" : "false"}
+          data-selected={isSelected ? "true" : "false"}
           aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
           aria-pressed={pinned}
         >
@@ -58,32 +53,21 @@ export function ThreadRow({
 
       <button
         type="button"
-        className="flex min-w-0 items-center gap-1.5 py-0.5 text-left"
+        className="sidebar-thread-button"
         onClick={onOpen}
         aria-current={isSelected ? "page" : undefined}
       >
-        {unread ? (
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[rgba(183,186,245,0.95)]" />
-        ) : null}
+        {unread ? <span className="sidebar-thread-unread-dot" /> : null}
         <span className="truncate">{title}</span>
       </button>
 
-      <span className="relative inline-flex h-6 w-7 shrink-0 items-center text-[color:var(--muted-2)]">
+      <span className="sidebar-thread-meta-slot">
         {terminalRunning ? (
-          <span
-            className={cn(
-              "absolute inset-y-0 right-0.5 inline-flex w-6 items-center justify-center text-[color:var(--muted)] transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
-            )}
-          >
+          <span className="sidebar-thread-meta-value">
             <SquareTerminal size={12} />
           </span>
         ) : (
-          <span
-            className={cn(
-              "absolute inset-y-0 right-0.5 inline-flex w-6 items-center justify-center text-center transition-opacity duration-150 ease-out group-hover:opacity-0 group-focus-within:opacity-0",
-            )}
-            aria-hidden="true"
-          >
+          <span className="sidebar-thread-meta-value" aria-hidden="true">
             {age}
           </span>
         )}
@@ -91,7 +75,7 @@ export function ThreadRow({
           type="button"
           className={cn(
             compactIconButtonClass,
-            "absolute inset-y-0 right-0.5 h-6 w-6 border-transparent bg-transparent opacity-0 hover:bg-transparent group-hover:opacity-100 group-focus-within:opacity-100",
+            "sidebar-thread-meta-action border-transparent bg-transparent hover:bg-transparent",
           )}
           onClick={onArchive}
           aria-label="Archive thread"

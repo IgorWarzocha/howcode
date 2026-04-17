@@ -55,9 +55,6 @@ export const compactIconButtonClass =
 export const compactRoundIconButtonClass =
   "inline-flex h-7 w-7 items-center justify-center rounded-full px-0 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
-export const navButtonClass =
-  "flex min-h-8 w-full items-center gap-2 rounded-[10px] border border-transparent px-2.5 text-[13px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
-
 export const toolbarButtonClass =
   "inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-transparent px-1.5 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
@@ -77,20 +74,11 @@ export const featureCardClass = `${interactiveCardClass} grid min-h-[160px] gap-
 
 export const sectionShellClass = "grid w-full max-w-[980px] content-start gap-[18px]";
 
-export const sidebarSectionLabelClass =
-  "flex items-center justify-between px-1.5 pt-1.5 text-[12px] leading-5 text-[color:var(--muted)]";
-
-export const sidebarSearchFieldClass =
-  "flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-2.5 text-[13px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.05)] focus-within:text-[color:var(--text)]";
-
 export const menuItemClass =
   "flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left text-[14px]";
 
 export const menuOptionClass =
   "grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] hover:bg-[rgba(255,255,255,0.04)]";
-
-export const sidebarRowClass =
-  "rounded-xl transition-colors duration-150 ease-out hover:bg-[rgba(183,186,245,0.08)] focus-within:bg-[rgba(183,186,245,0.08)]";
 
 export const terminalOutputClass =
   "grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs";

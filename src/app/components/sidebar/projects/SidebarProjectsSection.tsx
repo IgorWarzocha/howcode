@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../../types";
-import { sidebarSearchFieldClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { IconButton } from "../../common/IconButton";
 import { ProjectTree } from "../ProjectTree";
@@ -201,29 +200,27 @@ export function SidebarProjectsSection({
   };
 
   if (!showProjects) {
-    return <section className="flex min-h-0 flex-1" aria-hidden="true" />;
+    return <section className="sidebar-section" aria-hidden="true" />;
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-2.5">
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
+    <section className="sidebar-section">
+      <div className="sidebar-toolbar">
         <label
-          className={cn(
-            sidebarSearchFieldClass,
-            searchQuery.trim().length > 0 && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-          )}
+          className="sidebar-search-field"
+          data-active={searchQuery.trim().length > 0 ? "true" : "false"}
         >
-          <Search size={14} className="shrink-0 text-[color:var(--muted)]" />
+          <Search size={14} className="sidebar-search-icon" />
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search"
-            className="w-full min-w-0 bg-transparent p-0 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="sidebar-search-input"
             aria-label="Search projects"
           />
         </label>
         {showProjects ? (
-          <div className="relative flex items-center gap-1.5">
+          <div className="sidebar-action-group">
             <IconButton
               label={filterLabel}
               onClick={cycleFilterMode}

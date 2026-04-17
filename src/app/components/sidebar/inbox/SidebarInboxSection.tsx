@@ -1,8 +1,6 @@
 import { Clock3, ListFilter, Search, SquareTerminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { InboxThread } from "../../../desktop/types";
-import { sidebarSearchFieldClass } from "../../../ui/classes";
-import { cn } from "../../../utils/cn";
 import { EmptyStateCard } from "../../common/EmptyStateCard";
 import { IconButton } from "../../common/IconButton";
 import { InboxThreadRow } from "./InboxThreadRow";
@@ -106,25 +104,23 @@ export function SidebarInboxSection({
         : "Filter inbox threads";
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-2.5">
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
+    <section className="sidebar-section">
+      <div className="sidebar-toolbar">
         <label
-          className={cn(
-            sidebarSearchFieldClass,
-            searchQuery.trim().length > 0 && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-          )}
+          className="sidebar-search-field"
+          data-active={searchQuery.trim().length > 0 ? "true" : "false"}
         >
-          <Search size={14} className="shrink-0 text-[color:var(--muted)]" />
+          <Search size={14} className="sidebar-search-icon" />
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search inbox"
-            className="w-full min-w-0 bg-transparent p-0 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="sidebar-search-input"
             aria-label="Search inbox"
           />
         </label>
 
-        <div className="flex items-center gap-1.5">
+        <div className="sidebar-action-group">
           <IconButton
             label={filterLabel}
             icon={filterIcon}
@@ -141,8 +137,8 @@ export function SidebarInboxSection({
       </div>
 
       {visibleThreads.length > 0 ? (
-        <div className="min-h-0 overflow-y-auto">
-          <div className="grid gap-1">
+        <div className="sidebar-scroll-region">
+          <div className="sidebar-list">
             {visibleThreads.map((thread) => (
               <InboxThreadRow
                 key={thread.sessionPath}

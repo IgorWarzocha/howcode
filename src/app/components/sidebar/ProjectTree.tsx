@@ -89,10 +89,10 @@ type OldSessionsRowProps = {
 
 function OldSessionsRow({ expanded, onArchiveAll, onToggle }: OldSessionsRowProps) {
   return (
-    <div className="group grid min-h-7 w-full grid-cols-[16px_minmax(0,1fr)_28px] items-center gap-2 rounded-xl px-2.5 py-px text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] focus-within:bg-[rgba(255,255,255,0.04)] focus-within:text-[color:var(--text)]">
+    <div className="sidebar-row-surface sidebar-old-sessions-row">
       <button
         type="button"
-        className="inline-flex h-4 w-4 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:text-[color:var(--text)]"
+        className="sidebar-old-sessions-toggle"
         onClick={onToggle}
         aria-label={expanded ? "Collapse old sessions" : "Expand old sessions"}
         aria-expanded={expanded}
@@ -100,7 +100,7 @@ function OldSessionsRow({ expanded, onArchiveAll, onToggle }: OldSessionsRowProp
         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
       </button>
 
-      <button type="button" className="flex min-w-0 items-center py-1 text-left" onClick={onToggle}>
+      <button type="button" className="sidebar-old-sessions-button" onClick={onToggle}>
         <span className="truncate">Old sessions</span>
       </button>
 
@@ -256,7 +256,7 @@ export function ProjectTree({
   };
 
   return (
-    <div ref={containerRef} className="min-h-0 overflow-auto pr-1">
+    <div ref={containerRef} className="sidebar-project-tree">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -291,7 +291,7 @@ export function ProjectTree({
                 disabled={selectionModeActive}
               >
                 {({ dragHandleProps, isDragging }) => (
-                  <div className="mb-0.5">
+                  <div className="sidebar-tree-item">
                     <div className="relative">
                       <ProjectRow
                         actionMenuId={actionMenuId}

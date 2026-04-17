@@ -1,5 +1,4 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { navButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
 type NavButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
@@ -20,18 +19,14 @@ export function NavButton({
   return (
     <button
       type={type}
-      className={cn(
-        navButtonClass,
-        active &&
-          "bg-[rgba(183,186,245,0.09)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.03)]",
-        className,
-      )}
+      className={cn("sidebar-nav-button", className)}
       onClick={onClick}
+      data-active={active ? "true" : "false"}
       aria-current={active ? "page" : undefined}
       {...buttonProps}
     >
       {icon}
-      <span className="flex min-w-0 flex-1">{label}</span>
+      <span className="sidebar-nav-button__label">{label}</span>
     </button>
   );
 }

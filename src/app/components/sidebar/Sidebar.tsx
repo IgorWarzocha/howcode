@@ -6,7 +6,6 @@ import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
 
 type SidebarNavigableView = Exclude<View, "gitops">;
-import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
@@ -45,11 +44,7 @@ type SidebarProps = {
 };
 
 function ComingSoonLabel() {
-  return (
-    <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.08em] text-[color:var(--muted-2)]">
-      Coming soon
-    </span>
-  );
+  return <span className="sidebar-coming-soon-label">Coming soon</span>;
 }
 
 export function Sidebar({
@@ -112,14 +107,14 @@ export function Sidebar({
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? "true" : "false"}
-      className="motion-surface-pulse motion-sidebar-selection-pulse relative flex h-full min-h-0 min-w-0 flex-col gap-3.5 overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--sidebar)] px-2.5 pt-3 pb-2.5"
+      className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
       {showModeSelection ? (
-        <nav className="grid gap-0.5" aria-label="Primary navigation">
+        <nav className="sidebar-mode-nav" aria-label="Primary navigation">
           <NavButton
             icon={<Inbox size={16} />}
             label={
-              <span className="inline-flex items-center gap-2">
+              <span className="sidebar-feature-label">
                 <span>Inbox</span>
                 <FeatureStatusBadge statusId="feature:sidebar.inbox" />
               </span>
@@ -130,7 +125,7 @@ export function Sidebar({
           <NavButton
             icon={<MessageSquare size={16} />}
             label={
-              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span className="sidebar-mode-label">
                 <span>Chat</span>
                 <ComingSoonLabel />
               </span>
@@ -141,7 +136,7 @@ export function Sidebar({
           <NavButton
             icon={<PawPrint size={16} />}
             label={
-              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span className="sidebar-mode-label">
                 <span>Claw</span>
                 <ComingSoonLabel />
               </span>
@@ -152,7 +147,7 @@ export function Sidebar({
           <NavButton
             icon={<BriefcaseBusiness size={16} />}
             label={
-              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span className="sidebar-mode-label">
                 <span>Work</span>
                 <ComingSoonLabel />
               </span>
@@ -201,15 +196,13 @@ export function Sidebar({
         />
       )}
 
-      <div className="relative mt-auto">
+      <div className="sidebar-footer">
         <button
           ref={settingsButtonRef}
           type="button"
-          className={cn(
-            "flex min-h-[34px] w-full items-center gap-2.5 rounded-[10px] border border-transparent px-2.5 text-[14px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
-            settingsOpen && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
-          )}
+          className="sidebar-settings-button"
           onClick={onToggleSettings}
+          data-open={settingsOpen ? "true" : "false"}
           aria-haspopup="menu"
           aria-expanded={settingsOpen}
           aria-controls={settingsMenuId}
