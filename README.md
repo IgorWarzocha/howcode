@@ -1,3 +1,6 @@
+>[!IMPORTANT] 
+>If you somehow ended up here before I said I am ready, do yourself a favour and use the dev version via `bun run dev`. Things are changing rapidly. Releases will be built only when I feel like a milestone is feature-ready and without any experience-breaking bugs. Current initial release was mostly to see if it builds and if I can use the app to build itself. I kinda can.
+
 # howcode
 
 Howcode is a desktop shell for Pi that makes local coding workflows feel fast, native, and focused.
