@@ -4,6 +4,7 @@ import type {
   Project,
   Thread,
 } from "../../shared/desktop-contracts.ts";
+import { getEffectiveThreadRunningState } from "../../shared/thread-running-state.ts";
 import { getThreadStateDatabase } from "./db.cts";
 import {
   mapArchivedThreadRow,
@@ -21,6 +22,7 @@ import type {
   ThreadPathRow,
   ThreadRow,
 } from "./types.cts";
+import { getLiveThread } from "../runtime/live-thread-store.cts";
 import { ensureProject } from "./writes.cts";
 
 export function listProjects(cwd: string): Project[] {
@@ -82,18 +84,21 @@ export function hasProject(projectId: string) {
 
 export function hasRunningProjectThread(projectId: string) {
   const db = getThreadStateDatabase();
-  const row = db
+  const rows = db
     .prepare(
       `
-        SELECT id
+        SELECT
+          session_path AS sessionPath,
+          running AS running
         FROM threads
-        WHERE cwd = ? AND running = 1
-        LIMIT 1
+        WHERE cwd = ? AND archived = 0
       `,
     )
-    .get(projectId) as { id?: string } | undefined;
+    .all(projectId) as Array<{ sessionPath: string; running: number }>;
 
-  return typeof row?.id === "string";
+  return rows.some((row) =>
+    getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)),
+  );
 }
 
 export function listProjectThreads(projectId: string): Thread[] {
@@ -118,7 +123,12 @@ export function listProjectThreads(projectId: string): Thread[] {
     )
     .all(projectId) as ThreadRow[];
 
-  return rows.map(mapThreadRow);
+  return rows.map((row) =>
+    mapThreadRow({
+      ...row,
+      running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)) ? 1 : 0,
+    }),
+  );
 }
 
 export function listInboxThreads(): InboxThread[] {
@@ -153,7 +163,12 @@ export function listInboxThreads(): InboxThread[] {
     )
     .all() as InboxThreadRow[];
 
-  return rows.map(mapInboxThreadRow);
+  return rows.map((row) =>
+    mapInboxThreadRow({
+      ...row,
+      running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)) ? 1 : 0,
+    }),
+  );
 }
 
 export function listArchivedThreads(): ArchivedThread[] {
