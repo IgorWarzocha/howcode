@@ -646,6 +646,15 @@
   color: var(--text);
 }
 
+.sidebar-thread-pin-indicator {
+  display: block;
+  height: 0.375rem;
+  width: 0.375rem;
+  margin-inline: auto;
+  border-radius: 9999px;
+  background: rgba(183, 186, 245, 0.95);
+}
+
 .sidebar-thread-row:hover .sidebar-thread-pin,
 .sidebar-thread-row:focus-within .sidebar-thread-pin,
 .sidebar-thread-pin[data-pinned="true"],
@@ -665,14 +674,6 @@
   gap: 0.375rem;
   padding-block: 0.125rem;
   text-align: left;
-}
-
-.sidebar-thread-unread-dot {
-  height: 0.375rem;
-  width: 0.375rem;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  background: rgba(183, 186, 245, 0.95);
 }
 
 .sidebar-thread-meta-slot {

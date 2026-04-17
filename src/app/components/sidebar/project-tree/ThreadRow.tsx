@@ -37,6 +37,8 @@ export function ThreadRow({
         <span className="sidebar-thread-leading-icon">
           <ActivitySpinner />
         </span>
+      ) : unread ? (
+        <span className="sidebar-thread-pin-indicator" aria-hidden="true" />
       ) : (
         <button
           type="button"
@@ -57,7 +59,6 @@ export function ThreadRow({
         onClick={onOpen}
         aria-current={isSelected ? "page" : undefined}
       >
-        {unread ? <span className="sidebar-thread-unread-dot" /> : null}
         <span className="truncate">{title}</span>
       </button>
 
