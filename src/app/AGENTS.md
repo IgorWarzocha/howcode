@@ -1,0 +1,4 @@
+- Keep app-wide orchestration in `app-shell`; avoid new global controllers elsewhere.
+- Use `query/desktop-query.ts` and existing hooks for desktop access; avoid direct `window.piDesktop` calls.
+- Route mutable desktop actions through `app-shell/useDesktopActionHandlers.ts` and keep optimistic updates.
+- Reuse existing components/styles and use `features/feature-status.tsx` for mock or partial UI states.
