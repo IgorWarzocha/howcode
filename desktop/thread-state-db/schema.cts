@@ -232,5 +232,11 @@ export function ensureThreadStateSchema(database: Database) {
     database.exec("ALTER TABLE inbox_items ADD COLUMN last_user_prompt TEXT");
   }
 
+  database.exec(`
+    UPDATE threads
+    SET running = 0
+    WHERE running != 0
+  `);
+
   schemaReady = true;
 }
