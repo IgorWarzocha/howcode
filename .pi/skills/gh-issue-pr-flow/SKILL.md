@@ -27,6 +27,7 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 - Open the PR back into `dev`, not `main`, unless the user explicitly says otherwise.
 - If the issue asks for discussion first or is clearly not actionable yet, stop and explain instead of forcing implementation.
 - Only use auto-closing keywords such as `Closes #123` for issues that are fully resolved by the PR. Use `Refs #123` for anything partial.
+- Before any build or release pass in this flow, refresh the landing changelog in `src/app/views/landing-overview-content.ts` from recent merged PRs / `origin/dev` commits so the shipped app does not carry stale release notes.
 
 ## When to use
 - The user gives issue numbers like `#123` or `123`.
@@ -125,6 +126,12 @@ Branch naming should be issue-oriented and easy to trace, for example `issue-123
 3. Repeat until the review comes back clean or the remaining tradeoffs are explicitly accepted.
 4. If the user shares review findings in chat instead of rerunning the command, resolve them the same way.
 
+### 6.5. Refresh the landing changelog before builds
+1. If you are about to make a build, package, release artifact, or other ship-intended output, update `src/app/views/landing-overview-content.ts` first.
+2. Base the changelog on actual merged PRs and recent `origin/dev` commits, not memory.
+3. Keep it terse and user-facing; do not dump issue numbers or internal workflow noise into the app UI.
+4. If nothing user-visible changed since the last refresh, say so explicitly instead of inventing changelog churn.
+
 ### 7. Open a clean PR with good hygiene
 1. Push the branch if needed.
 2. Create a PR targeting `dev`.
@@ -187,6 +194,7 @@ gh pr view <pr-number-or-url> --comments
 - The PR targets `dev` explicitly.
 - The PR body clearly distinguishes `Closes` from `Refs`.
 - The user's `/review` findings were addressed or explicitly called out.
+- If the flow included a build or release pass, `src/app/views/landing-overview-content.ts` was refreshed first from real merged PRs / `origin/dev` history.
 - Codex was asked for review.
 - The PR link was returned to the user after posting the review request.
 - Codex feedback was triaged instead of accepted blindly when the user asked for feedback handling.
