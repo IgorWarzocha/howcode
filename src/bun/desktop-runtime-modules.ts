@@ -136,17 +136,17 @@ export type SkillCreatorModule = {
 };
 
 export const piThreads = (await import(
-  new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
+  new URL("../build/desktop/pi-threads.mjs", import.meta.url).href
 )) as PiThreadsModule;
 
 export const piSkills = (await import(
-  new URL("../build/desktop/pi-skills.mjs", import.meta.url).pathname
+  new URL("../build/desktop/pi-skills.mjs", import.meta.url).href
 )) as PiSkillsModule;
 
 export const skillCreator = (await import(
-  new URL("../build/desktop/skill-creator-session.mjs", import.meta.url).pathname
+  new URL("../build/desktop/skill-creator-session.mjs", import.meta.url).href
 )) as SkillCreatorModule;
 
 export const terminalManager = (await import(
-  new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
+  new URL("../build/desktop/terminal-manager.mjs", import.meta.url).href
 )) as TerminalManagerModule;

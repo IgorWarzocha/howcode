@@ -5,6 +5,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
+import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
@@ -111,7 +112,11 @@ export async function setComposerModel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
 
   if (!persistedSessionPath) {
-    await setDraftComposerModel(request.projectId ?? process.cwd(), provider, modelId);
+    await setDraftComposerModel(
+      request.projectId ?? getDesktopWorkingDirectory(),
+      provider,
+      modelId,
+    );
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
@@ -136,7 +141,7 @@ export async function setComposerThinkingLevel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
 
   if (!persistedSessionPath) {
-    await setDraftComposerThinkingLevel(request.projectId ?? process.cwd(), level);
+    await setDraftComposerThinkingLevel(request.projectId ?? getDesktopWorkingDirectory(), level);
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
@@ -184,7 +189,9 @@ export async function sendComposerPrompt(
   };
 
   if (!persistedSessionPath) {
-    return await runSend(await createRuntimeForNewSession(request.projectId ?? process.cwd()));
+    return await runSend(
+      await createRuntimeForNewSession(request.projectId ?? getDesktopWorkingDirectory()),
+    );
   }
 
   return await withRuntimeMutationLock(
@@ -290,7 +297,7 @@ export async function dequeueComposerPrompt(
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
-  const projectId = request.projectId ?? process.cwd();
+  const projectId = request.projectId ?? getDesktopWorkingDirectory();
   const composer = await buildComposerStateSnapshot({ projectId, sessionPath: null });
   const draft = createLocalThreadDraft(projectId);
 
