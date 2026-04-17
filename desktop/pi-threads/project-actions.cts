@@ -3,6 +3,7 @@ import path from "node:path";
 import { Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import {
   getComposerRequest,
   getProjectId,
@@ -265,7 +266,7 @@ export async function handleProjectDesktopAction(
           });
         }
 
-        if (await isProtectedProjectDeletionTarget(projectId, process.cwd())) {
+        if (await isProtectedProjectDeletionTarget(projectId, getDesktopWorkingDirectory())) {
           return handledAction({
             error: "Cannot delete the active shell project.",
           });

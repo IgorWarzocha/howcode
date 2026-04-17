@@ -8,6 +8,7 @@ import type {
   ComposerStateRequest,
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
+import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { buildQueuedPrompts } from "./composer-queue";
@@ -143,7 +144,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   } = await getPiModule();
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
-    : (request.projectId ?? process.cwd());
+    : (request.projectId ?? getDesktopWorkingDirectory());
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);

@@ -6,6 +6,7 @@ import type {
   ComposerFilePickerEntry,
   ComposerFilePickerState,
 } from "../../shared/desktop-contracts";
+import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory";
 
 async function pathExists(targetPath: string) {
   try {
@@ -62,7 +63,9 @@ export async function listComposerAttachmentEntries(request: {
   rootPath?: string | null;
 }): Promise<ComposerFilePickerState> {
   const homePath = os.homedir();
-  const rootPath = path.resolve(request.rootPath ?? request.projectId ?? process.cwd());
+  const rootPath = path.resolve(
+    request.rootPath ?? request.projectId ?? getDesktopWorkingDirectory(),
+  );
   const requestedPath = path.resolve(request.path ?? rootPath);
   const currentPath = isPathWithinRoot(requestedPath, rootPath) ? requestedPath : rootPath;
   const directoryEntries = await readdir(currentPath, { withFileTypes: true });

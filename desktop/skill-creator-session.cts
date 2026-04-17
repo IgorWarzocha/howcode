@@ -1,6 +1,7 @@
 import { mkdir, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Message, SkillCreatorSessionState } from "../shared/desktop-contracts.ts";
 import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
@@ -127,8 +128,8 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  const packagedSkillsPath = new URL("../../resources/skills", import.meta.url).pathname;
-  const repoSkillsPath = new URL("../../desktop/resources/skills", import.meta.url).pathname;
+  const packagedSkillsPath = fileURLToPath(new URL("../../resources/skills", import.meta.url));
+  const repoSkillsPath = fileURLToPath(new URL("../../desktop/resources/skills", import.meta.url));
   const bundledSkillsPath = (await pathExists(packagedSkillsPath))
     ? packagedSkillsPath
     : repoSkillsPath;

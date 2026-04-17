@@ -1,4 +1,5 @@
 import type { ProjectImportCandidate } from "../shared/desktop-contracts.ts";
+import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory.ts";
 import { setProjectImportState } from "./app-settings.cts";
 import { getOriginUrl, isGitRepository } from "./project-git/project-state.cts";
 import { listProjects, setProjectRepoOrigin } from "./thread-state-db.cts";
@@ -8,14 +9,14 @@ function resolveProjectIds(projectIds: string[]) {
     return [...new Set(projectIds)];
   }
 
-  return listProjects(process.cwd())
+  return listProjects(getDesktopWorkingDirectory())
     .filter((project) => project.threadCount !== 0)
     .map((project) => project.id);
 }
 
 export async function scanKnownProjects(projectIds: string[]): Promise<ProjectImportCandidate[]> {
   const knownProjects = new Map(
-    listProjects(process.cwd()).map((project) => [project.id, project] as const),
+    listProjects(getDesktopWorkingDirectory()).map((project) => [project.id, project] as const),
   );
 
   return await Promise.all(

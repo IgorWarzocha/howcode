@@ -212,6 +212,7 @@ function spawnLauncherProcess(executablePath, options = {}) {
     cwd: path.dirname(executablePath),
     env: {
       ...process.env,
+      HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
       ...(options.env || {}),
     },
   });
