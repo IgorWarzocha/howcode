@@ -30,6 +30,12 @@ import type {
   TerminalSessionSnapshot,
 } from "../../shared/terminal-contracts";
 
+// Packaged desktop builds run Pi from bundled backend modules rather than a real package layout.
+// Force Pi's extension loader to use bundled virtual modules instead of broken filesystem aliases.
+if (process.env.NODE_ENV !== "development") {
+  process.env.HOWCODE_FORCE_PI_VIRTUAL_MODULES = "1";
+}
+
 export type PiThreadsModule = {
   handleDesktopAction: (
     action: DesktopAction,

@@ -23,6 +23,17 @@ const builds = [
   },
 ];
 
+function patchBundledPiExtensionLoader(source: string) {
+  // Pi's extension loader switches to virtualModules only for Bun compiled binaries.
+  // Our desktop backend is bundled into standalone .mjs files instead, which means the
+  // loader's filesystem alias fallbacks point at nonexistent package paths in release builds.
+  // Allow the desktop runtime to force virtualModules when running the bundled backend.
+  return source.replace(
+    /\.\.\.isBunBinary\s*\?\s*\{\s*virtualModules:\s*VIRTUAL_MODULES,\s*tryNative:\s*false\s*\}\s*:\s*\{\s*alias:\s*getAliases\(\)\s*\}/g,
+    '...(isBunBinary || process.env.HOWCODE_FORCE_PI_VIRTUAL_MODULES === "1") ? { virtualModules: VIRTUAL_MODULES, tryNative: false } : { alias: getAliases() }',
+  );
+}
+
 for (const build of builds) {
   const result = await Bun.build({
     entrypoints: [build.entrypoint],
@@ -42,6 +53,13 @@ for (const build of builds) {
 
   for (const output of result.outputs) {
     const targetPath = output.path.endsWith(".map") ? `${build.outfile}.map` : build.outfile;
-    await Bun.write(targetPath, output);
+
+    if (output.path.endsWith(".map")) {
+      await Bun.write(targetPath, output);
+      continue;
+    }
+
+    const text = await output.text();
+    await Bun.write(targetPath, patchBundledPiExtensionLoader(text));
   }
 }
