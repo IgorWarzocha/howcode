@@ -8,14 +8,14 @@ function resolveProjectIds(projectIds: string[]) {
     return [...new Set(projectIds)];
   }
 
-  return listProjects(process.cwd())
+  return listProjects()
     .filter((project) => project.threadCount !== 0)
     .map((project) => project.id);
 }
 
 export async function scanKnownProjects(projectIds: string[]): Promise<ProjectImportCandidate[]> {
   const knownProjects = new Map(
-    listProjects(process.cwd()).map((project) => [project.id, project] as const),
+    listProjects().map((project) => [project.id, project] as const),
   );
 
   return await Promise.all(

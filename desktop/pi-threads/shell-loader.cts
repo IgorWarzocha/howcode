@@ -19,7 +19,7 @@ import {
   loadProjectDiffStats,
   loadProjectGitState,
 } from "../project-git.cts";
-import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
+import { ensureProject, listProjects, syncSessionSummaries } from "../thread-state-db.cts";
 import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
 
@@ -69,11 +69,20 @@ async function syncShellIndex(cwd: string) {
   );
 }
 
+function scheduleShellIndexSync(cwd: string) {
+  // Session discovery can be slow on Windows when the agent storage contains many
+  // folders. Keep shell-state reads responsive and converge the DB in the background.
+  void syncShellIndex(cwd).catch((error) => {
+    console.warn("Failed to sync shell index.", error);
+  });
+}
+
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
 
-  await syncShellIndex(cwd);
+  ensureProject(cwd);
+  scheduleShellIndexSync(cwd);
   const composer = await getComposerState({ projectId: cwd });
   const appSettings = loadAppSettings();
 

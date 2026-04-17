@@ -127,8 +127,8 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  const packagedSkillsPath = new URL("../../resources/skills", import.meta.url).pathname;
-  const repoSkillsPath = new URL("../../desktop/resources/skills", import.meta.url).pathname;
+  const packagedSkillsPath = new URL("../../resources/skills", import.meta.url);
+  const repoSkillsPath = new URL("../../desktop/resources/skills", import.meta.url);
   const bundledSkillsPath = (await pathExists(packagedSkillsPath))
     ? packagedSkillsPath
     : repoSkillsPath;

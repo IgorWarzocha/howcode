@@ -26,6 +26,10 @@ import {
   subscribeDesktopEvents,
 } from "./thread-publisher.cts";
 
+function getDesktopWorkingDirectory() {
+  return process.env.HOWCODE_REPO_ROOT || process.cwd();
+}
+
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const runtimePromise = persistedSessionPath
@@ -103,7 +107,7 @@ export async function setComposerModel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
 
   if (!persistedSessionPath) {
-    await setDraftComposerModel(request.projectId ?? process.cwd(), provider, modelId);
+    await setDraftComposerModel(request.projectId ?? getDesktopWorkingDirectory(), provider, modelId);
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
@@ -128,7 +132,7 @@ export async function setComposerThinkingLevel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
 
   if (!persistedSessionPath) {
-    await setDraftComposerThinkingLevel(request.projectId ?? process.cwd(), level);
+    await setDraftComposerThinkingLevel(request.projectId ?? getDesktopWorkingDirectory(), level);
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
@@ -146,7 +150,7 @@ export async function sendComposerPrompt(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const runtime = persistedSessionPath
     ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true })
-    : await createRuntimeForNewSession(request.projectId ?? process.cwd());
+    : await createRuntimeForNewSession(request.projectId ?? getDesktopWorkingDirectory());
   const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
   const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
 
@@ -167,7 +171,7 @@ export async function sendComposerPrompt(
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
-  const projectId = request.projectId ?? process.cwd();
+  const projectId = request.projectId ?? getDesktopWorkingDirectory();
   const composer = await buildComposerStateSnapshot({ projectId, sessionPath: null });
   const draft = createLocalThreadDraft(projectId);
 

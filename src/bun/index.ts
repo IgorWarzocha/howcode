@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
 import type { DesktopAction } from "../../shared/desktop-actions";
 import type {
@@ -37,6 +39,24 @@ import {
 import { piSkills, piThreads, skillCreator, terminalManager } from "./desktop-runtime-modules";
 import { getMainViewUrl } from "./main-view-url";
 
+function getDesktopWorkingDirectory() {
+  return process.env.HOWCODE_REPO_ROOT || process.cwd();
+}
+
+function configurePiPackageDir() {
+  const candidates = [
+    path.resolve(import.meta.dir, "../resources/pi-coding-agent"),
+    path.resolve(getDesktopWorkingDirectory(), "node_modules/@mariozechner/pi-coding-agent"),
+  ];
+
+  const packageDir = candidates.find((candidate) => existsSync(path.join(candidate, "package.json")));
+  if (packageDir) {
+    process.env.PI_PACKAGE_DIR = packageDir;
+  }
+}
+
+configurePiPackageDir();
+
 if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
   process.env.WEBKIT_DISABLE_DMABUF_RENDERER = "1";
 }
@@ -45,7 +65,8 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
   maxRequestTime: 300_000,
   handlers: {
     requests: {
-      getShellState: async () => piThreads.loadShellState(process.cwd()) as Promise<ShellState>,
+      getShellState: async () =>
+        piThreads.loadShellState(getDesktopWorkingDirectory()) as Promise<ShellState>,
       getProjectGitState: async ({ projectId }) =>
         (await piThreads.loadProjectGitState(projectId)) as ProjectGitState | null,
       getProjectDiff: async ({ projectId, baseline }) =>
@@ -85,7 +106,7 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         skillCreator.closeSkillCreatorSession(request) as Promise<{ ok: boolean }>,
       pickComposerAttachments: async ({ projectId }) => {
         const filePaths = await Utils.openFileDialog({
-          startingFolder: projectId ?? process.cwd(),
+          startingFolder: projectId ?? getDesktopWorkingDirectory(),
           canChooseFiles: true,
           canChooseDirectory: false,
           allowsMultipleSelection: true,

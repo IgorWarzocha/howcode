@@ -11,6 +11,10 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import type { PiRuntime } from "./types.cts";
 
+function getDesktopWorkingDirectory() {
+  return process.env.HOWCODE_REPO_ROOT || process.cwd();
+}
+
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
 
 type ComposerSourceModel = NonNullable<AgentSession["model"]>;
@@ -134,7 +138,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   } = await getPiModule();
   const cwd = persistedSessionPath
     ? SessionManager.open(persistedSessionPath).getCwd()
-    : (request.projectId ?? process.cwd());
+    : (request.projectId ?? getDesktopWorkingDirectory());
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);

@@ -124,18 +124,18 @@ export type SkillCreatorModule = {
   closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>;
 };
 
-export const piThreads = (await import(
-  new URL("../build/desktop/pi-threads.mjs", import.meta.url).pathname
-)) as PiThreadsModule;
+const piThreadsModuleUrl = new URL("../build/desktop/pi-threads.mjs", import.meta.url).href;
+const piSkillsModuleUrl = new URL("../build/desktop/pi-skills.mjs", import.meta.url).href;
+const skillCreatorModuleUrl = new URL(
+  "../build/desktop/skill-creator-session.mjs",
+  import.meta.url,
+).href;
+const terminalManagerModuleUrl = new URL("../build/desktop/terminal-manager.mjs", import.meta.url).href;
 
-export const piSkills = (await import(
-  new URL("../build/desktop/pi-skills.mjs", import.meta.url).pathname
-)) as PiSkillsModule;
+export const piThreads = (await import(piThreadsModuleUrl)) as PiThreadsModule;
 
-export const skillCreator = (await import(
-  new URL("../build/desktop/skill-creator-session.mjs", import.meta.url).pathname
-)) as SkillCreatorModule;
+export const piSkills = (await import(piSkillsModuleUrl)) as PiSkillsModule;
 
-export const terminalManager = (await import(
-  new URL("../build/desktop/terminal-manager.mjs", import.meta.url).pathname
-)) as TerminalManagerModule;
+export const skillCreator = (await import(skillCreatorModuleUrl)) as SkillCreatorModule;
+
+export const terminalManager = (await import(terminalManagerModuleUrl)) as TerminalManagerModule;

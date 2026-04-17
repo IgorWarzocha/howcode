@@ -24,11 +24,8 @@ import type {
   ThreadRow,
   TurnDiffRow,
 } from "./types.cts";
-import { ensureProject } from "./writes.cts";
-
-export function listProjects(cwd: string): Project[] {
+export function listProjects(cwd?: string | null): Project[] {
   const db = getThreadStateDatabase();
-  ensureProject(cwd);
 
   const rows = db
     .prepare(
@@ -63,7 +60,7 @@ export function listProjects(cwd: string): Project[] {
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(cwd) as ProjectRow[];
+    .all(cwd ?? null) as ProjectRow[];
 
   return rows.map(mapProjectRow);
 }
