@@ -108,7 +108,7 @@ export function upsertInboxThreadPrompt(sessionPath: string, prompt: string | nu
 
 export function beginInboxThreadTurn(sessionPath: string, prompt: string | null) {
   const db = getThreadStateDatabase();
-  db.prepare(
+  const resetInboxItem = db.prepare(
     `
       INSERT INTO inbox_items (
         session_path,
@@ -127,7 +127,29 @@ export function beginInboxThreadTurn(sessionPath: string, prompt: string | null)
         last_assistant_at_ms = NULL,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(sessionPath, prompt);
+  );
+  const resetThreadAssistantSnapshot = db.prepare(
+    `
+      UPDATE threads
+      SET
+        last_assistant_message_json = NULL,
+        last_assistant_preview = NULL,
+        last_assistant_at_ms = NULL,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE session_path = ?
+    `,
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    resetInboxItem.run(sessionPath, prompt);
+    resetThreadAssistantSnapshot.run(sessionPath);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }
 
 export function markInboxThreadRead(sessionPath: string) {

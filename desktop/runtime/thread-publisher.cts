@@ -2,6 +2,7 @@ import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
 import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
+import { getLatestInboxAssistantMessage } from "../../shared/thread-inbox.ts";
 import { buildThreadData } from "../../shared/thread-data.ts";
 import {
   beginInboxThreadTurn,
@@ -43,37 +44,9 @@ function buildLiveThreadData(runtime: PiRuntime) {
   });
 }
 
-function getLatestAssistantMessage(thread: ThreadData) {
-  const latestAssistantMessage = [...thread.messages]
-    .reverse()
-    .find((message) => message.role === "assistant");
-
-  if (!latestAssistantMessage || latestAssistantMessage.role !== "assistant") {
-    return null;
-  }
-
-  const content =
-    latestAssistantMessage.content.length > 0
-      ? latestAssistantMessage.content
-      : (latestAssistantMessage.thinkingContent ?? []);
-
-  if (content.length === 0) {
-    return null;
-  }
-
-  return {
-    content,
-    preview:
-      latestAssistantMessage.content[0] ??
-      latestAssistantMessage.thinkingHeaders?.[0] ??
-      latestAssistantMessage.thinkingContent?.[0] ??
-      null,
-  };
-}
-
 function hasAssistantMessageChanged(
   sessionPath: string,
-  latestAssistantMessage: ReturnType<typeof getLatestAssistantMessage>,
+  latestAssistantMessage: ReturnType<typeof getLatestInboxAssistantMessage>,
 ) {
   if (!latestAssistantMessage) {
     return false;
@@ -154,7 +127,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
 
     if (reason === "end") {
       const latestUserPrompt = getLatestUserPrompt(thread);
-      const latestAssistantMessage = getLatestAssistantMessage(thread);
+      const latestAssistantMessage = getLatestInboxAssistantMessage(thread.messages);
       if (latestAssistantMessage) {
         upsertInboxThreadMessage({
           sessionPath,
@@ -202,9 +175,14 @@ export async function publishExternalThreadUpdate({
   });
   setThreadRunningState(sessionPath, false);
 
-  const latestAssistantMessage = getLatestAssistantMessage(thread);
+  const latestUserPrompt = getLatestUserPrompt(thread);
+  const latestAssistantMessage = getLatestInboxAssistantMessage(thread.messages);
+
+  if (!latestAssistantMessage && (latestUserPrompt || hasInboxItem(sessionPath))) {
+    beginInboxThreadTurn(sessionPath, latestUserPrompt);
+  }
+
   if (latestAssistantMessage && hasAssistantMessageChanged(sessionPath, latestAssistantMessage)) {
-    const latestUserPrompt = getLatestUserPrompt(thread);
     upsertInboxThreadMessage({
       sessionPath,
       userPrompt: latestUserPrompt,

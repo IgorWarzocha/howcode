@@ -106,9 +106,16 @@ async function createRuntime(options: {
       if (event.message.role === "user") {
         void publishThreadUpdate(runtime, "start");
       }
-      if (event.message.role === "assistant") {
-        void publishThreadUpdate(runtime, "end");
+
+      if (runtimeKey) {
+        scheduleRuntimeDisposal(runtimeKey);
       }
+
+      return;
+    }
+
+    if (event.type === "agent_end") {
+      void publishThreadUpdate(runtime, "end");
 
       if (runtimeKey) {
         scheduleRuntimeDisposal(runtimeKey);
