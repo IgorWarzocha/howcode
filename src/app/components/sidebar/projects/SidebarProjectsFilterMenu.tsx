@@ -1,7 +1,5 @@
 import { Check, Clock3, Github, SquareTerminal, Star } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
-import { menuOptionClass, popoverPanelClass } from "../../../ui/classes";
-import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 import type { SidebarProjectsFilterMode } from "./sidebar-projects.helpers";
 
@@ -35,10 +33,7 @@ export function SidebarProjectsFilterMenu({
       role="menu"
       aria-label="Project filters"
       data-open={open ? "true" : "false"}
-      className={cn(
-        popoverPanelClass,
-        "motion-popover absolute top-[calc(100%+6px)] right-0 z-30 grid w-44 gap-1 rounded-2xl p-1.5",
-      )}
+      className="sidebar-popover-panel sidebar-filter-menu motion-popover"
     >
       {items.map((item) => {
         const selected = item.id === filterMode;
@@ -49,19 +44,14 @@ export function SidebarProjectsFilterMenu({
             type="button"
             role="menuitemradio"
             aria-checked={selected}
-            className={cn(
-              menuOptionClass,
-              "grid-cols-[14px_14px_minmax(0,1fr)] text-[color:var(--text)]",
-              selected && "bg-[rgba(255,255,255,0.06)]",
-            )}
+            className="sidebar-filter-option"
+            data-selected={selected ? "true" : "false"}
             onClick={() => onSelect(item.id)}
           >
-            <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+            <span className="sidebar-filter-option__check">
               {selected ? <Check size={14} /> : null}
             </span>
-            <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-              {item.icon}
-            </span>
+            <span className="sidebar-filter-option__icon">{item.icon}</span>
             <span className="truncate text-left">{item.label}</span>
           </button>
         );

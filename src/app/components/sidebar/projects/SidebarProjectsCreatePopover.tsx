@@ -1,7 +1,5 @@
 import { FolderPlus } from "lucide-react";
 import { type RefObject, useEffect, useRef } from "react";
-import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
-import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 
 type SidebarProjectsCreatePopoverProps = {
@@ -55,12 +53,9 @@ export function SidebarProjectsCreatePopover({
       open
       aria-label="Create project"
       data-open={open ? "true" : "false"}
-      className={cn(
-        popoverPanelClass,
-        "motion-popover absolute inset-x-0 top-[calc(100%+2px)] z-30 m-0 grid gap-1.5 rounded-xl border-[color:var(--border-strong)] p-1.5",
-      )}
+      className="sidebar-popover-panel sidebar-project-create-popover motion-popover"
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_32px] items-center gap-1">
+      <div className="sidebar-project-create-row">
         <input
           ref={inputRef}
           value={draft}
@@ -76,29 +71,24 @@ export function SidebarProjectsCreatePopover({
               onClose();
             }
           }}
-          className={cn(settingsInputClass, "h-8 border-0 bg-transparent px-2 py-0")}
+          className="sidebar-project-create-input"
           placeholder="Project name"
           aria-label="Project name"
         />
 
         <button
           type="button"
-          className={cn(
-            compactIconButtonClass,
-            "h-8 w-8 rounded-lg border border-transparent",
-            canCreate
-              ? "bg-[color:var(--accent)] text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26]"
-              : "opacity-45",
-          )}
+          className="sidebar-project-create-submit"
           onClick={onCreate}
           disabled={!canCreate}
+          data-enabled={canCreate ? "true" : "false"}
           aria-label={busy ? "Creating project" : "Create project"}
         >
           <FolderPlus size={15} />
         </button>
       </div>
 
-      {errorMessage ? <div className="px-1 text-[12px] text-[#f2a7a7]">{errorMessage}</div> : null}
+      {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}
     </dialog>
   );
 }
