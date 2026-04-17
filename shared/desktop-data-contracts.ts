@@ -362,6 +362,9 @@ export type ThreadData = {
 
 export type DesktopEvent =
   | {
+      type: "shell-state-refresh";
+    }
+  | {
       type: "thread-update";
       reason: "start" | "update" | "end" | "external";
       projectId: string;
