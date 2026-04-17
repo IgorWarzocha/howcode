@@ -22,9 +22,13 @@ import {
   loadProjectDiffStats,
   loadProjectGitState,
 } from "../project-git.cts";
-import { listProjects, syncSessionSummaries } from "../thread-state-db.cts";
+import { emitDesktopEvent } from "../runtime/desktop-events.cts";
+import { ensureProject, listProjects, syncSessionSummaries } from "../thread-state-db.cts";
 import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
+
+const syncedShellIndexes = new Set<string>();
+const inFlightShellIndexSyncs = new Map<string, Promise<void>>();
 
 type SessionSummary = {
   id: string;
@@ -101,11 +105,32 @@ async function syncShellIndex(cwd: string) {
   );
 }
 
+function scheduleShellIndexSync(cwd: string) {
+  if (syncedShellIndexes.has(cwd) || inFlightShellIndexSyncs.has(cwd)) {
+    return;
+  }
+
+  const syncPromise = syncShellIndex(cwd)
+    .then(() => {
+      syncedShellIndexes.add(cwd);
+      emitDesktopEvent({ type: "shell-state-refresh" });
+    })
+    .catch((error) => {
+      console.warn("Failed to sync shell index.", error);
+    })
+    .finally(() => {
+      inFlightShellIndexSyncs.delete(cwd);
+    });
+
+  inFlightShellIndexSyncs.set(cwd, syncPromise);
+}
+
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
 
-  await syncShellIndex(cwd);
+  ensureProject(cwd);
+  scheduleShellIndexSync(cwd);
   const composer = await getComposerState({ projectId: cwd });
   const appSettings = loadAppSettings();
   const [resolvedCwd, projects] = await Promise.all([

@@ -323,6 +323,11 @@ export function useAppShellEffects({
         desktopEventStateRef.current;
       const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState);
 
+      if (event.type === "shell-state-refresh") {
+        scheduleShellStateRefresh();
+        return;
+      }
+
       if (event.type === "composer-update") {
         const shouldApplyComposerUpdate = event.sessionPath
           ? event.sessionPath === visibleSessionPath
