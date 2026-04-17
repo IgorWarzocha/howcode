@@ -1,6 +1,9 @@
 name: Release artifacts
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     tags:
       - "v*"
