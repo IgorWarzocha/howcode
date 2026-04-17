@@ -65,13 +65,7 @@ It is a thin launcher that:
 3. caches it locally
 4. launches the packaged desktop app
 
-On Linux, the npm launcher now sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` up front before starting the app. The previous detect-and-retry approach was too unreliable because the renderer failure can happen after the detached launcher exits or without matching the watched output.
-
-If you launch Linux release assets directly outside the npm launcher, document this manual workaround:
-
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 ./howcode/bin/launcher
-```
+Linux release builds now bundle CEF and default to the CEF renderer in Electrobun. That removes the old runtime dependence on the `WEBKIT_DISABLE_DMABUF_RENDERER` workaround, but increases Linux artifact size.
 
 ## Repo map
 

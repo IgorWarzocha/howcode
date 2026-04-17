@@ -217,14 +217,7 @@ function spawnLauncherProcess(executablePath, options = {}) {
 }
 
 async function launch(executablePath) {
-  const child = spawnLauncherProcess(executablePath, {
-    env:
-      process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER
-        ? {
-            WEBKIT_DISABLE_DMABUF_RENDERER: "1",
-          }
-        : undefined,
-  });
+  const child = spawnLauncherProcess(executablePath);
 
   child.unref();
 }

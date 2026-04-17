@@ -27,7 +27,7 @@ On first run, it downloads the matching desktop app for your platform from GitHu
 
 - macOS, Linux, and Windows desktop builds
 - local cached installs after first download
-- automatic Linux DMABUF workaround in the npm launcher
+- Linux builds that bundle CEF for a more consistent renderer
 
 ## Project
 
@@ -36,13 +36,9 @@ On first run, it downloads the matching desktop app for your platform from GitHu
 
 ## Linux note
 
-On Linux, the npm launcher sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` automatically before starting the app to avoid the common WebKit/GBM white-screen issue.
+Linux release builds now bundle CEF, so the launcher does not need to inject the old `WEBKIT_DISABLE_DMABUF_RENDERER` workaround anymore.
 
-If you are launching a downloaded Linux release asset manually, use:
-
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 ./howcode/bin/launcher
-```
+Expect Linux downloads to be larger than the native-webview builds in exchange for more consistent rendering behavior.
 
 ## Cache location
 

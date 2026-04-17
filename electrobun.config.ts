@@ -4,7 +4,7 @@ export default {
   app: {
     name: "howcode",
     identifier: "howcode.desktop.local",
-    version: "0.1.1",
+    version: "0.1.2",
     description: "Desktop shell for Pi focused on fast local coding workflows.",
   },
   build: {
@@ -20,7 +20,8 @@ export default {
       bundleCEF: false,
     },
     linux: {
-      bundleCEF: false,
+      bundleCEF: true,
+      defaultRenderer: "cef",
     },
     win: {
       bundleCEF: false,

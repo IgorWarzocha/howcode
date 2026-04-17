@@ -23,13 +23,9 @@ On first run, the launcher downloads the matching desktop build for your platfor
 
 ### Linux note
 
-The npm launcher now starts Linux builds with:
+Linux release builds now ship with bundled CEF by default, so they no longer depend on the old WebKit DMABUF workaround.
 
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1
-```
-
-If you run a downloaded Linux release asset directly and see a white window, launch it with that env var yourself.
+The tradeoff is a larger Linux download in exchange for a more consistent renderer.
 
 ## Current status
 

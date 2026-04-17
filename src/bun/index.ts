@@ -36,10 +36,6 @@ import {
 import { piSkills, piThreads, skillCreator, terminalManager } from "./desktop-runtime-modules";
 import { getMainViewUrl } from "./main-view-url";
 
-if (process.platform === "linux" && !process.env.WEBKIT_DISABLE_DMABUF_RENDERER) {
-  process.env.WEBKIT_DISABLE_DMABUF_RENDERER = "1";
-}
-
 const rpc = BrowserView.defineRPC<PiDesktopRpc>({
   maxRequestTime: 300_000,
   handlers: {
