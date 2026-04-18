@@ -136,6 +136,27 @@ export function ComposerPromptSurface({
     }
   }, [dictationMissingModel, showDictationButton]);
 
+  useEffect(() => {
+    if (!dictationActive && !dictationTranscribing) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void cancelDictation();
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [cancelDictation, dictationActive, dictationTranscribing]);
+
   const placeholderText =
     activeView === "thread"
       ? "Ask for follow-up changes"
