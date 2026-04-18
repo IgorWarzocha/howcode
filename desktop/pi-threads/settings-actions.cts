@@ -3,6 +3,7 @@ import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts"
 import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
+  getSettingsDictationModelId,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
@@ -13,6 +14,7 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
   setComposerStreamingBehavior,
+  setDictationModelId,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setInitializeGitOnProjectCreate,
@@ -50,6 +52,11 @@ export function handleSettingsDesktopAction(
     if (value) {
       setComposerStreamingBehavior(value);
     }
+    return handledAction();
+  }
+
+  if (key === "dictationModelId") {
+    setDictationModelId(getSettingsDictationModelId(payload));
     return handledAction();
   }
 

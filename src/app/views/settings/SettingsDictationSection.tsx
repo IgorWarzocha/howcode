@@ -1,6 +1,8 @@
-import { Check, Mic } from "lucide-react";
+import { Check, Download, Mic } from "lucide-react";
+import type { ReactNode } from "react";
+import { ActivitySpinner } from "../../components/common/ActivitySpinner";
 import { SectionIntro } from "../../components/common/SectionIntro";
-import type { AppSettings, DictationState } from "../../desktop/types";
+import type { AppSettings, DictationModelSummary, DictationState } from "../../desktop/types";
 import { inlineCodeClass, settingsListRowClass, settingsSectionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 
@@ -17,7 +19,7 @@ function getDictationStatusCopy(dictationState: DictationState | null) {
     return {
       title: "Speech-to-text ready",
       description: dictationState.modelId
-        ? `Detected ${dictationState.modelId}. Dictation is ready to use from the composer mic button.`
+        ? `Using ${dictationState.modelId}. Dictation is ready to use from the composer mic button.`
         : "A local speech-to-text model was detected. Dictation is ready to use.",
     };
   }
@@ -25,8 +27,7 @@ function getDictationStatusCopy(dictationState: DictationState | null) {
   if (dictationState.reason === "missing-model") {
     return {
       title: "No speech-to-text model detected",
-      description:
-        "The first-run install and model picker flow will live here. For now this section is the destination from the composer prompt.",
+      description: "Download one of the curated int8 Whisper models below to enable dictation.",
     };
   }
 
@@ -36,13 +37,107 @@ function getDictationStatusCopy(dictationState: DictationState | null) {
   };
 }
 
+function ModelActionButton({
+  disabled = false,
+  primary = false,
+  onClick,
+  label,
+  icon,
+}: {
+  disabled?: boolean;
+  primary?: boolean;
+  onClick: () => void;
+  label: string;
+  icon: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        primary
+          ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+          : "border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function DictationModelRow({
+  model,
+  pending,
+  onDownload,
+  onUse,
+}: {
+  model: DictationModelSummary;
+  pending: boolean;
+  onDownload: () => void;
+  onUse: () => void;
+}) {
+  return (
+    <div className={settingsListRowClass}>
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2 text-[13px] text-[color:var(--text)]">
+          <span>{model.name}</span>
+          <span className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10.5px] text-[color:var(--muted)]">
+            {model.downloadSizeLabel}
+          </span>
+          {model.selected ? (
+            <span className="rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2 py-0.5 text-[10.5px] text-[color:var(--text)]">
+              Selected
+            </span>
+          ) : null}
+        </div>
+        <div className="text-[12px] text-[color:var(--muted)]">{model.description}</div>
+      </div>
+      {model.installed ? (
+        model.selected ? (
+          <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2.5 text-[11px] text-[color:var(--text)]">
+            <Check size={11} />
+            <span>In use</span>
+          </div>
+        ) : (
+          <ModelActionButton label="Use" icon={<Check size={11} />} onClick={onUse} />
+        )
+      ) : (
+        <ModelActionButton
+          primary
+          disabled={pending}
+          label={pending ? "Downloading…" : "Download"}
+          icon={
+            pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Download size={11} />
+          }
+          onClick={onDownload}
+        />
+      )}
+    </div>
+  );
+}
+
 export function SettingsDictationSection({
   appSettings,
+  dictationDownloadLogLines,
+  dictationInstallError,
+  dictationInstallPendingId,
+  dictationModels,
   dictationState,
+  installDictationModel,
+  selectDictationModel,
   setShowDictationButton,
 }: {
   appSettings: AppSettings;
+  dictationDownloadLogLines: string[];
+  dictationInstallError: string | null;
+  dictationInstallPendingId: string | null;
+  dictationModels: DictationModelSummary[];
   dictationState: DictationState | null;
+  installDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") => void;
+  selectDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") => void;
   setShowDictationButton: (value: boolean) => void;
 }) {
   const statusCopy = getDictationStatusCopy(dictationState);
@@ -51,7 +146,7 @@ export function SettingsDictationSection({
     <section className={settingsSectionClass}>
       <SectionIntro
         title="Speech to text"
-        description="Local dictation checks for downloaded models on app launch. Model picking and downloading will be added here next."
+        description="Download one of the curated sherpa-onnx int8 Whisper models and choose which installed model the composer should use."
       />
 
       <div className={settingsListRowClass}>
@@ -68,9 +163,40 @@ export function SettingsDictationSection({
           ) : null}
         </div>
         <div className="rounded-full border border-[color:var(--border)] px-2.5 py-1 text-[11.5px] text-[color:var(--muted)]">
-          {dictationState?.available ? "Detected" : (dictationState?.reason ?? "Pending")}
+          {dictationState?.available ? "Ready" : (dictationState?.reason ?? "Pending")}
         </div>
       </div>
+
+      <div className="grid gap-2">
+        {dictationModels.map((model) => (
+          <DictationModelRow
+            key={model.id}
+            model={model}
+            pending={dictationInstallPendingId === model.id}
+            onDownload={() => installDictationModel(model.id)}
+            onUse={() => selectDictationModel(model.id)}
+          />
+        ))}
+      </div>
+
+      {dictationInstallError ? (
+        <output className="text-[12px] text-[#f2a7a7]" aria-live="polite">
+          {dictationInstallError}
+        </output>
+      ) : null}
+
+      {dictationDownloadLogLines.length > 0 ? (
+        <div className="grid gap-1.5 rounded-xl border border-[color:var(--border)] bg-[rgba(18,20,28,0.78)] px-3 py-2 font-mono text-[11px] text-[color:var(--muted)]">
+          <div className="text-[10.5px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+            Temporary download log
+          </div>
+          <div className="grid gap-1">
+            {dictationDownloadLogLines.map((line, index) => (
+              <div key={`${index}:${line}`}>{line}</div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className={settingsListRowClass}>
         <div className="grid gap-0.5">

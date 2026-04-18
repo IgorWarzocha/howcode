@@ -1,8 +1,12 @@
 import { existsSync, readdirSync, type Dirent } from "node:fs";
+import { mkdir, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import type {
+  DictationModelId,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -13,6 +17,13 @@ import {
   resolveWhisperModelFilesFromFilePaths,
   type ResolvedWhisperModelFiles,
 } from "../../shared/dictation-helpers.ts";
+import {
+  dictationModelDefinitions,
+  getDictationModelDefinition,
+  getDictationModelDownloadSizeLabel,
+} from "../../shared/dictation-models.ts";
+import { loadAppSettings } from "../app-settings.cts";
+import { emitDesktopEvent } from "../runtime/desktop-events.cts";
 import { getDesktopUserDataPath } from "../user-data-path.cts";
 
 type SherpaOfflineStream = {
@@ -50,6 +61,76 @@ let recognizerCache: {
   key: string;
   promise: Promise<SherpaOfflineRecognizer>;
 } | null = null;
+
+function getDictationModelsRootDirectory() {
+  const [modelDirectory = DEFAULT_DICTATION_MODEL_DIRECTORY] = getDictationModelDirectories();
+  return modelDirectory;
+}
+
+function getDictationModelDirectory(modelId: DictationModelId) {
+  return path.join(getDictationModelsRootDirectory(), modelId);
+}
+
+function getResolvedModelFilesForDefinition(modelId: DictationModelId): DictationModelFiles | null {
+  const definition = getDictationModelDefinition(modelId);
+  if (!definition) {
+    return null;
+  }
+
+  const modelDirectory = getDictationModelDirectory(modelId);
+  const encoderPath = path.join(modelDirectory, definition.files.encoder);
+  const decoderPath = path.join(modelDirectory, definition.files.decoder);
+  const tokensPath = path.join(modelDirectory, definition.files.tokens);
+
+  if (!existsSync(encoderPath) || !existsSync(decoderPath) || !existsSync(tokensPath)) {
+    return null;
+  }
+
+  return {
+    modelDirectory,
+    encoderPath,
+    decoderPath,
+    tokensPath,
+    modelId,
+    language: normalizeWhisperLanguage(modelId),
+  };
+}
+
+function getInstalledDictationModelFiles() {
+  return dictationModelDefinitions.flatMap((definition) => {
+    const modelFiles = getResolvedModelFilesForDefinition(definition.id);
+    return modelFiles ? [modelFiles] : [];
+  });
+}
+
+function getSelectedInstalledDictationModelFiles() {
+  const appSettings = loadAppSettings();
+  const selectedModelId = appSettings.dictationModelId;
+  const selectedModelFiles = selectedModelId
+    ? getResolvedModelFilesForDefinition(selectedModelId)
+    : null;
+
+  if (selectedModelFiles) {
+    return selectedModelFiles;
+  }
+
+  return getInstalledDictationModelFiles()[0] ?? null;
+}
+
+function findConfiguredDictationModelFiles(modelId?: DictationModelId) {
+  for (const directoryPath of getDictationModelDirectories()) {
+    const modelFiles = resolveWhisperModelFilesFromDirectory(directoryPath);
+    if (!modelFiles) {
+      continue;
+    }
+
+    if (!modelId || modelFiles.modelId === modelId) {
+      return modelFiles;
+    }
+  }
+
+  return null;
+}
 
 function getDictationModelDirectories() {
   const configuredDirectories = DICTATION_MODEL_DIR_ENV_KEYS.map((key) =>
@@ -235,14 +316,7 @@ async function getRecognizer(modelFiles: DictationModelFiles, language: string |
 }
 
 function getResolvedDictationModelFiles() {
-  for (const directoryPath of getDictationModelDirectories()) {
-    const modelFiles = resolveWhisperModelFilesFromDirectory(directoryPath);
-    if (modelFiles) {
-      return modelFiles;
-    }
-  }
-
-  return null;
+  return getSelectedInstalledDictationModelFiles() ?? findConfiguredDictationModelFiles();
 }
 
 function buildUnavailableDictationState(
@@ -316,6 +390,133 @@ export async function getDictationState(): Promise<DictationState> {
     language: modelFiles.language,
     error: null,
   };
+}
+
+export async function listDictationModels(): Promise<DictationModelSummary[]> {
+  const resolvedModelId = getResolvedDictationModelFiles()?.modelId ?? null;
+
+  return dictationModelDefinitions.map((definition) => {
+    const installed =
+      getResolvedModelFilesForDefinition(definition.id) !== null ||
+      findConfiguredDictationModelFiles(definition.id) !== null;
+
+    return {
+      id: definition.id,
+      name: definition.name,
+      description: definition.description,
+      downloadSizeBytes: definition.downloadSizeBytes,
+      downloadSizeLabel: getDictationModelDownloadSizeLabel(definition.downloadSizeBytes),
+      installed,
+      selected: installed && resolvedModelId === definition.id,
+    };
+  });
+}
+
+function buildHuggingFaceResolveUrl(repo: string, fileName: string) {
+  return `https://huggingface.co/${repo}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
+}
+
+async function downloadToFile(url: string, targetPath: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status} ${response.statusText}) for ${url}`);
+  }
+
+  const temporaryPath = `${targetPath}.partial`;
+  await Bun.write(temporaryPath, response);
+  await rename(temporaryPath, targetPath);
+}
+
+function createDictationDownloadStagePath(modelId: DictationModelId) {
+  return path.join(
+    getDictationModelsRootDirectory(),
+    `.${modelId}.download-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  );
+}
+
+function emitDictationDownloadLog(
+  modelId: DictationModelId,
+  message: string,
+  options: { done?: boolean; isError?: boolean } = {},
+) {
+  emitDesktopEvent({
+    type: "dictation-download-log",
+    modelId,
+    message,
+    at: new Date().toISOString(),
+    done: options.done ?? false,
+    isError: options.isError ?? false,
+  });
+}
+
+export async function installDictationModel(
+  modelId: DictationModelId,
+): Promise<DictationModelInstallResult> {
+  const definition = getDictationModelDefinition(modelId);
+  if (!definition) {
+    return {
+      ok: false,
+      modelId,
+      error: "Unknown dictation model.",
+    };
+  }
+
+  const modelDirectory = getDictationModelDirectory(modelId);
+  const stagingDirectory = createDictationDownloadStagePath(modelId);
+  const downloadedFiles = [
+    definition.files.encoder,
+    definition.files.decoder,
+    definition.files.tokens,
+  ];
+
+  try {
+    emitDictationDownloadLog(modelId, `Preparing ${definition.name} download…`);
+    await mkdir(stagingDirectory, { recursive: true });
+
+    for (const fileName of downloadedFiles) {
+      emitDictationDownloadLog(modelId, `Downloading ${fileName}…`);
+      await downloadToFile(
+        buildHuggingFaceResolveUrl(definition.huggingFaceRepo, fileName),
+        path.join(stagingDirectory, fileName),
+      );
+      emitDictationDownloadLog(modelId, `Saved ${fileName}.`);
+    }
+
+    emitDictationDownloadLog(modelId, "Finalizing model install…");
+    await mkdir(modelDirectory, { recursive: true });
+
+    for (const fileName of downloadedFiles) {
+      const targetPath = path.join(modelDirectory, fileName);
+      await rm(targetPath, { force: true });
+      await rename(path.join(stagingDirectory, fileName), targetPath);
+    }
+
+    await rm(stagingDirectory, { recursive: true, force: true });
+
+    recognizerCache = null;
+
+    emitDictationDownloadLog(modelId, `${definition.name} is ready.`, { done: true });
+
+    return {
+      ok: true,
+      modelId,
+      error: null,
+    };
+  } catch (error) {
+    await rm(stagingDirectory, { recursive: true, force: true }).catch(() => undefined);
+
+    emitDictationDownloadLog(
+      modelId,
+      error instanceof Error ? error.message : "Could not download dictation model.",
+      { done: true, isError: true },
+    );
+
+    return {
+      ok: false,
+      modelId,
+      error: error instanceof Error ? error.message : "Could not download dictation model.",
+    };
+  }
 }
 
 export async function transcribeDictation(

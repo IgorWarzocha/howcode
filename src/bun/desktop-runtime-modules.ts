@@ -8,6 +8,8 @@ import type {
   ComposerStateRequest,
   DesktopActionResultData,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -58,6 +60,10 @@ export type PiThreadsModule = {
   loadInboxThreadList: () => Promise<InboxThread[]>;
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
   getDictationState: () => Promise<DictationState>;
+  listDictationModels: () => Promise<DictationModelSummary[]>;
+  installDictationModel: (request: {
+    modelId: "tiny.en" | "base.en" | "small.en";
+  }) => Promise<DictationModelInstallResult>;
   transcribeDictation: (
     request: DictationTranscriptionRequest,
   ) => Promise<DictationTranscriptionResult>;

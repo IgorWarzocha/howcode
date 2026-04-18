@@ -73,7 +73,13 @@ export function SettingsView({
 
       <SettingsDictationSection
         appSettings={appSettings}
+        dictationDownloadLogLines={controller.dictationDownloadLogLines}
+        dictationInstallError={controller.dictationInstallError}
+        dictationInstallPendingId={controller.dictationInstallPendingId}
+        dictationModels={controller.dictationModels}
         dictationState={controller.dictationState}
+        installDictationModel={controller.installDictationModel}
+        selectDictationModel={controller.selectDictationModel}
         setShowDictationButton={controller.setShowDictationButton}
       />
 

@@ -149,6 +149,24 @@ export type DictationState = {
   error: string | null;
 };
 
+export type DictationModelId = "tiny.en" | "base.en" | "small.en";
+
+export type DictationModelSummary = {
+  id: DictationModelId;
+  name: string;
+  description: string;
+  downloadSizeBytes: number;
+  downloadSizeLabel: string;
+  installed: boolean;
+  selected: boolean;
+};
+
+export type DictationModelInstallResult = {
+  ok: boolean;
+  modelId: DictationModelId;
+  error: string | null;
+};
+
 export type DictationTranscriptionRequest = {
   audioBase64: string;
   sampleRate: number;
@@ -285,6 +303,7 @@ export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   skillCreatorModel: ModelSelection | null;
   composerStreamingBehavior: ComposerStreamingBehavior;
+  dictationModelId: DictationModelId | null;
   showDictationButton: boolean;
   favoriteFolders: string[];
   projectImportState: boolean | null;
@@ -390,6 +409,14 @@ export type ThreadData = {
 export type DesktopEvent =
   | {
       type: "shell-state-refresh";
+    }
+  | {
+      type: "dictation-download-log";
+      modelId: DictationModelId;
+      message: string;
+      at: string;
+      done: boolean;
+      isError: boolean;
     }
   | {
       type: "thread-update";

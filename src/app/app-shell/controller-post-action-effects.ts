@@ -104,6 +104,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "gitCommitMessageModel" &&
     payload.key !== "skillCreatorModel" &&
     payload.key !== "composerStreamingBehavior" &&
+    payload.key !== "dictationModelId" &&
     payload.key !== "showDictationButton" &&
     payload.key !== "favoriteFolders" &&
     payload.key !== "projectImportState" &&
@@ -139,6 +140,15 @@ export function getOptimisticallyUpdatedShellState(
     (payload.value === "steer" || payload.value === "followUp" || payload.value === "stop")
       ? payload.value
       : currentState.appSettings.composerStreamingBehavior;
+
+  const nextDictationModelId =
+    payload.key === "dictationModelId" &&
+    (payload.value === null ||
+      payload.value === "tiny.en" ||
+      payload.value === "base.en" ||
+      payload.value === "small.en")
+      ? payload.value
+      : currentState.appSettings.dictationModelId;
 
   const nextShowDictationButton =
     payload.key === "showDictationButton" && typeof payload.value === "boolean"
@@ -198,6 +208,7 @@ export function getOptimisticallyUpdatedShellState(
       gitCommitMessageModel: nextSelection,
       skillCreatorModel: nextSkillCreatorSelection,
       composerStreamingBehavior: nextComposerStreamingBehavior,
+      dictationModelId: nextDictationModelId,
       showDictationButton: nextShowDictationButton,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,

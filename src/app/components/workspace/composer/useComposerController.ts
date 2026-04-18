@@ -95,6 +95,7 @@ export function useComposerController({
   const draftValueRef = useRef("");
   const dictationSettledPromiseRef = useRef<Promise<void> | null>(null);
   const dictationSettledResolverRef = useRef<(() => void) | null>(null);
+  const dictationFlushPromiseRef = useRef<Promise<void> | null>(null);
   const sendLockRef = useRef(false);
 
   activeDraftThreadIdRef.current = draftThreadId;
@@ -133,60 +134,76 @@ export function useComposerController({
   }, [clearDictationSession]);
 
   const stopDictationAndFlush = useCallback(async () => {
+    if (dictationFlushPromiseRef.current) {
+      await dictationFlushPromiseRef.current;
+      return;
+    }
+
     const capture = dictationCaptureRef.current;
     if (!capture) {
       return;
     }
 
+    dictationCaptureRef.current = null;
+
     const submittedScopeKey = activeDictationScopeKeyRef.current;
-    setDictationActive(false);
-    setDictationInterimText("Transcribing…");
+    const flushPromise = (async () => {
+      setDictationActive(false);
+      setDictationInterimText("Transcribing…");
 
-    try {
-      const audio = await capture.stop();
+      try {
+        const audio = await capture.stop();
 
-      if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
-        return;
-      }
+        if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+          return;
+        }
 
-      if (!audio.audioBase64) {
-        setErrorMessage("No speech was captured.");
-        return;
-      }
+        if (!audio.audioBase64) {
+          setErrorMessage("No speech was captured.");
+          return;
+        }
 
-      if (!window.piDesktop?.transcribeDictation) {
-        setErrorMessage("Local dictation is unavailable in this runtime.");
-        return;
-      }
+        if (!window.piDesktop?.transcribeDictation) {
+          setErrorMessage("Local dictation is unavailable in this runtime.");
+          return;
+        }
 
-      const result = await window.piDesktop.transcribeDictation({
-        audioBase64: audio.audioBase64,
-        sampleRate: audio.sampleRate,
-        language: navigator.language || null,
-      });
+        const result = await window.piDesktop.transcribeDictation({
+          audioBase64: audio.audioBase64,
+          sampleRate: audio.sampleRate,
+          language: navigator.language || null,
+        });
 
-      if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
-        return;
-      }
+        if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+          return;
+        }
 
-      if (!result.ok) {
-        setErrorMessage(result.error ?? "Could not transcribe dictation.");
-        return;
-      }
+        if (!result.ok) {
+          setErrorMessage(result.error ?? "Could not transcribe dictation.");
+          return;
+        }
 
-      if (result.text.trim()) {
-        setDraftValue((current) => appendDictatedText(current, result.text));
-        setErrorMessage(null);
+        if (result.text.trim()) {
+          setDraftValue((current) => appendDictatedText(current, result.text));
+          setErrorMessage(null);
+        }
+      } catch (error) {
+        if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Could not stop local dictation.",
+          );
+        }
+      } finally {
+        dictationFlushPromiseRef.current = null;
+
+        if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+          clearDictationSession();
+        }
       }
-    } catch (error) {
-      if (activeDictationScopeKeyRef.current === submittedScopeKey) {
-        setErrorMessage(error instanceof Error ? error.message : "Could not stop local dictation.");
-      }
-    } finally {
-      if (activeDictationScopeKeyRef.current === submittedScopeKey) {
-        clearDictationSession();
-      }
-    }
+    })();
+
+    dictationFlushPromiseRef.current = flushPromise;
+    await flushPromise;
   }, [clearDictationSession, setDraftValue]);
 
   const dictationScopeKey = useMemo(

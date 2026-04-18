@@ -13,7 +13,9 @@ export {
 } from "./pi-threads/thread-loader.cts";
 export {
   getDictationState,
+  installDictationModel,
   captureProjectDiffBaseline,
+  listDictationModels,
   loadComposerState,
   listProjectCommits,
   loadProjectDiff,

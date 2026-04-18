@@ -8,6 +8,8 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -108,6 +110,10 @@ declare global {
       }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
       getDictationState?: () => Promise<DictationState>;
+      listDictationModels?: () => Promise<DictationModelSummary[]>;
+      installDictationModel?: (
+        modelId: "tiny.en" | "base.en" | "small.en",
+      ) => Promise<DictationModelInstallResult>;
       transcribeDictation?: (
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>;

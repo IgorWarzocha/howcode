@@ -8,6 +8,8 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerState,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -124,6 +126,14 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
       getComposerState: async (request) =>
         piThreads.loadComposerState(request) as Promise<ComposerState>,
       getDictationState: async () => piThreads.getDictationState() as Promise<DictationState>,
+      listDictationModels: async () =>
+        piThreads.listDictationModels() as Promise<DictationModelSummary[]>,
+      installDictationModel: async (request) =>
+        piThreads.installDictationModel(
+          request as {
+            modelId: "tiny.en" | "base.en" | "small.en";
+          },
+        ) as Promise<DictationModelInstallResult>,
       transcribeDictation: async (request) =>
         piThreads.transcribeDictation(
           request as DictationTranscriptionRequest,

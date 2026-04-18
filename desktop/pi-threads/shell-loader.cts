@@ -3,6 +3,8 @@ import path from "node:path";
 import type {
   ComposerState,
   ComposerStateRequest,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -13,6 +15,8 @@ import type {
 } from "../../shared/desktop-contracts.ts";
 import {
   getDictationState as getSherpaDictationState,
+  installDictationModel as installSherpaDictationModel,
+  listDictationModels as listSherpaDictationModels,
   transcribeDictation as transcribeSherpaDictation,
 } from "../dictation/sherpa-onnx.cts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
@@ -168,6 +172,16 @@ export async function loadComposerState(
 
 export async function getDictationState(): Promise<DictationState> {
   return getSherpaDictationState();
+}
+
+export async function listDictationModels(): Promise<DictationModelSummary[]> {
+  return listSherpaDictationModels();
+}
+
+export async function installDictationModel(request: {
+  modelId: "tiny.en" | "base.en" | "small.en";
+}): Promise<DictationModelInstallResult> {
+  return installSherpaDictationModel(request.modelId);
 }
 
 export async function transcribeDictation(

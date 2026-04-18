@@ -88,6 +88,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 gitCommitMessageModel: null,
                 skillCreatorModel: null,
                 composerStreamingBehavior: "followUp",
+                dictationModelId: null,
                 showDictationButton: true,
                 favoriteFolders: [],
                 projectImportState: null,

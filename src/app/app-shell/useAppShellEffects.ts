@@ -343,6 +343,10 @@ export function useAppShellEffects({
         return;
       }
 
+      if (event.type !== "thread-update") {
+        return;
+      }
+
       queryClient.setQueriesData(
         { queryKey: desktopQueryKeys.thread(event.sessionPath) },
         event.thread,

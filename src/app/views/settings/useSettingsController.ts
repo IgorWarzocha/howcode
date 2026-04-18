@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AppSettings, DesktopActionInvoker, DictationState } from "../../desktop/types";
+import type {
+  AppSettings,
+  DesktopActionInvoker,
+  DesktopEvent,
+  DictationModelSummary,
+  DictationState,
+} from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project } from "../../types";
@@ -26,6 +32,10 @@ export function useSettingsController({
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false);
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
   const [dictationState, setDictationState] = useState<DictationState | null>(null);
+  const [dictationModels, setDictationModels] = useState<DictationModelSummary[]>([]);
+  const [dictationInstallPendingId, setDictationInstallPendingId] = useState<string | null>(null);
+  const [dictationInstallError, setDictationInstallError] = useState<string | null>(null);
+  const [dictationDownloadLogLines, setDictationDownloadLogLines] = useState<string[]>([]);
   const [importBusy, setImportBusy] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
   const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
@@ -41,28 +51,51 @@ export function useSettingsController({
   }, [appSettings.preferredProjectLocation]);
 
   useEffect(() => {
-    let disposed = false;
-
-    if (!window.piDesktop?.getDictationState) {
+    if (!appSettings.dictationModelId) {
       return;
     }
 
-    void window.piDesktop
-      .getDictationState()
-      .then((state) => {
-        if (!disposed) {
-          setDictationState(state);
-        }
-      })
-      .catch(() => {
-        if (!disposed) {
-          setDictationState(null);
-        }
-      });
+    setDictationModels((current) =>
+      current.map((model) => ({
+        ...model,
+        selected: model.installed && model.id === appSettings.dictationModelId,
+      })),
+    );
+  }, [appSettings.dictationModelId]);
 
-    return () => {
-      disposed = true;
-    };
+  const refreshDictationState = useCallback(async () => {
+    const [nextDictationState, nextDictationModels] = await Promise.all([
+      window.piDesktop?.getDictationState?.().catch(() => null) ?? Promise.resolve(null),
+      window.piDesktop?.listDictationModels?.().catch(() => []) ?? Promise.resolve([]),
+    ]);
+
+    setDictationState(nextDictationState);
+    setDictationModels(nextDictationModels);
+  }, []);
+
+  useEffect(() => {
+    void refreshDictationState();
+  }, [refreshDictationState]);
+
+  useEffect(() => {
+    if (!window.piDesktop?.subscribe) {
+      return;
+    }
+
+    return window.piDesktop.subscribe((event: DesktopEvent) => {
+      if (event.type !== "dictation-download-log") {
+        return;
+      }
+
+      setDictationDownloadLogLines((current) => {
+        const nextLines = [...current, `bun ${event.modelId}: ${event.message}`];
+        return nextLines.slice(-12);
+      });
+    });
+  }, []);
+
+  const appendDictationDownloadLogLine = useCallback((line: string) => {
+    setDictationDownloadLogLines((current) => [...current, line].slice(-12));
   }, []);
 
   const closeGitCommitMenu = useCallback(() => {
@@ -140,8 +173,72 @@ export function useSettingsController({
     }
   };
 
+  const installDictationModel = async (modelId: "tiny.en" | "base.en" | "small.en") => {
+    if (!window.piDesktop?.installDictationModel) {
+      setDictationInstallError("Dictation model installs are unavailable in this runtime.");
+      return;
+    }
+
+    setDictationInstallPendingId(modelId);
+    setDictationInstallError(null);
+    setDictationDownloadLogLines([]);
+    appendDictationDownloadLogLine(`ui ${modelId}: install requested`);
+
+    try {
+      appendDictationDownloadLogLine(`ui ${modelId}: calling desktop RPC…`);
+      const result = await window.piDesktop.installDictationModel(modelId);
+      appendDictationDownloadLogLine(
+        `ui ${modelId}: RPC resolved (ok=${result.ok ? "yes" : "no"})`,
+      );
+
+      if (!result.ok) {
+        setDictationInstallError(result.error ?? "Could not download dictation model.");
+        return;
+      }
+
+      await onAction("settings.update", {
+        key: "dictationModelId",
+        value: modelId,
+      });
+      await refreshDictationState();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not download dictation model.";
+      appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`);
+      setDictationInstallError(message);
+    } finally {
+      setDictationInstallPendingId(null);
+    }
+  };
+
+  const selectDictationModel = (modelId: "tiny.en" | "base.en" | "small.en") => {
+    setDictationInstallError(null);
+    void onAction("settings.update", {
+      key: "dictationModelId",
+      value: modelId,
+    });
+    setDictationState((current) =>
+      current?.available
+        ? {
+            ...current,
+            modelId,
+          }
+        : current,
+    );
+    setDictationModels((current) =>
+      current.map((model) => ({
+        ...model,
+        selected: model.id === modelId,
+      })),
+    );
+  };
+
   return {
     addFavoriteFolder,
+    dictationDownloadLogLines,
+    dictationInstallError,
+    dictationInstallPendingId,
+    dictationModels,
     dictationState,
     favoriteFolderDraft,
     gitCommitButtonRef,
@@ -153,7 +250,9 @@ export function useSettingsController({
     importBusy,
     importErrorMessage,
     importStatusMessage,
+    installDictationModel,
     preferredProjectLocationDraft,
+    refreshDictationState,
     savePreferredProjectLocation,
     setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) =>
       void onAction("settings.update", {
@@ -165,6 +264,7 @@ export function useSettingsController({
         key: "showDictationButton",
         value,
       }),
+    selectDictationModel,
     selectGitCommitModel: (id: string) =>
       selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>

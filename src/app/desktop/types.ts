@@ -17,6 +17,8 @@ export type {
   DesktopActionPayload,
   DesktopActionResult,
   DesktopActionResultData,
+  DictationModelInstallResult,
+  DictationModelSummary,
   InboxThread,
   DictationState,
   DictationTranscriptionRequest,

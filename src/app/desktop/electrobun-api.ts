@@ -10,6 +10,8 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -178,6 +180,12 @@ export const piDesktopApi = {
     (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
   getDictationState: async () =>
     (await getRpc()).request.getDictationState({}) as Promise<DictationState>,
+  listDictationModels: async () =>
+    (await getRpc()).request.listDictationModels({}) as Promise<DictationModelSummary[]>,
+  installDictationModel: async (modelId: "tiny.en" | "base.en" | "small.en") =>
+    (await getRpc()).request.installDictationModel({
+      modelId,
+    }) as Promise<DictationModelInstallResult>,
   transcribeDictation: async (request: DictationTranscriptionRequest) =>
     (await getRpc()).request.transcribeDictation(request) as Promise<DictationTranscriptionResult>,
   getProjectThreads: async (projectId: string) =>

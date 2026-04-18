@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   ComposerStreamingBehavior,
+  DictationModelId,
   ModelSelection,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
@@ -9,6 +10,7 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const skillCreatorModelKey = "skillCreatorModel";
 const composerStreamingBehaviorKey = "composerStreamingBehavior";
+const dictationModelIdKey = "dictationModelId";
 const showDictationButtonKey = "showDictationButton";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
@@ -110,6 +112,21 @@ function parseComposerStreamingBehaviorPreference(
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return parsed === "steer" || parsed === "followUp" || parsed === "stop" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseDictationModelIdPreference(
+  valueJson: string | null | undefined,
+): DictationModelId | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "tiny.en" || parsed === "base.en" || parsed === "small.en" ? parsed : null;
   } catch {
     return null;
   }
@@ -231,6 +248,15 @@ export function loadAppSettings(): AppSettings {
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
 
+  const dictationModelIdRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(dictationModelIdKey) as PreferenceRow | undefined;
   const showDictationButtonRow = db
     .prepare(
       `
@@ -247,6 +273,7 @@ export function loadAppSettings(): AppSettings {
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
       "followUp",
+    dictationModelId: parseDictationModelIdPreference(dictationModelIdRow?.valueJson),
     showDictationButton: parseBooleanPreference(showDictationButtonRow?.valueJson) ?? true,
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
@@ -280,6 +307,15 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
   writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior));
+}
+
+export function setDictationModelId(modelId: DictationModelId | null) {
+  if (!modelId) {
+    deleteAppPreference(dictationModelIdKey);
+    return;
+  }
+
+  writeAppPreference(dictationModelIdKey, JSON.stringify(modelId));
 }
 
 export function setShowDictationButton(enabled: boolean) {

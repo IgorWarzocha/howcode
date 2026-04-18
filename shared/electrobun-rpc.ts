@@ -9,6 +9,8 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
@@ -119,6 +121,11 @@ export type PiDesktopRpc = {
       };
       getComposerState: { params: ComposerStateRequest; response: ComposerState };
       getDictationState: { params: Record<string, never>; response: DictationState };
+      listDictationModels: { params: Record<string, never>; response: DictationModelSummary[] };
+      installDictationModel: {
+        params: { modelId: "tiny.en" | "base.en" | "small.en" };
+        response: DictationModelInstallResult;
+      };
       transcribeDictation: {
         params: DictationTranscriptionRequest;
         response: DictationTranscriptionResult;

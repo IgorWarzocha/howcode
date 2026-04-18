@@ -5,6 +5,7 @@ import type {
   ComposerState,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
+  DictationModelId,
   ProjectDeletionMode,
   ProjectImportCandidate,
 } from "./desktop-data-contracts";
@@ -51,6 +52,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "skillCreatorModel"; provider: string; modelId: string; reset?: false }
   | { key: "skillCreatorModel"; reset: true }
   | { key: "composerStreamingBehavior"; value: ComposerStreamingBehavior }
+  | { key: "dictationModelId"; value: DictationModelId | null }
   | { key: "showDictationButton"; value: boolean }
   | { key: "favoriteFolders"; folders: string[] }
   | { key: "projectImportState"; imported: boolean | null }
