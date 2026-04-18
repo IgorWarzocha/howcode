@@ -3,6 +3,7 @@ import { ViewShell } from "../components/common/ViewShell";
 import type { AppSettings, ComposerModel, DesktopActionInvoker } from "../desktop/types";
 import type { Project } from "../types";
 import { SettingsFavoriteFoldersSection } from "./settings/SettingsFavoriteFoldersSection";
+import { SettingsDictationSection } from "./settings/SettingsDictationSection";
 import { SettingsModelSection } from "./settings/SettingsModelSection";
 import { SettingsProjectDefaultsSection } from "./settings/SettingsProjectDefaultsSection";
 import { SettingsProjectImportSection } from "./settings/SettingsProjectImportSection";
@@ -31,7 +32,7 @@ export function SettingsView({
     <ViewShell maxWidthClassName="max-w-[760px]">
       <ViewHeader
         title="App settings"
-        subtitle="Git commit model, skill creator model, streaming send behavior, project cleanup defaults, Pi TUI defaults, project UI import, and favorite folders."
+        subtitle="Git commit model, skill creator model, speech-to-text setup, streaming send behavior, project cleanup defaults, Pi TUI defaults, project UI import, and favorite folders."
         onClose={onClose}
         closeLabel="Close app settings"
       />
@@ -68,6 +69,20 @@ export function SettingsView({
         setProjectDeletionMode={controller.setProjectDeletionMode}
         toggleInitializeGitOnProjectCreate={controller.toggleInitializeGitOnProjectCreate}
         togglePiTuiTakeover={controller.togglePiTuiTakeover}
+      />
+
+      <SettingsDictationSection
+        appSettings={appSettings}
+        deleteDictationModel={controller.deleteDictationModel}
+        dictationDownloadLogLines={controller.dictationDownloadLogLines}
+        dictationInstallError={controller.dictationInstallError}
+        dictationPendingAction={controller.dictationPendingAction}
+        dictationModels={controller.dictationModels}
+        dictationState={controller.dictationState}
+        installDictationModel={controller.installDictationModel}
+        setDictationMaxDurationSeconds={controller.setDictationMaxDurationSeconds}
+        selectDictationModel={controller.selectDictationModel}
+        setShowDictationButton={controller.setShowDictationButton}
       />
 
       <SettingsProjectImportSection

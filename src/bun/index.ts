@@ -8,6 +8,12 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerState,
+  DictationModelInstallResult,
+  DictationModelRemoveResult,
+  DictationModelSummary,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   DesktopActionResult,
   DesktopEvent,
   InboxThread,
@@ -120,6 +126,25 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         listComposerAttachmentEntries(request) as Promise<ComposerFilePickerState>,
       getComposerState: async (request) =>
         piThreads.loadComposerState(request) as Promise<ComposerState>,
+      getDictationState: async () => piThreads.getDictationState() as Promise<DictationState>,
+      listDictationModels: async () =>
+        piThreads.listDictationModels() as Promise<DictationModelSummary[]>,
+      installDictationModel: async (request) =>
+        piThreads.installDictationModel(
+          request as {
+            modelId: "tiny.en" | "base.en" | "small.en";
+          },
+        ) as Promise<DictationModelInstallResult>,
+      removeDictationModel: async (request) =>
+        piThreads.removeDictationModel(
+          request as {
+            modelId: "tiny.en" | "base.en" | "small.en";
+          },
+        ) as Promise<DictationModelRemoveResult>,
+      transcribeDictation: async (request) =>
+        piThreads.transcribeDictation(
+          request as DictationTranscriptionRequest,
+        ) as Promise<DictationTranscriptionResult>,
       getProjectThreads: async ({ projectId }) =>
         piThreads.loadProjectThreads(projectId) as Promise<Thread[]>,
       getInboxThreads: async () => piThreads.loadInboxThreadList() as Promise<InboxThread[]>,

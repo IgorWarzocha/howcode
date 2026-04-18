@@ -1,20 +1,29 @@
-import { type RefObject, useMemo } from "react";
+import { type RefObject, useEffect, useMemo } from "react";
 import type {
   DesktopActionInvoker,
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
+import { toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
+import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerGitOpsFooter } from "./ComposerGitOpsFooter";
 import { ComposerGitOpsMessageField } from "./ComposerGitOpsMessageField";
 import { ComposerGitOpsTopBar } from "./ComposerGitOpsTopBar";
+import { useComposerDictation } from "./useComposerDictation";
 import { useComposerGitOpsState } from "./useComposerGitOpsState";
 
 type ComposerGitOpsSurfaceProps = {
+  dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   composerPanelRef: RefObject<HTMLDivElement | null>;
+  onOpenSettingsView: () => void;
   projectGitState: ProjectGitState | null;
+  projectId: string;
+  sessionPath: string | null;
+  showDictationButton: boolean;
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
@@ -31,8 +40,14 @@ type ComposerGitOpsSurfaceProps = {
 };
 
 export function ComposerGitOpsSurface({
+  dictationModelId,
+  dictationMaxDurationSeconds,
   composerPanelRef,
+  onOpenSettingsView,
   projectGitState,
+  projectId,
+  sessionPath,
+  showDictationButton,
   diffBaseline,
   diffRenderMode,
   diffComments,
@@ -69,6 +84,8 @@ export function ComposerGitOpsSurface({
     repoUrl,
     runningPrimaryAction,
     setCommitFocused,
+    setActionErrorMessage,
+    setCommitMessageValue,
     setIncludeUnstaged,
     setPushEnabled,
     setRepoUrl,
@@ -84,6 +101,86 @@ export function ComposerGitOpsSurface({
   const contentMinHeightClass = useMemo(
     () => cn("relative", hasDiffComments ? "min-h-24" : "min-h-[148px]"),
     [hasDiffComments],
+  );
+
+  const {
+    cancelDictation,
+    dictationActive,
+    dictationInterimText,
+    dictationMissingModel,
+    dictationSupported,
+    toggleDictation,
+  } = useComposerDictation({
+    activeView: "gitops",
+    dictationModelId,
+    dictationMaxDurationSeconds,
+    draftThreadId: `gitops:${projectId}`,
+    projectId,
+    sessionPath,
+    setDraftValue: setCommitMessageValue,
+    setErrorMessage: setActionErrorMessage,
+  });
+  const dictationTranscribing = dictationInterimText.length > 0;
+
+  useEffect(() => {
+    if (!dictationActive && !dictationTranscribing) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      void cancelDictation();
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [cancelDictation, dictationActive, dictationTranscribing]);
+
+  const dictationControls = (
+    <ComposerDictationControls
+      dictationActive={dictationActive}
+      dictationMissingModel={dictationMissingModel}
+      dictationSupported={dictationSupported}
+      dictationTranscribing={dictationTranscribing}
+      onAction={onAction}
+      onOpenSettingsView={onOpenSettingsView}
+      showDictationButton={showDictationButton}
+      toggleDictation={toggleDictation}
+    />
+  );
+  const primaryActionButton = (
+    <button
+      type="button"
+      className={cn(
+        toolbarButtonClass,
+        "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
+      )}
+      onClick={() => {
+        void handlePrimaryAction();
+      }}
+      disabled={
+        hasDiffComments
+          ? diffCommentsSending
+          : runningPrimaryAction || (isGitRepo ? !canCommit : false)
+      }
+      aria-label={primaryActionLabel}
+    >
+      {primaryActionLabel}
+    </button>
+  );
+  const trailingActions = (
+    <div className="inline-flex items-center gap-2">
+      {dictationControls}
+      {primaryActionButton}
+    </div>
   );
 
   return (
@@ -119,7 +216,19 @@ export function ComposerGitOpsSurface({
             onBlur={() => setCommitFocused(false)}
             onChange={handleCommitMessageChange}
             onFocus={() => setCommitFocused(true)}
+            onInput={() => {
+              if (actionErrorMessage) {
+                setActionErrorMessage(null);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
+                event.preventDefault();
+                void cancelDictation();
+              }
+            }}
             onLayoutChange={onLayoutChange}
+            trailingAccessory={trailingActions}
             value={commitMessage}
           />
         ) : null}
@@ -134,7 +243,19 @@ export function ComposerGitOpsSurface({
           onBlur={() => setCommitFocused(false)}
           onChange={handleCommitMessageChange}
           onFocus={() => setCommitFocused(true)}
+          onInput={() => {
+            if (actionErrorMessage) {
+              setActionErrorMessage(null);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
+              event.preventDefault();
+              void cancelDictation();
+            }
+          }}
           onLayoutChange={onLayoutChange}
+          trailingAccessory={trailingActions}
           value={commitMessage}
         />
       ) : null}
@@ -144,24 +265,18 @@ export function ComposerGitOpsSurface({
       {/* Footer row structure here is mirrored by the prompt composer footer. */}
       <ComposerGitOpsFooter
         composerPanelRef={composerPanelRef}
-        canCommit={canCommit}
         diffBaseline={diffBaseline}
-        diffCommentsSending={diffCommentsSending}
-        hasDiffComments={hasDiffComments}
         hasOrigin={hasOrigin}
         includeUnstaged={includeUnstaged}
         isGitRepo={isGitRepo}
         onBack={onBack}
-        onPrimaryAction={handlePrimaryAction}
         onSetDiffBaseline={onSetDiffBaseline}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}
         previewEnabled={previewEnabled}
-        primaryActionLabel={primaryActionLabel}
         projectGitState={projectGitState}
         pushEnabled={pushEnabled}
-        runningPrimaryAction={runningPrimaryAction}
       />
     </div>
   );

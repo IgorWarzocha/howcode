@@ -8,7 +8,12 @@ import { ComposerGitOpsSurface } from "./composer/ComposerGitOpsSurface";
 import type { SavedDiffComment } from "./diff/diffCommentStore";
 
 type GitOpsComposerPanelProps = {
+  dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   projectGitState: ProjectGitState | null;
+  projectId: string;
+  sessionPath: string | null;
+  showDictationButton: boolean;
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
@@ -22,10 +27,16 @@ type GitOpsComposerPanelProps = {
   onAction: DesktopActionInvoker;
   onLayoutChange: () => void;
   onBack: () => void;
+  onOpenSettingsView: () => void;
 };
 
 export function GitOpsComposerPanel({
+  dictationModelId,
+  dictationMaxDurationSeconds,
   projectGitState,
+  projectId,
+  sessionPath,
+  showDictationButton,
   diffBaseline,
   diffRenderMode,
   diffComments,
@@ -39,6 +50,7 @@ export function GitOpsComposerPanel({
   onAction,
   onLayoutChange,
   onBack,
+  onOpenSettingsView,
 }: GitOpsComposerPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
@@ -49,8 +61,14 @@ export function GitOpsComposerPanel({
       aria-label="Git ops composer panel"
     >
       <ComposerGitOpsSurface
+        dictationModelId={dictationModelId}
+        dictationMaxDurationSeconds={dictationMaxDurationSeconds}
         composerPanelRef={composerPanelRef}
+        onOpenSettingsView={onOpenSettingsView}
         projectGitState={projectGitState}
+        projectId={projectId}
+        sessionPath={sessionPath}
+        showDictationButton={showDictationButton}
         diffBaseline={diffBaseline}
         diffRenderMode={diffRenderMode}
         diffComments={diffComments}

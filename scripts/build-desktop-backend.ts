@@ -30,6 +30,8 @@ const builds = [
 const PI_EXTENSION_LOADER_PATTERN =
   /\.\.\.isBunBinary\s*\?\s*\{\s*virtualModules:\s*VIRTUAL_MODULES,\s*tryNative:\s*false\s*\}\s*:\s*\{\s*alias:\s*getAliases\(\)\s*\}/g;
 
+const EXTERNAL_DESKTOP_PACKAGES = ["sherpa-onnx-node"];
+
 function patchBundledPiExtensionLoader(source: string) {
   // Pi's extension loader switches to virtualModules only for Bun compiled binaries.
   // Our desktop backend is bundled into standalone .mjs files instead, which means the
@@ -53,6 +55,7 @@ for (const build of builds) {
     entrypoints: [build.entrypoint],
     target: "bun",
     format: "esm",
+    external: EXTERNAL_DESKTOP_PACKAGES,
     // We post-process the bundles that carry Pi's extension loader. Disable linked sourcemaps for
     // those outputs so we never ship stale mappings after rewriting the emitted JavaScript.
     sourcemap: build.piLoaderPatch === "required" ? "none" : "linked",

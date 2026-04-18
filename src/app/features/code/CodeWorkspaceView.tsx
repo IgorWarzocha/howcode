@@ -73,7 +73,6 @@ export function CodeWorkspaceView({
     handleShowTakeoverTerminal,
     handleToggleTerminal,
     listComposerAttachmentEntries,
-    pickComposerAttachments,
     projectGitState,
     shellState,
     state,
@@ -296,6 +295,9 @@ export function CodeWorkspaceView({
                     gitCommitMessageModel: null,
                     skillCreatorModel: null,
                     composerStreamingBehavior: "followUp",
+                    dictationModelId: null,
+                    dictationMaxDurationSeconds: 180,
+                    showDictationButton: true,
                     favoriteFolders: [],
                     projectImportState: null,
                     preferredProjectLocation: null,
@@ -340,7 +342,14 @@ export function CodeWorkspaceView({
               {state.activeView === "gitops" ? (
                 <div>
                   <GitOpsComposerPanel
+                    dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                    dictationMaxDurationSeconds={
+                      shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                    }
                     projectGitState={projectGitState}
+                    projectId={composerProjectId}
+                    sessionPath={terminalSessionPath}
+                    showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                     diffBaseline={diffBaseline}
                     diffRenderMode={diffRenderMode}
                     diffComments={diffComments}
@@ -360,6 +369,7 @@ export function CodeWorkspaceView({
                     onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                     onAction={handleAction}
                     onBack={handleCloseGitOpsView}
+                    onOpenSettingsView={() => controller.handleShowView("settings")}
                   />
                 </div>
               ) : (
@@ -393,7 +403,12 @@ export function CodeWorkspaceView({
                       projectGitState={projectGitState}
                       diffBaseline={diffBaseline}
                       sessionPath={terminalSessionPath}
+                      dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                      dictationMaxDurationSeconds={
+                        shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                      }
                       favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                      showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       diffRenderMode={diffRenderMode}
                       diffComments={diffComments}
                       diffCommentCount={diffCommentCount}
@@ -413,6 +428,7 @@ export function CodeWorkspaceView({
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
+                      onOpenSettingsView={() => controller.handleShowView("settings")}
                       onRestoredQueuedPromptApplied={() => {
                         setRestoredQueuedPrompt((current) =>
                           current?.projectId === composerProjectId &&
@@ -423,7 +439,6 @@ export function CodeWorkspaceView({
                       }}
                       onToggleTerminal={handleToggleTerminal}
                       terminalVisible={state.terminalVisible}
-                      onPickAttachments={pickComposerAttachments}
                       onListAttachmentEntries={listComposerAttachmentEntries}
                       onAction={handleAction}
                     />

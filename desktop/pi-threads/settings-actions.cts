@@ -3,9 +3,11 @@ import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts"
 import {
   getSettingsBooleanValue,
   getSettingsComposerStreamingBehavior,
+  getSettingsDictationModelId,
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
+  getSettingsNumberValue,
   getSettingsPreferredProjectLocation,
   getSettingsProjectDeletionMode,
   getSettingsProjectImportState,
@@ -13,6 +15,8 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
   setComposerStreamingBehavior,
+  setDictationMaxDurationSeconds,
+  setDictationModelId,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setInitializeGitOnProjectCreate,
@@ -20,6 +24,7 @@ import {
   setPreferredProjectLocation,
   setProjectDeletionMode,
   setProjectImportState,
+  setShowDictationButton,
   setSkillCreatorModelSelection,
   setUseAgentsSkillsPaths,
 } from "../app-settings.cts";
@@ -49,6 +54,24 @@ export function handleSettingsDesktopAction(
     if (value) {
       setComposerStreamingBehavior(value);
     }
+    return handledAction();
+  }
+
+  if (key === "dictationModelId") {
+    setDictationModelId(getSettingsDictationModelId(payload));
+    return handledAction();
+  }
+
+  if (key === "dictationMaxDurationSeconds") {
+    const value = getSettingsNumberValue(payload);
+    if (value !== null) {
+      setDictationMaxDurationSeconds(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "showDictationButton") {
+    setShowDictationButton(getSettingsBooleanValue(payload) ?? true);
     return handledAction();
   }
 

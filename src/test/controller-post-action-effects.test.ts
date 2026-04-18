@@ -18,6 +18,9 @@ function buildShellState(): ShellState {
       gitCommitMessageModel: null,
       skillCreatorModel: null,
       composerStreamingBehavior: "followUp",
+      dictationModelId: null,
+      dictationMaxDurationSeconds: 180,
+      showDictationButton: true,
       favoriteFolders: ["/existing"],
       projectImportState: null,
       preferredProjectLocation: null,
@@ -182,6 +185,28 @@ describe("controller post action effects", () => {
     ).toMatchObject({
       appSettings: {
         piTuiTakeover: true,
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "dictationModelId",
+        value: "base.en",
+      }),
+    ).toMatchObject({
+      appSettings: {
+        dictationModelId: "base.en",
+      },
+    });
+
+    expect(
+      getOptimisticallyUpdatedShellState(buildShellState(), {
+        key: "showDictationButton",
+        value: false,
+      }),
+    ).toMatchObject({
+      appSettings: {
+        showDictationButton: false,
       },
     });
   });

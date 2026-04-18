@@ -55,7 +55,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "sherpa-onnx-node": "^1.12.38"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

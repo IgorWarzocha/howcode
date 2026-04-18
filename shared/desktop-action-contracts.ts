@@ -5,6 +5,7 @@ import type {
   ComposerState,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
+  DictationModelId,
   ProjectDeletionMode,
   ProjectImportCandidate,
 } from "./desktop-data-contracts";
@@ -38,7 +39,7 @@ export type DesktopActionPayloadFields = {
   threadId?: string;
   threadIds?: string[];
   title?: string;
-  value?: string | boolean | null;
+  value?: string | number | boolean | null;
 };
 
 export type DesktopActionPayloadInput = {
@@ -51,6 +52,9 @@ export type DesktopSettingsUpdatePayload =
   | { key: "skillCreatorModel"; provider: string; modelId: string; reset?: false }
   | { key: "skillCreatorModel"; reset: true }
   | { key: "composerStreamingBehavior"; value: ComposerStreamingBehavior }
+  | { key: "dictationModelId"; value: DictationModelId | null }
+  | { key: "dictationMaxDurationSeconds"; value: number }
+  | { key: "showDictationButton"; value: boolean }
   | { key: "favoriteFolders"; folders: string[] }
   | { key: "projectImportState"; imported: boolean | null }
   | { key: "preferredProjectLocation"; value: string | null }

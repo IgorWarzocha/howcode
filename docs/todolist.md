@@ -23,7 +23,8 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 ### Small composer/control wins
 
-- [ ] decide whether `composer.dictate` should be implemented soon or hidden
+- [x] wire the composer mic to renderer audio capture + Bun-side sherpa-onnx transcription
+- [ ] validate sherpa-onnx dictation behavior in packaged builds with real downloaded models
 - [ ] tighten README + status docs whenever mock/partial behavior changes
 
 ## B. Interconnected implementation batches

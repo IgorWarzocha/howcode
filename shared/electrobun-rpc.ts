@@ -9,6 +9,12 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelRemoveResult,
+  DictationModelSummary,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -115,6 +121,20 @@ export type PiDesktopRpc = {
         response: ComposerFilePickerState;
       };
       getComposerState: { params: ComposerStateRequest; response: ComposerState };
+      getDictationState: { params: Record<string, never>; response: DictationState };
+      listDictationModels: { params: Record<string, never>; response: DictationModelSummary[] };
+      installDictationModel: {
+        params: { modelId: "tiny.en" | "base.en" | "small.en" };
+        response: DictationModelInstallResult;
+      };
+      removeDictationModel: {
+        params: { modelId: "tiny.en" | "base.en" | "small.en" };
+        response: DictationModelRemoveResult;
+      };
+      transcribeDictation: {
+        params: DictationTranscriptionRequest;
+        response: DictationTranscriptionResult;
+      };
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
       getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };

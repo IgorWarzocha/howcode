@@ -8,6 +8,12 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelRemoveResult,
+  DictationModelSummary,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -104,6 +110,17 @@ declare global {
         rootPath?: string | null;
       }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
+      getDictationState?: () => Promise<DictationState>;
+      listDictationModels?: () => Promise<DictationModelSummary[]>;
+      installDictationModel?: (
+        modelId: "tiny.en" | "base.en" | "small.en",
+      ) => Promise<DictationModelInstallResult>;
+      removeDictationModel?: (
+        modelId: "tiny.en" | "base.en" | "small.en",
+      ) => Promise<DictationModelRemoveResult>;
+      transcribeDictation?: (
+        request: DictationTranscriptionRequest,
+      ) => Promise<DictationTranscriptionResult>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;

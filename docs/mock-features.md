@@ -54,8 +54,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Streaming thread updates are pushed over Electrobun RPC messages and rendered live: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/app-shell/useAppShellController.ts`
 - Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
 - Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `desktop/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
+- Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Bun desktop runtime; `composer.dictate` action inventory is still unused/no-op while the dedicated RPC path settles: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
 - Still stubbed in this area:
-  - `composer.dictate`
   - `composer.host`
   - composer-adjacent git ops is still partial: commit actions exist, but the overall git UX is not finished and branch control is still display-only
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`

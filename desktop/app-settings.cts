@@ -1,14 +1,22 @@
 import type {
   AppSettings,
   ComposerStreamingBehavior,
+  DictationModelId,
   ModelSelection,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
+import {
+  DEFAULT_DICTATION_MAX_DURATION_SECONDS,
+  normalizeDictationMaxDurationSeconds,
+} from "../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const skillCreatorModelKey = "skillCreatorModel";
 const composerStreamingBehaviorKey = "composerStreamingBehavior";
+const dictationModelIdKey = "dictationModelId";
+const dictationMaxDurationSecondsKey = "dictationMaxDurationSeconds";
+const showDictationButtonKey = "showDictationButton";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
@@ -84,6 +92,19 @@ function parseStringPreference(valueJson: string | null | undefined): string | n
   }
 }
 
+function parseNumberPreference(valueJson: string | null | undefined): number | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseProjectDeletionModePreference(
   valueJson: string | null | undefined,
 ): ProjectDeletionMode | null {
@@ -109,6 +130,21 @@ function parseComposerStreamingBehaviorPreference(
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return parsed === "steer" || parsed === "followUp" || parsed === "stop" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseDictationModelIdPreference(
+  valueJson: string | null | undefined,
+): DictationModelId | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "tiny.en" || parsed === "base.en" || parsed === "small.en" ? parsed : null;
   } catch {
     return null;
   }
@@ -230,12 +266,46 @@ export function loadAppSettings(): AppSettings {
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
 
+  const dictationModelIdRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(dictationModelIdKey) as PreferenceRow | undefined;
+  const dictationMaxDurationSecondsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(dictationMaxDurationSecondsKey) as PreferenceRow | undefined;
+  const showDictationButtonRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(showDictationButtonKey) as PreferenceRow | undefined;
+
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
       "followUp",
+    dictationModelId: parseDictationModelIdPreference(dictationModelIdRow?.valueJson),
+    dictationMaxDurationSeconds:
+      normalizeDictationMaxDurationSeconds(
+        parseNumberPreference(dictationMaxDurationSecondsRow?.valueJson),
+      ) ?? DEFAULT_DICTATION_MAX_DURATION_SECONDS,
+    showDictationButton: parseBooleanPreference(showDictationButtonRow?.valueJson) ?? true,
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
@@ -268,6 +338,35 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
   writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior));
+}
+
+export function setDictationModelId(modelId: DictationModelId | null) {
+  if (!modelId) {
+    deleteAppPreference(dictationModelIdKey);
+    return;
+  }
+
+  writeAppPreference(dictationModelIdKey, JSON.stringify(modelId));
+}
+
+export function setDictationMaxDurationSeconds(value: number) {
+  const normalizedValue = normalizeDictationMaxDurationSeconds(value);
+
+  if (!normalizedValue || normalizedValue === DEFAULT_DICTATION_MAX_DURATION_SECONDS) {
+    deleteAppPreference(dictationMaxDurationSecondsKey);
+    return;
+  }
+
+  writeAppPreference(dictationMaxDurationSecondsKey, JSON.stringify(normalizedValue));
+}
+
+export function setShowDictationButton(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(showDictationButtonKey);
+    return;
+  }
+
+  writeAppPreference(showDictationButtonKey, JSON.stringify(false));
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {

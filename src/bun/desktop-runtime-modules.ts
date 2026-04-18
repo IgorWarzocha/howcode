@@ -8,6 +8,12 @@ import type {
   ComposerStateRequest,
   DesktopActionResultData,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelRemoveResult,
+  DictationModelSummary,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -54,6 +60,17 @@ export type PiThreadsModule = {
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadInboxThreadList: () => Promise<InboxThread[]>;
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
+  getDictationState: () => Promise<DictationState>;
+  listDictationModels: () => Promise<DictationModelSummary[]>;
+  installDictationModel: (request: {
+    modelId: "tiny.en" | "base.en" | "small.en";
+  }) => Promise<DictationModelInstallResult>;
+  removeDictationModel: (request: {
+    modelId: "tiny.en" | "base.en" | "small.en";
+  }) => Promise<DictationModelRemoveResult>;
+  transcribeDictation: (
+    request: DictationTranscriptionRequest,
+  ) => Promise<DictationTranscriptionResult>;
   searchPiPackages: (request?: {
     query?: string | null;
     cursor?: number | null;

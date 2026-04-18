@@ -21,7 +21,7 @@ export const featureStatusById = {
   "feature:composer.remote-connections": { status: "mock", label: "Mock" },
   "feature:composer.connections.add": { status: "mock", label: "Mock" },
   "feature:composer.connections.dismiss": { status: "mock", label: "Mock" },
-  "feature:composer.dictate": { status: "mock", label: "Mock" },
+  "feature:composer.dictate": { status: "partial", label: "Partial" },
   "feature:composer.git-ops": { status: "partial", label: "Partial" },
   "feature:composer.terminal-toggle": { status: "partial", label: "Partial" },
   "feature:composer.host": { status: "mock", label: "Mock" },

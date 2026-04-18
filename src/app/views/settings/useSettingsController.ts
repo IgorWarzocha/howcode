@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
@@ -9,6 +9,7 @@ import {
   getModelSettingValue,
   getProjectImportSummaryMessage,
 } from "./helpers";
+import { useSettingsDictationController } from "./useSettingsDictationController";
 
 export function useSettingsController({
   appSettings,
@@ -35,17 +36,19 @@ export function useSettingsController({
   const skillCreatorPanelRef = useRef<HTMLDivElement>(null);
   const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen);
 
+  const dictation = useSettingsDictationController({ appSettings, onAction });
+
   useEffect(() => {
     setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? "");
   }, [appSettings.preferredProjectLocation]);
 
-  const closeGitCommitMenu = useCallback(() => {
+  const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false);
-  }, []);
+  };
 
-  const closeSkillCreatorMenu = useCallback(() => {
+  const closeSkillCreatorMenu = () => {
     setSkillCreatorMenuOpen(false);
-  }, []);
+  };
 
   useDismissibleLayer({
     open: gitCommitMenuOpen,
@@ -116,6 +119,12 @@ export function useSettingsController({
 
   return {
     addFavoriteFolder,
+    deleteDictationModel: dictation.deleteDictationModel,
+    dictationDownloadLogLines: dictation.dictationDownloadLogLines,
+    dictationInstallError: dictation.dictationInstallError,
+    dictationModels: dictation.dictationModels,
+    dictationPendingAction: dictation.dictationPendingAction,
+    dictationState: dictation.dictationState,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
@@ -126,13 +135,26 @@ export function useSettingsController({
     importBusy,
     importErrorMessage,
     importStatusMessage,
+    installDictationModel: dictation.installDictationModel,
     preferredProjectLocationDraft,
+    refreshDictationState: dictation.refreshDictationState,
     savePreferredProjectLocation,
     setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) =>
       void onAction("settings.update", {
         key: "composerStreamingBehavior",
         value,
       }),
+    setDictationMaxDurationSeconds: (value: AppSettings["dictationMaxDurationSeconds"]) =>
+      void onAction("settings.update", {
+        key: "dictationMaxDurationSeconds",
+        value,
+      }),
+    setShowDictationButton: (value: boolean) =>
+      void onAction("settings.update", {
+        key: "showDictationButton",
+        value,
+      }),
+    selectDictationModel: dictation.selectDictationModel,
     selectGitCommitModel: (id: string) =>
       selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>

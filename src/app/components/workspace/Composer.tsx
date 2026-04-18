@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import type {
-  ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
@@ -27,7 +26,10 @@ export type ComposerProps = {
   projectGitState: ProjectGitState | null;
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
+  dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   favoriteFolders: string[];
+  showDictationButton: boolean;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
@@ -40,11 +42,11 @@ export type ComposerProps = {
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onOpenGitOpsView: () => void;
+  onOpenSettingsView: () => void;
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;
-  onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
     path?: string | null;

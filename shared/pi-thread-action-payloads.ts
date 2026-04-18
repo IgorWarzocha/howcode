@@ -5,6 +5,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionPayloadInput,
+  DictationModelId,
   ModelSelection,
   ProjectDeletionMode,
 } from "./desktop-contracts";
@@ -154,6 +155,9 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "skillCreatorModel" ||
     payload.key === "composerStreamingBehavior" ||
+    payload.key === "dictationModelId" ||
+    payload.key === "dictationMaxDurationSeconds" ||
+    payload.key === "showDictationButton" ||
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
@@ -163,6 +167,10 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
     : null;
+}
+
+export function getSettingsNumberValue(payload: DesktopActionPayloadInput) {
+  return typeof payload.value === "number" && Number.isFinite(payload.value) ? payload.value : null;
 }
 
 export function getSettingsReset(payload: DesktopActionPayloadInput) {
@@ -209,6 +217,14 @@ export function getSettingsComposerStreamingBehavior(
   payload: DesktopActionPayloadInput,
 ): ComposerStreamingBehavior | null {
   return payload.value === "steer" || payload.value === "followUp" || payload.value === "stop"
+    ? payload.value
+    : null;
+}
+
+export function getSettingsDictationModelId(
+  payload: DesktopActionPayloadInput,
+): DictationModelId | null {
+  return payload.value === "tiny.en" || payload.value === "base.en" || payload.value === "small.en"
     ? payload.value
     : null;
 }

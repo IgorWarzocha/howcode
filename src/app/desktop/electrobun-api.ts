@@ -10,6 +10,12 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationModelInstallResult,
+  DictationModelRemoveResult,
+  DictationModelSummary,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -173,6 +179,20 @@ export const piDesktopApi = {
     ) as Promise<ComposerFilePickerState>,
   getComposerState: async (request: ComposerStateRequest = {}) =>
     (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
+  getDictationState: async () =>
+    (await getRpc()).request.getDictationState({}) as Promise<DictationState>,
+  listDictationModels: async () =>
+    (await getRpc()).request.listDictationModels({}) as Promise<DictationModelSummary[]>,
+  installDictationModel: async (modelId: "tiny.en" | "base.en" | "small.en") =>
+    (await getRpc()).request.installDictationModel({
+      modelId,
+    }) as Promise<DictationModelInstallResult>,
+  removeDictationModel: async (modelId: "tiny.en" | "base.en" | "small.en") =>
+    (await getRpc()).request.removeDictationModel({
+      modelId,
+    }) as Promise<DictationModelRemoveResult>,
+  transcribeDictation: async (request: DictationTranscriptionRequest) =>
+    (await getRpc()).request.transcribeDictation(request) as Promise<DictationTranscriptionResult>,
   getProjectThreads: async (projectId: string) =>
     (await getRpc()).request.getProjectThreads({ projectId }) as Promise<Thread[]>,
   getInboxThreads: async () =>
