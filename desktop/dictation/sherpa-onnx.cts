@@ -1,8 +1,10 @@
-import { existsSync, readdirSync, type Dirent } from "node:fs";
+import { createWriteStream, existsSync, readdirSync, type Dirent } from "node:fs";
 import { mkdir, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import type {
   DictationModelId,
   DictationModelInstallResult,
@@ -423,9 +425,22 @@ async function downloadToFile(url: string, targetPath: string) {
     throw new Error(`Download failed (${response.status} ${response.statusText}) for ${url}`);
   }
 
+  if (!response.body) {
+    throw new Error(`Download failed: missing response body for ${url}`);
+  }
+
   const temporaryPath = `${targetPath}.partial`;
-  await Bun.write(temporaryPath, response);
-  await rename(temporaryPath, targetPath);
+
+  try {
+    await pipeline(
+      Readable.fromWeb(response.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
+      createWriteStream(temporaryPath),
+    );
+    await rename(temporaryPath, targetPath);
+  } catch (error) {
+    await rm(temporaryPath, { force: true }).catch(() => undefined);
+    throw error;
+  }
 }
 
 function createDictationDownloadStagePath(modelId: DictationModelId) {
