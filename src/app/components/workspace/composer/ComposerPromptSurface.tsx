@@ -148,6 +148,7 @@ export function ComposerPromptSurface({
 
       event.preventDefault();
       event.stopImmediatePropagation();
+      dictationButtonRef.current?.blur();
       void cancelDictation();
     };
 
@@ -292,6 +293,7 @@ export function ComposerPromptSurface({
                     ref={dictationButtonRef}
                     type="button"
                     onClick={async () => {
+                      dictationButtonRef.current?.blur();
                       const result = await toggleDictation();
                       setDictationPromptOpen(result === "setup-required");
                     }}
