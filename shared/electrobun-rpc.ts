@@ -10,6 +10,7 @@ import type {
   DesktopActionResult,
   DesktopEvent,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -125,6 +126,10 @@ export type PiDesktopRpc = {
       installDictationModel: {
         params: { modelId: "tiny.en" | "base.en" | "small.en" };
         response: DictationModelInstallResult;
+      };
+      removeDictationModel: {
+        params: { modelId: "tiny.en" | "base.en" | "small.en" };
+        response: DictationModelRemoveResult;
       };
       transcribeDictation: {
         params: DictationTranscriptionRequest;

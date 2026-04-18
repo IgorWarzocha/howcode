@@ -9,6 +9,7 @@ import type {
   DesktopActionResult,
   DesktopEvent,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -114,6 +115,9 @@ declare global {
       installDictationModel?: (
         modelId: "tiny.en" | "base.en" | "small.en",
       ) => Promise<DictationModelInstallResult>;
+      removeDictationModel?: (
+        modelId: "tiny.en" | "base.en" | "small.en",
+      ) => Promise<DictationModelRemoveResult>;
       transcribeDictation?: (
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>;

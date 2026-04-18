@@ -14,6 +14,7 @@ export {
 export {
   getDictationState,
   installDictationModel,
+  removeDictationModel,
   captureProjectDiffBaseline,
   listDictationModels,
   loadComposerState,

@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import type {
   DictationModelId,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -434,6 +435,10 @@ function createDictationDownloadStagePath(modelId: DictationModelId) {
   );
 }
 
+function getInstalledManagedDictationModelDirectory(modelId: DictationModelId) {
+  return getResolvedModelFilesForDefinition(modelId)?.modelDirectory ?? null;
+}
+
 function emitDictationDownloadLog(
   modelId: DictationModelId,
   message: string,
@@ -515,6 +520,53 @@ export async function installDictationModel(
       ok: false,
       modelId,
       error: error instanceof Error ? error.message : "Could not download dictation model.",
+    };
+  }
+}
+
+export async function removeDictationModel(
+  modelId: DictationModelId,
+): Promise<DictationModelRemoveResult> {
+  const definition = getDictationModelDefinition(modelId);
+  if (!definition) {
+    return {
+      ok: false,
+      modelId,
+      error: "Unknown dictation model.",
+    };
+  }
+
+  const modelDirectory = getInstalledManagedDictationModelDirectory(modelId);
+  if (!modelDirectory) {
+    return {
+      ok: true,
+      modelId,
+      error: null,
+    };
+  }
+
+  try {
+    emitDictationDownloadLog(modelId, `Removing ${definition.name}…`);
+    await rm(modelDirectory, { recursive: true, force: true });
+    recognizerCache = null;
+    emitDictationDownloadLog(modelId, `${definition.name} was removed.`, { done: true });
+
+    return {
+      ok: true,
+      modelId,
+      error: null,
+    };
+  } catch (error) {
+    emitDictationDownloadLog(
+      modelId,
+      error instanceof Error ? error.message : "Could not remove dictation model.",
+      { done: true, isError: true },
+    );
+
+    return {
+      ok: false,
+      modelId,
+      error: error instanceof Error ? error.message : "Could not remove dictation model.",
     };
   }
 }

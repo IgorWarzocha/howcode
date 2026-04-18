@@ -1,10 +1,17 @@
-import { Check, Download, Mic } from "lucide-react";
+import { Check, Download, Mic, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { ActivitySpinner } from "../../components/common/ActivitySpinner";
+import type { DictationModelId } from "../../desktop/types";
 import { SectionIntro } from "../../components/common/SectionIntro";
 import type { AppSettings, DictationModelSummary, DictationState } from "../../desktop/types";
 import { inlineCodeClass, settingsListRowClass, settingsSectionClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+
+function normalizeManagedDictationModelId(
+  modelId: string | null | undefined,
+): DictationModelId | null {
+  return modelId === "tiny.en" || modelId === "base.en" || modelId === "small.en" ? modelId : null;
+}
 
 function getDictationStatusCopy(dictationState: DictationState | null) {
   if (!dictationState) {
@@ -69,16 +76,25 @@ function ModelActionButton({
 }
 
 function DictationModelRow({
+  activeModelId,
   model,
-  pending,
+  pendingAction,
+  anyPending,
+  onDelete,
   onDownload,
   onUse,
 }: {
+  activeModelId: DictationModelId | null;
   model: DictationModelSummary;
-  pending: boolean;
+  pendingAction: "download" | "switch" | "delete" | null;
+  anyPending: boolean;
+  onDelete: () => void;
   onDownload: () => void;
   onUse: () => void;
 }) {
+  const isSwitchTarget = activeModelId !== null && activeModelId !== model.id;
+  const downloadLabel = isSwitchTarget ? "Download & use" : "Download";
+
   return (
     <div className={settingsListRowClass}>
       <div className="grid gap-0.5">
@@ -95,35 +111,68 @@ function DictationModelRow({
         </div>
         <div className="text-[12px] text-[color:var(--muted)]">{model.description}</div>
       </div>
-      {model.installed ? (
-        model.selected ? (
-          <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2.5 text-[11px] text-[color:var(--text)]">
-            <Check size={11} />
-            <span>In use</span>
-          </div>
+
+      <div className="flex items-center gap-2">
+        {model.installed ? (
+          <>
+            {model.selected ? (
+              <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2.5 text-[11px] text-[color:var(--text)]">
+                <Check size={11} />
+                <span>In use</span>
+              </div>
+            ) : (
+              <ModelActionButton
+                disabled={anyPending}
+                label={pendingAction === "switch" ? "Switching…" : "Use"}
+                icon={
+                  pendingAction === "switch" ? (
+                    <ActivitySpinner className="h-3 w-3 text-current" />
+                  ) : (
+                    <Check size={11} />
+                  )
+                }
+                onClick={onUse}
+              />
+            )}
+            <ModelActionButton
+              disabled={anyPending}
+              label={pendingAction === "delete" ? "Deleting…" : "Delete"}
+              icon={
+                pendingAction === "delete" ? (
+                  <ActivitySpinner className="h-3 w-3 text-current" />
+                ) : (
+                  <Trash2 size={11} />
+                )
+              }
+              onClick={onDelete}
+            />
+          </>
         ) : (
-          <ModelActionButton label="Use" icon={<Check size={11} />} onClick={onUse} />
-        )
-      ) : (
-        <ModelActionButton
-          primary
-          disabled={pending}
-          label={pending ? "Downloading…" : "Download"}
-          icon={
-            pending ? <ActivitySpinner className="h-3 w-3 text-current" /> : <Download size={11} />
-          }
-          onClick={onDownload}
-        />
-      )}
+          <ModelActionButton
+            primary
+            disabled={anyPending}
+            label={pendingAction === "download" ? "Downloading…" : downloadLabel}
+            icon={
+              pendingAction === "download" ? (
+                <ActivitySpinner className="h-3 w-3 text-current" />
+              ) : (
+                <Download size={11} />
+              )
+            }
+            onClick={onDownload}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
 export function SettingsDictationSection({
   appSettings,
+  deleteDictationModel,
   dictationDownloadLogLines,
   dictationInstallError,
-  dictationInstallPendingId,
+  dictationPendingAction,
   dictationModels,
   dictationState,
   installDictationModel,
@@ -131,16 +180,24 @@ export function SettingsDictationSection({
   setShowDictationButton,
 }: {
   appSettings: AppSettings;
+  deleteDictationModel: (modelId: DictationModelId) => void;
   dictationDownloadLogLines: string[];
   dictationInstallError: string | null;
-  dictationInstallPendingId: string | null;
+  dictationPendingAction: {
+    modelId: DictationModelId;
+    kind: "download" | "switch" | "delete";
+  } | null;
   dictationModels: DictationModelSummary[];
   dictationState: DictationState | null;
-  installDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") => void;
-  selectDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") => void;
+  installDictationModel: (modelId: DictationModelId) => void;
+  selectDictationModel: (modelId: DictationModelId) => void;
   setShowDictationButton: (value: boolean) => void;
 }) {
   const statusCopy = getDictationStatusCopy(dictationState);
+  const activeModelId =
+    dictationModels.find((model) => model.selected)?.id ??
+    normalizeManagedDictationModelId(dictationState?.modelId) ??
+    null;
 
   return (
     <section className={settingsSectionClass}>
@@ -171,8 +228,13 @@ export function SettingsDictationSection({
         {dictationModels.map((model) => (
           <DictationModelRow
             key={model.id}
+            activeModelId={activeModelId}
+            anyPending={dictationPendingAction !== null}
             model={model}
-            pending={dictationInstallPendingId === model.id}
+            pendingAction={
+              dictationPendingAction?.modelId === model.id ? dictationPendingAction.kind : null
+            }
+            onDelete={() => deleteDictationModel(model.id)}
             onDownload={() => installDictationModel(model.id)}
             onUse={() => selectDictationModel(model.id)}
           />

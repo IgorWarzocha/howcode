@@ -11,6 +11,7 @@ import type {
   DesktopActionResult,
   DesktopEvent,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -186,6 +187,10 @@ export const piDesktopApi = {
     (await getRpc()).request.installDictationModel({
       modelId,
     }) as Promise<DictationModelInstallResult>,
+  removeDictationModel: async (modelId: "tiny.en" | "base.en" | "small.en") =>
+    (await getRpc()).request.removeDictationModel({
+      modelId,
+    }) as Promise<DictationModelRemoveResult>,
   transcribeDictation: async (request: DictationTranscriptionRequest) =>
     (await getRpc()).request.transcribeDictation(request) as Promise<DictationTranscriptionResult>,
   getProjectThreads: async (projectId: string) =>

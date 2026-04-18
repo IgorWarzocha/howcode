@@ -167,6 +167,12 @@ export type DictationModelInstallResult = {
   error: string | null;
 };
 
+export type DictationModelRemoveResult = {
+  ok: boolean;
+  modelId: DictationModelId;
+  error: string | null;
+};
+
 export type DictationTranscriptionRequest = {
   audioBase64: string;
   sampleRate: number;

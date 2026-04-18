@@ -3,6 +3,7 @@ import type {
   AppSettings,
   DesktopActionInvoker,
   DesktopEvent,
+  DictationModelId,
   DictationModelSummary,
   DictationState,
 } from "../../desktop/types";
@@ -15,6 +16,12 @@ import {
   getModelSettingValue,
   getProjectImportSummaryMessage,
 } from "./helpers";
+
+function normalizeManagedDictationModelId(
+  modelId: string | null | undefined,
+): DictationModelId | null {
+  return modelId === "tiny.en" || modelId === "base.en" || modelId === "small.en" ? modelId : null;
+}
 
 export function useSettingsController({
   appSettings,
@@ -33,7 +40,10 @@ export function useSettingsController({
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
   const [dictationState, setDictationState] = useState<DictationState | null>(null);
   const [dictationModels, setDictationModels] = useState<DictationModelSummary[]>([]);
-  const [dictationInstallPendingId, setDictationInstallPendingId] = useState<string | null>(null);
+  const [dictationPendingAction, setDictationPendingAction] = useState<{
+    modelId: DictationModelId;
+    kind: "download" | "switch" | "delete";
+  } | null>(null);
   const [dictationInstallError, setDictationInstallError] = useState<string | null>(null);
   const [dictationDownloadLogLines, setDictationDownloadLogLines] = useState<string[]>([]);
   const [importBusy, setImportBusy] = useState(false);
@@ -97,6 +107,15 @@ export function useSettingsController({
   const appendDictationDownloadLogLine = useCallback((line: string) => {
     setDictationDownloadLogLines((current) => [...current, line].slice(-12));
   }, []);
+
+  const getActiveDictationModelId = useCallback(() => {
+    return (
+      dictationModels.find((model) => model.selected)?.id ??
+      normalizeManagedDictationModelId(dictationState?.modelId) ??
+      normalizeManagedDictationModelId(appSettings.dictationModelId) ??
+      null
+    );
+  }, [appSettings.dictationModelId, dictationModels, dictationState?.modelId]);
 
   const closeGitCommitMenu = useCallback(() => {
     setGitCommitMenuOpen(false);
@@ -173,13 +192,41 @@ export function useSettingsController({
     }
   };
 
-  const installDictationModel = async (modelId: "tiny.en" | "base.en" | "small.en") => {
+  const removePreviousModelIfNeeded = useCallback(
+    async (previousModelId: DictationModelId | null, nextModelId: DictationModelId) => {
+      if (
+        !previousModelId ||
+        previousModelId === nextModelId ||
+        !window.piDesktop?.removeDictationModel
+      ) {
+        return;
+      }
+
+      appendDictationDownloadLogLine(`ui ${previousModelId}: removing previous model`);
+
+      const removeResult = await window.piDesktop.removeDictationModel(previousModelId);
+      appendDictationDownloadLogLine(
+        `ui ${previousModelId}: remove resolved (ok=${removeResult.ok ? "yes" : "no"})`,
+      );
+
+      if (!removeResult.ok) {
+        setDictationInstallError(
+          removeResult.error ?? "Could not remove previous dictation model.",
+        );
+      }
+    },
+    [appendDictationDownloadLogLine],
+  );
+
+  const installDictationModel = async (modelId: DictationModelId) => {
     if (!window.piDesktop?.installDictationModel) {
       setDictationInstallError("Dictation model installs are unavailable in this runtime.");
       return;
     }
 
-    setDictationInstallPendingId(modelId);
+    const previousModelId = getActiveDictationModelId();
+
+    setDictationPendingAction({ modelId, kind: "download" });
     setDictationInstallError(null);
     setDictationDownloadLogLines([]);
     appendDictationDownloadLogLine(`ui ${modelId}: install requested`);
@@ -196,10 +243,21 @@ export function useSettingsController({
         return;
       }
 
+      setDictationPendingAction({ modelId, kind: "switch" });
       await onAction("settings.update", {
         key: "dictationModelId",
         value: modelId,
       });
+
+      setDictationModels((current) =>
+        current.map((model) => ({
+          ...model,
+          installed: model.id === modelId || model.installed,
+          selected: model.id === modelId,
+        })),
+      );
+
+      await removePreviousModelIfNeeded(previousModelId, modelId);
       await refreshDictationState();
     } catch (error) {
       const message =
@@ -207,38 +265,86 @@ export function useSettingsController({
       appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`);
       setDictationInstallError(message);
     } finally {
-      setDictationInstallPendingId(null);
+      setDictationPendingAction(null);
     }
   };
 
-  const selectDictationModel = (modelId: "tiny.en" | "base.en" | "small.en") => {
+  const selectDictationModel = async (modelId: DictationModelId) => {
+    const previousModelId = getActiveDictationModelId();
+
+    setDictationPendingAction({ modelId, kind: "switch" });
     setDictationInstallError(null);
-    void onAction("settings.update", {
-      key: "dictationModelId",
-      value: modelId,
-    });
-    setDictationState((current) =>
-      current?.available
-        ? {
-            ...current,
-            modelId,
-          }
-        : current,
-    );
     setDictationModels((current) =>
       current.map((model) => ({
         ...model,
         selected: model.id === modelId,
       })),
     );
+
+    try {
+      await onAction("settings.update", {
+        key: "dictationModelId",
+        value: modelId,
+      });
+
+      await removePreviousModelIfNeeded(previousModelId, modelId);
+      await refreshDictationState();
+    } catch (error) {
+      setDictationInstallError(
+        error instanceof Error ? error.message : "Could not switch dictation model.",
+      );
+    } finally {
+      setDictationPendingAction(null);
+    }
+  };
+
+  const deleteDictationModel = async (modelId: DictationModelId) => {
+    if (!window.piDesktop?.removeDictationModel) {
+      setDictationInstallError("Dictation model removal is unavailable in this runtime.");
+      return;
+    }
+
+    const activeModelId = getActiveDictationModelId();
+
+    setDictationPendingAction({ modelId, kind: "delete" });
+    setDictationInstallError(null);
+    appendDictationDownloadLogLine(`ui ${modelId}: delete requested`);
+
+    try {
+      const result = await window.piDesktop.removeDictationModel(modelId);
+      appendDictationDownloadLogLine(
+        `ui ${modelId}: delete resolved (ok=${result.ok ? "yes" : "no"})`,
+      );
+
+      if (!result.ok) {
+        setDictationInstallError(result.error ?? "Could not remove dictation model.");
+        return;
+      }
+
+      if (activeModelId === modelId) {
+        await onAction("settings.update", {
+          key: "dictationModelId",
+          value: null,
+        });
+      }
+
+      await refreshDictationState();
+    } catch (error) {
+      setDictationInstallError(
+        error instanceof Error ? error.message : "Could not remove dictation model.",
+      );
+    } finally {
+      setDictationPendingAction(null);
+    }
   };
 
   return {
     addFavoriteFolder,
+    deleteDictationModel,
     dictationDownloadLogLines,
     dictationInstallError,
-    dictationInstallPendingId,
     dictationModels,
+    dictationPendingAction,
     dictationState,
     favoriteFolderDraft,
     gitCommitButtonRef,

@@ -4,6 +4,7 @@ import type {
   ComposerState,
   ComposerStateRequest,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -17,6 +18,7 @@ import {
   getDictationState as getSherpaDictationState,
   installDictationModel as installSherpaDictationModel,
   listDictationModels as listSherpaDictationModels,
+  removeDictationModel as removeSherpaDictationModel,
   transcribeDictation as transcribeSherpaDictation,
 } from "../dictation/sherpa-onnx.cts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
@@ -182,6 +184,12 @@ export async function installDictationModel(request: {
   modelId: "tiny.en" | "base.en" | "small.en";
 }): Promise<DictationModelInstallResult> {
   return installSherpaDictationModel(request.modelId);
+}
+
+export async function removeDictationModel(request: {
+  modelId: "tiny.en" | "base.en" | "small.en";
+}): Promise<DictationModelRemoveResult> {
+  return removeSherpaDictationModel(request.modelId);
 }
 
 export async function transcribeDictation(

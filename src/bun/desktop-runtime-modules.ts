@@ -9,6 +9,7 @@ import type {
   DesktopActionResultData,
   DesktopEvent,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -64,6 +65,9 @@ export type PiThreadsModule = {
   installDictationModel: (request: {
     modelId: "tiny.en" | "base.en" | "small.en";
   }) => Promise<DictationModelInstallResult>;
+  removeDictationModel: (request: {
+    modelId: "tiny.en" | "base.en" | "small.en";
+  }) => Promise<DictationModelRemoveResult>;
   transcribeDictation: (
     request: DictationTranscriptionRequest,
   ) => Promise<DictationTranscriptionResult>;

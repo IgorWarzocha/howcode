@@ -9,6 +9,7 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   DictationModelInstallResult,
+  DictationModelRemoveResult,
   DictationModelSummary,
   DictationState,
   DictationTranscriptionRequest,
@@ -134,6 +135,12 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
             modelId: "tiny.en" | "base.en" | "small.en";
           },
         ) as Promise<DictationModelInstallResult>,
+      removeDictationModel: async (request) =>
+        piThreads.removeDictationModel(
+          request as {
+            modelId: "tiny.en" | "base.en" | "small.en";
+          },
+        ) as Promise<DictationModelRemoveResult>,
       transcribeDictation: async (request) =>
         piThreads.transcribeDictation(
           request as DictationTranscriptionRequest,
