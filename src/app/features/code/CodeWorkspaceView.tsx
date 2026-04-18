@@ -341,7 +341,11 @@ export function CodeWorkspaceView({
               {state.activeView === "gitops" ? (
                 <div>
                   <GitOpsComposerPanel
+                    dictationModelId={shellState?.appSettings.dictationModelId ?? null}
                     projectGitState={projectGitState}
+                    projectId={composerProjectId}
+                    sessionPath={terminalSessionPath}
+                    showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                     diffBaseline={diffBaseline}
                     diffRenderMode={diffRenderMode}
                     diffComments={diffComments}
@@ -361,6 +365,7 @@ export function CodeWorkspaceView({
                     onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                     onAction={handleAction}
                     onBack={handleCloseGitOpsView}
+                    onOpenSettingsView={() => controller.handleShowView("settings")}
                   />
                 </div>
               ) : (

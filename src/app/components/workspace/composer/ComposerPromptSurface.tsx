@@ -80,6 +80,7 @@ export function ComposerPromptSurface({
     togglePendingPickerAttachment,
     thinkingLevelLabels,
   } = useComposerController({
+    activeView,
     model,
     projectId,
     sessionPath,

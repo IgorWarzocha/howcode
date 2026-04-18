@@ -110,6 +110,7 @@ export function useSettingsDictationController({
 
       if (!result.ok) {
         setDictationInstallError(result.error ?? "Could not download dictation model.");
+        await refreshDictationState();
         return;
       }
 
@@ -133,6 +134,7 @@ export function useSettingsDictationController({
         error instanceof Error ? error.message : "Could not download dictation model.";
       appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`);
       setDictationInstallError(message);
+      await refreshDictationState();
     } finally {
       setDictationPendingAction(null);
     }
@@ -159,6 +161,7 @@ export function useSettingsDictationController({
       setDictationInstallError(
         error instanceof Error ? error.message : "Could not switch dictation model.",
       );
+      await refreshDictationState();
     } finally {
       setDictationPendingAction(null);
     }
@@ -184,6 +187,7 @@ export function useSettingsDictationController({
 
       if (!result.ok) {
         setDictationInstallError(result.error ?? "Could not remove dictation model.");
+        await refreshDictationState();
         return;
       }
 
@@ -199,6 +203,7 @@ export function useSettingsDictationController({
       setDictationInstallError(
         error instanceof Error ? error.message : "Could not remove dictation model.",
       );
+      await refreshDictationState();
     } finally {
       setDictationPendingAction(null);
     }

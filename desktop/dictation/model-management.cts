@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { createWriteStream, existsSync } from "node:fs";
-import { mkdir, rename, rm } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -44,6 +45,62 @@ function buildHuggingFaceResolveUrl(repo: string, fileName: string) {
   return `https://huggingface.co/${repo}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
 }
 
+type DownloadMetadata = {
+  contentLength: number | null;
+  etag: string | null;
+};
+
+function normalizeEtag(etag: string | null) {
+  if (!etag) {
+    return null;
+  }
+
+  return etag.replace(/^W\//, "").replace(/^"|"$/g, "").trim().toLowerCase() || null;
+}
+
+function getEtagHashAlgorithm(etag: string | null) {
+  if (!etag) {
+    return null;
+  }
+
+  if (/^[a-f0-9]{64}$/i.test(etag)) {
+    return "sha256" as const;
+  }
+
+  if (/^[a-f0-9]{40}$/i.test(etag)) {
+    return "sha1" as const;
+  }
+
+  return null;
+}
+
+async function validateDownloadedFile(targetPath: string, metadata: DownloadMetadata) {
+  const fileStats = await stat(targetPath);
+  if (!fileStats.isFile() || fileStats.size <= 0) {
+    throw new Error(`Download failed: ${path.basename(targetPath)} is empty.`);
+  }
+
+  if (metadata.contentLength !== null && fileStats.size !== metadata.contentLength) {
+    throw new Error(
+      `Download failed: ${path.basename(targetPath)} size mismatch (${fileStats.size} != ${metadata.contentLength}).`,
+    );
+  }
+
+  const normalizedEtag = normalizeEtag(metadata.etag);
+  const hashAlgorithm = getEtagHashAlgorithm(normalizedEtag);
+  if (!normalizedEtag || !hashAlgorithm) {
+    return;
+  }
+
+  const fileHash = createHash(hashAlgorithm)
+    .update(await readFile(targetPath))
+    .digest("hex");
+
+  if (fileHash !== normalizedEtag) {
+    throw new Error(`Download failed: ${path.basename(targetPath)} checksum mismatch.`);
+  }
+}
+
 async function downloadToFile(url: string, targetPath: string) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -55,12 +112,17 @@ async function downloadToFile(url: string, targetPath: string) {
   }
 
   const temporaryPath = `${targetPath}.partial`;
+  const metadata: DownloadMetadata = {
+    contentLength: Number.parseInt(response.headers.get("content-length") ?? "", 10) || null,
+    etag: response.headers.get("etag"),
+  };
 
   try {
     await pipeline(
       Readable.fromWeb(response.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
       createWriteStream(temporaryPath),
     );
+    await validateDownloadedFile(temporaryPath, metadata);
     await rename(temporaryPath, targetPath);
   } catch (error) {
     await rm(temporaryPath, { force: true }).catch(() => undefined);
@@ -132,7 +194,7 @@ export async function installManagedDictationModel(
         buildHuggingFaceResolveUrl(definition.huggingFaceRepo, fileName),
         path.join(stagingDirectory, fileName),
       );
-      emitDictationDownloadLog(modelId, `Saved ${fileName}.`);
+      emitDictationDownloadLog(modelId, `Validated ${fileName}.`);
     }
 
     emitDictationDownloadLog(modelId, "Finalizing model install…");

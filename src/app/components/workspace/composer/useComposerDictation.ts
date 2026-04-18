@@ -16,6 +16,7 @@ import {
 } from "./local-dictation";
 
 type UseComposerDictationProps = {
+  activeView: string;
   dictationModelId: string | null;
   draftThreadId: string | null;
   projectId: string;
@@ -25,6 +26,7 @@ type UseComposerDictationProps = {
 };
 
 export function useComposerDictation({
+  activeView,
   dictationModelId,
   draftThreadId,
   projectId,
@@ -39,12 +41,16 @@ export function useComposerDictation({
   const dictationSessionTokenRef = useRef(0);
   const dictationFlushPromiseRef = useRef<Promise<void> | null>(null);
   const dictationScopeKey = useMemo(
-    () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
-    [draftThreadId, projectId, sessionPath],
+    () => `${activeView}::${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
+    [activeView, draftThreadId, projectId, sessionPath],
   );
   const activeDictationScopeKeyRef = useRef(dictationScopeKey);
 
   activeDictationScopeKeyRef.current = dictationScopeKey;
+
+  const clearPendingDictationFlush = useCallback(() => {
+    dictationFlushPromiseRef.current = null;
+  }, []);
 
   const clearDictationSession = useCallback(() => {
     dictationCaptureRef.current = null;
@@ -54,6 +60,7 @@ export function useComposerDictation({
 
   const abortDictationSession = useCallback(() => {
     dictationSessionTokenRef.current += 1;
+    clearPendingDictationFlush();
 
     const capture = dictationCaptureRef.current;
     if (!capture) {
@@ -63,7 +70,7 @@ export function useComposerDictation({
 
     void capture.abort();
     clearDictationSession();
-  }, [clearDictationSession]);
+  }, [clearDictationSession, clearPendingDictationFlush]);
 
   const stopDictationAndFlush = useCallback(async () => {
     if (dictationFlushPromiseRef.current) {
@@ -250,11 +257,13 @@ export function useComposerDictation({
     }
 
     if (dictationFlushPromiseRef.current) {
+      const pendingFlush = dictationFlushPromiseRef.current;
       dictationSessionTokenRef.current += 1;
+      clearPendingDictationFlush();
       clearDictationSession();
-      await dictationFlushPromiseRef.current.catch(() => undefined);
+      await pendingFlush.catch(() => undefined);
     }
-  }, [abortDictationSession, clearDictationSession]);
+  }, [abortDictationSession, clearDictationSession, clearPendingDictationFlush]);
 
   return {
     cancelDictation,

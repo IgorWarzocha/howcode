@@ -8,6 +8,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from "../../../desktop/types";
+import type { View } from "../../../types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
@@ -33,6 +34,7 @@ function getModelLabel(model: ComposerModel | null) {
 }
 
 type UseComposerControllerProps = {
+  activeView: View;
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
@@ -50,6 +52,7 @@ type UseComposerControllerProps = {
 };
 
 export function useComposerController({
+  activeView,
   model,
   projectId,
   sessionPath,
@@ -150,6 +153,7 @@ export function useComposerController({
     stopDictationAndFlush,
     toggleDictation,
   } = useComposerDictation({
+    activeView,
     dictationModelId,
     draftThreadId,
     projectId,

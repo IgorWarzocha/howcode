@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import {
@@ -33,6 +33,9 @@ export function useComposerGitOpsState({
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
   const previousProjectIdRef = useRef<string | null>(projectGitState?.projectId ?? null);
+  const commitMessageRef = useRef(commitMessage);
+
+  commitMessageRef.current = commitMessage;
 
   const isGitRepo = projectGitState?.isGitRepo ?? false;
   const hasOrigin = projectGitState?.hasOrigin ?? false;
@@ -97,6 +100,15 @@ export function useComposerGitOpsState({
       }
     },
     [actionErrorMessage, persistedCleanMessage],
+  );
+
+  const setCommitMessageValue = useCallback(
+    (value: SetStateAction<string>) => {
+      const nextMessage = typeof value === "function" ? value(commitMessageRef.current) : value;
+
+      handleCommitMessageChange(nextMessage);
+    },
+    [handleCommitMessageChange],
   );
 
   const handleSaveOrigin = useCallback(async () => {
@@ -220,7 +232,9 @@ export function useComposerGitOpsState({
     repoUrl,
     runningPrimaryAction,
     setCommitFocused,
+    setActionErrorMessage,
     setIncludeUnstaged,
+    setCommitMessageValue,
     setPushEnabled,
     setRepoUrl,
     togglePreviewEnabled,

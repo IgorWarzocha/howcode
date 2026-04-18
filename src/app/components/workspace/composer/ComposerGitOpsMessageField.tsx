@@ -1,3 +1,4 @@
+import type { KeyboardEventHandler, ReactNode } from "react";
 import { GitCompareArrows } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import { ComposerTextField } from "./ComposerTextField";
@@ -10,6 +11,9 @@ type ComposerGitOpsMessageFieldProps = {
   onFocus: () => void;
   onBlur: () => void;
   onLayoutChange: () => void;
+  onKeyDown?: KeyboardEventHandler<HTMLTextAreaElement>;
+  onInput?: () => void;
+  trailingAccessory?: ReactNode;
   value: string;
   commitFocused: boolean;
 };
@@ -21,7 +25,10 @@ export function ComposerGitOpsMessageField({
   onBlur,
   onChange,
   onFocus,
+  onInput,
+  onKeyDown,
   onLayoutChange,
+  trailingAccessory,
   value,
   commitFocused,
 }: ComposerGitOpsMessageFieldProps) {
@@ -29,6 +36,8 @@ export function ComposerGitOpsMessageField({
     <ComposerTextField
       value={value}
       onChange={onChange}
+      onInput={onInput}
+      onKeyDown={onKeyDown}
       onFocus={onFocus}
       onBlur={onBlur}
       ariaLabel={hasDiffComments ? "Comment instructions" : "Commit message"}
@@ -62,7 +71,10 @@ export function ComposerGitOpsMessageField({
     return (
       <div className="flex items-end justify-between gap-2 px-4 pb-3">
         <div className="min-w-0 flex-1">{field}</div>
-        {errorChrome}
+        <div className="inline-flex items-center gap-2">
+          {trailingAccessory}
+          {errorChrome}
+        </div>
       </div>
     );
   }
@@ -71,7 +83,10 @@ export function ComposerGitOpsMessageField({
     <div className="grid min-h-[148px] content-end px-4 pt-[52px] pb-3">
       <div className="flex min-h-[82px] items-end justify-between gap-2">
         <div className="min-w-0 flex-1">{field}</div>
-        {errorChrome}
+        <div className="inline-flex items-center gap-2">
+          {trailingAccessory}
+          {errorChrome}
+        </div>
       </div>
     </div>
   );
