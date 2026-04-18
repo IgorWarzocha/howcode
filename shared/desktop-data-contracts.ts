@@ -158,6 +158,7 @@ export type DictationModelSummary = {
   downloadSizeBytes: number;
   downloadSizeLabel: string;
   installed: boolean;
+  managed: boolean;
   selected: boolean;
 };
 

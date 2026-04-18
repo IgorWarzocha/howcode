@@ -192,39 +192,11 @@ export function useSettingsController({
     }
   };
 
-  const removePreviousModelIfNeeded = useCallback(
-    async (previousModelId: DictationModelId | null, nextModelId: DictationModelId) => {
-      if (
-        !previousModelId ||
-        previousModelId === nextModelId ||
-        !window.piDesktop?.removeDictationModel
-      ) {
-        return;
-      }
-
-      appendDictationDownloadLogLine(`ui ${previousModelId}: removing previous model`);
-
-      const removeResult = await window.piDesktop.removeDictationModel(previousModelId);
-      appendDictationDownloadLogLine(
-        `ui ${previousModelId}: remove resolved (ok=${removeResult.ok ? "yes" : "no"})`,
-      );
-
-      if (!removeResult.ok) {
-        setDictationInstallError(
-          removeResult.error ?? "Could not remove previous dictation model.",
-        );
-      }
-    },
-    [appendDictationDownloadLogLine],
-  );
-
   const installDictationModel = async (modelId: DictationModelId) => {
     if (!window.piDesktop?.installDictationModel) {
       setDictationInstallError("Dictation model installs are unavailable in this runtime.");
       return;
     }
-
-    const previousModelId = getActiveDictationModelId();
 
     setDictationPendingAction({ modelId, kind: "download" });
     setDictationInstallError(null);
@@ -257,7 +229,6 @@ export function useSettingsController({
         })),
       );
 
-      await removePreviousModelIfNeeded(previousModelId, modelId);
       await refreshDictationState();
     } catch (error) {
       const message =
@@ -270,8 +241,6 @@ export function useSettingsController({
   };
 
   const selectDictationModel = async (modelId: DictationModelId) => {
-    const previousModelId = getActiveDictationModelId();
-
     setDictationPendingAction({ modelId, kind: "switch" });
     setDictationInstallError(null);
     setDictationModels((current) =>
@@ -287,7 +256,6 @@ export function useSettingsController({
         value: modelId,
       });
 
-      await removePreviousModelIfNeeded(previousModelId, modelId);
       await refreshDictationState();
     } catch (error) {
       setDictationInstallError(

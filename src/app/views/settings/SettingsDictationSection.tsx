@@ -134,18 +134,21 @@ function DictationModelRow({
                 onClick={onUse}
               />
             )}
-            <ModelActionButton
-              disabled={anyPending}
-              label={pendingAction === "delete" ? "Deleting…" : "Delete"}
-              icon={
-                pendingAction === "delete" ? (
-                  <ActivitySpinner className="h-3 w-3 text-current" />
-                ) : (
-                  <Trash2 size={11} />
-                )
-              }
-              onClick={onDelete}
-            />
+
+            {model.managed ? (
+              <ModelActionButton
+                disabled={anyPending}
+                label={pendingAction === "delete" ? "Deleting…" : "Delete"}
+                icon={
+                  pendingAction === "delete" ? (
+                    <ActivitySpinner className="h-3 w-3 text-current" />
+                  ) : (
+                    <Trash2 size={11} />
+                  )
+                }
+                onClick={onDelete}
+              />
+            ) : null}
           </>
         ) : (
           <ModelActionButton

@@ -399,9 +399,8 @@ export async function listDictationModels(): Promise<DictationModelSummary[]> {
   const resolvedModelId = getResolvedDictationModelFiles()?.modelId ?? null;
 
   return dictationModelDefinitions.map((definition) => {
-    const installed =
-      getResolvedModelFilesForDefinition(definition.id) !== null ||
-      findConfiguredDictationModelFiles(definition.id) !== null;
+    const managed = getResolvedModelFilesForDefinition(definition.id) !== null;
+    const installed = managed || findConfiguredDictationModelFiles(definition.id) !== null;
 
     return {
       id: definition.id,
@@ -410,6 +409,7 @@ export async function listDictationModels(): Promise<DictationModelSummary[]> {
       downloadSizeBytes: definition.downloadSizeBytes,
       downloadSizeLabel: getDictationModelDownloadSizeLabel(definition.downloadSizeBytes),
       installed,
+      managed,
       selected: installed && resolvedModelId === definition.id,
     };
   });
@@ -452,6 +452,13 @@ function createDictationDownloadStagePath(modelId: DictationModelId) {
 
 function getInstalledManagedDictationModelDirectory(modelId: DictationModelId) {
   return getResolvedModelFilesForDefinition(modelId)?.modelDirectory ?? null;
+}
+
+function createDictationBackupPath(modelId: DictationModelId) {
+  return path.join(
+    getDictationModelsRootDirectory(),
+    `.${modelId}.backup-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  );
 }
 
 function emitDictationDownloadLog(
@@ -503,15 +510,26 @@ export async function installDictationModel(
     }
 
     emitDictationDownloadLog(modelId, "Finalizing model install…");
-    await mkdir(modelDirectory, { recursive: true });
+    const existingManagedDirectory = existsSync(modelDirectory) ? modelDirectory : null;
+    const backupDirectory = existingManagedDirectory ? createDictationBackupPath(modelId) : null;
 
-    for (const fileName of downloadedFiles) {
-      const targetPath = path.join(modelDirectory, fileName);
-      await rm(targetPath, { force: true });
-      await rename(path.join(stagingDirectory, fileName), targetPath);
+    if (existingManagedDirectory && backupDirectory) {
+      await rename(existingManagedDirectory, backupDirectory);
     }
 
-    await rm(stagingDirectory, { recursive: true, force: true });
+    try {
+      await rename(stagingDirectory, modelDirectory);
+
+      if (backupDirectory) {
+        await rm(backupDirectory, { recursive: true, force: true });
+      }
+    } catch (error) {
+      if (backupDirectory) {
+        await rename(backupDirectory, modelDirectory).catch(() => undefined);
+      }
+
+      throw error;
+    }
 
     recognizerCache = null;
 
