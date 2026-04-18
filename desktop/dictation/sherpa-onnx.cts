@@ -1,4 +1,4 @@
-import { createWriteStream, existsSync, readdirSync, type Dirent } from "node:fs";
+import { createWriteStream, existsSync } from "node:fs";
 import { mkdir, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -14,20 +14,24 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
 } from "../../shared/desktop-contracts.ts";
-import {
-  decodePcm16MonoBytes,
-  normalizeWhisperLanguage,
-  resolveWhisperModelFilesFromFilePaths,
-  type ResolvedWhisperModelFiles,
-} from "../../shared/dictation-helpers.ts";
+import { decodePcm16MonoBytes, normalizeWhisperLanguage } from "../../shared/dictation-helpers.ts";
 import {
   dictationModelDefinitions,
   getDictationModelDefinition,
   getDictationModelDownloadSizeLabel,
 } from "../../shared/dictation-models.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import {
+  DEFAULT_DICTATION_MODEL_DIRECTORY,
+  findConfiguredDictationModelFiles,
+  getDictationModelDirectories,
+  getDictationModelDirectory,
+  getDictationModelsRootDirectory,
+  getInstalledManagedDictationModelDirectory,
+  getManagedDictationModelFiles,
+  getResolvedDictationModelFiles,
+  type DictationModelFiles,
+} from "./model-resolution.cts";
 import { emitDesktopEvent } from "../runtime/desktop-events.cts";
-import { getDesktopUserDataPath } from "../user-data-path.cts";
 
 type SherpaOfflineStream = {
   acceptWaveform: (input: { samples: Float32Array; sampleRate: number }) => void;
@@ -49,14 +53,6 @@ type SherpaOnnxModule = {
   };
 };
 
-type DictationModelFiles = ResolvedWhisperModelFiles;
-
-const DEFAULT_DICTATION_MODEL_DIRECTORY = path.join(getDesktopUserDataPath(), "models", "whisper");
-const DICTATION_MODEL_DIR_ENV_KEYS = [
-  "HOWCODE_SHERPA_ONNX_MODEL_DIR",
-  "HOWCODE_DICTATION_MODEL_DIR",
-] as const;
-
 const sherpaRequire = createRequire(import.meta.url);
 
 let sherpaOnnxModulePromise: Promise<SherpaOnnxModule> | null = null;
@@ -64,98 +60,6 @@ let recognizerCache: {
   key: string;
   promise: Promise<SherpaOfflineRecognizer>;
 } | null = null;
-
-function getDictationModelsRootDirectory() {
-  const [modelDirectory = DEFAULT_DICTATION_MODEL_DIRECTORY] = getDictationModelDirectories();
-  return modelDirectory;
-}
-
-function getDictationModelDirectory(modelId: DictationModelId) {
-  return path.join(getDictationModelsRootDirectory(), modelId);
-}
-
-function getResolvedModelFilesForDefinition(modelId: DictationModelId): DictationModelFiles | null {
-  const definition = getDictationModelDefinition(modelId);
-  if (!definition) {
-    return null;
-  }
-
-  const modelDirectory = getDictationModelDirectory(modelId);
-  const encoderPath = path.join(modelDirectory, definition.files.encoder);
-  const decoderPath = path.join(modelDirectory, definition.files.decoder);
-  const tokensPath = path.join(modelDirectory, definition.files.tokens);
-
-  if (!existsSync(encoderPath) || !existsSync(decoderPath) || !existsSync(tokensPath)) {
-    return null;
-  }
-
-  return {
-    modelDirectory,
-    encoderPath,
-    decoderPath,
-    tokensPath,
-    modelId,
-    language: normalizeWhisperLanguage(modelId),
-  };
-}
-
-function getInstalledDictationModelFiles() {
-  return dictationModelDefinitions.flatMap((definition) => {
-    const modelFiles = getResolvedModelFilesForDefinition(definition.id);
-    return modelFiles ? [modelFiles] : [];
-  });
-}
-
-function resolveConfiguredDictationModelFilesFromDirectory(
-  directoryPath: string,
-  modelId?: DictationModelId,
-) {
-  const candidateFiles = collectCandidateFiles(directoryPath);
-
-  if (!modelId) {
-    return resolveWhisperModelFilesFromFilePaths(candidateFiles);
-  }
-
-  return resolveWhisperModelFilesFromFilePaths(
-    candidateFiles.filter((filePath) => path.basename(filePath).startsWith(`${modelId}-`)),
-  );
-}
-
-function getSelectedDictationModelFiles() {
-  const appSettings = loadAppSettings();
-  const selectedModelId = appSettings.dictationModelId;
-  const selectedModelFiles = selectedModelId
-    ? (getResolvedModelFilesForDefinition(selectedModelId) ??
-      findConfiguredDictationModelFiles(selectedModelId))
-    : null;
-
-  if (selectedModelFiles) {
-    return selectedModelFiles;
-  }
-
-  return getInstalledDictationModelFiles()[0] ?? null;
-}
-
-function findConfiguredDictationModelFiles(modelId?: DictationModelId) {
-  for (const directoryPath of getDictationModelDirectories()) {
-    const modelFiles = resolveConfiguredDictationModelFilesFromDirectory(directoryPath, modelId);
-    if (!modelFiles) {
-      continue;
-    }
-
-    return modelFiles;
-  }
-
-  return null;
-}
-
-function getDictationModelDirectories() {
-  const configuredDirectories = DICTATION_MODEL_DIR_ENV_KEYS.map((key) =>
-    process.env[key]?.trim(),
-  ).filter((value): value is string => Boolean(value));
-
-  return [...new Set([...configuredDirectories, DEFAULT_DICTATION_MODEL_DIRECTORY])];
-}
 
 function getSherpaPlatformPackageName() {
   switch (`${process.platform}-${process.arch}`) {
@@ -226,52 +130,6 @@ async function loadSherpaOnnxModule() {
   return sherpaOnnxModulePromise;
 }
 
-function collectCandidateFiles(rootDirectory: string, maxDepth = 3) {
-  const pending = [{ directoryPath: rootDirectory, depth: 0 }];
-  const filePaths: string[] = [];
-
-  while (pending.length > 0) {
-    const current = pending.pop();
-    if (!current) {
-      continue;
-    }
-
-    let entries: Dirent[];
-    try {
-      entries = readdirSync(current.directoryPath, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-
-    for (const entry of entries) {
-      const entryPath = path.join(current.directoryPath, entry.name);
-      if (entry.isDirectory()) {
-        if (current.depth < maxDepth) {
-          pending.push({ directoryPath: entryPath, depth: current.depth + 1 });
-        }
-
-        continue;
-      }
-
-      if (entry.isFile()) {
-        filePaths.push(entryPath);
-      }
-    }
-  }
-
-  return filePaths;
-}
-
-export function resolveWhisperModelFilesFromDirectory(
-  directoryPath: string,
-): DictationModelFiles | null {
-  if (!existsSync(directoryPath)) {
-    return null;
-  }
-
-  return resolveWhisperModelFilesFromFilePaths(collectCandidateFiles(directoryPath));
-}
-
 function getRecognizerThreadCount() {
   const configured = Number.parseInt(process.env.HOWCODE_SHERPA_ONNX_NUM_THREADS ?? "", 10);
   if (Number.isFinite(configured) && configured > 0) {
@@ -330,10 +188,6 @@ async function getRecognizer(modelFiles: DictationModelFiles, language: string |
   }
 
   return recognizerCache.promise;
-}
-
-function getResolvedDictationModelFiles() {
-  return getSelectedDictationModelFiles() ?? findConfiguredDictationModelFiles();
 }
 
 function buildUnavailableDictationState(
@@ -413,7 +267,7 @@ export async function listDictationModels(): Promise<DictationModelSummary[]> {
   const resolvedModelId = getResolvedDictationModelFiles()?.modelId ?? null;
 
   return dictationModelDefinitions.map((definition) => {
-    const managed = getResolvedModelFilesForDefinition(definition.id) !== null;
+    const managed = getManagedDictationModelFiles(definition.id) !== null;
     const installed = managed || findConfiguredDictationModelFiles(definition.id) !== null;
 
     return {
@@ -462,10 +316,6 @@ function createDictationDownloadStagePath(modelId: DictationModelId) {
     getDictationModelsRootDirectory(),
     `.${modelId}.download-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
   );
-}
-
-function getInstalledManagedDictationModelDirectory(modelId: DictationModelId) {
-  return getResolvedModelFilesForDefinition(modelId)?.modelDirectory ?? null;
 }
 
 function createDictationBackupPath(modelId: DictationModelId) {
