@@ -10,7 +10,7 @@ Execution backlog lives in: `docs/implementation-todo.md`
   - Action list: `shared/desktop-actions.ts`
   - Explicit implemented vs no-op partition: `shared/desktop-action-coverage.ts`
   - Action bridge: `src/app/hooks/useDesktopBridge.ts`
-  - Bun RPC dispatch: `src/bun/index.ts`, `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`
+  - Electron IPC dispatch: `src/electron/main/index.ts`, `shared/desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`
   - Backend action router: `desktop/pi-threads/action-router.cts`
   - Shell loading lane: `desktop/pi-threads/shell-loader.cts`
   - Thread hydration lane: `desktop/pi-threads/thread-loader.cts`
@@ -28,9 +28,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Shell/project index backed by SQLite: `desktop/thread-state-db/*`, `desktop/pi-threads/shell-loader.cts`
 - Project collapsed state persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/state/workspace.ts`
-- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`, `desktop/pi-threads/thread-loader.cts`
+- Lazy loading of project thread lists: `src/app/hooks/useDesktopShell.ts`, `src/app/app-shell/useAppShellController.ts`, `src/electron/main/index.ts`, `desktop/pi-threads/thread-loader.cts`
 - Opened thread content now hydrates directly from Pi session files; SQLite is only project/thread metadata and diff-summary index state: `src/app/hooks/useDesktopThread.ts`, `desktop/pi-threads/thread-loader.cts`, `desktop/thread-state-db/*`
-- The actively displayed session is now watched for external Pi JSONL writes so the open thread refreshes from disk without polling every session: `desktop/pi-threads/session-watch.cts`, `desktop/runtime/thread-publisher.cts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`
+- The actively displayed session is now watched for external Pi JSONL writes so the open thread refreshes from disk without polling every session: `desktop/pi-threads/session-watch.cts`, `desktop/runtime/thread-publisher.cts`, `src/app/app-shell/useAppShellController.ts`, `src/electron/main/index.ts`
 - Thread pin persistence: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/sidebar/ProjectTree.tsx`
 - Thread archive / restore / permanent delete: `desktop/thread-state-db/*`, `desktop/pi-threads/action-router.cts`, `src/app/components/settings/ArchivedThreadsPanel.tsx`
 - Archived threads settings view: `src/app/components/settings/ArchivedThreadsPanel.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
@@ -49,12 +49,12 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Controlled composer state exists in renderer and the surface is now split into prompt-vs-git-ops mock states for easier iteration: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
 - Send is wired through real Pi sessions with per-cwd runtimes: `desktop/runtime/*`, `desktop/pi-threads/action-router.cts`
-- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/bun/index.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
+- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/electron/main/ipc/request-handlers/system.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
 - Existing thread continuation is real via runtime session activation: `desktop/runtime/runtime-registry.cts`
-- Streaming thread updates are pushed over Electrobun RPC messages and rendered live: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/app-shell/useAppShellController.ts`
+- Streaming thread updates are pushed over Electron IPC messages and rendered live: `src/electron/main/ipc/register-desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`, `src/app/app-shell/useAppShellController.ts`
 - Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
 - Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `desktop/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
-- Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Bun desktop runtime; `composer.dictate` action inventory is still unused/no-op while the dedicated RPC path settles: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
+- Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Electron desktop runtime; `composer.dictate` action inventory is still unused/no-op while the dedicated IPC path settles: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
 - Still stubbed in this area:
   - `composer.host`
   - composer-adjacent git ops is still partial: commit actions exist, but the overall git UX is not finished and branch control is still display-only
@@ -144,7 +144,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 **Expansion direction:**
 - Add real thread action menu.
-- Define open split-button behavior in the Bun desktop bridge.
+- Define open split-button behavior in the Electron desktop bridge.
 - Expand commit controls beyond the current project git surface wiring (branch switching is still display-only, and the diff lane is still on the older turn-based path).
 - Define real handoff behavior.
 - Replace mock home diff stats with real workspace diff data when the diff lane is implemented.
@@ -212,11 +212,10 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Takeover mode now swaps the thread pane for a composer-lite `Pi desktop` surface that embeds the native Pi TUI in the same centered `744px` lane as the thread/composer view.
 - Backend PTY/session manager exists in:
   - `desktop/terminal/manager.cts`
-  - `desktop/terminal/bun-pty.cts`
   - `desktop/terminal/node-pty.cts`
   - `shared/terminal-contracts.ts`
-  - `src/bun/index.ts`
-- Bun PTY is used on POSIX Electrobun runs; `node-pty` remains as the Windows fallback.
+  - `src/electron/main/index.ts`
+- `node-pty` is now used across platforms.
 - Transcript history is persisted per session and replayed on reopen.
 - Still partial because:
   - only one terminal is surfaced per current project/thread context

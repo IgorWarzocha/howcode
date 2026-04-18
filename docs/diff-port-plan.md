@@ -85,8 +85,8 @@ Recommended checkpoint lifecycle for `/home/igorw/Work/howcode`:
 - `/home/igorw/Work/howcode/shared/desktop-contracts.ts`
 - `/home/igorw/Work/howcode/src/app/desktop/types.ts`
 - `/home/igorw/Work/howcode/desktop/pi-threads/action-router.cts`
-- `/home/igorw/Work/howcode/src/bun/index.ts`
-- `/home/igorw/Work/howcode/src/app/desktop/electrobun-api.ts`
+- `/home/igorw/Work/howcode/src/electron/main/index.ts`
+- `/home/igorw/Work/howcode/src/electron/preload/create-desktop-api.ts`
 
 ## Architecture summary of t3code diff views
 
@@ -389,7 +389,7 @@ Extend `/home/igorw/Work/howcode/shared/desktop-contracts.ts` with:
 - `TurnDiffRequest`
 - `TurnDiffResult`
 
-Expose bridge methods from `/home/igorw/Work/howcode/src/bun/index.ts` and `/home/igorw/Work/howcode/src/app/desktop/electrobun-api.ts`:
+Expose bridge methods from `/home/igorw/Work/howcode/src/electron/main/index.ts` and `/home/igorw/Work/howcode/src/electron/preload/create-desktop-api.ts`:
 
 - `getTurnDiff(...)`
 - `getFullThreadDiff(...)`

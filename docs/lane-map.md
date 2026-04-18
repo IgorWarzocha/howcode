@@ -38,18 +38,18 @@ This repo is intentionally split around future Pi desktop integration seams.
 
 ## Desktop bridge lanes
 
-- `src/bun/index.ts`
-  - Electrobun `BrowserWindow` boot + Bun-side RPC handlers for the renderer
-- `src/app/desktop/electrobun-api.ts`
-  - renderer-side Electrobun bridge that preserves the `window.piDesktop` shape
-- `shared/electrobun-rpc.ts`
-  - typed Bun <-> webview RPC contract
+- `src/electron/main/**`
+  - Electron app bootstrap, typed IPC handler registration, and runtime wiring
+- `src/electron/preload/**`
+  - preload bridge that preserves the `window.piDesktop` shape
+- `shared/desktop-ipc.ts`
+  - typed Electron main <-> renderer IPC contract
 - `desktop/pi-module.cts`
   - single dynamic-import boundary for the Pi package
 - `desktop/project-git.cts`
   - selected-project git/branch/diff-stat probing used by header chrome
 - `desktop/terminal/*`
-  - PTY abstraction, Bun/node-pty adapter selection, transcript persistence, terminal event fanout
+  - PTY abstraction, `node-pty` process wiring, transcript persistence, terminal event fanout
 - `desktop/runtime/*`
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `desktop/pi-threads/*`
@@ -90,9 +90,9 @@ This repo is intentionally split around future Pi desktop integration seams.
 
 ## Checks
 
-- `bun run lint`
-- `bun run format`
-- `bun run typecheck`
-- `bun run test`
-- `bun run build`
-- `bun run check`
+- `npm run lint`
+- `npm run format`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+- `npm run check`

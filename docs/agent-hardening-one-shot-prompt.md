@@ -33,7 +33,7 @@ Also inspect the current relevant implementation files before changing anything:
 - `src/app/state/workspace.ts`
 - `src/app/state/workspace.test.ts`
 - `shared/desktop-contracts.ts`
-- `src/bun/index.ts`
+- `src/electron/main/index.ts`
 
 ## Important operating rules
 

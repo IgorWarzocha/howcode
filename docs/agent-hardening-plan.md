@@ -31,7 +31,7 @@ Primary goals:
 | Category | Score | Evidence |
 | --- | ---: | --- |
 | `agent_native` | 5/10 | good shared contracts and lane map, but several orchestration hubs own too many behaviors |
-| `fully_typed` | 7/10 | strict TS is enabled in renderer and Bun desktop configs |
+| `fully_typed` | 7/10 | strict TS is enabled in renderer and desktop runtime configs |
 | `traversable` | 4/10 | large mixed-responsibility files and duplicated message-mapping logic increase reread cost |
 | `test_coverage` | 3/10 | deterministic reducer tests exist, but extracted pure helpers are not broadly covered |
 | `feedback_loops` | 8/10 | `check`, lint, typecheck, test, build, and pre-commit hooks are already wired |
@@ -220,7 +220,7 @@ Target split:
 ## Files to leave alone for now
 
 - `src/app/state/workspace.ts`: focused reducer/selectors and already covered by `src/app/state/workspace.test.ts`
-- `src/bun/index.ts`: mostly Electrobun window/bootstrap wiring; revisit only after desktop domain modules are cleaner
+- `src/electron/main/index.ts`: mostly Electron window/bootstrap wiring; revisit only after desktop domain modules are cleaner
 
 ## Recommended implementation order
 

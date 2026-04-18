@@ -1,5 +1,5 @@
 >[!IMPORTANT] 
->If you somehow ended up here before I said I am ready, do yourself a favour and use the dev version via `bun run dev`. Things are changing rapidly. Releases will be built only when I feel like a milestone is feature-ready and without any experience-breaking bugs. Current initial release was mostly to see if it builds and if I can use the app to build itself. I kinda can.
+>If you somehow ended up here before I said I am ready, do yourself a favour and use the dev version via `npm run dev`. Things are changing rapidly. Releases will be built only when I feel like a milestone is feature-ready and without any experience-breaking bugs. Current initial release was mostly to see if it builds and if I can use the app to build itself. I kinda can.
 
 # howcode
 
@@ -26,7 +26,7 @@ On first run, the launcher downloads the matching desktop build for your platfor
 
 ### Renderer note
 
-Release builds now ship with bundled CEF by default on macOS, Linux, and Windows.
+Release builds now ship with bundled Electron + Chromium on macOS, Linux, and Windows.
 
 The tradeoff is larger downloads in exchange for a more consistent renderer.
 

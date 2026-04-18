@@ -77,7 +77,7 @@ export function useSettingsDictationController({
       }
 
       setDictationDownloadLogLines((current) => {
-        const nextLines = [...current, `bun ${event.modelId}: ${event.message}`];
+        const nextLines = [...current, `${event.modelId}: ${event.message}`];
         return nextLines.slice(-12);
       });
 
