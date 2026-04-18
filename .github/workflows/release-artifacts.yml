@@ -117,9 +117,8 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            artifacts/*
-            !artifacts/npm-launcher
-            artifacts/npm-launcher/*
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
 
   cleanup-dev-artifacts:
     name: Cleanup old dev artifacts
@@ -184,13 +183,13 @@ jobs:
           path: release-assets
 
       - name: List release assets
-        run: find release-assets -maxdepth 2 -type f -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -d '' assets < <(find release-assets -type f -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1

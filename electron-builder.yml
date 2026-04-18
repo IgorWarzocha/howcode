@@ -12,6 +12,8 @@ extraResources:
     to: resources
 mac:
   category: public.app-category.developer-tools
+  extendInfo:
+    NSMicrophoneUsageDescription: Howcode needs microphone access for local dictation.
   target:
     - dir
 linux:
