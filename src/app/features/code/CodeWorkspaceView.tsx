@@ -73,7 +73,6 @@ export function CodeWorkspaceView({
     handleShowTakeoverTerminal,
     handleToggleTerminal,
     listComposerAttachmentEntries,
-    pickComposerAttachments,
     projectGitState,
     shellState,
     state,
@@ -428,7 +427,6 @@ export function CodeWorkspaceView({
                       }}
                       onToggleTerminal={handleToggleTerminal}
                       terminalVisible={state.terminalVisible}
-                      onPickAttachments={pickComposerAttachments}
                       onListAttachmentEntries={listComposerAttachmentEntries}
                       onAction={handleAction}
                     />

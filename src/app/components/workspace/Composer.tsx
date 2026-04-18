@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import type {
-  ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
@@ -47,7 +46,6 @@ export type ComposerProps = {
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;
-  onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
     path?: string | null;

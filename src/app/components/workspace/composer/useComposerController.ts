@@ -8,13 +8,12 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
 } from "../../../desktop/types";
-import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
-import { withComposerSendLock } from "./composerSendLock";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
+import { useComposerAttachmentPicker } from "./useComposerAttachmentPicker";
 import { useComposerDictation } from "./useComposerDictation";
-import { submitComposerDraft } from "./submitComposerDraft";
+import { useComposerSubmission } from "./useComposerSubmission";
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: "Off",
@@ -43,7 +42,6 @@ type UseComposerControllerProps = {
   streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
   onRestoredQueuedPromptApplied: () => void;
-  onPickAttachments: (projectId?: string | null) => Promise<ComposerAttachment[]>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
     path?: string | null;
@@ -61,7 +59,6 @@ export function useComposerController({
   streamingBehaviorPreference,
   onAction,
   onRestoredQueuedPromptApplied,
-  onPickAttachments,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
   const draftThreadId = useMemo(
@@ -73,11 +70,6 @@ export function useComposerController({
   const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
-  const [pickerLoading, setPickerLoading] = useState(false);
-  const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
-    [],
-  );
   const composerScopeKey = useMemo(
     () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
     [draftThreadId, projectId, sessionPath],
@@ -164,33 +156,25 @@ export function useComposerController({
     setErrorMessage,
   });
 
-  const mergeAttachments = (current: ComposerAttachment[], next: ComposerAttachment[]) => {
-    const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
-
-    for (const attachment of next) {
-      byPath.set(attachment.path, attachment);
-    }
-
-    return [...byPath.values()];
-  };
-
-  const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
-    setPickerLoading(true);
-
-    try {
-      const nextPickerState = await onListAttachmentEntries({
-        projectId,
-        path: path ?? null,
-        rootPath: rootPath ?? pickerState?.rootPath ?? projectId ?? null,
-      });
-      setPickerState(nextPickerState);
-      setErrorMessage(null);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
-    } finally {
-      setPickerLoading(false);
-    }
-  };
+  const {
+    attachPendingPickerAttachments,
+    navigatePickerUp,
+    openPickerDirectory,
+    openPickerRoot,
+    pendingPickerAttachments,
+    pickAttachments,
+    pickerLoading,
+    pickerState,
+    removeAttachment,
+    togglePendingPickerAttachment,
+  } = useComposerAttachmentPicker({
+    openMenu,
+    pickerRootPath: projectId,
+    setAttachments,
+    setErrorMessage,
+    setOpenMenu,
+    onListAttachmentEntries,
+  });
 
   const runComposerAction = async (
     action: DesktopAction,
@@ -208,157 +192,27 @@ export function useComposerController({
     }
   };
 
-  const send = async () => {
-    if (isSending || sendLockRef.current) {
-      return;
-    }
-
-    await withComposerSendLock(sendLockRef, async () => {
-      const submittedScopeKey = composerScopeKey;
-      const submittedProjectId = projectId;
-      const submittedSessionPath = sessionPath;
-      const submittedDraftThreadId = draftThreadId;
-      const submittedAttachments = attachments;
-
-      setIsSending(true);
-
-      try {
-        await stopDictationAndFlush();
-
-        if (activeComposerScopeKeyRef.current !== submittedScopeKey) {
-          return;
-        }
-
-        const textToSend = draftValueRef.current.trim();
-        if (textToSend.length === 0) {
-          return;
-        }
-
-        const submittedDraft = textToSend;
-
-        setErrorMessage(null);
-        skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-        setDraftValue("");
-        setAttachments([]);
-
-        const result = await submitComposerDraft({
-          draft: submittedDraft,
-          attachments: submittedAttachments,
-          draftThreadId: submittedDraftThreadId,
-          isSending: false,
-          projectId: submittedProjectId,
-          sessionPath: submittedSessionPath,
-          streamingBehaviorPreference,
-          onAction,
-          clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
-        });
-
-        if (
-          result.status === "error" &&
-          activeDraftThreadIdRef.current === submittedDraftThreadId
-        ) {
-          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-          setAttachments((currentAttachments) =>
-            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-          );
-          setErrorMessage(result.errorMessage);
-        }
-
-        if (
-          result.status === "stopped" &&
-          activeDraftThreadIdRef.current === submittedDraftThreadId
-        ) {
-          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-          setAttachments((currentAttachments) =>
-            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-          );
-        }
-      } finally {
-        setIsSending(false);
-      }
-    });
-  };
-
-  const stop = async () => {
-    if (!isStreaming || isSending) {
-      return;
-    }
-
-    setIsSending(true);
-    setErrorMessage(null);
-
-    try {
-      const result = await onAction("composer.stop", {
-        projectId,
-        sessionPath,
-      });
-
-      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
-      if (actionErrorMessage) {
-        setErrorMessage(actionErrorMessage);
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const pickAttachments = async () => {
-    if (openMenu === "picker") {
-      setOpenMenu(null);
-      return;
-    }
-
-    setPendingPickerAttachments([]);
-    setOpenMenu("picker");
-    await loadPickerEntries(projectId, projectId);
-  };
-
-  const openPickerDirectory = async (path: string) => {
-    await loadPickerEntries(path);
-  };
-
-  const openPickerRoot = async (rootPath: string) => {
-    await loadPickerEntries(rootPath, rootPath);
-  };
-
-  const navigatePickerUp = async () => {
-    if (!pickerState?.parentPath) {
-      return;
-    }
-
-    await loadPickerEntries(pickerState.parentPath);
-  };
-
-  const togglePendingPickerAttachment = (attachment: ComposerAttachment) => {
-    setPendingPickerAttachments((current) => {
-      const exists = current.some(
-        (currentAttachment) => currentAttachment.path === attachment.path,
-      );
-
-      return exists
-        ? current.filter((currentAttachment) => currentAttachment.path !== attachment.path)
-        : [...current, attachment];
-    });
-  };
-
-  const attachPendingPickerAttachments = () => {
-    if (pendingPickerAttachments.length === 0) {
-      return;
-    }
-
-    setAttachments((current) => mergeAttachments(current, pendingPickerAttachments));
-    setPendingPickerAttachments([]);
-    setOpenMenu(null);
-    setErrorMessage(null);
-  };
-
-  const removeAttachment = (attachmentPath: string) => {
-    setAttachments((current) =>
-      current.filter((currentAttachment) => currentAttachment.path !== attachmentPath),
-    );
-  };
+  const { send, stop } = useComposerSubmission({
+    attachments,
+    composerScopeKey,
+    draftThreadId,
+    isSending,
+    isStreaming,
+    onAction,
+    projectId,
+    sessionPath,
+    setAttachments,
+    setDraftValue,
+    setErrorMessage,
+    setIsSending,
+    stopDictationAndFlush,
+    streamingBehaviorPreference,
+    activeComposerScopeKeyRef,
+    activeDraftThreadIdRef,
+    draftValueRef,
+    sendLockRef,
+    skipNextDraftPersistenceRef,
+  });
 
   const modelLabel = useMemo(() => getModelLabel(model), [model]);
 
