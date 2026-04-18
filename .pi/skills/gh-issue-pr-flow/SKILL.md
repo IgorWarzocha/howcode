@@ -23,6 +23,7 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 - If an issue is mushy, multi-part, or mixes discovery with implementation, rewrite or split it before coding.
 - When rewriting an existing issue, preserve the user's original text at the bottom under `## Original issue text` as a blockquote.
 - New or rewritten issues should follow the writing rules in `references/issue-writing.md`.
+- If PR or release work touches GitHub Actions, artifact uploads, or release packaging, check `references/actions-artifact-retention.md` so workflow changes match the repo's storage policy.
 - Start new work from a fresh local branch based on `dev`.
 - Open the PR back into `dev`, not `main`, unless the user explicitly says otherwise.
 - If the issue asks for discussion first or is clearly not actionable yet, stop and explain instead of forcing implementation.
@@ -142,6 +143,7 @@ Branch naming should be issue-oriented and easy to trace, for example `issue-123
    - `Closes #n` for fully resolved issues
    - `Refs #n` for related but not fully closed issues
 4. Prefer a squash-merge-ready PR description from the start.
+5. If the PR changes Actions workflows, artifact uploads, or release triggers, validate it against `references/actions-artifact-retention.md` before opening or updating the PR.
 
 Useful commands:
 
@@ -185,6 +187,7 @@ gh pr view <pr-number-or-url> --comments
 ## References
 - `references/issue-selection.md` — how to choose manageable work and when to leave items alone
 - `references/issue-writing.md` — how this repo wants issues, epics, labels, and original-text preservation handled
+- `references/actions-artifact-retention.md` — how this repo wants GitHub Actions artifact retention, dev artifacts, PR packaging validation, and release uploads handled
 
 ## Validation
 - If the user asked for issue selection, the chosen issue is a manageable leaf issue rather than an epic or mushy umbrella issue.
@@ -195,6 +198,7 @@ gh pr view <pr-number-or-url> --comments
 - The PR body clearly distinguishes `Closes` from `Refs`.
 - The user's `/review` findings were addressed or explicitly called out.
 - If the flow included a build or release pass, `src/app/views/landing-overview-content.ts` was refreshed first from real merged PRs / `origin/dev` history.
+- If the flow touched GitHub Actions workflows, artifact retention and upload behavior still match `references/actions-artifact-retention.md`.
 - Codex was asked for review.
 - The PR link was returned to the user after posting the review request.
 - Codex feedback was triaged instead of accepted blindly when the user asked for feedback handling.
