@@ -149,11 +149,21 @@ function buildRecognizerCacheKey(modelFiles: DictationModelFiles, language: stri
 export async function getRecognizer(modelFiles: DictationModelFiles, language: string | null) {
   const cacheKey = buildRecognizerCacheKey(modelFiles, language);
   if (!recognizerCache || recognizerCache.key !== cacheKey) {
+    const promise = loadSherpaOnnxModule()
+      .then((sherpaOnnx) =>
+        sherpaOnnx.OfflineRecognizer.createAsync(buildRecognizerConfig(modelFiles, language)),
+      )
+      .catch((error) => {
+        if (recognizerCache?.key === cacheKey) {
+          recognizerCache = null;
+        }
+
+        throw error;
+      });
+
     recognizerCache = {
       key: cacheKey,
-      promise: loadSherpaOnnxModule().then((sherpaOnnx) =>
-        sherpaOnnx.OfflineRecognizer.createAsync(buildRecognizerConfig(modelFiles, language)),
-      ),
+      promise,
     };
   }
 

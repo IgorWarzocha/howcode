@@ -54,6 +54,11 @@ export function useSettingsDictationController({
 
     setDictationState(nextDictationState);
     setDictationModels(nextDictationModels);
+
+    return {
+      dictationState: nextDictationState,
+      dictationModels: nextDictationModels,
+    };
   }, []);
 
   useEffect(() => {
@@ -192,10 +197,17 @@ export function useSettingsDictationController({
       }
 
       if (activeModelId === modelId) {
-        await onAction("settings.update", {
-          key: "dictationModelId",
-          value: null,
-        });
+        const refreshedState = await refreshDictationState();
+        const modelStillInstalled = refreshedState.dictationModels.some(
+          (model) => model.id === modelId && model.installed,
+        );
+
+        if (!modelStillInstalled) {
+          await onAction("settings.update", {
+            key: "dictationModelId",
+            value: null,
+          });
+        }
       }
 
       await refreshDictationState();
