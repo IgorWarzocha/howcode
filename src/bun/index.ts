@@ -8,6 +8,9 @@ import type {
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerState,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   DesktopActionResult,
   DesktopEvent,
   InboxThread,
@@ -120,6 +123,11 @@ const rpc = BrowserView.defineRPC<PiDesktopRpc>({
         listComposerAttachmentEntries(request) as Promise<ComposerFilePickerState>,
       getComposerState: async (request) =>
         piThreads.loadComposerState(request) as Promise<ComposerState>,
+      getDictationState: async () => piThreads.getDictationState() as Promise<DictationState>,
+      transcribeDictation: async (request) =>
+        piThreads.transcribeDictation(
+          request as DictationTranscriptionRequest,
+        ) as Promise<DictationTranscriptionResult>,
       getProjectThreads: async ({ projectId }) =>
         piThreads.loadProjectThreads(projectId) as Promise<Thread[]>,
       getInboxThreads: async () => piThreads.loadInboxThreadList() as Promise<InboxThread[]>,

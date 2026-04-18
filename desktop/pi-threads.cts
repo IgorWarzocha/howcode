@@ -12,6 +12,7 @@ export {
   loadThread,
 } from "./pi-threads/thread-loader.cts";
 export {
+  getDictationState,
   captureProjectDiffBaseline,
   loadComposerState,
   listProjectCommits,
@@ -21,4 +22,5 @@ export {
   loadShellState,
   setWatchedSessionPath,
   subscribeDesktopEvents,
+  transcribeDictation,
 } from "./pi-threads/shell-loader.cts";

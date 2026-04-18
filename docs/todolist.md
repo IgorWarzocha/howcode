@@ -23,8 +23,8 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 ### Small composer/control wins
 
-- [x] wire `composer.dictate` to browser-native speech recognition in the renderer
-- [ ] validate dictation behavior in bundled CEF across packaged builds
+- [x] wire the composer mic to renderer audio capture + Bun-side sherpa-onnx transcription
+- [ ] validate sherpa-onnx dictation behavior in packaged builds with real downloaded models
 - [ ] tighten README + status docs whenever mock/partial behavior changes
 
 ## B. Interconnected implementation batches

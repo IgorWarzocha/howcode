@@ -7,15 +7,16 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
+  DictationState,
 } from "../../../desktop/types";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import {
   appendDictatedText,
-  getBrowserSpeechRecognitionConstructor,
-  getBrowserSpeechRecognitionErrorMessage,
-  type BrowserSpeechRecognitionInstance,
-} from "./browser-dictation";
+  canUseLocalDictationCapture,
+  startLocalDictationCapture,
+  type LocalDictationCaptureSession,
+} from "./local-dictation";
 import { withComposerSendLock } from "./composerSendLock";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
@@ -87,9 +88,10 @@ export function useComposerController({
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
   const skipNextDraftPersistenceRef = useRef<string | null>(null);
-  const dictationRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
+  const dictationCaptureRef = useRef<LocalDictationCaptureSession | null>(null);
   const [dictationActive, setDictationActive] = useState(false);
   const [dictationInterimText, setDictationInterimText] = useState("");
+  const [dictationState, setDictationState] = useState<DictationState | null>(null);
   const draftValueRef = useRef("");
   const dictationSettledPromiseRef = useRef<Promise<void> | null>(null);
   const dictationSettledResolverRef = useRef<(() => void) | null>(null);
@@ -113,38 +115,79 @@ export function useComposerController({
   }, []);
 
   const clearDictationSession = useCallback(() => {
-    dictationRecognitionRef.current = null;
+    dictationCaptureRef.current = null;
     setDictationActive(false);
     setDictationInterimText("");
     resolveDictationSettled();
   }, [resolveDictationSettled]);
 
   const abortDictationSession = useCallback(() => {
-    const recognition = dictationRecognitionRef.current;
-    if (!recognition) {
+    const capture = dictationCaptureRef.current;
+    if (!capture) {
       clearDictationSession();
       return;
     }
 
-    recognition.onstart = null;
-    recognition.onresult = null;
-    recognition.onerror = null;
-    recognition.onend = null;
-    recognition.abort();
+    void capture.abort();
     clearDictationSession();
   }, [clearDictationSession]);
 
   const stopDictationAndFlush = useCallback(async () => {
-    const recognition = dictationRecognitionRef.current;
-    if (!recognition) {
+    const capture = dictationCaptureRef.current;
+    if (!capture) {
       return;
     }
 
-    const settledPromise = dictationSettledPromiseRef.current;
-    setDictationInterimText("");
-    recognition.stop();
-    await settledPromise;
-  }, []);
+    const submittedScopeKey = activeDictationScopeKeyRef.current;
+    setDictationActive(false);
+    setDictationInterimText("Transcribing…");
+
+    try {
+      const audio = await capture.stop();
+
+      if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+        return;
+      }
+
+      if (!audio.audioBase64) {
+        setErrorMessage("No speech was captured.");
+        return;
+      }
+
+      if (!window.piDesktop?.transcribeDictation) {
+        setErrorMessage("Local dictation is unavailable in this runtime.");
+        return;
+      }
+
+      const result = await window.piDesktop.transcribeDictation({
+        audioBase64: audio.audioBase64,
+        sampleRate: audio.sampleRate,
+        language: navigator.language || null,
+      });
+
+      if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+        return;
+      }
+
+      if (!result.ok) {
+        setErrorMessage(result.error ?? "Could not transcribe dictation.");
+        return;
+      }
+
+      if (result.text.trim()) {
+        setDraftValue((current) => appendDictatedText(current, result.text));
+        setErrorMessage(null);
+      }
+    } catch (error) {
+      if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not stop local dictation.");
+      }
+    } finally {
+      if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+        clearDictationSession();
+      }
+    }
+  }, [clearDictationSession, setDraftValue]);
 
   const dictationScopeKey = useMemo(
     () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
@@ -203,7 +246,38 @@ export function useComposerController({
   });
 
   const canSend = draft.trim().length > 0 && !isSending;
-  const dictationSupported = useMemo(() => getBrowserSpeechRecognitionConstructor() !== null, []);
+  const dictationSupported = useMemo(
+    () =>
+      canUseLocalDictationCapture() &&
+      typeof window.piDesktop?.transcribeDictation === "function" &&
+      (dictationState?.available ?? true),
+    [dictationState],
+  );
+
+  useEffect(() => {
+    let disposed = false;
+
+    if (!window.piDesktop?.getDictationState) {
+      return;
+    }
+
+    void window.piDesktop
+      .getDictationState()
+      .then((state) => {
+        if (!disposed) {
+          setDictationState(state);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setDictationState(null);
+        }
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const mergeAttachments = (current: ComposerAttachment[], next: ComposerAttachment[]) => {
     const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
@@ -345,72 +419,44 @@ export function useComposerController({
     }
   };
 
-  const toggleDictation = () => {
-    if (dictationRecognitionRef.current) {
+  const toggleDictation = async () => {
+    if (dictationCaptureRef.current) {
       void stopDictationAndFlush();
       return;
     }
 
-    const SpeechRecognition = getBrowserSpeechRecognitionConstructor();
-    if (!SpeechRecognition) {
-      setErrorMessage("Browser-native dictation is unavailable in this runtime.");
+    if (!canUseLocalDictationCapture() || !window.piDesktop?.transcribeDictation) {
+      setErrorMessage("Local dictation is unavailable in this runtime.");
       return;
     }
 
     try {
-      const recognition = new SpeechRecognition();
+      const availability =
+        dictationState ??
+        (window.piDesktop.getDictationState
+          ? await window.piDesktop.getDictationState().catch(() => null)
+          : null);
+
+      if (availability) {
+        setDictationState(availability);
+      }
+
+      if (availability && !availability.available) {
+        setErrorMessage(availability.error ?? "Local dictation is unavailable in this runtime.");
+        return;
+      }
+
+      const capture = await startLocalDictationCapture();
       dictationSettledPromiseRef.current = new Promise<void>((resolve) => {
         dictationSettledResolverRef.current = resolve;
       });
-      dictationRecognitionRef.current = recognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = navigator.language || "en-US";
-      recognition.onstart = () => {
-        setDictationActive(true);
-        setDictationInterimText("");
-        setErrorMessage(null);
-      };
-      recognition.onresult = (event) => {
-        let finalText = "";
-        let interimText = "";
-
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
-          const result = event.results[index];
-          const transcript = result?.[0]?.transcript?.trim();
-          if (!transcript) {
-            continue;
-          }
-
-          if (result.isFinal) {
-            finalText = appendDictatedText(finalText, transcript);
-          } else {
-            interimText = appendDictatedText(interimText, transcript);
-          }
-        }
-
-        if (finalText) {
-          setDraftValue((current) => appendDictatedText(current, finalText));
-        }
-
-        setDictationInterimText(interimText);
-      };
-      recognition.onerror = (event) => {
-        clearDictationSession();
-
-        if (event.error !== "aborted") {
-          setErrorMessage(getBrowserSpeechRecognitionErrorMessage(event.error));
-        }
-      };
-      recognition.onend = () => {
-        clearDictationSession();
-      };
-      recognition.start();
+      dictationCaptureRef.current = capture;
+      setDictationActive(true);
+      setDictationInterimText("");
+      setErrorMessage(null);
     } catch (error) {
       clearDictationSession();
-      setErrorMessage(
-        error instanceof Error ? error.message : "Could not start browser-native dictation.",
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Could not start local dictation.");
     }
   };
 

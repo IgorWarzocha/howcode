@@ -3,11 +3,18 @@ import path from "node:path";
 import type {
   ComposerState,
   ComposerStateRequest,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   Project,
   ProjectCommitEntry,
   ProjectDiffStatsResult,
   ShellState,
 } from "../../shared/desktop-contracts.ts";
+import {
+  getDictationState as getSherpaDictationState,
+  transcribeDictation as transcribeSherpaDictation,
+} from "../dictation/sherpa-onnx.cts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import {
@@ -157,6 +164,16 @@ export async function loadComposerState(
   request: ComposerStateRequest = {},
 ): Promise<ComposerState> {
   return getComposerState(request);
+}
+
+export async function getDictationState(): Promise<DictationState> {
+  return getSherpaDictationState();
+}
+
+export async function transcribeDictation(
+  request: DictationTranscriptionRequest,
+): Promise<DictationTranscriptionResult> {
+  return transcribeSherpaDictation(request);
 }
 
 export async function loadProjectCommitHistory(

@@ -1,5 +1,33 @@
 import type { ElectrobunConfig } from "electrobun";
 
+function getSherpaOnnxPlatformPackage() {
+  switch (`${process.platform}-${process.arch}`) {
+    case "darwin-arm64":
+      return "sherpa-onnx-darwin-arm64";
+    case "darwin-x64":
+      return "sherpa-onnx-darwin-x64";
+    case "linux-arm64":
+      return "sherpa-onnx-linux-arm64";
+    case "linux-x64":
+      return "sherpa-onnx-linux-x64";
+    case "win32-ia32":
+      return "sherpa-onnx-win-ia32";
+    case "win32-x64":
+      return "sherpa-onnx-win-x64";
+    default:
+      return null;
+  }
+}
+
+const sherpaOnnxPlatformPackage = getSherpaOnnxPlatformPackage();
+const sherpaOnnxCopyEntries: Record<string, string> = {};
+
+if (sherpaOnnxPlatformPackage) {
+  sherpaOnnxCopyEntries["node_modules/sherpa-onnx-node"] = "node_modules/sherpa-onnx-node";
+  sherpaOnnxCopyEntries[`node_modules/${sherpaOnnxPlatformPackage}`] =
+    `node_modules/${sherpaOnnxPlatformPackage}`;
+}
+
 export default {
   app: {
     name: "howcode",
@@ -27,6 +55,7 @@ export default {
         "resources/pi-coding-agent/dist/modes/interactive/theme",
       "node_modules/@mariozechner/pi-coding-agent/dist/core/export-html":
         "resources/pi-coding-agent/dist/core/export-html",
+      ...sherpaOnnxCopyEntries,
     },
     watchIgnore: ["dist/**"],
     mac: {

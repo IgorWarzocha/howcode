@@ -10,6 +10,9 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -173,6 +176,10 @@ export const piDesktopApi = {
     ) as Promise<ComposerFilePickerState>,
   getComposerState: async (request: ComposerStateRequest = {}) =>
     (await getRpc()).request.getComposerState(request) as Promise<ComposerState>,
+  getDictationState: async () =>
+    (await getRpc()).request.getDictationState({}) as Promise<DictationState>,
+  transcribeDictation: async (request: DictationTranscriptionRequest) =>
+    (await getRpc()).request.transcribeDictation(request) as Promise<DictationTranscriptionResult>,
   getProjectThreads: async (projectId: string) =>
     (await getRpc()).request.getProjectThreads({ projectId }) as Promise<Thread[]>,
   getInboxThreads: async () =>

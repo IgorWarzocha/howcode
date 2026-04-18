@@ -230,8 +230,7 @@ export function ComposerPromptSurface({
 
       {dictationActive || dictationInterimText ? (
         <output className="px-4 pb-2 text-[12px] text-[color:var(--muted)]" aria-live="polite">
-          {dictationActive ? "Listening…" : "Dictation stopped."}
-          {dictationInterimText ? ` ${dictationInterimText}` : ""}
+          {dictationActive ? "Listening…" : dictationInterimText || "Dictation stopped."}
         </output>
       ) : null}
 

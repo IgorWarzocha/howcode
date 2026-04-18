@@ -9,6 +9,9 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -115,6 +118,11 @@ export type PiDesktopRpc = {
         response: ComposerFilePickerState;
       };
       getComposerState: { params: ComposerStateRequest; response: ComposerState };
+      getDictationState: { params: Record<string, never>; response: DictationState };
+      transcribeDictation: {
+        params: DictationTranscriptionRequest;
+        response: DictationTranscriptionResult;
+      };
       getProjectThreads: { params: { projectId: string }; response: Thread[] };
       getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
       getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };

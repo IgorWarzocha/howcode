@@ -139,6 +139,31 @@ export type ComposerAttachment = {
   kind: "text" | "image";
 };
 
+export type DictationState = {
+  available: boolean;
+  runtime: "sherpa-onnx-node" | null;
+  modelDirectory: string | null;
+  modelId: string | null;
+  language: string | null;
+  error: string | null;
+};
+
+export type DictationTranscriptionRequest = {
+  audioBase64: string;
+  sampleRate: number;
+  language?: string | null;
+};
+
+export type DictationTranscriptionResult = {
+  ok: boolean;
+  text: string;
+  runtime: "sherpa-onnx-node" | null;
+  modelDirectory: string | null;
+  modelId: string | null;
+  language: string | null;
+  error: string | null;
+};
+
 export type PiPackageCatalogItem = {
   name: string;
   version: string;

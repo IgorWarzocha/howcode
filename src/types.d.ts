@@ -8,6 +8,9 @@ import type {
   ComposerStateRequest,
   DesktopActionResult,
   DesktopEvent,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -104,6 +107,10 @@ declare global {
         rootPath?: string | null;
       }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
+      getDictationState?: () => Promise<DictationState>;
+      transcribeDictation?: (
+        request: DictationTranscriptionRequest,
+      ) => Promise<DictationTranscriptionResult>;
       getProjectThreads?: (projectId: string) => Promise<Thread[]>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;

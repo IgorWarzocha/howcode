@@ -8,6 +8,9 @@ import type {
   ComposerStateRequest,
   DesktopActionResultData,
   DesktopEvent,
+  DictationState,
+  DictationTranscriptionRequest,
+  DictationTranscriptionResult,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -54,6 +57,10 @@ export type PiThreadsModule = {
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadInboxThreadList: () => Promise<InboxThread[]>;
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
+  getDictationState: () => Promise<DictationState>;
+  transcribeDictation: (
+    request: DictationTranscriptionRequest,
+  ) => Promise<DictationTranscriptionResult>;
   searchPiPackages: (request?: {
     query?: string | null;
     cursor?: number | null;
