@@ -39,6 +39,7 @@ type UseComposerControllerProps = {
   projectId: string;
   sessionPath: string | null;
   dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   isStreaming: boolean;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -57,6 +58,7 @@ export function useComposerController({
   projectId,
   sessionPath,
   dictationModelId,
+  dictationMaxDurationSeconds,
   isStreaming,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -155,6 +157,7 @@ export function useComposerController({
   } = useComposerDictation({
     activeView,
     dictationModelId,
+    dictationMaxDurationSeconds,
     draftThreadId,
     projectId,
     sessionPath,

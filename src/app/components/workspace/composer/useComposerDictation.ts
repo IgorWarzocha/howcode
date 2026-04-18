@@ -18,6 +18,7 @@ import {
 type UseComposerDictationProps = {
   activeView: string;
   dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   draftThreadId: string | null;
   projectId: string;
   sessionPath: string | null;
@@ -28,6 +29,7 @@ type UseComposerDictationProps = {
 export function useComposerDictation({
   activeView,
   dictationModelId,
+  dictationMaxDurationSeconds,
   draftThreadId,
   projectId,
   sessionPath,
@@ -243,7 +245,7 @@ export function useComposerDictation({
         return "unavailable" as const;
       }
 
-      const capture = await startLocalDictationCapture();
+      const capture = await startLocalDictationCapture(dictationMaxDurationSeconds);
       dictationSessionTokenRef.current += 1;
       dictationCaptureRef.current = capture;
       setDictationActive(true);

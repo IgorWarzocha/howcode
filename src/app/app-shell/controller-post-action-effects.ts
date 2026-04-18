@@ -105,6 +105,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "skillCreatorModel" &&
     payload.key !== "composerStreamingBehavior" &&
     payload.key !== "dictationModelId" &&
+    payload.key !== "dictationMaxDurationSeconds" &&
     payload.key !== "showDictationButton" &&
     payload.key !== "favoriteFolders" &&
     payload.key !== "projectImportState" &&
@@ -149,6 +150,11 @@ export function getOptimisticallyUpdatedShellState(
       payload.value === "small.en")
       ? payload.value
       : currentState.appSettings.dictationModelId;
+
+  const nextDictationMaxDurationSeconds =
+    payload.key === "dictationMaxDurationSeconds" && typeof payload.value === "number"
+      ? payload.value
+      : currentState.appSettings.dictationMaxDurationSeconds;
 
   const nextShowDictationButton =
     payload.key === "showDictationButton" && typeof payload.value === "boolean"
@@ -209,6 +215,7 @@ export function getOptimisticallyUpdatedShellState(
       skillCreatorModel: nextSkillCreatorSelection,
       composerStreamingBehavior: nextComposerStreamingBehavior,
       dictationModelId: nextDictationModelId,
+      dictationMaxDurationSeconds: nextDictationMaxDurationSeconds,
       showDictationButton: nextShowDictationButton,
       favoriteFolders: nextFavoriteFolders,
       projectImportState: nextProjectImportState,

@@ -1,8 +1,17 @@
 import { Check, Mic } from "lucide-react";
+import {
+  DEFAULT_DICTATION_MAX_DURATION_SECONDS,
+  DICTATION_MAX_DURATION_OPTIONS,
+} from "../../../../shared/dictation-settings";
 import type { DictationModelId, DictationModelSummary } from "../../desktop/types";
 import { SectionIntro } from "../../components/common/SectionIntro";
 import type { AppSettings, DictationState } from "../../desktop/types";
-import { inlineCodeClass, settingsListRowClass, settingsSectionClass } from "../../ui/classes";
+import {
+  inlineCodeClass,
+  settingsInputClass,
+  settingsListRowClass,
+  settingsSectionClass,
+} from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { SettingsDictationModelRow } from "./SettingsDictationModelRow";
 import type { DictationPendingAction } from "./useSettingsDictationController";
@@ -53,6 +62,7 @@ export function SettingsDictationSection({
   dictationModels,
   dictationState,
   installDictationModel,
+  setDictationMaxDurationSeconds,
   selectDictationModel,
   setShowDictationButton,
 }: {
@@ -64,6 +74,7 @@ export function SettingsDictationSection({
   dictationModels: DictationModelSummary[];
   dictationState: DictationState | null;
   installDictationModel: (modelId: DictationModelId) => void;
+  setDictationMaxDurationSeconds: (value: number) => void;
   selectDictationModel: (modelId: DictationModelId) => void;
   setShowDictationButton: (value: boolean) => void;
 }) {
@@ -133,6 +144,30 @@ export function SettingsDictationSection({
           </div>
         </div>
       ) : null}
+
+      <div className={settingsListRowClass}>
+        <div className="grid gap-0.5">
+          <div className="text-[13px] text-[color:var(--text)]">Max dictation length</div>
+          <div className="text-[12px] text-[color:var(--muted)]">
+            Longer captures use more memory before transcription. Default is{" "}
+            {DEFAULT_DICTATION_MAX_DURATION_SECONDS / 60} minutes.
+          </div>
+        </div>
+        <select
+          className={settingsInputClass}
+          value={String(appSettings.dictationMaxDurationSeconds)}
+          onChange={(event) =>
+            setDictationMaxDurationSeconds(Number.parseInt(event.target.value, 10))
+          }
+          aria-label="Max dictation length"
+        >
+          {DICTATION_MAX_DURATION_OPTIONS.map((seconds) => (
+            <option key={seconds} value={seconds}>
+              {seconds < 60 ? `${seconds} seconds` : `${seconds / 60} minutes`}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className={settingsListRowClass}>
         <div className="grid gap-0.5">

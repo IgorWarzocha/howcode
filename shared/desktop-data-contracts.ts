@@ -311,6 +311,7 @@ export type AppSettings = {
   skillCreatorModel: ModelSelection | null;
   composerStreamingBehavior: ComposerStreamingBehavior;
   dictationModelId: DictationModelId | null;
+  dictationMaxDurationSeconds: number;
   showDictationButton: boolean;
   favoriteFolders: string[];
   projectImportState: boolean | null;

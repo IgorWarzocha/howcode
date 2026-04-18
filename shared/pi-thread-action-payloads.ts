@@ -156,6 +156,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "skillCreatorModel" ||
     payload.key === "composerStreamingBehavior" ||
     payload.key === "dictationModelId" ||
+    payload.key === "dictationMaxDurationSeconds" ||
     payload.key === "showDictationButton" ||
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
@@ -166,6 +167,10 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
     : null;
+}
+
+export function getSettingsNumberValue(payload: DesktopActionPayloadInput) {
+  return typeof payload.value === "number" && Number.isFinite(payload.value) ? payload.value : null;
 }
 
 export function getSettingsReset(payload: DesktopActionPayloadInput) {

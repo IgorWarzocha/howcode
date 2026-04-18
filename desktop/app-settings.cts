@@ -5,12 +5,17 @@ import type {
   ModelSelection,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
+import {
+  DEFAULT_DICTATION_MAX_DURATION_SECONDS,
+  normalizeDictationMaxDurationSeconds,
+} from "../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const skillCreatorModelKey = "skillCreatorModel";
 const composerStreamingBehaviorKey = "composerStreamingBehavior";
 const dictationModelIdKey = "dictationModelId";
+const dictationMaxDurationSecondsKey = "dictationMaxDurationSeconds";
 const showDictationButtonKey = "showDictationButton";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
@@ -82,6 +87,19 @@ function parseStringPreference(valueJson: string | null | undefined): string | n
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return typeof parsed === "string" && parsed.trim().length > 0 ? parsed.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseNumberPreference(valueJson: string | null | undefined): number | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -257,6 +275,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(dictationModelIdKey) as PreferenceRow | undefined;
+  const dictationMaxDurationSecondsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(dictationMaxDurationSecondsKey) as PreferenceRow | undefined;
   const showDictationButtonRow = db
     .prepare(
       `
@@ -274,6 +301,10 @@ export function loadAppSettings(): AppSettings {
       parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
       "followUp",
     dictationModelId: parseDictationModelIdPreference(dictationModelIdRow?.valueJson),
+    dictationMaxDurationSeconds:
+      normalizeDictationMaxDurationSeconds(
+        parseNumberPreference(dictationMaxDurationSecondsRow?.valueJson),
+      ) ?? DEFAULT_DICTATION_MAX_DURATION_SECONDS,
     showDictationButton: parseBooleanPreference(showDictationButtonRow?.valueJson) ?? true,
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
@@ -316,6 +347,17 @@ export function setDictationModelId(modelId: DictationModelId | null) {
   }
 
   writeAppPreference(dictationModelIdKey, JSON.stringify(modelId));
+}
+
+export function setDictationMaxDurationSeconds(value: number) {
+  const normalizedValue = normalizeDictationMaxDurationSeconds(value);
+
+  if (!normalizedValue || normalizedValue === DEFAULT_DICTATION_MAX_DURATION_SECONDS) {
+    deleteAppPreference(dictationMaxDurationSecondsKey);
+    return;
+  }
+
+  writeAppPreference(dictationMaxDurationSecondsKey, JSON.stringify(normalizedValue));
 }
 
 export function setShowDictationButton(enabled: boolean) {

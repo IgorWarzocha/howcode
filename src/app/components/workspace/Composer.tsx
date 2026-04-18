@@ -27,6 +27,7 @@ export type ComposerProps = {
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
   dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   favoriteFolders: string[];
   showDictationButton: boolean;
   diffRenderMode: "stacked" | "split";

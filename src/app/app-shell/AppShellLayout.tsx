@@ -89,6 +89,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 skillCreatorModel: null,
                 composerStreamingBehavior: "followUp",
                 dictationModelId: null,
+                dictationMaxDurationSeconds: 180,
                 showDictationButton: true,
                 favoriteFolders: [],
                 projectImportState: null,

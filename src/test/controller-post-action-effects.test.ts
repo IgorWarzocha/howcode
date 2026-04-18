@@ -19,6 +19,7 @@ function buildShellState(): ShellState {
       skillCreatorModel: null,
       composerStreamingBehavior: "followUp",
       dictationModelId: null,
+      dictationMaxDurationSeconds: 180,
       showDictationButton: true,
       favoriteFolders: ["/existing"],
       projectImportState: null,

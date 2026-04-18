@@ -296,6 +296,7 @@ export function CodeWorkspaceView({
                     skillCreatorModel: null,
                     composerStreamingBehavior: "followUp",
                     dictationModelId: null,
+                    dictationMaxDurationSeconds: 180,
                     showDictationButton: true,
                     favoriteFolders: [],
                     projectImportState: null,
@@ -342,6 +343,9 @@ export function CodeWorkspaceView({
                 <div>
                   <GitOpsComposerPanel
                     dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                    dictationMaxDurationSeconds={
+                      shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                    }
                     projectGitState={projectGitState}
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}
@@ -400,6 +404,9 @@ export function CodeWorkspaceView({
                       diffBaseline={diffBaseline}
                       sessionPath={terminalSessionPath}
                       dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                      dictationMaxDurationSeconds={
+                        shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                      }
                       favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                       showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       diffRenderMode={diffRenderMode}

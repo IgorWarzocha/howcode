@@ -1,3 +1,5 @@
+import { DEFAULT_DICTATION_MAX_DURATION_SECONDS } from "../../../../../shared/dictation-settings";
+
 export type LocalDictationCaptureResult = {
   audioBase64: string;
   sampleRate: number;
@@ -9,8 +11,6 @@ export type LocalDictationCaptureSession = {
 };
 
 const TARGET_SAMPLE_RATE = 16_000;
-const MAX_DICTATION_DURATION_SECONDS = 180;
-const MAX_CAPTURE_SAMPLE_COUNT = TARGET_SAMPLE_RATE * MAX_DICTATION_DURATION_SECONDS;
 
 function getAudioContextConstructor() {
   return (
@@ -113,6 +113,12 @@ async function disposeCaptureResources({
   await audioContext.close();
 }
 
+async function stopMediaStreamTracks(stream: MediaStream) {
+  for (const track of stream.getTracks()) {
+    track.stop();
+  }
+}
+
 export function canUseLocalDictationCapture() {
   return (
     typeof navigator !== "undefined" &&
@@ -121,7 +127,9 @@ export function canUseLocalDictationCapture() {
   );
 }
 
-export async function startLocalDictationCapture(): Promise<LocalDictationCaptureSession> {
+export async function startLocalDictationCapture(
+  maxDurationSeconds = DEFAULT_DICTATION_MAX_DURATION_SECONDS,
+): Promise<LocalDictationCaptureSession> {
   if (!canUseLocalDictationCapture()) {
     throw new Error("Local microphone capture is unavailable in this runtime.");
   }
@@ -135,22 +143,24 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
   });
   const AudioContextConstructor = getAudioContextConstructor();
   if (!AudioContextConstructor) {
-    for (const track of stream.getTracks()) {
-      track.stop();
-    }
+    await stopMediaStreamTracks(stream);
 
     throw new Error("AudioContext is unavailable in this runtime.");
   }
 
   const audioContext = new AudioContextConstructor();
-  if (audioContext.state === "suspended") {
-    await audioContext.resume();
+  try {
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+  } catch (error) {
+    await stopMediaStreamTracks(stream);
+    await audioContext.close().catch(() => undefined);
+    throw error;
   }
 
   if (audioContext.sampleRate < TARGET_SAMPLE_RATE) {
-    for (const track of stream.getTracks()) {
-      track.stop();
-    }
+    await stopMediaStreamTracks(stream);
 
     await audioContext.close();
     throw new Error("The microphone sample rate is lower than the dictation target sample rate.");
@@ -161,9 +171,10 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
   const mutedDestination = audioContext.createGain();
   mutedDestination.gain.value = 0;
 
+  const maxCaptureSampleCount = TARGET_SAMPLE_RATE * Math.max(1, Math.floor(maxDurationSeconds));
   const recordedChunks: Float32Array[] = [];
   let recordedSampleCount = 0;
-  let captureError: Error | null = null;
+  let captureLimitReached = false;
   let settled = false;
   let settlePromise: Promise<void> | null = null;
 
@@ -175,17 +186,35 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
     const inputChannel = event.inputBuffer.getChannelData(0);
     const downsampled = downsampleBuffer(inputChannel, audioContext.sampleRate, TARGET_SAMPLE_RATE);
     if (downsampled.length > 0) {
-      if (recordedSampleCount + downsampled.length > MAX_CAPTURE_SAMPLE_COUNT) {
-        captureError =
-          captureError ??
-          new Error(
-            `Dictation is limited to ${MAX_DICTATION_DURATION_SECONDS / 60} minutes per capture.`,
-          );
+      if (captureLimitReached) {
         return;
       }
 
-      recordedChunks.push(downsampled);
-      recordedSampleCount += downsampled.length;
+      const remainingSampleCapacity = maxCaptureSampleCount - recordedSampleCount;
+      if (remainingSampleCapacity <= 0) {
+        captureLimitReached = true;
+        return;
+      }
+
+      const chunkToStore =
+        downsampled.length > remainingSampleCapacity
+          ? downsampled.subarray(0, remainingSampleCapacity)
+          : downsampled;
+
+      if (chunkToStore.length === 0) {
+        captureLimitReached = true;
+        return;
+      }
+
+      recordedChunks.push(chunkToStore.slice());
+      recordedSampleCount += chunkToStore.length;
+
+      if (
+        chunkToStore.length < downsampled.length ||
+        recordedSampleCount >= maxCaptureSampleCount
+      ) {
+        captureLimitReached = true;
+      }
     }
   };
 
@@ -211,10 +240,6 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
   return {
     stop: async () => {
       await settleCapture();
-
-      if (captureError) {
-        throw captureError;
-      }
 
       const samples = concatFloat32Arrays(recordedChunks);
 

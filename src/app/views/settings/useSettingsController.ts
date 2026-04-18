@@ -144,6 +144,11 @@ export function useSettingsController({
         key: "composerStreamingBehavior",
         value,
       }),
+    setDictationMaxDurationSeconds: (value: AppSettings["dictationMaxDurationSeconds"]) =>
+      void onAction("settings.update", {
+        key: "dictationMaxDurationSeconds",
+        value,
+      }),
     setShowDictationButton: (value: boolean) =>
       void onAction("settings.update", {
         key: "showDictationButton",

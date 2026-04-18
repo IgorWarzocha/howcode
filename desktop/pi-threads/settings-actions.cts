@@ -7,6 +7,7 @@ import {
   getSettingsFavoriteFolders,
   getSettingsKey,
   getSettingsModelSelection,
+  getSettingsNumberValue,
   getSettingsPreferredProjectLocation,
   getSettingsProjectDeletionMode,
   getSettingsProjectImportState,
@@ -14,6 +15,7 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
   setComposerStreamingBehavior,
+  setDictationMaxDurationSeconds,
   setDictationModelId,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
@@ -57,6 +59,14 @@ export function handleSettingsDesktopAction(
 
   if (key === "dictationModelId") {
     setDictationModelId(getSettingsDictationModelId(payload));
+    return handledAction();
+  }
+
+  if (key === "dictationMaxDurationSeconds") {
+    const value = getSettingsNumberValue(payload);
+    if (value !== null) {
+      setDictationMaxDurationSeconds(value);
+    }
     return handledAction();
   }
 

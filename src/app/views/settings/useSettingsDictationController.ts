@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { getDesktopActionErrorMessage } from "../../desktop/action-results";
 import type {
   AppSettings,
   DesktopActionInvoker,
@@ -90,6 +91,21 @@ export function useSettingsDictationController({
     setDictationDownloadLogLines((current) => [...current, line].slice(-12));
   }, []);
 
+  const updateDictationModelSetting = useCallback(
+    async (modelId: DictationModelId | null, fallbackMessage: string) => {
+      const actionResult = await onAction("settings.update", {
+        key: "dictationModelId",
+        value: modelId,
+      });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(actionResult, fallbackMessage);
+      if (actionErrorMessage) {
+        throw new Error(actionErrorMessage);
+      }
+    },
+    [onAction],
+  );
+
   const getActiveDictationModelId = useCallback(() => {
     return (
       dictationModels.find((model) => model.selected)?.id ??
@@ -124,10 +140,7 @@ export function useSettingsDictationController({
       }
 
       setDictationPendingAction({ modelId, kind: "switch" });
-      await onAction("settings.update", {
-        key: "dictationModelId",
-        value: modelId,
-      });
+      await updateDictationModelSetting(modelId, "Could not switch dictation model.");
 
       setDictationModels((current) =>
         current.map((model) => ({
@@ -160,10 +173,7 @@ export function useSettingsDictationController({
     );
 
     try {
-      await onAction("settings.update", {
-        key: "dictationModelId",
-        value: modelId,
-      });
+      await updateDictationModelSetting(modelId, "Could not switch dictation model.");
 
       await refreshDictationState();
     } catch (error) {
@@ -207,10 +217,7 @@ export function useSettingsDictationController({
         );
 
         if (!modelStillInstalled) {
-          await onAction("settings.update", {
-            key: "dictationModelId",
-            value: null,
-          });
+          await updateDictationModelSetting(null, "Could not clear dictation model selection.");
         }
       }
 

@@ -9,6 +9,7 @@ import type { SavedDiffComment } from "./diff/diffCommentStore";
 
 type GitOpsComposerPanelProps = {
   dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   projectGitState: ProjectGitState | null;
   projectId: string;
   sessionPath: string | null;
@@ -31,6 +32,7 @@ type GitOpsComposerPanelProps = {
 
 export function GitOpsComposerPanel({
   dictationModelId,
+  dictationMaxDurationSeconds,
   projectGitState,
   projectId,
   sessionPath,
@@ -60,6 +62,7 @@ export function GitOpsComposerPanel({
     >
       <ComposerGitOpsSurface
         dictationModelId={dictationModelId}
+        dictationMaxDurationSeconds={dictationMaxDurationSeconds}
         composerPanelRef={composerPanelRef}
         onOpenSettingsView={onOpenSettingsView}
         projectGitState={projectGitState}

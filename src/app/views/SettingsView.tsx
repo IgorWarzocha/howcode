@@ -80,6 +80,7 @@ export function SettingsView({
         dictationModels={controller.dictationModels}
         dictationState={controller.dictationState}
         installDictationModel={controller.installDictationModel}
+        setDictationMaxDurationSeconds={controller.setDictationMaxDurationSeconds}
         selectDictationModel={controller.selectDictationModel}
         setShowDictationButton={controller.setShowDictationButton}
       />

@@ -17,6 +17,7 @@ import { useComposerGitOpsState } from "./useComposerGitOpsState";
 
 type ComposerGitOpsSurfaceProps = {
   dictationModelId: string | null;
+  dictationMaxDurationSeconds: number;
   composerPanelRef: RefObject<HTMLDivElement | null>;
   onOpenSettingsView: () => void;
   projectGitState: ProjectGitState | null;
@@ -40,6 +41,7 @@ type ComposerGitOpsSurfaceProps = {
 
 export function ComposerGitOpsSurface({
   dictationModelId,
+  dictationMaxDurationSeconds,
   composerPanelRef,
   onOpenSettingsView,
   projectGitState,
@@ -111,6 +113,7 @@ export function ComposerGitOpsSurface({
   } = useComposerDictation({
     activeView: "gitops",
     dictationModelId,
+    dictationMaxDurationSeconds,
     draftThreadId: `gitops:${projectId}`,
     projectId,
     sessionPath,
