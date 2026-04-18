@@ -6,6 +6,7 @@ import {
   parseDevServerMetadata,
   resolveDevServerMetadataPath,
 } from "../../../../shared/dev-server";
+import { getRendererDistDirectory } from "../runtime/app-paths";
 
 async function resolveDevServerUrl() {
   const metadataPath = resolveDevServerMetadataPath([
@@ -41,5 +42,5 @@ export async function loadMainWindow(mainWindow: BrowserWindow) {
     }
   }
 
-  await mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
+  await mainWindow.loadFile(path.join(getRendererDistDirectory(), "index.html"));
 }

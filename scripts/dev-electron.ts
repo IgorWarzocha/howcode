@@ -1,11 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, unwatchFile, watchFile } from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
+import { ensureElectronBinary } from "./electron-binary";
 
-const require = createRequire(import.meta.url);
-
-const electronBinary = require("electron") as string;
 const projectRoot = process.cwd();
 const entryFile = path.join(projectRoot, "build", "electron", "main", "index.cjs");
 const watchedFiles = [
@@ -31,7 +28,9 @@ async function waitForBuildArtifacts() {
   }
 }
 
-function startElectronProcess() {
+async function startElectronProcess() {
+  const electronBinary = await ensureElectronBinary();
+
   electronProcess = spawn(electronBinary, [entryFile], {
     cwd: projectRoot,
     stdio: "inherit",
@@ -62,13 +61,13 @@ function scheduleRestart() {
 
   restartTimer = setTimeout(() => {
     stopElectronProcess();
-    startElectronProcess();
+    void startElectronProcess();
   }, 200);
 }
 
 async function main() {
   await waitForBuildArtifacts();
-  startElectronProcess();
+  await startElectronProcess();
 
   for (const filePath of watchedFiles) {
     watchFile(filePath, { interval: 250 }, (current, previous) => {

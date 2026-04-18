@@ -1,5 +1,6 @@
 import path from "node:path";
-import { app, BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
+import { getElectronBuildDirectory } from "../runtime/app-paths";
 
 export function createMainWindow() {
   return new BrowserWindow({
@@ -9,7 +10,7 @@ export function createMainWindow() {
     x: 120,
     y: 80,
     webPreferences: {
-      preload: path.join(app.getAppPath(), "build", "electron", "preload", "index.cjs"),
+      preload: path.join(getElectronBuildDirectory(), "preload", "index.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,

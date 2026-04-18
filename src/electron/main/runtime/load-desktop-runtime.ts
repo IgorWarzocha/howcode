@@ -1,6 +1,5 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { app } from "electron";
 import type {
   DesktopRuntimeModules,
   PiSkillsModule,
@@ -8,10 +7,7 @@ import type {
   SkillCreatorModule,
   TerminalManagerModule,
 } from "./desktop-runtime-contracts";
-
-function getDesktopBuildDirectory() {
-  return path.join(app.getAppPath(), "build", "desktop");
-}
+import { getDesktopBuildDirectory } from "./app-paths";
 
 async function importDesktopModule<TModule>(fileName: string) {
   const modulePath = path.join(getDesktopBuildDirectory(), fileName);

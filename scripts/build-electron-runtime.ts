@@ -78,6 +78,9 @@ async function runBuild() {
 
   if (isWatchMode) {
     console.log("Watching Electron runtime bundles...");
+    await new Promise(() => {
+      setInterval(() => {}, 1 << 30);
+    });
   }
 }
 

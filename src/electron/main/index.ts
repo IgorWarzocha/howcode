@@ -2,10 +2,12 @@ import { app, BrowserWindow } from "electron";
 import { createMainWindow } from "./app/create-main-window";
 import { loadMainWindow } from "./app/load-main-window";
 import { registerDesktopIpc } from "./ipc/register-desktop-ipc";
+import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from "./runtime/devtools";
 import { configureDesktopEnvironment } from "./runtime/environment";
 import { loadDesktopRuntimeModules } from "./runtime/load-desktop-runtime";
 
 let currentMainWindow: BrowserWindow | null = null;
+const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging();
 
 async function openMainWindow() {
   const mainWindow = createMainWindow();
@@ -23,6 +25,7 @@ async function openMainWindow() {
 async function bootstrap() {
   await app.whenReady();
   configureDesktopEnvironment();
+  logDevtoolsRemoteDebugging(devtoolsDebuggingPort);
 
   const runtime = await loadDesktopRuntimeModules();
   registerDesktopIpc(() => currentMainWindow, runtime);
