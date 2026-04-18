@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
@@ -89,17 +89,79 @@ export function useComposerController({
   const dictationRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
   const [dictationActive, setDictationActive] = useState(false);
   const [dictationInterimText, setDictationInterimText] = useState("");
+  const draftValueRef = useRef("");
+  const dictationSettledPromiseRef = useRef<Promise<void> | null>(null);
+  const dictationSettledResolverRef = useRef<(() => void) | null>(null);
 
   activeDraftThreadIdRef.current = draftThreadId;
+
+  const setDraftValue = useCallback((value: SetStateAction<string>) => {
+    const nextValue =
+      typeof value === "function"
+        ? (value as (current: string) => string)(draftValueRef.current)
+        : value;
+    draftValueRef.current = nextValue;
+    setDraft(nextValue);
+  }, []);
+
+  const resolveDictationSettled = useCallback(() => {
+    dictationSettledResolverRef.current?.();
+    dictationSettledResolverRef.current = null;
+    dictationSettledPromiseRef.current = null;
+  }, []);
+
+  const clearDictationSession = useCallback(() => {
+    dictationRecognitionRef.current = null;
+    setDictationActive(false);
+    setDictationInterimText("");
+    resolveDictationSettled();
+  }, [resolveDictationSettled]);
+
+  const abortDictationSession = useCallback(() => {
+    const recognition = dictationRecognitionRef.current;
+    if (!recognition) {
+      clearDictationSession();
+      return;
+    }
+
+    recognition.onstart = null;
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    recognition.abort();
+    clearDictationSession();
+  }, [clearDictationSession]);
+
+  const stopDictationAndFlush = useCallback(async () => {
+    const recognition = dictationRecognitionRef.current;
+    if (!recognition) {
+      return;
+    }
+
+    const settledPromise = dictationSettledPromiseRef.current;
+    setDictationInterimText("");
+    recognition.stop();
+    await settledPromise;
+  }, []);
+
+  const dictationScopeKey = useMemo(
+    () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
+    [draftThreadId, projectId, sessionPath],
+  );
+
+  useEffect(() => {
+    void dictationScopeKey;
+    abortDictationSession();
+  }, [abortDictationSession, dictationScopeKey]);
 
   useEffect(() => {
     skipNextDraftPersistenceRef.current = draftThreadId;
 
     const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
-    setDraft(persistedDraft?.prompt ?? "");
+    setDraftValue(persistedDraft?.prompt ?? "");
     setAttachments(persistedDraft?.attachments ?? []);
     setErrorMessage(null);
-  }, [draftThreadId]);
+  }, [draftThreadId, setDraftValue]);
 
   useEffect(() => {
     if (!draftThreadId) {
@@ -119,34 +181,19 @@ export function useComposerController({
       return;
     }
 
-    setDraft((currentDraft) =>
+    setDraftValue((currentDraft) =>
       mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
     );
     setOpenMenu(null);
     setErrorMessage(null);
     onRestoredQueuedPromptApplied();
-  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt]);
+  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue]);
 
   useDismissibleLayer({
     open: openMenu !== null,
     onDismiss: () => setOpenMenu(null),
     refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
   });
-
-  useEffect(
-    () => () => {
-      const recognition = dictationRecognitionRef.current;
-      if (recognition) {
-        recognition.onstart = null;
-        recognition.onresult = null;
-        recognition.onerror = null;
-        recognition.onend = null;
-        recognition.abort();
-      }
-      dictationRecognitionRef.current = null;
-    },
-    [],
-  );
 
   const canSend = draft.trim().length > 0 && !isSending;
   const dictationSupported = useMemo(() => getBrowserSpeechRecognitionConstructor() !== null, []);
@@ -196,21 +243,25 @@ export function useComposerController({
   };
 
   const send = async () => {
-    if (draft.trim().length === 0 || isSending) {
+    if (isSending) {
       return;
     }
 
-    dictationRecognitionRef.current?.stop();
-    setDictationInterimText("");
+    await stopDictationAndFlush();
+
+    const textToSend = draftValueRef.current.trim();
+    if (textToSend.length === 0) {
+      return;
+    }
 
     const submittedAttachments = attachments;
-    const submittedDraft = draft;
+    const submittedDraft = textToSend;
     const submittedDraftThreadId = draftThreadId;
 
     setIsSending(true);
     setErrorMessage(null);
     skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-    setDraft("");
+    setDraftValue("");
     setAttachments([]);
 
     const result = await submitComposerDraft({
@@ -226,7 +277,7 @@ export function useComposerController({
     });
 
     if (result.status === "error" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
-      setDraft((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+      setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
       setAttachments((currentAttachments) =>
         currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
       );
@@ -234,7 +285,7 @@ export function useComposerController({
     }
 
     if (result.status === "stopped" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
-      setDraft((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+      setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
       setAttachments((currentAttachments) =>
         currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
       );
@@ -270,8 +321,7 @@ export function useComposerController({
 
   const toggleDictation = () => {
     if (dictationRecognitionRef.current) {
-      dictationRecognitionRef.current.stop();
-      setDictationInterimText("");
+      void stopDictationAndFlush();
       return;
     }
 
@@ -283,6 +333,9 @@ export function useComposerController({
 
     try {
       const recognition = new SpeechRecognition();
+      dictationSettledPromiseRef.current = new Promise<void>((resolve) => {
+        dictationSettledResolverRef.current = resolve;
+      });
       dictationRecognitionRef.current = recognition;
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -311,30 +364,24 @@ export function useComposerController({
         }
 
         if (finalText) {
-          setDraft((current) => appendDictatedText(current, finalText));
+          setDraftValue((current) => appendDictatedText(current, finalText));
         }
 
         setDictationInterimText(interimText);
       };
       recognition.onerror = (event) => {
-        setDictationActive(false);
-        setDictationInterimText("");
-        dictationRecognitionRef.current = null;
+        clearDictationSession();
 
         if (event.error !== "aborted") {
           setErrorMessage(getBrowserSpeechRecognitionErrorMessage(event.error));
         }
       };
       recognition.onend = () => {
-        setDictationActive(false);
-        setDictationInterimText("");
-        dictationRecognitionRef.current = null;
+        clearDictationSession();
       };
       recognition.start();
     } catch (error) {
-      dictationRecognitionRef.current = null;
-      setDictationActive(false);
-      setDictationInterimText("");
+      clearDictationSession();
       setErrorMessage(
         error instanceof Error ? error.message : "Could not start browser-native dictation.",
       );
@@ -427,7 +474,7 @@ export function useComposerController({
     removeAttachment,
     runComposerAction,
     send,
-    setDraft,
+    setDraft: setDraftValue,
     setOpenMenu,
     stop,
     toggleDictation,
