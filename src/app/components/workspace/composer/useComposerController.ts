@@ -148,11 +148,16 @@ export function useComposerController({
     () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
     [draftThreadId, projectId, sessionPath],
   );
+  const activeDictationScopeKeyRef = useRef(dictationScopeKey);
+
+  activeDictationScopeKeyRef.current = dictationScopeKey;
 
   useEffect(() => {
     void dictationScopeKey;
     abortDictationSession();
   }, [abortDictationSession, dictationScopeKey]);
+
+  useEffect(() => abortDictationSession, [abortDictationSession]);
 
   useEffect(() => {
     skipNextDraftPersistenceRef.current = draftThreadId;
@@ -247,16 +252,24 @@ export function useComposerController({
       return;
     }
 
+    const submittedScopeKey = dictationScopeKey;
+    const submittedProjectId = projectId;
+    const submittedSessionPath = sessionPath;
+    const submittedDraftThreadId = draftThreadId;
+    const submittedAttachments = attachments;
+
     await stopDictationAndFlush();
+
+    if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+      return;
+    }
 
     const textToSend = draftValueRef.current.trim();
     if (textToSend.length === 0) {
       return;
     }
 
-    const submittedAttachments = attachments;
     const submittedDraft = textToSend;
-    const submittedDraftThreadId = draftThreadId;
 
     setIsSending(true);
     setErrorMessage(null);
@@ -269,8 +282,8 @@ export function useComposerController({
       attachments: submittedAttachments,
       draftThreadId: submittedDraftThreadId,
       isSending,
-      projectId,
-      sessionPath,
+      projectId: submittedProjectId,
+      sessionPath: submittedSessionPath,
       streamingBehaviorPreference,
       onAction,
       clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
