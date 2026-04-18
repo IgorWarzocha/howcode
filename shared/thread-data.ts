@@ -25,3 +25,7 @@ export function buildThreadData({
     isStreaming,
   };
 }
+
+export function setThreadStreamingState(thread: ThreadData, isStreaming: boolean): ThreadData {
+  return thread.isStreaming === isStreaming ? thread : { ...thread, isStreaming };
+}
