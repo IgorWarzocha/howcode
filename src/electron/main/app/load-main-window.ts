@@ -8,6 +8,8 @@ import {
 } from "../../../../shared/dev-server";
 import { getRendererDistDirectory } from "../runtime/app-paths";
 
+const DEV_SERVER_PROBE_TIMEOUT_MS = 1_500;
+
 async function resolveDevServerUrl() {
   const metadataPath = resolveDevServerMetadataPath([
     process.env.HOWCODE_REPO_ROOT ?? "",
@@ -26,7 +28,10 @@ async function resolveDevServerUrl() {
       return null;
     }
 
-    await fetch(devServerUrl, { method: "HEAD" });
+    await fetch(devServerUrl, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(DEV_SERVER_PROBE_TIMEOUT_MS),
+    });
     return devServerUrl;
   } catch {
     return null;

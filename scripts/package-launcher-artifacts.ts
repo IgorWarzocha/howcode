@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -55,9 +55,51 @@ async function findPaths(rootPath: string, matcher: (entryPath: string) => boole
   return matches;
 }
 
+function getPreferredBundlePathCandidates(target: Target) {
+  if (target.os === "macos") {
+    return [
+      path.join(electronOutputRoot, `mac-${target.arch}`, `${appName}.app`),
+      path.join(electronOutputRoot, "mac", `${appName}.app`),
+      path.join(electronOutputRoot, `${appName}.app`),
+    ];
+  }
+
+  if (target.os === "win") {
+    return [
+      path.join(electronOutputRoot, `win-${target.arch}-unpacked`),
+      path.join(electronOutputRoot, "win-unpacked"),
+    ];
+  }
+
+  return [
+    path.join(electronOutputRoot, `linux-${target.arch}-unpacked`),
+    path.join(electronOutputRoot, "linux-unpacked"),
+  ];
+}
+
+async function sortPathsByModifiedTime(paths: string[]) {
+  const pathsWithMetadata = await Promise.all(
+    paths.map(async (entryPath) => ({ entryPath, modifiedAtMs: (await stat(entryPath)).mtimeMs })),
+  );
+
+  return pathsWithMetadata
+    .sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
+    .map(({ entryPath }) => entryPath);
+}
+
 async function resolveBundlePath(target: Target) {
   if (!existsSync(electronOutputRoot)) {
     throw new Error("Missing Electron output. Run `bun run build:release` first.");
+  }
+
+  const preferredBundleCandidates = getPreferredBundlePathCandidates(target).filter((entryPath) =>
+    existsSync(entryPath),
+  );
+  if (preferredBundleCandidates.length > 0) {
+    const [preferredBundlePath] = await sortPathsByModifiedTime(preferredBundleCandidates);
+    if (preferredBundlePath) {
+      return preferredBundlePath;
+    }
   }
 
   const matches = await findPaths(electronOutputRoot, (entryPath) => {
@@ -73,7 +115,7 @@ async function resolveBundlePath(target: Target) {
     return /linux.*unpacked$/i.test(path.basename(entryPath));
   });
 
-  const [bundlePath] = matches.sort((left, right) => left.length - right.length);
+  const [bundlePath] = await sortPathsByModifiedTime(matches);
   if (!bundlePath) {
     throw new Error(`Could not find unpacked Electron bundle in ${electronOutputRoot}.`);
   }

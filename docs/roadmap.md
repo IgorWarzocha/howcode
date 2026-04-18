@@ -26,7 +26,7 @@ What remains is mostly a mix of:
 1. Keep the shell useful while shipping deeper features.
 2. Prefer one coherent implementation pass per connected area instead of scattered one-off fixes.
 3. Remove or hide fake surfaces if we do not plan to make them real soon.
-4. Keep the Bun/Electrobun + shared-contract architecture intact while growing features.
+4. Keep the Electron + shared-contract architecture intact while using Bun only for installs, scripts, and build orchestration.
 
 ## Phase 1 — close obvious product gaps
 

@@ -31,7 +31,7 @@ async function waitForBuildArtifacts() {
 async function startElectronProcess() {
   const electronBinary = await ensureElectronBinary();
 
-  electronProcess = spawn(electronBinary, [entryFile], {
+  const child = spawn(electronBinary, [entryFile], {
     cwd: projectRoot,
     stdio: "inherit",
     env: {
@@ -40,8 +40,12 @@ async function startElectronProcess() {
     },
   });
 
-  electronProcess.on("exit", () => {
-    electronProcess = null;
+  electronProcess = child;
+
+  child.on("exit", () => {
+    if (electronProcess === child) {
+      electronProcess = null;
+    }
   });
 }
 

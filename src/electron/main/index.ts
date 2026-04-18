@@ -9,6 +9,8 @@ import { loadDesktopRuntimeModules } from "./runtime/load-desktop-runtime";
 let currentMainWindow: BrowserWindow | null = null;
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging();
 
+app.setName("howcode");
+
 async function openMainWindow() {
   const mainWindow = createMainWindow();
   currentMainWindow = mainWindow;

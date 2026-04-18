@@ -14,8 +14,6 @@ function resolvePiPackageDirectory() {
 
 export function configureDesktopEnvironment() {
   process.env.HOWCODE_USER_DATA_PATH = app.getPath("userData");
-  process.env.HOWCODE_APP_ID = "howcode.desktop.local";
-  process.env.HOWCODE_CHANNEL = app.isPackaged ? "stable" : "dev";
 
   const piPackageDirectory = resolvePiPackageDirectory();
   if (piPackageDirectory) {

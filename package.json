@@ -1,5 +1,6 @@
 {
-  "name": "pi-desktop-mock",
+  "name": "howcode",
+  "productName": "howcode",
   "version": "0.1.2",
   "private": true,
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",

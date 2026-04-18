@@ -3,6 +3,10 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 
+type NodeError = Error & {
+  code?: string;
+};
+
 function getElectronInstallScriptPath() {
   return require.resolve("electron/install.js");
 }
@@ -11,7 +15,12 @@ function tryResolveElectronBinary() {
   try {
     return require("electron") as string;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Electron failed to install correctly")) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("Electron failed to install correctly") ||
+        ((error as NodeError).code === "MODULE_NOT_FOUND" &&
+          /['\"]electron['\"]/.test(error.message)))
+    ) {
       return null;
     }
 
