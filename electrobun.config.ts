@@ -61,6 +61,10 @@ export default {
     mac: {
       bundleCEF: true,
       defaultRenderer: "cef",
+      entitlements: {
+        "com.apple.security.device.audio-input":
+          "Howcode needs microphone access for local dictation.",
+      },
     },
     linux: {
       bundleCEF: true,
