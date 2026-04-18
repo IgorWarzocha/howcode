@@ -447,6 +447,11 @@ export function useComposerController({
       return "stopped" as const;
     }
 
+    if (dictationFlushPromiseRef.current) {
+      await dictationFlushPromiseRef.current;
+      return "stopped" as const;
+    }
+
     if (!canUseLocalDictationCapture() || !window.piDesktop?.transcribeDictation) {
       setErrorMessage("Local dictation is unavailable in this runtime.");
       return "unavailable" as const;
