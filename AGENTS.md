@@ -1,4 +1,4 @@
-- Prefer Node.js 24 LTS-compatible installs and scripts for desktop/runtime work.
+- Use Bun for installs and scripts; keep the app runtime on Node.js/Electron.
 - Pre-commit hooks exist; skip separate lint/format/check runs unless asked.
 - Prefer `src/electron/main/**`, `src/electron/preload/**`, and `shared/*` contracts over ad-hoc desktop IPC shims.
 - Keep UI changes optimistic and reuse existing patterns over one-offs.

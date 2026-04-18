@@ -2,7 +2,8 @@
 
 ## Stack
 
-- Node.js 24 LTS
+- Bun for installs/scripts
+- Node.js 24 LTS runtime target
 - Electron
 - React + Vite
 - Tailwind CSS v4
@@ -11,18 +12,18 @@
 ## Local development
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ## Common commands
 
 ```bash
-npm run build
-npm run build:release
-npm run build:launcher-artifacts
-npm run release:prepare
-npm run publish:howcode:dry-run
+bun run build
+bun run build:release
+bun run build:launcher-artifacts
+bun run release:prepare
+bun run publish:howcode:dry-run
 ```
 
 ## Release flow
@@ -30,7 +31,7 @@ npm run publish:howcode:dry-run
 Build release artifacts:
 
 ```bash
-npm run release:prepare
+bun run release:prepare
 ```
 
 This produces:
@@ -81,16 +82,16 @@ Desktop release builds bundle Electron with Chromium on macOS, Linux, and Window
 Main checks:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run check
+bun run lint
+bun run typecheck
+bun run test
+bun run check
 ```
 
 Hooks:
 
 - `.husky/pre-commit` — lint-staged, typecheck, test
-- `.husky/pre-push` — full `npm run check`
+- `.husky/pre-push` — full `bun run check`
 
 ## Useful docs
 

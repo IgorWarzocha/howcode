@@ -10,7 +10,7 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
   "include": ["scripts/**/*.ts", "shared/**/*.ts"]
 }

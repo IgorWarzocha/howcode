@@ -57,7 +57,7 @@ async function findPaths(rootPath: string, matcher: (entryPath: string) => boole
 
 async function resolveBundlePath(target: Target) {
   if (!existsSync(electronOutputRoot)) {
-    throw new Error("Missing Electron output. Run `npm run build:release` first.");
+    throw new Error("Missing Electron output. Run `bun run build:release` first.");
   }
 
   const matches = await findPaths(electronOutputRoot, (entryPath) => {

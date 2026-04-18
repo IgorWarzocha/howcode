@@ -1,52 +1,49 @@
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { build, context, type BuildOptions } from "esbuild";
 
 const isWatchMode = process.argv.includes("--watch");
 const projectRoot = process.cwd();
 const buildRoot = path.join(projectRoot, "build");
 
-const commonOptions: Pick<
-  BuildOptions,
-  "bundle" | "platform" | "target" | "sourcemap" | "packages" | "logLevel"
-> = {
-  bundle: true,
-  platform: "node",
-  target: "node24",
-  sourcemap: true,
-  packages: "external" as const,
-  logLevel: "info" as const,
-};
-
-const electronOptions: BuildOptions = {
-  ...commonOptions,
-  format: "cjs" as const,
-  entryPoints: [
-    path.join(projectRoot, "src", "electron", "main", "index.ts"),
-    path.join(projectRoot, "src", "electron", "preload", "index.ts"),
-  ],
-  outbase: path.join(projectRoot, "src", "electron"),
-  outdir: path.join(buildRoot, "electron"),
-  external: ["electron"],
-  outExtension: {
-    ".js": ".cjs",
+const buildTargets = [
+  {
+    label: "electron-runtime",
+    entrypoints: [
+      path.join(projectRoot, "src", "electron", "main", "index.ts"),
+      path.join(projectRoot, "src", "electron", "preload", "index.ts"),
+    ],
+    outdir: path.join(buildRoot, "electron"),
+    root: path.join(projectRoot, "src", "electron"),
+    naming: {
+      entry: "[dir]/[name].cjs",
+    },
+    format: "cjs",
   },
-};
-
-const desktopOptions: BuildOptions = {
-  ...commonOptions,
-  format: "esm" as const,
-  entryPoints: {
-    "pi-threads": path.join(projectRoot, "desktop", "pi-threads.cts"),
-    "pi-skills": path.join(projectRoot, "desktop", "pi-skills.cts"),
-    "skill-creator-session": path.join(projectRoot, "desktop", "skill-creator-session.cts"),
-    "terminal-manager": path.join(projectRoot, "desktop", "terminal", "manager.cts"),
+  {
+    label: "desktop-runtime",
+    entrypoints: [
+      path.join(projectRoot, "desktop", "pi-threads.cts"),
+      path.join(projectRoot, "desktop", "pi-skills.cts"),
+      path.join(projectRoot, "desktop", "skill-creator-session.cts"),
+    ],
+    outdir: path.join(buildRoot, "desktop"),
+    root: path.join(projectRoot, "desktop"),
+    naming: {
+      entry: "[name].mjs",
+    },
+    format: "esm",
   },
-  outdir: path.join(buildRoot, "desktop"),
-  outExtension: {
-    ".js": ".mjs",
+  {
+    label: "terminal-manager",
+    entrypoints: [path.join(projectRoot, "desktop", "terminal", "manager.cts")],
+    outdir: path.join(buildRoot, "desktop"),
+    root: path.join(projectRoot, "desktop", "terminal"),
+    naming: {
+      entry: "terminal-manager.mjs",
+    },
+    format: "esm",
   },
-};
+] as const;
 
 async function prepareBuildDirectories() {
   await rm(path.join(buildRoot, "electron"), { recursive: true, force: true });
@@ -58,18 +55,30 @@ async function prepareBuildDirectories() {
 async function runBuild() {
   await prepareBuildDirectories();
 
-  if (isWatchMode) {
-    const [electronContext, desktopContext] = await Promise.all([
-      context(electronOptions),
-      context(desktopOptions),
-    ]);
+  const builds = await Promise.all(
+    buildTargets.map((target) =>
+      Bun.build({
+        entrypoints: [...target.entrypoints],
+        outdir: target.outdir,
+        root: target.root,
+        naming: target.naming,
+        target: "node",
+        format: target.format,
+        packages: "external",
+        sourcemap: "linked",
+        watch: isWatchMode,
+        throw: true,
+      } as Bun.BuildConfig & { watch?: boolean }),
+    ),
+  );
 
-    await Promise.all([electronContext.watch(), desktopContext.watch()]);
-    console.log("Watching Electron runtime bundles...");
-    return;
+  for (const [index, build] of builds.entries()) {
+    console.log(`Built ${buildTargets[index].label} (${build.outputs.length} output(s)).`);
   }
 
-  await Promise.all([build(electronOptions), build(desktopOptions)]);
+  if (isWatchMode) {
+    console.log("Watching Electron runtime bundles...");
+  }
 }
 
 void runBuild().catch((error) => {
