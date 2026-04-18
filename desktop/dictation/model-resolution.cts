@@ -2,6 +2,7 @@ import { existsSync, readdirSync, type Dirent } from "node:fs";
 import path from "node:path";
 import type { DictationModelId } from "../../shared/desktop-contracts.ts";
 import {
+  inferWhisperLanguage,
   normalizeWhisperLanguage,
   resolveWhisperModelFilesFromFilePaths,
   type ResolvedWhisperModelFiles,
@@ -35,8 +36,7 @@ export function getDictationModelDirectories() {
 }
 
 export function getDictationModelsRootDirectory() {
-  const [modelDirectory = DEFAULT_DICTATION_MODEL_DIRECTORY] = getDictationModelDirectories();
-  return modelDirectory;
+  return DEFAULT_DICTATION_MODEL_DIRECTORY;
 }
 
 export function getDictationModelDirectory(modelId: DictationModelId) {
@@ -66,7 +66,7 @@ export function getManagedDictationModelFiles(
     decoderPath,
     tokensPath,
     modelId,
-    language: normalizeWhisperLanguage(modelId),
+    language: inferWhisperLanguage(modelId) ?? normalizeWhisperLanguage(modelId),
   };
 }
 
@@ -95,6 +95,10 @@ function collectCandidateFiles(rootDirectory: string, maxDepth = 3) {
     }
 
     for (const entry of entries) {
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
+
       const entryPath = path.join(current.directoryPath, entry.name);
       if (entry.isDirectory()) {
         if (current.depth < maxDepth) {

@@ -4,10 +4,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   decodePcm16MonoBytes,
+  inferWhisperLanguage,
   resolveWhisperModelFilesFromFilePaths,
 } from "../../shared/dictation-helpers";
 
 describe("sherpa dictation helpers", () => {
+  it("infers english from dotted whisper model ids", () => {
+    expect(inferWhisperLanguage("tiny.en")).toBe("en");
+    expect(inferWhisperLanguage("base.en")).toBe("en");
+  });
+
   it("prefers quantized whisper models when multiple variants are present", () => {
     const rootDirectory = mkdtempSync(path.join(os.tmpdir(), "howcode-whisper-model-"));
     const modelDirectory = path.join(rootDirectory, "tiny-en");

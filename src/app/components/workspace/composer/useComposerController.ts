@@ -81,11 +81,13 @@ export function useComposerController({
   const activeComposerScopeKeyRef = useRef(composerScopeKey);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
   const skipNextDraftPersistenceRef = useRef<string | null>(null);
+  const attachmentsRef = useRef<ComposerAttachment[]>([]);
   const draftValueRef = useRef("");
   const sendLockRef = useRef(false);
 
   activeDraftThreadIdRef.current = draftThreadId;
   activeComposerScopeKeyRef.current = composerScopeKey;
+  attachmentsRef.current = attachments;
 
   const setDraftValue = useCallback((value: SetStateAction<string>) => {
     const nextValue =
@@ -193,7 +195,6 @@ export function useComposerController({
   };
 
   const { send, stop } = useComposerSubmission({
-    attachments,
     composerScopeKey,
     draftThreadId,
     isSending,
@@ -209,6 +210,7 @@ export function useComposerController({
     streamingBehaviorPreference,
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
+    attachmentsRef,
     draftValueRef,
     sendLockRef,
     skipNextDraftPersistenceRef,

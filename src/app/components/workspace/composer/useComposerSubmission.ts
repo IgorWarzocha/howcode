@@ -10,7 +10,6 @@ import { withComposerSendLock } from "./composerSendLock";
 import { submitComposerDraft } from "./submitComposerDraft";
 
 type UseComposerSubmissionProps = {
-  attachments: ComposerAttachment[];
   composerScopeKey: string;
   draftThreadId: string | null;
   isSending: boolean;
@@ -26,13 +25,13 @@ type UseComposerSubmissionProps = {
   streamingBehaviorPreference: ComposerStreamingBehavior;
   activeComposerScopeKeyRef: MutableRefObject<string>;
   activeDraftThreadIdRef: MutableRefObject<string | null>;
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>;
   draftValueRef: MutableRefObject<string>;
   sendLockRef: MutableRefObject<boolean>;
   skipNextDraftPersistenceRef: MutableRefObject<string | null>;
 };
 
 export function useComposerSubmission({
-  attachments,
   composerScopeKey,
   draftThreadId,
   isSending,
@@ -48,6 +47,7 @@ export function useComposerSubmission({
   streamingBehaviorPreference,
   activeComposerScopeKeyRef,
   activeDraftThreadIdRef,
+  attachmentsRef,
   draftValueRef,
   sendLockRef,
   skipNextDraftPersistenceRef,
@@ -62,7 +62,6 @@ export function useComposerSubmission({
       const submittedProjectId = projectId;
       const submittedSessionPath = sessionPath;
       const submittedDraftThreadId = draftThreadId;
-      const submittedAttachments = attachments;
 
       setIsSending(true);
 
@@ -74,6 +73,7 @@ export function useComposerSubmission({
         }
 
         const textToSend = draftValueRef.current.trim();
+        const submittedAttachments = attachmentsRef.current;
         if (textToSend.length === 0) {
           return;
         }
@@ -124,7 +124,7 @@ export function useComposerSubmission({
   }, [
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
-    attachments,
+    attachmentsRef,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
