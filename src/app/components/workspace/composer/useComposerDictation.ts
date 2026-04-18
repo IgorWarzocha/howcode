@@ -68,7 +68,7 @@ export function useComposerDictation({
       return;
     }
 
-    void capture.abort();
+    void capture.abort().catch(() => undefined);
     clearDictationSession();
   }, [clearDictationSession, clearPendingDictationFlush]);
 
@@ -218,9 +218,16 @@ export function useComposerDictation({
     }
 
     try {
-      const availability = window.piDesktop.getDictationState
-        ? await window.piDesktop.getDictationState().catch(() => null)
-        : dictationState;
+      let availability = dictationState;
+
+      if (window.piDesktop.getDictationState) {
+        try {
+          availability = await window.piDesktop.getDictationState();
+        } catch {
+          setErrorMessage("Could not verify local dictation availability in this runtime.");
+          return "unavailable" as const;
+        }
+      }
 
       if (availability) {
         setDictationState(availability);

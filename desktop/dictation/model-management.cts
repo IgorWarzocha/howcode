@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { createWriteStream, existsSync } from "node:fs";
-import { mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { mkdir, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -92,9 +92,12 @@ async function validateDownloadedFile(targetPath: string, metadata: DownloadMeta
     return;
   }
 
-  const fileHash = createHash(hashAlgorithm)
-    .update(await readFile(targetPath))
-    .digest("hex");
+  const hash = createHash(hashAlgorithm);
+  for await (const chunk of createReadStream(targetPath)) {
+    hash.update(chunk);
+  }
+
+  const fileHash = hash.digest("hex");
 
   if (fileHash !== normalizedEtag) {
     throw new Error(`Download failed: ${path.basename(targetPath)} checksum mismatch.`);
@@ -207,16 +210,35 @@ export async function installManagedDictationModel(
 
     try {
       await rename(stagingDirectory, modelDirectory);
-
-      if (backupDirectory) {
-        await rm(backupDirectory, { recursive: true, force: true });
-      }
     } catch (error) {
       if (backupDirectory) {
-        await rename(backupDirectory, modelDirectory).catch(() => undefined);
+        try {
+          await rename(backupDirectory, modelDirectory);
+        } catch (restoreError) {
+          const installErrorMessage = error instanceof Error ? error.message : String(error);
+          const restoreErrorMessage =
+            restoreError instanceof Error ? restoreError.message : String(restoreError);
+
+          throw new Error(
+            `Could not finalize dictation model install (${installErrorMessage}) and failed to restore the previous model (${restoreErrorMessage}).`,
+          );
+        }
       }
 
       throw error;
+    }
+
+    if (backupDirectory) {
+      try {
+        await rm(backupDirectory, { recursive: true, force: true });
+      } catch (error) {
+        emitDictationDownloadLog(
+          modelId,
+          error instanceof Error
+            ? `Installed ${definition.name}, but could not remove the previous backup: ${error.message}`
+            : `Installed ${definition.name}, but could not remove the previous backup.`,
+        );
+      }
     }
 
     resetRecognizerCache();

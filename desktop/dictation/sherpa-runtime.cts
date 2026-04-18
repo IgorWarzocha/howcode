@@ -91,10 +91,15 @@ function ensureSherpaLibraryPath() {
 
 export async function loadSherpaOnnxModule() {
   if (!sherpaOnnxModulePromise) {
-    sherpaOnnxModulePromise = Promise.resolve().then(() => {
-      ensureSherpaLibraryPath();
-      return sherpaRequire("sherpa-onnx-node") as SherpaOnnxModule;
-    });
+    sherpaOnnxModulePromise = Promise.resolve()
+      .then(() => {
+        ensureSherpaLibraryPath();
+        return sherpaRequire("sherpa-onnx-node") as SherpaOnnxModule;
+      })
+      .catch((error) => {
+        sherpaOnnxModulePromise = null;
+        throw error;
+      });
   }
 
   return sherpaOnnxModulePromise;

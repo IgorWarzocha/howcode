@@ -79,8 +79,12 @@ export function useSettingsDictationController({
         const nextLines = [...current, `bun ${event.modelId}: ${event.message}`];
         return nextLines.slice(-12);
       });
+
+      if (event.done) {
+        void refreshDictationState();
+      }
     });
-  }, []);
+  }, [refreshDictationState]);
 
   const appendDictationDownloadLogLine = useCallback((line: string) => {
     setDictationDownloadLogLines((current) => [...current, line].slice(-12));

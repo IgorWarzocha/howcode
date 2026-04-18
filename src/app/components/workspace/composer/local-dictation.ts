@@ -9,6 +9,8 @@ export type LocalDictationCaptureSession = {
 };
 
 const TARGET_SAMPLE_RATE = 16_000;
+const MAX_DICTATION_DURATION_SECONDS = 180;
+const MAX_CAPTURE_SAMPLE_COUNT = TARGET_SAMPLE_RATE * MAX_DICTATION_DURATION_SECONDS;
 
 function getAudioContextConstructor() {
   return (
@@ -145,12 +147,23 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
     await audioContext.resume();
   }
 
+  if (audioContext.sampleRate < TARGET_SAMPLE_RATE) {
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+
+    await audioContext.close();
+    throw new Error("The microphone sample rate is lower than the dictation target sample rate.");
+  }
+
   const source = audioContext.createMediaStreamSource(stream);
   const processor = audioContext.createScriptProcessor(4_096, 1, 1);
   const mutedDestination = audioContext.createGain();
   mutedDestination.gain.value = 0;
 
   const recordedChunks: Float32Array[] = [];
+  let recordedSampleCount = 0;
+  let captureError: Error | null = null;
   let settled = false;
   let settlePromise: Promise<void> | null = null;
 
@@ -162,7 +175,17 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
     const inputChannel = event.inputBuffer.getChannelData(0);
     const downsampled = downsampleBuffer(inputChannel, audioContext.sampleRate, TARGET_SAMPLE_RATE);
     if (downsampled.length > 0) {
+      if (recordedSampleCount + downsampled.length > MAX_CAPTURE_SAMPLE_COUNT) {
+        captureError =
+          captureError ??
+          new Error(
+            `Dictation is limited to ${MAX_DICTATION_DURATION_SECONDS / 60} minutes per capture.`,
+          );
+        return;
+      }
+
       recordedChunks.push(downsampled);
+      recordedSampleCount += downsampled.length;
     }
   };
 
@@ -188,6 +211,11 @@ export async function startLocalDictationCapture(): Promise<LocalDictationCaptur
   return {
     stop: async () => {
       await settleCapture();
+
+      if (captureError) {
+        throw captureError;
+      }
+
       const samples = concatFloat32Arrays(recordedChunks);
 
       return {
