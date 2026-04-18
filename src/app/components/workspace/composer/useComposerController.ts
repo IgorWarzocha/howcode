@@ -95,6 +95,7 @@ export function useComposerController({
   const [dictationInterimText, setDictationInterimText] = useState("");
   const [dictationState, setDictationState] = useState<DictationState | null>(null);
   const draftValueRef = useRef("");
+  const dictationSessionTokenRef = useRef(0);
   const dictationSettledPromiseRef = useRef<Promise<void> | null>(null);
   const dictationSettledResolverRef = useRef<(() => void) | null>(null);
   const dictationFlushPromiseRef = useRef<Promise<void> | null>(null);
@@ -125,6 +126,8 @@ export function useComposerController({
   }, [resolveDictationSettled]);
 
   const abortDictationSession = useCallback(() => {
+    dictationSessionTokenRef.current += 1;
+
     const capture = dictationCaptureRef.current;
     if (!capture) {
       clearDictationSession();
@@ -149,6 +152,7 @@ export function useComposerController({
     dictationCaptureRef.current = null;
 
     const submittedScopeKey = activeDictationScopeKeyRef.current;
+    const submittedSessionToken = dictationSessionTokenRef.current;
     const flushPromise = (async () => {
       setDictationActive(false);
       setDictationInterimText("Transcribing…");
@@ -156,7 +160,10 @@ export function useComposerController({
       try {
         const audio = await capture.stop();
 
-        if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+        if (
+          activeDictationScopeKeyRef.current !== submittedScopeKey ||
+          dictationSessionTokenRef.current !== submittedSessionToken
+        ) {
           return;
         }
 
@@ -176,7 +183,10 @@ export function useComposerController({
           language: navigator.language || null,
         });
 
-        if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+        if (
+          activeDictationScopeKeyRef.current !== submittedScopeKey ||
+          dictationSessionTokenRef.current !== submittedSessionToken
+        ) {
           return;
         }
 
@@ -190,7 +200,10 @@ export function useComposerController({
           setErrorMessage(null);
         }
       } catch (error) {
-        if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+        if (
+          activeDictationScopeKeyRef.current === submittedScopeKey &&
+          dictationSessionTokenRef.current === submittedSessionToken
+        ) {
           setErrorMessage(
             error instanceof Error ? error.message : "Could not stop local dictation.",
           );
@@ -198,7 +211,10 @@ export function useComposerController({
       } finally {
         dictationFlushPromiseRef.current = null;
 
-        if (activeDictationScopeKeyRef.current === submittedScopeKey) {
+        if (
+          activeDictationScopeKeyRef.current === submittedScopeKey &&
+          dictationSessionTokenRef.current === submittedSessionToken
+        ) {
           clearDictationSession();
         }
       }
@@ -477,6 +493,7 @@ export function useComposerController({
       }
 
       const capture = await startLocalDictationCapture();
+      dictationSessionTokenRef.current += 1;
       dictationSettledPromiseRef.current = new Promise<void>((resolve) => {
         dictationSettledResolverRef.current = resolve;
       });
@@ -491,6 +508,19 @@ export function useComposerController({
       return "unavailable" as const;
     }
   };
+
+  const cancelDictation = useCallback(async () => {
+    if (dictationCaptureRef.current) {
+      abortDictationSession();
+      return;
+    }
+
+    if (dictationFlushPromiseRef.current) {
+      dictationSessionTokenRef.current += 1;
+      clearDictationSession();
+      await dictationFlushPromiseRef.current.catch(() => undefined);
+    }
+  }, [abortDictationSession, clearDictationSession]);
 
   const pickAttachments = async () => {
     if (openMenu === "picker") {
@@ -552,6 +582,7 @@ export function useComposerController({
 
   return {
     attachments,
+    cancelDictation,
     canSend,
     clearError: () => setErrorMessage(null),
     draft,

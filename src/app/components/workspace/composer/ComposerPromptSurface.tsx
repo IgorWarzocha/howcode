@@ -1,4 +1,16 @@
-import { Bot, Check, GitBranch, Mic, Plus, Send, Square, Terminal, X } from "lucide-react";
+import {
+  AudioLines,
+  Bot,
+  Check,
+  FileAudio,
+  GitBranch,
+  Mic,
+  Plus,
+  Send,
+  Square,
+  Terminal,
+  X,
+} from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { useAnimatedPresence } from "../../../hooks/useAnimatedPresence";
@@ -63,6 +75,7 @@ export function ComposerPromptSurface({
   const dictationPromptPresent = useAnimatedPresence(dictationPromptOpen);
   const {
     attachments,
+    cancelDictation,
     canSend,
     clearError,
     draft,
@@ -109,6 +122,7 @@ export function ComposerPromptSurface({
     onPickAttachments,
     onListAttachmentEntries,
   });
+  const dictationTranscribing = dictationInterimText.length > 0;
 
   useDismissibleLayer({
     open: dictationPromptOpen,
@@ -180,6 +194,12 @@ export function ComposerPromptSurface({
                   }
                 }}
                 onKeyDown={(event) => {
+                  if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
+                    event.preventDefault();
+                    void cancelDictation();
+                    return;
+                  }
+
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
                     void send();
@@ -259,22 +279,38 @@ export function ComposerPromptSurface({
                       getFeatureStatusButtonClass("feature:composer.dictate"),
                       dictationActive &&
                         "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1]",
+                      dictationTranscribing &&
+                        "border-[rgba(183,186,245,0.3)] bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
                       dictationPromptOpen &&
                         "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
                     )}
-                    aria-label={dictationActive ? "Stop dictation" : "Dictate"}
-                    aria-pressed={dictationActive || dictationPromptOpen}
+                    aria-label={
+                      dictationActive
+                        ? "Stop dictation"
+                        : dictationTranscribing
+                          ? "Transcribing dictation"
+                          : "Dictate"
+                    }
+                    aria-pressed={dictationActive || dictationTranscribing || dictationPromptOpen}
                     title={
                       dictationActive
                         ? "Stop dictation"
-                        : dictationSupported
-                          ? "Dictate"
-                          : dictationMissingModel
-                            ? "Install speech-to-text model"
-                            : "Dictation unavailable in this runtime"
+                        : dictationTranscribing
+                          ? "Transcribing dictation"
+                          : dictationSupported
+                            ? "Dictate"
+                            : dictationMissingModel
+                              ? "Install speech-to-text model"
+                              : "Dictation unavailable in this runtime"
                     }
                   >
-                    <Mic size={15} />
+                    {dictationActive ? (
+                      <AudioLines size={15} />
+                    ) : dictationTranscribing ? (
+                      <FileAudio size={15} />
+                    ) : (
+                      <Mic size={15} />
+                    )}
                   </button>
                 </div>
               ) : null}
@@ -312,12 +348,6 @@ export function ComposerPromptSurface({
       {errorMessage ? (
         <output className="px-4 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
           {errorMessage}
-        </output>
-      ) : null}
-
-      {dictationActive || dictationInterimText ? (
-        <output className="px-4 pb-2 text-[12px] text-[color:var(--muted)]" aria-live="polite">
-          {dictationActive ? "Listening…" : dictationInterimText || "Dictation stopped."}
         </output>
       ) : null}
 
