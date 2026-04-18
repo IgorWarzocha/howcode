@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker, DictationState } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project } from "../../types";
@@ -25,6 +25,7 @@ export function useSettingsController({
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false);
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false);
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
+  const [dictationState, setDictationState] = useState<DictationState | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
   const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
@@ -38,6 +39,31 @@ export function useSettingsController({
   useEffect(() => {
     setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? "");
   }, [appSettings.preferredProjectLocation]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    if (!window.piDesktop?.getDictationState) {
+      return;
+    }
+
+    void window.piDesktop
+      .getDictationState()
+      .then((state) => {
+        if (!disposed) {
+          setDictationState(state);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setDictationState(null);
+        }
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const closeGitCommitMenu = useCallback(() => {
     setGitCommitMenuOpen(false);
@@ -116,6 +142,7 @@ export function useSettingsController({
 
   return {
     addFavoriteFolder,
+    dictationState,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
@@ -131,6 +158,11 @@ export function useSettingsController({
     setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) =>
       void onAction("settings.update", {
         key: "composerStreamingBehavior",
+        value,
+      }),
+    setShowDictationButton: (value: boolean) =>
+      void onAction("settings.update", {
+        key: "showDictationButton",
         value,
       }),
     selectGitCommitModel: (id: string) =>

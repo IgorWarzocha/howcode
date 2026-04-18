@@ -20,6 +20,7 @@ import {
   setPreferredProjectLocation,
   setProjectDeletionMode,
   setProjectImportState,
+  setShowDictationButton,
   setSkillCreatorModelSelection,
   setUseAgentsSkillsPaths,
 } from "../app-settings.cts";
@@ -49,6 +50,11 @@ export function handleSettingsDesktopAction(
     if (value) {
       setComposerStreamingBehavior(value);
     }
+    return handledAction();
+  }
+
+  if (key === "showDictationButton") {
+    setShowDictationButton(getSettingsBooleanValue(payload) ?? true);
     return handledAction();
   }
 

@@ -28,6 +28,7 @@ export type ComposerProps = {
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
   favoriteFolders: string[];
+  showDictationButton: boolean;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
@@ -40,6 +41,7 @@ export type ComposerProps = {
   promptResetKey: number;
   onOpenTakeoverTerminal: () => void;
   onOpenGitOpsView: () => void;
+  onOpenSettingsView: () => void;
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   terminalVisible: boolean;

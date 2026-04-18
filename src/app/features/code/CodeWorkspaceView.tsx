@@ -296,6 +296,7 @@ export function CodeWorkspaceView({
                     gitCommitMessageModel: null,
                     skillCreatorModel: null,
                     composerStreamingBehavior: "followUp",
+                    showDictationButton: true,
                     favoriteFolders: [],
                     projectImportState: null,
                     preferredProjectLocation: null,
@@ -394,6 +395,7 @@ export function CodeWorkspaceView({
                       diffBaseline={diffBaseline}
                       sessionPath={terminalSessionPath}
                       favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                      showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       diffRenderMode={diffRenderMode}
                       diffComments={diffComments}
                       diffCommentCount={diffCommentCount}
@@ -413,6 +415,7 @@ export function CodeWorkspaceView({
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
+                      onOpenSettingsView={() => controller.handleShowView("settings")}
                       onRestoredQueuedPromptApplied={() => {
                         setRestoredQueuedPrompt((current) =>
                           current?.projectId === composerProjectId &&

@@ -246,6 +246,7 @@ export function useComposerController({
   });
 
   const canSend = draft.trim().length > 0 && !isSending;
+  const dictationMissingModel = dictationState?.reason === "missing-model";
   const dictationSupported = useMemo(
     () =>
       canUseLocalDictationCapture() &&
@@ -422,12 +423,12 @@ export function useComposerController({
   const toggleDictation = async () => {
     if (dictationCaptureRef.current) {
       void stopDictationAndFlush();
-      return;
+      return "stopped" as const;
     }
 
     if (!canUseLocalDictationCapture() || !window.piDesktop?.transcribeDictation) {
       setErrorMessage("Local dictation is unavailable in this runtime.");
-      return;
+      return "unavailable" as const;
     }
 
     try {
@@ -442,8 +443,13 @@ export function useComposerController({
       }
 
       if (availability && !availability.available) {
+        if (availability.reason === "missing-model") {
+          setErrorMessage(null);
+          return "setup-required" as const;
+        }
+
         setErrorMessage(availability.error ?? "Local dictation is unavailable in this runtime.");
-        return;
+        return "unavailable" as const;
       }
 
       const capture = await startLocalDictationCapture();
@@ -454,9 +460,11 @@ export function useComposerController({
       setDictationActive(true);
       setDictationInterimText("");
       setErrorMessage(null);
+      return "started" as const;
     } catch (error) {
       clearDictationSession();
       setErrorMessage(error instanceof Error ? error.message : "Could not start local dictation.");
+      return "unavailable" as const;
     }
   };
 
@@ -525,6 +533,7 @@ export function useComposerController({
     draft,
     dictationActive,
     dictationInterimText,
+    dictationMissingModel,
     dictationSupported,
     errorMessage,
     isSending,

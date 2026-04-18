@@ -245,11 +245,15 @@ function getResolvedDictationModelFiles() {
   return null;
 }
 
-function buildUnavailableDictationState(error: string): DictationState {
+function buildUnavailableDictationState(
+  error: string,
+  reason: DictationState["reason"],
+): DictationState {
   const [modelDirectory = DEFAULT_DICTATION_MODEL_DIRECTORY] = getDictationModelDirectories();
 
   return {
     available: false,
+    reason,
     runtime: null,
     modelDirectory,
     modelId: null,
@@ -278,7 +282,10 @@ export function decodeBase64Pcm16Mono(audioBase64: string) {
 
 export async function getDictationState(): Promise<DictationState> {
   if (!getSherpaPlatformPackageName()) {
-    return buildUnavailableDictationState("Local dictation is unavailable on this platform.");
+    return buildUnavailableDictationState(
+      "Local dictation is unavailable on this platform.",
+      "unsupported-platform",
+    );
   }
 
   const modelFiles = getResolvedDictationModelFiles();
@@ -287,6 +294,7 @@ export async function getDictationState(): Promise<DictationState> {
 
     return buildUnavailableDictationState(
       `No Whisper model was found. Expected a sherpa-onnx Whisper model under ${modelDirectory}.`,
+      "missing-model",
     );
   }
 
@@ -295,11 +303,13 @@ export async function getDictationState(): Promise<DictationState> {
   } catch (error) {
     return buildUnavailableDictationState(
       error instanceof Error ? error.message : "Could not load sherpa-onnx-node.",
+      "runtime-error",
     );
   }
 
   return {
     available: true,
+    reason: null,
     runtime: "sherpa-onnx-node",
     modelDirectory: modelFiles.modelDirectory,
     modelId: modelFiles.modelId,

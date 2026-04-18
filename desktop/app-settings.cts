@@ -9,6 +9,7 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 const gitCommitMessageModelKey = "gitCommitMessageModel";
 const skillCreatorModelKey = "skillCreatorModel";
 const composerStreamingBehaviorKey = "composerStreamingBehavior";
+const showDictationButtonKey = "showDictationButton";
 const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
@@ -230,12 +231,23 @@ export function loadAppSettings(): AppSettings {
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
 
+  const showDictationButtonRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(showDictationButtonKey) as PreferenceRow | undefined;
+
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
       "followUp",
+    showDictationButton: parseBooleanPreference(showDictationButtonRow?.valueJson) ?? true,
     favoriteFolders: parseFavoriteFolders(favoriteFoldersRow?.valueJson),
     projectImportState: parseBooleanPreference(projectImportStateRow?.valueJson),
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
@@ -268,6 +280,15 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {
   writeAppPreference(composerStreamingBehaviorKey, JSON.stringify(behavior));
+}
+
+export function setShowDictationButton(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(showDictationButtonKey);
+    return;
+  }
+
+  writeAppPreference(showDictationButtonKey, JSON.stringify(false));
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {

@@ -154,6 +154,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "skillCreatorModel" ||
     payload.key === "composerStreamingBehavior" ||
+    payload.key === "showDictationButton" ||
     payload.key === "favoriteFolders" ||
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||

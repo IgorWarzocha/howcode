@@ -141,6 +141,7 @@ export type ComposerAttachment = {
 
 export type DictationState = {
   available: boolean;
+  reason: "missing-model" | "runtime-error" | "unsupported-platform" | null;
   runtime: "sherpa-onnx-node" | null;
   modelDirectory: string | null;
   modelId: string | null;
@@ -284,6 +285,7 @@ export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
   skillCreatorModel: ModelSelection | null;
   composerStreamingBehavior: ComposerStreamingBehavior;
+  showDictationButton: boolean;
   favoriteFolders: string[];
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
