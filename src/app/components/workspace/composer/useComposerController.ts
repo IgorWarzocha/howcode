@@ -16,6 +16,7 @@ import {
   getBrowserSpeechRecognitionErrorMessage,
   type BrowserSpeechRecognitionInstance,
 } from "./browser-dictation";
+import { withComposerSendLock } from "./composerSendLock";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { submitComposerDraft } from "./submitComposerDraft";
@@ -92,6 +93,7 @@ export function useComposerController({
   const draftValueRef = useRef("");
   const dictationSettledPromiseRef = useRef<Promise<void> | null>(null);
   const dictationSettledResolverRef = useRef<(() => void) | null>(null);
+  const sendLockRef = useRef(false);
 
   activeDraftThreadIdRef.current = draftThreadId;
 
@@ -248,63 +250,74 @@ export function useComposerController({
   };
 
   const send = async () => {
-    if (isSending) {
+    if (isSending || sendLockRef.current) {
       return;
     }
 
-    const submittedScopeKey = dictationScopeKey;
-    const submittedProjectId = projectId;
-    const submittedSessionPath = sessionPath;
-    const submittedDraftThreadId = draftThreadId;
-    const submittedAttachments = attachments;
+    await withComposerSendLock(sendLockRef, async () => {
+      const submittedScopeKey = dictationScopeKey;
+      const submittedProjectId = projectId;
+      const submittedSessionPath = sessionPath;
+      const submittedDraftThreadId = draftThreadId;
+      const submittedAttachments = attachments;
 
-    await stopDictationAndFlush();
+      setIsSending(true);
 
-    if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
-      return;
-    }
+      try {
+        await stopDictationAndFlush();
 
-    const textToSend = draftValueRef.current.trim();
-    if (textToSend.length === 0) {
-      return;
-    }
+        if (activeDictationScopeKeyRef.current !== submittedScopeKey) {
+          return;
+        }
 
-    const submittedDraft = textToSend;
+        const textToSend = draftValueRef.current.trim();
+        if (textToSend.length === 0) {
+          return;
+        }
 
-    setIsSending(true);
-    setErrorMessage(null);
-    skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-    setDraftValue("");
-    setAttachments([]);
+        const submittedDraft = textToSend;
 
-    const result = await submitComposerDraft({
-      draft: submittedDraft,
-      attachments: submittedAttachments,
-      draftThreadId: submittedDraftThreadId,
-      isSending,
-      projectId: submittedProjectId,
-      sessionPath: submittedSessionPath,
-      streamingBehaviorPreference,
-      onAction,
-      clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
+        setErrorMessage(null);
+        skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+        setDraftValue("");
+        setAttachments([]);
+
+        const result = await submitComposerDraft({
+          draft: submittedDraft,
+          attachments: submittedAttachments,
+          draftThreadId: submittedDraftThreadId,
+          isSending: false,
+          projectId: submittedProjectId,
+          sessionPath: submittedSessionPath,
+          streamingBehaviorPreference,
+          onAction,
+          clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
+        });
+
+        if (
+          result.status === "error" &&
+          activeDraftThreadIdRef.current === submittedDraftThreadId
+        ) {
+          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+          setAttachments((currentAttachments) =>
+            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
+          );
+          setErrorMessage(result.errorMessage);
+        }
+
+        if (
+          result.status === "stopped" &&
+          activeDraftThreadIdRef.current === submittedDraftThreadId
+        ) {
+          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
+          setAttachments((currentAttachments) =>
+            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
+          );
+        }
+      } finally {
+        setIsSending(false);
+      }
     });
-
-    if (result.status === "error" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
-      setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-      setAttachments((currentAttachments) =>
-        currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-      );
-      setErrorMessage(result.errorMessage);
-    }
-
-    if (result.status === "stopped" && activeDraftThreadIdRef.current === submittedDraftThreadId) {
-      setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-      setAttachments((currentAttachments) =>
-        currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-      );
-    }
-
-    setIsSending(false);
   };
 
   const stop = async () => {
