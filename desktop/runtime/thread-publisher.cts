@@ -3,7 +3,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
 import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
 import { getLatestInboxAssistantMessage } from "../../shared/thread-inbox.ts";
-import { buildThreadData } from "../../shared/thread-data.ts";
+import { buildThreadData, setThreadStreamingState } from "../../shared/thread-data.ts";
 import {
   beginInboxThreadTurn,
   getThreadAssistantSnapshot,
@@ -76,6 +76,17 @@ function getLatestUserPrompt(thread: ThreadData) {
   return prompt.length > 0 ? prompt : null;
 }
 
+export function normalizeThreadDataForReason(
+  thread: ThreadData,
+  reason: RuntimeThreadReason | "external",
+): ThreadData {
+  if (reason !== "end" && reason !== "external") {
+    return thread;
+  }
+
+  return setThreadStreamingState(thread, false);
+}
+
 export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReason) {
   const sessionPath = runtime.session.sessionFile;
   if (!sessionPath) {
@@ -84,10 +95,12 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
 
   markInternalThreadUpdate(sessionPath);
 
-  const thread = buildLiveThreadData(runtime);
-  if (!thread) {
+  const liveThread = buildLiveThreadData(runtime);
+  if (!liveThread) {
     return;
   }
+
+  const thread = normalizeThreadDataForReason(liveThread, reason);
 
   const threadId = runtime.session.sessionId;
   const projectId = runtime.cwd;
@@ -164,6 +177,8 @@ export async function publishExternalThreadUpdate({
   thread: ThreadData;
   threadId: string;
 }) {
+  thread = normalizeThreadDataForReason(thread, "external");
+
   rememberLiveThread(sessionPath, thread);
   rememberSessionPath(sessionPath, projectId);
   upsertThreadSummary({
