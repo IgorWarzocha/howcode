@@ -106,11 +106,27 @@ function getInstalledDictationModelFiles() {
   });
 }
 
-function getSelectedInstalledDictationModelFiles() {
+function resolveConfiguredDictationModelFilesFromDirectory(
+  directoryPath: string,
+  modelId?: DictationModelId,
+) {
+  const candidateFiles = collectCandidateFiles(directoryPath);
+
+  if (!modelId) {
+    return resolveWhisperModelFilesFromFilePaths(candidateFiles);
+  }
+
+  return resolveWhisperModelFilesFromFilePaths(
+    candidateFiles.filter((filePath) => path.basename(filePath).startsWith(`${modelId}-`)),
+  );
+}
+
+function getSelectedDictationModelFiles() {
   const appSettings = loadAppSettings();
   const selectedModelId = appSettings.dictationModelId;
   const selectedModelFiles = selectedModelId
-    ? getResolvedModelFilesForDefinition(selectedModelId)
+    ? (getResolvedModelFilesForDefinition(selectedModelId) ??
+      findConfiguredDictationModelFiles(selectedModelId))
     : null;
 
   if (selectedModelFiles) {
@@ -122,14 +138,12 @@ function getSelectedInstalledDictationModelFiles() {
 
 function findConfiguredDictationModelFiles(modelId?: DictationModelId) {
   for (const directoryPath of getDictationModelDirectories()) {
-    const modelFiles = resolveWhisperModelFilesFromDirectory(directoryPath);
+    const modelFiles = resolveConfiguredDictationModelFilesFromDirectory(directoryPath, modelId);
     if (!modelFiles) {
       continue;
     }
 
-    if (!modelId || modelFiles.modelId === modelId) {
-      return modelFiles;
-    }
+    return modelFiles;
   }
 
   return null;
@@ -319,7 +333,7 @@ async function getRecognizer(modelFiles: DictationModelFiles, language: string |
 }
 
 function getResolvedDictationModelFiles() {
-  return getSelectedInstalledDictationModelFiles() ?? findConfiguredDictationModelFiles();
+  return getSelectedDictationModelFiles() ?? findConfiguredDictationModelFiles();
 }
 
 function buildUnavailableDictationState(
@@ -653,7 +667,7 @@ export async function transcribeDictation(
   }
 
   const language = normalizeWhisperLanguage(
-    process.env.HOWCODE_SHERPA_ONNX_LANGUAGE?.trim() || request.language || modelFiles.language,
+    process.env.HOWCODE_SHERPA_ONNX_LANGUAGE?.trim() || modelFiles.language || request.language,
   );
 
   try {

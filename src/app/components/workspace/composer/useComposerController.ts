@@ -43,6 +43,7 @@ type UseComposerControllerProps = {
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
+  dictationModelId: string | null;
   isStreaming: boolean;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -60,6 +61,7 @@ export function useComposerController({
   model,
   projectId,
   sessionPath,
+  dictationModelId,
   isStreaming,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -275,6 +277,8 @@ export function useComposerController({
   useEffect(() => {
     let disposed = false;
 
+    void dictationModelId;
+
     if (!window.piDesktop?.getDictationState) {
       return;
     }
@@ -295,7 +299,7 @@ export function useComposerController({
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [dictationModelId]);
 
   const mergeAttachments = (current: ComposerAttachment[], next: ComposerAttachment[]) => {
     const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
@@ -449,11 +453,9 @@ export function useComposerController({
     }
 
     try {
-      const availability =
-        dictationState ??
-        (window.piDesktop.getDictationState
-          ? await window.piDesktop.getDictationState().catch(() => null)
-          : null);
+      const availability = window.piDesktop.getDictationState
+        ? await window.piDesktop.getDictationState().catch(() => null)
+        : dictationState;
 
       if (availability) {
         setDictationState(availability);

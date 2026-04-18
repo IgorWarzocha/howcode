@@ -395,6 +395,7 @@ export function CodeWorkspaceView({
                       projectGitState={projectGitState}
                       diffBaseline={diffBaseline}
                       sessionPath={terminalSessionPath}
+                      dictationModelId={shellState?.appSettings.dictationModelId ?? null}
                       favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                       showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       diffRenderMode={diffRenderMode}
