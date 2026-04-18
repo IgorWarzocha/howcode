@@ -6,10 +6,10 @@ import {
   parseDevServerMetadata,
   resolveDevServerMetadataPath,
   resolveRepoRoot,
-} from "../bun/dev-server";
+} from "../../shared/dev-server";
 
 describe("dev server helpers", () => {
-  it("resolves the repo root from the bundled Electrobun resource path", () => {
+  it("resolves the repo root from a bundled desktop resource path", () => {
     const bundledMainPath = path.join(
       process.cwd(),
       "build",

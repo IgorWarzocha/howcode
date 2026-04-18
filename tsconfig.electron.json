@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -10,7 +10,7 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["node", "bun"]
+    "types": ["node"]
   },
-  "include": ["src/bun/**/*.ts", "shared/**/*.ts", "scripts/**/*.ts", "electrobun.config.ts"]
+  "include": ["src/electron/**/*.ts", "shared/**/*.ts", "src/desktop-host/**/*.ts"]
 }

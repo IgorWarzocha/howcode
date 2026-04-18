@@ -1,6 +1,6 @@
 import { readdir, realpath, rm, unlink } from "node:fs/promises";
 import path from "node:path";
-import { Utils } from "electrobun/bun";
+import { shell } from "electron";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
@@ -206,7 +206,7 @@ export async function handleProjectDesktopAction(
         return handledAction();
       }
 
-      if (!Utils.openPath(projectId)) {
+      if ((await shell.openPath(projectId)) !== "") {
         throw new Error(`Unable to open path: ${projectId}`);
       }
 

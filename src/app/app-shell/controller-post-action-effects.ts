@@ -77,15 +77,12 @@ function sortPinnedProjects<T extends { id: string; pinned?: boolean }>(projects
   });
 }
 
-function hasElectrobunDesktopBridge() {
+function hasDesktopBridge() {
   if (typeof window === "undefined") {
     return false;
   }
 
-  return (
-    typeof (window as Window & { __electrobunRpcSocketPort?: unknown })
-      .__electrobunRpcSocketPort === "number"
-  );
+  return typeof window.piDesktop?.invokeAction === "function";
 }
 
 function buildLocalThreadFallback(projectId: string) {
@@ -544,7 +541,7 @@ export async function runPostDesktopActionEffects({
     const threadId =
       typeof actionResult?.result?.threadId === "string" ? actionResult.result.threadId : null;
     const localFallback =
-      !threadId && !sessionPath && projectId && !hasElectrobunDesktopBridge()
+      !threadId && !sessionPath && projectId && !hasDesktopBridge()
         ? buildLocalThreadFallback(projectId)
         : null;
 

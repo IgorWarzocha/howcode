@@ -8,10 +8,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["desktop/**/*.ts", "desktop/**/*.cts", "shared/**/*.ts"]
+  "include": ["scripts/**/*.ts", "shared/**/*.ts"]
 }

@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type Database from "better-sqlite3";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { formatGitCommandError, getNonInteractiveGitEnv } from "../project-git/git-runner.cts";

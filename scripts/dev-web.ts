@@ -2,13 +2,14 @@ import { rmSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { createServer } from "vite";
 
 import {
   DEV_SERVER_HOST,
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
-} from "../src/bun/dev-server";
+} from "../shared/dev-server";
 
 const devServerMetadataPath = path.join(process.cwd(), DEV_SERVER_METADATA_RELATIVE_PATH);
 
@@ -81,7 +82,7 @@ try {
       throw listenError;
     }
 
-    await Bun.sleep(25);
+    await delay(25);
   }
 
   const address = server.httpServer.address();

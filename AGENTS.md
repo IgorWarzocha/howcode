@@ -1,6 +1,6 @@
-- Use Bun for installs and scripts; do not use npm.
+- Prefer Node.js 24 LTS-compatible installs and scripts for desktop/runtime work.
 - Pre-commit hooks exist; skip separate lint/format/check runs unless asked.
-- Prefer `src/bun/index.ts` + `shared/*` contracts over ad-hoc desktop IPC shims.
+- Prefer `src/electron/main/**`, `src/electron/preload/**`, and `shared/*` contracts over ad-hoc desktop IPC shims.
 - Keep UI changes optimistic and reuse existing patterns over one-offs.
 - For major changes, validate with a commit and leave the repo committed.
 - This repository uses nested AGENTS.md files to flag folder-specific guidelines. They are loaded automatically. No need to read them.
