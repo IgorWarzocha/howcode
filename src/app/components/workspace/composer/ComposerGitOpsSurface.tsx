@@ -5,6 +5,7 @@ import type {
   ProjectGitState,
 } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
+import { toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import { ComposerDictationControls } from "./ComposerDictationControls";
@@ -152,6 +153,32 @@ export function ComposerGitOpsSurface({
       toggleDictation={toggleDictation}
     />
   );
+  const primaryActionButton = (
+    <button
+      type="button"
+      className={cn(
+        toolbarButtonClass,
+        "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
+      )}
+      onClick={() => {
+        void handlePrimaryAction();
+      }}
+      disabled={
+        hasDiffComments
+          ? diffCommentsSending
+          : runningPrimaryAction || (isGitRepo ? !canCommit : false)
+      }
+      aria-label={primaryActionLabel}
+    >
+      {primaryActionLabel}
+    </button>
+  );
+  const trailingActions = (
+    <div className="inline-flex items-center gap-2">
+      {dictationControls}
+      {primaryActionButton}
+    </div>
+  );
 
   return (
     <div
@@ -198,7 +225,7 @@ export function ComposerGitOpsSurface({
               }
             }}
             onLayoutChange={onLayoutChange}
-            trailingAccessory={dictationControls}
+            trailingAccessory={trailingActions}
             value={commitMessage}
           />
         ) : null}
@@ -225,7 +252,7 @@ export function ComposerGitOpsSurface({
             }
           }}
           onLayoutChange={onLayoutChange}
-          trailingAccessory={dictationControls}
+          trailingAccessory={trailingActions}
           value={commitMessage}
         />
       ) : null}
@@ -235,24 +262,18 @@ export function ComposerGitOpsSurface({
       {/* Footer row structure here is mirrored by the prompt composer footer. */}
       <ComposerGitOpsFooter
         composerPanelRef={composerPanelRef}
-        canCommit={canCommit}
         diffBaseline={diffBaseline}
-        diffCommentsSending={diffCommentsSending}
-        hasDiffComments={hasDiffComments}
         hasOrigin={hasOrigin}
         includeUnstaged={includeUnstaged}
         isGitRepo={isGitRepo}
         onBack={onBack}
-        onPrimaryAction={handlePrimaryAction}
         onSetDiffBaseline={onSetDiffBaseline}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}
         previewEnabled={previewEnabled}
-        primaryActionLabel={primaryActionLabel}
         projectGitState={projectGitState}
         pushEnabled={pushEnabled}
-        runningPrimaryAction={runningPrimaryAction}
       />
     </div>
   );
