@@ -1,4 +1,4 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 export const DEV_SERVER_HOST = "127.0.0.1";
@@ -72,4 +72,17 @@ export function parseDevServerMetadata(rawMetadata: string) {
   }
 
   return null;
+}
+
+export function resolveConfiguredDevServerUrl(searchStartPaths: readonly string[]) {
+  const metadataPath = resolveDevServerMetadataPath(searchStartPaths);
+  if (!metadataPath) {
+    return null;
+  }
+
+  try {
+    return parseDevServerMetadata(readFileSync(metadataPath, "utf8"));
+  } catch {
+    return null;
+  }
 }

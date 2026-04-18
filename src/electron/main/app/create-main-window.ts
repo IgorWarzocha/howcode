@@ -1,9 +1,25 @@
 import path from "node:path";
-import { BrowserWindow } from "electron";
+import { BrowserWindow, app, shell } from "electron";
+import { resolveConfiguredDevServerUrl } from "../../../../shared/dev-server";
+import { isTrustedRendererUrl, shouldOpenUrlExternally } from "./navigation-security";
 import { getElectronBuildDirectory } from "../runtime/app-paths";
+import { getRendererDistDirectory } from "../runtime/app-paths";
+
+function getRendererTrustConfig() {
+  return {
+    rendererDistDirectory: getRendererDistDirectory(),
+    devServerUrl: app.isPackaged
+      ? null
+      : resolveConfiguredDevServerUrl([
+          process.env.HOWCODE_REPO_ROOT ?? "",
+          app.getAppPath(),
+          process.cwd(),
+        ]),
+  };
+}
 
 export function createMainWindow() {
-  return new BrowserWindow({
+  const mainWindow = new BrowserWindow({
     title: "howcode",
     width: 1480,
     height: 980,
@@ -16,4 +32,27 @@ export function createMainWindow() {
       sandbox: false,
     },
   });
+
+  const rendererTrustConfig = getRendererTrustConfig();
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (isTrustedRendererUrl(url, rendererTrustConfig)) {
+      return;
+    }
+
+    event.preventDefault();
+    if (shouldOpenUrlExternally(url)) {
+      void shell.openExternal(url);
+    }
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (shouldOpenUrlExternally(url)) {
+      void shell.openExternal(url);
+    }
+
+    return { action: "deny" };
+  });
+
+  return mainWindow;
 }
