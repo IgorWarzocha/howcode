@@ -23,7 +23,8 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 ### Small composer/control wins
 
-- [ ] decide whether `composer.dictate` should be implemented soon or hidden
+- [x] wire `composer.dictate` to browser-native speech recognition in the renderer
+- [ ] validate dictation behavior in bundled CEF across packaged builds
 - [ ] tighten README + status docs whenever mock/partial behavior changes
 
 ## B. Interconnected implementation batches

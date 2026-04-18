@@ -56,6 +56,9 @@ export function ComposerPromptSurface({
     canSend,
     clearError,
     draft,
+    dictationActive,
+    dictationInterimText,
+    dictationSupported,
     errorMessage,
     isSending,
     isStreaming: composerIsStreaming,
@@ -78,6 +81,7 @@ export function ComposerPromptSurface({
     setDraft,
     setOpenMenu,
     stop,
+    toggleDictation,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
@@ -166,13 +170,24 @@ export function ComposerPromptSurface({
             <div className="inline-flex h-8 items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => onAction("composer.dictate")}
+                onClick={() => {
+                  void toggleDictation();
+                }}
                 className={cn(
                   iconButtonClass,
                   getFeatureStatusButtonClass("feature:composer.dictate"),
+                  dictationActive &&
+                    "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1]",
                 )}
-                aria-label="Dictate"
-                title="Dictate"
+                aria-label={dictationActive ? "Stop dictation" : "Dictate"}
+                aria-pressed={dictationActive}
+                title={
+                  dictationActive
+                    ? "Stop dictation"
+                    : dictationSupported
+                      ? "Dictate"
+                      : "Dictation unavailable in this runtime"
+                }
               >
                 <Mic size={15} />
               </button>
@@ -210,6 +225,13 @@ export function ComposerPromptSurface({
       {errorMessage ? (
         <output className="px-4 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
           {errorMessage}
+        </output>
+      ) : null}
+
+      {dictationActive || dictationInterimText ? (
+        <output className="px-4 pb-2 text-[12px] text-[color:var(--muted)]" aria-live="polite">
+          {dictationActive ? "Listening…" : "Dictation stopped."}
+          {dictationInterimText ? ` ${dictationInterimText}` : ""}
         </output>
       ) : null}
 

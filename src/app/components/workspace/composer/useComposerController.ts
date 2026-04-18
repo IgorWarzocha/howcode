@@ -10,6 +10,12 @@ import type {
 } from "../../../desktop/types";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import {
+  appendDictatedText,
+  getBrowserSpeechRecognitionConstructor,
+  getBrowserSpeechRecognitionErrorMessage,
+  type BrowserSpeechRecognitionInstance,
+} from "./browser-dictation";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { submitComposerDraft } from "./submitComposerDraft";
@@ -80,6 +86,9 @@ export function useComposerController({
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
   const skipNextDraftPersistenceRef = useRef<string | null>(null);
+  const dictationRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
+  const [dictationActive, setDictationActive] = useState(false);
+  const [dictationInterimText, setDictationInterimText] = useState("");
 
   activeDraftThreadIdRef.current = draftThreadId;
 
@@ -124,7 +133,23 @@ export function useComposerController({
     refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
   });
 
+  useEffect(
+    () => () => {
+      const recognition = dictationRecognitionRef.current;
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        recognition.abort();
+      }
+      dictationRecognitionRef.current = null;
+    },
+    [],
+  );
+
   const canSend = draft.trim().length > 0 && !isSending;
+  const dictationSupported = useMemo(() => getBrowserSpeechRecognitionConstructor() !== null, []);
 
   const mergeAttachments = (current: ComposerAttachment[], next: ComposerAttachment[]) => {
     const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
@@ -174,6 +199,9 @@ export function useComposerController({
     if (draft.trim().length === 0 || isSending) {
       return;
     }
+
+    dictationRecognitionRef.current?.stop();
+    setDictationInterimText("");
 
     const submittedAttachments = attachments;
     const submittedDraft = draft;
@@ -240,6 +268,79 @@ export function useComposerController({
     }
   };
 
+  const toggleDictation = () => {
+    if (dictationRecognitionRef.current) {
+      dictationRecognitionRef.current.stop();
+      setDictationInterimText("");
+      return;
+    }
+
+    const SpeechRecognition = getBrowserSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+      setErrorMessage("Browser-native dictation is unavailable in this runtime.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      dictationRecognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || "en-US";
+      recognition.onstart = () => {
+        setDictationActive(true);
+        setDictationInterimText("");
+        setErrorMessage(null);
+      };
+      recognition.onresult = (event) => {
+        let finalText = "";
+        let interimText = "";
+
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const result = event.results[index];
+          const transcript = result?.[0]?.transcript?.trim();
+          if (!transcript) {
+            continue;
+          }
+
+          if (result.isFinal) {
+            finalText = appendDictatedText(finalText, transcript);
+          } else {
+            interimText = appendDictatedText(interimText, transcript);
+          }
+        }
+
+        if (finalText) {
+          setDraft((current) => appendDictatedText(current, finalText));
+        }
+
+        setDictationInterimText(interimText);
+      };
+      recognition.onerror = (event) => {
+        setDictationActive(false);
+        setDictationInterimText("");
+        dictationRecognitionRef.current = null;
+
+        if (event.error !== "aborted") {
+          setErrorMessage(getBrowserSpeechRecognitionErrorMessage(event.error));
+        }
+      };
+      recognition.onend = () => {
+        setDictationActive(false);
+        setDictationInterimText("");
+        dictationRecognitionRef.current = null;
+      };
+      recognition.start();
+    } catch (error) {
+      dictationRecognitionRef.current = null;
+      setDictationActive(false);
+      setDictationInterimText("");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not start browser-native dictation.",
+      );
+    }
+  };
+
   const pickAttachments = async () => {
     if (openMenu === "picker") {
       setOpenMenu(null);
@@ -303,6 +404,9 @@ export function useComposerController({
     canSend,
     clearError: () => setErrorMessage(null),
     draft,
+    dictationActive,
+    dictationInterimText,
+    dictationSupported,
     errorMessage,
     isSending,
     pickerButtonRef,
@@ -326,6 +430,7 @@ export function useComposerController({
     setDraft,
     setOpenMenu,
     stop,
+    toggleDictation,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
