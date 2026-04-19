@@ -107,6 +107,18 @@ function getOpenAttachmentIcon(attachment: ComposerAttachment) {
   );
 }
 
+function resolveAttachmentKindFromLookup(
+  path: string,
+  kindsByPath: Record<string, ComposerAttachment["kind"] | null> | null,
+  fallbackKindsByPath: Record<string, ComposerAttachment["kind"]>,
+) {
+  if (kindsByPath && Object.prototype.hasOwnProperty.call(kindsByPath, path)) {
+    return kindsByPath[path] ?? null;
+  }
+
+  return fallbackKindsByPath[path] ?? null;
+}
+
 function FileEntryButton({
   attachment,
   isAlreadyAttached,
@@ -132,6 +144,10 @@ function FileEntryButton({
         isDragging && "opacity-70",
       )}
       onClick={() => {
+        if (attachment.kind === "directory") {
+          return;
+        }
+
         const nextAction = resolveFileEntryActivation({
           attachment,
           isAlreadyAttached,
@@ -270,9 +286,17 @@ export function ComposerFilePicker({
           .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
           .map((attachment) => [attachment.path, attachment.kind] as const),
       );
-      const kindsByPath = (await getAttachmentKindsForPathsQuery(localPaths)) ?? null;
+      let kindsByPath: Record<string, ComposerAttachment["kind"] | null> | null = null;
+
+      try {
+        kindsByPath = (await getAttachmentKindsForPathsQuery(localPaths)) ?? null;
+      } catch {
+        kindsByPath = null;
+      }
+
       const externalAttachments = normalizeComposerAttachments(rawAttachments, {
-        resolveAttachmentKind: (path) => kindsByPath?.[path] ?? fallbackKindsByPath[path] ?? null,
+        resolveAttachmentKind: (path) =>
+          resolveAttachmentKindFromLookup(path, kindsByPath, fallbackKindsByPath),
       });
       if (externalAttachments.length > 0) {
         onAttachAttachments(externalAttachments);

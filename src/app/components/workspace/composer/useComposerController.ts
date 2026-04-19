@@ -96,15 +96,24 @@ async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
       .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
       .map((attachment) => [attachment.path, attachment.kind] as const),
   );
+  const hasLookup = kindsByPath !== null;
 
   return normalizeComposerAttachments(attachments, {
-    resolveAttachmentKind: (path) => kindsByPath?.[path] ?? fallbackKindsByPath[path] ?? null,
+    resolveAttachmentKind: (path) => {
+      if (hasLookup && kindsByPath && Object.prototype.hasOwnProperty.call(kindsByPath, path)) {
+        return kindsByPath[path] ?? null;
+      }
+
+      return fallbackKindsByPath[path] ?? null;
+    },
   });
 }
 
 type UseComposerControllerProps = {
   activeView: View;
+  composerPanelRef: RefObject<HTMLDivElement | null>;
   mainViewRef: RefObject<HTMLElement | null>;
+  workspaceFooterRef: RefObject<HTMLElement | null>;
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
@@ -124,7 +133,9 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
+  composerPanelRef,
   mainViewRef,
+  workspaceFooterRef,
   model,
   projectId,
   sessionPath,
@@ -235,7 +246,11 @@ export function useComposerController({
         return;
       }
 
-      if (mainViewRef.current?.contains(target)) {
+      if (composerPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      if (mainViewRef.current?.contains(target) || workspaceFooterRef.current?.contains(target)) {
         setOpenMenu((current) => (current === "picker" ? null : current));
       }
     };
@@ -244,7 +259,7 @@ export function useComposerController({
     return () => {
       window.removeEventListener("pointerdown", handlePointerDown, true);
     };
-  }, [mainViewRef, openMenu]);
+  }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef]);
 
   const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
 

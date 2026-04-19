@@ -32,7 +32,9 @@ export function useComposerAttachmentPicker({
   setOpenMenu,
   onListAttachmentEntries,
 }: UseComposerAttachmentPickerProps) {
+  const pickerScopeKey = `${pickerSessionKey ?? ""}::${pickerRootPath}`;
   const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
+  const [pickerStateScopeKey, setPickerStateScopeKey] = useState<string | null>(null);
   const [pickerLoading, setPickerLoading] = useState(false);
   const pickerRequestIdRef = useRef(0);
   const previousOpenMenuRef = useRef<"model" | "picker" | null>(openMenu);
@@ -62,6 +64,7 @@ export function useComposerAttachmentPicker({
         }
 
         setPickerState(nextPickerState);
+        setPickerStateScopeKey(pickerScopeKey);
         setErrorMessage(null);
         return nextPickerState;
       } catch (error) {
@@ -77,7 +80,7 @@ export function useComposerAttachmentPicker({
         }
       }
     },
-    [fetchPickerEntries, setErrorMessage],
+    [fetchPickerEntries, pickerScopeKey, setErrorMessage],
   );
 
   const pickAttachments = async () => {
@@ -86,24 +89,29 @@ export function useComposerAttachmentPicker({
       return;
     }
 
+    setPickerState(null);
+    setPickerStateScopeKey(null);
+    setPickerLoading(true);
     setOpenMenu("picker");
   };
 
   useEffect(() => {
-    const scopeKey = `${pickerSessionKey ?? ""}::${pickerRootPath}`;
     const pickerOpened = openMenu === "picker" && previousOpenMenuRef.current !== "picker";
     const pickerScopeChanged =
-      openMenu === "picker" && previousPickerScopeKeyRef.current !== scopeKey;
+      openMenu === "picker" && previousPickerScopeKeyRef.current !== pickerScopeKey;
 
     previousOpenMenuRef.current = openMenu;
-    previousPickerScopeKeyRef.current = scopeKey;
+    previousPickerScopeKeyRef.current = pickerScopeKey;
 
     if (!pickerOpened && !pickerScopeChanged) {
       return;
     }
 
+    setPickerState(null);
+    setPickerStateScopeKey(null);
+    setPickerLoading(true);
     void loadPickerEntries(pickerRootPath, pickerRootPath);
-  }, [loadPickerEntries, openMenu, pickerRootPath, pickerSessionKey]);
+  }, [loadPickerEntries, openMenu, pickerRootPath, pickerScopeKey]);
 
   const openPickerDirectory = async (path: string) => {
     await loadPickerEntries(path);
@@ -163,7 +171,7 @@ export function useComposerAttachmentPicker({
     openPickerRoot,
     pickAttachments,
     pickerLoading,
-    pickerState,
+    pickerState: pickerStateScopeKey === pickerScopeKey ? pickerState : null,
     removeAttachment,
     togglePendingPickerAttachment,
   };

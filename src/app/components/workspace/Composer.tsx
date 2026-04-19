@@ -48,6 +48,7 @@ export type ComposerProps = {
   terminalVisible: boolean;
   onLayoutChange: () => void;
   mainViewRef: RefObject<HTMLElement | null>;
+  workspaceFooterRef: RefObject<HTMLElement | null>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
     path?: string | null;
@@ -69,6 +70,7 @@ export function Composer(props: ComposerProps) {
         {...props}
         composerPanelRef={composerPanelRef}
         mainViewRef={props.mainViewRef}
+        workspaceFooterRef={props.workspaceFooterRef}
         onOpenGitOps={props.onOpenGitOpsView}
       />
     </div>

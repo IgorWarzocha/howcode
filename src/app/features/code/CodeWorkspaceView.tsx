@@ -429,6 +429,7 @@ export function CodeWorkspaceView({
                       promptResetKey={composerPromptResetKey}
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       mainViewRef={mainViewRef}
+                      workspaceFooterRef={footerRef}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
                       onOpenSettingsView={() => controller.handleShowView("settings")}
