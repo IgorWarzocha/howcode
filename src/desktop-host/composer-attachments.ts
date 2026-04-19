@@ -2,10 +2,10 @@ import { readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type {
-  ComposerAttachment,
   ComposerFilePickerEntry,
   ComposerFilePickerState,
 } from "../../shared/desktop-contracts";
+import { getAttachmentKind, isSafeExternalUrl } from "../../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory";
 
 async function pathExists(targetPath: string) {
@@ -37,24 +37,11 @@ export async function normalizeDialogFilePaths(filePaths: string[]) {
   return normalized;
 }
 
-export function isSafeExternalUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 function isPathWithinRoot(candidatePath: string, rootPath: string) {
   const relativePath = path.relative(rootPath, candidatePath);
   return (
     relativePath.length === 0 || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
   );
-}
-
-export function getAttachmentKind(filePath: string): ComposerAttachment["kind"] {
-  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath) ? "image" : "text";
 }
 
 export async function listComposerAttachmentEntries(request: {

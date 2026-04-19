@@ -1,13 +1,1 @@
-import type { ComposerAttachment } from "../../shared/desktop-contracts.ts";
-
-export function buildComposerAttachmentPrompt(attachments: ComposerAttachment[]): string {
-  const attachmentPaths = attachments
-    .map((attachment) => attachment.path.trim())
-    .filter((path) => path.length > 0);
-
-  if (attachmentPaths.length === 0) {
-    return "";
-  }
-
-  return `The user attached the following files, please read them:\n${attachmentPaths.map((path) => `- ${path}`).join("\n")}`;
-}
+export { buildComposerAttachmentPrompt } from "../../shared/composer-attachment-prompt";

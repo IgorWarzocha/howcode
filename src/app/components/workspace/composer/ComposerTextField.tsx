@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type ClipboardEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 type ComposerTextFieldProps = {
   value: string;
@@ -9,6 +9,7 @@ type ComposerTextFieldProps = {
   onChange: (value: string) => void;
   onInput?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   onExpandedChange?: (expanded: boolean) => void;
@@ -23,6 +24,7 @@ export function ComposerTextField({
   onChange,
   onInput,
   onKeyDown,
+  onPaste,
   onFocus,
   onBlur,
   onExpandedChange,
@@ -85,6 +87,7 @@ export function ComposerTextField({
         onChange={(event) => onChange(event.target.value)}
         onInput={onInput}
         onKeyDown={onKeyDown}
+        onPaste={onPaste}
         onFocus={onFocus}
         onBlur={onBlur}
         aria-label={ariaLabel}

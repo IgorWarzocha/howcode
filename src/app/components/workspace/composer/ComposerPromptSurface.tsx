@@ -1,5 +1,5 @@
 import { Plus, Send, Square } from "lucide-react";
-import { type RefObject, useEffect } from "react";
+import { type ClipboardEvent, type RefObject, useEffect } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
@@ -79,6 +79,7 @@ export function ComposerPromptSurface({
     toggleDictation,
     attachPendingPickerAttachments,
     togglePendingPickerAttachment,
+    handlePaste,
     thinkingLevelLabels,
   } = useComposerController({
     activeView,
@@ -186,6 +187,13 @@ export function ComposerPromptSurface({
                     event.preventDefault();
                     void send();
                   }
+                }}
+                onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
+                  event.preventDefault();
+                  void handlePaste({
+                    clipboardData: event.clipboardData,
+                    textarea: event.currentTarget,
+                  });
                 }}
                 ariaLabel="Prompt composer"
                 placeholder={placeholderText}

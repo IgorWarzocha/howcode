@@ -3,6 +3,8 @@ import type {
   AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
+  DesktopClipboardFilePaths,
+  DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
@@ -107,6 +109,14 @@ export type DesktopRequestMap = {
   pickComposerAttachments: {
     params: { projectId?: string | null };
     response: ComposerAttachment[];
+  };
+  readClipboardSnapshot: {
+    params: Record<string, never>;
+    response: DesktopClipboardSnapshot;
+  };
+  readClipboardFilePaths: {
+    params: Record<string, never>;
+    response: DesktopClipboardFilePaths;
   };
   listComposerAttachmentEntries: {
     params: { projectId?: string | null; path?: string | null; rootPath?: string | null };

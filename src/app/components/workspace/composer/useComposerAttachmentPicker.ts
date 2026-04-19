@@ -1,15 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
-
-function mergeAttachments(current: ComposerAttachment[], next: ComposerAttachment[]) {
-  const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
-
-  for (const attachment of next) {
-    byPath.set(attachment.path, attachment);
-  }
-
-  return [...byPath.values()];
-}
+import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 
 type UseComposerAttachmentPickerProps = {
   openMenu: "model" | "picker" | null;
@@ -100,7 +91,7 @@ export function useComposerAttachmentPicker({
       return;
     }
 
-    setAttachments((current) => mergeAttachments(current, pendingPickerAttachments));
+    setAttachments((current) => mergeComposerAttachments(current, pendingPickerAttachments));
     setPendingPickerAttachments([]);
     setOpenMenu(null);
     setErrorMessage(null);

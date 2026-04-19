@@ -1,16 +1,21 @@
-import { dialog, shell } from "electron";
+import { clipboard, dialog, shell } from "electron";
+import { getAttachmentKind, isSafeExternalUrl } from "../../../../../shared/composer-attachments";
 import {
-  getAttachmentKind,
-  isSafeExternalUrl,
   listComposerAttachmentEntries,
   normalizeDialogFilePaths,
 } from "../../../../desktop-host/composer-attachments";
+import { readNativeClipboardFilePaths } from "./clipboard-file-paths";
 import { getDesktopWorkingDirectory } from "../../../../../shared/desktop-working-directory";
 import type { DesktopRequestHandlerMap } from "../../../../../shared/desktop-ipc";
 
 type SystemRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  "pickComposerAttachments" | "listComposerAttachmentEntries" | "openExternal" | "openPath"
+  | "pickComposerAttachments"
+  | "readClipboardSnapshot"
+  | "readClipboardFilePaths"
+  | "listComposerAttachmentEntries"
+  | "openExternal"
+  | "openPath"
 >;
 
 export function createSystemHandlers(): SystemRequestHandlers {
@@ -35,6 +40,25 @@ export function createSystemHandlers(): SystemRequestHandlers {
           kind: getAttachmentKind(filePath),
         }));
     },
+    readClipboardSnapshot: () => {
+      const formats = clipboard.availableFormats();
+      const valuesByFormat = Object.fromEntries(
+        formats.map((format) => {
+          try {
+            return [format, clipboard.read(format)] as const;
+          } catch {
+            return [format, ""] as const;
+          }
+        }),
+      );
+
+      if (!valuesByFormat["text/plain"]) {
+        valuesByFormat["text/plain"] = clipboard.readText();
+      }
+
+      return { formats, valuesByFormat };
+    },
+    readClipboardFilePaths: () => readNativeClipboardFilePaths(),
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
     openExternal: async ({ url }) => {
       if (!isSafeExternalUrl(url)) {

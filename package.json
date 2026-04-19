@@ -58,6 +58,7 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "better-sqlite3": "^12.2.0",
+    "clip-filepaths": "^0.3.0",
     "lucide-react": "^0.525.0",
     "node-pty": "^1.1.0",
     "react": "^19.1.0",

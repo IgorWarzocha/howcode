@@ -21,6 +21,7 @@
         "@xterm/addon-fit": "^0.11.0",
         "@xterm/xterm": "^6.0.0",
         "better-sqlite3": "^12.2.0",
+        "clip-filepaths": "^0.3.0",
         "lucide-react": "^0.525.0",
         "node-pty": "^1.1.0",
         "react": "^19.1.0",
@@ -785,6 +786,24 @@
     "cli-spinners": ["cli-spinners@2.9.2", "", {}, "sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg=="],
 
     "cli-truncate": ["cli-truncate@4.0.0", "", { "dependencies": { "slice-ansi": "^5.0.0", "string-width": "^7.0.0" } }, "sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA=="],
+
+    "clip-filepaths": ["clip-filepaths@0.3.0", "", { "optionalDependencies": { "clip-filepaths-darwin-arm64": "0.3.0", "clip-filepaths-darwin-x64": "0.3.0", "clip-filepaths-linux-arm64-gnu": "0.3.0", "clip-filepaths-linux-arm64-musl": "0.3.0", "clip-filepaths-linux-x64-gnu": "0.3.0", "clip-filepaths-linux-x64-musl": "0.3.0", "clip-filepaths-win32-arm64-msvc": "0.3.0", "clip-filepaths-win32-x64-msvc": "0.3.0" } }, "sha512-RTvOf16co5+Xqpn9ioDKDHYG2Ie7qhL0CSHstrC2u1hCHpb5QxUOnti4rO8hF+uwqonr/KriO6PfXf1zLSGBqA=="],
+
+    "clip-filepaths-darwin-arm64": ["clip-filepaths-darwin-arm64@0.3.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-MNsead3rwMUg/i2+Qn4XUK/O2wPmR+viMwAB2ogd10YdKgAjNqRnVYYMSw3ZAbHy+mIg2xK/sQXsTefwXXMHng=="],
+
+    "clip-filepaths-darwin-x64": ["clip-filepaths-darwin-x64@0.3.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-Ged3iEL8V32XGRUi8zhel3xu3dWkq2ILmWRBurA6vMX+dm6izQvwB+hDNVfozEXSbpsUiXaD8Lx1K2FNQePykA=="],
+
+    "clip-filepaths-linux-arm64-gnu": ["clip-filepaths-linux-arm64-gnu@0.3.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-ytyiSkiOSe/erIiNILZf8BW+1lpE0KKDA0n2OjWHvq8/VXxxmseNRqiORb+xZUV0tfn2Nz/0QknqcaAjBmpa2w=="],
+
+    "clip-filepaths-linux-arm64-musl": ["clip-filepaths-linux-arm64-musl@0.3.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-0JiZ4bBNhv8Hv6fh88E6M4bPzdFR3MDUiu/Y/jvC012DZRUUTRh6Mk+zcrol8A0zjFMha/VofO7wtXI4yVIJMw=="],
+
+    "clip-filepaths-linux-x64-gnu": ["clip-filepaths-linux-x64-gnu@0.3.0", "", { "os": "linux", "cpu": "x64" }, "sha512-Cq+go0MfeNh+KSiWla0uYFZ2nOSsCI2MF7qcvyd2r7DGDpd02nNeAYXO6kGr4WYgy1z7JRCYyjwrbsPi/KFcrw=="],
+
+    "clip-filepaths-linux-x64-musl": ["clip-filepaths-linux-x64-musl@0.3.0", "", { "os": "linux", "cpu": "x64" }, "sha512-yZP8/FXT7ca4KKxnTFapJINf8uMUWRqLmW3NBcs2DUJ/Z5merc7vJu3aaGnzMO9+IFwWk6Wl4UFSHD3l5OX2Qg=="],
+
+    "clip-filepaths-win32-arm64-msvc": ["clip-filepaths-win32-arm64-msvc@0.3.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-IuzhKedlG8jvfuK2Np6pcjeAherzGTldPiNcodslaSyPJT5tBwSvQp4a9jN/B4vp9QTlPDpDMFeUcjgOmZ41RQ=="],
+
+    "clip-filepaths-win32-x64-msvc": ["clip-filepaths-win32-x64-msvc@0.3.0", "", { "os": "win32", "cpu": "x64" }, "sha512-FERY7lIHMXBD2JMTC9LT96G5wMKF0Vky5reM6ZtNvBDvbe6GwSMC843LjKupoiP/DptosG7d0o3ecaFRyeySdg=="],
 
     "cliui": ["cliui@8.0.1", "", { "dependencies": { "string-width": "^4.2.0", "strip-ansi": "^6.0.1", "wrap-ansi": "^7.0.0" } }, "sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ=="],
 

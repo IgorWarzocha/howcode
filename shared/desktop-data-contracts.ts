@@ -139,6 +139,16 @@ export type ComposerAttachment = {
   kind: "text" | "image";
 };
 
+export type DesktopClipboardSnapshot = {
+  formats: string[];
+  valuesByFormat: Record<string, string>;
+};
+
+export type DesktopClipboardFilePaths = {
+  filePaths: string[];
+  text: string | null;
+};
+
 export type DictationState = {
   available: boolean;
   reason: "missing-model" | "runtime-error" | "unsupported-platform" | null;

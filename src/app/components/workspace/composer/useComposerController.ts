@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
+  DesktopClipboardFilePaths,
+  DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
@@ -11,6 +14,14 @@ import type {
 import type { View } from "../../../types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
+import {
+  getComposerAttachmentsFromClipboardData,
+  getComposerAttachmentsFromClipboardFilePaths,
+  getComposerAttachmentsFromClipboardSnapshot,
+  getPreferredClipboardTextFromClipboardFilePaths,
+  getPreferredClipboardTextFromClipboardData,
+  getPreferredClipboardTextFromClipboardSnapshot,
+} from "./composer-paste-attachments";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { useComposerAttachmentPicker } from "./useComposerAttachmentPicker";
 import { useComposerDictation } from "./useComposerDictation";
@@ -31,6 +42,21 @@ function getModelLabel(model: ComposerModel | null) {
   }
 
   return model.name;
+}
+
+function insertTextAtSelection(
+  currentValue: string,
+  selectionStart: number,
+  selectionEnd: number,
+  insertedText: string,
+) {
+  const safeStart = Math.max(0, selectionStart);
+  const safeEnd = Math.max(safeStart, selectionEnd);
+  const nextValue = currentValue.slice(0, safeStart) + insertedText + currentValue.slice(safeEnd);
+  return {
+    nextValue,
+    nextCursorPosition: safeStart + insertedText.length,
+  };
 }
 
 type UseComposerControllerProps = {
@@ -225,8 +251,80 @@ export function useComposerController({
 
   const modelLabel = useMemo(() => getModelLabel(model), [model]);
 
+  const handlePaste = useCallback(
+    async (request: {
+      clipboardData: DataTransfer | null;
+      textarea: HTMLTextAreaElement;
+    }) => {
+      const { clipboardData, textarea } = request;
+
+      const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData);
+      if (directAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, directAttachments));
+        setErrorMessage(null);
+        setOpenMenu(null);
+        return;
+      }
+
+      let fallbackSnapshot: DesktopClipboardSnapshot | null = null;
+      let fallbackClipboardFilePaths: DesktopClipboardFilePaths | null = null;
+      try {
+        fallbackClipboardFilePaths = (await window.piDesktop?.readClipboardFilePaths?.()) ?? null;
+      } catch {
+        fallbackClipboardFilePaths = null;
+      }
+
+      const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
+        fallbackClipboardFilePaths,
+      );
+      if (nativeAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, nativeAttachments));
+        setErrorMessage(null);
+        setOpenMenu(null);
+        return;
+      }
+
+      try {
+        fallbackSnapshot = (await window.piDesktop?.readClipboardSnapshot?.()) ?? null;
+      } catch {
+        fallbackSnapshot = null;
+      }
+
+      const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot);
+      if (fallbackAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, fallbackAttachments));
+        setErrorMessage(null);
+        setOpenMenu(null);
+        return;
+      }
+
+      const pastedText =
+        getPreferredClipboardTextFromClipboardData(clipboardData) ||
+        getPreferredClipboardTextFromClipboardFilePaths(fallbackClipboardFilePaths) ||
+        getPreferredClipboardTextFromClipboardSnapshot(fallbackSnapshot);
+
+      if (!pastedText) {
+        return;
+      }
+
+      const { nextValue, nextCursorPosition } = insertTextAtSelection(
+        textarea.value,
+        textarea.selectionStart ?? textarea.value.length,
+        textarea.selectionEnd ?? textarea.value.length,
+        pastedText,
+      );
+      setDraftValue(nextValue);
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
+      });
+    },
+    [setDraftValue],
+  );
+
   return {
     attachments,
+    handlePaste,
     cancelDictation,
     canSend,
     clearError: () => setErrorMessage(null),
