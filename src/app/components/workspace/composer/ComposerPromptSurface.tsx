@@ -77,6 +77,7 @@ export function ComposerPromptSurface({
     stop,
     toggleDictation,
     attachPickerAttachments,
+    handleDrop,
     togglePendingPickerAttachment,
     handlePaste,
     thinkingLevelLabels,
@@ -134,7 +135,23 @@ export function ComposerPromptSurface({
     <div className="grid min-h-[189px] gap-0">
       {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
           swap without vertical jump. */}
-      <div className="relative min-h-[148px]">
+      <div
+        className="relative min-h-[148px]"
+        onDragOver={(event) => {
+          if ((event.dataTransfer?.files?.length ?? 0) > 0) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDrop={(event) => {
+          if ((event.dataTransfer?.files?.length ?? 0) === 0) {
+            return;
+          }
+
+          event.preventDefault();
+          handleDrop(event.dataTransfer);
+        }}
+      >
         {/* The prompt surface keeps add-attachment, attachment count, prompt text, and trailing
             controls in one shared block so it still mirrors the git-ops composer shell. */}
         {pickerOpen ? (

@@ -1,22 +1,23 @@
 import {
-  DndContext,
-  PointerSensor,
-  type DragEndEvent,
-  type DragStartEvent,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { Check, File, Folder, FolderOpen, Globe, Home, Search, X } from "lucide-react";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+  Check,
+  ChevronLeft,
+  File,
+  Folder,
+  FolderOpen,
+  Globe,
+  Home,
+  Paperclip,
+  Search,
+  X,
+} from "lucide-react";
+import { type DragEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { isSafeExternalUrl } from "../../../../../shared/composer-attachments";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 import { resolveFileEntryActivation } from "./composer-file-picker.helpers";
+import { getComposerAttachmentsFromClipboardData } from "./composer-paste-attachments";
 
 type ComposerFilePickerProps = {
   attachments: ComposerAttachment[];
@@ -43,20 +44,14 @@ type RootOption = {
   iconOnly: boolean;
 };
 
-type DraggableFileEntryProps = {
+type FileEntryButtonProps = {
   attachment: ComposerAttachment;
-  attachmentsToAttach: ComposerAttachment[];
   isAlreadyAttached: boolean;
   isSelected: boolean;
-  currentSelection: ComposerAttachment[];
-  onAttachAttachments: (
-    attachments: ComposerAttachment[],
-    options?: { closeMenu?: boolean },
-  ) => void;
+  onDragStart: (attachment: ComposerAttachment, event: DragEvent<HTMLButtonElement>) => void;
+  onDragEnd: () => void;
   onToggleFile: (attachment: ComposerAttachment) => void;
 };
-
-const attachmentDropZoneId = "composer-picker-attached-dropzone";
 
 function getFolderLabel(folderPath: string) {
   const segments = folderPath.split(/[\\/]/).filter(Boolean);
@@ -79,27 +74,20 @@ function getParentFolderPath(filePath: string) {
   return parentPath || "/";
 }
 
-function DraggableFileEntry({
+function FileEntryButton({
   attachment,
-  attachmentsToAttach,
   isAlreadyAttached,
   isSelected,
-  currentSelection,
-  onAttachAttachments,
+  onDragStart,
+  onDragEnd,
   onToggleFile,
-}: DraggableFileEntryProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `composer-picker-entry:${attachment.path}`,
-    disabled: isAlreadyAttached,
-    data: { attachmentsToAttach },
-  });
+}: FileEntryButtonProps) {
+  const [isDragging, setIsDragging] = useState(false);
 
   return (
     <button
-      ref={setNodeRef}
       type="button"
-      {...attributes}
-      {...listeners}
+      draggable={!isAlreadyAttached}
       className={cn(
         "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors",
         isSelected && "border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.05)]",
@@ -109,22 +97,23 @@ function DraggableFileEntry({
           "hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
         isDragging && "opacity-70",
       )}
-      style={{ transform: CSS.Translate.toString(transform) }}
       onClick={() => {
         const nextAction = resolveFileEntryActivation({
           attachment,
-          currentSelection,
           isAlreadyAttached,
         });
-
-        if (nextAction.type === "attach") {
-          onAttachAttachments(nextAction.attachments);
-          return;
-        }
 
         if (nextAction.type === "toggle") {
           onToggleFile(nextAction.attachment);
         }
+      }}
+      onDragStart={(event) => {
+        setIsDragging(true);
+        onDragStart(attachment, event);
+      }}
+      onDragEnd={() => {
+        setIsDragging(false);
+        onDragEnd();
       }}
       title={attachment.path}
     >
@@ -152,6 +141,7 @@ export function ComposerFilePicker({
   onToggleFile,
 }: ComposerFilePickerProps) {
   const [draggedAttachments, setDraggedAttachments] = useState<ComposerAttachment[]>([]);
+  const [dropActive, setDropActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -189,16 +179,6 @@ export function ComposerFilePicker({
     return entries.filter((entry) => entry.name.toLowerCase().includes(query));
   }, [picker?.entries, searchQuery]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-  );
-
-  const { isOver, setNodeRef: setDropZoneRef } = useDroppable({
-    id: attachmentDropZoneId,
-  });
-
   const openAttachment = async (attachment: ComposerAttachment) => {
     if (isSafeExternalUrl(attachment.path)) {
       if (window.piDesktop?.openExternal) {
@@ -214,19 +194,44 @@ export function ComposerFilePicker({
     await window.piDesktop?.openPath?.(folderPath);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const nextDraggedAttachments = Array.isArray(event.active.data.current?.attachmentsToAttach)
-      ? (event.active.data.current.attachmentsToAttach as ComposerAttachment[])
-      : [];
+  const handleInternalDragStart = (
+    attachment: ComposerAttachment,
+    event: DragEvent<HTMLButtonElement>,
+  ) => {
+    const nextDraggedAttachments =
+      currentSelection.some((currentAttachment) => currentAttachment.path === attachment.path) &&
+      currentSelection.length > 0
+        ? currentSelection
+        : [attachment];
+
     setDraggedAttachments(nextDraggedAttachments);
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData(
+      "application/x-howcode-attachments",
+      JSON.stringify(nextDraggedAttachments.map((candidate) => candidate.path)),
+    );
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    if (event.over?.id === attachmentDropZoneId && draggedAttachments.length > 0) {
+  const handleDragEnd = () => {
+    setDraggedAttachments([]);
+    setDropActive(false);
+  };
+
+  const handleDropIntoAttachments = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    if (draggedAttachments.length > 0) {
       onAttachAttachments(draggedAttachments);
+      handleDragEnd();
+      return;
     }
 
-    setDraggedAttachments([]);
+    const externalAttachments = getComposerAttachmentsFromClipboardData(event.dataTransfer);
+    if (externalAttachments.length > 0) {
+      onAttachAttachments(externalAttachments);
+    }
+
+    setDropActive(false);
   };
 
   useEffect(() => {
@@ -239,12 +244,24 @@ export function ComposerFilePicker({
     <SurfacePanel
       ref={panelRef}
       className={cn(
-        "absolute right-0 bottom-full left-0 z-[70] grid h-[378px] grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+        "absolute right-0 bottom-full left-0 z-[70] grid h-[min(378px,calc(100vh-12rem))] min-h-[220px] grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
         popoverPanelClass,
       )}
     >
       <div className="flex h-11 min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[rgba(169,178,215,0.08)] px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+          {picker?.parentPath ? (
+            <button
+              type="button"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
+              onClick={() => onOpenDirectory(picker.parentPath ?? projectRootPath)}
+              aria-label="Go up"
+              title="Go up"
+            >
+              <ChevronLeft size={13} />
+            </button>
+          ) : null}
+
           {rootOptions.map((rootOption) => (
             <button
               key={rootOption.path}
@@ -265,182 +282,190 @@ export function ComposerFilePicker({
           ))}
         </div>
 
-        {searchExpanded || searchQuery.length > 0 ? (
-          <label className="relative shrink-0">
-            <Search
-              size={12}
-              className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[color:var(--muted)]"
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onBlur={() => {
-                if (searchQuery.trim().length === 0) {
-                  setSearchExpanded(false);
-                }
-              }}
-              placeholder="Search files"
-              className={cn(
-                settingsInputClass,
-                "h-6 w-40 rounded-full border-transparent bg-[rgba(255,255,255,0.04)] pr-2 pl-7 text-[11px]",
-              )}
+        <div className="flex shrink-0 items-center gap-1">
+          {currentSelection.length > 0 ? (
+            <button
+              type="button"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
+              onClick={() => onAttachAttachments(currentSelection)}
+              aria-label={`Attach ${currentSelection.length} selected file${currentSelection.length === 1 ? "" : "s"}`}
+              title={`Attach ${currentSelection.length} selected file${currentSelection.length === 1 ? "" : "s"}`}
+            >
+              <Paperclip size={13} />
+            </button>
+          ) : null}
+
+          {searchExpanded || searchQuery.length > 0 ? (
+            <label className="relative shrink-0">
+              <Search
+                size={12}
+                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[color:var(--muted)]"
+              />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onBlur={() => {
+                  if (searchQuery.trim().length === 0) {
+                    setSearchExpanded(false);
+                  }
+                }}
+                placeholder="Search files"
+                className={cn(
+                  settingsInputClass,
+                  "h-6 w-40 rounded-full border-transparent bg-[rgba(255,255,255,0.04)] pr-2 pl-7 text-[11px]",
+                )}
+                aria-label="Search files"
+              />
+            </label>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
+              onClick={() => setSearchExpanded(true)}
               aria-label="Search files"
-            />
-          </label>
-        ) : (
-          <button
-            type="button"
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
-            onClick={() => setSearchExpanded(true)}
-            aria-label="Search files"
-            title="Search files"
-          >
-            <Search size={13} />
-          </button>
-        )}
+              title="Search files"
+            >
+              <Search size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setDraggedAttachments([])}
-      >
-        <div className="grid min-h-0 grid-cols-[minmax(220px,0.33fr)_minmax(0,0.67fr)] overflow-hidden">
-          <div
-            ref={setDropZoneRef}
-            className={cn(
-              "min-h-0 border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
-              isOver && "bg-[rgba(255,255,255,0.04)]",
-            )}
-          >
-            <div className="grid min-h-full content-start gap-1">
-              {attachments.length > 0 ? (
-                attachments.map((attachment) => (
-                  <div
-                    key={attachment.path}
-                    className={cn(
-                      "grid h-8 grid-cols-[12px_minmax(0,1fr)_18px_18px] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
-                    )}
-                    title={attachment.path}
-                  >
-                    <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-                      <File size={11} />
-                    </span>
-                    <span className="truncate">{attachment.name}</span>
-                    <button
-                      type="button"
-                      className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
-                      onClick={() => void openAttachment(attachment)}
-                      aria-label={
-                        isSafeExternalUrl(attachment.path)
-                          ? `Open ${attachment.name} in browser`
-                          : `Open folder for ${attachment.name}`
-                      }
-                      title={
-                        isSafeExternalUrl(attachment.path)
-                          ? `Open ${attachment.name} in browser`
-                          : `Open folder for ${attachment.name}`
-                      }
-                    >
-                      {isSafeExternalUrl(attachment.path) ? (
-                        <Globe size={11} />
-                      ) : (
-                        <FolderOpen size={11} />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
-                      onClick={() => onRemoveAttachment(attachment.path)}
-                      aria-label={`Remove ${attachment.name}`}
-                      title={`Remove ${attachment.name}`}
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ))
-              ) : (
+      <div className="grid min-h-0 grid-cols-[minmax(220px,0.33fr)_minmax(0,0.67fr)] overflow-hidden">
+        <div
+          className={cn(
+            "min-h-0 border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
+            dropActive && "bg-[rgba(255,255,255,0.04)]",
+          )}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setDropActive(true);
+          }}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setDropActive(false);
+            }
+          }}
+          onDrop={handleDropIntoAttachments}
+        >
+          <div className="grid min-h-full content-start gap-1">
+            {attachments.length > 0 ? (
+              attachments.map((attachment) => (
                 <div
+                  key={attachment.path}
                   className={cn(
-                    "grid min-h-24 place-items-center rounded-xl border border-dashed border-transparent px-3 py-4 text-center text-[12px] text-[color:var(--muted)] transition-colors",
-                    isOver &&
-                      "border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+                    "grid h-8 grid-cols-[12px_minmax(0,1fr)_18px_18px] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
                   )}
+                  title={attachment.path}
                 >
-                  {draggedAttachments.length > 0 ? "Drop to attach" : "No attachments yet."}
+                  <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+                    <File size={11} />
+                  </span>
+                  <span className="truncate">{attachment.name}</span>
+                  <button
+                    type="button"
+                    className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
+                    onClick={() => void openAttachment(attachment)}
+                    aria-label={
+                      isSafeExternalUrl(attachment.path)
+                        ? `Open ${attachment.name} in browser`
+                        : `Open folder for ${attachment.name}`
+                    }
+                    title={
+                      isSafeExternalUrl(attachment.path)
+                        ? `Open ${attachment.name} in browser`
+                        : `Open folder for ${attachment.name}`
+                    }
+                  >
+                    {isSafeExternalUrl(attachment.path) ? (
+                      <Globe size={11} />
+                    ) : (
+                      <FolderOpen size={11} />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
+                    onClick={() => onRemoveAttachment(attachment.path)}
+                    aria-label={`Remove ${attachment.name}`}
+                    title={`Remove ${attachment.name}`}
+                  >
+                    <X size={11} />
+                  </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="min-h-0 overflow-y-auto p-2 pt-1">
-            {!picker && loading ? (
-              <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
-                Loading files…
-              </div>
-            ) : filteredEntries.length > 0 ? (
+              ))
+            ) : (
               <div
                 className={cn(
-                  "grid grid-cols-2 gap-1",
-                  loading && "pointer-events-none opacity-70",
+                  "grid min-h-24 place-items-center rounded-xl border border-dashed border-transparent px-3 py-4 text-center text-[12px] text-[color:var(--muted)] transition-colors",
+                  dropActive &&
+                    "border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
                 )}
               >
-                {filteredEntries.map((entry) => {
-                  if (entry.kind === "directory") {
-                    return (
-                      <button
-                        key={entry.path}
-                        type="button"
-                        className={cn(
-                          "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
-                        )}
-                        onDoubleClick={() => onOpenDirectory(entry.path)}
-                        title={entry.path}
-                      >
-                        <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-                          <Folder size={11} />
-                        </span>
-                        <span className="truncate">{entry.name}</span>
-                      </button>
-                    );
-                  }
-
-                  const attachment: ComposerAttachment = {
-                    path: entry.path,
-                    name: entry.name,
-                    kind: entry.kind,
-                  };
-                  const isAlreadyAttached = attachedByPath.has(entry.path);
-                  const attachmentsToAttach =
-                    selectionByPath.has(entry.path) && currentSelection.length > 0
-                      ? currentSelection
-                      : [attachment];
-
-                  return (
-                    <DraggableFileEntry
-                      key={entry.path}
-                      attachment={attachment}
-                      attachmentsToAttach={attachmentsToAttach}
-                      isAlreadyAttached={isAlreadyAttached}
-                      isSelected={selectionByPath.has(entry.path)}
-                      currentSelection={currentSelection}
-                      onAttachAttachments={onAttachAttachments}
-                      onToggleFile={onToggleFile}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
-                {searchQuery.trim().length > 0 ? "No matching files." : "No files in this folder."}
+                {draggedAttachments.length > 0 ? "Drop to attach" : "No attachments yet."}
               </div>
             )}
           </div>
         </div>
-      </DndContext>
+
+        <div className="min-h-0 overflow-x-hidden overflow-y-auto p-2 pt-1">
+          {!picker && loading ? (
+            <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
+              Loading files…
+            </div>
+          ) : filteredEntries.length > 0 ? (
+            <div
+              className={cn("grid grid-cols-2 gap-1", loading && "pointer-events-none opacity-70")}
+            >
+              {filteredEntries.map((entry) => {
+                if (entry.kind === "directory") {
+                  return (
+                    <button
+                      key={entry.path}
+                      type="button"
+                      className={cn(
+                        "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
+                      )}
+                      onDoubleClick={() => onOpenDirectory(entry.path)}
+                      title={entry.path}
+                    >
+                      <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+                        <Folder size={11} />
+                      </span>
+                      <span className="truncate">{entry.name}</span>
+                    </button>
+                  );
+                }
+
+                const attachment: ComposerAttachment = {
+                  path: entry.path,
+                  name: entry.name,
+                  kind: entry.kind,
+                };
+
+                return (
+                  <FileEntryButton
+                    key={entry.path}
+                    attachment={attachment}
+                    isAlreadyAttached={attachedByPath.has(entry.path)}
+                    isSelected={selectionByPath.has(entry.path)}
+                    onDragStart={handleInternalDragStart}
+                    onDragEnd={handleDragEnd}
+                    onToggleFile={onToggleFile}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
+              {searchQuery.trim().length > 0 ? "No matching files." : "No files in this folder."}
+            </div>
+          )}
+        </div>
+      </div>
 
       {errorMessage ? (
         <div className="pointer-events-none absolute right-3 bottom-2 left-3 truncate text-[11px] text-[#f2a7a7]">

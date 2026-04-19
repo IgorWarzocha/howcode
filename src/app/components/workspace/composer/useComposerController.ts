@@ -323,8 +323,21 @@ export function useComposerController({
     [setDraftValue],
   );
 
+  const handleDrop = useCallback((dataTransfer: DataTransfer | null) => {
+    const droppedAttachments = getComposerAttachmentsFromClipboardData(dataTransfer);
+    if (droppedAttachments.length === 0) {
+      return false;
+    }
+
+    setAttachments((current) => mergeComposerAttachments(current, droppedAttachments));
+    setErrorMessage(null);
+    setOpenMenu(null);
+    return true;
+  }, []);
+
   return {
     attachments,
+    handleDrop,
     handlePaste,
     cancelDictation,
     canSend,
