@@ -106,7 +106,7 @@ declare global {
       }) => Promise<SkillCreatorSessionState>;
       closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
-      readClipboardSnapshot?: () => Promise<DesktopClipboardSnapshot>;
+      readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>;
       readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;

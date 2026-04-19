@@ -15,9 +15,11 @@ import type { View } from "../../../types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import {
+  attachmentClipboardSnapshotFormats,
   getComposerAttachmentsFromClipboardData,
   getComposerAttachmentsFromClipboardFilePaths,
   getComposerAttachmentsFromClipboardSnapshot,
+  hasAttachmentHintInClipboardData,
   getPreferredClipboardTextFromClipboardFilePaths,
   getPreferredClipboardTextFromClipboardData,
   getPreferredClipboardTextFromClipboardSnapshot,
@@ -44,19 +46,11 @@ function getModelLabel(model: ComposerModel | null) {
   return model.name;
 }
 
-function insertTextAtSelection(
-  currentValue: string,
-  selectionStart: number,
-  selectionEnd: number,
-  insertedText: string,
-) {
-  const safeStart = Math.max(0, selectionStart);
-  const safeEnd = Math.max(safeStart, selectionEnd);
-  const nextValue = currentValue.slice(0, safeStart) + insertedText + currentValue.slice(safeEnd);
-  return {
-    nextValue,
-    nextCursorPosition: safeStart + insertedText.length,
-  };
+function applyPastedTextToTextarea(textarea: HTMLTextAreaElement, pastedText: string) {
+  const selectionStart = textarea.selectionStart ?? textarea.value.length;
+  const selectionEnd = textarea.selectionEnd ?? textarea.value.length;
+  textarea.setRangeText(pastedText, selectionStart, selectionEnd, "end");
+  return textarea.value;
 }
 
 type UseComposerControllerProps = {
@@ -257,12 +251,19 @@ export function useComposerController({
       textarea: HTMLTextAreaElement;
     }) => {
       const { clipboardData, textarea } = request;
+      const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData);
 
       const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData);
       if (directAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, directAttachments));
         setErrorMessage(null);
         setOpenMenu(null);
+        return;
+      }
+
+      if (directPastedText && !hasAttachmentHintInClipboardData(clipboardData)) {
+        setDraftValue(applyPastedTextToTextarea(textarea, directPastedText));
+        setErrorMessage(null);
         return;
       }
 
@@ -285,7 +286,9 @@ export function useComposerController({
       }
 
       try {
-        fallbackSnapshot = (await window.piDesktop?.readClipboardSnapshot?.()) ?? null;
+        fallbackSnapshot =
+          (await window.piDesktop?.readClipboardSnapshot?.(attachmentClipboardSnapshotFormats)) ??
+          null;
       } catch {
         fallbackSnapshot = null;
       }
@@ -299,7 +302,7 @@ export function useComposerController({
       }
 
       const pastedText =
-        getPreferredClipboardTextFromClipboardData(clipboardData) ||
+        directPastedText ||
         getPreferredClipboardTextFromClipboardFilePaths(fallbackClipboardFilePaths) ||
         getPreferredClipboardTextFromClipboardSnapshot(fallbackSnapshot);
 
@@ -307,13 +310,11 @@ export function useComposerController({
         return;
       }
 
-      const { nextValue, nextCursorPosition } = insertTextAtSelection(
-        textarea.value,
-        textarea.selectionStart ?? textarea.value.length,
-        textarea.selectionEnd ?? textarea.value.length,
-        pastedText,
-      );
+      const nextValue = applyPastedTextToTextarea(textarea, pastedText);
       setDraftValue(nextValue);
+      setErrorMessage(null);
+
+      const nextCursorPosition = textarea.selectionStart ?? nextValue.length;
       requestAnimationFrame(() => {
         textarea.focus();
         textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);

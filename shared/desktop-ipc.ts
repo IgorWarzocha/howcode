@@ -111,7 +111,7 @@ export type DesktopRequestMap = {
     response: ComposerAttachment[];
   };
   readClipboardSnapshot: {
-    params: Record<string, never>;
+    params: { formats?: string[] | null };
     response: DesktopClipboardSnapshot;
   };
   readClipboardFilePaths: {

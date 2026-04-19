@@ -40,8 +40,10 @@ export function createSystemHandlers(): SystemRequestHandlers {
           kind: getAttachmentKind(filePath),
         }));
     },
-    readClipboardSnapshot: () => {
-      const formats = clipboard.availableFormats();
+    readClipboardSnapshot: ({ formats: requestedFormats }) => {
+      const formats = Array.isArray(requestedFormats)
+        ? requestedFormats.filter((format) => typeof format === "string" && format.length > 0)
+        : clipboard.availableFormats();
       const valuesByFormat = Object.fromEntries(
         formats.map((format) => {
           try {

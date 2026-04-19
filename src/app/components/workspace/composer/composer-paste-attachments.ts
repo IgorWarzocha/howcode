@@ -39,6 +39,15 @@ const preferredClipboardTypes = [
   "text",
 ];
 
+const attachmentHintClipboardTypes = new Set([
+  "text/uri-list",
+  "x-special/gnome-copied-files",
+  "public.file-url",
+  "public.url",
+]);
+
+export const attachmentClipboardSnapshotFormats = [...preferredClipboardTypes];
+
 function toArray<T>(value: Iterable<T> | ArrayLike<T> | null | undefined): T[] {
   if (!value) {
     return [];
@@ -165,6 +174,30 @@ export function getComposerAttachmentsFromClipboardData(
     getClipboardFileAttachments(clipboardData),
     getClipboardTextAttachments(clipboardData),
   );
+}
+
+export function hasAttachmentHintInClipboardData(clipboardData: ComposerClipboardDataLike | null) {
+  if (!clipboardData) {
+    return false;
+  }
+
+  if (getClipboardFileAttachments(clipboardData).length > 0) {
+    return true;
+  }
+
+  for (const item of toArray(clipboardData.items)) {
+    if (item.kind === "file") {
+      return true;
+    }
+  }
+
+  for (const type of toArray(clipboardData.types)) {
+    if (typeof type === "string" && attachmentHintClipboardTypes.has(type)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function getComposerAttachmentsFromClipboardFilePaths(
