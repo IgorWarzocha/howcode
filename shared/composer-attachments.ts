@@ -1,6 +1,32 @@
 import type { ComposerAttachment } from "./desktop-data-contracts";
 
 const imageAttachmentPattern = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+const unixAbsolutePathRoots = new Set([
+  "Applications",
+  "Library",
+  "System",
+  "Users",
+  "Volumes",
+  "bin",
+  "dev",
+  "etc",
+  "home",
+  "media",
+  "mnt",
+  "opt",
+  "private",
+  "proc",
+  "repo",
+  "root",
+  "run",
+  "sbin",
+  "srv",
+  "tmp",
+  "usr",
+  "var",
+  "workspace",
+  "workspaces",
+]);
 
 function stripWrappingCharacters(value: string) {
   const trimmed = value.trim();
@@ -36,15 +62,26 @@ function decodeFileUrlPath(url: URL) {
 }
 
 function isLikelyLocalFilePath(candidate: string) {
+  const pathSegments = candidate.split(/[\\/]/).filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1] ?? "";
+  const relativePathRemainder =
+    candidate.startsWith("./") || candidate.startsWith("~/")
+      ? candidate.slice(2)
+      : candidate.startsWith("../")
+        ? candidate.slice(3)
+        : "";
+  const hasNestedRelativePath = /[\\/]/.test(relativePathRemainder);
+  const hasFileLikeBasename = lastSegment.includes(".");
+
   return (
-    candidate.startsWith("/") ||
+    (candidate.startsWith("/") &&
+      candidate !== "/" &&
+      pathSegments.length >= 2 &&
+      unixAbsolutePathRoots.has(pathSegments[0] ?? "")) ||
     /^[A-Za-z]:[\\/]/.test(candidate) ||
     candidate.startsWith("\\\\") ||
-    candidate.startsWith("./") ||
-    candidate.startsWith("../") ||
-    candidate === "." ||
-    candidate === ".." ||
-    candidate.startsWith("~/")
+    ((candidate.startsWith("./") || candidate.startsWith("../") || candidate.startsWith("~/")) &&
+      (hasNestedRelativePath || hasFileLikeBasename))
   );
 }
 
@@ -56,7 +93,7 @@ function getUrlAttachmentName(url: URL) {
 function getPathAttachmentName(filePath: string) {
   const normalizedPath = filePath.replace(/[\\/]+$/, "");
   const parts = normalizedPath.split(/[\\/]/).filter(Boolean);
-  return parts[parts.length - 1] || normalizedPath;
+  return parts[parts.length - 1] || normalizedPath || filePath;
 }
 
 function toAttachment(path: string, name: string): ComposerAttachment {

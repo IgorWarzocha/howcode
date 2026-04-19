@@ -22,6 +22,14 @@ describe("composer attachment paste helpers", () => {
     });
   });
 
+  it("keeps root file urls from producing blank attachment names", () => {
+    expect(parseComposerAttachmentReference("file:///")).toEqual({
+      path: "/",
+      name: "/",
+      kind: "text",
+    });
+  });
+
   it("parses newline-separated pasted references and deduplicates them", () => {
     expect(
       extractComposerAttachmentsFromPaste(`
@@ -45,6 +53,12 @@ describe("composer attachment paste helpers", () => {
     expect(extractComposerAttachmentsFromPaste("check this out https://example.com/guide")).toEqual(
       [],
     );
+  });
+
+  it("does not swallow slash commands or api routes as attachments", () => {
+    expect(parseComposerAttachmentReference("/help")).toBeNull();
+    expect(parseComposerAttachmentReference("/v1/chat/completions")).toBeNull();
+    expect(parseComposerAttachmentReference("./build")).toBeNull();
   });
 });
 
