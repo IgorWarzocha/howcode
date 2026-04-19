@@ -24,6 +24,11 @@ import {
   getManagedDictationModelFiles,
   getResolvedDictationModelFiles,
 } from "./model-resolution.cts";
+import {
+  getDownloadChecksumExpectations,
+  type DownloadMetadata,
+  fetchDownloadResponse,
+} from "./model-download.ts";
 import { resetRecognizerCache } from "./sherpa-runtime.cts";
 
 function emitDictationDownloadLog(
@@ -45,35 +50,6 @@ function buildHuggingFaceResolveUrl(repo: string, fileName: string) {
   return `https://huggingface.co/${repo}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
 }
 
-type DownloadMetadata = {
-  contentLength: number | null;
-  etag: string | null;
-};
-
-function normalizeEtag(etag: string | null) {
-  if (!etag) {
-    return null;
-  }
-
-  return etag.replace(/^W\//, "").replace(/^"|"$/g, "").trim().toLowerCase() || null;
-}
-
-function getEtagHashAlgorithm(etag: string | null) {
-  if (!etag) {
-    return null;
-  }
-
-  if (/^[a-f0-9]{64}$/i.test(etag)) {
-    return "sha256" as const;
-  }
-
-  if (/^[a-f0-9]{40}$/i.test(etag)) {
-    return "sha1" as const;
-  }
-
-  return null;
-}
-
 async function validateDownloadedFile(targetPath: string, metadata: DownloadMetadata) {
   const fileStats = await stat(targetPath);
   if (!fileStats.isFile() || fileStats.size <= 0) {
@@ -86,39 +62,44 @@ async function validateDownloadedFile(targetPath: string, metadata: DownloadMeta
     );
   }
 
-  const normalizedEtag = normalizeEtag(metadata.etag);
-  const hashAlgorithm = getEtagHashAlgorithm(normalizedEtag);
-  if (!normalizedEtag || !hashAlgorithm) {
+  const checksumExpectations = getDownloadChecksumExpectations(metadata.etag, fileStats.size);
+  if (checksumExpectations.length === 0) {
     return;
   }
 
-  const hash = createHash(hashAlgorithm);
+  const hashes = checksumExpectations.map((expectation) => {
+    const hash = createHash(expectation.algorithm);
+    if (expectation.prefix) {
+      hash.update(expectation.prefix);
+    }
+
+    return {
+      expected: expectation.expected,
+      hash,
+    };
+  });
+
   for await (const chunk of createReadStream(targetPath)) {
-    hash.update(chunk);
+    for (const candidate of hashes) {
+      candidate.hash.update(chunk);
+    }
   }
 
-  const fileHash = hash.digest("hex");
-
-  if (fileHash !== normalizedEtag) {
+  const matchesChecksum = hashes.some(
+    (candidate) => candidate.hash.digest("hex") === candidate.expected,
+  );
+  if (!matchesChecksum) {
     throw new Error(`Download failed: ${path.basename(targetPath)} checksum mismatch.`);
   }
 }
 
 async function downloadToFile(url: string, targetPath: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Download failed (${response.status} ${response.statusText}) for ${url}`);
-  }
-
+  const { response, metadata } = await fetchDownloadResponse(url);
   if (!response.body) {
     throw new Error(`Download failed: missing response body for ${url}`);
   }
 
   const temporaryPath = `${targetPath}.partial`;
-  const metadata: DownloadMetadata = {
-    contentLength: Number.parseInt(response.headers.get("content-length") ?? "", 10) || null,
-    etag: response.headers.get("etag"),
-  };
 
   try {
     await pipeline(
