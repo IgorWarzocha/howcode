@@ -29,19 +29,25 @@ export function useComposerAttachmentPicker({
     [],
   );
 
+  const fetchPickerEntries = async (path?: string | null, rootPath?: string | null) => {
+    return await onListAttachmentEntries({
+      projectId: pickerRootPath,
+      path: path ?? null,
+      rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
+    });
+  };
+
   const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
     setPickerLoading(true);
 
     try {
-      const nextPickerState = await onListAttachmentEntries({
-        projectId: pickerRootPath,
-        path: path ?? null,
-        rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
-      });
+      const nextPickerState = await fetchPickerEntries(path, rootPath);
       setPickerState(nextPickerState);
       setErrorMessage(null);
+      return nextPickerState;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
+      return null;
     } finally {
       setPickerLoading(false);
     }
@@ -55,7 +61,16 @@ export function useComposerAttachmentPicker({
 
     setPendingPickerAttachments([]);
     setOpenMenu("picker");
-    await loadPickerEntries(pickerRootPath, pickerRootPath);
+
+    const initialPickerState = await loadPickerEntries(pickerRootPath, pickerRootPath);
+    if (
+      !initialPickerState?.homePath ||
+      initialPickerState.homePath === initialPickerState.rootPath
+    ) {
+      return;
+    }
+
+    await loadPickerEntries(initialPickerState.homePath, initialPickerState.homePath);
   };
 
   const openPickerDirectory = async (path: string) => {
@@ -64,14 +79,6 @@ export function useComposerAttachmentPicker({
 
   const openPickerRoot = async (rootPath: string) => {
     await loadPickerEntries(rootPath, rootPath);
-  };
-
-  const navigatePickerUp = async () => {
-    if (!pickerState?.parentPath) {
-      return;
-    }
-
-    await loadPickerEntries(pickerState.parentPath);
   };
 
   const togglePendingPickerAttachment = (attachment: ComposerAttachment) => {
@@ -86,14 +93,25 @@ export function useComposerAttachmentPicker({
     });
   };
 
-  const attachPendingPickerAttachments = () => {
-    if (pendingPickerAttachments.length === 0) {
+  const attachPickerAttachments = (
+    nextAttachments: ComposerAttachment[],
+    options?: { closeMenu?: boolean },
+  ) => {
+    if (nextAttachments.length === 0) {
       return;
     }
 
-    setAttachments((current) => mergeComposerAttachments(current, pendingPickerAttachments));
-    setPendingPickerAttachments([]);
-    setOpenMenu(null);
+    const attachedPaths = new Set(nextAttachments.map((attachment) => attachment.path));
+
+    setAttachments((current) => mergeComposerAttachments(current, nextAttachments));
+    setPendingPickerAttachments((current) =>
+      current.filter((attachment) => !attachedPaths.has(attachment.path)),
+    );
+
+    if (options?.closeMenu) {
+      setOpenMenu(null);
+    }
+
     setErrorMessage(null);
   };
 
@@ -103,9 +121,14 @@ export function useComposerAttachmentPicker({
     );
   };
 
+  const clearAttachments = () => {
+    setAttachments([]);
+    setErrorMessage(null);
+  };
+
   return {
-    attachPendingPickerAttachments,
-    navigatePickerUp,
+    attachPickerAttachments,
+    clearAttachments,
     openPickerDirectory,
     openPickerRoot,
     pendingPickerAttachments,

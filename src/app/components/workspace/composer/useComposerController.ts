@@ -186,8 +186,8 @@ export function useComposerController({
   });
 
   const {
-    attachPendingPickerAttachments,
-    navigatePickerUp,
+    attachPickerAttachments,
+    clearAttachments,
     openPickerDirectory,
     openPickerRoot,
     pendingPickerAttachments,
@@ -328,6 +328,7 @@ export function useComposerController({
     handlePaste,
     cancelDictation,
     canSend,
+    clearAttachments,
     clearError: () => setErrorMessage(null),
     draft,
     dictationActive,
@@ -350,7 +351,6 @@ export function useComposerController({
     pickAttachments,
     openPickerDirectory,
     openPickerRoot,
-    navigatePickerUp,
     removeAttachment,
     runComposerAction,
     send,
@@ -358,7 +358,7 @@ export function useComposerController({
     setOpenMenu,
     stop,
     toggleDictation,
-    attachPendingPickerAttachments,
+    attachPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
   };

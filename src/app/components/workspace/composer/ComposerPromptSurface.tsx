@@ -1,9 +1,8 @@
-import { Plus, Send, Square } from "lucide-react";
+import { Paperclip, Send, Square, X } from "lucide-react";
 import { type ClipboardEvent, type RefObject, useEffect } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
-import { AttachmentChips } from "./AttachmentChips";
 import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerFilePicker } from "./ComposerFilePicker";
@@ -48,6 +47,7 @@ export function ComposerPromptSurface({
     attachments,
     cancelDictation,
     canSend,
+    clearAttachments,
     clearError,
     draft,
     dictationActive,
@@ -69,7 +69,6 @@ export function ComposerPromptSurface({
     pickAttachments,
     openPickerDirectory,
     openPickerRoot,
-    navigatePickerUp,
     removeAttachment,
     runComposerAction,
     send,
@@ -77,7 +76,7 @@ export function ComposerPromptSurface({
     setOpenMenu,
     stop,
     toggleDictation,
-    attachPendingPickerAttachments,
+    attachPickerAttachments,
     togglePendingPickerAttachment,
     handlePaste,
     thinkingLevelLabels,
@@ -98,12 +97,19 @@ export function ComposerPromptSurface({
   const dictationTranscribing = dictationInterimText.length > 0;
 
   useEffect(() => {
-    if (!dictationActive && !dictationTranscribing) {
+    if (!pickerOpen && !dictationActive && !dictationTranscribing) {
       return;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") {
+        return;
+      }
+
+      if (pickerOpen) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setOpenMenu(null);
         return;
       }
 
@@ -117,7 +123,7 @@ export function ComposerPromptSurface({
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [cancelDictation, dictationActive, dictationTranscribing]);
+  }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu]);
 
   const placeholderText =
     activeView === "thread"
@@ -129,28 +135,11 @@ export function ComposerPromptSurface({
       {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
           swap without vertical jump. */}
       <div className="relative min-h-[148px]">
-        {/* The prompt surface intentionally uses one shared top block: +, attachments, placeholder,
-            textarea, and dictate/send all live here so we match git-ops height without adding a
-            separate control row above or below the prompt. */}
-        <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-2">
-          <button
-            ref={pickerButtonRef}
-            type="button"
-            className={cn(compactIconButtonClass, "shrink-0")}
-            onClick={pickAttachments}
-            aria-label="Add attachment"
-            title="Add attachment"
-          >
-            <Plus size={16} />
-          </button>
-          {attachments.length > 0 ? (
-            <div className="min-w-0 flex-1">
-              <AttachmentChips attachments={attachments} onRemove={removeAttachment} />
-            </div>
-          ) : null}
-        </div>
+        {/* The prompt surface keeps add-attachment, attachment count, prompt text, and trailing
+            controls in one shared block so it still mirrors the git-ops composer shell. */}
         {pickerOpen ? (
           <ComposerFilePicker
+            attachments={attachments}
             currentSelection={pendingPickerAttachments}
             errorMessage={errorMessage}
             favoriteFolders={favoriteFolders}
@@ -158,47 +147,83 @@ export function ComposerPromptSurface({
             picker={pickerState}
             panelRef={pickerPanelRef}
             projectRootPath={projectId}
-            onAttachSelected={attachPendingPickerAttachments}
-            onNavigateUp={navigatePickerUp}
+            onAttachAttachments={attachPickerAttachments}
             onOpenRoot={openPickerRoot}
             onOpenDirectory={openPickerDirectory}
+            onRemoveAttachment={removeAttachment}
             onToggleFile={togglePendingPickerAttachment}
           />
         ) : null}
-        <div className="grid min-h-[148px] content-end px-4 pt-[52px] pb-3">
+        <div className="grid min-h-[148px] content-end px-4 py-3">
           <div className="flex min-h-[82px] items-end justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <ComposerTextField
-                value={draft}
-                onChange={setDraft}
-                onInput={() => {
-                  if (errorMessage) {
-                    clearError();
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
-                    event.preventDefault();
-                    void cancelDictation();
-                    return;
-                  }
+            <div className="flex min-w-0 flex-1 items-end gap-2">
+              <div className="inline-flex h-6 shrink-0 items-center gap-1.5">
+                <button
+                  ref={pickerButtonRef}
+                  type="button"
+                  className={cn(compactIconButtonClass, "shrink-0")}
+                  onClick={pickAttachments}
+                  aria-label="Add attachment"
+                  title="Add attachment"
+                >
+                  <Paperclip size={16} />
+                </button>
 
-                  if (event.key === "Enter" && !event.shiftKey) {
+                {attachments.length > 0 ? (
+                  <>
+                    <span
+                      className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]"
+                      aria-label={`${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`}
+                      title={`${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`}
+                    >
+                      {attachments.length}
+                    </span>
+                    <button
+                      type="button"
+                      className={cn(compactIconButtonClass, "h-5 w-5 shrink-0")}
+                      onClick={clearAttachments}
+                      aria-label="Clear attachments"
+                      title="Clear attachments"
+                    >
+                      <X size={12} />
+                    </button>
+                  </>
+                ) : null}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <ComposerTextField
+                  value={draft}
+                  onChange={setDraft}
+                  onInput={() => {
+                    if (errorMessage) {
+                      clearError();
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
+                      event.preventDefault();
+                      void cancelDictation();
+                      return;
+                    }
+
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                  onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
                     event.preventDefault();
-                    void send();
-                  }
-                }}
-                onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
-                  event.preventDefault();
-                  void handlePaste({
-                    clipboardData: event.clipboardData,
-                    textarea: event.currentTarget,
-                  });
-                }}
-                ariaLabel="Prompt composer"
-                placeholder={placeholderText}
-                onHeightChange={onLayoutChange}
-              />
+                    void handlePaste({
+                      clipboardData: event.clipboardData,
+                      textarea: event.currentTarget,
+                    });
+                  }}
+                  ariaLabel="Prompt composer"
+                  placeholder={placeholderText}
+                  onHeightChange={onLayoutChange}
+                />
+              </div>
             </div>
 
             <div className="inline-flex h-8 items-center justify-end gap-2">
