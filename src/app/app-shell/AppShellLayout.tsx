@@ -6,6 +6,7 @@ import type { ProjectDiffBaseline } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
+import { appShellRootClass } from "./layout-classes";
 import type { AppShellController } from "./useAppShellController";
 import { useAppShellLayoutState } from "./useAppShellLayoutState";
 
@@ -77,7 +78,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
   return (
     <>
-      <div className="relative flex h-screen overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]">
+      <div className={appShellRootClass}>
         <div className="relative w-[300px] max-w-[calc(100vw-1rem)] min-w-0 shrink-0">
           <Sidebar
             projects={projects}
