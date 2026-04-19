@@ -24,5 +24,7 @@ win:
     - dir
 asarUnpack:
   - node_modules/**/*.node
+  - node_modules/node-pty/build/Release/**
+  - node_modules/node-pty/prebuilds/**
   - node_modules/sherpa-onnx-node/**
   - node_modules/sherpa-onnx-*/**

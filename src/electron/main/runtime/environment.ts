@@ -12,8 +12,20 @@ function resolvePiPackageDirectory() {
   }
 }
 
+function resolveConfiguredUserDataPath() {
+  const configuredUserDataPath = process.env.HOWCODE_USER_DATA_PATH?.trim();
+  if (configuredUserDataPath) {
+    return configuredUserDataPath;
+  }
+
+  const defaultUserDataPath = app.getPath("userData");
+  return app.isPackaged ? defaultUserDataPath : path.join(defaultUserDataPath, "dev");
+}
+
 export function configureDesktopEnvironment() {
-  process.env.HOWCODE_USER_DATA_PATH = app.getPath("userData");
+  const userDataPath = resolveConfiguredUserDataPath();
+  app.setPath("userData", userDataPath);
+  process.env.HOWCODE_USER_DATA_PATH = userDataPath;
 
   const piPackageDirectory = resolvePiPackageDirectory();
   if (piPackageDirectory) {

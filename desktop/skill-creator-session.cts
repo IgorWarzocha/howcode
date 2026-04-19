@@ -114,6 +114,33 @@ function buildFollowUpPrompt(prompt: string, createdSkillPath: string | null) {
   return lines.join("\n\n");
 }
 
+async function resolveBundledSkillsPath() {
+  const configuredSkillsPath = process.env.HOWCODE_BUNDLED_SKILLS_PATH?.trim();
+  const processWithResourcesPath = process as NodeJS.Process & { resourcesPath?: string };
+  const packagedResourcesSkillsPath = processWithResourcesPath.resourcesPath
+    ? path.join(processWithResourcesPath.resourcesPath, "resources", "skills")
+    : null;
+  const bundledRelativeSkillsPath = fileURLToPath(
+    new URL("../../resources/skills", import.meta.url),
+  );
+  const repoSkillsPath = fileURLToPath(new URL("../../desktop/resources/skills", import.meta.url));
+
+  const candidates = [
+    configuredSkillsPath,
+    packagedResourcesSkillsPath,
+    bundledRelativeSkillsPath,
+    repoSkillsPath,
+  ];
+
+  for (const candidatePath of candidates) {
+    if (candidatePath && (await pathExists(candidatePath))) {
+      return candidatePath;
+    }
+  }
+
+  return repoSkillsPath;
+}
+
 async function createSkillCreatorSession(cwd: string, projectPath?: string | null) {
   const {
     AuthStorage,
@@ -128,11 +155,7 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  const packagedSkillsPath = fileURLToPath(new URL("../../resources/skills", import.meta.url));
-  const repoSkillsPath = fileURLToPath(new URL("../../desktop/resources/skills", import.meta.url));
-  const bundledSkillsPath = (await pathExists(packagedSkillsPath))
-    ? packagedSkillsPath
-    : repoSkillsPath;
+  const bundledSkillsPath = await resolveBundledSkillsPath();
   const resourceLoader = new DefaultResourceLoader({
     cwd,
     agentDir,
