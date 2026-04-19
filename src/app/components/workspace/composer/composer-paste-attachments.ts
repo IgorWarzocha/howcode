@@ -47,6 +47,8 @@ const attachmentHintClipboardTypes = new Set([
   "public.url",
 ]);
 
+const fileTransferTypes = new Set(["Files", "application/x-moz-file"]);
+
 export const attachmentClipboardSnapshotFormats = [...preferredClipboardTypes];
 
 function toArray<T>(value: Iterable<T> | ArrayLike<T> | null | undefined): T[] {
@@ -215,6 +217,30 @@ export function getComposerAttachmentsFromClipboardData(
     getClipboardFileAttachments(clipboardData, options?.resolveFilePath),
     getClipboardTextAttachments(clipboardData),
   );
+}
+
+export function hasFilePayloadInClipboardData(clipboardData: ComposerClipboardDataLike | null) {
+  if (!clipboardData) {
+    return false;
+  }
+
+  if (toArray(clipboardData.files).length > 0) {
+    return true;
+  }
+
+  for (const item of toArray(clipboardData.items)) {
+    if (item.kind === "file") {
+      return true;
+    }
+  }
+
+  for (const type of toArray(clipboardData.types)) {
+    if (typeof type === "string" && fileTransferTypes.has(type)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function hasAttachmentHintInClipboardData(clipboardData: ComposerClipboardDataLike | null) {

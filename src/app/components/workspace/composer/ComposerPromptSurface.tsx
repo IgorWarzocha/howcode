@@ -7,6 +7,7 @@ import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerFilePicker } from "./ComposerFilePicker";
 import { ComposerTextField } from "./ComposerTextField";
+import { hasFilePayloadInClipboardData } from "./composer-paste-attachments";
 import { useComposerController } from "./useComposerController";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -126,6 +127,38 @@ export function ComposerPromptSurface({
     };
   }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu]);
 
+  useEffect(() => {
+    const handleWindowFileDrag = (event: DragEvent) => {
+      if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy";
+      }
+    };
+
+    const handleWindowDrop = (event: DragEvent) => {
+      if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
+        return;
+      }
+
+      event.preventDefault();
+      handleDrop(event.dataTransfer);
+    };
+
+    window.addEventListener("dragenter", handleWindowFileDrag, true);
+    window.addEventListener("dragover", handleWindowFileDrag, true);
+    window.addEventListener("drop", handleWindowDrop, true);
+
+    return () => {
+      window.removeEventListener("dragenter", handleWindowFileDrag, true);
+      window.removeEventListener("dragover", handleWindowFileDrag, true);
+      window.removeEventListener("drop", handleWindowDrop, true);
+    };
+  }, [handleDrop]);
+
   const placeholderText =
     activeView === "thread"
       ? "Ask for follow-up changes"
@@ -135,23 +168,7 @@ export function ComposerPromptSurface({
     <div className="grid min-h-[189px] gap-0">
       {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
           swap without vertical jump. */}
-      <div
-        className="relative min-h-[148px]"
-        onDragOver={(event) => {
-          if ((event.dataTransfer?.files?.length ?? 0) > 0) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
-          }
-        }}
-        onDrop={(event) => {
-          if ((event.dataTransfer?.files?.length ?? 0) === 0) {
-            return;
-          }
-
-          event.preventDefault();
-          handleDrop(event.dataTransfer);
-        }}
-      >
+      <div className="relative min-h-[148px]">
         {/* The prompt surface keeps add-attachment, attachment count, prompt text, and trailing
             controls in one shared block so it still mirrors the git-ops composer shell. */}
         {pickerOpen ? (

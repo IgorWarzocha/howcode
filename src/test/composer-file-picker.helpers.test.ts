@@ -12,7 +12,6 @@ describe("resolveFileEntryActivation", () => {
     expect(
       resolveFileEntryActivation({
         attachment,
-        currentSelection: [],
         isAlreadyAttached: false,
       }),
     ).toEqual({
@@ -21,16 +20,15 @@ describe("resolveFileEntryActivation", () => {
     });
   });
 
-  it("attaches the current selection on click once the file is selected", () => {
+  it("keeps click behavior as a toggle even when already selected", () => {
     expect(
       resolveFileEntryActivation({
         attachment,
-        currentSelection: [attachment],
         isAlreadyAttached: false,
       }),
     ).toEqual({
-      type: "attach",
-      attachments: [attachment],
+      type: "toggle",
+      attachment,
     });
   });
 
@@ -38,7 +36,6 @@ describe("resolveFileEntryActivation", () => {
     expect(
       resolveFileEntryActivation({
         attachment,
-        currentSelection: [attachment],
         isAlreadyAttached: true,
       }),
     ).toEqual({ type: "noop" });

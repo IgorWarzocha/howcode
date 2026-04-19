@@ -343,7 +343,6 @@ export function useComposerController({
 
     setAttachments((current) => mergeComposerAttachments(current, droppedAttachments));
     setErrorMessage(null);
-    setOpenMenu(null);
     return true;
   }, []);
 

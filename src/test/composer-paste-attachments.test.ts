@@ -6,6 +6,7 @@ import {
   getPreferredClipboardTextFromClipboardData,
   getPreferredClipboardTextFromClipboardFilePaths,
   getPreferredClipboardTextFromClipboardSnapshot,
+  hasFilePayloadInClipboardData,
 } from "../app/components/workspace/composer/composer-paste-attachments";
 
 function createClipboardData(
@@ -128,6 +129,18 @@ describe("getComposerAttachmentsFromClipboardData", () => {
         kind: "text",
       },
     ]);
+  });
+
+  it("detects external file drags before files are populated", () => {
+    expect(
+      hasFilePayloadInClipboardData(
+        createClipboardData({
+          types: ["Files"],
+          files: [],
+          items: [],
+        }),
+      ),
+    ).toBe(true);
   });
 
   it("reads attachment references from electron clipboard snapshots", () => {

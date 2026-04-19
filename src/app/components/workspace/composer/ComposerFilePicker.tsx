@@ -226,7 +226,9 @@ export function ComposerFilePicker({
       return;
     }
 
-    const externalAttachments = getComposerAttachmentsFromClipboardData(event.dataTransfer);
+    const externalAttachments = getComposerAttachmentsFromClipboardData(event.dataTransfer, {
+      resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
+    });
     if (externalAttachments.length > 0) {
       onAttachAttachments(externalAttachments);
     }
@@ -333,7 +335,7 @@ export function ComposerFilePicker({
         </div>
       </div>
 
-      <div className="grid min-h-0 grid-cols-[minmax(220px,0.33fr)_minmax(0,0.67fr)] overflow-hidden">
+      <div className="grid min-h-0 grid-cols-[minmax(140px,0.34fr)_minmax(0,0.66fr)] overflow-hidden">
         <div
           className={cn(
             "min-h-0 border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
