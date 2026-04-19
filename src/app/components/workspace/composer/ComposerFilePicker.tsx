@@ -1,15 +1,4 @@
-import {
-  Check,
-  ChevronLeft,
-  File,
-  Folder,
-  FolderOpen,
-  Globe,
-  Home,
-  Paperclip,
-  Search,
-  X,
-} from "lucide-react";
+import { Check, ChevronLeft, File, Folder, Globe, Home, Paperclip, Search, X } from "lucide-react";
 import { type DragEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   isSafeExternalUrl,
@@ -80,6 +69,14 @@ function getOpenAttachmentLabel(attachment: ComposerAttachment) {
   }
 
   return `Open ${attachment.name}`;
+}
+
+function getOpenAttachmentIcon(attachment: ComposerAttachment) {
+  if (isSafeExternalUrl(attachment.path)) {
+    return <Globe size={11} />;
+  }
+
+  return attachment.kind === "directory" ? <Folder size={11} /> : <File size={11} />;
 }
 
 function FileEntryButton({
@@ -384,13 +381,10 @@ export function ComposerFilePicker({
                 <div
                   key={attachment.path}
                   className={cn(
-                    "grid h-8 grid-cols-[12px_minmax(0,1fr)_18px_18px] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
+                    "grid h-7 grid-cols-[minmax(0,1fr)_18px_18px] items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 text-[11px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
                   )}
                   title={attachment.path}
                 >
-                  <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-                    {attachment.kind === "directory" ? <Folder size={11} /> : <File size={11} />}
-                  </span>
                   <span className="truncate">{attachment.name}</span>
                   <button
                     type="button"
@@ -399,11 +393,7 @@ export function ComposerFilePicker({
                     aria-label={getOpenAttachmentLabel(attachment)}
                     title={getOpenAttachmentLabel(attachment)}
                   >
-                    {isSafeExternalUrl(attachment.path) ? (
-                      <Globe size={11} />
-                    ) : (
-                      <FolderOpen size={11} />
-                    )}
+                    {getOpenAttachmentIcon(attachment)}
                   </button>
                   <button
                     type="button"
