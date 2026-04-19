@@ -20,18 +20,23 @@ function parseContentLength(value: string | null) {
 
 export function getDownloadMetadataFromHeaders(headers: Headers): DownloadMetadata {
   return {
-    contentLength:
-      parseContentLength(headers.get("x-linked-size")) ??
-      parseContentLength(headers.get("content-length")),
+    contentLength: parseContentLength(headers.get("x-linked-size")),
     etag: normalizeEtag(headers.get("x-linked-etag")) ?? normalizeEtag(headers.get("etag")),
   };
 }
 
-function mergeDownloadMetadata(current: DownloadMetadata, headers: Headers): DownloadMetadata {
+function mergeDownloadMetadata(
+  current: DownloadMetadata,
+  headers: Headers,
+  options: { includeContentLength: boolean },
+): DownloadMetadata {
   const next = getDownloadMetadataFromHeaders(headers);
+  const fallbackContentLength = options.includeContentLength
+    ? parseContentLength(headers.get("content-length"))
+    : null;
 
   return {
-    contentLength: current.contentLength ?? next.contentLength,
+    contentLength: current.contentLength ?? next.contentLength ?? fallbackContentLength,
     etag: current.etag ?? next.etag,
   };
 }
@@ -49,7 +54,9 @@ export async function fetchDownloadResponse(url: string) {
 
   for (let redirectCount = 0; redirectCount <= MAX_DOWNLOAD_REDIRECTS; redirectCount += 1) {
     const response = await fetch(currentUrl, { redirect: "manual" });
-    metadata = mergeDownloadMetadata(metadata, response.headers);
+    metadata = mergeDownloadMetadata(metadata, response.headers, {
+      includeContentLength: !isRedirectStatus(response.status),
+    });
 
     if (!isRedirectStatus(response.status)) {
       if (!response.ok) {
