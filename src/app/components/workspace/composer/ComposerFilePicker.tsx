@@ -92,6 +92,15 @@ function FileEntryButton({
   onToggleFile,
 }: FileEntryButtonProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const pendingDirectoryToggleRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pendingDirectoryToggleRef.current !== null) {
+        window.clearTimeout(pendingDirectoryToggleRef.current);
+      }
+    };
+  }, []);
 
   return (
     <button
@@ -107,6 +116,26 @@ function FileEntryButton({
         isDragging && "opacity-70",
       )}
       onClick={() => {
+        if (attachment.kind === "directory") {
+          if (pendingDirectoryToggleRef.current !== null) {
+            window.clearTimeout(pendingDirectoryToggleRef.current);
+          }
+
+          pendingDirectoryToggleRef.current = window.setTimeout(() => {
+            pendingDirectoryToggleRef.current = null;
+
+            const nextAction = resolveFileEntryActivation({
+              attachment,
+              isAlreadyAttached,
+            });
+
+            if (nextAction.type === "toggle") {
+              onToggleFile(nextAction.attachment);
+            }
+          }, 180);
+          return;
+        }
+
         const nextAction = resolveFileEntryActivation({
           attachment,
           isAlreadyAttached,
@@ -118,6 +147,11 @@ function FileEntryButton({
       }}
       onDoubleClick={() => {
         if (attachment.kind === "directory") {
+          if (pendingDirectoryToggleRef.current !== null) {
+            window.clearTimeout(pendingDirectoryToggleRef.current);
+            pendingDirectoryToggleRef.current = null;
+          }
+
           onOpenDirectory?.(attachment.path);
         }
       }}

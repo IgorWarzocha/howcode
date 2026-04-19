@@ -67,6 +67,19 @@ describe("composer attachment paste helpers", () => {
     expect(parseComposerAttachmentReference("/v1/chat/completions")).toBeNull();
     expect(parseComposerAttachmentReference("./build")).toBeNull();
   });
+
+  it("parses single-segment absolute unix paths from the allowlist", () => {
+    expect(parseComposerAttachmentReference("/repo")).toEqual({
+      path: "/repo",
+      name: "repo",
+      kind: "text",
+    });
+    expect(parseComposerAttachmentReference("/tmp")).toEqual({
+      path: "/tmp",
+      name: "tmp",
+      kind: "text",
+    });
+  });
 });
 
 describe("buildComposerAttachmentPrompt", () => {
