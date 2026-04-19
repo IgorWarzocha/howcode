@@ -62,9 +62,7 @@ describe("composer attachment paste helpers", () => {
     );
   });
 
-  it("does not swallow slash commands or api routes as attachments", () => {
-    expect(parseComposerAttachmentReference("/help")).toBeNull();
-    expect(parseComposerAttachmentReference("/v1/chat/completions")).toBeNull();
+  it("still refuses obvious relative command-like paths", () => {
     expect(parseComposerAttachmentReference("./build")).toBeNull();
   });
 
@@ -77,6 +75,19 @@ describe("composer attachment paste helpers", () => {
     expect(parseComposerAttachmentReference("/tmp")).toEqual({
       path: "/tmp",
       name: "tmp",
+      kind: "text",
+    });
+  });
+
+  it("parses absolute unix paths outside the old allowlist", () => {
+    expect(parseComposerAttachmentReference("/data/project/file.txt")).toEqual({
+      path: "/data/project/file.txt",
+      name: "file.txt",
+      kind: "text",
+    });
+    expect(parseComposerAttachmentReference("/nix/store/abc123-package")).toEqual({
+      path: "/nix/store/abc123-package",
+      name: "abc123-package",
       kind: "text",
     });
   });

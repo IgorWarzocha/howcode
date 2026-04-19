@@ -259,6 +259,10 @@ export function hasAttachmentHintInClipboardData(clipboardData: ComposerClipboar
     return false;
   }
 
+  if (hasFilePayloadInClipboardData(clipboardData)) {
+    return true;
+  }
+
   if (getClipboardFileAttachments(clipboardData).length > 0) {
     return true;
   }

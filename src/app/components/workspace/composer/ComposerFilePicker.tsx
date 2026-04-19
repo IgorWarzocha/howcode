@@ -363,7 +363,7 @@ export function ComposerFilePicker({
       <div className="grid min-h-0 grid-cols-[minmax(140px,0.34fr)_minmax(0,0.66fr)] overflow-hidden">
         <div
           className={cn(
-            "min-h-0 border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
+            "min-h-0 overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
             dropActive && "bg-[rgba(255,255,255,0.04)]",
           )}
           onDragOver={(event) => {

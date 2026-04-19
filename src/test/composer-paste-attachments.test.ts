@@ -6,6 +6,7 @@ import {
   getPreferredClipboardTextFromClipboardData,
   getPreferredClipboardTextFromClipboardFilePaths,
   getPreferredClipboardTextFromClipboardSnapshot,
+  hasAttachmentHintInClipboardData,
   hasFilePayloadInClipboardData,
 } from "../app/components/workspace/composer/composer-paste-attachments";
 
@@ -147,6 +148,18 @@ describe("getComposerAttachmentsFromClipboardData", () => {
   it("detects external file drags before files are populated", () => {
     expect(
       hasFilePayloadInClipboardData(
+        createClipboardData({
+          types: ["Files"],
+          files: [],
+          items: [],
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("treats file transfer types as attachment hints", () => {
+    expect(
+      hasAttachmentHintInClipboardData(
         createClipboardData({
           types: ["Files"],
           files: [],

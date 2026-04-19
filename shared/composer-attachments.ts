@@ -66,10 +66,7 @@ function isLikelyLocalFilePath(candidate: string) {
   const lastSegment = pathSegments[pathSegments.length - 1] ?? "";
 
   return (
-    (candidate.startsWith("/") &&
-      candidate !== "/" &&
-      pathSegments.length >= 1 &&
-      unixAbsolutePathRoots.has(pathSegments[0] ?? "")) ||
+    (candidate.startsWith("/") && candidate !== "/" && pathSegments.length >= 1) ||
     /^[A-Za-z]:[\\/]/.test(candidate) ||
     candidate.startsWith("\\\\")
   );
