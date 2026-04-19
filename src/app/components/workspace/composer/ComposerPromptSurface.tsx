@@ -163,12 +163,13 @@ export function ComposerPromptSurface({
     activeView === "thread"
       ? "Ask for follow-up changes"
       : "Ask Pi anything, @ to add files, / for commands, $ for skills";
+  const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
 
   return (
-    <div className="grid min-h-[189px] gap-0">
-      {/* Keep this outer min-height in sync with ComposerGitOpsSurface so both composer modes
-          swap without vertical jump. */}
-      <div className="relative min-h-[148px]">
+    <div className="grid gap-0">
+      {/* Let the prompt column size itself to one line by default, then grow upward naturally as
+          the textarea expands. */}
+      <div className="relative">
         {/* The prompt surface keeps add-attachment, attachment count, prompt text, and trailing
             controls in one shared block so it still mirrors the git-ops composer shell. */}
         {pickerOpen ? (
@@ -188,30 +189,31 @@ export function ComposerPromptSurface({
             onToggleFile={togglePendingPickerAttachment}
           />
         ) : null}
-        <div className="grid min-h-[148px] content-end px-4 py-3">
-          <div className="flex min-h-[82px] items-end justify-between gap-2">
+        <div className="grid content-end px-4 py-3">
+          <div className="flex items-end justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-end gap-2">
               <div className="inline-flex h-6 shrink-0 items-center gap-1.5">
                 <button
                   ref={pickerButtonRef}
                   type="button"
-                  className={cn(compactIconButtonClass, "shrink-0")}
+                  className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md"
                   onClick={pickAttachments}
-                  aria-label="Add attachment"
-                  title="Add attachment"
+                  aria-label={attachmentButtonLabel}
+                  title={attachmentButtonLabel}
                 >
-                  <Paperclip size={16} />
+                  <span className={cn(compactIconButtonClass, "shrink-0")}>
+                    <Paperclip size={16} />
+                  </span>
+
+                  {attachments.length > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+                      {attachments.length}
+                    </span>
+                  ) : null}
                 </button>
 
                 {attachments.length > 0 ? (
                   <>
-                    <span
-                      className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]"
-                      aria-label={`${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`}
-                      title={`${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`}
-                    >
-                      {attachments.length}
-                    </span>
                     <button
                       type="button"
                       className={cn(compactIconButtonClass, "h-5 w-5 shrink-0")}
@@ -255,6 +257,7 @@ export function ComposerPromptSurface({
                   }}
                   ariaLabel="Prompt composer"
                   placeholder={placeholderText}
+                  reservedLineCount={1}
                   onHeightChange={onLayoutChange}
                 />
               </div>

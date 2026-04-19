@@ -8,6 +8,12 @@ describe("resolveFileEntryActivation", () => {
     kind: "text",
   } as const;
 
+  const directoryAttachment = {
+    path: "/repo/src",
+    name: "src",
+    kind: "directory",
+  } as const;
+
   it("selects a file on first click", () => {
     expect(
       resolveFileEntryActivation({
@@ -39,5 +45,17 @@ describe("resolveFileEntryActivation", () => {
         isAlreadyAttached: true,
       }),
     ).toEqual({ type: "noop" });
+  });
+
+  it("lets directories toggle like files when they are not already attached", () => {
+    expect(
+      resolveFileEntryActivation({
+        attachment: directoryAttachment,
+        isAlreadyAttached: false,
+      }),
+    ).toEqual({
+      type: "toggle",
+      attachment: directoryAttachment,
+    });
   });
 });

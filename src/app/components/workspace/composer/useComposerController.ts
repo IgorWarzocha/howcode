@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
-import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
+import {
+  mergeComposerAttachments,
+  normalizeComposerAttachments,
+} from "../../../../../shared/composer-attachments";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
@@ -59,6 +62,16 @@ function resolveDesktopFilePath(file: {
   type?: string | null;
 }) {
   return window.piDesktop?.getPathForFile?.(file as File) ?? null;
+}
+
+function resolveDesktopAttachmentKind(path: string): ComposerAttachment["kind"] | null {
+  return window.piDesktop?.getAttachmentKindForPath?.(path) ?? null;
+}
+
+function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
+  return normalizeComposerAttachments(attachments, {
+    resolveAttachmentKind: resolveDesktopAttachmentKind,
+  });
 }
 
 type UseComposerControllerProps = {
@@ -241,6 +254,7 @@ export function useComposerController({
     setDraftValue,
     setErrorMessage,
     setIsSending,
+    setOpenMenu,
     stopDictationAndFlush,
     streamingBehaviorPreference,
     activeComposerScopeKeyRef,
@@ -264,8 +278,9 @@ export function useComposerController({
       const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
         resolveFilePath: resolveDesktopFilePath,
       });
-      if (directAttachments.length > 0) {
-        setAttachments((current) => mergeComposerAttachments(current, directAttachments));
+      const normalizedDirectAttachments = normalizeDesktopAttachments(directAttachments);
+      if (normalizedDirectAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
         setErrorMessage(null);
         setOpenMenu(null);
         return;
@@ -288,8 +303,9 @@ export function useComposerController({
       const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
         fallbackClipboardFilePaths,
       );
-      if (nativeAttachments.length > 0) {
-        setAttachments((current) => mergeComposerAttachments(current, nativeAttachments));
+      const normalizedNativeAttachments = normalizeDesktopAttachments(nativeAttachments);
+      if (normalizedNativeAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, normalizedNativeAttachments));
         setErrorMessage(null);
         setOpenMenu(null);
         return;
@@ -304,8 +320,11 @@ export function useComposerController({
       }
 
       const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot);
-      if (fallbackAttachments.length > 0) {
-        setAttachments((current) => mergeComposerAttachments(current, fallbackAttachments));
+      const normalizedFallbackAttachments = normalizeDesktopAttachments(fallbackAttachments);
+      if (normalizedFallbackAttachments.length > 0) {
+        setAttachments((current) =>
+          mergeComposerAttachments(current, normalizedFallbackAttachments),
+        );
         setErrorMessage(null);
         setOpenMenu(null);
         return;
@@ -334,9 +353,11 @@ export function useComposerController({
   );
 
   const handleDrop = useCallback((dataTransfer: DataTransfer | null) => {
-    const droppedAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
-      resolveFilePath: resolveDesktopFilePath,
-    });
+    const droppedAttachments = normalizeDesktopAttachments(
+      getComposerAttachmentsFromClipboardData(dataTransfer, {
+        resolveFilePath: resolveDesktopFilePath,
+      }),
+    );
     if (droppedAttachments.length === 0) {
       return false;
     }

@@ -1,4 +1,6 @@
+import { statSync } from "node:fs";
 import { ipcRenderer, type IpcRendererEvent, webUtils } from "electron";
+import { getAttachmentKind } from "../../../shared/composer-attachments";
 import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
@@ -90,6 +92,13 @@ export function createDesktopApi() {
     getPathForFile: (file: File) => {
       try {
         return webUtils.getPathForFile(file) || null;
+      } catch {
+        return null;
+      }
+    },
+    getAttachmentKindForPath: (path: string) => {
+      try {
+        return statSync(path).isDirectory() ? "directory" : getAttachmentKind(path);
       } catch {
         return null;
       }

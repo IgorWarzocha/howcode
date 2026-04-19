@@ -136,7 +136,7 @@ export type ComposerState = {
 export type ComposerAttachment = {
   path: string;
   name: string;
-  kind: "text" | "image";
+  kind: "directory" | "text" | "image";
 };
 
 export type DesktopClipboardSnapshot = {

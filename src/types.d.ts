@@ -109,6 +109,7 @@ declare global {
       readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>;
       readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>;
       getPathForFile?: (file: File) => string | null;
+      getAttachmentKindForPath?: (path: string) => ComposerAttachment["kind"] | null;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;
         path?: string | null;

@@ -21,6 +21,7 @@ type UseComposerSubmissionProps = {
   setDraftValue: Dispatch<SetStateAction<string>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setIsSending: Dispatch<SetStateAction<boolean>>;
+  setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
   stopDictationAndFlush: () => Promise<void>;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   activeComposerScopeKeyRef: MutableRefObject<string>;
@@ -43,6 +44,7 @@ export function useComposerSubmission({
   setDraftValue,
   setErrorMessage,
   setIsSending,
+  setOpenMenu,
   stopDictationAndFlush,
   streamingBehaviorPreference,
   activeComposerScopeKeyRef,
@@ -81,6 +83,7 @@ export function useComposerSubmission({
         const submittedDraft = textToSend;
 
         setErrorMessage(null);
+        setOpenMenu(null);
         skipNextDraftPersistenceRef.current = submittedDraftThreadId;
         setDraftValue("");
         setAttachments([]);
@@ -137,6 +140,7 @@ export function useComposerSubmission({
     setDraftValue,
     setErrorMessage,
     setIsSending,
+    setOpenMenu,
     skipNextDraftPersistenceRef,
     stopDictationAndFlush,
     streamingBehaviorPreference,

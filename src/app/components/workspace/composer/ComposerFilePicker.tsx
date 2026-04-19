@@ -11,7 +11,10 @@ import {
   X,
 } from "lucide-react";
 import { type DragEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { isSafeExternalUrl } from "../../../../../shared/composer-attachments";
+import {
+  isSafeExternalUrl,
+  normalizeComposerAttachments,
+} from "../../../../../shared/composer-attachments";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -48,36 +51,42 @@ type FileEntryButtonProps = {
   attachment: ComposerAttachment;
   isAlreadyAttached: boolean;
   isSelected: boolean;
+  onOpenDirectory?: (path: string) => void;
   onDragStart: (attachment: ComposerAttachment, event: DragEvent<HTMLButtonElement>) => void;
   onDragEnd: () => void;
   onToggleFile: (attachment: ComposerAttachment) => void;
 };
+
+function getAttachmentIcon(attachment: ComposerAttachment, selected: boolean) {
+  if (selected) {
+    return <Check size={11} />;
+  }
+
+  if (attachment.kind === "directory") {
+    return <Folder size={11} />;
+  }
+
+  return <File size={11} />;
+}
 
 function getFolderLabel(folderPath: string) {
   const segments = folderPath.split(/[\\/]/).filter(Boolean);
   return segments[segments.length - 1] ?? folderPath;
 }
 
-function getParentFolderPath(filePath: string) {
-  const normalizedPath = filePath.replace(/[\\/]+$/, "");
-  const match = normalizedPath.match(/^(.*)[\\/][^\\/]+$/);
-  const parentPath = match?.[1] ?? null;
-
-  if (!parentPath) {
-    return null;
+function getOpenAttachmentLabel(attachment: ComposerAttachment) {
+  if (isSafeExternalUrl(attachment.path)) {
+    return `Open ${attachment.name} in browser`;
   }
 
-  if (/^[A-Za-z]:$/.test(parentPath)) {
-    return `${parentPath}\\`;
-  }
-
-  return parentPath || "/";
+  return `Open ${attachment.name}`;
 }
 
 function FileEntryButton({
   attachment,
   isAlreadyAttached,
   isSelected,
+  onOpenDirectory,
   onDragStart,
   onDragEnd,
   onToggleFile,
@@ -107,6 +116,11 @@ function FileEntryButton({
           onToggleFile(nextAction.attachment);
         }
       }}
+      onDoubleClick={() => {
+        if (attachment.kind === "directory") {
+          onOpenDirectory?.(attachment.path);
+        }
+      }}
       onDragStart={(event) => {
         setIsDragging(true);
         onDragStart(attachment, event);
@@ -118,7 +132,7 @@ function FileEntryButton({
       title={attachment.path}
     >
       <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-        {isAlreadyAttached || isSelected ? <Check size={11} /> : <File size={11} />}
+        {getAttachmentIcon(attachment, isAlreadyAttached || isSelected)}
       </span>
       <span className="truncate">{attachment.name}</span>
     </button>
@@ -190,8 +204,7 @@ export function ComposerFilePicker({
       return;
     }
 
-    const folderPath = getParentFolderPath(attachment.path) ?? attachment.path;
-    await window.piDesktop?.openPath?.(folderPath);
+    await window.piDesktop?.openPath?.(attachment.path);
   };
 
   const handleInternalDragStart = (
@@ -226,9 +239,14 @@ export function ComposerFilePicker({
       return;
     }
 
-    const externalAttachments = getComposerAttachmentsFromClipboardData(event.dataTransfer, {
-      resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
-    });
+    const externalAttachments = normalizeComposerAttachments(
+      getComposerAttachmentsFromClipboardData(event.dataTransfer, {
+        resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
+      }),
+      {
+        resolveAttachmentKind: (path) => window.piDesktop?.getAttachmentKindForPath?.(path) ?? null,
+      },
+    );
     if (externalAttachments.length > 0) {
       onAttachAttachments(externalAttachments);
     }
@@ -290,8 +308,8 @@ export function ComposerFilePicker({
               type="button"
               className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
               onClick={() => onAttachAttachments(currentSelection)}
-              aria-label={`Attach ${currentSelection.length} selected file${currentSelection.length === 1 ? "" : "s"}`}
-              title={`Attach ${currentSelection.length} selected file${currentSelection.length === 1 ? "" : "s"}`}
+              aria-label={`Attach ${currentSelection.length} selected item${currentSelection.length === 1 ? "" : "s"}`}
+              title={`Attach ${currentSelection.length} selected item${currentSelection.length === 1 ? "" : "s"}`}
             >
               <Paperclip size={13} />
             </button>
@@ -364,23 +382,15 @@ export function ComposerFilePicker({
                   title={attachment.path}
                 >
                   <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-                    <File size={11} />
+                    {attachment.kind === "directory" ? <Folder size={11} /> : <File size={11} />}
                   </span>
                   <span className="truncate">{attachment.name}</span>
                   <button
                     type="button"
                     className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
                     onClick={() => void openAttachment(attachment)}
-                    aria-label={
-                      isSafeExternalUrl(attachment.path)
-                        ? `Open ${attachment.name} in browser`
-                        : `Open folder for ${attachment.name}`
-                    }
-                    title={
-                      isSafeExternalUrl(attachment.path)
-                        ? `Open ${attachment.name} in browser`
-                        : `Open folder for ${attachment.name}`
-                    }
+                    aria-label={getOpenAttachmentLabel(attachment)}
+                    title={getOpenAttachmentLabel(attachment)}
                   >
                     {isSafeExternalUrl(attachment.path) ? (
                       <Globe size={11} />
@@ -423,25 +433,6 @@ export function ComposerFilePicker({
               className={cn("grid grid-cols-2 gap-1", loading && "pointer-events-none opacity-70")}
             >
               {filteredEntries.map((entry) => {
-                if (entry.kind === "directory") {
-                  return (
-                    <button
-                      key={entry.path}
-                      type="button"
-                      className={cn(
-                        "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
-                      )}
-                      onDoubleClick={() => onOpenDirectory(entry.path)}
-                      title={entry.path}
-                    >
-                      <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-                        <Folder size={11} />
-                      </span>
-                      <span className="truncate">{entry.name}</span>
-                    </button>
-                  );
-                }
-
                 const attachment: ComposerAttachment = {
                   path: entry.path,
                   name: entry.name,
@@ -454,6 +445,7 @@ export function ComposerFilePicker({
                     attachment={attachment}
                     isAlreadyAttached={attachedByPath.has(entry.path)}
                     isSelected={selectionByPath.has(entry.path)}
+                    onOpenDirectory={onOpenDirectory}
                     onDragStart={handleInternalDragStart}
                     onDragEnd={handleDragEnd}
                     onToggleFile={onToggleFile}

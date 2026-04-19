@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildComposerAttachmentPrompt } from "../../shared/composer-attachment-prompt";
 import {
   extractComposerAttachmentsFromPaste,
+  normalizeComposerAttachments,
   parseComposerAttachmentReference,
 } from "../../shared/composer-attachments";
 
@@ -63,14 +64,23 @@ describe("composer attachment paste helpers", () => {
 });
 
 describe("buildComposerAttachmentPrompt", () => {
-  it("asks the agent to read local files while keeping urls as softer references", () => {
+  it("asks the agent to read local files and inspect folders while keeping urls as softer references", () => {
     expect(
       buildComposerAttachmentPrompt([
         { path: "/repo/src/main.ts", name: "main.ts", kind: "text" },
+        { path: "/repo/src", name: "src", kind: "directory" },
         { path: "https://example.com/guide", name: "guide", kind: "text" },
       ]),
     ).toBe(
-      "The user attached the following files, please read them:\n- /repo/src/main.ts\n\nThe user attached the following references, please use them if relevant:\n- https://example.com/guide",
+      "The user attached the following files, please read them:\n- /repo/src/main.ts\n\nThe user attached the following folders, please inspect the relevant files within them if needed:\n- /repo/src\n\nThe user attached the following references, please use them if relevant:\n- https://example.com/guide",
     );
+  });
+
+  it("can normalize folder attachments with a path-kind resolver", () => {
+    expect(
+      normalizeComposerAttachments([{ path: "/repo/src", name: "src", kind: "text" }], {
+        resolveAttachmentKind: (path) => (path === "/repo/src" ? "directory" : null),
+      }),
+    ).toEqual([{ path: "/repo/src", name: "src", kind: "directory" }]);
   });
 });

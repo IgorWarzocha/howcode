@@ -99,7 +99,7 @@ export function ComposerGitOpsSurface({
   });
 
   const contentMinHeightClass = useMemo(
-    () => cn("relative", hasDiffComments ? "min-h-24" : "min-h-[148px]"),
+    () => cn("relative", hasDiffComments && "min-h-24"),
     [hasDiffComments],
   );
 
@@ -184,12 +184,8 @@ export function ComposerGitOpsSurface({
   );
 
   return (
-    <div
-      className="grid min-h-[189px] gap-0"
-      {...getFeatureStatusDataAttributes("feature:composer.git-ops")}
-    >
-      {/* This outer height is the reference for the prompt composer too. Keep both surfaces in sync
-          so switching between prompt and git-ops does not resize the composer shell. */}
+    <div className="grid gap-0" {...getFeatureStatusDataAttributes("feature:composer.git-ops")}>
+      {/* Keep one-line default height here too, then let the field grow upward as content expands. */}
       <div className={contentMinHeightClass}>
         {/* Top git-ops controls are absolutely positioned inside this shared block. The prompt
             composer mirrors this pattern with its + button, prompt body, and send controls. */}

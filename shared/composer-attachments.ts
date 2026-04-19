@@ -130,6 +130,36 @@ export function mergeComposerAttachments(
   return [...byPath.values()];
 }
 
+export function normalizeComposerAttachments(
+  attachments: ComposerAttachment[],
+  options?: {
+    resolveAttachmentKind?: (path: string) => ComposerAttachment["kind"] | null;
+  },
+) {
+  return mergeComposerAttachments(
+    [],
+    attachments
+      .map((attachment) => {
+        const path = attachment.path.trim();
+        if (!path) {
+          return null;
+        }
+
+        const resolvedKind = isSafeExternalUrl(path)
+          ? "text"
+          : (options?.resolveAttachmentKind?.(path) ?? attachment.kind);
+        const name = attachment.name.trim() || getPathAttachmentName(path);
+
+        return {
+          path,
+          name,
+          kind: resolvedKind,
+        } satisfies ComposerAttachment;
+      })
+      .filter((attachment): attachment is ComposerAttachment => attachment !== null),
+  );
+}
+
 export function parseComposerAttachmentReference(rawReference: string): ComposerAttachment | null {
   const candidate = stripWrappingCharacters(rawReference);
   if (!candidate) {
