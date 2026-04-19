@@ -41,6 +41,7 @@ type FileEntryButtonProps = {
   isAlreadyAttached: boolean;
   isSelected: boolean;
   onOpenDirectory?: (path: string) => void;
+  onRemoveAttachment: (attachmentPath: string) => void;
   onDragStart: (attachment: ComposerAttachment, event: DragEvent<HTMLButtonElement>) => void;
   onDragEnd: () => void;
   onToggleFile: (attachment: ComposerAttachment) => void;
@@ -84,6 +85,7 @@ function FileEntryButton({
   isAlreadyAttached,
   isSelected,
   onOpenDirectory,
+  onRemoveAttachment,
   onDragStart,
   onDragEnd,
   onToggleFile,
@@ -111,6 +113,8 @@ function FileEntryButton({
 
         if (nextAction.type === "toggle") {
           onToggleFile(nextAction.attachment);
+        } else if (nextAction.type === "remove") {
+          onRemoveAttachment(nextAction.attachmentPath);
         }
       }}
       onDoubleClick={() => {
@@ -357,7 +361,7 @@ export function ComposerFilePicker({
         </div>
       </div>
 
-      <div className="grid min-h-0 grid-cols-[minmax(140px,0.34fr)_minmax(0,0.66fr)] overflow-hidden">
+      <div className="grid min-h-0 grid-cols-[minmax(120px,0.25fr)_minmax(0,0.75fr)] overflow-hidden">
         <div
           className={cn(
             "min-h-0 overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
@@ -375,20 +379,20 @@ export function ComposerFilePicker({
           }}
           onDrop={handleDropIntoAttachments}
         >
-          <div className="grid min-h-full content-start gap-1">
+          <div className="grid min-h-full content-start gap-0">
             {attachments.length > 0 ? (
               attachments.map((attachment) => (
                 <div
                   key={attachment.path}
                   className={cn(
-                    "grid h-7 grid-cols-[minmax(0,1fr)_18px_18px] items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 text-[11px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
+                    "flex h-5 items-center gap-0 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
                   )}
                   title={attachment.path}
                 >
-                  <span className="truncate">{attachment.name}</span>
+                  <span className="min-w-0 flex-1 truncate leading-5">{attachment.name}</span>
                   <button
                     type="button"
-                    className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
+                    className={cn(compactIconButtonClass, "h-3.5 w-3.5 shrink-0 rounded")}
                     onClick={() => void openAttachment(attachment)}
                     aria-label={getOpenAttachmentLabel(attachment)}
                     title={getOpenAttachmentLabel(attachment)}
@@ -397,7 +401,7 @@ export function ComposerFilePicker({
                   </button>
                   <button
                     type="button"
-                    className={cn(compactIconButtonClass, "h-[18px] w-[18px] rounded")}
+                    className={cn(compactIconButtonClass, "h-3.5 w-3.5 shrink-0 rounded")}
                     onClick={() => onRemoveAttachment(attachment.path)}
                     aria-label={`Remove ${attachment.name}`}
                     title={`Remove ${attachment.name}`}
@@ -427,7 +431,7 @@ export function ComposerFilePicker({
             </div>
           ) : filteredEntries.length > 0 ? (
             <div
-              className={cn("grid grid-cols-2 gap-1", loading && "pointer-events-none opacity-70")}
+              className={cn("grid grid-cols-3 gap-1", loading && "pointer-events-none opacity-70")}
             >
               {filteredEntries.map((entry) => {
                 const attachment: ComposerAttachment = {
@@ -443,6 +447,7 @@ export function ComposerFilePicker({
                     isAlreadyAttached={attachedByPath.has(entry.path)}
                     isSelected={selectionByPath.has(entry.path)}
                     onOpenDirectory={onOpenDirectory}
+                    onRemoveAttachment={onRemoveAttachment}
                     onDragStart={handleInternalDragStart}
                     onDragEnd={handleDragEnd}
                     onToggleFile={onToggleFile}

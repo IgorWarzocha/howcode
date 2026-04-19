@@ -38,13 +38,13 @@ describe("resolveFileEntryActivation", () => {
     });
   });
 
-  it("ignores clicks for already attached files", () => {
+  it("removes already attached files on click", () => {
     expect(
       resolveFileEntryActivation({
         attachment,
         isAlreadyAttached: true,
       }),
-    ).toEqual({ type: "noop" });
+    ).toEqual({ type: "remove", attachmentPath: "/repo/src/main.ts" });
   });
 
   it("lets directories toggle like files when they are not already attached", () => {

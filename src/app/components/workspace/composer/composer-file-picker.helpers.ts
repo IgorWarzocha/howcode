@@ -10,7 +10,7 @@ export function resolveFileEntryActivation({
   isAlreadyAttached,
 }: ResolveFileEntryActivationArgs) {
   if (isAlreadyAttached) {
-    return { type: "noop" } as const;
+    return { type: "remove", attachmentPath: attachment.path } as const;
   }
 
   return { type: "toggle", attachment } as const;
