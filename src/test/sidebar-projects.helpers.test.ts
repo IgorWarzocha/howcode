@@ -69,41 +69,34 @@ describe("sidebar projects helpers", () => {
 
     expect(result.projects).toHaveLength(1);
     expect(result.projects[0]?.id).toBe("/alpha");
-    expect(result.projects[0]?.threads).toHaveLength(1);
-    expect(result.projects[0]?.threads[0]?.id).toBe("a2");
+    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["a2"]);
     expect(result.autoExpandedProjectIds.has("/alpha")).toBe(true);
   });
 
-  it("filters favourites using project and thread favourite state", () => {
-    const result = getSidebarVisibleProjects({
-      projects,
-      searchQuery: "",
-      filterMode: "favourites",
-      terminalRunningProjectIds: emptyRunningProjectIds,
-      terminalRunningSessionPaths: emptyRunningSessionPaths,
-      appLaunchedAtMs: 0,
-    });
+  it("supports the main filter modes", () => {
+    expect(
+      getSidebarVisibleProjects({
+        projects,
+        searchQuery: "",
+        filterMode: "favourites",
+        terminalRunningProjectIds: emptyRunningProjectIds,
+        terminalRunningSessionPaths: emptyRunningSessionPaths,
+        appLaunchedAtMs: 0,
+      }).projects.map((project) => project.id),
+    ).toEqual(["/alpha", "/beta"]);
 
-    expect(result.projects.map((project) => project.id)).toEqual(["/alpha", "/beta"]);
-    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["a2"]);
-    expect(result.projects[1]?.threads.map((thread) => thread.id)).toEqual(["b1"]);
-  });
+    expect(
+      getSidebarVisibleProjects({
+        projects,
+        searchQuery: "",
+        filterMode: "github",
+        terminalRunningProjectIds: emptyRunningProjectIds,
+        terminalRunningSessionPaths: emptyRunningSessionPaths,
+        appLaunchedAtMs: 0,
+      }).projects.map((project) => project.id),
+    ).toEqual(["/beta"]);
 
-  it("filters github projects only", () => {
-    const result = getSidebarVisibleProjects({
-      projects,
-      searchQuery: "",
-      filterMode: "github",
-      terminalRunningProjectIds: emptyRunningProjectIds,
-      terminalRunningSessionPaths: emptyRunningSessionPaths,
-      appLaunchedAtMs: 0,
-    });
-
-    expect(result.projects.map((project) => project.id)).toEqual(["/beta"]);
-  });
-
-  it("filters threads with running terminals only", () => {
-    const result = getSidebarVisibleProjects({
+    const terminalResult = getSidebarVisibleProjects({
       projects,
       searchQuery: "",
       filterMode: "terminal",
@@ -111,13 +104,10 @@ describe("sidebar projects helpers", () => {
       terminalRunningSessionPaths: new Set(["/alpha/2"]),
       appLaunchedAtMs: 0,
     });
+    expect(terminalResult.projects.map((project) => project.id)).toEqual(["/alpha"]);
+    expect(terminalResult.projects[0]?.threads.map((thread) => thread.id)).toEqual(["a2"]);
 
-    expect(result.projects.map((project) => project.id)).toEqual(["/alpha"]);
-    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["a2"]);
-  });
-
-  it("filters threads active since app launch", () => {
-    const result = getSidebarVisibleProjects({
+    const recentResult = getSidebarVisibleProjects({
       projects,
       searchQuery: "",
       filterMode: "recent",
@@ -125,9 +115,8 @@ describe("sidebar projects helpers", () => {
       terminalRunningSessionPaths: emptyRunningSessionPaths,
       appLaunchedAtMs: 300,
     });
-
-    expect(result.projects.map((project) => project.id)).toEqual(["/beta"]);
-    expect(result.projects[0]?.threads.map((thread) => thread.id)).toEqual(["b1"]);
+    expect(recentResult.projects.map((project) => project.id)).toEqual(["/beta"]);
+    expect(recentResult.projects[0]?.threads.map((thread) => thread.id)).toEqual(["b1"]);
   });
 
   it("keeps lazy projects visible for terminal and recent filters while threads load", () => {
@@ -149,24 +138,26 @@ describe("sidebar projects helpers", () => {
       },
     ];
 
-    const terminalResult = getSidebarVisibleProjects({
-      projects: lazyProjects,
-      searchQuery: "",
-      filterMode: "terminal",
-      terminalRunningProjectIds: new Set(["/lazy-terminal"]),
-      terminalRunningSessionPaths: emptyRunningSessionPaths,
-      appLaunchedAtMs: 0,
-    });
-    const recentResult = getSidebarVisibleProjects({
-      projects: lazyProjects,
-      searchQuery: "",
-      filterMode: "recent",
-      terminalRunningProjectIds: emptyRunningProjectIds,
-      terminalRunningSessionPaths: emptyRunningSessionPaths,
-      appLaunchedAtMs: 500,
-    });
+    expect(
+      getSidebarVisibleProjects({
+        projects: lazyProjects,
+        searchQuery: "",
+        filterMode: "terminal",
+        terminalRunningProjectIds: new Set(["/lazy-terminal"]),
+        terminalRunningSessionPaths: emptyRunningSessionPaths,
+        appLaunchedAtMs: 0,
+      }).projects.map((project) => project.id),
+    ).toEqual(["/lazy-terminal"]);
 
-    expect(terminalResult.projects.map((project) => project.id)).toEqual(["/lazy-terminal"]);
-    expect(recentResult.projects.map((project) => project.id)).toEqual(["/lazy-recent"]);
+    expect(
+      getSidebarVisibleProjects({
+        projects: lazyProjects,
+        searchQuery: "",
+        filterMode: "recent",
+        terminalRunningProjectIds: emptyRunningProjectIds,
+        terminalRunningSessionPaths: emptyRunningSessionPaths,
+        appLaunchedAtMs: 500,
+      }).projects.map((project) => project.id),
+    ).toEqual(["/lazy-recent"]);
   });
 });

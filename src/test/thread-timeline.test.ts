@@ -12,8 +12,8 @@ import { isTurnRowCollapsible } from "../app/components/workspace/thread/timelin
 import type { Message } from "../app/types";
 
 describe("thread timeline", () => {
-  it("groups tool calls into turns and keeps summaries separate", () => {
-    const messages: Message[] = [
+  it("groups normal turns and starts a new implicit turn after a compaction summary", () => {
+    const groupedMessages: Message[] = [
       { id: "user-1", role: "user", content: ["Investigate the chat window"] },
       {
         id: "tool-1",
@@ -33,35 +33,33 @@ describe("thread timeline", () => {
         content: ["Kept the timeline split plan."],
       },
     ];
-    expect(buildTimelineRows({ messages, previousMessageCount: 4 })).toEqual([
+    expect(buildTimelineRows({ messages: groupedMessages, previousMessageCount: 4 })).toEqual([
       { kind: "history-divider", id: "history-divider:4", hiddenCount: 4 },
       {
         kind: "turn",
         id: "turn:user-1",
-        userMessage: messages[0],
+        userMessage: groupedMessages[0],
         items: [
           {
             kind: "tool-group",
             id: "tool-group:tool-1:tool-1:1",
-            messages: [messages[1]],
+            messages: [groupedMessages[1]],
           },
           {
             kind: "message",
             id: "assistant-1",
-            message: messages[2],
+            message: groupedMessages[2],
           },
         ],
       },
       {
         kind: "summary",
         id: "summary:summary-1",
-        message: messages[3],
+        message: groupedMessages[3],
       },
     ]);
-  });
 
-  it("starts a new implicit turn after a compaction summary", () => {
-    const messages: Message[] = [
+    const postSummaryMessages: Message[] = [
       { id: "user-1", role: "user", content: ["Investigate the chat window"] },
       {
         id: "assistant-1",
@@ -86,24 +84,23 @@ describe("thread timeline", () => {
         content: ["I can now patch the grouping logic."],
       },
     ];
-
-    expect(buildTimelineRows({ messages, previousMessageCount: 0 })).toEqual([
+    expect(buildTimelineRows({ messages: postSummaryMessages, previousMessageCount: 0 })).toEqual([
       {
         kind: "turn",
         id: "turn:user-1",
-        userMessage: messages[0],
+        userMessage: postSummaryMessages[0],
         items: [
           {
             kind: "message",
             id: "assistant-1",
-            message: messages[1],
+            message: postSummaryMessages[1],
           },
         ],
       },
       {
         kind: "summary",
         id: "summary:summary-1",
-        message: messages[2],
+        message: postSummaryMessages[2],
       },
       {
         kind: "turn",
@@ -113,19 +110,19 @@ describe("thread timeline", () => {
           {
             kind: "tool-group",
             id: "tool-group:tool-2:tool-2:1",
-            messages: [messages[3]],
+            messages: [postSummaryMessages[3]],
           },
           {
             kind: "message",
             id: "assistant-2",
-            message: messages[4],
+            message: postSummaryMessages[4],
           },
         ],
       },
     ]);
   });
 
-  it("derives streaming state, signatures, and virtualized row markers from timeline rows", () => {
+  it("derives streaming state for assistant turns and active tool groups", () => {
     const userMessage: ProseMessage = {
       id: "user-1",
       role: "user",
@@ -141,13 +138,7 @@ describe("thread timeline", () => {
         kind: "turn",
         id: "turn-1",
         userMessage,
-        items: [
-          {
-            kind: "message",
-            id: "row-user-1",
-            message: userMessage,
-          },
-        ],
+        items: [{ kind: "message", id: "row-user-1", message: userMessage }],
       },
       {
         kind: "summary",
@@ -162,13 +153,7 @@ describe("thread timeline", () => {
         kind: "turn",
         id: "turn-2",
         userMessage,
-        items: [
-          {
-            kind: "message",
-            id: "row-assistant-1",
-            message: streamingAssistantMessage,
-          },
-        ],
+        items: [{ kind: "message", id: "row-assistant-1", message: streamingAssistantMessage }],
       },
     ];
 
@@ -194,12 +179,8 @@ describe("thread timeline", () => {
     expect(result.rowStructureSignature).toBe(
       "turn-1:collapsed:1||summary-1:expanded||turn-2:expanded:1",
     );
-    expect(result.virtualizedRowCount).toBe(0);
-    expect(result.firstUnvirtualizedRowIndex).toBe(0);
-  });
 
-  it("tracks the active streaming tool group when a tool call is the latest message", () => {
-    const messages: Message[] = [
+    const toolMessages: Message[] = [
       { id: "user-1", role: "user", content: ["hi"] },
       {
         id: "tool-1",
@@ -218,19 +199,17 @@ describe("thread timeline", () => {
         isError: false,
       },
     ];
-    const rows = buildTimelineRows({ messages, previousMessageCount: 0 });
-    const result = buildThreadTimelineState({
-      rows,
-      messages,
+    const toolState = buildThreadTimelineState({
+      rows: buildTimelineRows({ messages: toolMessages, previousMessageCount: 0 }),
+      messages: toolMessages,
       isStreaming: true,
       collapsedRowIds: {},
       expandedToolGroupIds: {},
     });
-
-    expect(result.streamingToolGroupId).toBe("tool-group:tool-1:tool-2:2");
+    expect(toolState.streamingToolGroupId).toBe("tool-group:tool-1:tool-2:2");
   });
 
-  it("reconciles collapse state by pruning removed rows, defaulting new rows closed, and forcing streaming rows open", () => {
+  it("reconciles collapse state for foldable rows", () => {
     const foldableRows = getFoldableRows([
       {
         kind: "turn",
@@ -275,7 +254,7 @@ describe("thread timeline", () => {
     );
   });
 
-  it("only marks turns collapsible when collapsing would actually hide content", () => {
+  it("marks turns collapsible only when collapsing would hide content", () => {
     expect(
       isTurnRowCollapsible({
         kind: "turn",

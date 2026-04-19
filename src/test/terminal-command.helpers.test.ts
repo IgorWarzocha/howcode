@@ -4,7 +4,7 @@ import { resolveTerminalCommand } from "../../desktop/terminal/terminal-command.
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts";
 
 describe("terminal command helpers", () => {
-  it("builds stable terminal session ids from the terminal identity fields", () => {
+  it("builds stable session ids and resolves platform-specific commands", () => {
     const request: TerminalOpenRequest = {
       projectId: "/repo",
       sessionPath: "/repo/.pi/session.json",
@@ -16,9 +16,7 @@ describe("terminal command helpers", () => {
 
     expect(makeSessionId(request)).toBe(makeSessionId({ ...request, cols: 80, rows: 24 }));
     expect(makeSessionId(request)).not.toBe(makeSessionId({ ...request, launchMode: "shell" }));
-  });
 
-  it("resolves pi session commands and shell commands per platform", () => {
     expect(
       resolveTerminalCommand(
         {

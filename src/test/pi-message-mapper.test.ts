@@ -7,13 +7,19 @@ import {
 } from "../../shared/pi-message-mapper";
 
 describe("pi message mapper", () => {
-  it("normalizes empty and long thread titles", () => {
+  it("normalizes titles and derives the first user title", () => {
     expect(normalizeThreadTitle("")).toBe("New thread");
     expect(normalizeThreadTitle("   hello\n\nworld   ")).toBe("hello world");
     expect(normalizeThreadTitle("x".repeat(80))).toBe(`${"x".repeat(69)}...`);
+
+    const messages = mapAgentMessagesToUiMessages([
+      { role: "assistant", timestamp: 1, content: [{ type: "text", text: "Preface" }] },
+      { role: "user", timestamp: 2, content: [{ type: "text", text: "Fix the sidebar" }] },
+    ] as never[]);
+    expect(getFirstUserTurnTitle(messages)).toBe("Fix the sidebar");
   });
 
-  it("maps mixed Pi messages into desktop messages", () => {
+  it("maps mixed runtime messages into desktop messages", () => {
     const messages = mapAgentMessagesToUiMessages([
       {
         role: "user",
@@ -88,25 +94,16 @@ describe("pi message mapper", () => {
     ]);
   });
 
-  it("derives a title from the first user turn", () => {
-    const messages = mapAgentMessagesToUiMessages([
-      { role: "assistant", timestamp: 1, content: [{ type: "text", text: "Preface" }] },
-      { role: "user", timestamp: 2, content: [{ type: "text", text: "Fix the sidebar" }] },
-    ] as never[]);
-
-    expect(getFirstUserTurnTitle(messages)).toBe("Fix the sidebar");
-  });
-
-  it("keeps thinking-only assistant messages visible", () => {
-    const messages = mapAgentMessagesToUiMessages([
-      {
-        role: "assistant",
-        timestamp: 1,
-        content: [{ type: "thinking", thinking: "Working through the repo structure" }],
-      },
-    ] as never[]);
-
-    expect(messages).toEqual([
+  it("preserves thinking-only messages and extracts thinking headers", () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: "assistant",
+          timestamp: 1,
+          content: [{ type: "thinking", thinking: "Working through the repo structure" }],
+        },
+      ] as never[]),
+    ).toEqual([
       {
         id: "1-assistant",
         role: "assistant",
@@ -114,24 +111,22 @@ describe("pi message mapper", () => {
         thinkingContent: ["Working through the repo structure"],
       },
     ]);
-  });
 
-  it("extracts thinking section headers for the desktop header row", () => {
-    const messages = mapAgentMessagesToUiMessages([
-      {
-        role: "assistant",
-        timestamp: 1,
-        content: [
-          {
-            type: "thinking",
-            thinking:
-              "**Optimizing Markdown Formatting**\n\nBody\n\n## Formatting thoughts and styles\n\nMore body\n\n__Considering markdown in thinking blocks__\n\nLast body",
-          },
-        ],
-      },
-    ] as never[]);
-
-    expect(messages).toEqual([
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: "assistant",
+          timestamp: 1,
+          content: [
+            {
+              type: "thinking",
+              thinking:
+                "**Optimizing Markdown Formatting**\n\nBody\n\n## Formatting thoughts and styles\n\nMore body\n\n__Considering markdown in thinking blocks__\n\nLast body",
+            },
+          ],
+        },
+      ] as never[]),
+    ).toEqual([
       {
         id: "1-assistant",
         role: "assistant",

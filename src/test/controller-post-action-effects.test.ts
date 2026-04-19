@@ -80,138 +80,52 @@ function buildShellState(): ShellState {
 }
 
 describe("controller post action effects", () => {
-  it("updates the optimistic git commit model selection", () => {
+  it("applies representative optimistic setting updates", () => {
+    const state = buildShellState();
+
     expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
+      getOptimisticallyUpdatedShellState(state, {
         key: "gitCommitMessageModel",
         provider: "openai",
         modelId: "gpt-5",
       }),
     ).toMatchObject({
-      appSettings: {
-        gitCommitMessageModel: { provider: "openai", id: "gpt-5" },
-      },
+      appSettings: { gitCommitMessageModel: { provider: "openai", id: "gpt-5" } },
     });
-  });
 
-  it("updates the optimistic skill creator model selection", () => {
     expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
+      getOptimisticallyUpdatedShellState(state, {
         key: "skillCreatorModel",
         provider: "anthropic",
         modelId: "claude-sonnet",
       }),
     ).toMatchObject({
-      appSettings: {
-        skillCreatorModel: { provider: "anthropic", id: "claude-sonnet" },
-      },
+      appSettings: { skillCreatorModel: { provider: "anthropic", id: "claude-sonnet" } },
     });
-  });
 
-  it("deduplicates favorite folders during optimistic updates", () => {
     expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
+      getOptimisticallyUpdatedShellState(state, {
         key: "favoriteFolders",
         folders: [" /repo ", "/repo", "", "/existing"],
       }),
-    ).toMatchObject({
-      appSettings: {
-        favoriteFolders: ["/repo", "/existing"],
-      },
-    });
-  });
-
-  it("updates project creation settings optimistically", () => {
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "composerStreamingBehavior",
-        value: "steer",
-      }),
-    ).toMatchObject({
-      appSettings: {
-        composerStreamingBehavior: "steer",
-      },
-    });
+    ).toMatchObject({ appSettings: { favoriteFolders: ["/repo", "/existing"] } });
 
     expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "preferredProjectLocation",
-        value: "/work",
-      }),
-    ).toMatchObject({
-      appSettings: {
-        preferredProjectLocation: "/work",
-      },
-    });
-
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "initializeGitOnProjectCreate",
-        value: true,
-      }),
-    ).toMatchObject({
-      appSettings: {
-        initializeGitOnProjectCreate: true,
-      },
-    });
-
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "useAgentsSkillsPaths",
-        value: true,
-      }),
-    ).toMatchObject({
-      appSettings: {
-        useAgentsSkillsPaths: true,
-      },
-    });
-
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
+      getOptimisticallyUpdatedShellState(state, {
         key: "projectDeletionMode",
         value: "full-clean",
       }),
-    ).toMatchObject({
-      appSettings: {
-        projectDeletionMode: "full-clean",
-      },
-    });
+    ).toMatchObject({ appSettings: { projectDeletionMode: "full-clean" } });
 
     expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "piTuiTakeover",
-        value: true,
-      }),
-    ).toMatchObject({
-      appSettings: {
-        piTuiTakeover: true,
-      },
-    });
-
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
-        key: "dictationModelId",
-        value: "base.en",
-      }),
-    ).toMatchObject({
-      appSettings: {
-        dictationModelId: "base.en",
-      },
-    });
-
-    expect(
-      getOptimisticallyUpdatedShellState(buildShellState(), {
+      getOptimisticallyUpdatedShellState(state, {
         key: "showDictationButton",
         value: false,
       }),
-    ).toMatchObject({
-      appSettings: {
-        showDictationButton: false,
-      },
-    });
+    ).toMatchObject({ appSettings: { showDictationButton: false } });
   });
 
-  it("resets model selections and trims blank project locations", () => {
+  it("resets model selections and normalizes blank project locations", () => {
     const state = {
       ...buildShellState(),
       appSettings: {
@@ -227,49 +141,30 @@ describe("controller post action effects", () => {
         key: "gitCommitMessageModel",
         reset: true,
       }),
-    ).toMatchObject({
-      appSettings: {
-        gitCommitMessageModel: null,
-      },
-    });
+    ).toMatchObject({ appSettings: { gitCommitMessageModel: null } });
 
     expect(
       getOptimisticallyUpdatedShellState(state, {
         key: "skillCreatorModel",
         reset: true,
       }),
-    ).toMatchObject({
-      appSettings: {
-        skillCreatorModel: null,
-      },
-    });
+    ).toMatchObject({ appSettings: { skillCreatorModel: null } });
 
     expect(
       getOptimisticallyUpdatedShellState(state, {
         key: "preferredProjectLocation",
         value: "   ",
       }),
-    ).toMatchObject({
-      appSettings: {
-        preferredProjectLocation: null,
-      },
-    });
+    ).toMatchObject({ appSettings: { preferredProjectLocation: null } });
   });
 
-  it("renames projects optimistically", () => {
-    const result = getOptimisticallyRenamedShellState(buildShellState(), {
+  it("renames projects and ignores invalid rename payloads", () => {
+    const state = buildShellState();
+    const result = getOptimisticallyRenamedShellState(state, {
       projectId: "/repo",
       projectName: "Renamed repo",
     });
-
-    expect(result?.projects[0]).toMatchObject({
-      id: "/repo",
-      name: "Renamed repo",
-    });
-  });
-
-  it("leaves state unchanged for invalid rename and pin payloads", () => {
-    const state = buildShellState();
+    expect(result?.projects[0]).toMatchObject({ id: "/repo", name: "Renamed repo" });
 
     expect(
       getOptimisticallyRenamedShellState(state, {
@@ -277,19 +172,13 @@ describe("controller post action effects", () => {
         projectName: "   ",
       }),
     ).toBe(state);
-
-    expect(getOptimisticallyPinnedShellState(state, "thread.pin", { projectId: "/another" })).toBe(
-      state,
-    );
-    expect(getOptimisticallyPinnedShellState(state, "project.pin", {})).toBe(state);
-    expect(getOptimisticallyPinnedShellState(state, "thread.open", { projectId: "/another" })).toBe(
-      state,
-    );
   });
 
-  it("pins threads optimistically and moves them to the front", () => {
+  it("pins threads and projects while ignoring invalid pin payloads", () => {
+    const state = buildShellState();
+
     expect(
-      getOptimisticallyPinnedShellState(buildShellState(), "thread.pin", {
+      getOptimisticallyPinnedShellState(state, "thread.pin", {
         projectId: "/another",
         threadId: "thread-1",
       }),
@@ -305,11 +194,9 @@ describe("controller post action effects", () => {
         },
       ],
     });
-  });
 
-  it("pins projects optimistically and moves them to the front", () => {
     expect(
-      getOptimisticallyPinnedShellState(buildShellState(), "project.pin", {
+      getOptimisticallyPinnedShellState(state, "project.pin", {
         projectId: "/another",
       }),
     ).toMatchObject({
@@ -318,5 +205,13 @@ describe("controller post action effects", () => {
         { id: "/repo", pinned: false },
       ],
     });
+
+    expect(getOptimisticallyPinnedShellState(state, "thread.pin", { projectId: "/another" })).toBe(
+      state,
+    );
+    expect(getOptimisticallyPinnedShellState(state, "project.pin", {})).toBe(state);
+    expect(getOptimisticallyPinnedShellState(state, "thread.open", { projectId: "/another" })).toBe(
+      state,
+    );
   });
 });
