@@ -5,11 +5,13 @@ import type { ComposerAttachment } from "../../../desktop/types";
 type ComposerDraft = {
   prompt: string;
   attachments: ComposerAttachment[];
+  pickerOpen: boolean;
 };
 
 type PersistedComposerDraft = {
   prompt: string;
   attachments?: ComposerAttachment[];
+  pickerOpen?: boolean;
 };
 
 type PersistedComposerDraftState = {
@@ -39,6 +41,7 @@ function cloneDraft(draft: ComposerDraft): ComposerDraft {
   return {
     prompt: draft.prompt,
     attachments: cloneAttachments(draft.attachments),
+    pickerOpen: draft.pickerOpen,
   };
 }
 
@@ -52,7 +55,7 @@ function isComposerAttachment(value: unknown): value is ComposerAttachment {
   return (
     typeof candidate.path === "string" &&
     typeof candidate.name === "string" &&
-    (candidate.kind === "text" || candidate.kind === "image")
+    (candidate.kind === "directory" || candidate.kind === "text" || candidate.kind === "image")
   );
 }
 
@@ -67,12 +70,13 @@ function toDraft(value: unknown): ComposerDraft | null {
   const attachments = Array.isArray(candidate.attachments)
     ? candidate.attachments.filter(isComposerAttachment).map((attachment) => ({ ...attachment }))
     : [];
+  const pickerOpen = candidate.pickerOpen === true;
 
-  if (prompt.length === 0 && attachments.length === 0) {
+  if (prompt.length === 0 && attachments.length === 0 && !pickerOpen) {
     return null;
   }
 
-  return { prompt, attachments };
+  return { prompt, attachments, pickerOpen };
 }
 
 function hydrateDrafts(storage: StorageLike | null, storageKey: string) {
@@ -124,6 +128,7 @@ function serializeDrafts(
         threadId,
         {
           prompt: draft.prompt,
+          ...(draft.pickerOpen ? { pickerOpen: true } : {}),
           ...(draft.attachments.length > 0
             ? { attachments: cloneAttachments(draft.attachments) }
             : {}),
@@ -236,7 +241,11 @@ export function createComposerDraftStore({
     const mirroredThreadId = getMirroredProjectDraftThreadId(threadId);
     const previousDraft = draftsByThreadId[threadId];
 
-    if (nextDraft.prompt.length === 0 && nextDraft.attachments.length === 0) {
+    if (
+      nextDraft.prompt.length === 0 &&
+      nextDraft.attachments.length === 0 &&
+      !nextDraft.pickerOpen
+    ) {
       delete draftsByThreadId[threadId];
 
       if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
@@ -257,7 +266,11 @@ export function createComposerDraftStore({
     threadId: string,
     updater: (currentDraft: ComposerDraft) => ComposerDraft,
   ) => {
-    const currentDraft = draftsByThreadId[threadId] ?? { prompt: "", attachments: [] };
+    const currentDraft = draftsByThreadId[threadId] ?? {
+      prompt: "",
+      attachments: [],
+      pickerOpen: false,
+    };
     writeDraft(threadId, updater(currentDraft));
   };
 
@@ -289,7 +302,7 @@ export function createComposerDraftStore({
       }));
     },
     clearComposerContent(threadId: string) {
-      writeDraft(threadId, { prompt: "", attachments: [] });
+      writeDraft(threadId, { prompt: "", attachments: [], pickerOpen: false });
     },
     clearThreadDraft(threadId: string) {
       if (!(threadId in draftsByThreadId)) {

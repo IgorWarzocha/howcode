@@ -77,7 +77,9 @@ export function getComposerAttachments(payload: DesktopActionPayloadInput): Comp
         return (
           typeof candidate.path === "string" &&
           typeof candidate.name === "string" &&
-          (candidate.kind === "text" || candidate.kind === "image")
+          (candidate.kind === "directory" ||
+            candidate.kind === "text" ||
+            candidate.kind === "image")
         );
       })
     : [];

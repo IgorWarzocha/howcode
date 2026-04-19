@@ -3,6 +3,8 @@ import type {
   AnyDesktopActionPayload,
   ArchivedThread,
   ComposerAttachment,
+  DesktopClipboardFilePaths,
+  DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
@@ -104,6 +106,12 @@ declare global {
       }) => Promise<SkillCreatorSessionState>;
       closeSkillCreatorSession?: (sessionId: string) => Promise<{ ok: boolean }>;
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
+      readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>;
+      readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>;
+      getAttachmentKindsForPaths?: (
+        paths: string[],
+      ) => Promise<Record<string, ComposerAttachment["kind"] | null>>;
+      getPathForFile?: (file: File) => string | null;
       listComposerAttachmentEntries?: (request?: {
         projectId?: string | null;
         path?: string | null;

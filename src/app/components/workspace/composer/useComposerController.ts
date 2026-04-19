@@ -1,7 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+  type SetStateAction,
+} from "react";
+import {
+  mergeComposerAttachments,
+  normalizeComposerAttachments,
+} from "../../../../../shared/composer-attachments";
 import type { DesktopAction } from "../../../desktop/actions";
 import type {
   ComposerAttachment,
+  DesktopClipboardFilePaths,
+  DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
@@ -10,7 +24,23 @@ import type {
 } from "../../../desktop/types";
 import type { View } from "../../../types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import {
+  getAttachmentKindsForPathsQuery,
+  getPathForFileQuery,
+  readClipboardFilePathsQuery,
+  readClipboardSnapshotQuery,
+} from "../../../query/desktop-query";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
+import {
+  attachmentClipboardSnapshotFormats,
+  getComposerAttachmentsFromClipboardData,
+  getComposerAttachmentsFromClipboardFilePaths,
+  getComposerAttachmentsFromClipboardSnapshot,
+  hasAttachmentHintInClipboardData,
+  getPreferredClipboardTextFromClipboardFilePaths,
+  getPreferredClipboardTextFromClipboardData,
+  getPreferredClipboardTextFromClipboardSnapshot,
+} from "./composer-paste-attachments";
 import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
 import { useComposerAttachmentPicker } from "./useComposerAttachmentPicker";
 import { useComposerDictation } from "./useComposerDictation";
@@ -33,8 +63,57 @@ function getModelLabel(model: ComposerModel | null) {
   return model.name;
 }
 
+function applyPastedTextToTextarea(textarea: HTMLTextAreaElement, pastedText: string) {
+  const selectionStart = textarea.selectionStart ?? textarea.value.length;
+  const selectionEnd = textarea.selectionEnd ?? textarea.value.length;
+  textarea.setRangeText(pastedText, selectionStart, selectionEnd, "end");
+  return textarea.value;
+}
+
+function resolveDesktopFilePath(file: {
+  path?: string | null;
+  name?: string | null;
+  type?: string | null;
+}) {
+  return getPathForFileQuery(file as File) ?? null;
+}
+
+async function resolveDesktopAttachmentKinds(paths: string[]) {
+  try {
+    return await getAttachmentKindsForPathsQuery(paths);
+  } catch {
+    return null;
+  }
+}
+
+async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
+  const localPaths = [...new Set(attachments.map((attachment) => attachment.path.trim()))].filter(
+    (path) => path.length > 0 && !/^https?:\/\//i.test(path),
+  );
+  const kindsByPath = await resolveDesktopAttachmentKinds(localPaths);
+  const fallbackKindsByPath = Object.fromEntries(
+    attachments
+      .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
+      .map((attachment) => [attachment.path, attachment.kind] as const),
+  );
+  const hasLookup = kindsByPath !== null;
+
+  return normalizeComposerAttachments(attachments, {
+    resolveAttachmentKind: (path) => {
+      if (hasLookup && kindsByPath && Object.prototype.hasOwnProperty.call(kindsByPath, path)) {
+        return kindsByPath[path] ?? null;
+      }
+
+      return fallbackKindsByPath[path] ?? null;
+    },
+  });
+}
+
 type UseComposerControllerProps = {
   activeView: View;
+  composerPanelRef: RefObject<HTMLDivElement | null>;
+  mainViewRef: RefObject<HTMLElement | null>;
+  workspaceFooterRef: RefObject<HTMLElement | null>;
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
@@ -54,6 +133,9 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
+  composerPanelRef,
+  mainViewRef,
+  workspaceFooterRef,
   model,
   projectId,
   sessionPath,
@@ -109,6 +191,7 @@ export function useComposerController({
     const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
     setDraftValue(persistedDraft?.prompt ?? "");
     setAttachments(persistedDraft?.attachments ?? []);
+    setOpenMenu(persistedDraft?.pickerOpen ? "picker" : null);
     setErrorMessage(null);
   }, [draftThreadId, setDraftValue]);
 
@@ -122,8 +205,12 @@ export function useComposerController({
       return;
     }
 
-    composerDraftStore.setDraft(draftThreadId, { prompt: draft, attachments });
-  }, [attachments, draft, draftThreadId]);
+    composerDraftStore.setDraft(draftThreadId, {
+      prompt: draft,
+      attachments,
+      pickerOpen: openMenu === "picker",
+    });
+  }, [attachments, draft, draftThreadId, openMenu]);
 
   useEffect(() => {
     if (!restoredQueuedPrompt) {
@@ -133,18 +220,48 @@ export function useComposerController({
     setDraftValue((currentDraft) =>
       mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
     );
-    setOpenMenu(null);
     setErrorMessage(null);
     onRestoredQueuedPromptApplied();
   }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue]);
 
   useDismissibleLayer({
-    open: openMenu !== null,
+    open: openMenu === "model",
     onDismiss: () => setOpenMenu(null),
-    refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
+    refs: [modelButtonRef, modelMenuRef],
   });
 
-  const canSend = draft.trim().length > 0 && !isSending;
+  useEffect(() => {
+    if (openMenu !== "picker") {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+
+      if (!target) {
+        return;
+      }
+
+      if (pickerButtonRef.current?.contains(target) || pickerPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      if (composerPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      if (mainViewRef.current?.contains(target) || workspaceFooterRef.current?.contains(target)) {
+        setOpenMenu((current) => (current === "picker" ? null : current));
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef]);
+
+  const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
 
   const {
     cancelDictation,
@@ -166,11 +283,10 @@ export function useComposerController({
   });
 
   const {
-    attachPendingPickerAttachments,
-    navigatePickerUp,
+    attachPickerAttachments,
+    clearAttachments,
     openPickerDirectory,
     openPickerRoot,
-    pendingPickerAttachments,
     pickAttachments,
     pickerLoading,
     pickerState,
@@ -179,6 +295,7 @@ export function useComposerController({
   } = useComposerAttachmentPicker({
     openMenu,
     pickerRootPath: projectId,
+    pickerSessionKey: draftThreadId,
     setAttachments,
     setErrorMessage,
     setOpenMenu,
@@ -213,6 +330,7 @@ export function useComposerController({
     setDraftValue,
     setErrorMessage,
     setIsSending,
+    setOpenMenu,
     stopDictationAndFlush,
     streamingBehaviorPreference,
     activeComposerScopeKeyRef,
@@ -225,10 +343,108 @@ export function useComposerController({
 
   const modelLabel = useMemo(() => getModelLabel(model), [model]);
 
+  const handlePaste = useCallback(
+    async (request: {
+      clipboardData: DataTransfer | null;
+      textarea: HTMLTextAreaElement;
+    }) => {
+      const { clipboardData, textarea } = request;
+      const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData);
+
+      const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
+        resolveFilePath: resolveDesktopFilePath,
+      });
+      const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments);
+      if (normalizedDirectAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
+        setErrorMessage(null);
+        return;
+      }
+
+      if (directPastedText && !hasAttachmentHintInClipboardData(clipboardData)) {
+        setDraftValue(applyPastedTextToTextarea(textarea, directPastedText));
+        setErrorMessage(null);
+        return;
+      }
+
+      let fallbackSnapshot: DesktopClipboardSnapshot | null = null;
+      let fallbackClipboardFilePaths: DesktopClipboardFilePaths | null = null;
+      try {
+        fallbackClipboardFilePaths = await readClipboardFilePathsQuery();
+      } catch {
+        fallbackClipboardFilePaths = null;
+      }
+
+      const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
+        fallbackClipboardFilePaths,
+      );
+      const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments);
+      if (normalizedNativeAttachments.length > 0) {
+        setAttachments((current) => mergeComposerAttachments(current, normalizedNativeAttachments));
+        setErrorMessage(null);
+        return;
+      }
+
+      try {
+        fallbackSnapshot = await readClipboardSnapshotQuery(attachmentClipboardSnapshotFormats);
+      } catch {
+        fallbackSnapshot = null;
+      }
+
+      const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot);
+      const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments);
+      if (normalizedFallbackAttachments.length > 0) {
+        setAttachments((current) =>
+          mergeComposerAttachments(current, normalizedFallbackAttachments),
+        );
+        setErrorMessage(null);
+        return;
+      }
+
+      const pastedText =
+        directPastedText ||
+        getPreferredClipboardTextFromClipboardFilePaths(fallbackClipboardFilePaths) ||
+        getPreferredClipboardTextFromClipboardSnapshot(fallbackSnapshot);
+
+      if (!pastedText) {
+        return;
+      }
+
+      const nextValue = applyPastedTextToTextarea(textarea, pastedText);
+      setDraftValue(nextValue);
+      setErrorMessage(null);
+
+      const nextCursorPosition = textarea.selectionStart ?? nextValue.length;
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
+      });
+    },
+    [setDraftValue],
+  );
+
+  const handleDrop = useCallback(async (dataTransfer: DataTransfer | null) => {
+    const droppedAttachments = await normalizeDesktopAttachments(
+      getComposerAttachmentsFromClipboardData(dataTransfer, {
+        resolveFilePath: resolveDesktopFilePath,
+      }),
+    );
+    if (droppedAttachments.length === 0) {
+      return false;
+    }
+
+    setAttachments((current) => mergeComposerAttachments(current, droppedAttachments));
+    setErrorMessage(null);
+    return true;
+  }, []);
+
   return {
     attachments,
+    handleDrop,
+    handlePaste,
     cancelDictation,
     canSend,
+    clearAttachments,
     clearError: () => setErrorMessage(null),
     draft,
     dictationActive,
@@ -247,11 +463,9 @@ export function useComposerController({
     modelMenuOpen: openMenu === "model",
     modelMenuRef,
     isStreaming,
-    pendingPickerAttachments,
     pickAttachments,
     openPickerDirectory,
     openPickerRoot,
-    navigatePickerUp,
     removeAttachment,
     runComposerAction,
     send,
@@ -259,7 +473,7 @@ export function useComposerController({
     setOpenMenu,
     stop,
     toggleDictation,
-    attachPendingPickerAttachments,
+    attachPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
   };

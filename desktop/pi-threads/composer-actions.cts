@@ -44,14 +44,15 @@ export async function handleComposerDesktopAction(
 
     case "composer.send": {
       const text = getComposerText(payload);
-      if (!text) {
+      const attachments = getComposerAttachments(payload);
+      if (!text && attachments.length === 0) {
         return handledAction();
       }
 
       const composerSendOutcome = await sendComposerPrompt({
         ...getComposerRequest(payload),
         text,
-        attachments: getComposerAttachments(payload),
+        attachments,
         streamingBehavior: getComposerStreamingBehavior(payload),
       });
       return handledAction({ composerSendOutcome });

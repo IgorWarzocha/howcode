@@ -50,6 +50,7 @@ export function ComposerGitOpsMessageField({
             ? ""
             : "Leave blank to autogenerate a commit message"
       }
+      reservedLineCount={1}
       onHeightChange={onLayoutChange}
     />
   );
@@ -80,8 +81,8 @@ export function ComposerGitOpsMessageField({
   }
 
   return (
-    <div className="grid min-h-[148px] content-end px-4 pt-[52px] pb-3">
-      <div className="flex min-h-[82px] items-end justify-between gap-2">
+    <div className="grid content-end px-4 pt-[52px] pb-3">
+      <div className="flex items-end justify-between gap-2">
         <div className="min-w-0 flex-1">{field}</div>
         <div className="inline-flex items-center gap-2">
           {trailingAccessory}

@@ -1,19 +1,18 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
-
-function mergeAttachments(current: ComposerAttachment[], next: ComposerAttachment[]) {
-  const byPath = new Map(current.map((attachment) => [attachment.path, attachment]));
-
-  for (const attachment of next) {
-    byPath.set(attachment.path, attachment);
-  }
-
-  return [...byPath.values()];
-}
+import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 
 type UseComposerAttachmentPickerProps = {
   openMenu: "model" | "picker" | null;
   pickerRootPath: string;
+  pickerSessionKey: string | null;
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
@@ -27,34 +26,62 @@ type UseComposerAttachmentPickerProps = {
 export function useComposerAttachmentPicker({
   openMenu,
   pickerRootPath,
+  pickerSessionKey,
   setAttachments,
   setErrorMessage,
   setOpenMenu,
   onListAttachmentEntries,
 }: UseComposerAttachmentPickerProps) {
+  const pickerScopeKey = `${pickerSessionKey ?? ""}::${pickerRootPath}`;
   const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
+  const [pickerStateScopeKey, setPickerStateScopeKey] = useState<string | null>(null);
   const [pickerLoading, setPickerLoading] = useState(false);
-  const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
-    [],
-  );
+  const pickerRequestIdRef = useRef(0);
+  const previousOpenMenuRef = useRef<"model" | "picker" | null>(openMenu);
+  const previousPickerScopeKeyRef = useRef<string | null>(null);
 
-  const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
-    setPickerLoading(true);
-
-    try {
-      const nextPickerState = await onListAttachmentEntries({
+  const fetchPickerEntries = useCallback(
+    async (path?: string | null, rootPath?: string | null) => {
+      return await onListAttachmentEntries({
         projectId: pickerRootPath,
         path: path ?? null,
         rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
       });
-      setPickerState(nextPickerState);
-      setErrorMessage(null);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
-    } finally {
-      setPickerLoading(false);
-    }
-  };
+    },
+    [onListAttachmentEntries, pickerRootPath, pickerState?.rootPath],
+  );
+
+  const loadPickerEntries = useCallback(
+    async (path?: string | null, rootPath?: string | null) => {
+      const requestId = pickerRequestIdRef.current + 1;
+      pickerRequestIdRef.current = requestId;
+      setPickerLoading(true);
+
+      try {
+        const nextPickerState = await fetchPickerEntries(path, rootPath);
+        if (requestId !== pickerRequestIdRef.current) {
+          return nextPickerState;
+        }
+
+        setPickerState(nextPickerState);
+        setPickerStateScopeKey(pickerScopeKey);
+        setErrorMessage(null);
+        return nextPickerState;
+      } catch (error) {
+        if (requestId !== pickerRequestIdRef.current) {
+          return null;
+        }
+
+        setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
+        return null;
+      } finally {
+        if (requestId === pickerRequestIdRef.current) {
+          setPickerLoading(false);
+        }
+      }
+    },
+    [fetchPickerEntries, pickerScopeKey, setErrorMessage],
+  );
 
   const pickAttachments = async () => {
     if (openMenu === "picker") {
@@ -62,10 +89,29 @@ export function useComposerAttachmentPicker({
       return;
     }
 
-    setPendingPickerAttachments([]);
+    setPickerState(null);
+    setPickerStateScopeKey(null);
+    setPickerLoading(true);
     setOpenMenu("picker");
-    await loadPickerEntries(pickerRootPath, pickerRootPath);
   };
+
+  useEffect(() => {
+    const pickerOpened = openMenu === "picker" && previousOpenMenuRef.current !== "picker";
+    const pickerScopeChanged =
+      openMenu === "picker" && previousPickerScopeKeyRef.current !== pickerScopeKey;
+
+    previousOpenMenuRef.current = openMenu;
+    previousPickerScopeKeyRef.current = pickerScopeKey;
+
+    if (!pickerOpened && !pickerScopeChanged) {
+      return;
+    }
+
+    setPickerState(null);
+    setPickerStateScopeKey(null);
+    setPickerLoading(true);
+    void loadPickerEntries(pickerRootPath, pickerRootPath);
+  }, [loadPickerEntries, openMenu, pickerRootPath, pickerScopeKey]);
 
   const openPickerDirectory = async (path: string) => {
     await loadPickerEntries(path);
@@ -75,16 +121,8 @@ export function useComposerAttachmentPicker({
     await loadPickerEntries(rootPath, rootPath);
   };
 
-  const navigatePickerUp = async () => {
-    if (!pickerState?.parentPath) {
-      return;
-    }
-
-    await loadPickerEntries(pickerState.parentPath);
-  };
-
   const togglePendingPickerAttachment = (attachment: ComposerAttachment) => {
-    setPendingPickerAttachments((current) => {
+    setAttachments((current) => {
       const exists = current.some(
         (currentAttachment) => currentAttachment.path === attachment.path,
       );
@@ -93,16 +131,25 @@ export function useComposerAttachmentPicker({
         ? current.filter((currentAttachment) => currentAttachment.path !== attachment.path)
         : [...current, attachment];
     });
+    setErrorMessage(null);
   };
 
-  const attachPendingPickerAttachments = () => {
-    if (pendingPickerAttachments.length === 0) {
+  const attachPickerAttachments = (
+    nextAttachments: ComposerAttachment[],
+    options?: { closeMenu?: boolean },
+  ) => {
+    if (nextAttachments.length === 0) {
       return;
     }
 
-    setAttachments((current) => mergeAttachments(current, pendingPickerAttachments));
-    setPendingPickerAttachments([]);
-    setOpenMenu(null);
+    const attachedPaths = new Set(nextAttachments.map((attachment) => attachment.path));
+
+    setAttachments((current) => mergeComposerAttachments(current, nextAttachments));
+
+    if (options?.closeMenu) {
+      setOpenMenu(null);
+    }
+
     setErrorMessage(null);
   };
 
@@ -112,15 +159,19 @@ export function useComposerAttachmentPicker({
     );
   };
 
+  const clearAttachments = () => {
+    setAttachments([]);
+    setErrorMessage(null);
+  };
+
   return {
-    attachPendingPickerAttachments,
-    navigatePickerUp,
+    attachPickerAttachments,
+    clearAttachments,
     openPickerDirectory,
     openPickerRoot,
-    pendingPickerAttachments,
     pickAttachments,
     pickerLoading,
-    pickerState,
+    pickerState: pickerStateScopeKey === pickerScopeKey ? pickerState : null,
     removeAttachment,
     togglePendingPickerAttachment,
   };

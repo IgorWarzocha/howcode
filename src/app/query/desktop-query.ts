@@ -5,6 +5,8 @@ import type {
   ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
+  DesktopClipboardFilePaths,
+  DesktopClipboardSnapshot,
   InboxThread,
   PiConfiguredPackage,
   PiConfiguredSkill,
@@ -224,6 +226,32 @@ export async function listComposerAttachmentEntriesQuery(
   } = {},
 ): Promise<ComposerFilePickerState | null> {
   return (await window.piDesktop?.listComposerAttachmentEntries?.(request)) ?? null;
+}
+
+export async function readClipboardSnapshotQuery(
+  formats?: string[] | null,
+): Promise<DesktopClipboardSnapshot | null> {
+  return (await window.piDesktop?.readClipboardSnapshot?.(formats ?? null)) ?? null;
+}
+
+export async function readClipboardFilePathsQuery(): Promise<DesktopClipboardFilePaths | null> {
+  return (await window.piDesktop?.readClipboardFilePaths?.()) ?? null;
+}
+
+export async function getAttachmentKindsForPathsQuery(paths: string[]) {
+  return (await window.piDesktop?.getAttachmentKindsForPaths?.(paths)) ?? null;
+}
+
+export function getPathForFileQuery(file: File) {
+  return window.piDesktop?.getPathForFile?.(file) ?? null;
+}
+
+export async function openExternalQuery(url: string) {
+  return (await window.piDesktop?.openExternal?.(url)) ?? false;
+}
+
+export async function openPathQuery(path: string) {
+  return (await window.piDesktop?.openPath?.(path)) ?? false;
 }
 
 export async function getThreadQuery(

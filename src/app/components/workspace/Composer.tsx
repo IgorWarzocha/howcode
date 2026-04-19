@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import type {
   ComposerFilePickerState,
   ComposerModel,
@@ -47,6 +47,8 @@ export type ComposerProps = {
   onToggleTerminal: () => void;
   terminalVisible: boolean;
   onLayoutChange: () => void;
+  mainViewRef: RefObject<HTMLElement | null>;
+  workspaceFooterRef: RefObject<HTMLElement | null>;
   onListAttachmentEntries: (request: {
     projectId?: string | null;
     path?: string | null;
@@ -67,6 +69,8 @@ export function Composer(props: ComposerProps) {
       <ComposerPromptSurface
         {...props}
         composerPanelRef={composerPanelRef}
+        mainViewRef={props.mainViewRef}
+        workspaceFooterRef={props.workspaceFooterRef}
         onOpenGitOps={props.onOpenGitOpsView}
       />
     </div>
