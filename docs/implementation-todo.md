@@ -10,9 +10,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Add renderer composer state instead of uncontrolled textarea
   - files: `src/app/components/workspace/Composer.tsx`
 - [x] Add desktop bridge contract(s) for creating a thread and sending a prompt
-  - files: `shared/electrobun-rpc.ts`, `src/app/desktop/electrobun-api.ts`, `src/types.d.ts`
+  - files: `shared/desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`, `src/types.d.ts`
 - [x] Implement desktop-runtime handlers that create/continue Pi sessions
-  - files: `src/bun/index.ts`, `desktop/pi-threads.cts`
+  - files: `src/electron/main/index.ts`, `desktop/pi-threads.cts`
 - [x] Use `createAgentSession()` or equivalent Pi session continuation path
   - files: `desktop/pi-threads.cts`
 - [x] Persist thread/session metadata into SQLite on send
@@ -20,9 +20,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Refresh shell state + opened thread after send
   - files: `src/app/hooks/useDesktopShell.ts`, `src/app/hooks/useDesktopThread.ts`, `src/app/AppShell.tsx`
 - [x] Support streaming assistant output instead of waiting for full completion
-  - files: `src/bun/index.ts`, `src/app/desktop/electrobun-api.ts`, `src/app/*`
+  - files: `src/electron/main/ipc/register-desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`, `src/app/*`
 - [x] Add attachment picking + file/image send support
-  - files: `src/bun/index.ts`, `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+  - files: `src/electron/main/ipc/request-handlers/system.ts`, `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 - [x] Surface basic composer send/model errors inline
   - files: `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 
@@ -63,15 +63,15 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 5. Terminal panel
 - [x] Replace static terminal transcript with a real PTY-backed xterm.js viewport
-  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `desktop/terminal/*`, `src/bun/index.ts`
+  - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `desktop/terminal/*`, `src/electron/main/index.ts`
 - [x] Add takeover mode that replaces the thread pane with a centered composer-lite Pi TUI surface
   - files: `src/app/components/workspace/TerminalPanel.tsx`, `src/app/components/workspace/terminal/TerminalViewport.tsx`, `src/app/app-shell/AppShellLayout.tsx`, `shared/terminal-contracts.ts`, `desktop/terminal/*`
 - [ ] Decide if terminal should remain:
   - [ ] a real shell
   - [ ] a Pi run log
   - [ ] a hybrid
-- [x] Implement open/write/resize/close event flow with Bun PTY + Windows `node-pty` fallback
-  - files: `shared/terminal-contracts.ts`, `shared/electrobun-rpc.ts`, `desktop/terminal/*`, `src/app/hooks/useDesktopTerminal.ts`
+- [x] Implement open/write/resize/close event flow with `node-pty`
+  - files: `shared/terminal-contracts.ts`, `shared/desktop-ipc.ts`, `desktop/terminal/*`, `src/app/hooks/useDesktopTerminal.ts`
 - [ ] Add multi-terminal/split terminal UI if Codex parity requires it
 
 #### 6. Diff panel
@@ -95,7 +95,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Replace `previousMessageCount: 0` with real history metadata
 - [x] Keep the centered thread scrollbar inside the chat lane and render the visible thread timeline in natural flow instead of relying on heuristic row-height prediction
 - [x] Watch only the selected session file for external Pi TUI writes and push watcher-driven thread refreshes
-  - files: `desktop/pi-threads/session-watch.cts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/app-shell/useAppShellController.ts`, `src/bun/index.ts`
+  - files: `desktop/pi-threads/session-watch.cts`, `desktop/pi-threads/thread-loader.cts`, `desktop/runtime/thread-publisher.cts`, `shared/desktop-contracts.ts`, `src/app/app-shell/useAppShellController.ts`, `src/electron/main/index.ts`
 
 #### 8. Sidebar utility controls
 - [ ] Finish thread filtering/search as a coherent end-to-end flow
@@ -127,7 +127,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 ## Checklist by layer
 
-### Bun / desktop backend checklist
+### Electron / desktop backend checklist
 
 - [x] Add real send-thread desktop bridge requests
 - [x] Add real new-thread desktop bridge requests
@@ -142,9 +142,9 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Add DB migrations/versioning for future schema changes
 
 Key files:
-- `src/bun/index.ts`
-- `shared/electrobun-rpc.ts`
-- `src/app/desktop/electrobun-api.ts`
+- `src/electron/main/index.ts`
+- `shared/desktop-ipc.ts`
+- `src/electron/preload/create-desktop-api.ts`
 - `desktop/pi-threads/*`
 - `desktop/terminal/*`
 - `desktop/runtime/*`

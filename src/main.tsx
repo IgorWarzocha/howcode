@@ -5,10 +5,11 @@ import "@xterm/xterm/css/xterm.css";
 import "@fontsource-variable/inter";
 import "./styles.css";
 import App from "./App";
-import { piDesktopApi } from "./app/desktop/electrobun-api";
 import { queryClient } from "./app/query/query-client";
 
-window.piDesktop = piDesktopApi;
+if (import.meta.env.DEV) {
+  void import("react-grab");
+}
 
 try {
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

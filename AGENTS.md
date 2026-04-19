@@ -1,6 +1,7 @@
-- Use Bun for installs and scripts; do not use npm.
+- Use Bun for installs and scripts; keep the app runtime on Node.js/Electron.
+- In dev, assume the app dev server is already running; do not start it manually, and use Electron CDP at `127.0.0.1:39217`.
 - Pre-commit hooks exist; skip separate lint/format/check runs unless asked.
-- Prefer `src/bun/index.ts` + `shared/*` contracts over ad-hoc desktop IPC shims.
+- Prefer `src/electron/main/**`, `src/electron/preload/**`, and `shared/*` contracts over ad-hoc desktop IPC shims.
 - Keep UI changes optimistic and reuse existing patterns over one-offs.
 - For major changes, validate with a commit and leave the repo committed.
 - This repository uses nested AGENTS.md files to flag folder-specific guidelines. They are loaded automatically. No need to read them.

@@ -16,32 +16,32 @@ const TARGETS = {
   "darwin:arm64": {
     os: "macos",
     arch: "arm64",
-    executable: `${APP_NAME}.app/Contents/MacOS/launcher`,
+    executable: `${APP_NAME}.app/Contents/MacOS/${APP_NAME}`,
   },
   "darwin:x64": {
     os: "macos",
     arch: "x64",
-    executable: `${APP_NAME}.app/Contents/MacOS/launcher`,
+    executable: `${APP_NAME}.app/Contents/MacOS/${APP_NAME}`,
   },
   "linux:arm64": {
     os: "linux",
     arch: "arm64",
-    executable: `${APP_NAME}/bin/launcher`,
+    executable: `${APP_NAME}/${APP_NAME}`,
   },
   "linux:x64": {
     os: "linux",
     arch: "x64",
-    executable: `${APP_NAME}/bin/launcher`,
+    executable: `${APP_NAME}/${APP_NAME}`,
   },
   "win32:arm64": {
     os: "win",
     arch: "x64",
-    executable: `${APP_NAME}/bin/launcher.exe`,
+    executable: `${APP_NAME}/${APP_NAME}.exe`,
   },
   "win32:x64": {
     os: "win",
     arch: "x64",
-    executable: `${APP_NAME}/bin/launcher.exe`,
+    executable: `${APP_NAME}/${APP_NAME}.exe`,
   },
 };
 

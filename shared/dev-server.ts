@@ -1,11 +1,11 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 export const DEV_SERVER_HOST = "127.0.0.1";
 export const DEV_SERVER_START_PORT = 5173;
 export const DEV_SERVER_METADATA_RELATIVE_PATH = path.join("build", "dev-server.json");
 
-const REPO_ROOT_MARKERS = ["package.json", "electrobun.config.ts"] as const;
+const REPO_ROOT_MARKERS = ["package.json", "tsconfig.json"] as const;
 
 function hasRepoRootMarkers(candidatePath: string) {
   return REPO_ROOT_MARKERS.every((entry) => existsSync(path.join(candidatePath, entry)));
@@ -72,4 +72,17 @@ export function parseDevServerMetadata(rawMetadata: string) {
   }
 
   return null;
+}
+
+export function resolveConfiguredDevServerUrl(searchStartPaths: readonly string[]) {
+  const metadataPath = resolveDevServerMetadataPath(searchStartPaths);
+  if (!metadataPath) {
+    return null;
+  }
+
+  try {
+    return parseDevServerMetadata(readFileSync(metadataPath, "utf8"));
+  } catch {
+    return null;
+  }
 }

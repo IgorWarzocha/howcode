@@ -1,132 +1,183 @@
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 const appName = "howcode";
-const buildRoot = path.join(process.cwd(), "build");
-const outputRoot = path.join(process.cwd(), "artifacts", "npm-launcher");
 
-function getElectrobunZstdPath() {
-  const electrobunRoot = path.join(process.cwd(), "node_modules", "electrobun");
-  const targetOs =
-    process.platform === "darwin" ? "macos" : process.platform === "win32" ? "win" : "linux";
-  const targetArch = process.arch === "arm64" ? "arm64" : "x64";
-  const binExt = process.platform === "win32" ? ".exe" : "";
+const electronOutputRoot = path.join(process.cwd(), "artifacts", "electron");
+const artifactRoot = path.join(process.cwd(), "artifacts");
+const launcherOutputRoot = path.join(artifactRoot, "npm-launcher");
 
-  return path.join(electrobunRoot, `dist-${targetOs}-${targetArch}`, `zig-zstd${binExt}`);
-}
+type Target = {
+  os: "macos" | "linux" | "win";
+  arch: "arm64" | "x64";
+};
 
-function getBundleZstdPath(bundlePath: string) {
-  const binaryName = process.platform === "win32" ? "zig-zstd.exe" : "zig-zstd";
-
+function getCurrentTarget(): Target {
   if (process.platform === "darwin") {
-    return path.join(bundlePath, "Contents", "MacOS", binaryName);
+    return { os: "macos", arch: process.arch === "arm64" ? "arm64" : "x64" };
   }
 
-  return path.join(bundlePath, "bin", binaryName);
+  if (process.platform === "win32") {
+    return { os: "win", arch: "x64" };
+  }
+
+  return { os: "linux", arch: process.arch === "arm64" ? "arm64" : "x64" };
 }
 
-function resolveZstdPath(bundlePath: string) {
-  const candidates = [getBundleZstdPath(bundlePath), getElectrobunZstdPath()];
-  const foundPath = candidates.find((candidatePath) => existsSync(candidatePath));
+async function findPaths(rootPath: string, matcher: (entryPath: string) => boolean) {
+  const stack = [rootPath];
+  const matches: string[] = [];
 
-  if (!foundPath) {
-    throw new Error(`Unable to find zig-zstd. Checked: ${candidates.join(", ")}`);
+  while (stack.length > 0) {
+    const currentPath = stack.pop();
+    if (!currentPath) {
+      continue;
+    }
+
+    const entries = await readdir(currentPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryPath = path.join(currentPath, entry.name);
+      if (matcher(entryPath)) {
+        matches.push(entryPath);
+      }
+
+      if (entry.isDirectory()) {
+        stack.push(entryPath);
+      }
+    }
   }
 
-  return foundPath;
+  return matches;
 }
 
-const targets = [
-  { os: "macos", arch: "arm64" },
-  { os: "macos", arch: "x64" },
-  { os: "linux", arch: "x64" },
-  { os: "linux", arch: "arm64" },
-  { os: "win", arch: "x64" },
-] as const;
-
-rmSync(outputRoot, { recursive: true, force: true });
-mkdirSync(outputRoot, { recursive: true });
-
-let packagedCount = 0;
-
-for (const target of targets) {
-  const buildDir = path.join(buildRoot, `stable-${target.os}-${target.arch}`);
-  const bundleName = target.os === "macos" ? `${appName}.app` : appName;
-  const bundlePath = path.join(buildDir, bundleName);
-  const resourcesPath =
-    target.os === "macos"
-      ? path.join(bundlePath, "Contents", "Resources")
-      : path.join(bundlePath, "Resources");
-
-  if (!existsSync(bundlePath)) {
-    continue;
+function getPreferredBundlePathCandidates(target: Target) {
+  if (target.os === "macos") {
+    return [
+      path.join(electronOutputRoot, `mac-${target.arch}`, `${appName}.app`),
+      path.join(electronOutputRoot, "mac", `${appName}.app`),
+      path.join(electronOutputRoot, `${appName}.app`),
+    ];
   }
 
-  const metadataPath = path.join(resourcesPath, "metadata.json");
-  const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as { hash?: string };
-  if (!metadata.hash) {
-    throw new Error(`Missing release hash in ${metadataPath}.`);
+  if (target.os === "win") {
+    return [
+      path.join(electronOutputRoot, `win-${target.arch}-unpacked`),
+      path.join(electronOutputRoot, "win-unpacked"),
+    ];
   }
 
-  const payloadPath = path.join(resourcesPath, `${metadata.hash}.tar.zst`);
-  if (!existsSync(payloadPath)) {
-    throw new Error(`Missing packaged payload for ${target.os}-${target.arch}: ${payloadPath}`);
-  }
+  return [
+    path.join(electronOutputRoot, `linux-${target.arch}-unpacked`),
+    path.join(electronOutputRoot, "linux-unpacked"),
+  ];
+}
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
-  const zstdPath = resolveZstdPath(bundlePath);
-  const tarPath = path.join(tempRoot, `${appName}-${target.os}-${target.arch}.tar`);
-  const decompressResult = spawnSync(
-    zstdPath,
-    ["decompress", "-i", payloadPath, "-o", tarPath, "--no-timing"],
-    {
-      stdio: "inherit",
-    },
+async function sortPathsByModifiedTime(paths: string[]) {
+  const pathsWithMetadata = await Promise.all(
+    paths.map(async (entryPath) => ({ entryPath, modifiedAtMs: (await stat(entryPath)).mtimeMs })),
   );
 
-  if (decompressResult.status !== 0) {
-    rmSync(tempRoot, { recursive: true, force: true });
-    throw new Error(`Failed to decompress payload for ${target.os}-${target.arch}.`);
+  return pathsWithMetadata
+    .sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
+    .map(({ entryPath }) => entryPath);
+}
+
+async function resolveBundlePath(target: Target) {
+  if (!existsSync(electronOutputRoot)) {
+    throw new Error("Missing Electron output. Run `bun run build:release` first.");
   }
 
-  const extractResult = spawnSync("tar", ["-xf", tarPath, "-C", tempRoot], {
+  const preferredBundleCandidates = getPreferredBundlePathCandidates(target).filter((entryPath) =>
+    existsSync(entryPath),
+  );
+  if (preferredBundleCandidates.length > 0) {
+    const [preferredBundlePath] = await sortPathsByModifiedTime(preferredBundleCandidates);
+    if (preferredBundlePath) {
+      return preferredBundlePath;
+    }
+  }
+
+  const matches = await findPaths(electronOutputRoot, (entryPath) => {
+    const normalized = entryPath.replace(/\\/g, "/");
+    if (target.os === "macos") {
+      return normalized.endsWith(`/${appName}.app`);
+    }
+
+    if (target.os === "win") {
+      return /win.*unpacked$/i.test(path.basename(entryPath));
+    }
+
+    return /linux.*unpacked$/i.test(path.basename(entryPath));
+  });
+
+  const [bundlePath] = await sortPathsByModifiedTime(matches);
+  if (!bundlePath) {
+    throw new Error(`Could not find unpacked Electron bundle in ${electronOutputRoot}.`);
+  }
+
+  return bundlePath;
+}
+
+async function createNormalizedArchive(bundlePath: string, target: Target) {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
+  const normalizedBundleName = target.os === "macos" ? `${appName}.app` : appName;
+  const normalizedBundlePath = path.join(tempRoot, normalizedBundleName);
+  const archivePath = path.join(
+    launcherOutputRoot,
+    `${appName}-${target.os}-${target.arch}.tar.gz`,
+  );
+
+  await cp(bundlePath, normalizedBundlePath, { recursive: true });
+
+  const tarResult = spawnSync("tar", ["-czf", archivePath, "-C", tempRoot, normalizedBundleName], {
     stdio: "inherit",
   });
 
-  if (extractResult.status !== 0) {
-    rmSync(tempRoot, { recursive: true, force: true });
-    throw new Error(`Failed to extract payload for ${target.os}-${target.arch}.`);
+  await rm(tempRoot, { recursive: true, force: true });
+
+  if (tarResult.status !== 0) {
+    throw new Error(`Failed to package launcher archive for ${target.os}-${target.arch}.`);
   }
 
-  const extractedBundlePath = path.join(tempRoot, bundleName);
-  if (!existsSync(extractedBundlePath)) {
-    rmSync(tempRoot, { recursive: true, force: true });
-    throw new Error(`Extracted payload missing ${bundleName} for ${target.os}-${target.arch}.`);
-  }
+  return archivePath;
+}
 
-  const archivePath = path.join(outputRoot, `${appName}-${target.os}-${target.arch}.tar.gz`);
-  const result = spawnSync("tar", ["-czf", archivePath, "-C", tempRoot, bundleName], {
-    stdio: "inherit",
-  });
+async function createUpdateMetadata(archivePath: string, target: Target, version: string) {
+  const archiveBuffer = await readFile(archivePath);
+  const hash = createHash("sha256").update(archiveBuffer).digest("hex");
+  const metadataPath = path.join(artifactRoot, `stable-${target.os}-${target.arch}-update.json`);
 
-  rmSync(tempRoot, { recursive: true, force: true });
+  await writeFile(
+    metadataPath,
+    JSON.stringify(
+      {
+        version,
+        hash,
+      },
+      null,
+      2,
+    ),
+  );
+}
 
-  if (result.status !== 0) {
-    throw new Error(`Failed to create launcher archive for ${target.os}-${target.arch}.`);
-  }
-
+async function main() {
+  const packageJson = JSON.parse(
+    await readFile(path.join(process.cwd(), "package.json"), "utf8"),
+  ) as { version: string };
+  mkdirSync(launcherOutputRoot, { recursive: true });
+  const target = getCurrentTarget();
+  const bundlePath = await resolveBundlePath(target);
+  const archivePath = await createNormalizedArchive(bundlePath, target);
+  await createUpdateMetadata(archivePath, target, packageJson.version);
   console.log(`created ${path.relative(process.cwd(), archivePath)}`);
-  packagedCount += 1;
 }
 
-if (packagedCount === 0) {
-  throw new Error(
-    "No stable Electrobun bundles were found under build/. Run `bun run build:release` first.",
-  );
-}
-
-console.log(
-  `packaged ${packagedCount} launcher archive(s) into ${path.relative(process.cwd(), outputRoot)}`,
-);
+void main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

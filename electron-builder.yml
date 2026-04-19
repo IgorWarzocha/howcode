@@ -1,0 +1,30 @@
+appId: howcode.desktop.local
+productName: howcode
+directories:
+  output: artifacts/electron
+files:
+  - dist/**
+  - build/electron/**
+  - build/desktop/**
+  - package.json
+extraResources:
+  - from: desktop/resources
+    to: resources
+mac:
+  category: public.app-category.developer-tools
+  extendInfo:
+    NSMicrophoneUsageDescription: Howcode needs microphone access for local dictation.
+  target:
+    - dir
+linux:
+  target:
+    - dir
+win:
+  target:
+    - dir
+asarUnpack:
+  - node_modules/**/*.node
+  - node_modules/node-pty/build/Release/**
+  - node_modules/node-pty/prebuilds/**
+  - node_modules/sherpa-onnx-node/**
+  - node_modules/sherpa-onnx-*/**

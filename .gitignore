@@ -1,6 +1,5 @@
 node_modules/
 package-lock.json
-vendor/electrobun/
 dist/
 build/
 artifacts/

@@ -2,11 +2,12 @@
 
 ## Stack
 
-- Bun
-- Electrobun
+- Bun for installs/scripts
+- Node.js 24 LTS runtime target
+- Electron
 - React + Vite
 - Tailwind CSS v4
-- SQLite via `bun:sqlite`
+- SQLite via `better-sqlite3`
 
 ## Local development
 
@@ -35,13 +36,13 @@ bun run release:prepare
 
 This produces:
 
-- `artifacts/` — Electrobun release artifacts
+- `artifacts/electron/` — Electron unpacked release artifacts
 - `artifacts/npm-launcher/` — launcher archives consumed by the npm package
 
 For a GitHub release, upload both:
 
 - `stable-<os>-<arch>-update.json`
-- `stable-<os>-<arch>-*` Electrobun artifacts
+- Electron unpacked bundle artifacts
 - `howcode-<os>-<arch>.tar.gz`
 
 Launcher base URL:
@@ -65,12 +66,12 @@ It is a thin launcher that:
 3. caches it locally
 4. launches the packaged desktop app
 
-Desktop release builds now bundle CEF and default to the CEF renderer in Electrobun on macOS, Linux, and Windows. That removes the old Linux runtime dependence on the `WEBKIT_DISABLE_DMABUF_RENDERER` workaround, but increases artifact size.
+Desktop release builds bundle Electron with Chromium on macOS, Linux, and Windows.
 
 ## Repo map
 
 - `src/app/*` — renderer app
-- `src/bun/*` — Electrobun main process
+- `src/electron/*` — Electron main and preload layers
 - `desktop/*` — desktop runtime lanes
 - `shared/*` — shared contracts and helpers
 - `packages/howcode/*` — npm launcher package

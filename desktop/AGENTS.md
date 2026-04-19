@@ -1,5 +1,5 @@
 - `desktop/` is backend runtime code for threads, skills, and terminal lanes.
 - Keep entrypoints stable: `pi-threads.cts`, `pi-skills.cts`, `skill-creator-session.cts`, and `terminal/manager.cts`.
 - Update `shared/*` contracts and the matching action router/handlers together.
-- After `desktop/**/*.cts` edits, rebuild with `bun run build:desktop` or `bun run dev:desktop:build`.
+- After `desktop/**/*.cts` edits, rebuild with `bun ./scripts/build-electron-runtime.ts` or `bun run dev:runtime`.
 - Keep event/state flow on the existing publisher and `thread-state-db.cts` paths.

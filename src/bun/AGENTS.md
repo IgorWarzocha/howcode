@@ -1,5 +1,0 @@
-- Treat `index.ts` as the Electrobun main-process boundary.
-- Keep handlers aligned with `shared/electrobun-rpc.ts` and `shared/desktop-contracts.ts`.
-- If `desktop-runtime-modules.ts` changes, rebuild `build/desktop/*.mjs` with Bun.
-- Keep `dev-server.ts` and `main-view-url.ts` compatible with `scripts/dev-web.ts`.
-- Preserve existing path and external-URL safety checks.

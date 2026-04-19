@@ -11,7 +11,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["node", "bun"]
+    "types": ["node"]
   },
   "include": ["desktop/**/*.ts", "desktop/**/*.cts", "shared/**/*.ts"]
 }

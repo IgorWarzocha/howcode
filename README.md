@@ -26,7 +26,7 @@ On first run, the launcher downloads the matching desktop build for your platfor
 
 ### Renderer note
 
-Release builds now ship with bundled CEF by default on macOS, Linux, and Windows.
+Release builds now ship with bundled Electron + Chromium on macOS, Linux, and Windows.
 
 The tradeoff is larger downloads in exchange for a more consistent renderer.
 
