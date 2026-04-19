@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 
@@ -28,6 +28,8 @@ export function useComposerAttachmentPicker({
   const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
     [],
   );
+  const homePathRef = useRef<string | null>(null);
+  const pickerRequestIdRef = useRef(0);
 
   const fetchPickerEntries = async (path?: string | null, rootPath?: string | null) => {
     return await onListAttachmentEntries({
@@ -38,18 +40,31 @@ export function useComposerAttachmentPicker({
   };
 
   const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
+    const requestId = pickerRequestIdRef.current + 1;
+    pickerRequestIdRef.current = requestId;
     setPickerLoading(true);
 
     try {
       const nextPickerState = await fetchPickerEntries(path, rootPath);
+      if (requestId !== pickerRequestIdRef.current) {
+        return nextPickerState;
+      }
+
+      homePathRef.current = nextPickerState?.homePath ?? homePathRef.current;
       setPickerState(nextPickerState);
       setErrorMessage(null);
       return nextPickerState;
     } catch (error) {
+      if (requestId !== pickerRequestIdRef.current) {
+        return null;
+      }
+
       setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
       return null;
     } finally {
-      setPickerLoading(false);
+      if (requestId === pickerRequestIdRef.current) {
+        setPickerLoading(false);
+      }
     }
   };
 
@@ -62,8 +77,10 @@ export function useComposerAttachmentPicker({
     setPendingPickerAttachments([]);
     setOpenMenu("picker");
 
-    const initialPickerState = await loadPickerEntries(pickerRootPath, pickerRootPath);
+    const initialRootPath = homePathRef.current ?? pickerState?.homePath ?? pickerRootPath;
+    const initialPickerState = await loadPickerEntries(initialRootPath, initialRootPath);
     if (
+      initialRootPath !== pickerRootPath ||
       !initialPickerState?.homePath ||
       initialPickerState.homePath === initialPickerState.rootPath
     ) {

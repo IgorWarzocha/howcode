@@ -128,7 +128,12 @@ export function ComposerPromptSurface({
   }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu]);
 
   useEffect(() => {
-    const handleWindowFileDrag = (event: DragEvent) => {
+    const composerPanel = composerPanelRef.current;
+    if (!composerPanel) {
+      return;
+    }
+
+    const handleComposerFileDrag = (event: DragEvent) => {
       if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
         return;
       }
@@ -139,7 +144,7 @@ export function ComposerPromptSurface({
       }
     };
 
-    const handleWindowDrop = (event: DragEvent) => {
+    const handleComposerDrop = (event: DragEvent) => {
       if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
         return;
       }
@@ -148,16 +153,16 @@ export function ComposerPromptSurface({
       handleDrop(event.dataTransfer);
     };
 
-    window.addEventListener("dragenter", handleWindowFileDrag, true);
-    window.addEventListener("dragover", handleWindowFileDrag, true);
-    window.addEventListener("drop", handleWindowDrop, true);
+    composerPanel.addEventListener("dragenter", handleComposerFileDrag, true);
+    composerPanel.addEventListener("dragover", handleComposerFileDrag, true);
+    composerPanel.addEventListener("drop", handleComposerDrop, true);
 
     return () => {
-      window.removeEventListener("dragenter", handleWindowFileDrag, true);
-      window.removeEventListener("dragover", handleWindowFileDrag, true);
-      window.removeEventListener("drop", handleWindowDrop, true);
+      composerPanel.removeEventListener("dragenter", handleComposerFileDrag, true);
+      composerPanel.removeEventListener("dragover", handleComposerFileDrag, true);
+      composerPanel.removeEventListener("drop", handleComposerDrop, true);
     };
-  }, [handleDrop]);
+  }, [composerPanelRef, handleDrop]);
 
   const placeholderText =
     activeView === "thread"
