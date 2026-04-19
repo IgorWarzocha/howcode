@@ -16,6 +16,12 @@ import type {
 } from "../../../desktop/types";
 import type { View } from "../../../types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
+import {
+  getAttachmentKindsForPathsQuery,
+  getPathForFileQuery,
+  readClipboardFilePathsQuery,
+  readClipboardSnapshotQuery,
+} from "../../../query/desktop-query";
 import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
 import {
   attachmentClipboardSnapshotFormats,
@@ -61,14 +67,14 @@ function resolveDesktopFilePath(file: {
   name?: string | null;
   type?: string | null;
 }) {
-  return window.piDesktop?.getPathForFile?.(file as File) ?? null;
+  return getPathForFileQuery(file as File) ?? null;
 }
 
 async function resolveDesktopAttachmentKinds(paths: string[]) {
   try {
-    return (await window.piDesktop?.getAttachmentKindsForPaths?.(paths)) ?? {};
+    return await getAttachmentKindsForPathsQuery(paths);
   } catch {
-    return {} as Record<string, ComposerAttachment["kind"] | null>;
+    return null;
   }
 }
 
@@ -77,9 +83,14 @@ async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
     (path) => path.length > 0 && !/^https?:\/\//i.test(path),
   );
   const kindsByPath = await resolveDesktopAttachmentKinds(localPaths);
+  const fallbackKindsByPath = Object.fromEntries(
+    attachments
+      .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
+      .map((attachment) => [attachment.path, attachment.kind] as const),
+  );
 
   return normalizeComposerAttachments(attachments, {
-    resolveAttachmentKind: (path) => kindsByPath[path] ?? null,
+    resolveAttachmentKind: (path) => kindsByPath?.[path] ?? fallbackKindsByPath[path] ?? null,
   });
 }
 
@@ -303,7 +314,7 @@ export function useComposerController({
       let fallbackSnapshot: DesktopClipboardSnapshot | null = null;
       let fallbackClipboardFilePaths: DesktopClipboardFilePaths | null = null;
       try {
-        fallbackClipboardFilePaths = (await window.piDesktop?.readClipboardFilePaths?.()) ?? null;
+        fallbackClipboardFilePaths = await readClipboardFilePathsQuery();
       } catch {
         fallbackClipboardFilePaths = null;
       }
@@ -320,9 +331,7 @@ export function useComposerController({
       }
 
       try {
-        fallbackSnapshot =
-          (await window.piDesktop?.readClipboardSnapshot?.(attachmentClipboardSnapshotFormats)) ??
-          null;
+        fallbackSnapshot = await readClipboardSnapshotQuery(attachmentClipboardSnapshotFormats);
       } catch {
         fallbackSnapshot = null;
       }

@@ -5,6 +5,12 @@ import {
   normalizeComposerAttachments,
 } from "../../../../../shared/composer-attachments";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
+import {
+  getAttachmentKindsForPathsQuery,
+  getPathForFileQuery,
+  openExternalQuery,
+  openPathQuery,
+} from "../../../query/desktop-query";
 import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
@@ -188,8 +194,8 @@ export function ComposerFilePicker({
 
   const openAttachment = async (attachment: ComposerAttachment) => {
     if (isSafeExternalUrl(attachment.path)) {
-      if (window.piDesktop?.openExternal) {
-        await window.piDesktop.openExternal(attachment.path);
+      if (openExternalQuery) {
+        await openExternalQuery(attachment.path);
         return;
       }
 
@@ -197,7 +203,7 @@ export function ComposerFilePicker({
       return;
     }
 
-    await window.piDesktop?.openPath?.(attachment.path);
+    await openPathQuery(attachment.path);
   };
 
   const handleInternalDragStart = (
@@ -229,21 +235,28 @@ export function ComposerFilePicker({
     }
 
     const dataTransfer = event.dataTransfer;
-    const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
-      resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
-    });
-    const localPaths = [
-      ...new Set(rawAttachments.map((attachment) => attachment.path.trim())),
-    ].filter((path) => path.length > 0 && !/^https?:\/\//i.test(path));
-    const kindsByPath = (await window.piDesktop?.getAttachmentKindsForPaths?.(localPaths)) ?? {};
-    const externalAttachments = normalizeComposerAttachments(rawAttachments, {
-      resolveAttachmentKind: (path) => kindsByPath[path] ?? null,
-    });
-    if (externalAttachments.length > 0) {
-      onAttachAttachments(externalAttachments);
+    try {
+      const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
+        resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
+      });
+      const localPaths = [
+        ...new Set(rawAttachments.map((attachment) => attachment.path.trim())),
+      ].filter((path) => path.length > 0 && !/^https?:\/\//i.test(path));
+      const fallbackKindsByPath = Object.fromEntries(
+        rawAttachments
+          .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
+          .map((attachment) => [attachment.path, attachment.kind] as const),
+      );
+      const kindsByPath = (await getAttachmentKindsForPathsQuery(localPaths)) ?? null;
+      const externalAttachments = normalizeComposerAttachments(rawAttachments, {
+        resolveAttachmentKind: (path) => kindsByPath?.[path] ?? fallbackKindsByPath[path] ?? null,
+      });
+      if (externalAttachments.length > 0) {
+        onAttachAttachments(externalAttachments);
+      }
+    } finally {
+      setDropActive(false);
     }
-
-    setDropActive(false);
   };
 
   useEffect(() => {

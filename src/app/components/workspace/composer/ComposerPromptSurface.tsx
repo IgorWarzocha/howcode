@@ -2,6 +2,7 @@ import { Paperclip, Send, Square, X } from "lucide-react";
 import { type ClipboardEvent, type RefObject, useEffect } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
+import { getPathForFileQuery } from "../../../query/desktop-query";
 import type { ComposerProps } from "../Composer";
 import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFooter } from "./ComposerFooter";
@@ -260,8 +261,7 @@ export function ComposerPromptSurface({
                     const directAttachments = getComposerAttachmentsFromClipboardData(
                       clipboardData,
                       {
-                        resolveFilePath: (file) =>
-                          window.piDesktop?.getPathForFile?.(file as File) ?? null,
+                        resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
                       },
                     );
                     const shouldInterceptPaste =
