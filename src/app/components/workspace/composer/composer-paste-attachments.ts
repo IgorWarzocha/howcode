@@ -29,6 +29,7 @@ export type ComposerClipboardDataLike = {
 };
 
 type ComposerClipboardTextSourceLike = Pick<ComposerClipboardDataLike, "getData" | "types">;
+type ClipboardFilePathResolver = (file: ClipboardFileLike) => string | null;
 
 const preferredClipboardTypes = [
   "text/uri-list",
@@ -98,8 +99,35 @@ function getClipboardTextValues(source: ComposerClipboardTextSourceLike) {
     .filter(({ value }) => value.length > 0);
 }
 
-function getClipboardFilePath(file: ClipboardFileLike | null | undefined) {
-  return typeof file?.path === "string" && file.path.trim().length > 0 ? file.path.trim() : null;
+function getClipboardTextValueByType(source: ComposerClipboardTextSourceLike, type: string) {
+  return normalizeClipboardPayloadByType(type, source.getData(type));
+}
+
+function shouldTreatClipboardValueAsAttachment(
+  source: ComposerClipboardTextSourceLike,
+  type: string,
+  value: string,
+) {
+  if (type !== "public.url") {
+    return true;
+  }
+
+  const plainTextValue =
+    getClipboardTextValueByType(source, "text/plain") ||
+    getClipboardTextValueByType(source, "text");
+
+  return plainTextValue.length === 0 || plainTextValue === value;
+}
+
+function getClipboardFilePath(
+  file: ClipboardFileLike | null | undefined,
+  resolveFilePath?: ClipboardFilePathResolver,
+) {
+  if (typeof file?.path === "string" && file.path.trim().length > 0) {
+    return file.path.trim();
+  }
+
+  return resolveFilePath?.(file ?? {}) ?? null;
 }
 
 function getClipboardFileName(file: ClipboardFileLike, filePath: string) {
@@ -119,8 +147,11 @@ function buildAttachmentFromPath(filePath: string): ComposerAttachment {
   };
 }
 
-function getClipboardFileAttachment(file: ClipboardFileLike): ComposerAttachment | null {
-  const filePath = getClipboardFilePath(file);
+function getClipboardFileAttachment(
+  file: ClipboardFileLike,
+  resolveFilePath?: ClipboardFilePathResolver,
+): ComposerAttachment | null {
+  const filePath = getClipboardFilePath(file, resolveFilePath);
   if (!filePath) {
     return null;
   }
@@ -135,12 +166,17 @@ function getClipboardFileAttachment(file: ClipboardFileLike): ComposerAttachment
   };
 }
 
-function getClipboardFileAttachments(clipboardData: ComposerClipboardDataLike) {
-  const directFiles = toArray(clipboardData.files).map(getClipboardFileAttachment);
+function getClipboardFileAttachments(
+  clipboardData: ComposerClipboardDataLike,
+  resolveFilePath?: ClipboardFilePathResolver,
+) {
+  const directFiles = toArray(clipboardData.files).map((file) =>
+    getClipboardFileAttachment(file, resolveFilePath),
+  );
   const itemFiles = toArray(clipboardData.items)
     .filter((item) => item.kind === "file")
     .map((item) => item.getAsFile?.() ?? null)
-    .map((file) => (file ? getClipboardFileAttachment(file) : null));
+    .map((file) => (file ? getClipboardFileAttachment(file, resolveFilePath) : null));
 
   return mergeComposerAttachments(
     [],
@@ -153,7 +189,11 @@ function getClipboardFileAttachments(clipboardData: ComposerClipboardDataLike) {
 function getClipboardTextAttachments(clipboardData: ComposerClipboardDataLike) {
   let attachments: ComposerAttachment[] = [];
 
-  for (const { value: normalizedValue } of getClipboardTextValues(clipboardData)) {
+  for (const { type, value: normalizedValue } of getClipboardTextValues(clipboardData)) {
+    if (!shouldTreatClipboardValueAsAttachment(clipboardData, type, normalizedValue)) {
+      continue;
+    }
+
     attachments = mergeComposerAttachments(
       attachments,
       extractComposerAttachmentsFromPaste(normalizedValue),
@@ -165,13 +205,14 @@ function getClipboardTextAttachments(clipboardData: ComposerClipboardDataLike) {
 
 export function getComposerAttachmentsFromClipboardData(
   clipboardData: ComposerClipboardDataLike | null,
+  options?: { resolveFilePath?: ClipboardFilePathResolver },
 ) {
   if (!clipboardData) {
     return [];
   }
 
   return mergeComposerAttachments(
-    getClipboardFileAttachments(clipboardData),
+    getClipboardFileAttachments(clipboardData, options?.resolveFilePath),
     getClipboardTextAttachments(clipboardData),
   );
 }
@@ -248,6 +289,14 @@ export function getComposerAttachmentsFromClipboardSnapshot(
 export function getPreferredClipboardText(source: ComposerClipboardTextSourceLike | null) {
   if (!source) {
     return "";
+  }
+
+  const preferredPlainTextValue =
+    getClipboardTextValueByType(source, "text/plain") ||
+    getClipboardTextValueByType(source, "text");
+
+  if (preferredPlainTextValue.length > 0) {
+    return preferredPlainTextValue;
   }
 
   return getClipboardTextValues(source)[0]?.value ?? "";

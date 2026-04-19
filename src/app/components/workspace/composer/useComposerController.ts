@@ -53,6 +53,14 @@ function applyPastedTextToTextarea(textarea: HTMLTextAreaElement, pastedText: st
   return textarea.value;
 }
 
+function resolveDesktopFilePath(file: {
+  path?: string | null;
+  name?: string | null;
+  type?: string | null;
+}) {
+  return window.piDesktop?.getPathForFile?.(file as File) ?? null;
+}
+
 type UseComposerControllerProps = {
   activeView: View;
   model: ComposerModel | null;
@@ -253,7 +261,9 @@ export function useComposerController({
       const { clipboardData, textarea } = request;
       const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData);
 
-      const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData);
+      const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
+        resolveFilePath: resolveDesktopFilePath,
+      });
       if (directAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, directAttachments));
         setErrorMessage(null);
@@ -324,7 +334,9 @@ export function useComposerController({
   );
 
   const handleDrop = useCallback((dataTransfer: DataTransfer | null) => {
-    const droppedAttachments = getComposerAttachmentsFromClipboardData(dataTransfer);
+    const droppedAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
+      resolveFilePath: resolveDesktopFilePath,
+    });
     if (droppedAttachments.length === 0) {
       return false;
     }

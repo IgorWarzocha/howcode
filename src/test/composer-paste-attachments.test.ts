@@ -3,6 +3,7 @@ import {
   getComposerAttachmentsFromClipboardData,
   getComposerAttachmentsFromClipboardFilePaths,
   getComposerAttachmentsFromClipboardSnapshot,
+  getPreferredClipboardTextFromClipboardData,
   getPreferredClipboardTextFromClipboardFilePaths,
   getPreferredClipboardTextFromClipboardSnapshot,
 } from "../app/components/workspace/composer/composer-paste-attachments";
@@ -65,6 +66,33 @@ describe("getComposerAttachmentsFromClipboardData", () => {
     ).toEqual([{ path: "/Users/igorw/Desktop/example.txt", name: "example.txt", kind: "text" }]);
   });
 
+  it("prefers visible plain text over public.url metadata when copying linked text", () => {
+    const clipboardData = createClipboardData({
+      data: {
+        "public.url": "https://example.com/docs",
+        "text/plain": "Example docs",
+      },
+      types: ["public.url", "text/plain"],
+    });
+
+    expect(getComposerAttachmentsFromClipboardData(clipboardData)).toEqual([]);
+    expect(getPreferredClipboardTextFromClipboardData(clipboardData)).toBe("Example docs");
+  });
+
+  it("still auto-attaches public.url metadata when plain text matches the url", () => {
+    const clipboardData = createClipboardData({
+      data: {
+        "public.url": "https://example.com/docs",
+        "text/plain": "https://example.com/docs",
+      },
+      types: ["public.url", "text/plain"],
+    });
+
+    expect(getComposerAttachmentsFromClipboardData(clipboardData)).toEqual([
+      { path: "https://example.com/docs", name: "docs", kind: "text" },
+    ]);
+  });
+
   it("uses file objects when Electron exposes pasted files directly", () => {
     expect(
       getComposerAttachmentsFromClipboardData(
@@ -77,6 +105,27 @@ describe("getComposerAttachmentsFromClipboardData", () => {
         path: "C:/Users/igorw/Pictures/example.png",
         name: "example.png",
         kind: "image",
+      },
+    ]);
+  });
+
+  it("uses a file-path resolver for dropped files without an exposed path", () => {
+    const droppedFile = { name: "external-drop.txt", type: "text/plain" };
+
+    expect(
+      getComposerAttachmentsFromClipboardData(
+        createClipboardData({
+          files: [droppedFile],
+        }),
+        {
+          resolveFilePath: (file) => (file === droppedFile ? "/tmp/external-drop.txt" : null),
+        },
+      ),
+    ).toEqual([
+      {
+        path: "/tmp/external-drop.txt",
+        name: "external-drop.txt",
+        kind: "text",
       },
     ]);
   });

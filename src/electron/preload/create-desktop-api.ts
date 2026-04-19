@@ -1,4 +1,4 @@
-import { ipcRenderer, type IpcRendererEvent } from "electron";
+import { ipcRenderer, type IpcRendererEvent, webUtils } from "electron";
 import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
@@ -87,6 +87,13 @@ export function createDesktopApi() {
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest("readClipboardSnapshot", { formats }),
     readClipboardFilePaths: () => invokeRequest("readClipboardFilePaths", {}),
+    getPathForFile: (file: File) => {
+      try {
+        return webUtils.getPathForFile(file) || null;
+      } catch {
+        return null;
+      }
+    },
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest("listComposerAttachmentEntries", request),
     getComposerState: (request = {}) => invokeRequest("getComposerState", request),
