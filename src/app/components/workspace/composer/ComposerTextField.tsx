@@ -33,6 +33,17 @@ export function ComposerTextField({
   const lastReportedHeightRef = useRef<number | null>(null);
   const [reservedHeight, setReservedHeight] = useState<number | null>(null);
 
+  const focusTextareaAtEnd = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.focus();
+    const cursorPosition = textarea.value.length;
+    textarea.setSelectionRange(cursorPosition, cursorPosition);
+  };
+
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
@@ -63,20 +74,24 @@ export function ComposerTextField({
     <div
       className="flex min-w-0 items-end"
       style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
+      onPointerEnter={(event) => {
+        if (event.pointerType !== "mouse") {
+          return;
+        }
+
+        if (document.activeElement === textareaRef.current) {
+          return;
+        }
+
+        focusTextareaAtEnd();
+      }}
       onPointerDown={(event) => {
         if (event.target === textareaRef.current) {
           return;
         }
 
         event.preventDefault();
-        const textarea = textareaRef.current;
-        if (!textarea) {
-          return;
-        }
-
-        textarea.focus();
-        const cursorPosition = textarea.value.length;
-        textarea.setSelectionRange(cursorPosition, cursorPosition);
+        focusTextareaAtEnd();
       }}
     >
       <textarea
