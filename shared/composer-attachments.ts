@@ -192,17 +192,21 @@ export function parseComposerAttachmentReference(rawReference: string): Composer
   return null;
 }
 
-export function extractComposerAttachmentsFromPaste(pastedText: string): ComposerAttachment[] {
+export function extractComposerAttachmentsFromPaste(
+  pastedText: string,
+  options?: { sourceType?: string | null },
+): ComposerAttachment[] {
   const trimmed = pastedText.trim();
   if (!trimmed) {
     return [];
   }
 
   const isMultiline = /\r|\n/.test(trimmed);
+  const shouldIgnoreCommentLines = options?.sourceType === "text/uri-list";
   const lines = trimmed
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith("#"));
+    .filter((line) => line.length > 0 && (!shouldIgnoreCommentLines || !line.startsWith("#")));
   const candidates = isMultiline ? lines : [trimmed];
   const attachments = candidates
     .map((candidate) => parseComposerAttachmentReference(candidate))

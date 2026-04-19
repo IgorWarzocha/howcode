@@ -46,8 +46,14 @@ describe("composer attachment paste helpers", () => {
 
   it("supports uri-list comments without treating them as pasted prose", () => {
     expect(
-      extractComposerAttachmentsFromPaste("# copied from clipboard\nhttps://example.com/guide"),
+      extractComposerAttachmentsFromPaste("# copied from clipboard\nhttps://example.com/guide", {
+        sourceType: "text/uri-list",
+      }),
     ).toEqual([{ path: "https://example.com/guide", name: "guide", kind: "text" }]);
+  });
+
+  it("does not treat markdown headings as uri-list comments in plain text", () => {
+    expect(extractComposerAttachmentsFromPaste("# Heading\n/tmp/file.ts")).toEqual([]);
   });
 
   it("leaves mixed prose untouched by refusing to auto-attach it", () => {

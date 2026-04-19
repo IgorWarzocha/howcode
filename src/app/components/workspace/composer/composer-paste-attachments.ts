@@ -59,12 +59,13 @@ function toArray<T>(value: Iterable<T> | ArrayLike<T> | null | undefined): T[] {
   return Array.from(value);
 }
 
-function normalizeClipboardText(value: string) {
-  return value.replaceAll("\0", "\n").trim();
+function normalizeClipboardRawText(value: string) {
+  return value.replaceAll("\0", "\n");
 }
 
 function normalizeClipboardPayloadByType(type: string, value: string) {
-  const normalized = normalizeClipboardText(value);
+  const rawValue = normalizeClipboardRawText(value);
+  const normalized = rawValue.trim();
   if (!normalized) {
     return "";
   }
@@ -101,8 +102,18 @@ function getClipboardTextValues(source: ComposerClipboardTextSourceLike) {
     .filter(({ value }) => value.length > 0);
 }
 
+function getClipboardRawTextValues(source: ComposerClipboardTextSourceLike) {
+  return getTextSourceTypes(source)
+    .map((type) => ({ type, value: normalizeClipboardRawText(source.getData(type)) }))
+    .filter(({ value }) => value.length > 0);
+}
+
 function getClipboardTextValueByType(source: ComposerClipboardTextSourceLike, type: string) {
   return normalizeClipboardPayloadByType(type, source.getData(type));
+}
+
+function getClipboardRawTextValueByType(source: ComposerClipboardTextSourceLike, type: string) {
+  return normalizeClipboardRawText(source.getData(type));
 }
 
 function shouldTreatClipboardValueAsAttachment(
@@ -198,7 +209,7 @@ function getClipboardTextAttachments(clipboardData: ComposerClipboardDataLike) {
 
     attachments = mergeComposerAttachments(
       attachments,
-      extractComposerAttachmentsFromPaste(normalizedValue),
+      extractComposerAttachmentsFromPaste(normalizedValue, { sourceType: type }),
     );
   }
 
@@ -318,14 +329,14 @@ export function getPreferredClipboardText(source: ComposerClipboardTextSourceLik
   }
 
   const preferredPlainTextValue =
-    getClipboardTextValueByType(source, "text/plain") ||
-    getClipboardTextValueByType(source, "text");
+    getClipboardRawTextValueByType(source, "text/plain") ||
+    getClipboardRawTextValueByType(source, "text");
 
   if (preferredPlainTextValue.length > 0) {
     return preferredPlainTextValue;
   }
 
-  return getClipboardTextValues(source)[0]?.value ?? "";
+  return getClipboardRawTextValues(source)[0]?.value ?? "";
 }
 
 export function getPreferredClipboardTextFromClipboardData(

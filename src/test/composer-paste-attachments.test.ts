@@ -80,6 +80,19 @@ describe("getComposerAttachmentsFromClipboardData", () => {
     expect(getPreferredClipboardTextFromClipboardData(clipboardData)).toBe("Example docs");
   });
 
+  it("preserves indentation and trailing newlines for plain text paste", () => {
+    const clipboardData = createClipboardData({
+      data: {
+        "text/plain": "  function test() {\n    return 1;\n  }\n",
+      },
+    });
+
+    expect(getComposerAttachmentsFromClipboardData(clipboardData)).toEqual([]);
+    expect(getPreferredClipboardTextFromClipboardData(clipboardData)).toBe(
+      "  function test() {\n    return 1;\n  }\n",
+    );
+  });
+
   it("still auto-attaches public.url metadata when plain text matches the url", () => {
     const clipboardData = createClipboardData({
       data: {
