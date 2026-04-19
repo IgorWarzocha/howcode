@@ -1,6 +1,21 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchDownloadResponse } from "../../desktop/dictation/model-download";
+import {
+  fetchDownloadResponse,
+  getDownloadChecksumExpectations,
+} from "../../desktop/dictation/model-download";
+
+function contentMatchesChecksum(content: string, etag: string) {
+  return getDownloadChecksumExpectations(etag, Buffer.byteLength(content)).some((expectation) => {
+    const hash = createHash(expectation.algorithm);
+    if (expectation.prefix) {
+      hash.update(expectation.prefix);
+    }
+
+    hash.update(content);
+    return hash.digest("hex") === expectation.expected;
+  });
+}
 
 describe("dictation model download metadata", () => {
   afterEach(() => {
@@ -94,5 +109,22 @@ describe("dictation model download metadata", () => {
       contentLength: fileContents.length,
       etag: expectedChecksum,
     });
+  });
+
+  it("accepts Hugging Face git-blob sha1 etags for plain repository files", () => {
+    const fileContents = "token-1\ntoken-2\n";
+    const gitBlobSha1 = createHash("sha1")
+      .update(`blob ${Buffer.byteLength(fileContents)}\0`)
+      .update(fileContents)
+      .digest("hex");
+
+    expect(contentMatchesChecksum(fileContents, gitBlobSha1)).toBe(true);
+  });
+
+  it("accepts raw sha256 etags for xet-backed model files", () => {
+    const fileContents = "model-binary";
+    const sha256 = createHash("sha256").update(fileContents).digest("hex");
+
+    expect(contentMatchesChecksum(fileContents, sha256)).toBe(true);
   });
 });

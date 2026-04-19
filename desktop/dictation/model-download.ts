@@ -1,6 +1,14 @@
+import { Buffer } from "node:buffer";
+
 export type DownloadMetadata = {
   contentLength: number | null;
   etag: string | null;
+};
+
+export type DownloadChecksumExpectation = {
+  algorithm: "sha1" | "sha256";
+  expected: string;
+  prefix: Buffer | null;
 };
 
 const MAX_DOWNLOAD_REDIRECTS = 5;
@@ -23,6 +31,32 @@ export function getDownloadMetadataFromHeaders(headers: Headers): DownloadMetada
     contentLength: parseContentLength(headers.get("x-linked-size")),
     etag: normalizeEtag(headers.get("x-linked-etag")) ?? normalizeEtag(headers.get("etag")),
   };
+}
+
+export function getDownloadChecksumExpectations(
+  etag: string | null,
+  contentLength: number,
+): DownloadChecksumExpectation[] {
+  if (!etag) {
+    return [];
+  }
+
+  if (/^[a-f0-9]{64}$/i.test(etag)) {
+    return [{ algorithm: "sha256", expected: etag, prefix: null }];
+  }
+
+  if (/^[a-f0-9]{40}$/i.test(etag)) {
+    return [
+      { algorithm: "sha1", expected: etag, prefix: null },
+      {
+        algorithm: "sha1",
+        expected: etag,
+        prefix: Buffer.from(`blob ${contentLength}\0`),
+      },
+    ];
+  }
+
+  return [];
 }
 
 function mergeDownloadMetadata(
