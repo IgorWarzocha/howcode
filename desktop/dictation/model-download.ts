@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 export type DownloadMetadata = {
   contentLength: number | null;
   etag: string | null;
+  etagSource: "etag" | "x-linked-etag" | null;
 };
 
 export type DownloadChecksumExpectation = {
@@ -11,7 +12,23 @@ export type DownloadChecksumExpectation = {
   prefix: Buffer | null;
 };
 
-const MAX_DOWNLOAD_REDIRECTS = 5;
+const MAX_DOWNLOAD_REDIRECTS = 20;
+
+function isHashCapableEtag(etag: string | null) {
+  return Boolean(etag && (/^[a-f0-9]{40}$/i.test(etag) || /^[a-f0-9]{64}$/i.test(etag)));
+}
+
+function getEtagSourcePriority(source: DownloadMetadata["etagSource"]) {
+  if (source === "x-linked-etag") {
+    return 2;
+  }
+
+  if (source === "etag") {
+    return 1;
+  }
+
+  return 0;
+}
 
 function normalizeEtag(etag: string | null) {
   if (!etag) {
@@ -27,9 +44,17 @@ function parseContentLength(value: string | null) {
 }
 
 export function getDownloadMetadataFromHeaders(headers: Headers): DownloadMetadata {
+  const xLinkedEtag = normalizeEtag(headers.get("x-linked-etag"));
+  const etag = normalizeEtag(headers.get("etag"));
+
   return {
     contentLength: parseContentLength(headers.get("x-linked-size")),
-    etag: normalizeEtag(headers.get("x-linked-etag")) ?? normalizeEtag(headers.get("etag")),
+    etag: isHashCapableEtag(xLinkedEtag) ? xLinkedEtag : isHashCapableEtag(etag) ? etag : null,
+    etagSource: isHashCapableEtag(xLinkedEtag)
+      ? "x-linked-etag"
+      : isHashCapableEtag(etag)
+        ? "etag"
+        : null,
   };
 }
 
@@ -68,10 +93,14 @@ function mergeDownloadMetadata(
   const fallbackContentLength = options.includeContentLength
     ? parseContentLength(headers.get("content-length"))
     : null;
+  const shouldUseNextEtag =
+    getEtagSourcePriority(next.etagSource) > getEtagSourcePriority(current.etagSource) ||
+    (next.etag !== null && next.etagSource === current.etagSource);
 
   return {
     contentLength: current.contentLength ?? next.contentLength ?? fallbackContentLength,
-    etag: current.etag ?? next.etag,
+    etag: shouldUseNextEtag ? next.etag : current.etag,
+    etagSource: shouldUseNextEtag ? next.etagSource : current.etagSource,
   };
 }
 
@@ -84,6 +113,7 @@ export async function fetchDownloadResponse(url: string) {
   let metadata: DownloadMetadata = {
     contentLength: null,
     etag: null,
+    etagSource: null,
   };
 
   for (let redirectCount = 0; redirectCount <= MAX_DOWNLOAD_REDIRECTS; redirectCount += 1) {

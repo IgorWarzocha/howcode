@@ -69,6 +69,7 @@ describe("dictation model download metadata", () => {
     expect(metadata).toEqual({
       contentLength: fileContents.length,
       etag: expectedChecksum,
+      etagSource: "x-linked-etag",
     });
     await expect(response.text()).resolves.toBe(fileContents);
   });
@@ -108,6 +109,149 @@ describe("dictation model download metadata", () => {
     expect(metadata).toEqual({
       contentLength: fileContents.length,
       etag: expectedChecksum,
+      etagSource: "x-linked-etag",
+    });
+  });
+
+  it("ignores early non-hash etags and keeps later hash metadata", async () => {
+    const fileContents = "tiny whisper model";
+    const expectedChecksum = createHash("sha256").update(fileContents).digest("hex");
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://huggingface.co/redirect-2",
+            etag: '"not-a-content-hash"',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://download.example.test/model.onnx",
+            "x-linked-etag": `"${expectedChecksum}"`,
+            "x-linked-size": String(fileContents.length),
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(fileContents, {
+          status: 200,
+          headers: {
+            etag: '"another-non-hash-etag"',
+            "content-length": String(fileContents.length),
+          },
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { metadata } = await fetchDownloadResponse(
+      "https://huggingface.co/repo/resolve/main/model.onnx?download=true",
+    );
+
+    expect(metadata).toEqual({
+      contentLength: fileContents.length,
+      etag: expectedChecksum,
+      etagSource: "x-linked-etag",
+    });
+  });
+
+  it("prefers later x-linked etags over earlier plain etags", async () => {
+    const fileContents = "tiny whisper model";
+    const earlyChecksum = createHash("sha256").update("redirect checksum").digest("hex");
+    const linkedChecksum = createHash("sha256").update(fileContents).digest("hex");
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://huggingface.co/redirect-2",
+            etag: `"${earlyChecksum}"`,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://download.example.test/model.onnx",
+            "x-linked-etag": `"${linkedChecksum}"`,
+            "x-linked-size": String(fileContents.length),
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(fileContents, {
+          status: 200,
+          headers: {
+            etag: `"${earlyChecksum}"`,
+            "content-length": String(fileContents.length),
+          },
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { metadata } = await fetchDownloadResponse(
+      "https://huggingface.co/repo/resolve/main/model.onnx?download=true",
+    );
+
+    expect(metadata).toEqual({
+      contentLength: fileContents.length,
+      etag: linkedChecksum,
+      etagSource: "x-linked-etag",
+    });
+  });
+
+  it("allows longer redirect chains before failing", async () => {
+    const fileContents = "token-1\ntoken-2\n";
+    const expectedChecksum = createHash("sha1").update(fileContents).digest("hex");
+    const fetchMock = vi.fn();
+
+    for (let index = 0; index < 6; index += 1) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: `https://huggingface.co/redirect-${index + 1}`,
+            ...(index === 5
+              ? {
+                  "x-linked-etag": `"${expectedChecksum}"`,
+                }
+              : {}),
+          },
+        }),
+      );
+    }
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(fileContents, {
+        status: 200,
+        headers: {
+          etag: `W/\"${expectedChecksum}\"`,
+          "content-length": String(fileContents.length),
+        },
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { metadata } = await fetchDownloadResponse(
+      "https://huggingface.co/repo/resolve/main/model.txt?download=true",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+    expect(metadata).toEqual({
+      contentLength: fileContents.length,
+      etag: expectedChecksum,
+      etagSource: "x-linked-etag",
     });
   });
 
