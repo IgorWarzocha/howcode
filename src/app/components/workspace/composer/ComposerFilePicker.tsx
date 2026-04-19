@@ -361,7 +361,9 @@ export function ComposerFilePicker({
                   )}
                   title={attachment.path}
                 >
-                  <span className="min-w-0 flex-1 truncate leading-5">{attachment.name}</span>
+                  <span className="min-w-0 max-w-[18ch] flex-1 truncate leading-5">
+                    {attachment.name}
+                  </span>
                   <button
                     type="button"
                     className={cn(compactIconButtonClass, "h-3.5 w-3.5 shrink-0 rounded")}
