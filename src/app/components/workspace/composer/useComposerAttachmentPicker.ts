@@ -25,9 +25,6 @@ export function useComposerAttachmentPicker({
 }: UseComposerAttachmentPickerProps) {
   const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
   const [pickerLoading, setPickerLoading] = useState(false);
-  const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
-    [],
-  );
   const pickerRequestIdRef = useRef(0);
 
   const fetchPickerEntries = async (path?: string | null, rootPath?: string | null) => {
@@ -72,7 +69,6 @@ export function useComposerAttachmentPicker({
       return;
     }
 
-    setPendingPickerAttachments([]);
     setOpenMenu("picker");
 
     await loadPickerEntries(pickerRootPath, pickerRootPath);
@@ -87,7 +83,7 @@ export function useComposerAttachmentPicker({
   };
 
   const togglePendingPickerAttachment = (attachment: ComposerAttachment) => {
-    setPendingPickerAttachments((current) => {
+    setAttachments((current) => {
       const exists = current.some(
         (currentAttachment) => currentAttachment.path === attachment.path,
       );
@@ -96,6 +92,7 @@ export function useComposerAttachmentPicker({
         ? current.filter((currentAttachment) => currentAttachment.path !== attachment.path)
         : [...current, attachment];
     });
+    setErrorMessage(null);
   };
 
   const attachPickerAttachments = (
@@ -109,9 +106,6 @@ export function useComposerAttachmentPicker({
     const attachedPaths = new Set(nextAttachments.map((attachment) => attachment.path));
 
     setAttachments((current) => mergeComposerAttachments(current, nextAttachments));
-    setPendingPickerAttachments((current) =>
-      current.filter((attachment) => !attachedPaths.has(attachment.path)),
-    );
 
     if (options?.closeMenu) {
       setOpenMenu(null);
@@ -136,7 +130,6 @@ export function useComposerAttachmentPicker({
     clearAttachments,
     openPickerDirectory,
     openPickerRoot,
-    pendingPickerAttachments,
     pickAttachments,
     pickerLoading,
     pickerState,

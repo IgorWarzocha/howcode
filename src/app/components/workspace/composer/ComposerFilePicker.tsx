@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, File, Folder, Globe, Home, Paperclip, Search, X } from "lucide-react";
+import { Check, ChevronLeft, File, Folder, Globe, Home, Search, X } from "lucide-react";
 import { type DragEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   isSafeExternalUrl,
@@ -13,7 +13,6 @@ import { getComposerAttachmentsFromClipboardData } from "./composer-paste-attach
 
 type ComposerFilePickerProps = {
   attachments: ComposerAttachment[];
-  currentSelection: ComposerAttachment[];
   errorMessage: string | null;
   favoriteFolders: string[];
   loading: boolean;
@@ -39,7 +38,6 @@ type RootOption = {
 type FileEntryButtonProps = {
   attachment: ComposerAttachment;
   isAlreadyAttached: boolean;
-  isSelected: boolean;
   onOpenDirectory?: (path: string) => void;
   onRemoveAttachment: (attachmentPath: string) => void;
   onDragStart: (attachment: ComposerAttachment, event: DragEvent<HTMLButtonElement>) => void;
@@ -83,7 +81,6 @@ function getOpenAttachmentIcon(attachment: ComposerAttachment) {
 function FileEntryButton({
   attachment,
   isAlreadyAttached,
-  isSelected,
   onOpenDirectory,
   onRemoveAttachment,
   onDragStart,
@@ -98,7 +95,7 @@ function FileEntryButton({
       draggable={!isAlreadyAttached}
       className={cn(
         "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors",
-        isSelected && "border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.05)]",
+        isAlreadyAttached && "border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.05)]",
         isAlreadyAttached &&
           "cursor-default text-[color:var(--muted)] hover:border-transparent hover:bg-transparent",
         !isAlreadyAttached &&
@@ -119,10 +116,6 @@ function FileEntryButton({
       }}
       onDoubleClick={() => {
         if (attachment.kind === "directory") {
-          if (isSelected && !isAlreadyAttached) {
-            onToggleFile(attachment);
-          }
-
           onOpenDirectory?.(attachment.path);
         }
       }}
@@ -137,7 +130,7 @@ function FileEntryButton({
       title={attachment.path}
     >
       <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
-        {getAttachmentIcon(attachment, isAlreadyAttached || isSelected)}
+        {getAttachmentIcon(attachment, isAlreadyAttached)}
       </span>
       <span className="truncate">{attachment.name}</span>
     </button>
@@ -146,7 +139,6 @@ function FileEntryButton({
 
 export function ComposerFilePicker({
   attachments,
-  currentSelection,
   errorMessage,
   favoriteFolders,
   loading,
@@ -165,10 +157,6 @@ export function ComposerFilePicker({
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const selectionByPath = useMemo(
-    () => new Set(currentSelection.map((attachment) => attachment.path)),
-    [currentSelection],
-  );
   const attachedByPath = useMemo(
     () => new Set(attachments.map((attachment) => attachment.path)),
     [attachments],
@@ -216,11 +204,7 @@ export function ComposerFilePicker({
     attachment: ComposerAttachment,
     event: DragEvent<HTMLButtonElement>,
   ) => {
-    const nextDraggedAttachments =
-      currentSelection.some((currentAttachment) => currentAttachment.path === attachment.path) &&
-      currentSelection.length > 0
-        ? currentSelection
-        : [attachment];
+    const nextDraggedAttachments = [attachment];
 
     setDraggedAttachments(nextDraggedAttachments);
     event.dataTransfer.effectAllowed = "copy";
@@ -311,18 +295,6 @@ export function ComposerFilePicker({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {currentSelection.length > 0 ? (
-            <button
-              type="button"
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
-              onClick={() => onAttachAttachments(currentSelection)}
-              aria-label={`Attach ${currentSelection.length} selected item${currentSelection.length === 1 ? "" : "s"}`}
-              title={`Attach ${currentSelection.length} selected item${currentSelection.length === 1 ? "" : "s"}`}
-            >
-              <Paperclip size={13} />
-            </button>
-          ) : null}
-
           {searchExpanded || searchQuery.length > 0 ? (
             <label className="relative shrink-0">
               <Search
@@ -445,7 +417,6 @@ export function ComposerFilePicker({
                     key={entry.path}
                     attachment={attachment}
                     isAlreadyAttached={attachedByPath.has(entry.path)}
-                    isSelected={selectionByPath.has(entry.path)}
                     onOpenDirectory={onOpenDirectory}
                     onRemoveAttachment={onRemoveAttachment}
                     onDragStart={handleInternalDragStart}

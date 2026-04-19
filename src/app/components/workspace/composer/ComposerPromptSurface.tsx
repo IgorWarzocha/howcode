@@ -70,7 +70,6 @@ export function ComposerPromptSurface({
     modelButtonRef,
     modelMenuOpen,
     modelMenuRef,
-    pendingPickerAttachments,
     pickAttachments,
     openPickerDirectory,
     openPickerRoot,
@@ -184,7 +183,6 @@ export function ComposerPromptSurface({
         {pickerOpen ? (
           <ComposerFilePicker
             attachments={attachments}
-            currentSelection={pendingPickerAttachments}
             errorMessage={errorMessage}
             favoriteFolders={favoriteFolders}
             loading={pickerLoading}
