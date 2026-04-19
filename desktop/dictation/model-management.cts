@@ -24,6 +24,7 @@ import {
   getManagedDictationModelFiles,
   getResolvedDictationModelFiles,
 } from "./model-resolution.cts";
+import { type DownloadMetadata, fetchDownloadResponse } from "./model-download.ts";
 import { resetRecognizerCache } from "./sherpa-runtime.cts";
 
 function emitDictationDownloadLog(
@@ -43,19 +44,6 @@ function emitDictationDownloadLog(
 
 function buildHuggingFaceResolveUrl(repo: string, fileName: string) {
   return `https://huggingface.co/${repo}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
-}
-
-type DownloadMetadata = {
-  contentLength: number | null;
-  etag: string | null;
-};
-
-function normalizeEtag(etag: string | null) {
-  if (!etag) {
-    return null;
-  }
-
-  return etag.replace(/^W\//, "").replace(/^"|"$/g, "").trim().toLowerCase() || null;
 }
 
 function getEtagHashAlgorithm(etag: string | null) {
@@ -86,9 +74,8 @@ async function validateDownloadedFile(targetPath: string, metadata: DownloadMeta
     );
   }
 
-  const normalizedEtag = normalizeEtag(metadata.etag);
-  const hashAlgorithm = getEtagHashAlgorithm(normalizedEtag);
-  if (!normalizedEtag || !hashAlgorithm) {
+  const hashAlgorithm = getEtagHashAlgorithm(metadata.etag);
+  if (!metadata.etag || !hashAlgorithm) {
     return;
   }
 
@@ -99,26 +86,18 @@ async function validateDownloadedFile(targetPath: string, metadata: DownloadMeta
 
   const fileHash = hash.digest("hex");
 
-  if (fileHash !== normalizedEtag) {
+  if (fileHash !== metadata.etag) {
     throw new Error(`Download failed: ${path.basename(targetPath)} checksum mismatch.`);
   }
 }
 
 async function downloadToFile(url: string, targetPath: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Download failed (${response.status} ${response.statusText}) for ${url}`);
-  }
-
+  const { response, metadata } = await fetchDownloadResponse(url);
   if (!response.body) {
     throw new Error(`Download failed: missing response body for ${url}`);
   }
 
   const temporaryPath = `${targetPath}.partial`;
-  const metadata: DownloadMetadata = {
-    contentLength: Number.parseInt(response.headers.get("content-length") ?? "", 10) || null,
-    etag: response.headers.get("etag"),
-  };
 
   try {
     await pipeline(
