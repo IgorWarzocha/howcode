@@ -11,7 +11,7 @@ import {
   openExternalQuery,
   openPathQuery,
 } from "../../../query/desktop-query";
-import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
+import { popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 import { resolveFileEntryActivation } from "./composer-file-picker.helpers";
@@ -53,14 +53,14 @@ type FileEntryButtonProps = {
 
 function getAttachmentIcon(attachment: ComposerAttachment, selected: boolean) {
   if (selected) {
-    return <Check size={11} />;
+    return <Check size={11} className="block -translate-y-px" />;
   }
 
   if (attachment.kind === "directory") {
-    return <Folder size={11} />;
+    return <Folder size={11} className="block -translate-y-px" />;
   }
 
-  return <File size={11} />;
+  return <File size={11} className="block -translate-y-px" />;
 }
 
 function getFolderLabel(folderPath: string) {
@@ -76,12 +76,35 @@ function getOpenAttachmentLabel(attachment: ComposerAttachment) {
   return `Open ${attachment.name}`;
 }
 
-function getOpenAttachmentIcon(attachment: ComposerAttachment) {
-  if (isSafeExternalUrl(attachment.path)) {
-    return <Globe size={11} />;
+function getAttachmentDisplayLabel(attachment: ComposerAttachment) {
+  if (!isSafeExternalUrl(attachment.path)) {
+    if (attachment.kind === "directory") {
+      const normalizedPath = attachment.path.replace(/[\\/]+$/, "");
+      const parts = normalizedPath.split(/[\\/]/).filter(Boolean);
+
+      if (parts.length >= 2) {
+        return `${attachment.path.startsWith("/") ? "/" : ""}${parts.slice(-2).join("/")}`;
+      }
+
+      return attachment.name;
+    }
+
+    return attachment.name;
   }
 
-  return attachment.kind === "directory" ? <Folder size={11} /> : <File size={11} />;
+  return attachment.path.replace(/^https?:\/\//i, "");
+}
+
+function getOpenAttachmentIcon(attachment: ComposerAttachment) {
+  if (isSafeExternalUrl(attachment.path)) {
+    return <Globe size={11} className="block -translate-y-px" />;
+  }
+
+  return attachment.kind === "directory" ? (
+    <Folder size={11} className="block -translate-y-px" />
+  ) : (
+    <File size={11} className="block -translate-y-px" />
+  );
 }
 
 function FileEntryButton({
@@ -100,7 +123,7 @@ function FileEntryButton({
       type="button"
       draggable={!isAlreadyAttached}
       className={cn(
-        "grid h-8 min-w-0 grid-cols-[12px_minmax(0,1fr)] items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors",
+        "flex h-8 min-w-0 items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors",
         isAlreadyAttached && "border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.05)]",
         isAlreadyAttached &&
           "cursor-default text-[color:var(--muted)] hover:border-transparent hover:bg-transparent",
@@ -135,10 +158,10 @@ function FileEntryButton({
       }}
       title={attachment.path}
     >
-      <span className="inline-flex items-center justify-center text-[color:var(--muted)]">
+      <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[color:var(--muted)]">
         {getAttachmentIcon(attachment, isAlreadyAttached)}
       </span>
-      <span className="truncate">{attachment.name}</span>
+      <span className="min-w-0 flex-1 truncate leading-none">{attachment.name}</span>
     </button>
   );
 }
@@ -349,7 +372,7 @@ export function ComposerFilePicker({
       <div className="grid min-h-0 grid-cols-[minmax(120px,0.25fr)_minmax(0,0.75fr)] overflow-hidden">
         <div
           className={cn(
-            "min-h-0 overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] p-2",
+            "min-h-0 overflow-x-hidden overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] py-2 pr-0 pl-2",
             dropActive && "bg-[rgba(255,255,255,0.04)]",
           )}
           onDragOver={(event) => {
@@ -370,30 +393,30 @@ export function ComposerFilePicker({
                 <div
                   key={attachment.path}
                   className={cn(
-                    "flex h-5 items-center gap-0 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
+                    "flex h-5 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]",
                   )}
                   title={attachment.path}
                 >
-                  <span className="min-w-0 max-w-[18ch] flex-1 truncate leading-5">
-                    {attachment.name}
-                  </span>
                   <button
                     type="button"
-                    className={cn(compactIconButtonClass, "h-3.5 w-3.5 shrink-0 rounded")}
+                    className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
                     onClick={() => void openAttachment(attachment)}
                     aria-label={getOpenAttachmentLabel(attachment)}
                     title={getOpenAttachmentLabel(attachment)}
                   >
                     {getOpenAttachmentIcon(attachment)}
                   </button>
+                  <span className="min-w-0 max-w-[20ch] flex-1 truncate leading-none">
+                    {getAttachmentDisplayLabel(attachment)}
+                  </span>
                   <button
                     type="button"
-                    className={cn(compactIconButtonClass, "h-3.5 w-3.5 shrink-0 rounded")}
+                    className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
                     onClick={() => onRemoveAttachment(attachment.path)}
                     aria-label={`Remove ${attachment.name}`}
                     title={`Remove ${attachment.name}`}
                   >
-                    <X size={11} />
+                    <X size={11} className="block -translate-y-px" />
                   </button>
                 </div>
               ))
