@@ -1,3 +1,4 @@
+import { stat } from "node:fs/promises";
 import { clipboard, dialog, shell } from "electron";
 import { getAttachmentKind, isSafeExternalUrl } from "../../../../../shared/composer-attachments";
 import {
@@ -13,6 +14,7 @@ type SystemRequestHandlers = Pick<
   | "pickComposerAttachments"
   | "readClipboardSnapshot"
   | "readClipboardFilePaths"
+  | "getAttachmentKindsForPaths"
   | "listComposerAttachmentEntries"
   | "openExternal"
   | "openPath"
@@ -61,6 +63,24 @@ export function createSystemHandlers(): SystemRequestHandlers {
       return { formats, valuesByFormat };
     },
     readClipboardFilePaths: () => readNativeClipboardFilePaths(),
+    getAttachmentKindsForPaths: async ({ paths }) => {
+      const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
+        (path): path is string => typeof path === "string" && path.trim().length > 0,
+      );
+
+      const entries = await Promise.all(
+        uniquePaths.map(async (path) => {
+          try {
+            const stats = await stat(path);
+            return [path, stats.isDirectory() ? "directory" : getAttachmentKind(path)] as const;
+          } catch {
+            return [path, null] as const;
+          }
+        }),
+      );
+
+      return Object.fromEntries(entries);
+    },
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
     openExternal: async ({ url }) => {
       if (!isSafeExternalUrl(url)) {

@@ -92,15 +92,6 @@ function FileEntryButton({
   onToggleFile,
 }: FileEntryButtonProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const pendingDirectoryToggleRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (pendingDirectoryToggleRef.current !== null) {
-        window.clearTimeout(pendingDirectoryToggleRef.current);
-      }
-    };
-  }, []);
 
   return (
     <button
@@ -116,26 +107,6 @@ function FileEntryButton({
         isDragging && "opacity-70",
       )}
       onClick={() => {
-        if (attachment.kind === "directory") {
-          if (pendingDirectoryToggleRef.current !== null) {
-            window.clearTimeout(pendingDirectoryToggleRef.current);
-          }
-
-          pendingDirectoryToggleRef.current = window.setTimeout(() => {
-            pendingDirectoryToggleRef.current = null;
-
-            const nextAction = resolveFileEntryActivation({
-              attachment,
-              isAlreadyAttached,
-            });
-
-            if (nextAction.type === "toggle") {
-              onToggleFile(nextAction.attachment);
-            }
-          }, 180);
-          return;
-        }
-
         const nextAction = resolveFileEntryActivation({
           attachment,
           isAlreadyAttached,
@@ -147,9 +118,8 @@ function FileEntryButton({
       }}
       onDoubleClick={() => {
         if (attachment.kind === "directory") {
-          if (pendingDirectoryToggleRef.current !== null) {
-            window.clearTimeout(pendingDirectoryToggleRef.current);
-            pendingDirectoryToggleRef.current = null;
+          if (isSelected && !isAlreadyAttached) {
+            onToggleFile(attachment);
           }
 
           onOpenDirectory?.(attachment.path);
@@ -264,7 +234,7 @@ export function ComposerFilePicker({
     setDropActive(false);
   };
 
-  const handleDropIntoAttachments = (event: DragEvent<HTMLDivElement>) => {
+  const handleDropIntoAttachments = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
     if (draggedAttachments.length > 0) {
@@ -273,14 +243,17 @@ export function ComposerFilePicker({
       return;
     }
 
-    const externalAttachments = normalizeComposerAttachments(
-      getComposerAttachmentsFromClipboardData(event.dataTransfer, {
-        resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
-      }),
-      {
-        resolveAttachmentKind: (path) => window.piDesktop?.getAttachmentKindForPath?.(path) ?? null,
-      },
-    );
+    const dataTransfer = event.dataTransfer;
+    const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
+      resolveFilePath: (file) => window.piDesktop?.getPathForFile?.(file as File) ?? null,
+    });
+    const localPaths = [
+      ...new Set(rawAttachments.map((attachment) => attachment.path.trim())),
+    ].filter((path) => path.length > 0 && !/^https?:\/\//i.test(path));
+    const kindsByPath = (await window.piDesktop?.getAttachmentKindsForPaths?.(localPaths)) ?? {};
+    const externalAttachments = normalizeComposerAttachments(rawAttachments, {
+      resolveAttachmentKind: (path) => kindsByPath[path] ?? null,
+    });
     if (externalAttachments.length > 0) {
       onAttachAttachments(externalAttachments);
     }

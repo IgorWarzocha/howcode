@@ -80,6 +80,12 @@ describe("composer attachment paste helpers", () => {
       kind: "text",
     });
   });
+
+  it("does not auto-attach shorthand relative or home paths", () => {
+    expect(parseComposerAttachmentReference("~/notes.txt")).toBeNull();
+    expect(parseComposerAttachmentReference("./src/app.ts")).toBeNull();
+    expect(parseComposerAttachmentReference("../src/app.ts")).toBeNull();
+  });
 });
 
 describe("buildComposerAttachmentPrompt", () => {
@@ -101,5 +107,16 @@ describe("buildComposerAttachmentPrompt", () => {
         resolveAttachmentKind: (path) => (path === "/repo/src" ? "directory" : null),
       }),
     ).toEqual([{ path: "/repo/src", name: "src", kind: "directory" }]);
+  });
+
+  it("drops unresolved local attachments when kind resolution fails", () => {
+    expect(
+      normalizeComposerAttachments(
+        [{ path: "/tmp/missing.txt", name: "missing.txt", kind: "text" }],
+        {
+          resolveAttachmentKind: () => null,
+        },
+      ),
+    ).toEqual([]);
   });
 });

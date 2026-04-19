@@ -28,7 +28,6 @@ export function useComposerAttachmentPicker({
   const [pendingPickerAttachments, setPendingPickerAttachments] = useState<ComposerAttachment[]>(
     [],
   );
-  const homePathRef = useRef<string | null>(null);
   const pickerRequestIdRef = useRef(0);
 
   const fetchPickerEntries = async (path?: string | null, rootPath?: string | null) => {
@@ -50,7 +49,6 @@ export function useComposerAttachmentPicker({
         return nextPickerState;
       }
 
-      homePathRef.current = nextPickerState?.homePath ?? homePathRef.current;
       setPickerState(nextPickerState);
       setErrorMessage(null);
       return nextPickerState;
@@ -77,17 +75,7 @@ export function useComposerAttachmentPicker({
     setPendingPickerAttachments([]);
     setOpenMenu("picker");
 
-    const initialRootPath = homePathRef.current ?? pickerState?.homePath ?? pickerRootPath;
-    const initialPickerState = await loadPickerEntries(initialRootPath, initialRootPath);
-    if (
-      initialRootPath !== pickerRootPath ||
-      !initialPickerState?.homePath ||
-      initialPickerState.homePath === initialPickerState.rootPath
-    ) {
-      return;
-    }
-
-    await loadPickerEntries(initialPickerState.homePath, initialPickerState.homePath);
+    await loadPickerEntries(pickerRootPath, pickerRootPath);
   };
 
   const openPickerDirectory = async (path: string) => {

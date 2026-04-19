@@ -7,7 +7,11 @@ import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerFilePicker } from "./ComposerFilePicker";
 import { ComposerTextField } from "./ComposerTextField";
-import { hasFilePayloadInClipboardData } from "./composer-paste-attachments";
+import {
+  getComposerAttachmentsFromClipboardData,
+  hasAttachmentHintInClipboardData,
+  hasFilePayloadInClipboardData,
+} from "./composer-paste-attachments";
 import { useComposerController } from "./useComposerController";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -254,9 +258,25 @@ export function ComposerPromptSurface({
                     }
                   }}
                   onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
+                    const clipboardData = event.clipboardData;
+                    const directAttachments = getComposerAttachmentsFromClipboardData(
+                      clipboardData,
+                      {
+                        resolveFilePath: (file) =>
+                          window.piDesktop?.getPathForFile?.(file as File) ?? null,
+                      },
+                    );
+                    const shouldInterceptPaste =
+                      directAttachments.length > 0 ||
+                      hasAttachmentHintInClipboardData(clipboardData);
+
+                    if (!shouldInterceptPaste) {
+                      return;
+                    }
+
                     event.preventDefault();
                     void handlePaste({
-                      clipboardData: event.clipboardData,
+                      clipboardData,
                       textarea: event.currentTarget,
                     });
                   }}

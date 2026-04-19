@@ -64,14 +64,6 @@ function decodeFileUrlPath(url: URL) {
 function isLikelyLocalFilePath(candidate: string) {
   const pathSegments = candidate.split(/[\\/]/).filter(Boolean);
   const lastSegment = pathSegments[pathSegments.length - 1] ?? "";
-  const relativePathRemainder =
-    candidate.startsWith("./") || candidate.startsWith("~/")
-      ? candidate.slice(2)
-      : candidate.startsWith("../")
-        ? candidate.slice(3)
-        : "";
-  const hasNestedRelativePath = /[\\/]/.test(relativePathRemainder);
-  const hasFileLikeBasename = lastSegment.includes(".");
 
   return (
     (candidate.startsWith("/") &&
@@ -79,9 +71,7 @@ function isLikelyLocalFilePath(candidate: string) {
       pathSegments.length >= 1 &&
       unixAbsolutePathRoots.has(pathSegments[0] ?? "")) ||
     /^[A-Za-z]:[\\/]/.test(candidate) ||
-    candidate.startsWith("\\\\") ||
-    ((candidate.startsWith("./") || candidate.startsWith("../") || candidate.startsWith("~/")) &&
-      (hasNestedRelativePath || hasFileLikeBasename))
+    candidate.startsWith("\\\\")
   );
 }
 
@@ -145,9 +135,21 @@ export function normalizeComposerAttachments(
           return null;
         }
 
-        const resolvedKind = isSafeExternalUrl(path)
-          ? "text"
-          : (options?.resolveAttachmentKind?.(path) ?? attachment.kind);
+        let resolvedKind: ComposerAttachment["kind"];
+
+        if (isSafeExternalUrl(path)) {
+          resolvedKind = "text";
+        } else if (options?.resolveAttachmentKind) {
+          const nextKind = options.resolveAttachmentKind(path);
+          if (nextKind === null) {
+            return null;
+          }
+
+          resolvedKind = nextKind;
+        } else {
+          resolvedKind = attachment.kind;
+        }
+
         const name = attachment.name.trim() || getPathAttachmentName(path);
 
         return {

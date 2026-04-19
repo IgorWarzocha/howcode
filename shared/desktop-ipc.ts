@@ -118,6 +118,10 @@ export type DesktopRequestMap = {
     params: Record<string, never>;
     response: DesktopClipboardFilePaths;
   };
+  getAttachmentKindsForPaths: {
+    params: { paths: string[] };
+    response: Record<string, ComposerAttachment["kind"] | null>;
+  };
   listComposerAttachmentEntries: {
     params: { projectId?: string | null; path?: string | null; rootPath?: string | null };
     response: ComposerFilePickerState;

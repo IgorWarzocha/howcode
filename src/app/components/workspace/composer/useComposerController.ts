@@ -64,13 +64,22 @@ function resolveDesktopFilePath(file: {
   return window.piDesktop?.getPathForFile?.(file as File) ?? null;
 }
 
-function resolveDesktopAttachmentKind(path: string): ComposerAttachment["kind"] | null {
-  return window.piDesktop?.getAttachmentKindForPath?.(path) ?? null;
+async function resolveDesktopAttachmentKinds(paths: string[]) {
+  try {
+    return (await window.piDesktop?.getAttachmentKindsForPaths?.(paths)) ?? {};
+  } catch {
+    return {} as Record<string, ComposerAttachment["kind"] | null>;
+  }
 }
 
-function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
+async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
+  const localPaths = [...new Set(attachments.map((attachment) => attachment.path.trim()))].filter(
+    (path) => path.length > 0 && !/^https?:\/\//i.test(path),
+  );
+  const kindsByPath = await resolveDesktopAttachmentKinds(localPaths);
+
   return normalizeComposerAttachments(attachments, {
-    resolveAttachmentKind: resolveDesktopAttachmentKind,
+    resolveAttachmentKind: (path) => kindsByPath[path] ?? null,
   });
 }
 
@@ -278,7 +287,7 @@ export function useComposerController({
       const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
         resolveFilePath: resolveDesktopFilePath,
       });
-      const normalizedDirectAttachments = normalizeDesktopAttachments(directAttachments);
+      const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments);
       if (normalizedDirectAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
         setErrorMessage(null);
@@ -303,7 +312,7 @@ export function useComposerController({
       const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
         fallbackClipboardFilePaths,
       );
-      const normalizedNativeAttachments = normalizeDesktopAttachments(nativeAttachments);
+      const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments);
       if (normalizedNativeAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, normalizedNativeAttachments));
         setErrorMessage(null);
@@ -320,7 +329,7 @@ export function useComposerController({
       }
 
       const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot);
-      const normalizedFallbackAttachments = normalizeDesktopAttachments(fallbackAttachments);
+      const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments);
       if (normalizedFallbackAttachments.length > 0) {
         setAttachments((current) =>
           mergeComposerAttachments(current, normalizedFallbackAttachments),
@@ -352,8 +361,8 @@ export function useComposerController({
     [setDraftValue],
   );
 
-  const handleDrop = useCallback((dataTransfer: DataTransfer | null) => {
-    const droppedAttachments = normalizeDesktopAttachments(
+  const handleDrop = useCallback(async (dataTransfer: DataTransfer | null) => {
+    const droppedAttachments = await normalizeDesktopAttachments(
       getComposerAttachmentsFromClipboardData(dataTransfer, {
         resolveFilePath: resolveDesktopFilePath,
       }),
