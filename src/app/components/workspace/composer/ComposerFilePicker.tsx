@@ -16,6 +16,7 @@ import type { ComposerAttachment, ComposerFilePickerState } from "../../../deskt
 import { compactIconButtonClass, popoverPanelClass, settingsInputClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
+import { resolveFileEntryActivation } from "./composer-file-picker.helpers";
 
 type ComposerFilePickerProps = {
   attachments: ComposerAttachment[];
@@ -47,6 +48,11 @@ type DraggableFileEntryProps = {
   attachmentsToAttach: ComposerAttachment[];
   isAlreadyAttached: boolean;
   isSelected: boolean;
+  currentSelection: ComposerAttachment[];
+  onAttachAttachments: (
+    attachments: ComposerAttachment[],
+    options?: { closeMenu?: boolean },
+  ) => void;
   onToggleFile: (attachment: ComposerAttachment) => void;
 };
 
@@ -78,6 +84,8 @@ function DraggableFileEntry({
   attachmentsToAttach,
   isAlreadyAttached,
   isSelected,
+  currentSelection,
+  onAttachAttachments,
   onToggleFile,
 }: DraggableFileEntryProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -103,8 +111,19 @@ function DraggableFileEntry({
       )}
       style={{ transform: CSS.Translate.toString(transform) }}
       onClick={() => {
-        if (!isAlreadyAttached) {
-          onToggleFile(attachment);
+        const nextAction = resolveFileEntryActivation({
+          attachment,
+          currentSelection,
+          isAlreadyAttached,
+        });
+
+        if (nextAction.type === "attach") {
+          onAttachAttachments(nextAction.attachments);
+          return;
+        }
+
+        if (nextAction.type === "toggle") {
+          onToggleFile(nextAction.attachment);
         }
       }}
       title={attachment.path}
@@ -407,6 +426,8 @@ export function ComposerFilePicker({
                       attachmentsToAttach={attachmentsToAttach}
                       isAlreadyAttached={isAlreadyAttached}
                       isSelected={selectionByPath.has(entry.path)}
+                      currentSelection={currentSelection}
+                      onAttachAttachments={onAttachAttachments}
                       onToggleFile={onToggleFile}
                     />
                   );
