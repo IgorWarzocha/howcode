@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import {
   mergeComposerAttachments,
   normalizeComposerAttachments,
@@ -96,6 +104,7 @@ async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
 
 type UseComposerControllerProps = {
   activeView: View;
+  mainViewRef: RefObject<HTMLElement | null>;
   model: ComposerModel | null;
   projectId: string;
   sessionPath: string | null;
@@ -115,6 +124,7 @@ type UseComposerControllerProps = {
 
 export function useComposerController({
   activeView,
+  mainViewRef,
   model,
   projectId,
   sessionPath,
@@ -170,6 +180,7 @@ export function useComposerController({
     const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
     setDraftValue(persistedDraft?.prompt ?? "");
     setAttachments(persistedDraft?.attachments ?? []);
+    setOpenMenu(persistedDraft?.pickerOpen ? "picker" : null);
     setErrorMessage(null);
   }, [draftThreadId, setDraftValue]);
 
@@ -183,8 +194,12 @@ export function useComposerController({
       return;
     }
 
-    composerDraftStore.setDraft(draftThreadId, { prompt: draft, attachments });
-  }, [attachments, draft, draftThreadId]);
+    composerDraftStore.setDraft(draftThreadId, {
+      prompt: draft,
+      attachments,
+      pickerOpen: openMenu === "picker",
+    });
+  }, [attachments, draft, draftThreadId, openMenu]);
 
   useEffect(() => {
     if (!restoredQueuedPrompt) {
@@ -194,16 +209,42 @@ export function useComposerController({
     setDraftValue((currentDraft) =>
       mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
     );
-    setOpenMenu(null);
     setErrorMessage(null);
     onRestoredQueuedPromptApplied();
   }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue]);
 
   useDismissibleLayer({
-    open: openMenu !== null,
+    open: openMenu === "model",
     onDismiss: () => setOpenMenu(null),
-    refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
+    refs: [modelButtonRef, modelMenuRef],
   });
+
+  useEffect(() => {
+    if (openMenu !== "picker") {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+
+      if (!target) {
+        return;
+      }
+
+      if (pickerButtonRef.current?.contains(target) || pickerPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      if (mainViewRef.current?.contains(target)) {
+        setOpenMenu((current) => (current === "picker" ? null : current));
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [mainViewRef, openMenu]);
 
   const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
 
@@ -239,6 +280,7 @@ export function useComposerController({
   } = useComposerAttachmentPicker({
     openMenu,
     pickerRootPath: projectId,
+    pickerSessionKey: draftThreadId,
     setAttachments,
     setErrorMessage,
     setOpenMenu,
@@ -301,7 +343,6 @@ export function useComposerController({
       if (normalizedDirectAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
         setErrorMessage(null);
-        setOpenMenu(null);
         return;
       }
 
@@ -326,7 +367,6 @@ export function useComposerController({
       if (normalizedNativeAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, normalizedNativeAttachments));
         setErrorMessage(null);
-        setOpenMenu(null);
         return;
       }
 
@@ -343,7 +383,6 @@ export function useComposerController({
           mergeComposerAttachments(current, normalizedFallbackAttachments),
         );
         setErrorMessage(null);
-        setOpenMenu(null);
         return;
       }
 

@@ -17,12 +17,14 @@ import { useComposerController } from "./useComposerController";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>;
+  mainViewRef: RefObject<HTMLElement | null>;
   onOpenGitOps: () => void;
 };
 
 export function ComposerPromptSurface({
   activeView,
   composerPanelRef,
+  mainViewRef,
   model,
   availableModels,
   isStreaming,
@@ -88,6 +90,7 @@ export function ComposerPromptSurface({
     thinkingLevelLabels,
   } = useComposerController({
     activeView,
+    mainViewRef,
     model,
     projectId,
     sessionPath,

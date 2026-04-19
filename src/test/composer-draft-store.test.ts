@@ -27,20 +27,24 @@ describe("composerDraftStore", () => {
     store.setDraft("session:/repo/one.json", {
       prompt: "fix the timeline",
       attachments: [],
+      pickerOpen: false,
     });
     store.setDraft("session:/repo/two.json", {
       prompt: "rename the header",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      pickerOpen: false,
     });
     store.flush();
 
     expect(store.getDraft("session:/repo/one.json")).toEqual({
       prompt: "fix the timeline",
       attachments: [],
+      pickerOpen: false,
     });
     expect(store.getDraft("session:/repo/two.json")).toEqual({
       prompt: "rename the header",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      pickerOpen: false,
     });
   });
 
@@ -54,6 +58,7 @@ describe("composerDraftStore", () => {
         draftsByThreadId: {
           "session:/repo/one.json": {
             prompt: "restored prompt",
+            pickerOpen: true,
             attachments: [
               { path: "/repo/image.png", name: "image.png", kind: "image" },
               { path: 42, name: "bad", kind: "text" },
@@ -74,6 +79,7 @@ describe("composerDraftStore", () => {
     expect(store.getDraft("session:/repo/one.json")).toEqual({
       prompt: "restored prompt",
       attachments: [{ path: "/repo/image.png", name: "image.png", kind: "image" }],
+      pickerOpen: true,
     });
     expect(store.getDraft("broken")).toBeNull();
   });
@@ -87,8 +93,16 @@ describe("composerDraftStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setDraft("session:/repo/one.json", { prompt: "draft 1", attachments: [] });
-    store.setDraft("session:/repo/one.json", { prompt: "draft 2", attachments: [] });
+    store.setDraft("session:/repo/one.json", {
+      prompt: "draft 1",
+      attachments: [],
+      pickerOpen: false,
+    });
+    store.setDraft("session:/repo/one.json", {
+      prompt: "draft 2",
+      attachments: [],
+      pickerOpen: false,
+    });
 
     expect(storage.getItem(composerDraftStorageKey)).toBeNull();
 
@@ -116,7 +130,11 @@ describe("composerDraftStore", () => {
       beforeUnloadTarget: null,
     });
 
-    store.setDraft("session:/repo/one.json", { prompt: "keep this", attachments: [] });
+    store.setDraft("session:/repo/one.json", {
+      prompt: "keep this",
+      attachments: [],
+      pickerOpen: false,
+    });
     store.flush();
 
     store.clearComposerContent("session:/repo/one.json");
@@ -152,26 +170,38 @@ describe("composerDraftStore", () => {
     const secondLocalThreadId = "session:local://%2Frepo/second";
     const projectDraftThreadId = "project:/repo:new-thread";
 
-    store.setDraft(firstLocalThreadId, { prompt: "first draft", attachments: [] });
-    store.setDraft(secondLocalThreadId, { prompt: "second draft", attachments: [] });
+    store.setDraft(firstLocalThreadId, {
+      prompt: "first draft",
+      attachments: [],
+      pickerOpen: false,
+    });
+    store.setDraft(secondLocalThreadId, {
+      prompt: "second draft",
+      attachments: [],
+      pickerOpen: false,
+    });
 
     expect(store.getDraft(firstLocalThreadId)).toEqual({
       prompt: "first draft",
       attachments: [],
+      pickerOpen: false,
     });
     expect(store.getDraft(secondLocalThreadId)).toEqual({
       prompt: "second draft",
       attachments: [],
+      pickerOpen: false,
     });
     expect(store.getDraft(projectDraftThreadId)).toEqual({
       prompt: "second draft",
       attachments: [],
+      pickerOpen: false,
     });
 
     store.clearThreadDraft(firstLocalThreadId);
     expect(store.getDraft(projectDraftThreadId)).toEqual({
       prompt: "second draft",
       attachments: [],
+      pickerOpen: false,
     });
 
     store.clearThreadDraft(secondLocalThreadId);
@@ -190,6 +220,7 @@ describe("composerDraftStore", () => {
     store.setDraft("session:/repo/one.json", {
       prompt: "rename the header",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      pickerOpen: false,
     });
 
     const draft = store.getDraft("session:/repo/one.json");
@@ -202,6 +233,39 @@ describe("composerDraftStore", () => {
     expect(store.getDraft("session:/repo/one.json")).toEqual({
       prompt: "rename the header",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      pickerOpen: false,
+    });
+  });
+
+  it("persists picker open state even without prompt text or attachments", () => {
+    const storage = createMemoryStorage();
+    const store = createComposerDraftStore({
+      storage,
+      storageKey: composerDraftStorageKey,
+      debounceMs: 300,
+      beforeUnloadTarget: null,
+    });
+
+    store.setDraft("session:/repo/one.json", {
+      prompt: "",
+      attachments: [],
+      pickerOpen: true,
+    });
+    store.flush();
+
+    expect(store.getDraft("session:/repo/one.json")).toEqual({
+      prompt: "",
+      attachments: [],
+      pickerOpen: true,
+    });
+    expect(JSON.parse(storage.getItem(composerDraftStorageKey) ?? "null")).toEqual({
+      version: 1,
+      draftsByThreadId: {
+        "session:/repo/one.json": {
+          prompt: "",
+          pickerOpen: true,
+        },
+      },
     });
   });
 });

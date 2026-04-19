@@ -1,10 +1,18 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 
 type UseComposerAttachmentPickerProps = {
   openMenu: "model" | "picker" | null;
   pickerRootPath: string;
+  pickerSessionKey: string | null;
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
@@ -18,6 +26,7 @@ type UseComposerAttachmentPickerProps = {
 export function useComposerAttachmentPicker({
   openMenu,
   pickerRootPath,
+  pickerSessionKey,
   setAttachments,
   setErrorMessage,
   setOpenMenu,
@@ -26,42 +35,50 @@ export function useComposerAttachmentPicker({
   const [pickerState, setPickerState] = useState<ComposerFilePickerState | null>(null);
   const [pickerLoading, setPickerLoading] = useState(false);
   const pickerRequestIdRef = useRef(0);
+  const previousOpenMenuRef = useRef<"model" | "picker" | null>(openMenu);
+  const previousPickerScopeKeyRef = useRef<string | null>(null);
 
-  const fetchPickerEntries = async (path?: string | null, rootPath?: string | null) => {
-    return await onListAttachmentEntries({
-      projectId: pickerRootPath,
-      path: path ?? null,
-      rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
-    });
-  };
+  const fetchPickerEntries = useCallback(
+    async (path?: string | null, rootPath?: string | null) => {
+      return await onListAttachmentEntries({
+        projectId: pickerRootPath,
+        path: path ?? null,
+        rootPath: rootPath ?? pickerState?.rootPath ?? pickerRootPath ?? null,
+      });
+    },
+    [onListAttachmentEntries, pickerRootPath, pickerState?.rootPath],
+  );
 
-  const loadPickerEntries = async (path?: string | null, rootPath?: string | null) => {
-    const requestId = pickerRequestIdRef.current + 1;
-    pickerRequestIdRef.current = requestId;
-    setPickerLoading(true);
+  const loadPickerEntries = useCallback(
+    async (path?: string | null, rootPath?: string | null) => {
+      const requestId = pickerRequestIdRef.current + 1;
+      pickerRequestIdRef.current = requestId;
+      setPickerLoading(true);
 
-    try {
-      const nextPickerState = await fetchPickerEntries(path, rootPath);
-      if (requestId !== pickerRequestIdRef.current) {
+      try {
+        const nextPickerState = await fetchPickerEntries(path, rootPath);
+        if (requestId !== pickerRequestIdRef.current) {
+          return nextPickerState;
+        }
+
+        setPickerState(nextPickerState);
+        setErrorMessage(null);
         return nextPickerState;
-      }
+      } catch (error) {
+        if (requestId !== pickerRequestIdRef.current) {
+          return null;
+        }
 
-      setPickerState(nextPickerState);
-      setErrorMessage(null);
-      return nextPickerState;
-    } catch (error) {
-      if (requestId !== pickerRequestIdRef.current) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
         return null;
+      } finally {
+        if (requestId === pickerRequestIdRef.current) {
+          setPickerLoading(false);
+        }
       }
-
-      setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
-      return null;
-    } finally {
-      if (requestId === pickerRequestIdRef.current) {
-        setPickerLoading(false);
-      }
-    }
-  };
+    },
+    [fetchPickerEntries, setErrorMessage],
+  );
 
   const pickAttachments = async () => {
     if (openMenu === "picker") {
@@ -70,9 +87,23 @@ export function useComposerAttachmentPicker({
     }
 
     setOpenMenu("picker");
-
-    await loadPickerEntries(pickerRootPath, pickerRootPath);
   };
+
+  useEffect(() => {
+    const scopeKey = `${pickerSessionKey ?? ""}::${pickerRootPath}`;
+    const pickerOpened = openMenu === "picker" && previousOpenMenuRef.current !== "picker";
+    const pickerScopeChanged =
+      openMenu === "picker" && previousPickerScopeKeyRef.current !== scopeKey;
+
+    previousOpenMenuRef.current = openMenu;
+    previousPickerScopeKeyRef.current = scopeKey;
+
+    if (!pickerOpened && !pickerScopeChanged) {
+      return;
+    }
+
+    void loadPickerEntries(pickerRootPath, pickerRootPath);
+  }, [loadPickerEntries, openMenu, pickerRootPath, pickerSessionKey]);
 
   const openPickerDirectory = async (path: string) => {
     await loadPickerEntries(path);

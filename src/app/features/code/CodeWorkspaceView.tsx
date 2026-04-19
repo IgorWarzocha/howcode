@@ -64,6 +64,7 @@ export function CodeWorkspaceView({
   const [pendingQueuedPromptIds, setPendingQueuedPromptIds] = useState<string[]>([]);
   const pendingQueuedPromptIdsRef = useRef(new Set<string>());
   const footerRef = useRef<HTMLElement>(null);
+  const mainViewRef = useRef<HTMLElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
@@ -270,6 +271,7 @@ export function CodeWorkspaceView({
       >
         <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">
           <main
+            ref={mainViewRef}
             className={
               state.activeView === "thread" || showDiffInMainView
                 ? "min-h-0 overflow-hidden pt-1.5"
@@ -426,6 +428,7 @@ export function CodeWorkspaceView({
                       }}
                       promptResetKey={composerPromptResetKey}
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                      mainViewRef={mainViewRef}
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
                       onOpenSettingsView={() => controller.handleShowView("settings")}
