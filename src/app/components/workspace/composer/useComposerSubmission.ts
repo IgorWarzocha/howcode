@@ -74,7 +74,7 @@ export function useComposerSubmission({
 
         const textToSend = draftValueRef.current.trim();
         const submittedAttachments = attachmentsRef.current;
-        if (textToSend.length === 0) {
+        if (textToSend.length === 0 && submittedAttachments.length === 0) {
           return;
         }
 

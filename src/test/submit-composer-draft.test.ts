@@ -196,6 +196,33 @@ describe("submitComposerDraft", () => {
     expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
+  it("sends attachment-only drafts", async () => {
+    const onAction = vi.fn(async () => buildActionSuccessResult());
+    const clearStoredDraft = vi.fn();
+
+    const result = await submitComposerDraft({
+      draft: "   ",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      draftThreadId: "session:/repo/thread.json",
+      isSending: false,
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
+      onAction,
+      clearStoredDraft,
+    });
+
+    expect(result).toEqual({ status: "sent", text: "" });
+    expect(onAction).toHaveBeenCalledWith("composer.send", {
+      text: "",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehavior: "followUp",
+    });
+    expect(clearStoredDraft).toHaveBeenCalledWith("session:/repo/thread.json");
+  });
+
   it("skips sends while a request is already in flight", async () => {
     const onAction = vi.fn(async () => null);
 

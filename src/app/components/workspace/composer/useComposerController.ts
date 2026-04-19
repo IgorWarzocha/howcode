@@ -164,7 +164,7 @@ export function useComposerController({
     refs: [pickerButtonRef, pickerPanelRef, modelButtonRef, modelMenuRef],
   });
 
-  const canSend = draft.trim().length > 0 && !isSending;
+  const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
 
   const {
     cancelDictation,

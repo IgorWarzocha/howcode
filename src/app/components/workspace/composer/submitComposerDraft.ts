@@ -35,7 +35,7 @@ export async function submitComposerDraft({
   clearStoredDraft,
 }: SubmitComposerDraftOptions): Promise<SubmitComposerDraftResult> {
   const text = draft.trim();
-  if (!text || isSending) {
+  if ((text.length === 0 && attachments.length === 0) || isSending) {
     return { status: "skipped" };
   }
 

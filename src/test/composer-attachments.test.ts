@@ -63,14 +63,14 @@ describe("composer attachment paste helpers", () => {
 });
 
 describe("buildComposerAttachmentPrompt", () => {
-  it("describes attachments as generic references", () => {
+  it("asks the agent to read local files while keeping urls as softer references", () => {
     expect(
       buildComposerAttachmentPrompt([
         { path: "/repo/src/main.ts", name: "main.ts", kind: "text" },
         { path: "https://example.com/guide", name: "guide", kind: "text" },
       ]),
     ).toBe(
-      "The user attached the following references, please use them if relevant:\n- /repo/src/main.ts\n- https://example.com/guide",
+      "The user attached the following files, please read them:\n- /repo/src/main.ts\n\nThe user attached the following references, please use them if relevant:\n- https://example.com/guide",
     );
   });
 });
