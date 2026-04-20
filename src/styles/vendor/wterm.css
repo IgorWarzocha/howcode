@@ -1,0 +1,41 @@
+.terminal-viewport .wterm {
+  height: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--terminal-surface, var(--terminal-bg));
+  box-shadow: none;
+  cursor: text;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.terminal-viewport--flush,
+.terminal-viewport--flush .wterm {
+  border-radius: 0;
+}
+
+.terminal-viewport--flush .wterm {
+  padding: 0 0 0 14px;
+}
+
+.terminal-viewport .wterm .term-grid {
+  min-height: 100%;
+}
+
+.terminal-viewport .wterm::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.terminal-viewport .wterm::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(140, 148, 181, 0.22);
+  background-clip: padding-box;
+}
+
+.terminal-viewport .wterm ::selection {
+  background: var(--terminal-selection, rgba(185, 191, 243, 0.18));
+}
