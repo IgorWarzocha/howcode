@@ -11,10 +11,6 @@
   scrollbar-width: auto;
 }
 
-.terminal-viewport .wterm[data-link-hovered="true"] {
-  cursor: pointer;
-}
-
 .terminal-viewport--flush,
 .terminal-viewport--flush .wterm {
   border-radius: 0;

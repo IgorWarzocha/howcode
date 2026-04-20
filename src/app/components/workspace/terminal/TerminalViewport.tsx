@@ -33,9 +33,15 @@ const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>
 
 const CLEAR_TERMINAL_SEQUENCE = "\u001b[2J\u001b[3J\u001b[H";
 const MAX_PENDING_TERMINAL_EVENTS = 200;
+const MAX_FRONTEND_HISTORY_CHARS = 200_000;
+const TRIMMED_FRONTEND_HISTORY_CHARS = 160_000;
 const TERMINAL_LINK_PATTERN = /https?:\/\/[^\s)\]}]+/g;
 const DEFAULT_TERMINAL_COLS = 80;
 const DEFAULT_TERMINAL_ROWS = 24;
+const MIN_INITIAL_TERMINAL_COLS = 20;
+const MIN_INITIAL_TERMINAL_ROWS = 5;
+const MIN_USABLE_TERMINAL_COLS = 2;
+const MIN_USABLE_TERMINAL_ROWS = 2;
 
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
@@ -64,6 +70,12 @@ function writeSystemMessage(write: (data: string) => void, message: string) {
 
 function clearTerminal(write: (data: string) => void) {
   write(CLEAR_TERMINAL_SEQUENCE);
+}
+
+function clampTerminalHistory(history: string) {
+  return history.length > MAX_FRONTEND_HISTORY_CHARS
+    ? history.slice(-TRIMMED_FRONTEND_HISTORY_CHARS)
+    : history;
 }
 
 function extractTerminalLinks(line: string): TerminalLinkMatch[] {
@@ -169,6 +181,53 @@ function normalizeTerminalDimension(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
+function isUsableTerminalSize(cols: number, rows: number) {
+  return cols >= MIN_USABLE_TERMINAL_COLS && rows >= MIN_USABLE_TERMINAL_ROWS;
+}
+
+function measureTerminalSize(terminal: WTerm) {
+  const element = terminal.element;
+  const grid = element.querySelector<HTMLElement>(".term-grid");
+  if (!grid) {
+    return null;
+  }
+
+  const row = element.ownerDocument.createElement("div");
+  row.className = "term-row";
+  row.style.visibility = "hidden";
+  row.style.position = "absolute";
+
+  const probe = element.ownerDocument.createElement("span");
+  probe.textContent = "W";
+  row.appendChild(probe);
+  grid.appendChild(row);
+
+  const charWidth = probe.getBoundingClientRect().width;
+  const rowHeight = row.getBoundingClientRect().height;
+  row.remove();
+
+  if (charWidth <= 0 || rowHeight <= 0) {
+    return null;
+  }
+
+  const styles = getComputedStyle(element);
+  const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+  const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
+  const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0;
+  const contentWidth = element.clientWidth - paddingLeft - paddingRight;
+  const contentHeight = element.clientHeight - paddingTop - paddingBottom;
+
+  if (contentWidth <= 0 || contentHeight <= 0) {
+    return null;
+  }
+
+  return {
+    cols: Math.max(1, Math.floor(contentWidth / charWidth)),
+    rows: Math.max(1, Math.floor(contentHeight / rowHeight)),
+  };
+}
+
 function terminalWrapperStyle(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
   return {
     "--terminal-surface": `var(${backgroundCssVar})`,
@@ -218,9 +277,11 @@ export function TerminalViewport({
   const attachFailedRef = useRef(false);
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
   const replayingBufferedEventsRef = useRef(false);
+  const terminalHistoryRef = useRef("");
   const lastKnownSizeRef = useRef({ cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS });
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
+  const [terminalInitError, setTerminalInitError] = useState<string | null>(null);
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   const effectiveLaunchMode =
     launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
@@ -235,26 +296,58 @@ export function TerminalViewport({
 
   const resetTerminal = useCallback(
     (history = "") => {
+      const nextHistory = clampTerminalHistory(history);
+      terminalHistoryRef.current = nextHistory;
       clearTerminal((data) => writeToTerminal(data));
-      if (history) {
-        writeToTerminal(history);
+      if (nextHistory) {
+        writeToTerminal(nextHistory);
       }
+    },
+    [writeToTerminal],
+  );
+
+  const appendTerminalHistory = useCallback(
+    (chunk: string) => {
+      const nextHistory = clampTerminalHistory(terminalHistoryRef.current + chunk);
+      const trimmed = nextHistory.length !== terminalHistoryRef.current.length + chunk.length;
+      terminalHistoryRef.current = nextHistory;
+
+      if (trimmed) {
+        clearTerminal((data) => writeToTerminal(data));
+        if (nextHistory) {
+          writeToTerminal(nextHistory);
+        }
+        return;
+      }
+
+      writeToTerminal(chunk);
     },
     [writeToTerminal],
   );
 
   const handleTerminalReady = useCallback((terminal: WTerm) => {
     terminalInstanceRef.current = terminal;
+    setTerminalInitError(null);
+    const measuredSize = measureTerminalSize(terminal);
     lastKnownSizeRef.current = {
-      cols: normalizeTerminalDimension(terminal.cols, DEFAULT_TERMINAL_COLS),
-      rows: normalizeTerminalDimension(terminal.rows, DEFAULT_TERMINAL_ROWS),
+      cols: normalizeTerminalDimension(measuredSize?.cols ?? terminal.cols, DEFAULT_TERMINAL_COLS),
+      rows: normalizeTerminalDimension(measuredSize?.rows ?? terminal.rows, DEFAULT_TERMINAL_ROWS),
     };
     setTerminalReadyRevision((current) => current + 1);
+  }, []);
+
+  const handleTerminalError = useCallback((error: unknown) => {
+    const message = error instanceof Error ? error.message : "Unable to initialize terminal.";
+    setTerminalInitError(message);
   }, []);
 
   const handleTerminalResize = useCallback((cols: number, rows: number) => {
     const nextCols = normalizeTerminalDimension(cols, lastKnownSizeRef.current.cols);
     const nextRows = normalizeTerminalDimension(rows, lastKnownSizeRef.current.rows);
+
+    if (!isUsableTerminalSize(nextCols, nextRows)) {
+      return;
+    }
 
     lastKnownSizeRef.current = {
       cols: nextCols,
@@ -309,18 +402,6 @@ export function TerminalViewport({
       return;
     }
 
-    const setLinkHover = (hovered: boolean) => {
-      terminalElement.dataset.linkHovered = hovered ? "true" : "false";
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      setLinkHover(Boolean(findTerminalLinkAtPoint(terminalElement, event.clientX, event.clientY)));
-    };
-
-    const handleMouseLeave = () => {
-      setLinkHover(false);
-    };
-
     const handleClick = (event: MouseEvent) => {
       if (hasSelectionInside(terminalElement)) {
         return;
@@ -341,15 +422,10 @@ export function TerminalViewport({
       });
     };
 
-    terminalElement.addEventListener("mousemove", handleMouseMove);
-    terminalElement.addEventListener("mouseleave", handleMouseLeave);
     terminalElement.addEventListener("click", handleClick, true);
 
     return () => {
-      terminalElement.removeEventListener("mousemove", handleMouseMove);
-      terminalElement.removeEventListener("mouseleave", handleMouseLeave);
       terminalElement.removeEventListener("click", handleClick, true);
-      delete terminalElement.dataset.linkHovered;
     };
   }, [terminalReadyRevision, writeToTerminal]);
 
@@ -369,6 +445,7 @@ export function TerminalViewport({
     lastSentSizeRef.current = null;
     pendingEventsRef.current = [];
     replayingBufferedEventsRef.current = false;
+    terminalHistoryRef.current = "";
     resetTerminal();
 
     const bufferPendingEvent = (event: TerminalEvent) => {
@@ -385,18 +462,18 @@ export function TerminalViewport({
     const applyTerminalEvent = (event: TerminalEvent) => {
       switch (event.type) {
         case "output":
-          writeToTerminal(event.data);
+          appendTerminalHistory(event.data);
           break;
         case "error":
-          writeSystemMessage((message) => writeToTerminal(message), event.message);
+          appendTerminalHistory(`\r\n[terminal] ${event.message}\r\n`);
           break;
         case "exited":
-          writeSystemMessage(
-            (message) => writeToTerminal(message),
-            `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
+          appendTerminalHistory(
+            `\r\n[terminal] Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.\r\n`,
           );
           break;
         case "cleared":
+          terminalHistoryRef.current = "";
           clearTerminal((message) => writeToTerminal(message));
           break;
         case "started":
@@ -441,13 +518,27 @@ export function TerminalViewport({
       applyTerminalEvent(event);
     });
 
-    const getCurrentSize = () => ({
-      cols: normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols),
-      rows: normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows),
-    });
+    const getCurrentSize = () => {
+      const measuredSize = measureTerminalSize(terminal);
+
+      return {
+        cols: normalizeTerminalDimension(
+          measuredSize?.cols ?? terminal.cols,
+          lastKnownSizeRef.current.cols,
+        ),
+        rows: normalizeTerminalDimension(
+          measuredSize?.rows ?? terminal.rows,
+          lastKnownSizeRef.current.rows,
+        ),
+      };
+    };
 
     const openSession = async () => {
-      const size = getCurrentSize();
+      const initialSize = getCurrentSize();
+      const size = {
+        cols: Math.max(initialSize.cols, MIN_INITIAL_TERMINAL_COLS),
+        rows: Math.max(initialSize.rows, MIN_INITIAL_TERMINAL_ROWS),
+      };
       const snapshot = await openDesktopTerminal({
         projectId,
         sessionPath: terminalSessionPath,
@@ -480,9 +571,9 @@ export function TerminalViewport({
       replayBufferedEvents(snapshot.sessionId);
       terminalHandleRef.current?.focus();
 
-      const currentSize = getCurrentSize();
-      if (currentSize.cols !== snapshot.cols || currentSize.rows !== snapshot.rows) {
-        handleTerminalResize(currentSize.cols, currentSize.rows);
+      const resizedSize = getCurrentSize();
+      if (resizedSize.cols !== snapshot.cols || resizedSize.rows !== snapshot.rows) {
+        handleTerminalResize(resizedSize.cols, resizedSize.rows);
       }
     };
 
@@ -515,6 +606,7 @@ export function TerminalViewport({
     };
   }, [
     effectiveLaunchMode,
+    appendTerminalHistory,
     handleTerminalResize,
     keepAliveMsOnUnmount,
     preserveSessionOnUnmount,
@@ -529,7 +621,7 @@ export function TerminalViewport({
     <div
       style={viewportStyle}
       className={cn(
-        "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
+        "terminal-viewport relative h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
     >
@@ -538,11 +630,17 @@ export function TerminalViewport({
         autoResize
         cursorBlink
         onReady={handleTerminalReady}
+        onError={handleTerminalError}
         onResize={handleTerminalResize}
         onData={handleTerminalData}
         className="h-full w-full"
         style={{ height: "100%", width: "100%", ...terminalStyle }}
       />
+      {terminalInitError ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
+          <span>[terminal] {terminalInitError}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
