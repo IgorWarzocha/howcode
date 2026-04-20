@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:runtime\" \"bun run dev:desktop\"",
     "dev:clean": "rm -rf artifacts/electron build/electron build/desktop build/dev-server.json",
+    "prepush:clean": "rm -rf artifacts/electron dist build/electron build/desktop",
     "dev:web": "bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-electron-runtime.ts --watch",
     "dev:desktop": "bun ./scripts/dev-electron.ts",
