@@ -33,9 +33,9 @@ const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>
 
 const CLEAR_TERMINAL_SEQUENCE = "\u001b[2J\u001b[3J\u001b[H";
 const MAX_PENDING_TERMINAL_EVENTS = 200;
-const MIN_TERMINAL_COLS = 20;
-const MIN_TERMINAL_ROWS = 5;
 const TERMINAL_LINK_PATTERN = /https?:\/\/[^\s)\]}]+/g;
+const DEFAULT_TERMINAL_COLS = 80;
+const DEFAULT_TERMINAL_ROWS = 24;
 
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
@@ -146,14 +146,37 @@ function findTerminalLinkAtPoint(container: HTMLElement, clientX: number, client
   const lineText = row.textContent ?? "";
   return (
     extractTerminalLinks(lineText).find(
-      (match) => rowTextOffset >= match.start && rowTextOffset <= match.end,
+      (match) => rowTextOffset >= match.start && rowTextOffset < match.end,
     ) ?? null
   );
 }
 
-function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
+function hasSelectionInside(container: HTMLElement) {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.toString().trim().length === 0) {
+    return false;
+  }
+
+  const anchorNode = selection.anchorNode;
+  const focusNode = selection.focusNode;
+
+  return Boolean(
+    (anchorNode && container.contains(anchorNode)) || (focusNode && container.contains(focusNode)),
+  );
+}
+
+function normalizeTerminalDimension(value: number, fallback: number) {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+function terminalWrapperStyle(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
   return {
     "--terminal-surface": `var(${backgroundCssVar})`,
+  } as CSSProperties;
+}
+
+function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
+  return {
     "--terminal-selection": "rgba(185, 191, 243, 0.18)",
     "--term-bg": `var(${backgroundCssVar})`,
     "--term-fg": "var(--text)",
@@ -195,8 +218,7 @@ export function TerminalViewport({
   const attachFailedRef = useRef(false);
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
   const replayingBufferedEventsRef = useRef(false);
-  const openFrameRef = useRef<number | null>(null);
-  const lastKnownSizeRef = useRef({ cols: 80, rows: 24 });
+  const lastKnownSizeRef = useRef({ cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS });
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
@@ -204,7 +226,8 @@ export function TerminalViewport({
     launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
   const terminalSessionPath =
     effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
-  const viewportStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
+  const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar]);
+  const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
 
   const writeToTerminal = useCallback((data: string | Uint8Array) => {
     terminalHandleRef.current?.write(data);
@@ -223,15 +246,15 @@ export function TerminalViewport({
   const handleTerminalReady = useCallback((terminal: WTerm) => {
     terminalInstanceRef.current = terminal;
     lastKnownSizeRef.current = {
-      cols: Math.max(terminal.cols, MIN_TERMINAL_COLS),
-      rows: Math.max(terminal.rows, MIN_TERMINAL_ROWS),
+      cols: normalizeTerminalDimension(terminal.cols, DEFAULT_TERMINAL_COLS),
+      rows: normalizeTerminalDimension(terminal.rows, DEFAULT_TERMINAL_ROWS),
     };
     setTerminalReadyRevision((current) => current + 1);
   }, []);
 
   const handleTerminalResize = useCallback((cols: number, rows: number) => {
-    const nextCols = Math.max(cols, MIN_TERMINAL_COLS);
-    const nextRows = Math.max(rows, MIN_TERMINAL_ROWS);
+    const nextCols = normalizeTerminalDimension(cols, lastKnownSizeRef.current.cols);
+    const nextRows = normalizeTerminalDimension(rows, lastKnownSizeRef.current.rows);
 
     lastKnownSizeRef.current = {
       cols: nextCols,
@@ -299,8 +322,7 @@ export function TerminalViewport({
     };
 
     const handleClick = (event: MouseEvent) => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().trim().length > 0) {
+      if (hasSelectionInside(terminalElement)) {
         return;
       }
 
@@ -309,8 +331,8 @@ export function TerminalViewport({
         return;
       }
 
+      terminalHandleRef.current?.focus();
       event.preventDefault();
-      event.stopPropagation();
 
       void window.piDesktop?.openExternal?.(match.text).then((opened) => {
         if (!opened) {
@@ -420,8 +442,8 @@ export function TerminalViewport({
     });
 
     const getCurrentSize = () => ({
-      cols: Math.max(terminal.cols, lastKnownSizeRef.current.cols, MIN_TERMINAL_COLS),
-      rows: Math.max(terminal.rows, lastKnownSizeRef.current.rows, MIN_TERMINAL_ROWS),
+      cols: normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols),
+      rows: normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows),
     });
 
     const openSession = async () => {
@@ -464,17 +486,13 @@ export function TerminalViewport({
       }
     };
 
-    openFrameRef.current = requestAnimationFrame(() => {
-      openFrameRef.current = null;
-
-      void openSession().catch((error) => {
-        attachFailedRef.current = true;
-        pendingEventsRef.current = [];
-        writeSystemMessage(
-          (message) => writeToTerminal(message),
-          error instanceof Error ? error.message : "Unable to open terminal.",
-        );
-      });
+    void openSession().catch((error) => {
+      attachFailedRef.current = true;
+      pendingEventsRef.current = [];
+      writeSystemMessage(
+        (message) => writeToTerminal(message),
+        error instanceof Error ? error.message : "Unable to open terminal.",
+      );
     });
 
     return () => {
@@ -484,11 +502,6 @@ export function TerminalViewport({
       pendingEventsRef.current = [];
       replayingBufferedEventsRef.current = false;
       lastSentSizeRef.current = null;
-
-      if (openFrameRef.current !== null) {
-        cancelAnimationFrame(openFrameRef.current);
-        openFrameRef.current = null;
-      }
 
       unsubscribe();
 
@@ -528,7 +541,7 @@ export function TerminalViewport({
         onResize={handleTerminalResize}
         onData={handleTerminalData}
         className="h-full w-full"
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", ...terminalStyle }}
       />
     </div>
   );
