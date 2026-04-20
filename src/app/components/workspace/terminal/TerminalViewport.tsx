@@ -1,6 +1,5 @@
-import { FitAddon } from "@xterm/addon-fit";
-import { type ITheme, Terminal } from "@xterm/xterm";
-import { type CSSProperties, useEffect, useRef } from "react";
+import { Terminal, type TerminalHandle, type WTerm } from "@wterm/react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
@@ -12,30 +11,24 @@ import {
 } from "../../../hooks/useDesktopTerminal";
 import { cn } from "../../../utils/cn";
 
+type TerminalBackgroundCssVar = "--terminal-bg" | "--workspace" | "--sidebar";
+
 type TerminalViewportProps = {
   projectId: string;
   sessionPath: string | null;
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
-  backgroundCssVar?: "--terminal-bg" | "--workspace" | "--sidebar";
+  backgroundCssVar?: TerminalBackgroundCssVar;
   className?: string;
 };
 
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-const XTERM_SCROLLBAR_VISIBILITY_VISIBLE = 3;
+const CLEAR_TERMINAL_SEQUENCE = "\u001b[2J\u001b[3J\u001b[H";
 const MAX_PENDING_TERMINAL_EVENTS = 200;
-
-type XtermPrivateTerminal = Terminal & {
-  _core?: {
-    _viewport?: {
-      _scrollableElement?: {
-        updateOptions?: (options: { vertical?: number; horizontal?: number }) => void;
-      };
-    };
-  };
-};
+const MIN_TERMINAL_COLS = 20;
+const MIN_TERMINAL_ROWS = 5;
 
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
@@ -58,65 +51,41 @@ function scheduleTerminalClose(sessionId: string, delayMs: number) {
   pendingTerminalCloseTimers.set(sessionId, timer);
 }
 
-function writeSystemMessage(terminal: Terminal, message: string) {
-  terminal.write(`\r\n[terminal] ${message}\r\n`);
+function writeSystemMessage(write: (data: string) => void, message: string) {
+  write(`\r\n[terminal] ${message}\r\n`);
 }
 
-function forcePersistentTerminalScrollbar(terminal: Terminal) {
-  const scrollableElement = (terminal as XtermPrivateTerminal)._core?._viewport?._scrollableElement;
-  scrollableElement?.updateOptions?.({ vertical: XTERM_SCROLLBAR_VISIBILITY_VISIBLE });
+function clearTerminal(write: (data: string) => void) {
+  write(CLEAR_TERMINAL_SEQUENCE);
 }
 
-function terminalThemeFromApp(
-  backgroundCssVar: "--terminal-bg" | "--workspace" | "--sidebar",
-): ITheme {
-  const rootStyles = getComputedStyle(document.documentElement);
-  const getToken = (name: string, fallback: string) =>
-    rootStyles.getPropertyValue(name).trim() || fallback;
-
-  const background = getToken(backgroundCssVar, "#171923");
-  const foreground = getToken("--text", "#d5daed");
-  const accent = getToken("--accent", "#b9bff3");
-  const muted = getToken("--muted", "#969db7");
-  const mutedStrong = getToken("--muted-2", "#727894");
-  const green = getToken("--green", "#86d9a0");
-
+function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
   return {
-    background,
-    foreground,
-    cursor: accent,
-    cursorAccent: background,
-    selectionBackground: "rgba(185, 191, 243, 0.18)",
-    selectionInactiveBackground: "rgba(185, 191, 243, 0.12)",
-    scrollbarSliderBackground: "rgba(255, 255, 255, 0.08)",
-    scrollbarSliderHoverBackground: "rgba(255, 255, 255, 0.14)",
-    scrollbarSliderActiveBackground: "rgba(255, 255, 255, 0.2)",
-    black: background,
-    red: "#db7d84",
-    green,
-    yellow: accent,
-    blue: accent,
-    magenta: accent,
-    cyan: muted,
-    white: foreground,
-    brightBlack: mutedStrong,
-    brightRed: "#ec979d",
-    brightGreen: green,
-    brightYellow: foreground,
-    brightBlue: foreground,
-    brightMagenta: foreground,
-    brightCyan: foreground,
-    brightWhite: "#f7f9ff",
-  };
-}
-
-function extractTerminalLinks(line: string) {
-  const matches = [...line.matchAll(/https?:\/\/[^\s)\]}]+/g)];
-  return matches.map((match) => ({
-    text: match[0],
-    start: match.index ?? 0,
-    end: (match.index ?? 0) + match[0].length,
-  }));
+    "--terminal-surface": `var(${backgroundCssVar})`,
+    "--terminal-selection": "rgba(185, 191, 243, 0.18)",
+    "--term-bg": `var(${backgroundCssVar})`,
+    "--term-fg": "var(--text)",
+    "--term-cursor": "var(--accent)",
+    "--term-font-family": '"Liberation Mono", Consolas, Menlo, monospace',
+    "--term-font-size": "12px",
+    "--term-line-height": "1.2",
+    "--term-color-0": `var(${backgroundCssVar})`,
+    "--term-color-1": "#db7d84",
+    "--term-color-2": "var(--green)",
+    "--term-color-3": "var(--accent)",
+    "--term-color-4": "var(--accent)",
+    "--term-color-5": "var(--accent)",
+    "--term-color-6": "var(--muted)",
+    "--term-color-7": "var(--text)",
+    "--term-color-8": "var(--muted-2)",
+    "--term-color-9": "#ec979d",
+    "--term-color-10": "var(--green)",
+    "--term-color-11": "var(--text)",
+    "--term-color-12": "var(--text)",
+    "--term-color-13": "var(--text)",
+    "--term-color-14": "var(--text)",
+    "--term-color-15": "#f7f9ff",
+  } as CSSProperties;
 }
 
 export function TerminalViewport({
@@ -128,58 +97,110 @@ export function TerminalViewport({
   backgroundCssVar = "--terminal-bg",
   className,
 }: TerminalViewportProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const terminalRef = useRef<Terminal | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
+  const terminalHandleRef = useRef<TerminalHandle | null>(null);
+  const terminalInstanceRef = useRef<WTerm | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const attachFailedRef = useRef(false);
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
   const replayingBufferedEventsRef = useRef(false);
-  const resizeFrameRef = useRef<number | null>(null);
-  const lastSizeRef = useRef<{ width: number; height: number; cols: number; rows: number } | null>(
-    null,
-  );
+  const openFrameRef = useRef<number | null>(null);
+  const lastKnownSizeRef = useRef({ cols: 80, rows: 24 });
+  const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
+  const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   const effectiveLaunchMode =
     launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
   const terminalSessionPath =
     effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
+  const viewportStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
+
+  const writeToTerminal = useCallback((data: string | Uint8Array) => {
+    terminalHandleRef.current?.write(data);
+  }, []);
+
+  const resetTerminal = useCallback(
+    (history = "") => {
+      clearTerminal((data) => writeToTerminal(data));
+      if (history) {
+        writeToTerminal(history);
+      }
+    },
+    [writeToTerminal],
+  );
+
+  const handleTerminalReady = useCallback((terminal: WTerm) => {
+    terminalInstanceRef.current = terminal;
+    lastKnownSizeRef.current = {
+      cols: Math.max(terminal.cols, MIN_TERMINAL_COLS),
+      rows: Math.max(terminal.rows, MIN_TERMINAL_ROWS),
+    };
+    setTerminalReadyRevision((current) => current + 1);
+  }, []);
+
+  const handleTerminalResize = useCallback((cols: number, rows: number) => {
+    const nextCols = Math.max(cols, MIN_TERMINAL_COLS);
+    const nextRows = Math.max(rows, MIN_TERMINAL_ROWS);
+
+    lastKnownSizeRef.current = {
+      cols: nextCols,
+      rows: nextRows,
+    };
+
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) {
+      return;
+    }
+
+    const nextSize = { sessionId, cols: nextCols, rows: nextRows };
+    const lastSentSize = lastSentSizeRef.current;
+
+    if (
+      lastSentSize &&
+      lastSentSize.sessionId === nextSize.sessionId &&
+      lastSentSize.cols === nextSize.cols &&
+      lastSentSize.rows === nextSize.rows
+    ) {
+      return;
+    }
+
+    lastSentSizeRef.current = nextSize;
+    void resizeDesktopTerminal(nextSize);
+  }, []);
+
+  const handleTerminalData = useCallback(
+    (data: string) => {
+      const sessionId = sessionIdRef.current;
+      if (!sessionId) {
+        return;
+      }
+
+      void writeDesktopTerminal(sessionId, data).catch((error) => {
+        writeSystemMessage(
+          (message) => writeToTerminal(message),
+          error instanceof Error ? error.message : "Terminal write failed.",
+        );
+      });
+    },
+    [writeToTerminal],
+  );
 
   useEffect(() => {
-    const mount = containerRef.current;
-    if (!mount) {
+    if (terminalReadyRevision === 0) {
+      return;
+    }
+
+    const terminal = terminalInstanceRef.current;
+    if (!terminal) {
       return;
     }
 
     let cancelled = false;
     attachFailedRef.current = false;
-    const fitAddon = new FitAddon();
-    const terminal = new Terminal({
-      cursorBlink: true,
-      lineHeight: 1.2,
-      fontSize: 12,
-      scrollback: 5_000,
-      fontFamily: '"Liberation Mono", Consolas, Menlo, monospace',
-      fontWeight: "400",
-      fontWeightBold: "600",
-      letterSpacing: 0,
-      theme: terminalThemeFromApp(backgroundCssVar),
-    });
-
-    terminal.loadAddon(fitAddon);
-    terminal.open(mount);
-    forcePersistentTerminalScrollbar(terminal);
-    fitAddon.fit();
-    terminal.focus();
-    lastSizeRef.current = {
-      width: mount.clientWidth,
-      height: mount.clientHeight,
-      cols: terminal.cols,
-      rows: terminal.rows,
-    };
-
-    terminalRef.current = terminal;
-    fitAddonRef.current = fitAddon;
+    sessionIdRef.current = null;
+    lastSentSizeRef.current = null;
+    pendingEventsRef.current = [];
+    replayingBufferedEventsRef.current = false;
+    resetTerminal();
 
     const bufferPendingEvent = (event: TerminalEvent) => {
       pendingEventsRef.current.push(event);
@@ -195,26 +216,23 @@ export function TerminalViewport({
     const applyTerminalEvent = (event: TerminalEvent) => {
       switch (event.type) {
         case "output":
-          terminal.write(event.data);
+          writeToTerminal(event.data);
           break;
         case "error":
-          writeSystemMessage(terminal, event.message);
+          writeSystemMessage((message) => writeToTerminal(message), event.message);
           break;
         case "exited":
           writeSystemMessage(
-            terminal,
+            (message) => writeToTerminal(message),
             `Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.`,
           );
           break;
         case "cleared":
-          terminal.clear();
+          clearTerminal((message) => writeToTerminal(message));
           break;
         case "started":
         case "restarted":
-          terminal.clear();
-          if (event.snapshot.history) {
-            terminal.write(event.snapshot.history);
-          }
+          resetTerminal(event.snapshot.history);
           break;
       }
     };
@@ -237,60 +255,6 @@ export function TerminalViewport({
       replayingBufferedEventsRef.current = false;
     };
 
-    const linkDisposable = terminal.registerLinkProvider({
-      provideLinks: (bufferLineNumber, callback) => {
-        const activeTerminal = terminalRef.current;
-        if (!activeTerminal) {
-          callback(undefined);
-          return;
-        }
-
-        const line = activeTerminal.buffer.active.getLine(bufferLineNumber - 1);
-        if (!line) {
-          callback(undefined);
-          return;
-        }
-
-        const lineText = line.translateToString(true);
-        const matches = extractTerminalLinks(lineText);
-        if (!matches.length) {
-          callback(undefined);
-          return;
-        }
-
-        callback(
-          matches.map((match) => ({
-            text: match.text,
-            range: {
-              start: { x: match.start + 1, y: bufferLineNumber },
-              end: { x: match.end, y: bufferLineNumber },
-            },
-            activate: () => {
-              void window.piDesktop?.openExternal?.(match.text).then((opened) => {
-                if (!opened) {
-                  writeSystemMessage(activeTerminal, `Unable to open ${match.text}`);
-                }
-              });
-            },
-          })),
-        );
-      },
-    });
-
-    const inputDisposable = terminal.onData((data) => {
-      const sessionId = sessionIdRef.current;
-      if (!sessionId) {
-        return;
-      }
-
-      void writeDesktopTerminal(sessionId, data).catch((error) => {
-        writeSystemMessage(
-          terminal,
-          error instanceof Error ? error.message : "Terminal write failed.",
-        );
-      });
-    });
-
     const unsubscribe = subscribeDesktopTerminal((event: TerminalEvent) => {
       const sessionId = sessionIdRef.current;
 
@@ -308,77 +272,19 @@ export function TerminalViewport({
       applyTerminalEvent(event);
     });
 
-    const themeObserver = new MutationObserver(() => {
-      terminal.options.theme = terminalThemeFromApp(backgroundCssVar);
+    const getCurrentSize = () => ({
+      cols: Math.max(terminal.cols, lastKnownSizeRef.current.cols, MIN_TERMINAL_COLS),
+      rows: Math.max(terminal.rows, lastKnownSizeRef.current.rows, MIN_TERMINAL_ROWS),
     });
-
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "style"],
-    });
-
-    const resizeObserver = new ResizeObserver(() => {
-      const activeTerminal = terminalRef.current;
-      const activeFitAddon = fitAddonRef.current;
-      const sessionId = sessionIdRef.current;
-      if (!activeTerminal || !activeFitAddon || !sessionId) {
-        return;
-      }
-
-      const width = mount.clientWidth;
-      const height = mount.clientHeight;
-      if (width <= 0 || height <= 0) {
-        return;
-      }
-
-      if (resizeFrameRef.current !== null) {
-        cancelAnimationFrame(resizeFrameRef.current);
-      }
-
-      resizeFrameRef.current = requestAnimationFrame(() => {
-        resizeFrameRef.current = null;
-
-        activeFitAddon.fit();
-
-        const previousSize = lastSizeRef.current;
-        const nextSize = {
-          width,
-          height,
-          cols: activeTerminal.cols,
-          rows: activeTerminal.rows,
-        };
-
-        const changed =
-          !previousSize ||
-          previousSize.width !== nextSize.width ||
-          previousSize.height !== nextSize.height ||
-          previousSize.cols !== nextSize.cols ||
-          previousSize.rows !== nextSize.rows;
-
-        lastSizeRef.current = nextSize;
-
-        if (!changed) {
-          return;
-        }
-
-        void resizeDesktopTerminal({
-          sessionId,
-          cols: activeTerminal.cols,
-          rows: activeTerminal.rows,
-        });
-      });
-    });
-
-    resizeObserver.observe(mount);
 
     const openSession = async () => {
-      fitAddon.fit();
+      const size = getCurrentSize();
       const snapshot = await openDesktopTerminal({
         projectId,
         sessionPath: terminalSessionPath,
         launchMode: effectiveLaunchMode,
-        cols: Math.max(terminal.cols, 20),
-        rows: Math.max(terminal.rows, 5),
+        cols: size.cols,
+        rows: size.rows,
       });
 
       if (cancelled || !snapshot) {
@@ -387,29 +293,41 @@ export function TerminalViewport({
 
       attachFailedRef.current = false;
       sessionIdRef.current = snapshot.sessionId;
+      lastSentSizeRef.current = {
+        sessionId: snapshot.sessionId,
+        cols: snapshot.cols,
+        rows: snapshot.rows,
+      };
       cancelScheduledTerminalClose(snapshot.sessionId);
-      terminal.clear();
-      if (snapshot.history) {
-        terminal.write(snapshot.history);
-      }
+      resetTerminal(snapshot.history);
 
       if (snapshot.status === "exited") {
         writeSystemMessage(
-          terminal,
+          (message) => writeToTerminal(message),
           `Process exited${snapshot.exitCode !== null ? ` (${snapshot.exitCode})` : ""}.`,
         );
       }
 
       replayBufferedEvents(snapshot.sessionId);
+      terminalHandleRef.current?.focus();
+
+      const currentSize = getCurrentSize();
+      if (currentSize.cols !== snapshot.cols || currentSize.rows !== snapshot.rows) {
+        handleTerminalResize(currentSize.cols, currentSize.rows);
+      }
     };
 
-    void openSession().catch((error) => {
-      attachFailedRef.current = true;
-      pendingEventsRef.current = [];
-      writeSystemMessage(
-        terminal,
-        error instanceof Error ? error.message : "Unable to open terminal.",
-      );
+    openFrameRef.current = requestAnimationFrame(() => {
+      openFrameRef.current = null;
+
+      void openSession().catch((error) => {
+        attachFailedRef.current = true;
+        pendingEventsRef.current = [];
+        writeSystemMessage(
+          (message) => writeToTerminal(message),
+          error instanceof Error ? error.message : "Unable to open terminal.",
+        );
+      });
     });
 
     return () => {
@@ -418,16 +336,14 @@ export function TerminalViewport({
       sessionIdRef.current = null;
       pendingEventsRef.current = [];
       replayingBufferedEventsRef.current = false;
-      resizeObserver.disconnect();
-      if (resizeFrameRef.current !== null) {
-        cancelAnimationFrame(resizeFrameRef.current);
-        resizeFrameRef.current = null;
+      lastSentSizeRef.current = null;
+
+      if (openFrameRef.current !== null) {
+        cancelAnimationFrame(openFrameRef.current);
+        openFrameRef.current = null;
       }
-      themeObserver.disconnect();
+
       unsubscribe();
-      inputDisposable.dispose();
-      linkDisposable.dispose();
-      terminal.dispose();
 
       if (sessionId && !preserveSessionOnUnmount) {
         if (keepAliveMsOnUnmount > 0) {
@@ -438,22 +354,35 @@ export function TerminalViewport({
       }
     };
   }, [
+    effectiveLaunchMode,
+    handleTerminalResize,
     keepAliveMsOnUnmount,
-    backgroundCssVar,
     preserveSessionOnUnmount,
     projectId,
+    resetTerminal,
+    terminalReadyRevision,
     terminalSessionPath,
-    effectiveLaunchMode,
+    writeToTerminal,
   ]);
 
   return (
     <div
-      ref={containerRef}
-      style={{ "--terminal-surface": `var(${backgroundCssVar})` } as CSSProperties}
+      style={viewportStyle}
       className={cn(
         "terminal-viewport h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
-    />
+    >
+      <Terminal
+        ref={terminalHandleRef}
+        autoResize
+        cursorBlink
+        onReady={handleTerminalReady}
+        onResize={handleTerminalResize}
+        onData={handleTerminalData}
+        className="h-full w-full"
+        style={{ height: "100%", width: "100%" }}
+      />
+    </div>
   );
 }
