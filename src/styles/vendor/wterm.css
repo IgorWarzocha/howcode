@@ -4,10 +4,15 @@
   border-radius: 10px;
   background: var(--terminal-surface, var(--terminal-bg));
   box-shadow: none;
+  cursor: text;
   overflow-y: scroll;
   overflow-x: hidden;
   scrollbar-gutter: stable;
   scrollbar-width: auto;
+}
+
+.terminal-viewport .wterm[data-link-hovered="true"] {
+  cursor: pointer;
 }
 
 .terminal-viewport--flush,

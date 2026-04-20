@@ -23,12 +23,19 @@ type TerminalViewportProps = {
   className?: string;
 };
 
+type TerminalLinkMatch = {
+  text: string;
+  start: number;
+  end: number;
+};
+
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 const CLEAR_TERMINAL_SEQUENCE = "\u001b[2J\u001b[3J\u001b[H";
 const MAX_PENDING_TERMINAL_EVENTS = 200;
 const MIN_TERMINAL_COLS = 20;
 const MIN_TERMINAL_ROWS = 5;
+const TERMINAL_LINK_PATTERN = /https?:\/\/[^\s)\]}]+/g;
 
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
@@ -57,6 +64,91 @@ function writeSystemMessage(write: (data: string) => void, message: string) {
 
 function clearTerminal(write: (data: string) => void) {
   write(CLEAR_TERMINAL_SEQUENCE);
+}
+
+function extractTerminalLinks(line: string): TerminalLinkMatch[] {
+  const matches = [...line.matchAll(TERMINAL_LINK_PATTERN)];
+  return matches.map((match) => ({
+    text: match[0],
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+}
+
+function getCaretPositionFromPoint(document: Document, clientX: number, clientY: number) {
+  const documentWithCaretApi = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  };
+
+  const caretPosition = documentWithCaretApi.caretPositionFromPoint?.(clientX, clientY);
+  if (caretPosition) {
+    return {
+      node: caretPosition.offsetNode,
+      offset: caretPosition.offset,
+    };
+  }
+
+  const caretRange = documentWithCaretApi.caretRangeFromPoint?.(clientX, clientY);
+  if (caretRange) {
+    return {
+      node: caretRange.startContainer,
+      offset: caretRange.startOffset,
+    };
+  }
+
+  return null;
+}
+
+function findTerminalRow(container: HTMLElement, node: Node | null) {
+  let current: Node | null = node;
+
+  while (current) {
+    if (current instanceof HTMLElement && current.classList.contains("term-row")) {
+      return container.contains(current) ? current : null;
+    }
+
+    current = current.parentNode;
+  }
+
+  return null;
+}
+
+function getRowTextOffset(row: HTMLElement, node: Node, offset: number) {
+  const range = row.ownerDocument.createRange();
+
+  try {
+    range.setStart(row, 0);
+    range.setEnd(node, offset);
+  } catch {
+    return null;
+  }
+
+  return range.toString().length;
+}
+
+function findTerminalLinkAtPoint(container: HTMLElement, clientX: number, clientY: number) {
+  const caret = getCaretPositionFromPoint(container.ownerDocument, clientX, clientY);
+  if (!caret) {
+    return null;
+  }
+
+  const row = findTerminalRow(container, caret.node);
+  if (!row) {
+    return null;
+  }
+
+  const rowTextOffset = getRowTextOffset(row, caret.node, caret.offset);
+  if (rowTextOffset === null) {
+    return null;
+  }
+
+  const lineText = row.textContent ?? "";
+  return (
+    extractTerminalLinks(lineText).find(
+      (match) => rowTextOffset >= match.start && rowTextOffset <= match.end,
+    ) ?? null
+  );
 }
 
 function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): CSSProperties {
@@ -183,6 +275,61 @@ export function TerminalViewport({
     },
     [writeToTerminal],
   );
+
+  useEffect(() => {
+    if (terminalReadyRevision === 0) {
+      return;
+    }
+
+    const terminalElement = terminalInstanceRef.current?.element;
+    if (!terminalElement) {
+      return;
+    }
+
+    const setLinkHover = (hovered: boolean) => {
+      terminalElement.dataset.linkHovered = hovered ? "true" : "false";
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      setLinkHover(Boolean(findTerminalLinkAtPoint(terminalElement, event.clientX, event.clientY)));
+    };
+
+    const handleMouseLeave = () => {
+      setLinkHover(false);
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim().length > 0) {
+        return;
+      }
+
+      const match = findTerminalLinkAtPoint(terminalElement, event.clientX, event.clientY);
+      if (!match) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      void window.piDesktop?.openExternal?.(match.text).then((opened) => {
+        if (!opened) {
+          writeSystemMessage((message) => writeToTerminal(message), `Unable to open ${match.text}`);
+        }
+      });
+    };
+
+    terminalElement.addEventListener("mousemove", handleMouseMove);
+    terminalElement.addEventListener("mouseleave", handleMouseLeave);
+    terminalElement.addEventListener("click", handleClick, true);
+
+    return () => {
+      terminalElement.removeEventListener("mousemove", handleMouseMove);
+      terminalElement.removeEventListener("mouseleave", handleMouseLeave);
+      terminalElement.removeEventListener("click", handleClick, true);
+      delete terminalElement.dataset.linkHovered;
+    };
+  }, [terminalReadyRevision, writeToTerminal]);
 
   useEffect(() => {
     if (terminalReadyRevision === 0) {
