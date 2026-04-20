@@ -3,4 +3,4 @@
 set -e
 
 bun run prepush:clean
-bun run check
+bun run prepush:check
