@@ -94,5 +94,8 @@
     "@aws-sdk/core": "^3.974.5",
     "@aws-sdk/xml-builder": "^3.972.19",
     "uuid": "^14.0.0"
+  },
+  "patchedDependencies": {
+    "@mariozechner/pi-coding-agent@0.69.0": "patches/@mariozechner%2Fpi-coding-agent@0.69.0.patch"
   }
 }

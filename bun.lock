@@ -52,6 +52,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@mariozechner/pi-coding-agent@0.69.0": "patches/@mariozechner%2Fpi-coding-agent@0.69.0.patch",
+  },
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",
     "@aws-sdk/core": "^3.974.5",
