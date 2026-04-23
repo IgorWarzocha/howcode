@@ -27,7 +27,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const {
     activeComposerState,
     activeThreadData,
-    archivedThreads,
     collapsedProjectIds,
     composerProjectId,
     currentProjectName,

@@ -9,7 +9,6 @@ import type {
   ComposerStateRequest,
   ProjectGitState,
   ShellState,
-  Thread,
 } from "../desktop/types";
 import {
   desktopQueryKeys,

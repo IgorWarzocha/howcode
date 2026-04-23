@@ -7,7 +7,6 @@ import {
 } from "@pierre/diffs/react";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import { ChevronDown, ChevronRight, MessageSquarePlus } from "lucide-react";
-import { cn } from "../../../utils/cn";
 import {
   DIFF_PANEL_UNSAFE_CSS,
   type DiffCommentMetadata,

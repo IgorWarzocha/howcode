@@ -22,7 +22,7 @@ function getCurrentTarget(): Target {
   }
 
   if (process.platform === "win32") {
-    return { os: "win", arch: "x64" };
+    return { os: "win", arch: process.arch === "arm64" ? "arm64" : "x64" };
   }
 
   return { os: "linux", arch: process.arch === "arm64" ? "arm64" : "x64" };

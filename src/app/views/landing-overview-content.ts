@@ -1,7 +1,3 @@
-type LandingOverviewSection = {
-  markdown: string;
-};
-
 type LandingOverviewContent = {
   title: string;
   roadmap: {

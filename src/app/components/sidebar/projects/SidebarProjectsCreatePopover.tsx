@@ -1,20 +1,17 @@
 import { FolderPlus } from "lucide-react";
 import { type RefObject, useEffect, useRef } from "react";
-import { SurfacePanel } from "../../common/SurfacePanel";
 
 type SidebarProjectsCreatePopoverProps = {
   menuId: string;
   open: boolean;
   draft: string;
   defaultLocation: string | null;
-  initializeGit: boolean;
   busy: boolean;
   errorMessage: string | null;
   panelRef?: RefObject<HTMLDialogElement | null>;
   onChangeDraft: (value: string) => void;
   onCreate: () => void;
   onClose: () => void;
-  onOpenSettings: () => void;
 };
 
 export function SidebarProjectsCreatePopover({
@@ -22,14 +19,12 @@ export function SidebarProjectsCreatePopover({
   open,
   draft,
   defaultLocation,
-  initializeGit,
   busy,
   errorMessage,
   panelRef,
   onChangeDraft,
   onCreate,
   onClose,
-  onOpenSettings,
 }: SidebarProjectsCreatePopoverProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const canCreate = draft.trim().length > 0 && !busy && Boolean(defaultLocation);

@@ -264,7 +264,6 @@ export function SidebarProjectsSection({
             open={createOpen}
             draft={projectNameDraft}
             defaultLocation={appSettings.preferredProjectLocation}
-            initializeGit={appSettings.initializeGitOnProjectCreate}
             busy={createBusy}
             errorMessage={createErrorMessage}
             panelRef={createPanelRef}
@@ -275,10 +274,6 @@ export function SidebarProjectsSection({
             onClose={() => {
               setCreateOpen(false);
               setCreateErrorMessage(null);
-            }}
-            onOpenSettings={() => {
-              setCreateOpen(false);
-              onOpenSettingsPanel();
             }}
           />
         ) : null}

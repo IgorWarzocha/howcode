@@ -11,7 +11,6 @@ import type {
   DictationTranscriptionResult,
   Project,
   ProjectCommitEntry,
-  ProjectDiffStatsResult,
   ShellState,
 } from "../../shared/desktop-contracts.ts";
 import {

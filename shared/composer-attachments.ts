@@ -1,32 +1,6 @@
 import type { ComposerAttachment } from "./desktop-data-contracts";
 
 const imageAttachmentPattern = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
-const unixAbsolutePathRoots = new Set([
-  "Applications",
-  "Library",
-  "System",
-  "Users",
-  "Volumes",
-  "bin",
-  "dev",
-  "etc",
-  "home",
-  "media",
-  "mnt",
-  "opt",
-  "private",
-  "proc",
-  "repo",
-  "root",
-  "run",
-  "sbin",
-  "srv",
-  "tmp",
-  "usr",
-  "var",
-  "workspace",
-  "workspaces",
-]);
 
 function stripWrappingCharacters(value: string) {
   const trimmed = value.trim();
@@ -63,7 +37,6 @@ function decodeFileUrlPath(url: URL) {
 
 function isLikelyLocalFilePath(candidate: string) {
   const pathSegments = candidate.split(/[\\/]/).filter(Boolean);
-  const lastSegment = pathSegments[pathSegments.length - 1] ?? "";
 
   return (
     (candidate.startsWith("/") && candidate !== "/" && pathSegments.length >= 1) ||

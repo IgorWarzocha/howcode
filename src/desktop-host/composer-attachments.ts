@@ -5,7 +5,7 @@ import type {
   ComposerFilePickerEntry,
   ComposerFilePickerState,
 } from "../../shared/desktop-contracts";
-import { getAttachmentKind, isSafeExternalUrl } from "../../shared/composer-attachments";
+import { getAttachmentKind } from "../../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory";
 
 async function pathExists(targetPath: string) {
