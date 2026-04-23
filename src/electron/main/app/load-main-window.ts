@@ -10,6 +10,7 @@ import { getRendererDistDirectory } from "../runtime/app-paths";
 
 const DEV_SERVER_PROBE_TIMEOUT_MS = 1_500;
 const DEV_SERVER_STARTUP_TIMEOUT_MS = 10_000;
+const DEV_SERVER_STALE_URL_TIMEOUT_MS = 1_500;
 const DEV_SERVER_RETRY_INTERVAL_MS = 250;
 
 function waitForDevServerRetry() {
@@ -35,18 +36,35 @@ async function resolveDevServerUrl() {
   }
 
   const startupDeadline = Date.now() + DEV_SERVER_STARTUP_TIMEOUT_MS;
+  let lastDevServerUrl: string | null = null;
+  let firstProbeFailureAt: number | null = null;
 
   while (Date.now() < startupDeadline) {
+    let devServerUrl: string | null = null;
+
     try {
       const rawMetadata = await readFile(metadataPath, "utf8");
-      const devServerUrl = parseDevServerMetadata(rawMetadata);
-      if (devServerUrl) {
-        await probeDevServerUrl(devServerUrl);
-        return devServerUrl;
-      }
+      devServerUrl = parseDevServerMetadata(rawMetadata);
     } catch {
       // The dev script writes metadata only after Vite is listening. Keep probing briefly so
       // Electron doesn't permanently fall back to the packaged renderer during slow startups.
+    }
+
+    if (devServerUrl) {
+      if (devServerUrl !== lastDevServerUrl) {
+        lastDevServerUrl = devServerUrl;
+        firstProbeFailureAt = null;
+      }
+
+      try {
+        await probeDevServerUrl(devServerUrl);
+        return devServerUrl;
+      } catch {
+        firstProbeFailureAt ??= Date.now();
+        if (Date.now() - firstProbeFailureAt >= DEV_SERVER_STALE_URL_TIMEOUT_MS) {
+          return null;
+        }
+      }
     }
 
     await waitForDevServerRetry();

@@ -260,10 +260,10 @@ export function ProjectTree({
                         onAction={onAction}
                         onCloseProjectMenu={() => setOpenProjectMenuId(null)}
                         onThreadOpen={onThreadOpen}
-                        onToggleOldThreads={() =>
+                        onToggleOldThreads={(currentlyExpanded) =>
                           setExpandedOldProjectIds((current) => ({
                             ...current,
-                            [project.id]: !(expandedOldProjectIds[project.id] === true),
+                            [project.id]: !currentlyExpanded,
                           }))
                         }
                       />

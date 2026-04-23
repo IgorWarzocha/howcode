@@ -21,7 +21,7 @@ type ProjectThreadsListProps = {
   onAction: DesktopActionInvoker;
   onCloseProjectMenu: () => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
-  onToggleOldThreads: () => void;
+  onToggleOldThreads: (currentlyExpanded: boolean) => void;
 };
 
 function partitionProjectThreads(project: Project) {
@@ -187,7 +187,7 @@ export function ProjectThreadsList({
         <>
           <OldSessionsRow
             expanded={oldThreadsExpanded}
-            onToggle={onToggleOldThreads}
+            onToggle={() => onToggleOldThreads(oldThreadsExpanded)}
             onArchiveAll={() => {
               void onAction("thread.archive-many", {
                 projectId: project.id,
