@@ -49,10 +49,10 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/inter": "^5.2.8",
-    "@mariozechner/pi-agent-core": "^0.67.6",
-    "@mariozechner/pi-ai": "^0.67.6",
-    "@mariozechner/pi-coding-agent": "^0.67.6",
-    "@mariozechner/pi-tui": "^0.67.6",
+    "@mariozechner/pi-agent-core": "^0.69.0",
+    "@mariozechner/pi-ai": "^0.69.0",
+    "@mariozechner/pi-coding-agent": "^0.69.0",
+    "@mariozechner/pi-tui": "^0.69.0",
     "@pierre/diffs": "^1.1.0-beta.16",
     "@tanstack/react-pacer": "^0.21.1",
     "@tanstack/react-query": "^5.96.1",
@@ -88,5 +88,11 @@
     "typescript": "^5.8.3",
     "vite": "^7.0.4",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1036.0",
+    "@aws-sdk/core": "^3.974.5",
+    "@aws-sdk/xml-builder": "^3.972.19",
+    "uuid": "^14.0.0"
   }
 }
