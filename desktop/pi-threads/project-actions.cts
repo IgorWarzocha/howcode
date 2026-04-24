@@ -32,6 +32,7 @@ import {
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
+import { getProjectImportRefreshError } from "./project-import-refresh.ts";
 import { refreshShellIndex } from "./shell-loader.cts";
 
 async function unlinkIfPresent(filePath: string) {
@@ -311,9 +312,14 @@ export async function handleProjectDesktopAction(
     case "projects.import.scan": {
       const projectIds = getProjectIds(payload);
       const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
-      if (!refreshed && projectIds.length === 0) {
+      const refreshError = getProjectImportRefreshError({
+        mode: "scan",
+        projectIds,
+        refreshed,
+      });
+      if (refreshError) {
         return handledAction({
-          error: "Could not refresh Pi sessions before scanning projects.",
+          error: refreshError,
         });
       }
 
@@ -324,10 +330,17 @@ export async function handleProjectDesktopAction(
 
     case "projects.import.apply": {
       const projectIds = getProjectIds(payload);
-      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
-      if (!refreshed && projectIds.length === 0) {
+      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory(), {
+        emitRefreshEvent: false,
+      });
+      const refreshError = getProjectImportRefreshError({
+        mode: "import",
+        projectIds,
+        refreshed,
+      });
+      if (refreshError) {
         return handledAction({
-          error: "Could not refresh Pi sessions before importing projects.",
+          error: refreshError,
         });
       }
 

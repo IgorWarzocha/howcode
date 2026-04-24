@@ -1,4 +1,4 @@
-import { realpath } from "node:fs/promises";
+import { readFile, readdir, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import type {
   ComposerState,
@@ -56,6 +56,18 @@ type SessionStorage = {
   sessionDir: string | null;
 };
 
+type SessionFileEntry = {
+  type?: string;
+  id?: string;
+  timestamp?: string;
+  cwd?: string;
+  message?: {
+    role?: string;
+    content?: string | Array<{ type?: string; text?: string }>;
+  };
+  name?: string;
+};
+
 function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
   return {
     id: session.id,
@@ -76,6 +88,120 @@ async function getSessionStorage(cwd: string): Promise<SessionStorage> {
     agentDir,
     sessionDir: configuredSessionDir ?? null,
   };
+}
+
+function isNodeErrorWithCode(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+async function readDirectoryIfPresent(directoryPath: string) {
+  try {
+    return await readdir(directoryPath, { withFileTypes: true });
+  } catch (error) {
+    if (isNodeErrorWithCode(error, "ENOENT")) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function getMessageText(entry: SessionFileEntry) {
+  const content = entry.message?.content;
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .filter((block) => block.type === "text" && typeof block.text === "string")
+      .map((block) => block.text)
+      .join(" ");
+  }
+
+  return "";
+}
+
+async function readSessionSummary(filePath: string): Promise<SessionSummary | null> {
+  let content: string;
+  try {
+    content = await readFile(filePath, "utf8");
+  } catch (error) {
+    if (isNodeErrorWithCode(error, "ENOENT")) {
+      return null;
+    }
+
+    throw error;
+  }
+
+  const entries = content
+    .trim()
+    .split("\n")
+    .flatMap((line) => {
+      if (!line.trim()) {
+        return [];
+      }
+
+      try {
+        return [JSON.parse(line) as SessionFileEntry];
+      } catch {
+        return [];
+      }
+    });
+  const header = entries[0];
+  if (!header || header.type !== "session" || typeof header.id !== "string") {
+    return null;
+  }
+
+  let firstMessage = "";
+  let name: string | undefined;
+  for (const entry of entries) {
+    if (entry.type === "session_info") {
+      name = entry.name?.trim() || undefined;
+    }
+
+    if (!firstMessage && entry.type === "message" && entry.message?.role === "user") {
+      firstMessage = getMessageText(entry);
+    }
+  }
+
+  const fileStat = await stat(filePath);
+  const headerTimestamp =
+    typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
+
+  return {
+    id: header.id,
+    cwd: typeof header.cwd === "string" ? header.cwd : undefined,
+    path: filePath,
+    name,
+    firstMessage: firstMessage || "(no messages)",
+    modified: Number.isNaN(headerTimestamp) ? fileStat.mtime : new Date(headerTimestamp),
+  };
+}
+
+async function listAllSessionsStrict(): Promise<SessionSummary[]> {
+  const { getAgentDir } = await getPiModule();
+  const sessionsDir = path.join(getAgentDir(), "sessions");
+  const sessionDirectories = (await readDirectoryIfPresent(sessionsDir)).filter((entry) =>
+    entry.isDirectory(),
+  );
+  const sessionFilePaths: string[] = [];
+
+  for (const sessionDirectory of sessionDirectories) {
+    const sessionDirectoryPath = path.join(sessionsDir, sessionDirectory.name);
+    const sessionFiles = await readDirectoryIfPresent(sessionDirectoryPath);
+    sessionFilePaths.push(
+      ...sessionFiles
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
+        .map((entry) => path.join(sessionDirectoryPath, entry.name)),
+    );
+  }
+
+  const sessions = (await Promise.all(sessionFilePaths.map(readSessionSummary))).filter(
+    (session): session is SessionSummary => session !== null,
+  );
+  sessions.sort((left, right) => right.modified.getTime() - left.modified.getTime());
+  return sessions;
 }
 
 async function resolveProjectPathForComparison(projectId: string) {
@@ -108,8 +234,7 @@ async function enrichProjectsWithResolvedIds(projects: Project[]) {
 }
 
 async function syncShellIndex(cwd: string) {
-  const { SessionManager } = await getPiModule();
-  const sessions = (await SessionManager.listAll()) as SessionSummary[];
+  const sessions = await listAllSessionsStrict();
 
   syncSessionSummaries(
     cwd,
@@ -137,7 +262,7 @@ function scheduleShellIndexSync(cwd: string) {
   inFlightShellIndexSyncs.set(cwd, syncPromise);
 }
 
-export async function refreshShellIndex(cwd: string) {
+export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent?: boolean } = {}) {
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
   if (inFlightSync) {
     try {
@@ -150,7 +275,9 @@ export async function refreshShellIndex(cwd: string) {
   try {
     await syncShellIndex(cwd);
     syncedShellIndexes.add(cwd);
-    emitDesktopEvent({ type: "shell-state-refresh" });
+    if (options.emitRefreshEvent ?? true) {
+      emitDesktopEvent({ type: "shell-state-refresh" });
+    }
     return true;
   } catch (error) {
     console.warn("Failed to refresh shell index.", error);
