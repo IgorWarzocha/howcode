@@ -32,6 +32,7 @@ import {
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
+import { refreshShellIndex } from "./shell-loader.cts";
 
 async function unlinkIfPresent(filePath: string) {
   try {
@@ -307,13 +308,17 @@ export async function handleProjectDesktopAction(
       collapseAllProjects();
       return handledAction();
 
-    case "projects.import.scan":
+    case "projects.import.scan": {
+      await refreshShellIndex(getDesktopWorkingDirectory());
       return handledAction({
         projects: await scanKnownProjects(getProjectIds(payload)),
       });
+    }
 
-    case "projects.import.apply":
+    case "projects.import.apply": {
+      await refreshShellIndex(getDesktopWorkingDirectory());
       return handledAction(await importProjects(getProjectIds(payload)));
+    }
 
     default:
       return unhandledAction();

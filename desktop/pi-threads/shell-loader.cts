@@ -137,6 +137,17 @@ function scheduleShellIndexSync(cwd: string) {
   inFlightShellIndexSyncs.set(cwd, syncPromise);
 }
 
+export async function refreshShellIndex(cwd: string) {
+  const inFlightSync = inFlightShellIndexSyncs.get(cwd);
+  if (inFlightSync) {
+    await inFlightSync;
+  }
+
+  await syncShellIndex(cwd);
+  syncedShellIndexes.add(cwd);
+  emitDesktopEvent({ type: "shell-state-refresh" });
+}
+
 export async function loadShellState(cwd: string): Promise<ShellState> {
   const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
