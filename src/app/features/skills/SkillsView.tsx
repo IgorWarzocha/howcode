@@ -93,9 +93,12 @@ export function SkillsView({
         </div>
       ) : null}
 
-      <output className="text-[12px] text-[#f2a7a7]" aria-live="polite">
+      <output className="sr-only" aria-live="polite">
         {controller.actionError ?? ""}
       </output>
+      {controller.actionError ? (
+        <div className="text-[12px] text-[#f2a7a7]">{controller.actionError}</div>
+      ) : null}
 
       <SkillCreatorSection
         installScope={controller.installScope}
