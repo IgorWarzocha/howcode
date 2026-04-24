@@ -13,7 +13,6 @@ import { useSettingsDictationController } from "./useSettingsDictationController
 
 export function useSettingsController({
   appSettings,
-  projects,
   onAction,
 }: {
   appSettings: AppSettings;
@@ -102,7 +101,7 @@ export function useSettingsController({
 
     try {
       const result = await onAction("projects.import.apply", {
-        projectIds: projects.map((project) => project.id),
+        projectIds: [],
       });
       const error = getActionError(result);
       if (error) {

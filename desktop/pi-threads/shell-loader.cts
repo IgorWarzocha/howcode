@@ -1,5 +1,7 @@
-import { realpath } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { readdir, realpath, stat } from "node:fs/promises";
 import path from "node:path";
+import { createInterface } from "node:readline";
 import type {
   ComposerState,
   ComposerStateRequest,
@@ -40,7 +42,7 @@ import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
 
 const syncedShellIndexes = new Set<string>();
-const inFlightShellIndexSyncs = new Map<string, Promise<void>>();
+const inFlightShellIndexSyncs = new Map<string, Promise<boolean>>();
 
 type SessionSummary = {
   id: string;
@@ -54,6 +56,19 @@ type SessionSummary = {
 type SessionStorage = {
   agentDir: string;
   sessionDir: string | null;
+};
+
+type SessionFileEntry = {
+  type?: string;
+  id?: string;
+  timestamp?: string;
+  cwd?: string;
+  message?: {
+    role?: string;
+    timestamp?: number;
+    content?: string | Array<{ type?: string; text?: string }>;
+  };
+  name?: string;
 };
 
 function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
@@ -76,6 +91,171 @@ async function getSessionStorage(cwd: string): Promise<SessionStorage> {
     agentDir,
     sessionDir: configuredSessionDir ?? null,
   };
+}
+
+function isNodeErrorWithCode(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+async function readDirectoryIfPresent(directoryPath: string) {
+  try {
+    return await readdir(directoryPath, { withFileTypes: true });
+  } catch (error) {
+    if (isNodeErrorWithCode(error, "ENOENT")) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function getMessageText(entry: SessionFileEntry) {
+  const content = entry.message?.content;
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .filter((block) => block.type === "text" && typeof block.text === "string")
+      .map((block) => block.text)
+      .join(" ");
+  }
+
+  return "";
+}
+
+function getEntryTimestampMs(entry: SessionFileEntry) {
+  if (typeof entry.message?.timestamp === "number") {
+    return entry.message.timestamp;
+  }
+
+  if (typeof entry.timestamp !== "string") {
+    return null;
+  }
+
+  const timestampMs = Date.parse(entry.timestamp);
+  return Number.isNaN(timestampMs) ? null : timestampMs;
+}
+
+function getSessionModifiedDate(
+  header: SessionFileEntry,
+  lastActivityTimeMs: number | null,
+  fileModified: Date,
+) {
+  if (lastActivityTimeMs !== null) {
+    return new Date(lastActivityTimeMs);
+  }
+
+  const headerTimestampMs =
+    typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
+  return Number.isNaN(headerTimestampMs) ? fileModified : new Date(headerTimestampMs);
+}
+
+async function readSessionSummary(filePath: string): Promise<SessionSummary | null> {
+  let fileStat: Awaited<ReturnType<typeof stat>>;
+  try {
+    fileStat = await stat(filePath);
+  } catch (error) {
+    console.warn(`Failed to stat session file while refreshing shell index: ${filePath}`, error);
+    return null;
+  }
+
+  let header: SessionFileEntry | undefined;
+  let firstMessage: string | undefined;
+  let name: string | undefined;
+  let lastActivityTimeMs: number | null = null;
+
+  try {
+    const lines = createInterface({
+      input: createReadStream(filePath, { encoding: "utf8" }),
+      crlfDelay: Number.POSITIVE_INFINITY,
+    });
+
+    for await (const line of lines) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      let entry: SessionFileEntry;
+      try {
+        entry = JSON.parse(line) as SessionFileEntry;
+      } catch {
+        continue;
+      }
+
+      header ??= entry;
+
+      if (entry.type === "session_info") {
+        name = entry.name?.trim() || undefined;
+      }
+
+      if (!firstMessage && entry.type === "message" && entry.message?.role === "user") {
+        firstMessage = getMessageText(entry) || undefined;
+      }
+
+      if (
+        entry.type === "message" &&
+        (entry.message?.role === "user" || entry.message?.role === "assistant")
+      ) {
+        const entryTimestampMs = getEntryTimestampMs(entry);
+        if (entryTimestampMs !== null) {
+          lastActivityTimeMs = Math.max(lastActivityTimeMs ?? 0, entryTimestampMs);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed to read session file while refreshing shell index: ${filePath}`, error);
+    return null;
+  }
+
+  if (!header || header.type !== "session" || typeof header.id !== "string") {
+    return null;
+  }
+
+  return {
+    id: header.id,
+    cwd: typeof header.cwd === "string" ? header.cwd : undefined,
+    path: filePath,
+    name,
+    firstMessage,
+    modified: getSessionModifiedDate(header, lastActivityTimeMs, fileStat.mtime),
+  };
+}
+
+async function listAllSessionsStrict(): Promise<SessionSummary[]> {
+  const { getAgentDir } = await getPiModule();
+  const sessionsDir = path.join(getAgentDir(), "sessions");
+  const sessionDirectories = (await readDirectoryIfPresent(sessionsDir)).filter((entry) =>
+    entry.isDirectory(),
+  );
+  const sessionFilePaths: string[] = [];
+
+  for (const sessionDirectory of sessionDirectories) {
+    const sessionDirectoryPath = path.join(sessionsDir, sessionDirectory.name);
+    let sessionFiles: Awaited<ReturnType<typeof readDirectoryIfPresent>>;
+    try {
+      sessionFiles = await readDirectoryIfPresent(sessionDirectoryPath);
+    } catch (error) {
+      console.warn(
+        `Failed to read session directory while refreshing shell index: ${sessionDirectoryPath}`,
+        error,
+      );
+      continue;
+    }
+
+    sessionFilePaths.push(
+      ...sessionFiles
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
+        .map((entry) => path.join(sessionDirectoryPath, entry.name)),
+    );
+  }
+
+  const sessions = (await Promise.all(sessionFilePaths.map(readSessionSummary))).filter(
+    (session): session is SessionSummary => session !== null,
+  );
+  sessions.sort((left, right) => right.modified.getTime() - left.modified.getTime());
+  return sessions;
 }
 
 async function resolveProjectPathForComparison(projectId: string) {
@@ -108,8 +288,7 @@ async function enrichProjectsWithResolvedIds(projects: Project[]) {
 }
 
 async function syncShellIndex(cwd: string) {
-  const { SessionManager } = await getPiModule();
-  const sessions = (await SessionManager.listAll()) as SessionSummary[];
+  const sessions = await listAllSessionsStrict();
 
   syncSessionSummaries(
     cwd,
@@ -126,15 +305,39 @@ function scheduleShellIndexSync(cwd: string) {
     .then(() => {
       syncedShellIndexes.add(cwd);
       emitDesktopEvent({ type: "shell-state-refresh" });
+      return true;
     })
     .catch((error) => {
       console.warn("Failed to sync shell index.", error);
+      return false;
     })
     .finally(() => {
       inFlightShellIndexSyncs.delete(cwd);
     });
 
   inFlightShellIndexSyncs.set(cwd, syncPromise);
+}
+
+export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent?: boolean } = {}) {
+  const inFlightSync = inFlightShellIndexSyncs.get(cwd);
+  if (inFlightSync) {
+    const synced = await inFlightSync;
+    if (synced) {
+      return true;
+    }
+  }
+
+  try {
+    await syncShellIndex(cwd);
+    syncedShellIndexes.add(cwd);
+    if (options.emitRefreshEvent ?? true) {
+      emitDesktopEvent({ type: "shell-state-refresh" });
+    }
+    return true;
+  } catch (error) {
+    console.warn("Failed to refresh shell index.", error);
+    return false;
+  }
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {

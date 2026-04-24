@@ -32,6 +32,8 @@ import {
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
+import { getProjectImportRefreshError } from "./project-import-refresh.ts";
+import { refreshShellIndex } from "./shell-loader.cts";
 
 async function unlinkIfPresent(filePath: string) {
   try {
@@ -307,13 +309,43 @@ export async function handleProjectDesktopAction(
       collapseAllProjects();
       return handledAction();
 
-    case "projects.import.scan":
-      return handledAction({
-        projects: await scanKnownProjects(getProjectIds(payload)),
+    case "projects.import.scan": {
+      const projectIds = getProjectIds(payload);
+      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
+      const refreshError = getProjectImportRefreshError({
+        mode: "scan",
+        projectIds,
+        refreshed,
       });
+      if (refreshError) {
+        return handledAction({
+          error: refreshError,
+        });
+      }
 
-    case "projects.import.apply":
-      return handledAction(await importProjects(getProjectIds(payload)));
+      return handledAction({
+        projects: await scanKnownProjects(projectIds),
+      });
+    }
+
+    case "projects.import.apply": {
+      const projectIds = getProjectIds(payload);
+      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory(), {
+        emitRefreshEvent: false,
+      });
+      const refreshError = getProjectImportRefreshError({
+        mode: "import",
+        projectIds,
+        refreshed,
+      });
+      if (refreshError) {
+        return handledAction({
+          error: refreshError,
+        });
+      }
+
+      return handledAction(await importProjects(projectIds));
+    }
 
     default:
       return unhandledAction();
