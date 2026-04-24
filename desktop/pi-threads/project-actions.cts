@@ -309,15 +309,29 @@ export async function handleProjectDesktopAction(
       return handledAction();
 
     case "projects.import.scan": {
-      await refreshShellIndex(getDesktopWorkingDirectory());
+      const projectIds = getProjectIds(payload);
+      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
+      if (!refreshed && projectIds.length === 0) {
+        return handledAction({
+          error: "Could not refresh Pi sessions before scanning projects.",
+        });
+      }
+
       return handledAction({
-        projects: await scanKnownProjects(getProjectIds(payload)),
+        projects: await scanKnownProjects(projectIds),
       });
     }
 
     case "projects.import.apply": {
-      await refreshShellIndex(getDesktopWorkingDirectory());
-      return handledAction(await importProjects(getProjectIds(payload)));
+      const projectIds = getProjectIds(payload);
+      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
+      if (!refreshed && projectIds.length === 0) {
+        return handledAction({
+          error: "Could not refresh Pi sessions before importing projects.",
+        });
+      }
+
+      return handledAction(await importProjects(projectIds));
     }
 
     default:

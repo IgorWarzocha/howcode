@@ -151,8 +151,10 @@ export async function refreshShellIndex(cwd: string) {
     await syncShellIndex(cwd);
     syncedShellIndexes.add(cwd);
     emitDesktopEvent({ type: "shell-state-refresh" });
+    return true;
   } catch (error) {
     console.warn("Failed to refresh shell index.", error);
+    return false;
   }
 }
 
