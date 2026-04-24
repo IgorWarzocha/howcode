@@ -40,7 +40,7 @@ import { setWatchedSessionPath } from "./session-watch.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
 
 const syncedShellIndexes = new Set<string>();
-const inFlightShellIndexSyncs = new Map<string, Promise<void>>();
+const inFlightShellIndexSyncs = new Map<string, Promise<boolean>>();
 
 type SessionSummary = {
   id: string;
@@ -63,6 +63,7 @@ type SessionFileEntry = {
   cwd?: string;
   message?: {
     role?: string;
+    timestamp?: number;
     content?: string | Array<{ type?: string; text?: string }>;
   };
   name?: string;
@@ -122,16 +123,56 @@ function getMessageText(entry: SessionFileEntry) {
   return "";
 }
 
+function getEntryTimestampMs(entry: SessionFileEntry) {
+  if (typeof entry.message?.timestamp === "number") {
+    return entry.message.timestamp;
+  }
+
+  if (typeof entry.timestamp !== "string") {
+    return null;
+  }
+
+  const timestampMs = Date.parse(entry.timestamp);
+  return Number.isNaN(timestampMs) ? null : timestampMs;
+}
+
+function getSessionModifiedDate(
+  entries: SessionFileEntry[],
+  header: SessionFileEntry,
+  fileModified: Date,
+) {
+  let lastActivityTimeMs: number | null = null;
+
+  for (const entry of entries) {
+    if (
+      entry.type !== "message" ||
+      (entry.message?.role !== "user" && entry.message?.role !== "assistant")
+    ) {
+      continue;
+    }
+
+    const entryTimestampMs = getEntryTimestampMs(entry);
+    if (entryTimestampMs !== null) {
+      lastActivityTimeMs = Math.max(lastActivityTimeMs ?? 0, entryTimestampMs);
+    }
+  }
+
+  if (lastActivityTimeMs !== null) {
+    return new Date(lastActivityTimeMs);
+  }
+
+  const headerTimestampMs =
+    typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
+  return Number.isNaN(headerTimestampMs) ? fileModified : new Date(headerTimestampMs);
+}
+
 async function readSessionSummary(filePath: string): Promise<SessionSummary | null> {
   let content: string;
   try {
     content = await readFile(filePath, "utf8");
   } catch (error) {
-    if (isNodeErrorWithCode(error, "ENOENT")) {
-      return null;
-    }
-
-    throw error;
+    console.warn(`Failed to read session file while refreshing shell index: ${filePath}`, error);
+    return null;
   }
 
   const entries = content
@@ -165,9 +206,13 @@ async function readSessionSummary(filePath: string): Promise<SessionSummary | nu
     }
   }
 
-  const fileStat = await stat(filePath);
-  const headerTimestamp =
-    typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
+  let fileStat: Awaited<ReturnType<typeof stat>>;
+  try {
+    fileStat = await stat(filePath);
+  } catch (error) {
+    console.warn(`Failed to stat session file while refreshing shell index: ${filePath}`, error);
+    return null;
+  }
 
   return {
     id: header.id,
@@ -175,7 +220,7 @@ async function readSessionSummary(filePath: string): Promise<SessionSummary | nu
     path: filePath,
     name,
     firstMessage: firstMessage || "(no messages)",
-    modified: Number.isNaN(headerTimestamp) ? fileStat.mtime : new Date(headerTimestamp),
+    modified: getSessionModifiedDate(entries, header, fileStat.mtime),
   };
 }
 
@@ -251,9 +296,11 @@ function scheduleShellIndexSync(cwd: string) {
     .then(() => {
       syncedShellIndexes.add(cwd);
       emitDesktopEvent({ type: "shell-state-refresh" });
+      return true;
     })
     .catch((error) => {
       console.warn("Failed to sync shell index.", error);
+      return false;
     })
     .finally(() => {
       inFlightShellIndexSyncs.delete(cwd);
@@ -265,10 +312,9 @@ function scheduleShellIndexSync(cwd: string) {
 export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent?: boolean } = {}) {
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
   if (inFlightSync) {
-    try {
-      await inFlightSync;
-    } catch (error) {
-      console.warn("Failed to wait for shell index sync before refresh.", error);
+    const synced = await inFlightSync;
+    if (synced) {
+      return true;
     }
   }
 
