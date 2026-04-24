@@ -4,7 +4,6 @@ import type {
   Thread,
   ThreadData,
 } from "../../shared/desktop-contracts.ts";
-import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
 import { buildThreadData } from "../../shared/thread-data.ts";
 import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
 import { getLiveThread } from "../pi-desktop-runtime.cts";

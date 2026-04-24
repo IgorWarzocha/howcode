@@ -8,7 +8,6 @@ import {
   DEFAULT_DICTATION_MODEL_DIRECTORY,
   getDictationModelDirectories,
   getResolvedDictationModelFiles,
-  type DictationModelFiles,
 } from "./model-resolution.cts";
 import {
   getRecognizer,

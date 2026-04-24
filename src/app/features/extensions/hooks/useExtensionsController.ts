@@ -65,15 +65,6 @@ export function useExtensionsController({
   const projectInstalledCount = installedEntries.filter(
     (configuredPackage) => configuredPackage.scope === "project",
   ).length;
-  const scopedConfiguredEntries = useMemo(
-    () =>
-      configuredPackages.filter((configuredPackage) =>
-        installScope === "project"
-          ? configuredPackage.scope === "project"
-          : configuredPackage.scope === "user",
-      ),
-    [configuredPackages, installScope],
-  );
   const scopedInstalledEntries = useMemo(
     () =>
       installedEntries.filter((configuredPackage) =>

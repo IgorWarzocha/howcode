@@ -1,4 +1,5 @@
 import type { PiConfiguredSkill, PiSkillCatalogItem } from "../../desktop/types";
+import { isSafeExternalUrl } from "../../../../shared/composer-attachments";
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -26,12 +27,16 @@ export function isDesktopSkillsAvailable() {
 }
 
 export async function openExternalUrl(url: string) {
+  if (!isSafeExternalUrl(url)) {
+    return false;
+  }
+
   if (window.piDesktop?.openExternal) {
-    await window.piDesktop.openExternal(url);
-    return;
+    return window.piDesktop.openExternal(url);
   }
 
   window.open(url, "_blank", "noopener,noreferrer");
+  return true;
 }
 
 function getPathBasename(targetPath: string) {

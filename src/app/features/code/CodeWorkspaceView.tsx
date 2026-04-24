@@ -1,19 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
-import { getDesktopActionErrorMessage } from "../../desktop/action-results";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
-import { buildDiffCommentPrompt } from "../../components/workspace/diff/diffCommentPrompt";
-import {
-  type SavedDiffComment,
-  diffCommentStore,
-  getDiffCommentContextId,
-} from "../../components/workspace/diff/diffCommentStore";
-import type { ComposerQueuedPrompt, ProjectDiffBaseline } from "../../desktop/types";
+import type { ProjectDiffBaseline } from "../../desktop/types";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
+import { useDiffCommentController } from "./useDiffCommentController";
+import { useQueuedPromptRestore } from "./useQueuedPromptRestore";
+import { useWorkspaceFooterHeight } from "./useWorkspaceFooterHeight";
 
 type CodeWorkspaceViewProps = {
   controller: AppShellController;
@@ -31,12 +27,6 @@ type CodeWorkspaceViewProps = {
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
 const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
 
-type RestoredQueuedPromptState = {
-  projectId: string;
-  sessionPath: string | null;
-  text: string;
-};
-
 export function CodeWorkspaceView({
   controller,
   activeComposerState,
@@ -51,18 +41,7 @@ export function CodeWorkspaceView({
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
-  const [footerHeight, setFooterHeight] = useState(0);
   const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
-  const [diffComments, setDiffComments] = useState<SavedDiffComment[]>([]);
-  const [diffCommentCount, setDiffCommentCount] = useState(0);
-  const [selectedDiffCommentId, setSelectedDiffCommentId] = useState<string | null>(null);
-  const [selectedDiffCommentJumpKey, setSelectedDiffCommentJumpKey] = useState(0);
-  const [diffCommentsSending, setDiffCommentsSending] = useState(false);
-  const [diffCommentError, setDiffCommentError] = useState<string | null>(null);
-  const [restoredQueuedPrompt, setRestoredQueuedPrompt] =
-    useState<RestoredQueuedPromptState | null>(null);
-  const [pendingQueuedPromptIds, setPendingQueuedPromptIds] = useState<string[]>([]);
-  const pendingQueuedPromptIdsRef = useRef(new Set<string>());
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
@@ -81,177 +60,38 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
+  const footerHeight = useWorkspaceFooterHeight({
+    footerRef,
+    visible: showWorkspaceFooter,
+  });
   const footerInset = showWorkspaceFooter ? footerHeight : 0;
-  const pendingQueueScopeKey = `${composerProjectId}:${terminalSessionPath ?? ""}`;
-  const pendingQueueScopePrefix = `${pendingQueueScopeKey}:`;
-  const diffCommentContextId = useMemo(
-    () => getDiffCommentContextId({ projectId: composerProjectId }),
-    [composerProjectId],
-  );
-  const pendingQueuedPromptIdsForSession = useMemo(
-    () =>
-      pendingQueuedPromptIds.flatMap((pendingKey) =>
-        pendingKey.startsWith(pendingQueueScopePrefix)
-          ? [pendingKey.slice(pendingQueueScopePrefix.length)]
-          : [],
-      ),
-    [pendingQueueScopePrefix, pendingQueuedPromptIds],
-  );
-
-  const scopedRestoredQueuedPrompt =
-    restoredQueuedPrompt?.projectId === composerProjectId &&
-    restoredQueuedPrompt.sessionPath === terminalSessionPath
-      ? restoredQueuedPrompt.text
-      : null;
-
-  useLayoutEffect(() => {
-    const footer = footerRef.current;
-    if (!showWorkspaceFooter || !footer) {
-      setFooterHeight(0);
-      return;
-    }
-
-    const updateFooterHeight = () => {
-      const nextHeight = Math.ceil(footer.getBoundingClientRect().height);
-      setFooterHeight((current) => (current === nextHeight ? current : nextHeight));
-    };
-
-    updateFooterHeight();
-
-    if (typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      updateFooterHeight();
-    });
-    observer.observe(footer);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [showWorkspaceFooter]);
-
-  useEffect(() => {
-    const syncCommentCount = () => {
-      if (!diffCommentContextId) {
-        setDiffComments([]);
-        setDiffCommentCount(0);
-        return;
-      }
-
-      const nextComments = diffCommentStore.getContext(diffCommentContextId)?.comments ?? [];
-      setDiffComments(nextComments);
-      setDiffCommentCount(nextComments.length);
-    };
-
-    setSelectedDiffCommentId(null);
-    setSelectedDiffCommentJumpKey(0);
-    syncCommentCount();
-    return diffCommentStore.subscribe(syncCommentCount);
-  }, [diffCommentContextId]);
-
-  const handleSendDiffComments = async (message?: string | null) => {
-    if (!diffCommentContextId || diffCommentsSending) {
-      return;
-    }
-
-    const context = diffCommentStore.getContext(diffCommentContextId);
-    if (!context || context.comments.length === 0) {
-      return;
-    }
-
-    setDiffCommentsSending(true);
-    setDiffCommentError(null);
-    setSelectedDiffCommentId(null);
-    setComposerPromptResetKey((current) => current + 1);
-
-    try {
-      const streamingBehaviorPreference =
-        shellState?.appSettings.composerStreamingBehavior ?? "followUp";
-      const result = await handleAction("composer.send", {
-        text: buildDiffCommentPrompt({ comments: context.comments, instruction: message }),
-        streamingBehavior: streamingBehaviorPreference,
-      });
-
-      const actionErrorMessage = getDesktopActionErrorMessage(
-        result,
-        "Could not send comments to the agent.",
-      );
-      if (actionErrorMessage) {
-        setDiffCommentError(actionErrorMessage);
-        return;
-      }
-
-      if (result?.result?.composerSendOutcome === "stopped") {
-        return;
-      }
-
-      diffCommentStore.clearContext(diffCommentContextId);
-    } catch (error) {
-      setDiffCommentError(
-        error instanceof Error ? error.message : "Could not send comments to the agent.",
-      );
-    } finally {
-      setDiffCommentsSending(false);
-    }
-  };
-
-  const handleEditQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
-    const pendingKey = `${pendingQueueScopeKey}:${prompt.id}`;
-
-    if (pendingQueuedPromptIdsRef.current.has(pendingKey)) {
-      return;
-    }
-
-    pendingQueuedPromptIdsRef.current.add(pendingKey);
-    setPendingQueuedPromptIds((current) => [...current, pendingKey]);
-
-    try {
-      const result = await handleAction("composer.dequeue", {
-        projectId: composerProjectId,
-        sessionPath: terminalSessionPath,
-        queueId: prompt.id,
-        queueSnapshotKey: prompt.queueSnapshotKey,
-        queueMode: prompt.mode,
-      });
-
-      if (typeof result?.result?.dequeuedText === "string") {
-        setRestoredQueuedPrompt({
-          projectId: composerProjectId,
-          sessionPath: terminalSessionPath,
-          text: result.result.dequeuedText,
-        });
-      }
-    } finally {
-      pendingQueuedPromptIdsRef.current.delete(pendingKey);
-      setPendingQueuedPromptIds((current) => current.filter((id) => id !== pendingKey));
-    }
-  };
-
-  const handleRemoveQueuedPrompt = async (prompt: ComposerQueuedPrompt) => {
-    const pendingKey = `${pendingQueueScopeKey}:${prompt.id}`;
-
-    if (pendingQueuedPromptIdsRef.current.has(pendingKey)) {
-      return;
-    }
-
-    pendingQueuedPromptIdsRef.current.add(pendingKey);
-    setPendingQueuedPromptIds((current) => [...current, pendingKey]);
-
-    try {
-      await handleAction("composer.dequeue", {
-        projectId: composerProjectId,
-        sessionPath: terminalSessionPath,
-        queueId: prompt.id,
-        queueSnapshotKey: prompt.queueSnapshotKey,
-        queueMode: prompt.mode,
-      });
-    } finally {
-      pendingQueuedPromptIdsRef.current.delete(pendingKey);
-      setPendingQueuedPromptIds((current) => current.filter((id) => id !== pendingKey));
-    }
-  };
+  const {
+    diffCommentCount,
+    diffCommentError,
+    diffComments,
+    diffCommentsSending,
+    handleSelectDiffComment,
+    handleSendDiffComments,
+    selectedDiffCommentId,
+    selectedDiffCommentJumpKey,
+  } = useDiffCommentController({
+    composerProjectId,
+    handleAction,
+    handleOpenWorktreeDiffFile,
+    setComposerPromptResetKey,
+    shellState,
+  });
+  const {
+    handleEditQueuedPrompt,
+    handleRemoveQueuedPrompt,
+    markRestoredQueuedPromptApplied,
+    pendingQueuedPromptIdsForSession,
+    scopedRestoredQueuedPrompt,
+  } = useQueuedPromptRestore({
+    composerProjectId,
+    handleAction,
+    terminalSessionPath,
+  });
 
   const terminalDrawerPaddingStyle = showDesktopTerminalDrawer
     ? { paddingRight: TERMINAL_DRAWER_OFFSET }
@@ -363,11 +203,7 @@ export function CodeWorkspaceView({
                     onSendDiffComments={(message) => {
                       void handleSendDiffComments(message);
                     }}
-                    onSelectDiffComment={(filePath, commentId) => {
-                      setSelectedDiffCommentId(commentId);
-                      setSelectedDiffCommentJumpKey((current) => current + 1);
-                      handleOpenWorktreeDiffFile(filePath);
-                    }}
+                    onSelectDiffComment={handleSelectDiffComment}
                     onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                     onAction={handleAction}
                     onBack={handleCloseGitOpsView}
@@ -421,11 +257,7 @@ export function CodeWorkspaceView({
                       onSendDiffComments={(message) => {
                         void handleSendDiffComments(message);
                       }}
-                      onSelectDiffComment={(filePath, commentId) => {
-                        setSelectedDiffCommentId(commentId);
-                        setSelectedDiffCommentJumpKey((current) => current + 1);
-                        handleOpenWorktreeDiffFile(filePath);
-                      }}
+                      onSelectDiffComment={handleSelectDiffComment}
                       promptResetKey={composerPromptResetKey}
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                       mainViewRef={mainViewRef}
@@ -433,14 +265,7 @@ export function CodeWorkspaceView({
                       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
                       onOpenGitOpsView={handleOpenGitOpsView}
                       onOpenSettingsView={() => controller.handleShowView("settings")}
-                      onRestoredQueuedPromptApplied={() => {
-                        setRestoredQueuedPrompt((current) =>
-                          current?.projectId === composerProjectId &&
-                          current.sessionPath === terminalSessionPath
-                            ? null
-                            : current,
-                        );
-                      }}
+                      onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                       onToggleTerminal={handleToggleTerminal}
                       terminalVisible={state.terminalVisible}
                       onListAttachmentEntries={listComposerAttachmentEntries}

@@ -1,17 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type {
-  ArchivedThread,
-  ComposerState,
-  InboxThread,
-  ProjectGitState,
-  ShellState,
-  TerminalSessionSnapshot,
-} from "../desktop/types";
+import { useMemo, useReducer, useState } from "react";
+import type { ArchivedThread, ComposerState, InboxThread, ProjectGitState } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
-import { listDesktopTerminals, subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { useToast } from "../hooks/useToast";
 import { desktopQueryKeys } from "../query/desktop-query";
@@ -21,20 +13,18 @@ import { deriveControllerViewModel } from "./controller-view-model";
 import { getProjectSelectionAction } from "./scoped-project-view";
 import { useAppShellEffects } from "./useAppShellEffects";
 import { useDesktopActionHandlers } from "./useDesktopActionHandlers";
+import { useInboxAutoReadSync } from "./useInboxAutoReadSync";
 import { useProjectRepoOriginRefresh } from "./useProjectRepoOriginRefresh";
+import { useRunningTerminalSessions } from "./useRunningTerminalSessions";
 import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
-  const terminalEventTouchedSessionIdsRef = useRef(new Set<string>());
   const [appLaunchedAtMs] = useState(() => Date.now());
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
-  const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
-    Record<string, { projectId: string; sessionPath: string | null }>
-  >({});
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
@@ -75,80 +65,7 @@ export function useAppShellController() {
       inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
     [inboxThreads, state.selectedInboxSessionPath],
   );
-  const terminalRunningSessionPaths = useMemo(
-    () =>
-      new Set(
-        Object.values(runningTerminalSessionsById)
-          .map((session) => session.sessionPath)
-          .filter((sessionPath): sessionPath is string => typeof sessionPath === "string"),
-      ),
-    [runningTerminalSessionsById],
-  );
-  const terminalRunningProjectIds = useMemo(
-    () => new Set(Object.values(runningTerminalSessionsById).map((session) => session.projectId)),
-    [runningTerminalSessionsById],
-  );
-
-  useEffect(() => {
-    const applySnapshots = (snapshots: TerminalSessionSnapshot[]) => {
-      const touchedSessionIds = terminalEventTouchedSessionIdsRef.current;
-
-      setRunningTerminalSessionsById((current) => ({
-        ...current,
-        ...Object.fromEntries(
-          snapshots
-            .filter(
-              (snapshot) =>
-                snapshot.launchMode === "shell" &&
-                (snapshot.status === "starting" || snapshot.status === "running") &&
-                !touchedSessionIds.has(snapshot.sessionId),
-            )
-            .map((snapshot) => [
-              snapshot.sessionId,
-              {
-                projectId: snapshot.projectId,
-                sessionPath: snapshot.sessionPath,
-              },
-            ]),
-        ),
-      }));
-    };
-
-    void listDesktopTerminals().then((snapshots) => {
-      applySnapshots(snapshots);
-    });
-
-    return subscribeDesktopTerminal((event) => {
-      terminalEventTouchedSessionIdsRef.current.add(event.sessionId);
-
-      if (event.type === "started" || event.type === "restarted") {
-        if (event.snapshot.launchMode !== "shell") {
-          return;
-        }
-
-        setRunningTerminalSessionsById((current) => ({
-          ...current,
-          [event.sessionId]: {
-            projectId: event.snapshot.projectId,
-            sessionPath: event.snapshot.sessionPath,
-          },
-        }));
-        return;
-      }
-
-      if (event.type === "exited" || event.type === "error") {
-        setRunningTerminalSessionsById((current) => {
-          if (!(event.sessionId in current)) {
-            return current;
-          }
-
-          const next = { ...current };
-          delete next[event.sessionId];
-          return next;
-        });
-      }
-    });
-  }, []);
+  const { terminalRunningProjectIds, terminalRunningSessionPaths } = useRunningTerminalSessions();
 
   const {
     activeComposerState,
@@ -233,78 +150,15 @@ export function useAppShellController() {
     });
   };
 
-  useEffect(() => {
-    if (!inboxQuery.isSuccess) {
-      return;
-    }
-
-    if (inboxThreads.length === 0) {
-      if (state.selectedInboxSessionPath !== null) {
-        dispatch({ type: "select-inbox-thread", sessionPath: null });
-      }
-      return;
-    }
-
-    const hasSelectedInboxThread = inboxThreads.some(
-      (thread) => thread.sessionPath === state.selectedInboxSessionPath,
-    );
-
-    const selectedInboxThread = hasSelectedInboxThread
-      ? (inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ??
-        null)
-      : null;
-
-    if (!hasSelectedInboxThread) {
-      const nextThread = inboxThreads[0] ?? null;
-
-      dispatch({
-        type: "select-inbox-thread",
-        sessionPath: nextThread?.sessionPath ?? null,
-      });
-
-      if (state.activeView === "inbox" && nextThread?.unread) {
-        void invokeDesktopAction("inbox.mark-read", {
-          projectId: nextThread.projectId,
-          sessionPath: nextThread.sessionPath,
-        })
-          .then(async () => {
-            await Promise.all([
-              loadProjectThreads(nextThread.projectId),
-              queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
-            ]);
-          })
-          .catch((error) => {
-            console.warn("Failed to auto-mark selected inbox thread read.", error);
-          });
-      }
-
-      return;
-    }
-
-    if (state.activeView === "inbox" && selectedInboxThread?.unread) {
-      void invokeDesktopAction("inbox.mark-read", {
-        projectId: selectedInboxThread.projectId,
-        sessionPath: selectedInboxThread.sessionPath,
-      })
-        .then(async () => {
-          await Promise.all([
-            loadProjectThreads(selectedInboxThread.projectId),
-            queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
-          ]);
-        })
-        .catch((error) => {
-          console.warn("Failed to mark visible inbox thread read.", error);
-        });
-    }
-  }, [
+  useInboxAutoReadSync({
+    dispatch,
+    inboxQueryIsSuccess: inboxQuery.isSuccess,
     inboxThreads,
     invokeDesktopAction,
     loadProjectThreads,
     queryClient,
-    state.activeView,
-    state.selectedInboxSessionPath,
-    inboxQuery.isSuccess,
-  ]);
+    workspaceState: state,
+  });
 
   const handleShowView = (view: Exclude<View, "gitops">) => {
     dispatch({ type: "show-view", view });

@@ -1,332 +1,35 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch } from "react";
-import { createLocalThreadDraft } from "../../../shared/session-paths";
 import type { DesktopAction } from "../desktop/actions";
 import type {
-  AnyDesktopActionPayload,
   ArchivedThread,
   ComposerState,
   DesktopActionResult,
   ProjectGitState,
-  ShellState,
-  Thread,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
+import {
+  type ActionPayload,
+  buildLocalThreadFallback,
+  getPayloadProjectId,
+  getPayloadProjectIds,
+  getPayloadThreadIds,
+  getResultThreadIds,
+  hasActionError,
+  hasDesktopBridge,
+  isThreadList,
+} from "./controller-action-utils";
 
-type ActionPayload = AnyDesktopActionPayload;
-
-function getPayloadProjectId(payload: ActionPayload) {
-  return typeof payload.projectId === "string" ? payload.projectId : null;
-}
-
-function getPayloadThreadId(payload: ActionPayload) {
-  return typeof payload.threadId === "string" ? payload.threadId : null;
-}
-
-function getPayloadThreadIds(payload: ActionPayload) {
-  return Array.isArray(payload.threadIds)
-    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === "string")
-    : [];
-}
-
-function getPayloadProjectIds(payload: ActionPayload) {
-  return Array.isArray(payload.projectIds)
-    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === "string")
-    : [];
-}
-
-function getResultThreadIds(threadIds: unknown) {
-  return Array.isArray(threadIds)
-    ? threadIds.filter((threadId): threadId is string => typeof threadId === "string")
-    : [];
-}
-
-function isThreadList(value: unknown): value is Thread[] {
-  return Array.isArray(value);
-}
-
-function hasActionError(actionResult: DesktopActionResult | null | undefined) {
-  return actionResult?.ok === false || typeof actionResult?.result?.error === "string";
-}
-
-function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
-  return [...threads].sort((left, right) => {
-    const leftPinned = Boolean(left.pinned);
-    const rightPinned = Boolean(right.pinned);
-
-    if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
-    }
-
-    return 0;
-  });
-}
-
-function sortPinnedProjects<T extends { id: string; pinned?: boolean }>(projects: T[]) {
-  return [...projects].sort((left, right) => {
-    const leftPinned = Boolean(left.pinned);
-    const rightPinned = Boolean(right.pinned);
-
-    if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
-    }
-
-    return 0;
-  });
-}
-
-function hasDesktopBridge() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return typeof window.piDesktop?.invokeAction === "function";
-}
-
-function buildLocalThreadFallback(projectId: string) {
-  return createLocalThreadDraft(projectId);
-}
-
-export function getOptimisticallyUpdatedShellState(
-  currentState: ShellState | null,
-  payload: ActionPayload,
-) {
-  if (!currentState) {
-    return null;
-  }
-
-  if (
-    payload.key !== "gitCommitMessageModel" &&
-    payload.key !== "skillCreatorModel" &&
-    payload.key !== "composerStreamingBehavior" &&
-    payload.key !== "dictationModelId" &&
-    payload.key !== "dictationMaxDurationSeconds" &&
-    payload.key !== "showDictationButton" &&
-    payload.key !== "favoriteFolders" &&
-    payload.key !== "projectImportState" &&
-    payload.key !== "preferredProjectLocation" &&
-    payload.key !== "initializeGitOnProjectCreate" &&
-    payload.key !== "projectDeletionMode" &&
-    payload.key !== "useAgentsSkillsPaths" &&
-    payload.key !== "piTuiTakeover"
-  ) {
-    return currentState;
-  }
-
-  const nextSelection =
-    payload.key === "gitCommitMessageModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.gitCommitMessageModel
-      : currentState.appSettings.gitCommitMessageModel;
-
-  const nextSkillCreatorSelection =
-    payload.key === "skillCreatorModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.skillCreatorModel
-      : currentState.appSettings.skillCreatorModel;
-
-  const nextComposerStreamingBehavior =
-    payload.key === "composerStreamingBehavior" &&
-    (payload.value === "steer" || payload.value === "followUp" || payload.value === "stop")
-      ? payload.value
-      : currentState.appSettings.composerStreamingBehavior;
-
-  const nextDictationModelId =
-    payload.key === "dictationModelId" &&
-    (payload.value === null ||
-      payload.value === "tiny.en" ||
-      payload.value === "base.en" ||
-      payload.value === "small.en")
-      ? payload.value
-      : currentState.appSettings.dictationModelId;
-
-  const nextDictationMaxDurationSeconds =
-    payload.key === "dictationMaxDurationSeconds" && typeof payload.value === "number"
-      ? payload.value
-      : currentState.appSettings.dictationMaxDurationSeconds;
-
-  const nextShowDictationButton =
-    payload.key === "showDictationButton" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.showDictationButton;
-
-  const nextFavoriteFolders =
-    payload.key === "favoriteFolders" && Array.isArray(payload.folders)
-      ? [
-          ...new Set(
-            payload.folders
-              .filter((folder): folder is string => typeof folder === "string")
-              .map((folder) => folder.trim())
-              .filter(Boolean),
-          ),
-        ]
-      : currentState.appSettings.favoriteFolders;
-
-  const nextProjectImportState =
-    payload.key === "projectImportState" &&
-    (payload.imported === null || typeof payload.imported === "boolean")
-      ? payload.imported
-      : currentState.appSettings.projectImportState;
-
-  const nextPreferredProjectLocation =
-    payload.key === "preferredProjectLocation"
-      ? typeof payload.value === "string"
-        ? payload.value.trim() || null
-        : null
-      : currentState.appSettings.preferredProjectLocation;
-
-  const nextInitializeGitOnProjectCreate =
-    payload.key === "initializeGitOnProjectCreate" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.initializeGitOnProjectCreate;
-
-  const nextProjectDeletionMode =
-    payload.key === "projectDeletionMode" &&
-    (payload.value === "pi-only" || payload.value === "full-clean")
-      ? payload.value
-      : currentState.appSettings.projectDeletionMode;
-
-  const nextUseAgentsSkillsPaths =
-    payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.useAgentsSkillsPaths;
-
-  const nextPiTuiTakeover =
-    payload.key === "piTuiTakeover" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.piTuiTakeover;
-
-  return {
-    ...currentState,
-    appSettings: {
-      ...currentState.appSettings,
-      gitCommitMessageModel: nextSelection,
-      skillCreatorModel: nextSkillCreatorSelection,
-      composerStreamingBehavior: nextComposerStreamingBehavior,
-      dictationModelId: nextDictationModelId,
-      dictationMaxDurationSeconds: nextDictationMaxDurationSeconds,
-      showDictationButton: nextShowDictationButton,
-      favoriteFolders: nextFavoriteFolders,
-      projectImportState: nextProjectImportState,
-      preferredProjectLocation: nextPreferredProjectLocation,
-      initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
-      projectDeletionMode: nextProjectDeletionMode,
-      useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
-      piTuiTakeover: nextPiTuiTakeover,
-    },
-  } satisfies ShellState;
-}
-
-export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
-  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
-    getOptimisticallyUpdatedShellState(currentState ?? null, payload),
-  );
-}
-
-export function getOptimisticallyRenamedShellState(
-  currentState: ShellState | null,
-  payload: ActionPayload,
-) {
-  if (!currentState) {
-    return null;
-  }
-
-  const projectId = getPayloadProjectId(payload);
-  const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
-
-  if (!projectId || projectName.length === 0) {
-    return currentState;
-  }
-
-  return {
-    ...currentState,
-    projects: currentState.projects.map((project) =>
-      project.id === projectId ? { ...project, name: projectName } : project,
-    ),
-  } satisfies ShellState;
-}
-
-export function applyOptimisticProjectRename(queryClient: QueryClient, payload: ActionPayload) {
-  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
-    getOptimisticallyRenamedShellState(currentState ?? null, payload),
-  );
-}
-
-export function getOptimisticallyPinnedShellState(
-  currentState: ShellState | null,
-  action: DesktopAction,
-  payload: ActionPayload,
-) {
-  if (!currentState) {
-    return null;
-  }
-
-  if (action === "thread.pin") {
-    const projectId = getPayloadProjectId(payload);
-    const threadId = getPayloadThreadId(payload);
-
-    if (!projectId || !threadId) {
-      return currentState;
-    }
-
-    return {
-      ...currentState,
-      projects: currentState.projects.map((project) => {
-        if (project.id !== projectId) {
-          return project;
-        }
-
-        const nextThreads = sortPinnedThreads(
-          project.threads.map((thread) =>
-            thread.id === threadId ? { ...thread, pinned: !thread.pinned } : thread,
-          ),
-        );
-
-        return {
-          ...project,
-          threads: nextThreads,
-        };
-      }),
-    } satisfies ShellState;
-  }
-
-  if (action === "project.pin") {
-    const projectId = getPayloadProjectId(payload);
-
-    if (!projectId) {
-      return currentState;
-    }
-
-    return {
-      ...currentState,
-      projects: sortPinnedProjects(
-        currentState.projects.map((project) =>
-          project.id === projectId ? { ...project, pinned: !project.pinned } : project,
-        ),
-      ),
-    } satisfies ShellState;
-  }
-
-  return currentState;
-}
-
-export function applyOptimisticPinUpdate(
-  queryClient: QueryClient,
-  action: DesktopAction,
-  payload: ActionPayload,
-) {
-  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
-    getOptimisticallyPinnedShellState(currentState ?? null, action, payload),
-  );
-}
+export {
+  applyOptimisticPinUpdate,
+  applyOptimisticProjectRename,
+  applyOptimisticSettingsUpdate,
+  getOptimisticallyPinnedShellState,
+  getOptimisticallyRenamedShellState,
+  getOptimisticallyUpdatedShellState,
+} from "./controller-optimistic-updates";
 
 type RunPostDesktopActionEffectsInput = {
   action: DesktopAction;

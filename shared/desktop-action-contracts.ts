@@ -187,7 +187,7 @@ export type DesktopActionResult<A extends DesktopAction = DesktopAction> = {
   ok: boolean;
   at: string;
   payload: {
-    action: DesktopAction;
+    action: A;
     payload: AnyDesktopActionPayload;
   };
   result?: DesktopActionResultData | null;

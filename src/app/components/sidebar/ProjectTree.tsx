@@ -17,108 +17,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Archive, ChevronDown, ChevronRight } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import type { DesktopActionInvoker } from "../../desktop/types";
-import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import type { Project, View } from "../../types";
-import { compactIconButtonClass } from "../../ui/classes";
-import { cn } from "../../utils/cn";
 import { ProjectActionMenu } from "./ProjectActionMenu";
-import { EmptyThreadsState } from "./project-tree/EmptyThreadsState";
 import { ProjectRow } from "./project-tree/ProjectRow";
-import { ThreadRow } from "./project-tree/ThreadRow";
+import { ProjectThreadsList } from "./project-tree/ProjectThreadsList";
 import { isProtectedProjectDeletionTarget } from "./project-tree/project-tree-paths";
 import { useProjectMenuDismiss } from "./project-tree/useProjectMenuDismiss";
-
-const OLD_THREAD_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
-
-type ProjectThreadsGroupProps = {
-  isExpanded: boolean;
-  threadGroupId: string;
-  projectName: string;
-  children: ReactNode;
-};
-
-function ProjectThreadsGroup({
-  isExpanded,
-  threadGroupId,
-  projectName,
-  children,
-}: ProjectThreadsGroupProps) {
-  const present = useAnimatedPresence(isExpanded);
-
-  if (!present) {
-    return null;
-  }
-
-  return (
-    <div
-      id={threadGroupId}
-      aria-label={`Threads in ${projectName}`}
-      data-open={isExpanded ? "true" : "false"}
-      className="motion-collapse-panel"
-    >
-      <div className="motion-collapse-panel__inner">{children}</div>
-    </div>
-  );
-}
-
-function partitionProjectThreads(project: Project) {
-  if (!project.threadsLoaded) {
-    return { recentThreads: project.threads, oldThreads: [] as Project["threads"] };
-  }
-
-  const cutoffMs = Date.now() - OLD_THREAD_THRESHOLD_MS;
-
-  return {
-    recentThreads: project.threads.filter(
-      (thread) => (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) >= cutoffMs,
-    ),
-    oldThreads: project.threads.filter(
-      (thread) => (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) < cutoffMs,
-    ),
-  };
-}
-
-type OldSessionsRowProps = {
-  expanded: boolean;
-  onArchiveAll: () => void;
-  onToggle: () => void;
-};
-
-function OldSessionsRow({ expanded, onArchiveAll, onToggle }: OldSessionsRowProps) {
-  return (
-    <div className="sidebar-row-surface sidebar-old-sessions-row">
-      <button
-        type="button"
-        className="sidebar-old-sessions-toggle"
-        onClick={onToggle}
-        aria-label={expanded ? "Collapse old sessions" : "Expand old sessions"}
-        aria-expanded={expanded}
-      >
-        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-      </button>
-
-      <button type="button" className="sidebar-old-sessions-button" onClick={onToggle}>
-        <span className="truncate">Old sessions</span>
-      </button>
-
-      <button
-        type="button"
-        className={cn(
-          compactIconButtonClass,
-          "justify-self-end border-transparent bg-transparent text-[color:var(--muted-2)] hover:bg-transparent hover:text-[color:var(--text)]",
-        )}
-        onClick={onArchiveAll}
-        aria-label="Archive old sessions"
-        title="Archive old sessions"
-      >
-        <Archive size={12} />
-      </button>
-    </div>
-  );
-}
 
 type ProjectTreeProps = {
   projects: Project[];
@@ -269,20 +175,9 @@ export function ProjectTree({
           {projects.map((project) => {
             const isExpanded = !collapsedProjectIds[project.id];
             const effectiveIsExpanded = isExpanded && draggingProjectId !== project.id;
-            const hasThreads = project.threadsLoaded
-              ? project.threads.length > 0
-              : (project.threadCount ?? 0) > 0;
-            const { recentThreads, oldThreads } = partitionProjectThreads(project);
             const projectMenuOpen = openProjectMenuId === project.id;
             const threadGroupId = `project-threads-${project.id}`;
             const actionMenuId = `project-actions-${project.id}`;
-            const selectedOldThreadVisible = oldThreads.some(
-              (thread) => thread.id === selectedThreadId,
-            );
-            const oldThreadsExpanded =
-              revealOldThreads ||
-              selectedOldThreadVisible ||
-              expandedOldProjectIds[project.id] === true;
 
             return (
               <SortableProjectItem
@@ -353,121 +248,25 @@ export function ProjectTree({
                     </div>
 
                     {selectionModeActive ? null : (
-                      <ProjectThreadsGroup
+                      <ProjectThreadsList
+                        activeView={activeView}
+                        expandedByUser={expandedOldProjectIds[project.id] === true}
                         isExpanded={effectiveIsExpanded}
+                        project={project}
+                        revealOldThreads={revealOldThreads}
+                        selectedThreadId={selectedThreadId}
+                        terminalRunningSessionPaths={terminalRunningSessionPaths}
                         threadGroupId={threadGroupId}
-                        projectName={project.name}
-                      >
-                        {hasThreads ? (
-                          recentThreads.map((thread) => {
-                            const isSelected =
-                              selectedThreadId === thread.id &&
-                              (activeView === "thread" || activeView === "gitops");
-
-                            return (
-                              <ThreadRow
-                                key={thread.id}
-                                age={thread.age}
-                                pinned={Boolean(thread.pinned)}
-                                running={Boolean(thread.running)}
-                                terminalRunning={Boolean(
-                                  thread.sessionPath &&
-                                    terminalRunningSessionPaths.has(thread.sessionPath),
-                                )}
-                                unread={Boolean(thread.unread)}
-                                isSelected={isSelected}
-                                title={thread.title}
-                                onArchive={() =>
-                                  onAction("thread.archive", {
-                                    projectId: project.id,
-                                    threadId: thread.id,
-                                  })
-                                }
-                                onOpen={() => {
-                                  if (!thread.sessionPath) {
-                                    return;
-                                  }
-
-                                  onThreadOpen(project.id, thread.id, thread.sessionPath);
-                                  setOpenProjectMenuId(null);
-                                }}
-                                onPin={() =>
-                                  onAction("thread.pin", {
-                                    projectId: project.id,
-                                    threadId: thread.id,
-                                  })
-                                }
-                              />
-                            );
-                          })
-                        ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
-                          <EmptyThreadsState />
-                        ) : null}
-
-                        {oldThreads.length > 0 ? (
-                          <>
-                            <OldSessionsRow
-                              expanded={oldThreadsExpanded}
-                              onToggle={() =>
-                                setExpandedOldProjectIds((current) => ({
-                                  ...current,
-                                  [project.id]: !oldThreadsExpanded,
-                                }))
-                              }
-                              onArchiveAll={() => {
-                                void onAction("thread.archive-many", {
-                                  projectId: project.id,
-                                  threadIds: oldThreads.map((thread) => thread.id),
-                                });
-                              }}
-                            />
-
-                            {oldThreadsExpanded
-                              ? oldThreads.map((thread) => {
-                                  const isSelected =
-                                    selectedThreadId === thread.id &&
-                                    (activeView === "thread" || activeView === "gitops");
-
-                                  return (
-                                    <ThreadRow
-                                      key={thread.id}
-                                      age={thread.age}
-                                      pinned={Boolean(thread.pinned)}
-                                      running={Boolean(thread.running)}
-                                      terminalRunning={Boolean(
-                                        thread.sessionPath &&
-                                          terminalRunningSessionPaths.has(thread.sessionPath),
-                                      )}
-                                      unread={Boolean(thread.unread)}
-                                      isSelected={isSelected}
-                                      title={thread.title}
-                                      onArchive={() =>
-                                        onAction("thread.archive", {
-                                          projectId: project.id,
-                                          threadId: thread.id,
-                                        })
-                                      }
-                                      onOpen={() => {
-                                        if (!thread.sessionPath) {
-                                          return;
-                                        }
-
-                                        onThreadOpen(project.id, thread.id, thread.sessionPath);
-                                        setOpenProjectMenuId(null);
-                                      }}
-                                      onPin={() =>
-                                        onAction("thread.pin", {
-                                          projectId: project.id,
-                                          threadId: thread.id,
-                                        })
-                                      }
-                                    />
-                                  );
-                                })
-                              : null}
-                          </>
-                        ) : null}
-                      </ProjectThreadsGroup>
+                        onAction={onAction}
+                        onCloseProjectMenu={() => setOpenProjectMenuId(null)}
+                        onThreadOpen={onThreadOpen}
+                        onToggleOldThreads={(currentlyExpanded) =>
+                          setExpandedOldProjectIds((current) => ({
+                            ...current,
+                            [project.id]: !currentlyExpanded,
+                          }))
+                        }
+                      />
                     )}
                   </div>
                 )}

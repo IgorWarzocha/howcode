@@ -142,8 +142,6 @@ export function useComposerAttachmentPicker({
       return;
     }
 
-    const attachedPaths = new Set(nextAttachments.map((attachment) => attachment.path));
-
     setAttachments((current) => mergeComposerAttachments(current, nextAttachments));
 
     if (options?.closeMenu) {
