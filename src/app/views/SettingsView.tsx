@@ -87,6 +87,7 @@ export function SettingsView({
 
       <SettingsProjectImportSection
         importBusy={controller.importBusy}
+        desktopBridgeAvailable={controller.desktopBridgeAvailable}
         importErrorMessage={controller.importErrorMessage}
         importStatusMessage={controller.importStatusMessage}
         importedState={appSettings.projectImportState}

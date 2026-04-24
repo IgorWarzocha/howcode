@@ -4,6 +4,10 @@ import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project } from "../../types";
 import {
+  desktopBridgeUnavailableMessage,
+  useDesktopBridgeAvailable,
+} from "../../hooks/useDesktopBridge";
+import {
   buildModelSelectionPayload,
   getActionError,
   getModelSettingValue,
@@ -36,6 +40,7 @@ export function useSettingsController({
   const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen);
 
   const dictation = useSettingsDictationController({ appSettings, onAction });
+  const desktopBridgeAvailable = useDesktopBridgeAvailable();
 
   useEffect(() => {
     setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? "");
@@ -95,6 +100,12 @@ export function useSettingsController({
   };
 
   const handleImportProjectUi = async () => {
+    if (!desktopBridgeAvailable) {
+      setImportStatusMessage(null);
+      setImportErrorMessage(desktopBridgeUnavailableMessage);
+      return;
+    }
+
     setImportBusy(true);
     setImportStatusMessage("Scanning projects for UI info…");
     setImportErrorMessage(null);
@@ -134,6 +145,7 @@ export function useSettingsController({
     importBusy,
     importErrorMessage,
     importStatusMessage,
+    desktopBridgeAvailable,
     installDictationModel: dictation.installDictationModel,
     preferredProjectLocationDraft,
     refreshDictationState: dictation.refreshDictationState,

@@ -1,6 +1,5 @@
 import { readdir, realpath, rm, unlink } from "node:fs/promises";
 import path from "node:path";
-import { shell } from "electron";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
@@ -15,6 +14,7 @@ import { selectProjectRuntime } from "../pi-desktop-runtime.cts";
 import { createProject } from "../project-create.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
 import { importProjects, scanKnownProjects } from "../project-import.cts";
+import { openPathWithSystem } from "../system-open-path.cts";
 import { listTerminals } from "../terminal/manager.cts";
 import {
   archiveProjectThreads,
@@ -208,7 +208,7 @@ export async function handleProjectDesktopAction(
         return handledAction();
       }
 
-      if ((await shell.openPath(projectId)) !== "") {
+      if (!(await openPathWithSystem(projectId))) {
         throw new Error(`Unable to open path: ${projectId}`);
       }
 

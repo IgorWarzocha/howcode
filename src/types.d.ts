@@ -42,6 +42,7 @@ import type {
 
 declare global {
   interface Window {
+    __howcodeDevWebBridge?: boolean;
     piDesktop?: {
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
