@@ -71,6 +71,21 @@ type SessionFileEntry = {
   name?: string;
 };
 
+type SessionSummaryReadResult = {
+  summary: SessionSummary | null;
+  failed: boolean;
+};
+
+type SessionIndexReadResult = {
+  sessions: SessionSummary[];
+  partialFailure: boolean;
+};
+
+type ShellIndexSyncResult = {
+  complete: boolean;
+  didSync: boolean;
+};
+
 function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) {
   return {
     id: session.id,
@@ -152,13 +167,17 @@ function getSessionModifiedDate(
   return Number.isNaN(headerTimestampMs) ? fileModified : new Date(headerTimestampMs);
 }
 
-async function readSessionSummary(filePath: string): Promise<SessionSummary | null> {
+async function readSessionSummary(filePath: string): Promise<SessionSummaryReadResult> {
   let fileStat: Awaited<ReturnType<typeof stat>>;
   try {
     fileStat = await stat(filePath);
   } catch (error) {
+    if (isNodeErrorWithCode(error, "ENOENT")) {
+      return { summary: null, failed: false };
+    }
+
     console.warn(`Failed to stat session file while refreshing shell index: ${filePath}`, error);
-    return null;
+    return { summary: null, failed: true };
   }
 
   let header: SessionFileEntry | undefined;
@@ -205,25 +224,33 @@ async function readSessionSummary(filePath: string): Promise<SessionSummary | nu
       }
     }
   } catch (error) {
+    if (isNodeErrorWithCode(error, "ENOENT")) {
+      return { summary: null, failed: false };
+    }
+
     console.warn(`Failed to read session file while refreshing shell index: ${filePath}`, error);
-    return null;
+    return { summary: null, failed: true };
   }
 
   if (!header || header.type !== "session" || typeof header.id !== "string") {
-    return null;
+    console.warn(`Invalid session header while refreshing shell index: ${filePath}`);
+    return { summary: null, failed: true };
   }
 
   return {
-    id: header.id,
-    cwd: typeof header.cwd === "string" ? header.cwd : undefined,
-    path: filePath,
-    name,
-    firstMessage,
-    modified: getSessionModifiedDate(header, lastActivityTimeMs, fileStat.mtime),
+    summary: {
+      id: header.id,
+      cwd: typeof header.cwd === "string" ? header.cwd : undefined,
+      path: filePath,
+      name,
+      firstMessage,
+      modified: getSessionModifiedDate(header, lastActivityTimeMs, fileStat.mtime),
+    },
+    failed: false,
   };
 }
 
-async function listAllSessionsStrict(): Promise<SessionSummary[]> {
+async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
   const { getAgentDir } = await getPiModule();
   const sessionsDir = path.join(getAgentDir(), "sessions");
   const sessionDirectories = (await readDirectoryIfPresent(sessionsDir)).filter((entry) =>
@@ -231,31 +258,42 @@ async function listAllSessionsStrict(): Promise<SessionSummary[]> {
   );
   const sessionFilePaths: string[] = [];
 
-  for (const sessionDirectory of sessionDirectories) {
-    const sessionDirectoryPath = path.join(sessionsDir, sessionDirectory.name);
-    let sessionFiles: Awaited<ReturnType<typeof readDirectoryIfPresent>>;
-    try {
-      sessionFiles = await readDirectoryIfPresent(sessionDirectoryPath);
-    } catch (error) {
-      console.warn(
-        `Failed to read session directory while refreshing shell index: ${sessionDirectoryPath}`,
-        error,
-      );
-      continue;
-    }
+  const sessionDirectoryResults = await Promise.all(
+    sessionDirectories.map(async (sessionDirectory) => {
+      const sessionDirectoryPath = path.join(sessionsDir, sessionDirectory.name);
 
-    sessionFilePaths.push(
-      ...sessionFiles
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
-        .map((entry) => path.join(sessionDirectoryPath, entry.name)),
-    );
+      let sessionFiles: Awaited<ReturnType<typeof readDirectoryIfPresent>>;
+      try {
+        sessionFiles = await readDirectoryIfPresent(sessionDirectoryPath);
+      } catch (error) {
+        console.warn(
+          `Failed to read session directory while refreshing shell index: ${sessionDirectoryPath}`,
+          error,
+        );
+        return { filePaths: [], failed: true };
+      }
+
+      return {
+        filePaths: sessionFiles
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
+          .map((entry) => path.join(sessionDirectoryPath, entry.name)),
+        failed: false,
+      };
+    }),
+  );
+
+  let partialFailure = sessionDirectoryResults.some((result) => result.failed);
+  for (const result of sessionDirectoryResults) {
+    sessionFilePaths.push(...result.filePaths);
   }
 
-  const sessions = (await Promise.all(sessionFilePaths.map(readSessionSummary))).filter(
-    (session): session is SessionSummary => session !== null,
-  );
+  const sessionResults = await Promise.all(sessionFilePaths.map(readSessionSummary));
+  const sessions = sessionResults
+    .map((result) => result.summary)
+    .filter((session): session is SessionSummary => session !== null);
+  partialFailure ||= sessionResults.some((result) => result.failed);
   sessions.sort((left, right) => right.modified.getTime() - left.modified.getTime());
-  return sessions;
+  return { sessions, partialFailure };
 }
 
 async function resolveProjectPathForComparison(projectId: string) {
@@ -287,28 +325,35 @@ async function enrichProjectsWithResolvedIds(projects: Project[]) {
   );
 }
 
-async function syncShellIndex(cwd: string) {
-  const sessions = await listAllSessionsStrict();
+async function syncShellIndex(cwd: string): Promise<ShellIndexSyncResult> {
+  const { sessions, partialFailure } = await listAllSessionsStrict();
 
   syncSessionSummaries(
     cwd,
     sessions.map((session) => mapSessionSummaryToRecord(cwd, session)),
   );
+
+  return { complete: !partialFailure, didSync: true };
 }
 
-function scheduleShellIndexSync(cwd: string) {
-  if (syncedShellIndexes.has(cwd) || inFlightShellIndexSyncs.has(cwd)) {
-    return;
-  }
-
+function startShellIndexSync(
+  cwd: string,
+  options: { emitRefreshEvent?: boolean; warningLabel: string },
+) {
   const syncPromise = syncShellIndex(cwd)
-    .then(() => {
-      syncedShellIndexes.add(cwd);
-      emitDesktopEvent({ type: "shell-state-refresh" });
-      return true;
+    .then((syncResult) => {
+      if (syncResult.complete) {
+        syncedShellIndexes.add(cwd);
+      }
+
+      if (syncResult.didSync && (options.emitRefreshEvent ?? true)) {
+        emitDesktopEvent({ type: "shell-state-refresh" });
+      }
+
+      return syncResult.complete;
     })
     .catch((error) => {
-      console.warn("Failed to sync shell index.", error);
+      console.warn(options.warningLabel, error);
       return false;
     })
     .finally(() => {
@@ -316,28 +361,27 @@ function scheduleShellIndexSync(cwd: string) {
     });
 
   inFlightShellIndexSyncs.set(cwd, syncPromise);
+  return syncPromise;
+}
+
+function scheduleShellIndexSync(cwd: string) {
+  if (syncedShellIndexes.has(cwd) || inFlightShellIndexSyncs.has(cwd)) {
+    return;
+  }
+
+  void startShellIndexSync(cwd, { warningLabel: "Failed to sync shell index." });
 }
 
 export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent?: boolean } = {}) {
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
   if (inFlightSync) {
-    const synced = await inFlightSync;
-    if (synced) {
-      return true;
-    }
+    return await inFlightSync;
   }
 
-  try {
-    await syncShellIndex(cwd);
-    syncedShellIndexes.add(cwd);
-    if (options.emitRefreshEvent ?? true) {
-      emitDesktopEvent({ type: "shell-state-refresh" });
-    }
-    return true;
-  } catch (error) {
-    console.warn("Failed to refresh shell index.", error);
-    return false;
-  }
+  return await startShellIndexSync(cwd, {
+    emitRefreshEvent: options.emitRefreshEvent,
+    warningLabel: "Failed to refresh shell index.",
+  });
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {

@@ -93,6 +93,9 @@ export function SkillsView({
         </div>
       ) : null}
 
+      <output className="sr-only" aria-live="polite">
+        {controller.actionError ?? ""}
+      </output>
       {controller.actionError ? (
         <div className="text-[12px] text-[#f2a7a7]">{controller.actionError}</div>
       ) : null}

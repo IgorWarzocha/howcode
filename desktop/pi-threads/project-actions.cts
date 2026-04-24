@@ -32,7 +32,7 @@ import {
 } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
-import { getProjectImportRefreshError } from "./project-import-refresh.ts";
+import { resolveProjectImportActionResult } from "./project-import-action.ts";
 import { refreshShellIndex } from "./shell-loader.cts";
 
 async function unlinkIfPresent(filePath: string) {
@@ -311,40 +311,31 @@ export async function handleProjectDesktopAction(
 
     case "projects.import.scan": {
       const projectIds = getProjectIds(payload);
-      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory());
-      const refreshError = getProjectImportRefreshError({
-        mode: "scan",
-        projectIds,
-        refreshed,
-      });
-      if (refreshError) {
-        return handledAction({
-          error: refreshError,
-        });
-      }
-
-      return handledAction({
-        projects: await scanKnownProjects(projectIds),
-      });
+      return handledAction(
+        await resolveProjectImportActionResult({
+          cwd: getDesktopWorkingDirectory(),
+          mode: "scan",
+          projectIds,
+          refreshShellIndex,
+          runAfterRefresh: async (refreshedProjectIds) => ({
+            projects: await scanKnownProjects(refreshedProjectIds),
+          }),
+        }),
+      );
     }
 
     case "projects.import.apply": {
       const projectIds = getProjectIds(payload);
-      const refreshed = await refreshShellIndex(getDesktopWorkingDirectory(), {
-        emitRefreshEvent: false,
-      });
-      const refreshError = getProjectImportRefreshError({
-        mode: "import",
-        projectIds,
-        refreshed,
-      });
-      if (refreshError) {
-        return handledAction({
-          error: refreshError,
-        });
-      }
-
-      return handledAction(await importProjects(projectIds));
+      return handledAction(
+        await resolveProjectImportActionResult({
+          cwd: getDesktopWorkingDirectory(),
+          mode: "import",
+          projectIds,
+          refreshOptions: { emitRefreshEvent: false },
+          refreshShellIndex,
+          runAfterRefresh: importProjects,
+        }),
+      );
     }
 
     default:
