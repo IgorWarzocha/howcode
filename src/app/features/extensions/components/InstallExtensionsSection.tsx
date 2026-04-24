@@ -58,6 +58,7 @@ export function InstallExtensionsSection({
         }}
       >
         <SegmentedToggle
+          ariaLabel="Extension source type"
           value={manualSourceKind}
           options={sourceKindOptions}
           onChange={onManualSourceKindChange}

@@ -73,6 +73,7 @@ export function SkillsView({
         actions={
           <SegmentedToggle
             size="compact"
+            ariaLabel="Skill install scope"
             value={controller.installScope}
             options={[
               { value: "global", label: `Global (${controller.globalSkillCount})` },

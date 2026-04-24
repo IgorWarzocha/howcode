@@ -74,6 +74,7 @@ export function SettingsProjectDefaultsSection({
             </div>
           </div>
           <SegmentedToggle
+            ariaLabel="Send while Pi is responding"
             value={appSettings.composerStreamingBehavior}
             options={
               [
@@ -119,6 +120,7 @@ export function SettingsProjectDefaultsSection({
             </div>
           </div>
           <SegmentedToggle
+            ariaLabel="Project deletion cleanup"
             value={appSettings.projectDeletionMode}
             options={
               [
