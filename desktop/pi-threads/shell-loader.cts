@@ -372,10 +372,19 @@ function scheduleShellIndexSync(cwd: string) {
   void startShellIndexSync(cwd, { warningLabel: "Failed to sync shell index." });
 }
 
-export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent?: boolean } = {}) {
+export async function refreshShellIndex(
+  cwd: string,
+  options: { emitRefreshEvent?: boolean; force?: boolean } = {},
+) {
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
-  if (inFlightSync) {
+  if (inFlightSync && !options.force) {
     return await inFlightSync;
+  }
+
+  if (inFlightSync) {
+    // User-triggered project import needs a fresh filesystem pass. The background
+    // startup sync may have snapshotted sessions before a Pi CLI project was created.
+    await inFlightSync;
   }
 
   return await startShellIndexSync(cwd, {

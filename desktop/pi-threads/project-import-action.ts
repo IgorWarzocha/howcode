@@ -6,6 +6,7 @@ import {
 
 export type ProjectImportRefreshOptions = {
   emitRefreshEvent?: boolean;
+  force?: boolean;
 };
 
 export async function resolveProjectImportActionResult<T extends DesktopActionResultData>({

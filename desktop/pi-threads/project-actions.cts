@@ -316,6 +316,7 @@ export async function handleProjectDesktopAction(
           cwd: getDesktopWorkingDirectory(),
           mode: "scan",
           projectIds,
+          refreshOptions: { force: true },
           refreshShellIndex,
           runAfterRefresh: async (refreshedProjectIds) => ({
             projects: await scanKnownProjects(refreshedProjectIds),
@@ -331,7 +332,7 @@ export async function handleProjectDesktopAction(
           cwd: getDesktopWorkingDirectory(),
           mode: "import",
           projectIds,
-          refreshOptions: { emitRefreshEvent: false },
+          refreshOptions: { emitRefreshEvent: false, force: true },
           refreshShellIndex,
           runAfterRefresh: importProjects,
         }),
