@@ -140,12 +140,20 @@ function scheduleShellIndexSync(cwd: string) {
 export async function refreshShellIndex(cwd: string) {
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
   if (inFlightSync) {
-    await inFlightSync;
+    try {
+      await inFlightSync;
+    } catch (error) {
+      console.warn("Failed to wait for shell index sync before refresh.", error);
+    }
   }
 
-  await syncShellIndex(cwd);
-  syncedShellIndexes.add(cwd);
-  emitDesktopEvent({ type: "shell-state-refresh" });
+  try {
+    await syncShellIndex(cwd);
+    syncedShellIndexes.add(cwd);
+    emitDesktopEvent({ type: "shell-state-refresh" });
+  } catch (error) {
+    console.warn("Failed to refresh shell index.", error);
+  }
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
