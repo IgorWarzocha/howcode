@@ -385,6 +385,11 @@ export async function refreshShellIndex(
     // User-triggered project import needs a fresh filesystem pass. The background
     // startup sync may have snapshotted sessions before a Pi CLI project was created.
     await inFlightSync;
+
+    const forcedInFlightSync = inFlightShellIndexSyncs.get(cwd);
+    if (forcedInFlightSync) {
+      return await forcedInFlightSync;
+    }
   }
 
   return await startShellIndexSync(cwd, {
