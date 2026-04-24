@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type KeyboardEvent, useState } from "react";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import type { AppSettings, DesktopActionInvoker } from "../desktop/types";
 import type { Project } from "../types";
@@ -82,6 +82,20 @@ export function LandingView({ className }: LandingViewProps) {
   const content = getLandingOverviewContent();
   const [activeSection, setActiveSection] = useState<"roadmap" | "changelog">("roadmap");
   const activeContent = activeSection === "roadmap" ? content.roadmap : content.changelog;
+  const activePanelId = "landing-overview-panel";
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    event.preventDefault();
+    const nextSection = activeSection === "roadmap" ? "changelog" : "roadmap";
+    setActiveSection(nextSection);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`landing-${nextSection}-tab`)?.focus();
+    });
+  };
 
   return (
     <section
@@ -92,11 +106,18 @@ export function LandingView({ className }: LandingViewProps) {
     >
       <div className="grid w-full max-w-[760px] justify-items-center gap-8 text-center">
         <PixelHLogo />
+        <h1 className="sr-only">{content.title}</h1>
 
         <div className="grid w-full max-w-[680px] gap-0">
-          <div className="grid grid-cols-2 border-b border-[rgba(169,178,215,0.08)]">
+          <div
+            className="grid grid-cols-2 border-b border-[rgba(169,178,215,0.08)]"
+            role="tablist"
+            aria-label={content.title}
+          >
             <button
               type="button"
+              id="landing-roadmap-tab"
+              role="tab"
               className={cn(
                 "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
                 activeSection === "roadmap"
@@ -104,13 +125,18 @@ export function LandingView({ className }: LandingViewProps) {
                   : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
               )}
               onClick={() => setActiveSection("roadmap")}
-              aria-pressed={activeSection === "roadmap"}
+              onKeyDown={handleTabKeyDown}
+              aria-selected={activeSection === "roadmap"}
+              aria-controls={activePanelId}
+              tabIndex={activeSection === "roadmap" ? 0 : -1}
             >
               {content.roadmap.title}
             </button>
 
             <button
               type="button"
+              id="landing-changelog-tab"
+              role="tab"
               className={cn(
                 "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
                 activeSection === "changelog"
@@ -118,13 +144,21 @@ export function LandingView({ className }: LandingViewProps) {
                   : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
               )}
               onClick={() => setActiveSection("changelog")}
-              aria-pressed={activeSection === "changelog"}
+              onKeyDown={handleTabKeyDown}
+              aria-selected={activeSection === "changelog"}
+              aria-controls={activePanelId}
+              tabIndex={activeSection === "changelog" ? 0 : -1}
             >
               {content.changelog.title}
             </button>
           </div>
 
-          <div className="pt-4 text-left">
+          <div
+            id={activePanelId}
+            className="pt-4 text-left"
+            role="tabpanel"
+            aria-labelledby={`landing-${activeSection}-tab`}
+          >
             <MarkdownContent markdown={activeContent.markdown} className="gap-2 text-[13px]" />
           </div>
         </div>

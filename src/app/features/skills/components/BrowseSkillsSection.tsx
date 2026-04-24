@@ -104,7 +104,11 @@ export function BrowseSkillsSection({
   };
 
   const browseSectionContent =
-    submittedSearchInput.length < 2 ? null : skillsQuery.isLoading ? (
+    submittedSearchInput.length < 2 ? (
+      <EmptyStateCard>
+        Search with at least 2 characters to browse installable skills.
+      </EmptyStateCard>
+    ) : skillsQuery.isLoading ? (
       <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
         Loading skills…
       </div>
@@ -117,12 +121,10 @@ export function BrowseSkillsSection({
         {catalogItems.map((item) => {
           const installed = installedSkillSlugs.has(normalizeSkillSlug(item.skillId));
           const pendingInstall = isPendingInstall(getCatalogSkillSource(item));
-          const installLabel = pendingInstall
-            ? `Installing ${item.name}`
-            : installed
-              ? `${item.name} installed`
-              : `Install ${item.name}`;
           const selected = selectedCatalogSources.includes(item.identityKey);
+          const selectionLabel = selected
+            ? `Deselect ${item.name}`
+            : `Select ${item.name} for install`;
 
           return (
             <CompactMetaRow
@@ -131,11 +133,15 @@ export function BrowseSkillsSection({
               actions={
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)]">
                   {pendingInstall ? (
-                    <Sparkles size={14} />
+                    <output aria-label={`Installing ${item.name}`}>
+                      <Sparkles size={14} />
+                    </output>
                   ) : installed ? (
-                    <Check size={14} strokeWidth={2.4} />
+                    <span aria-label={`${item.name} installed`}>
+                      <Check size={14} strokeWidth={2.4} />
+                    </span>
                   ) : (
-                    <Tooltip content={installLabel}>
+                    <Tooltip content={selectionLabel}>
                       <button
                         type="button"
                         className={compactRoundIconButtonClass}
@@ -147,7 +153,7 @@ export function BrowseSkillsSection({
                           );
                         }}
                         aria-pressed={selected}
-                        aria-label={installLabel}
+                        aria-label={selectionLabel}
                       >
                         <span
                           className={cn(

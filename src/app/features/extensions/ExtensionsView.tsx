@@ -24,6 +24,7 @@ function ExtensionsScopeToggle({
   return (
     <SegmentedToggle
       size="compact"
+      ariaLabel="Extension install scope"
       value={installScope}
       options={[
         { value: "global", label: `Global (${globalInstalledCount})` },
