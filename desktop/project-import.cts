@@ -9,9 +9,7 @@ function resolveProjectIds(projectIds: string[]) {
     return [...new Set(projectIds)];
   }
 
-  return listProjects(getDesktopWorkingDirectory())
-    .filter((project) => project.threadCount !== 0)
-    .map((project) => project.id);
+  return listProjects(getDesktopWorkingDirectory()).map((project) => project.id);
 }
 
 export async function scanKnownProjects(projectIds: string[]): Promise<ProjectImportCandidate[]> {
