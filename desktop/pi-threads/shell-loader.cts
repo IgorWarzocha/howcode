@@ -307,10 +307,6 @@ async function enrichProjectsWithResolvedIds(projects: Project[]) {
 async function syncShellIndex(cwd: string) {
   const { sessions, partialFailure } = await listAllSessionsStrict();
 
-  if (partialFailure) {
-    return false;
-  }
-
   syncSessionSummaries(
     cwd,
     sessions.map((session) => mapSessionSummaryToRecord(cwd, session)),
@@ -358,6 +354,10 @@ export async function refreshShellIndex(cwd: string, options: { emitRefreshEvent
   const inFlightSync = inFlightShellIndexSyncs.get(cwd);
   if (inFlightSync) {
     await inFlightSync;
+    const chainedSync = inFlightShellIndexSyncs.get(cwd);
+    if (chainedSync) {
+      return await chainedSync;
+    }
   }
 
   return await startShellIndexSync(cwd, {
