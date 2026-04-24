@@ -15,13 +15,14 @@ describe("project import actions", () => {
       cwd: "/active-project",
       mode: "import",
       projectIds: [],
-      refreshOptions: { emitRefreshEvent: false },
+      refreshOptions: { emitRefreshEvent: false, force: true },
       refreshShellIndex,
       runAfterRefresh: importProjects,
     });
 
     expect(refreshShellIndex).toHaveBeenCalledWith("/active-project", {
       emitRefreshEvent: false,
+      force: true,
     });
     expect(importProjects).toHaveBeenCalledWith([]);
     expect(result).toEqual({
