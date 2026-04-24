@@ -76,12 +76,22 @@ export function SkillsView({
             value={controller.installScope}
             options={[
               { value: "global", label: `Global (${controller.globalSkillCount})` },
-              { value: "project", label: `Project (${controller.projectSkillCount})` },
+              {
+                value: "project",
+                label: `Project (${controller.projectSkillCount})`,
+                disabled: !controller.projectScopeAvailable,
+              },
             ]}
             onChange={controller.setInstallScope}
           />
         }
       />
+
+      {!controller.projectScopeAvailable ? (
+        <div className="text-[12px] text-[color:var(--muted)]">
+          Project skills are unavailable until a project path is available.
+        </div>
+      ) : null}
 
       {controller.actionError ? (
         <div className="text-[12px] text-[#f2a7a7]">{controller.actionError}</div>

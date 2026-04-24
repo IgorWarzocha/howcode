@@ -23,11 +23,13 @@ export function useSkillsController({
   onSetProjectScopeActive: (active: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const normalizedProjectPath = projectPath?.trim() ? projectPath : null;
   const [installScope, setInstallScope] = useState<InstallScope>("global");
   const [installedOpen, setInstalledOpen] = useState(true);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const desktopSkillsAvailable = isDesktopSkillsAvailable();
+  const projectScopeAvailable = normalizedProjectPath !== null;
 
   const configuredSkillsQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiSkills(projectPath),
@@ -54,12 +56,18 @@ export function useSkillsController({
   );
 
   useEffect(() => {
-    onSetProjectScopeActive(installScope === "project");
+    if (!projectScopeAvailable && installScope === "project") {
+      setInstallScope("global");
+    }
+  }, [installScope, projectScopeAvailable]);
+
+  useEffect(() => {
+    onSetProjectScopeActive(projectScopeAvailable && installScope === "project");
 
     return () => {
       onSetProjectScopeActive(false);
     };
-  }, [installScope, onSetProjectScopeActive]);
+  }, [installScope, onSetProjectScopeActive, projectScopeAvailable]);
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
@@ -92,6 +100,11 @@ export function useSkillsController({
   };
 
   const handleInstall = async (source: string) => {
+    if (installScope === "project" && !normalizedProjectPath) {
+      setActionError("Select a project first.");
+      return false;
+    }
+
     const normalizedSource = source.trim();
     const pendingAction = { kind: "install" as const, source: normalizedSource };
 
@@ -102,7 +115,7 @@ export function useSkillsController({
       const result = await installPiSkillQuery({
         source: normalizedSource,
         local: installScope === "project",
-        projectPath,
+        projectPath: normalizedProjectPath,
       });
 
       if (result?.configuredSkills) {
@@ -154,6 +167,7 @@ export function useSkillsController({
     invalidateConfiguredSkillsCaches,
     isPendingInstall: (source: string) => isPending("install", source),
     isPendingRemove: (installedPath: string) => isPending("remove", installedPath),
+    projectScopeAvailable,
     projectSkillCount,
     setActionError,
     setInstallScope,
