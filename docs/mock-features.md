@@ -49,7 +49,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 
 - Controlled composer state exists in renderer and the surface is now split into prompt-vs-git-ops mock states for easier iteration: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
 - Send is wired through real Pi sessions with per-cwd runtimes: `desktop/runtime/*`, `desktop/pi-threads/action-router.cts`
-- File picker attachments are wired and text/image files are sent through the Pi prompt path: `src/electron/main/ipc/request-handlers/system.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
+- File picker attachments are wired as explicit path/reference attachments. howcode does not upload or embed file contents itself; it injects prompt instructions for Pi to read the selected paths or use the referenced URLs, matching Pi-style file-reference semantics: `src/electron/main/ipc/request-handlers/system.ts`, `desktop/runtime/attachments.cts`, `src/app/components/workspace/Composer.tsx`
 - Existing thread continuation is real via runtime session activation: `desktop/runtime/runtime-registry.cts`
 - Streaming thread updates are pushed over Electron IPC messages and rendered live: `src/electron/main/ipc/register-desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`, `src/app/app-shell/useAppShellController.ts`
 - Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
@@ -61,8 +61,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
 **Expansion direction:**
-- Add attachment/image flows.
-- Improve attachment handling to match Pi CLI file processing more closely (auto-resize, binary rejection, richer previews).
+- Attachment/image flows are path/reference-based rather than payload uploads; binary and large-file handling belongs to Pi/read-tool behavior, not the howcode composer transport.
+- Improve attachment handling with richer previews or Pi-native image support if/when we intentionally move beyond path/reference semantics.
 - Expand failure UX beyond inline composer text (retry affordances, auth-specific actions).
 - Continue tightening live-turn fidelity beyond the current prose + reasoning + tool rendering.
 - Replace the current mock git ops surface with a git-native worktree/project diff + commit flow instead of extending the current per-turn checkpoint model.

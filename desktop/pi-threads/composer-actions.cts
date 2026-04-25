@@ -20,6 +20,7 @@ import {
 } from "../pi-desktop-runtime.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
+import { normalizeComposerSendAttachments } from "./composer-attachment-payload";
 
 export async function handleComposerDesktopAction(
   action: DesktopAction,
@@ -44,7 +45,16 @@ export async function handleComposerDesktopAction(
 
     case "composer.send": {
       const text = getComposerText(payload);
-      const attachments = getComposerAttachments(payload);
+      const rawAttachments = getComposerAttachments(payload);
+      const normalizedAttachmentPayload = await normalizeComposerSendAttachments(rawAttachments);
+      const attachments = normalizedAttachmentPayload.attachments;
+      if (normalizedAttachmentPayload.rejected) {
+        return handledAction({
+          error:
+            "Could not send prompt because one or more attached files are no longer available.",
+        });
+      }
+
       if (!text && attachments.length === 0) {
         return handledAction();
       }
