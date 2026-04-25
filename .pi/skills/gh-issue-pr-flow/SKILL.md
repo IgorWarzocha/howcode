@@ -17,7 +17,7 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 
 ## Critical rules
 - Treat the issue body as the initial problem statement or prompt.
-- Read the full issue, including comments, before coding.
+- Read the full issue body, labels, state, linked metadata, and comments before coding. Do not rely on `gh issue view --comments` alone when deciding scope.
 - Prefer actionable leaf issues over epics. Epics are containers unless the user explicitly asks for backlog cleanup or epic design work.
 - If the user says “pick an issue” or “work on something manageable”, use the project board and the issue-selection rules in `references/issue-selection.md` before choosing.
 - If an issue is mushy, multi-part, or mixes discovery with implementation, rewrite or split it before coding.
@@ -67,18 +67,19 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 ## Workflow
 ### 1. Resolve the work mode
 1. If the user is describing a problem that should become tracked work, create or rewrite issues first.
-2. If the user gives an issue number or link, open it with comments and read everything relevant.
+2. If the user gives an issue number or link, use the fuller JSON issue command first so the body, labels, state, and comments are all visible; then read everything relevant.
 3. If the user gives a PR link, read the PR state, description, and comments before acting.
 4. If the user asks what should be worked on next, inspect the project board and apply `references/issue-selection.md`.
 
 Useful commands:
 
 ```bash
-gh issue view <number> --comments
-gh issue view <url> --comments
+gh issue view <number-or-url> --comments --json number,title,state,body,comments,labels,assignees,projects,milestone,url
 gh pr view <number-or-url> --comments
 gh project item-list 3 --owner IgorWarzocha --limit 100 --format json
 ```
+
+Avoid the shorter `gh issue view <number> --comments` as the first read: it can make you skim comments/output and miss issue metadata or body details needed for triage.
 
 ### 2. Triage before coding
 1. Decide whether the work item is a leaf issue, epic, research item, or rewrite candidate.
