@@ -4,6 +4,7 @@ import { cn } from "../../utils/cn";
 
 export function SettingsProjectImportSection({
   importBusy,
+  desktopBridgeAvailable,
   importErrorMessage,
   importStatusMessage,
   importedState,
@@ -11,6 +12,7 @@ export function SettingsProjectImportSection({
   onShowFirstLaunchReminderAgain,
 }: {
   importBusy: boolean;
+  desktopBridgeAvailable: boolean;
   importErrorMessage: string | null;
   importStatusMessage: string | null;
   importedState: boolean | null;
@@ -29,7 +31,7 @@ export function SettingsProjectImportSection({
           type="button"
           className={cn(primaryButtonClass, "px-3 disabled:cursor-not-allowed disabled:opacity-45")}
           onClick={onImport}
-          disabled={importBusy}
+          disabled={importBusy || !desktopBridgeAvailable}
         >
           {importBusy ? "Importing…" : importedState ? "Run again" : "Import now"}
         </button>
@@ -46,6 +48,12 @@ export function SettingsProjectImportSection({
 
       {importStatusMessage ? (
         <div className="text-[12px] text-[color:var(--muted)]">{importStatusMessage}</div>
+      ) : null}
+      {!desktopBridgeAvailable ? (
+        <div className="text-[12px] text-[color:var(--muted)]">
+          Project sync needs the desktop bridge. Restart the dev server or use{" "}
+          <code>bun run dev</code>.
+        </div>
       ) : null}
       {importErrorMessage ? (
         <div className="text-[12px] text-[#f2a7a7]">{importErrorMessage}</div>

@@ -1,6 +1,7 @@
 import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
+import { useDesktopBridgeAvailable } from "../../../hooks/useDesktopBridge";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../../types";
 import { cn } from "../../../utils/cn";
@@ -70,6 +71,7 @@ export function SidebarProjectsSection({
   const [projectNameDraft, setProjectNameDraft] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
   const [createErrorMessage, setCreateErrorMessage] = useState<string | null>(null);
+  const desktopBridgeAvailable = useDesktopBridgeAvailable();
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const createPanelRef = useRef<HTMLDialogElement>(null);
 
@@ -296,6 +298,11 @@ export function SidebarProjectsSection({
           onThreadOpen={onThreadOpen}
           onToggleProjectCollapse={onToggleProjectCollapse}
         />
+      ) : !desktopBridgeAvailable ? (
+        <div className="px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted-2)]">
+          Project sync needs the desktop bridge. Restart the dev server or use{" "}
+          <code>bun run dev</code>.
+        </div>
       ) : (
         <div
           className={cn(
