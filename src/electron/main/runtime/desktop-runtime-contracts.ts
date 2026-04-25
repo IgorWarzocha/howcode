@@ -4,6 +4,7 @@ import type {
   ArchivedThread,
   ComposerState,
   ComposerStateRequest,
+  ComposerSlashCommand,
   DesktopActionResultData,
   DesktopEvent,
   DictationModelInstallResult,
@@ -44,6 +45,7 @@ export type PiThreadsModule = {
   loadArchivedThreadList: () => Promise<ArchivedThread[]>;
   loadInboxThreadList: () => Promise<InboxThread[]>;
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>;
+  loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>;
   getDictationState: () => Promise<DictationState>;
   listDictationModels: () => Promise<DictationModelSummary[]>;
   installDictationModel: (request: {

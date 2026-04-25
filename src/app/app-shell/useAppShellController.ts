@@ -252,7 +252,7 @@ export function useAppShellController() {
     setTakeoverOverrideForSelectedSession(true);
   };
 
-  const closeTakeover = ({
+  const closeTakeover = async ({
     preserveSessionOverride = false,
     refreshThread = true,
   }: {
@@ -267,6 +267,13 @@ export function useAppShellController() {
 
     if (refreshThread) {
       setThreadRefreshKey((current) => current + 1);
+    }
+
+    if (state.selectedSessionPath) {
+      await handleAction("composer.reload-settings", {
+        projectId: composerProjectId,
+        sessionPath: state.selectedSessionPath,
+      });
     }
   };
 

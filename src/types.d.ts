@@ -6,6 +6,7 @@ import type {
   DesktopClipboardFilePaths,
   DesktopClipboardSnapshot,
   ComposerFilePickerState,
+  ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
   DesktopActionResult,
@@ -119,6 +120,9 @@ declare global {
         rootPath?: string | null;
       }) => Promise<ComposerFilePickerState>;
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>;
+      getComposerSlashCommands?: (
+        request?: ComposerStateRequest,
+      ) => Promise<ComposerSlashCommand[]>;
       getDictationState?: () => Promise<DictationState>;
       listDictationModels?: () => Promise<DictationModelSummary[]>;
       installDictationModel?: (

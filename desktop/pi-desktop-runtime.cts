@@ -11,3 +11,4 @@ export {
   stopComposerRun,
   subscribeDesktopEvents,
 } from "./runtime/composer-service.cts";
+export { getComposerSlashCommands } from "./runtime/slash-commands.cts";

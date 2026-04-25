@@ -18,6 +18,7 @@ export {
   captureProjectDiffBaseline,
   listDictationModels,
   loadComposerState,
+  loadComposerSlashCommands,
   listProjectCommits,
   loadProjectDiff,
   loadProjectDiffStats,

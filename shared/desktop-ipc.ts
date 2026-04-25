@@ -6,6 +6,7 @@ import type {
   DesktopClipboardFilePaths,
   DesktopClipboardSnapshot,
   ComposerFilePickerState,
+  ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
   DesktopActionResult,
@@ -127,6 +128,7 @@ export type DesktopRequestMap = {
     response: ComposerFilePickerState;
   };
   getComposerState: { params: ComposerStateRequest; response: ComposerState };
+  getComposerSlashCommands: { params: ComposerStateRequest; response: ComposerSlashCommand[] };
   getDictationState: { params: Record<string, never>; response: DictationState };
   listDictationModels: { params: Record<string, never>; response: DictationModelSummary[] };
   installDictationModel: {
