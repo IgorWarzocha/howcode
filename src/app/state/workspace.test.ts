@@ -27,7 +27,37 @@ describe("workspace state", () => {
     expect(syncedState.collapsedProjectIds).toMatchObject({ alpha: false, beta: true });
   });
 
-  it("falls back to the first project when the current selection disappears", () => {
+  it("keeps an open thread visible when refreshed projects still contain it", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "thread",
+        selectedProjectId: "stale-project",
+        selectedThreadId: "thread-1",
+        selectedSessionPath: "/tmp/thread-1.jsonl",
+      },
+      {
+        type: "sync-projects",
+        projects: [
+          {
+            id: "alpha",
+            name: "alpha",
+            collapsed: false,
+            threads: [
+              { id: "thread-1", title: "Thread", age: "now", sessionPath: "/tmp/thread-1.jsonl" },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(nextState.activeView).toBe("thread");
+    expect(nextState.selectedProjectId).toBe("alpha");
+    expect(nextState.selectedThreadId).toBe("thread-1");
+    expect(nextState.selectedSessionPath).toBe("/tmp/thread-1.jsonl");
+  });
+
+  it("falls back to the first project when an open thread genuinely disappears", () => {
     const nextState = workspaceReducer(
       {
         ...createInitialWorkspaceState(mockProjects),
@@ -46,6 +76,25 @@ describe("workspace state", () => {
     expect(nextState.selectedProjectId).toBe("alpha");
     expect(nextState.selectedThreadId).toBeNull();
     expect(nextState.selectedSessionPath).toBeNull();
+  });
+
+  it("falls back to the first project when a non-thread selection disappears", () => {
+    const nextState = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        activeView: "code",
+        selectedProjectId: "missing-project",
+        selectedThreadId: null,
+        selectedSessionPath: null,
+      },
+      {
+        type: "sync-projects",
+        projects: [{ id: "alpha", name: "alpha", collapsed: false, threads: [] }],
+      },
+    );
+
+    expect(nextState.activeView).toBe("code");
+    expect(nextState.selectedProjectId).toBe("alpha");
   });
 
   it("opens threads, expands projects, and restores terminal visibility across session changes", () => {

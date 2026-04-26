@@ -18,7 +18,8 @@ export function getLiveThread(sessionPath: string) {
 }
 
 export function shouldSuppressExternalThreadUpdate(sessionPath: string, now = Date.now()) {
-  if (liveThreads.get(sessionPath)?.isStreaming) {
+  const liveThread = liveThreads.get(sessionPath);
+  if (liveThread?.isStreaming || liveThread?.isCompacting) {
     return true;
   }
 

@@ -188,6 +188,7 @@ export async function sendComposerPrompt(
         await runtime.session.compact(
           compactInstructions.length > 0 ? compactInstructions : undefined,
         );
+
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
         return "sent";
       } finally {
@@ -201,6 +202,10 @@ export async function sendComposerPrompt(
       request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
 
     try {
+      if (runtime.session.isCompacting) {
+        throw new Error("Wait for the current compaction to finish before sending another prompt.");
+      }
+
       if (runtime.session.isStreaming) {
         if (streamingBehavior === "stop") {
           await runtime.session.abort();

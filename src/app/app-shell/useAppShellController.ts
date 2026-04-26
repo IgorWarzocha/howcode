@@ -1,6 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useReducer, useState } from "react";
-import type { ArchivedThread, ComposerState, InboxThread, ProjectGitState } from "../desktop/types";
+import { getPersistedSessionPath } from "../../../shared/session-paths";
+import type {
+  ArchivedThread,
+  ComposerState,
+  InboxThread,
+  ProjectGitState,
+  ThreadData,
+} from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
@@ -24,6 +31,7 @@ export function useAppShellController() {
   const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState);
   const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([]);
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
+  const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
@@ -58,6 +66,11 @@ export function useAppShellController() {
     threadRefreshKey,
     threadHistoryCompactions,
   );
+  const selectedPersistedSessionPath = getPersistedSessionPath(state.selectedSessionPath);
+  const effectiveThreadData =
+    threadHistoryCompactions === 0 && liveThreadData?.sessionPath === selectedPersistedSessionPath
+      ? liveThreadData
+      : threadData;
   const inboxQuery = useDesktopInbox();
   const inboxThreads = inboxQuery.data ?? [];
   const selectedInboxThread = useMemo(
@@ -79,12 +92,12 @@ export function useAppShellController() {
       deriveControllerViewModel({
         projects,
         workspaceState: state,
-        threadData,
+        threadData: effectiveThreadData,
         shellCwd: shellState?.cwd,
         composerState,
         shellComposerState: shellState?.composer,
       }),
-    [composerState, projects, shellState?.composer, shellState?.cwd, state, threadData],
+    [composerState, effectiveThreadData, projects, shellState?.composer, shellState?.cwd, state],
   );
 
   useAppShellEffects({
@@ -103,7 +116,9 @@ export function useAppShellController() {
     dispatch,
     setArchivedThreads,
     setComposerState,
+    setLiveThreadData,
     setProjectGitState,
+    setThreadHistoryCompactions,
   });
 
   const { handleAction, runDesktopAction } = useDesktopActionHandlers({

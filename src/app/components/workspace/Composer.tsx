@@ -1,6 +1,7 @@
 import { useRef, type RefObject } from "react";
 import type {
   ComposerFilePickerState,
+  ComposerContextUsage,
   ComposerModel,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
@@ -16,8 +17,10 @@ export type ComposerProps = {
   activeView: View;
   hostLabel: string;
   model: ComposerModel | null;
+  contextUsage: ComposerContextUsage | null;
   availableModels: ComposerModel[];
   isStreaming: boolean;
+  isCompacting: boolean;
   thinkingLevel: ComposerThinkingLevel;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;

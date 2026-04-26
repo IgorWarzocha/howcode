@@ -51,9 +51,9 @@ describe("buildThreadHistorySlice", () => {
 
     expect(slice.previousMessageCount).toBe(4);
     expect(slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`)).toEqual([
-      "8:compactionSummary",
       "6:user",
       "7:assistant",
+      "8:compactionSummary",
       "9:user",
       "10:assistant",
     ]);
@@ -64,9 +64,9 @@ describe("buildThreadHistorySlice", () => {
 
     expect(slice.previousMessageCount).toBe(2);
     expect(slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`)).toEqual([
-      "5:compactionSummary",
       "3:user",
       "4:assistant",
+      "5:compactionSummary",
       "6:user",
       "7:assistant",
       "8:compactionSummary",

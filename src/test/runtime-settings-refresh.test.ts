@@ -35,6 +35,8 @@ describe("runtime settings refresh", () => {
         currentThinkingLevel: "medium",
         availableThinkingLevels: ["medium"],
         queuedPrompts: [],
+        contextUsage: null,
+        isCompacting: false,
       }),
       publishComposerUpdate,
     });
@@ -61,6 +63,8 @@ describe("runtime settings refresh", () => {
         currentThinkingLevel: "medium",
         availableThinkingLevels: ["medium"],
         queuedPrompts: [],
+        contextUsage: null,
+        isCompacting: false,
       }),
       publishComposerUpdate: vi.fn(),
     });

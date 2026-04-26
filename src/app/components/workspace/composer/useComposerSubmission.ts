@@ -15,6 +15,7 @@ type UseComposerSubmissionProps = {
   draftThreadId: string | null;
   isSending: boolean;
   isStreaming: boolean;
+  isCompacting: boolean;
   onAction: DesktopActionInvoker;
   projectId: string;
   sessionPath: string | null;
@@ -38,6 +39,7 @@ export function useComposerSubmission({
   draftThreadId,
   isSending,
   isStreaming,
+  isCompacting,
   onAction,
   projectId,
   sessionPath,
@@ -56,7 +58,7 @@ export function useComposerSubmission({
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
   const send = useCallback(async () => {
-    if (isSending || sendLockRef.current) {
+    if (isSending || isCompacting || sendLockRef.current) {
       return;
     }
 
@@ -137,6 +139,7 @@ export function useComposerSubmission({
     composerScopeKey,
     draftThreadId,
     draftValueRef,
+    isCompacting,
     isSending,
     onAction,
     projectId,
@@ -177,7 +180,53 @@ export function useComposerSubmission({
     }
   }, [isSending, isStreaming, onAction, projectId, sessionPath, setErrorMessage, setIsSending]);
 
+  const compact = useCallback(async () => {
+    if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
+      return;
+    }
+
+    await withComposerSendLock(sendLockRef, async () => {
+      setIsSending(true);
+      setErrorMessage(null);
+
+      try {
+        await stopDictationAndFlush();
+
+        const result = await submitComposerDraft({
+          draft: "/compact",
+          attachments: [],
+          draftThreadId: null,
+          isSending: false,
+          projectId,
+          sessionPath,
+          streamingBehaviorPreference,
+          onAction,
+          clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
+        });
+
+        if (result.status === "error") {
+          setErrorMessage(result.errorMessage);
+        }
+      } finally {
+        setIsSending(false);
+      }
+    });
+  }, [
+    isCompacting,
+    isSending,
+    isStreaming,
+    onAction,
+    projectId,
+    sendLockRef,
+    sessionPath,
+    setErrorMessage,
+    setIsSending,
+    stopDictationAndFlush,
+    streamingBehaviorPreference,
+  ]);
+
   return {
+    compact,
     send,
     stop,
   };

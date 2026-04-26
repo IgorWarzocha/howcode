@@ -162,10 +162,38 @@ async function createRuntime(options: {
       return;
     }
 
+    if (event.type === "compaction_start") {
+      void publishThreadUpdate(runtime, "compaction-start");
+
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; compaction_end will publish again.
+        });
+
+      return;
+    }
+
     if (event.type === "compaction_end") {
-      if (event.reason === "manual" && event.result) {
+      setTimeout(() => {
         void publishThreadUpdate(runtime, "compaction");
-      }
+
+        void buildComposerState(runtime)
+          .then((composer) => {
+            publishComposerUpdate(composer, {
+              projectId: runtime.cwd,
+              sessionPath: runtime.session.sessionFile,
+            });
+          })
+          .catch(() => {
+            // Ignore transient composer snapshot errors; a later runtime event will republish state.
+          });
+      }, 0);
 
       if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
         void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
