@@ -5,7 +5,7 @@ import type {
   ProjectGitState,
 } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
-import { toolbarButtonClass } from "../../../ui/classes";
+import { composerTextActionButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import { ComposerDictationControls } from "./ComposerDictationControls";
@@ -30,6 +30,7 @@ type ComposerGitOpsSurfaceProps = {
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
+  diffLoadError: string | null;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
@@ -54,6 +55,7 @@ export function ComposerGitOpsSurface({
   diffCommentCount,
   diffCommentsSending,
   diffCommentError,
+  diffLoadError,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onSendDiffComments,
@@ -159,10 +161,7 @@ export function ComposerGitOpsSurface({
   const primaryActionButton = (
     <button
       type="button"
-      className={cn(
-        toolbarButtonClass,
-        "rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-3 text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-45",
-      )}
+      className={composerTextActionButtonClass}
       onClick={() => {
         void handlePrimaryAction();
       }}
@@ -189,26 +188,27 @@ export function ComposerGitOpsSurface({
       <div className={contentMinHeightClass}>
         {/* Top git-ops controls are absolutely positioned inside this shared block. The prompt
             composer mirrors this pattern with its + button, prompt body, and send controls. */}
-        <ComposerGitOpsTopBar
-          commentCards={commentCards}
-          diffRenderMode={diffRenderMode}
-          hasDiffComments={hasDiffComments}
-          hasOrigin={hasOrigin}
-          isGitHubOrigin={isGitHubOrigin}
-          isGitRepo={isGitRepo}
-          onSaveOrigin={handleSaveOrigin}
-          onSelectDiffComment={onSelectDiffComment}
-          onSetDiffRenderMode={onSetDiffRenderMode}
-          onSetRepoUrl={setRepoUrl}
-          projectGitState={projectGitState}
-          repoUrl={repoUrl}
-        />
+        {hasDiffComments ? (
+          <ComposerGitOpsTopBar
+            commentCards={commentCards}
+            hasDiffComments={hasDiffComments}
+            hasOrigin={hasOrigin}
+            isGitHubOrigin={isGitHubOrigin}
+            isGitRepo={isGitRepo}
+            onSaveOrigin={handleSaveOrigin}
+            onSelectDiffComment={onSelectDiffComment}
+            onSetRepoUrl={setRepoUrl}
+            projectGitState={projectGitState}
+            repoUrl={repoUrl}
+          />
+        ) : null}
         {!hasDiffComments ? (
           <ComposerGitOpsMessageField
             actionErrorMessage={actionErrorMessage}
             commitFocused={commitFocused}
-            diffCommentError={diffCommentError}
+            diffCommentError={diffCommentError ?? diffLoadError}
             hasDiffComments={false}
+            isGitRepo={isGitRepo}
             onBlur={() => setCommitFocused(false)}
             onChange={handleCommitMessageChange}
             onFocus={() => setCommitFocused(true)}
@@ -234,8 +234,9 @@ export function ComposerGitOpsSurface({
         <ComposerGitOpsMessageField
           actionErrorMessage={actionErrorMessage}
           commitFocused={commitFocused}
-          diffCommentError={diffCommentError}
+          diffCommentError={diffCommentError ?? diffLoadError}
           hasDiffComments
+          isGitRepo={isGitRepo}
           onBlur={() => setCommitFocused(false)}
           onChange={handleCommitMessageChange}
           onFocus={() => setCommitFocused(true)}
@@ -262,11 +263,13 @@ export function ComposerGitOpsSurface({
       <ComposerGitOpsFooter
         composerPanelRef={composerPanelRef}
         diffBaseline={diffBaseline}
+        diffRenderMode={diffRenderMode}
         hasOrigin={hasOrigin}
         includeUnstaged={includeUnstaged}
         isGitRepo={isGitRepo}
         onBack={onBack}
         onSetDiffBaseline={onSetDiffBaseline}
+        onSetDiffRenderMode={onSetDiffRenderMode}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}

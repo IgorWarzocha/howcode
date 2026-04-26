@@ -1,20 +1,21 @@
 import type { DesktopActionResult } from "./types";
+import { cleanUserErrorMessage } from "./error-messages";
 
 export function getDesktopActionErrorMessage(
   actionResult: DesktopActionResult | null,
   fallbackMessage: string,
 ) {
   if (actionResult === null) {
-    return fallbackMessage;
+    return cleanUserErrorMessage(null, fallbackMessage);
   }
 
   if (actionResult?.ok === false && typeof actionResult.result?.error === "string") {
-    return actionResult.result.error;
+    return cleanUserErrorMessage(actionResult.result.error, fallbackMessage);
   }
 
   if (typeof actionResult?.result?.error === "string") {
-    return actionResult.result.error;
+    return cleanUserErrorMessage(actionResult.result.error, fallbackMessage);
   }
 
-  return actionResult.ok === false ? fallbackMessage : null;
+  return actionResult.ok === false ? cleanUserErrorMessage(null, fallbackMessage) : null;
 }

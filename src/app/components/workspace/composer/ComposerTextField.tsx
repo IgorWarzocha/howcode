@@ -1,8 +1,11 @@
 import { type ClipboardEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { cn } from "../../../utils/cn";
 
 type ComposerTextFieldProps = {
   value: string;
   placeholder: string;
+  placeholderTone?: "muted" | "error";
+  statusMessage?: string | null;
   ariaLabel: string;
   ariaActiveDescendant?: string;
   ariaControls?: string;
@@ -21,6 +24,8 @@ type ComposerTextFieldProps = {
 export function ComposerTextField({
   value,
   placeholder,
+  placeholderTone = "muted",
+  statusMessage = null,
   ariaLabel,
   ariaActiveDescendant,
   ariaControls,
@@ -78,7 +83,7 @@ export function ComposerTextField({
 
   return (
     <div
-      className="flex min-w-0 items-end"
+      className="grid min-w-0 gap-1"
       style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
       onPointerEnter={(event) => {
         if (event.pointerType !== "mouse") {
@@ -100,10 +105,18 @@ export function ComposerTextField({
         focusTextareaAtEnd();
       }}
     >
+      {statusMessage ? (
+        <div className="truncate text-[12px] leading-4 text-[#f2a7a7]">{statusMessage}</div>
+      ) : null}
       <textarea
         ref={textareaRef}
         rows={1}
-        className="m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+        className={cn(
+          "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
+          placeholderTone === "error"
+            ? "placeholder:text-[#f2a7a7]"
+            : "placeholder:text-[color:var(--muted-2)]",
+        )}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onInput={onInput}

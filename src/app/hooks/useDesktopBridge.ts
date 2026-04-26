@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DesktopAction } from "../desktop/actions";
+import { getErrorMessage } from "../desktop/error-messages";
 import type { DesktopActionInvoker, DesktopActionResult } from "../desktop/types";
 
 export const desktopBridgeUnavailableMessage =
@@ -87,7 +88,7 @@ export function useDesktopBridge() {
         at: new Date().toISOString(),
         payload: { action, payload },
         result: {
-          error: error instanceof Error ? error.message : "Desktop action request failed.",
+          error: getErrorMessage(error, "Desktop action request failed."),
         },
       };
     }

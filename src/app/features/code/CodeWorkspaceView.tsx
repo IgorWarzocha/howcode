@@ -5,6 +5,7 @@ import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline } from "../../desktop/types";
+import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 import { useDiffCommentController } from "./useDiffCommentController";
@@ -60,6 +61,11 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
+  const { error: diffLoadError } = useDesktopDiff(
+    composerProjectId,
+    diffBaseline,
+    showDiffInMainView && (projectGitState?.isGitRepo ?? false),
+  );
   const footerHeight = useWorkspaceFooterHeight({
     footerRef,
     visible: showWorkspaceFooter,
@@ -198,6 +204,7 @@ export function CodeWorkspaceView({
                     diffCommentCount={diffCommentCount}
                     diffCommentsSending={diffCommentsSending}
                     diffCommentError={diffCommentError}
+                    diffLoadError={diffLoadError}
                     onSetDiffBaseline={onSetDiffBaseline}
                     onSetDiffRenderMode={setDiffRenderMode}
                     onSendDiffComments={(message) => {

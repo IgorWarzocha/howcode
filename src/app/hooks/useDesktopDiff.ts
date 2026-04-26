@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { cleanUserErrorMessage } from "../desktop/error-messages";
 import type { ProjectDiffBaseline, ProjectDiffResult } from "../desktop/types";
 import { desktopQueryKeys, getProjectDiffQuery } from "../query/desktop-query";
 
@@ -7,6 +8,10 @@ type DiffState = {
   isLoading: boolean;
   error: string | null;
 };
+
+export function getReadableDesktopDiffError(error: string | null) {
+  return error ? cleanUserErrorMessage(error, "Could not load diff.") : null;
+}
 
 export function useDesktopDiff(
   projectId: string | null,
@@ -25,6 +30,6 @@ export function useDesktopDiff(
   return {
     diff: query.data ?? null,
     isLoading: query.isLoading || query.isFetching,
-    error: query.error?.message ?? null,
+    error: getReadableDesktopDiffError(query.error?.message ?? null),
   } satisfies DiffState;
 }

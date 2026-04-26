@@ -62,7 +62,7 @@ export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
 export function getFeatureStatusButtonClass(statusId: FeatureStatusId) {
   return getFeatureStatusMeta(statusId).status === "mock"
     ? "border-[rgba(255,110,110,0.22)] text-[#ff9c9c] hover:border-[rgba(255,110,110,0.36)] hover:bg-[rgba(255,94,94,0.08)] hover:text-[#ffd1d1]"
-    : "border-[rgba(255,214,102,0.22)] text-[#ffd36a] hover:border-[rgba(255,214,102,0.34)] hover:bg-[rgba(255,204,102,0.08)] hover:text-[#ffe297]";
+    : "border-[rgba(169,178,215,0.18)] text-[color:var(--muted)] hover:border-[rgba(169,178,215,0.28)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]";
 }
 
 export function getFeatureStatusBadgeClass(statusId: FeatureStatusId) {

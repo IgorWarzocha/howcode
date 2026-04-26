@@ -188,9 +188,10 @@ export function ComposerPromptSurface({
   }, [handleDrop]);
 
   const placeholderText =
-    activeView === "thread"
+    errorMessage ??
+    (activeView === "thread"
       ? "Ask for follow-up changes"
-      : "Ask Pi anything, @ to add files, / for commands, $ for skills";
+      : "Ask Pi anything, @ to add files, / for commands, $ for skills");
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
 
   return (
@@ -362,6 +363,8 @@ export function ComposerPromptSurface({
                   ariaControls={slashCommands.open ? slashCommands.listboxId : undefined}
                   ariaExpanded={slashCommands.open}
                   placeholder={placeholderText}
+                  placeholderTone={errorMessage ? "error" : "muted"}
+                  statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                   reservedLineCount={1}
                   onHeightChange={onLayoutChange}
                 />
@@ -411,7 +414,7 @@ export function ComposerPromptSurface({
       </div>
 
       {errorMessage ? (
-        <output className="px-4 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
+        <output className="sr-only" aria-live="polite">
           {errorMessage}
         </output>
       ) : null}
