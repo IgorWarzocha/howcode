@@ -40,8 +40,9 @@ Today the app includes real:
 - project and thread persistence
 - PTY-backed terminal support
 - checkpoint-backed diff rendering
-- git and project actions
+- project actions and partial git/commit actions
 - project-aware sidebar and inbox flows
+- skills/extensions browse and install surfaces
 
 ## Docs
 

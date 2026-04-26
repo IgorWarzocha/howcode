@@ -1,4 +1,4 @@
-# Pi Desktop Mock lane map
+# Howcode lane map
 
 This repo is intentionally split around future Pi desktop integration seams.
 
@@ -17,8 +17,8 @@ This repo is intentionally split around future Pi desktop integration seams.
   - deterministic workspace reducer + selectors
   - safest place to grow mock state into persisted session state
 - `src/app/data/mock-data.ts`
-  - visual fixtures only
-  - replace gradually with Pi SDK-backed data adapters
+  - legacy visual fixtures and card-grid placeholder data only
+  - do not use for real project/thread state; replace or remove remaining card fixtures as product surfaces become real
 - `src/app/components/sidebar/*`
   - left rail and settings menu
   - `project-tree/*` holds project/thread row decomposition and dismiss helpers
@@ -85,8 +85,8 @@ This repo is intentionally split around future Pi desktop integration seams.
   - shared Pi message/title mapping coverage
 - `src/test/pi-thread-action-payloads.test.ts`
   - action payload parsing coverage
-- `src/test/desktop-action-coverage.test.ts`
-  - action contract coverage partition
+- `shared/desktop-action-coverage.ts`
+  - action contract coverage partition; keep this file updated when action handlers move between no-op and implemented
 
 ## Checks
 

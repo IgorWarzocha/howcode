@@ -415,7 +415,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
   return {
     platform: process.platform,
     mockMode: false,
-    productName: "Pi Desktop Mock",
+    productName: "howcode",
     cwd,
     resolvedCwd,
     agentDir,

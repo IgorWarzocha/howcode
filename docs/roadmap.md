@@ -1,6 +1,6 @@
 # Product roadmap
 
-Snapshot: April 5, 2026.
+Snapshot: April 26, 2026.
 
 This roadmap turns the current mock/partial audit into a product plan.
 
@@ -13,7 +13,12 @@ The app already has a real core:
 - live thread hydration from Pi session files
 - real PTY-backed terminal
 - checkpoint-backed diff rendering
-- partial git/project actions
+- PTY terminal takeover mode
+- real project actions except worktree creation
+- partial git/commit actions
+- local sherpa-onnx dictation path
+- persisted inbox flow
+- real skills/extensions browse/install surfaces
 
 What remains is mostly a mix of:
 
@@ -33,15 +38,15 @@ What remains is mostly a mix of:
 These are the highest-value "make the current app feel honest" items:
 
 - finish header/navigation semantics
-- clean up stale mock labels vs real implementations
-- finish small-but-visible composer/settings/control gaps
+- clean up stale no-op action inventory vs real implementations
+- finish small-but-visible composer/settings/control gaps, especially host/remote and packaged dictation validation
 - decide which mock views stay visible and which should be hidden until real
 
 Representative items:
 
 - thread action menu / run action
 - workspace open / open options / handoff / popout decisions
-- dictate direction
+- validate packaged dictation behavior and decide whether the legacy `composer.dictate` action ID should stay
 - status-marker cleanup for project actions already backed by real behavior
 - keep header trace IDs documented without bringing the header UI back early
 
@@ -70,7 +75,7 @@ This is the main "make it feel like a real coding desktop" phase.
 
 These areas matter, but should follow the core workflow work above:
 
-- plugins / automations / debug surfaces
+- plugin / automation / debug surfaces; skills/extensions have real feature lanes already
 - project add/import flow
 - thread filtering/search
 - richer settings/account surfaces
