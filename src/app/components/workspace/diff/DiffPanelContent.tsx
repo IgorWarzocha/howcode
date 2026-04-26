@@ -167,21 +167,20 @@ export function DiffPanelContent({
       ) : (
         <>
           <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            {error && !renderablePatch ? (
-              <div className="px-3 pt-3">
-                <p className="mb-2 text-[11px] text-[#f2a7a7]">{error}</p>
-              </div>
-            ) : null}
-
             {!renderablePatch ? (
               <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-[color:var(--muted)]">
-                <p>
-                  {isLoading
-                    ? "Loading diff..."
-                    : hasNoNetChanges
-                      ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
-                      : "No patch available for this worktree."}
-                </p>
+                <div className="grid max-w-[42rem] gap-1.5">
+                  <p>
+                    {isLoading
+                      ? "Loading diff..."
+                      : error
+                        ? "Diff unavailable."
+                        : hasNoNetChanges
+                          ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
+                          : "No patch available for this worktree."}
+                  </p>
+                  {error ? <p className="text-[#f2a7a7]">{error}</p> : null}
+                </div>
               </div>
             ) : renderablePatch.kind === "files" ? (
               <div

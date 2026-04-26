@@ -4,6 +4,7 @@ import type {
   DesktopActionInvoker,
 } from "../../../desktop/types";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import { isCompactSlashCommand } from "../../../../../shared/composer-slash-commands";
 
 type SubmitComposerDraftResult =
@@ -71,7 +72,7 @@ export async function submitComposerDraft({
   } catch (error) {
     return {
       status: "error",
-      errorMessage: error instanceof Error ? error.message : "Could not send prompt.",
+      errorMessage: getErrorMessage(error, "Could not send prompt."),
       text,
     };
   }

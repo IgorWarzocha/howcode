@@ -12,6 +12,7 @@ import type {
 } from "../desktop/types";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import type { View } from "../types";
+import { cleanUserErrorMessage } from "../desktop/error-messages";
 import { buildContextualActionPayload } from "./controller-action-helpers";
 import {
   applyOptimisticPinUpdate,
@@ -49,10 +50,21 @@ function getActionErrorMessage(actionResult: DesktopActionResult | null) {
   }
 
   if (actionResult.ok === false && typeof actionResult.result?.error === "string") {
-    return actionResult.result.error;
+    return cleanUserErrorMessage(actionResult.result.error);
   }
 
-  return typeof actionResult.result?.error === "string" ? actionResult.result.error : null;
+  return typeof actionResult.result?.error === "string"
+    ? cleanUserErrorMessage(actionResult.result.error)
+    : null;
+}
+
+function shouldShowGlobalActionError(action: DesktopAction) {
+  return !(
+    action === "composer.send" ||
+    action === "composer.stop" ||
+    action === "workspace.commit" ||
+    action === "workspace.commit-options"
+  );
 }
 
 export function useDesktopActionHandlers({
@@ -110,7 +122,7 @@ export function useDesktopActionHandlers({
       });
 
       const actionErrorMessage = getActionErrorMessage(actionResult);
-      if (actionErrorMessage) {
+      if (actionErrorMessage && shouldShowGlobalActionError(action)) {
         showToast(actionErrorMessage);
       }
 

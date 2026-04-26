@@ -50,7 +50,10 @@ export function InboxComposer({
                   }
                 }}
                 ariaLabel="Inbox prompt composer"
-                placeholder="Reply to this thread…"
+                placeholder={errorMessage ?? "Reply to this thread…"}
+                placeholderTone={errorMessage ? "error" : "muted"}
+                statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
+                reservedLineCount={1}
               />
             </div>
 
@@ -87,7 +90,7 @@ export function InboxComposer({
       </div>
 
       {errorMessage ? (
-        <output className="px-4 pb-2 text-[12px] text-[#f2a7a7]" aria-live="polite">
+        <output className="sr-only" aria-live="polite">
           {errorMessage}
         </output>
       ) : null}

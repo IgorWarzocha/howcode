@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import {
@@ -118,13 +120,19 @@ export function useComposerGitOpsState({
     }
 
     try {
-      await onAction("workspace.commit-options", { repoUrl: nextRepoUrl });
+      const result = await onAction("workspace.commit-options", { repoUrl: nextRepoUrl });
+      const actionErrorMessage = getDesktopActionErrorMessage(
+        result,
+        "Could not update the repository remote.",
+      );
+      if (actionErrorMessage) {
+        setActionErrorMessage(actionErrorMessage);
+        return;
+      }
       setActionErrorMessage(null);
       setRepoUrl("");
     } catch (error) {
-      setActionErrorMessage(
-        error instanceof Error ? error.message : "Could not update the repository remote.",
-      );
+      setActionErrorMessage(getErrorMessage(error, "Could not update the repository remote."));
     }
   }, [isGitRepo, onAction, repoUrl]);
 
@@ -140,10 +148,18 @@ export function useComposerGitOpsState({
 
     if (!isGitRepo) {
       try {
-        await onAction("workspace.commit-options");
+        const result = await onAction("workspace.commit-options");
+        const actionErrorMessage = getDesktopActionErrorMessage(
+          result,
+          "Could not initialize git.",
+        );
+        if (actionErrorMessage) {
+          setActionErrorMessage(actionErrorMessage);
+          return;
+        }
         setActionErrorMessage(null);
       } catch (error) {
-        setActionErrorMessage(error instanceof Error ? error.message : "Could not initialize git.");
+        setActionErrorMessage(getErrorMessage(error, "Could not initialize git."));
       }
       return;
     }
@@ -188,7 +204,7 @@ export function useComposerGitOpsState({
       }
       setActionErrorMessage(getActionResultError(result));
     } catch (error) {
-      setActionErrorMessage(error instanceof Error ? error.message : "Could not commit changes.");
+      setActionErrorMessage(getErrorMessage(error, "Could not commit changes."));
     } finally {
       setRunningPrimaryAction(false);
     }

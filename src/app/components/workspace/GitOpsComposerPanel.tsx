@@ -20,6 +20,7 @@ type GitOpsComposerPanelProps = {
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
+  diffLoadError: string | null;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
   onSendDiffComments: (message?: string | null) => void;
@@ -43,6 +44,7 @@ export function GitOpsComposerPanel({
   diffCommentCount,
   diffCommentsSending,
   diffCommentError,
+  diffLoadError,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   onSendDiffComments,
@@ -75,6 +77,7 @@ export function GitOpsComposerPanel({
         diffCommentCount={diffCommentCount}
         diffCommentsSending={diffCommentsSending}
         diffCommentError={diffCommentError}
+        diffLoadError={diffLoadError}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onSendDiffComments={onSendDiffComments}

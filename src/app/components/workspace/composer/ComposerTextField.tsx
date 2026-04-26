@@ -1,8 +1,11 @@
 import { type ClipboardEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { cn } from "../../../utils/cn";
 
 type ComposerTextFieldProps = {
   value: string;
   placeholder: string;
+  placeholderTone?: "muted" | "error";
+  statusMessage?: string | null;
   ariaLabel: string;
   ariaActiveDescendant?: string;
   ariaControls?: string;
@@ -21,6 +24,8 @@ type ComposerTextFieldProps = {
 export function ComposerTextField({
   value,
   placeholder,
+  placeholderTone = "muted",
+  statusMessage = null,
   ariaLabel,
   ariaActiveDescendant,
   ariaControls,
@@ -35,6 +40,7 @@ export function ComposerTextField({
   onBlur,
   onExpandedChange,
 }: ComposerTextFieldProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastReportedHeightRef = useRef<number | null>(null);
   const [reservedHeight, setReservedHeight] = useState<number | null>(null);
@@ -64,10 +70,13 @@ export function ComposerTextField({
     textarea.style.height = "0px";
     const nextHeight = Math.max(textarea.scrollHeight, 24);
     textarea.style.height = `${nextHeight}px`;
-    if (lastReportedHeightRef.current !== nextHeight) {
-      lastReportedHeightRef.current = nextHeight;
-      onHeightChange?.(nextHeight);
-    }
+    window.requestAnimationFrame(() => {
+      const reportedHeight = wrapperRef.current?.getBoundingClientRect().height ?? nextHeight;
+      if (lastReportedHeightRef.current !== reportedHeight) {
+        lastReportedHeightRef.current = reportedHeight;
+        onHeightChange?.(reportedHeight);
+      }
+    });
 
     onExpandedChange?.(nextHeight > reservedHeight + 1);
 
@@ -76,9 +85,20 @@ export function ComposerTextField({
     }
   }, [onExpandedChange, onHeightChange, reservedLineCount, value]);
 
+  useEffect(() => {
+    const height = wrapperRef.current?.getBoundingClientRect().height;
+    if (!height || lastReportedHeightRef.current === height) {
+      return;
+    }
+
+    lastReportedHeightRef.current = height;
+    onHeightChange?.(height);
+  });
+
   return (
     <div
-      className="flex min-w-0 items-end"
+      ref={wrapperRef}
+      className="grid min-w-0 gap-1"
       style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
       onPointerEnter={(event) => {
         if (event.pointerType !== "mouse") {
@@ -100,10 +120,18 @@ export function ComposerTextField({
         focusTextareaAtEnd();
       }}
     >
+      {statusMessage ? (
+        <div className="truncate text-[12px] leading-4 text-[#f2a7a7]">{statusMessage}</div>
+      ) : null}
       <textarea
         ref={textareaRef}
         rows={1}
-        className="m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+        className={cn(
+          "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
+          placeholderTone === "error"
+            ? "placeholder:text-[#f2a7a7]"
+            : "placeholder:text-[color:var(--muted-2)]",
+        )}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onInput={onInput}

@@ -7,6 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type { DictationState } from "../../../desktop/types";
 import {
   appendDictatedText,
@@ -140,9 +141,7 @@ export function useComposerDictation({
           activeDictationScopeKeyRef.current === submittedScopeKey &&
           dictationSessionTokenRef.current === submittedSessionToken
         ) {
-          setErrorMessage(
-            error instanceof Error ? error.message : "Could not stop local dictation.",
-          );
+          setErrorMessage(getErrorMessage(error, "Could not stop local dictation."));
         }
       } finally {
         dictationFlushPromiseRef.current = null;
@@ -254,7 +253,7 @@ export function useComposerDictation({
       return "started" as const;
     } catch (error) {
       clearDictationSession();
-      setErrorMessage(error instanceof Error ? error.message : "Could not start local dictation.");
+      setErrorMessage(getErrorMessage(error, "Could not start local dictation."));
       return "unavailable" as const;
     }
   };

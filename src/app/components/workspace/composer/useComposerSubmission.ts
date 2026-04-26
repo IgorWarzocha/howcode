@@ -1,5 +1,6 @@
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
@@ -174,7 +175,7 @@ export function useComposerSubmission({
         setErrorMessage(actionErrorMessage);
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not stop Pi.");
+      setErrorMessage(getErrorMessage(error, "Could not stop Pi."));
     } finally {
       setIsSending(false);
     }

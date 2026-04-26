@@ -6,6 +6,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { mergeComposerAttachments } from "../../../../../shared/composer-attachments";
 
@@ -72,7 +73,7 @@ export function useComposerAttachmentPicker({
           return null;
         }
 
-        setErrorMessage(error instanceof Error ? error.message : "Could not load files.");
+        setErrorMessage(getErrorMessage(error, "Could not load files."));
         return null;
       } finally {
         if (requestId === pickerRequestIdRef.current) {

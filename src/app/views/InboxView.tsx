@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getDesktopActionErrorMessage } from "../desktop/action-results";
+import { getErrorMessage } from "../desktop/error-messages";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
@@ -42,8 +43,8 @@ export function InboxView({
         text: nextDraft,
         streamingBehavior: appSettings.composerStreamingBehavior,
       });
-    } catch {
-      setErrorMessage("Could not send follow-up.");
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Could not send follow-up."));
       return;
     } finally {
       setIsSending(false);
@@ -79,8 +80,8 @@ export function InboxView({
       if (actionErrorMessage) {
         setErrorMessage(actionErrorMessage);
       }
-    } catch {
-      setErrorMessage("Could not stop Pi.");
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Could not stop Pi."));
     } finally {
       setIsSending(false);
     }

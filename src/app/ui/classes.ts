@@ -62,7 +62,10 @@ export const ghostButtonClass =
   "rounded-[10px] border border-transparent px-2 py-1 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
 export const primaryButtonClass =
-  "min-h-8 rounded-full bg-[color:var(--accent)] px-4 text-[13px] font-medium text-[#1a1c26] transition-opacity duration-150 ease-out hover:opacity-90";
+  "min-h-8 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.06)] px-4 text-[13px] font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[rgba(169,178,215,0.22)] hover:bg-[rgba(255,255,255,0.1)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[rgba(255,255,255,0.035)] disabled:text-[color:var(--muted-2)]";
+
+export const composerTextActionButtonClass =
+  "inline-flex h-7 items-center justify-center rounded-md border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.06)] px-3 text-[12.5px] font-medium leading-5 text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[rgba(169,178,215,0.22)] hover:bg-[rgba(255,255,255,0.1)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[rgba(255,255,255,0.035)] disabled:text-[color:var(--muted-2)]";
 
 export const interactiveCardClass =
   "rounded-[20px] border border-[color:var(--border)] bg-[rgba(39,42,57,0.9)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(44,47,64,0.94)]";

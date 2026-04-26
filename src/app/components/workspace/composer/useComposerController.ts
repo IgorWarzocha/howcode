@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import type { DesktopAction } from "../../../desktop/actions";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type {
   ComposerAttachment,
   ComposerFilePickerState,
@@ -250,7 +251,7 @@ export function useComposerController({
         setOpenMenu(null);
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not update the composer.");
+      setErrorMessage(getErrorMessage(error, "Could not update the composer."));
     }
   };
 

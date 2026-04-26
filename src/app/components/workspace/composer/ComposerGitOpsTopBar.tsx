@@ -1,85 +1,44 @@
-import { Columns2, GitBranch, Github, Rows3, TriangleAlert } from "lucide-react";
+import { GitBranch, Github } from "lucide-react";
 import type { ProjectGitState } from "../../../desktop/types";
-import {
-  compactCardClass,
-  diffPanelIconButtonClass,
-  diffPanelTurnChipSelectedClass,
-} from "../../../ui/classes";
+import { compactCardClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { GitOpsCommentCard } from "./composer-git-ops.helpers";
 
 type ComposerGitOpsTopBarProps = {
   commentCards: GitOpsCommentCard[];
-  diffRenderMode: "stacked" | "split";
   hasDiffComments: boolean;
   hasOrigin: boolean;
   isGitHubOrigin: boolean;
   isGitRepo: boolean;
-  onSaveOrigin: () => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
-  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
-  onSetRepoUrl: (repoUrl: string) => void;
   projectGitState: ProjectGitState | null;
-  repoUrl: string;
 };
 
 export function ComposerGitOpsTopBar({
   commentCards,
-  diffRenderMode,
   hasDiffComments,
   hasOrigin,
   isGitHubOrigin,
   isGitRepo,
-  onSaveOrigin,
   onSelectDiffComment,
-  onSetDiffRenderMode,
-  onSetRepoUrl,
   projectGitState,
-  repoUrl,
 }: ComposerGitOpsTopBarProps) {
   return (
     <>
       <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
-        {isGitRepo ? (
-          hasOrigin ? (
-            <button
-              type="button"
-              className={cn(
-                compactCardClass,
-                "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
-              )}
-              title={projectGitState?.originUrl ?? "origin"}
-            >
-              {isGitHubOrigin ? <Github size={12} /> : null}
-              {projectGitState?.originName ?? "origin"}
-            </button>
-          ) : (
-            <input
-              value={repoUrl}
-              onChange={(event) => onSetRepoUrl(event.target.value)}
-              onBlur={() => {
-                void onSaveOrigin();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void onSaveOrigin();
-                }
-              }}
-              className={cn(
-                compactCardClass,
-                "w-64 bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]",
-              )}
-              placeholder="Paste repository URL"
-              aria-label="Repository URL"
-            />
-          )
-        ) : (
-          <div className="flex items-center gap-2 text-[12px] text-[#ff9c9c]">
-            <TriangleAlert size={14} />
-            <span>Not a git repository</span>
-          </div>
-        )}
+        {isGitRepo && hasOrigin ? (
+          <button
+            type="button"
+            className={cn(
+              compactCardClass,
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
+            )}
+            title={projectGitState?.originUrl ?? "origin"}
+          >
+            {isGitHubOrigin ? <Github size={12} /> : null}
+            {projectGitState?.originName ?? "origin"}
+          </button>
+        ) : null}
 
         {isGitRepo ? (
           <button
@@ -94,37 +53,6 @@ export function ComposerGitOpsTopBar({
             <span>{projectGitState?.branch ?? "Detached"}</span>
           </button>
         ) : null}
-      </div>
-
-      <div className="absolute top-4 right-4 flex items-center gap-1.5">
-        <button
-          type="button"
-          className={cn(
-            diffPanelIconButtonClass,
-            diffRenderMode === "stacked"
-              ? diffPanelTurnChipSelectedClass
-              : "border-[color:var(--border)] bg-transparent",
-          )}
-          onClick={() => onSetDiffRenderMode("stacked")}
-          aria-label="Unified diff view"
-          title="Unified diff view"
-        >
-          <Rows3 size={14} />
-        </button>
-        <button
-          type="button"
-          className={cn(
-            diffPanelIconButtonClass,
-            diffRenderMode === "split"
-              ? diffPanelTurnChipSelectedClass
-              : "border-[color:var(--border)] bg-transparent",
-          )}
-          onClick={() => onSetDiffRenderMode("split")}
-          aria-label="Split diff view"
-          title="Split diff view"
-        >
-          <Columns2 size={14} />
-        </button>
       </div>
 
       {hasDiffComments ? (
