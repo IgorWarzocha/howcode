@@ -159,9 +159,9 @@ export function useComposerSlashCommands({
       return true;
     }
 
-    if (event.key === "Tab" && !event.shiftKey && filteredCommands[0]) {
+    if (event.key === "Tab" && !event.shiftKey && filteredCommands[selectedIndex]) {
       event.preventDefault();
-      completeCommand(filteredCommands[0]);
+      completeCommand(filteredCommands[selectedIndex]);
       return true;
     }
 

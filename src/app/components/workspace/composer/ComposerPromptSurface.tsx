@@ -126,6 +126,9 @@ export function ComposerPromptSurface({
     send,
     onOpenSettingsView,
   });
+  const slashCommandListSignature = slashCommands.commands
+    .map((command) => `${command.source}:${command.name}`)
+    .join("|");
 
   useEffect(() => {
     if (!slashCommands.open) {
@@ -134,7 +137,11 @@ export function ComposerPromptSurface({
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      if (!target || slashCommandPanelRef.current?.contains(target)) {
+      if (
+        !target ||
+        slashCommandPanelRef.current?.contains(target) ||
+        composerPanelRef.current?.contains(target)
+      ) {
         return;
       }
 
@@ -145,12 +152,16 @@ export function ComposerPromptSurface({
     return () => {
       window.removeEventListener("pointerdown", handlePointerDown, true);
     };
-  }, [slashCommands]);
+  }, [composerPanelRef, slashCommands]);
 
   useEffect(() => {
     if (!slashCommands.open || !slashCommands.activeDescendantId) {
       return;
     }
+
+    // Keep the effect tied to command content changes too: the active id can remain
+    // `...-0` while filtering swaps the actual first row underneath it.
+    void slashCommandListSignature;
 
     const panel = slashCommandPanelRef.current;
     const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`);
@@ -176,7 +187,12 @@ export function ComposerPromptSurface({
     } else if (optionBottom > visibleBottom) {
       panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom;
     }
-  }, [slashCommands.open, slashCommands.activeDescendantId, slashCommands.selectedIndex]);
+  }, [
+    slashCommands.open,
+    slashCommands.activeDescendantId,
+    slashCommands.selectedIndex,
+    slashCommandListSignature,
+  ]);
 
   useEffect(() => {
     if (!pickerOpen && !dictationActive && !dictationTranscribing) {
