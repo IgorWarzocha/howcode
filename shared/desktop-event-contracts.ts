@@ -16,7 +16,7 @@ export type DesktopEvent =
     }
   | {
       type: "thread-update";
-      reason: "start" | "update" | "end" | "external";
+      reason: "start" | "update" | "end" | "external" | "compaction";
       projectId: string;
       threadId: string;
       sessionPath: string;

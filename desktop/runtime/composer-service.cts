@@ -6,6 +6,7 @@ import type {
   ComposerThinkingLevel,
 } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
+import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import { getPiModule } from "../pi-module.cts";
@@ -165,8 +166,35 @@ export async function sendComposerPrompt(
   },
 ): Promise<"sent" | "stopped"> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  const compactInstructions = parseCompactSlashCommand(request.text);
 
   const runSend = async (runtime: Awaited<ReturnType<typeof getOrCreateRuntimeForSessionPath>>) => {
+    if (compactInstructions !== null) {
+      try {
+        if (runtime.session.isStreaming) {
+          throw new Error("Wait for the current response to finish before compacting.");
+        }
+
+        if (runtime.session.isCompacting) {
+          throw new Error("Wait for the current compaction to finish before compacting again.");
+        }
+
+        const entries = runtime.session.sessionManager.getBranch();
+        const messageCount = entries.filter((entry) => entry.type === "message").length;
+        if (messageCount < 2) {
+          throw new Error("Nothing to compact (no messages yet)");
+        }
+
+        await runtime.session.compact(
+          compactInstructions.length > 0 ? compactInstructions : undefined,
+        );
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return "sent";
+      } finally {
+        scheduleRuntimeDisposalForRuntime(runtime);
+      }
+    }
+
     const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
     const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
     const streamingBehavior =

@@ -1,6 +1,9 @@
 import type { ComposerSlashCommand, ComposerStateRequest } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
-import { appSettingsSlashCommand } from "../../shared/composer-slash-commands.ts";
+import {
+  appSettingsSlashCommand,
+  compactSlashCommand,
+} from "../../shared/composer-slash-commands.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { createComposerSnapshotSession } from "./composer-state.cts";
 import {
@@ -10,11 +13,17 @@ import {
 } from "./runtime-registry.cts";
 import type { PiRuntime } from "./types.cts";
 
+const builtinCommandNames = new Set([compactSlashCommand.name]);
+
 function mapSessionCommands(session: PiRuntime["session"]): ComposerSlashCommand[] {
-  const commands: ComposerSlashCommand[] = [appSettingsSlashCommand];
+  const commands: ComposerSlashCommand[] = [appSettingsSlashCommand, compactSlashCommand];
   const extensionCommandNames = new Set<string>();
 
   for (const command of session.extensionRunner.getRegisteredCommands()) {
+    if (builtinCommandNames.has(command.invocationName)) {
+      continue;
+    }
+
     extensionCommandNames.add(command.invocationName);
     commands.push({
       name: command.invocationName,
@@ -25,7 +34,7 @@ function mapSessionCommands(session: PiRuntime["session"]): ComposerSlashCommand
   }
 
   for (const template of session.promptTemplates) {
-    if (extensionCommandNames.has(template.name)) {
+    if (builtinCommandNames.has(template.name) || extensionCommandNames.has(template.name)) {
       continue;
     }
 
@@ -40,7 +49,10 @@ function mapSessionCommands(session: PiRuntime["session"]): ComposerSlashCommand
   if (session.settingsManager.getEnableSkillCommands()) {
     for (const skill of session.resourceLoader.getSkills().skills) {
       const skillCommandName = `skill:${skill.name}`;
-      if (extensionCommandNames.has(skillCommandName)) {
+      if (
+        builtinCommandNames.has(skillCommandName) ||
+        extensionCommandNames.has(skillCommandName)
+      ) {
         continue;
       }
 

@@ -80,7 +80,7 @@ export function normalizeThreadDataForReason(
   thread: ThreadData,
   reason: RuntimeThreadReason | "external",
 ): ThreadData {
-  if (reason !== "end" && reason !== "external") {
+  if (reason !== "end" && reason !== "external" && reason !== "compaction") {
     return thread;
   }
 

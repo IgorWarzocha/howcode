@@ -4,6 +4,7 @@ import type {
   DesktopActionInvoker,
 } from "../../../desktop/types";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
+import { isCompactSlashCommand } from "../../../../../shared/composer-slash-commands";
 
 type SubmitComposerDraftResult =
   | { status: "skipped" }
@@ -40,9 +41,10 @@ export async function submitComposerDraft({
   }
 
   try {
+    const sendAttachments = isCompactSlashCommand(text) ? [] : attachments;
     const actionResult = await onAction("composer.send", {
       text,
-      attachments,
+      attachments: sendAttachments,
       projectId,
       sessionPath,
       streamingBehavior: streamingBehaviorPreference,
@@ -61,7 +63,7 @@ export async function submitComposerDraft({
       return { status: "stopped", text };
     }
 
-    if (draftThreadId) {
+    if (draftThreadId && !isCompactSlashCommand(text)) {
       clearStoredDraft(draftThreadId);
     }
 

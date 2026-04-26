@@ -51,7 +51,7 @@ export type ComposerStateRequest = {
   sessionPath?: string | null;
 };
 
-export type ComposerSlashCommandSource = "app" | "extension" | "prompt" | "skill";
+export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";
 
 export type ComposerSlashCommand = {
   name: string;

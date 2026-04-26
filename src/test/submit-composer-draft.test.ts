@@ -223,6 +223,33 @@ describe("submitComposerDraft", () => {
     expect(clearStoredDraft).toHaveBeenCalledWith("session:/repo/thread.json");
   });
 
+  it("sends compact commands without attachments and keeps stored attachments available", async () => {
+    const onAction = vi.fn(async () => buildActionSuccessResult());
+    const clearStoredDraft = vi.fn();
+
+    const result = await submitComposerDraft({
+      draft: "  /compact keep repo state  ",
+      attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
+      draftThreadId: "session:/repo/thread.json",
+      isSending: false,
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehaviorPreference: "followUp",
+      onAction,
+      clearStoredDraft,
+    });
+
+    expect(result).toEqual({ status: "sent", text: "/compact keep repo state" });
+    expect(onAction).toHaveBeenCalledWith("composer.send", {
+      text: "/compact keep repo state",
+      attachments: [],
+      projectId: "/repo",
+      sessionPath: "/repo/thread.json",
+      streamingBehavior: "followUp",
+    });
+    expect(clearStoredDraft).not.toHaveBeenCalled();
+  });
+
   it("skips sends while a request is already in flight", async () => {
     const onAction = vi.fn(async () => null);
 

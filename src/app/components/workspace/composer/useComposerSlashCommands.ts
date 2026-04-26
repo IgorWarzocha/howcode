@@ -1,10 +1,14 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
-import { appSettingsSlashCommand } from "../../../../../shared/composer-slash-commands";
+import {
+  appSettingsSlashCommand,
+  fallbackAppSlashCommands,
+} from "../../../../../shared/composer-slash-commands";
 import type { ComposerSlashCommand } from "../../../desktop/types";
 import { getComposerSlashCommandsQuery } from "../../../query/desktop-query";
 
 export const slashCommandSourceLabels: Record<ComposerSlashCommand["source"], string> = {
   app: "App",
+  builtin: "Pi",
   extension: "Extensions",
   prompt: "Prompts",
   skill: "Skills",
@@ -169,7 +173,7 @@ export function useComposerSlashCommands({
       })
       .catch(() => {
         if (!cancelled) {
-          setCommands([appSettingsSlashCommand]);
+          setCommands(fallbackAppSlashCommands);
         }
       })
       .finally(() => {

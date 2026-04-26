@@ -163,6 +163,10 @@ async function createRuntime(options: {
     }
 
     if (event.type === "compaction_end") {
+      if (event.reason === "manual" && event.result) {
+        void publishThreadUpdate(runtime, "compaction");
+      }
+
       if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
         void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
           // Keep the stale mark; the next safe point will retry silently.
