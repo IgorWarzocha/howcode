@@ -18,15 +18,18 @@ type ComposerGitOpsFooterProps = {
   hasOrigin: boolean;
   includeUnstaged: boolean;
   isGitRepo: boolean;
+  onSaveOrigin: () => void;
   onBack: () => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSetRepoUrl: (repoUrl: string) => void;
   onToggleIncludeUnstaged: () => void;
   onTogglePreview: () => void;
   onTogglePush: () => void;
   previewEnabled: boolean;
   projectGitState: ProjectGitState | null;
   pushEnabled: boolean;
+  repoUrl: string;
 };
 
 export function ComposerGitOpsFooter({
@@ -36,15 +39,18 @@ export function ComposerGitOpsFooter({
   hasOrigin,
   includeUnstaged,
   isGitRepo,
+  onSaveOrigin,
   onBack,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  onSetRepoUrl,
   onToggleIncludeUnstaged,
   onTogglePreview,
   onTogglePush,
   previewEnabled,
   projectGitState,
   pushEnabled,
+  repoUrl,
 }: ComposerGitOpsFooterProps) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -107,11 +113,29 @@ export function ComposerGitOpsFooter({
               <div
                 className={cn(
                   popoverPanelClass,
-                  "absolute bottom-[calc(100%+8px)] left-0 z-20 grid min-w-52 gap-2 rounded-xl border p-3",
+                  "absolute bottom-[calc(100%+8px)] left-0 z-20 grid min-w-56 gap-2 rounded-xl border p-3",
                 )}
                 role="menu"
                 aria-label="Commit options"
               >
+                {!hasOrigin ? (
+                  <input
+                    value={repoUrl}
+                    onChange={(event) => onSetRepoUrl(event.target.value)}
+                    onBlur={() => {
+                      void onSaveOrigin();
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void onSaveOrigin();
+                      }
+                    }}
+                    className="min-h-7 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+                    placeholder="Repository URL"
+                    aria-label="Repository URL"
+                  />
+                ) : null}
                 <PlainToggle
                   label="Include unstaged"
                   checked={includeUnstaged}

@@ -62,8 +62,6 @@ function shouldShowGlobalActionError(action: DesktopAction) {
   return !(
     action === "composer.send" ||
     action === "composer.stop" ||
-    action === "composer.dequeue" ||
-    action === "composer.reload-settings" ||
     action === "workspace.commit" ||
     action === "workspace.commit-options"
   );

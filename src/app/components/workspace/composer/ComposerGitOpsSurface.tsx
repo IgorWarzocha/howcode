@@ -267,15 +267,18 @@ export function ComposerGitOpsSurface({
         hasOrigin={hasOrigin}
         includeUnstaged={includeUnstaged}
         isGitRepo={isGitRepo}
+        onSaveOrigin={handleSaveOrigin}
         onBack={onBack}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
+        onSetRepoUrl={setRepoUrl}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}
         previewEnabled={previewEnabled}
         projectGitState={projectGitState}
         pushEnabled={pushEnabled}
+        repoUrl={repoUrl}
       />
     </div>
   );
