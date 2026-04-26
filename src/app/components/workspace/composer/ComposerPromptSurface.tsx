@@ -16,7 +16,7 @@ import {
 import { useComposerController } from "./useComposerController";
 import {
   getComposerSlashCommandOptionId,
-  slashCommandSourceLabels,
+  getComposerSlashCommandGroupLabel,
   useComposerSlashCommands,
 } from "./useComposerSlashCommands";
 
@@ -146,6 +146,37 @@ export function ComposerPromptSurface({
       window.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [slashCommands]);
+
+  useEffect(() => {
+    if (!slashCommands.open || !slashCommands.activeDescendantId) {
+      return;
+    }
+
+    const panel = slashCommandPanelRef.current;
+    const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`);
+    if (!panel || !option) {
+      return;
+    }
+
+    if (slashCommands.selectedIndex === 0) {
+      panel.scrollTop = 0;
+      return;
+    }
+
+    const panelStyles = window.getComputedStyle(panel);
+    const paddingTop = Number.parseFloat(panelStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(panelStyles.paddingBottom) || 0;
+    const visibleTop = panel.scrollTop + paddingTop;
+    const visibleBottom = panel.scrollTop + panel.clientHeight - paddingBottom;
+    const optionTop = option.offsetTop;
+    const optionBottom = optionTop + option.offsetHeight;
+
+    if (optionTop < visibleTop) {
+      panel.scrollTop = optionTop - paddingTop;
+    } else if (optionBottom > visibleBottom) {
+      panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom;
+    }
+  }, [slashCommands.open, slashCommands.activeDescendantId, slashCommands.selectedIndex]);
 
   useEffect(() => {
     if (!pickerOpen && !dictationActive && !dictationTranscribing) {
@@ -290,18 +321,22 @@ export function ComposerPromptSurface({
                     role="listbox"
                     tabIndex={-1}
                     aria-label="Composer slash commands"
-                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
                   >
                     {slashCommands.commands.length > 0 ? (
                       slashCommands.commands.map((command, index) => {
                         const selected = index === slashCommands.selectedIndex;
                         const previous = slashCommands.commands[index - 1];
-                        const showGroup = previous?.source !== command.source;
+                        const groupLabel = getComposerSlashCommandGroupLabel(command);
+                        const previousGroupLabel = previous
+                          ? getComposerSlashCommandGroupLabel(previous)
+                          : null;
+                        const showGroup = previousGroupLabel !== groupLabel;
                         return (
                           <div key={`${command.source}:${command.name}`}>
                             {showGroup ? (
                               <div className="px-2 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--muted-2)]">
-                                {slashCommandSourceLabels[command.source]}
+                                {groupLabel}
                               </div>
                             ) : null}
                             <button
