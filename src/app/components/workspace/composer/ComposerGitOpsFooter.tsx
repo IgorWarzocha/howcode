@@ -66,12 +66,16 @@ export function ComposerGitOpsFooter({
         return;
       }
 
-      setOptionsOpen(false);
+      if (!hasOrigin && repoUrl.trim().length > 0) {
+        void onSaveOrigin();
+      }
+
+      window.setTimeout(() => setOptionsOpen(false), 0);
     };
 
     window.addEventListener("pointerdown", handlePointerDown, true);
     return () => window.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [optionsOpen]);
+  }, [hasOrigin, onSaveOrigin, optionsOpen, repoUrl]);
 
   useEffect(() => {
     if (!optionsOpen) {

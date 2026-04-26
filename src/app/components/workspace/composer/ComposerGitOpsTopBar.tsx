@@ -10,11 +10,8 @@ type ComposerGitOpsTopBarProps = {
   hasOrigin: boolean;
   isGitHubOrigin: boolean;
   isGitRepo: boolean;
-  onSaveOrigin: () => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
-  onSetRepoUrl: (repoUrl: string) => void;
   projectGitState: ProjectGitState | null;
-  repoUrl: string;
 };
 
 export function ComposerGitOpsTopBar({
@@ -23,49 +20,24 @@ export function ComposerGitOpsTopBar({
   hasOrigin,
   isGitHubOrigin,
   isGitRepo,
-  onSaveOrigin,
   onSelectDiffComment,
-  onSetRepoUrl,
   projectGitState,
-  repoUrl,
 }: ComposerGitOpsTopBarProps) {
   return (
     <>
       <div className="absolute top-4 left-4 flex max-w-[calc(100%-18rem)] items-center gap-2">
-        {isGitRepo ? (
-          hasOrigin ? (
-            <button
-              type="button"
-              className={cn(
-                compactCardClass,
-                "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
-              )}
-              title={projectGitState?.originUrl ?? "origin"}
-            >
-              {isGitHubOrigin ? <Github size={12} /> : null}
-              {projectGitState?.originName ?? "origin"}
-            </button>
-          ) : (
-            <input
-              value={repoUrl}
-              onChange={(event) => onSetRepoUrl(event.target.value)}
-              onBlur={() => {
-                void onSaveOrigin();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void onSaveOrigin();
-                }
-              }}
-              className={cn(
-                compactCardClass,
-                "w-64 bg-transparent px-2.5 py-1 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]",
-              )}
-              placeholder="Paste repository URL"
-              aria-label="Repository URL"
-            />
-          )
+        {isGitRepo && hasOrigin ? (
+          <button
+            type="button"
+            className={cn(
+              compactCardClass,
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
+            )}
+            title={projectGitState?.originUrl ?? "origin"}
+          >
+            {isGitHubOrigin ? <Github size={12} /> : null}
+            {projectGitState?.originName ?? "origin"}
+          </button>
         ) : null}
 
         {isGitRepo ? (

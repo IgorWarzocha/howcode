@@ -195,11 +195,8 @@ export function ComposerGitOpsSurface({
             hasOrigin={hasOrigin}
             isGitHubOrigin={isGitHubOrigin}
             isGitRepo={isGitRepo}
-            onSaveOrigin={handleSaveOrigin}
             onSelectDiffComment={onSelectDiffComment}
-            onSetRepoUrl={setRepoUrl}
             projectGitState={projectGitState}
-            repoUrl={repoUrl}
           />
         ) : null}
         {!hasDiffComments ? (
