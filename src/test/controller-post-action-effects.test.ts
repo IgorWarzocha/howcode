@@ -4,6 +4,7 @@ import {
   getOptimisticallyRenamedShellState,
   getOptimisticallyUpdatedShellState,
 } from "../app/app-shell/controller-post-action-effects";
+import { defaultPiSettings } from "../../shared/default-pi-settings";
 import type { ShellState } from "../app/desktop/types";
 
 function buildShellState(): ShellState {
@@ -29,6 +30,7 @@ function buildShellState(): ShellState {
       useAgentsSkillsPaths: false,
       piTuiTakeover: false,
     },
+    piSettings: defaultPiSettings,
     availableHosts: [],
     composer: {
       currentModel: null,

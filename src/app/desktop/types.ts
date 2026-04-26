@@ -31,6 +31,7 @@ export type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   ModelSelection,
+  PiSettings,
   PiConfiguredPackage,
   PiConfiguredPackageType,
   PiConfiguredSkill,

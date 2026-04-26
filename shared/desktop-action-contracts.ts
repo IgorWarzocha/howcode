@@ -6,6 +6,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
+  PiSettings,
   ProjectDeletionMode,
   ProjectImportCandidate,
 } from "./desktop-data-contracts";
@@ -18,6 +19,7 @@ export type DesktopActionPayloadFields = {
   imported?: boolean | null;
   includeUnstaged?: boolean;
   key?: keyof AppSettings;
+  piSettingsKey?: keyof PiSettings;
   level?: ComposerThinkingLevel;
   message?: string | null;
   modelId?: string;
@@ -145,6 +147,7 @@ export type DesktopActionPayloadMap = {
   "debug.open-card": EmptyActionPayload;
   "landing.project-switcher": EmptyActionPayload;
   "settings.update": DesktopSettingsUpdatePayload;
+  "pi-settings.update": { piSettingsKey: keyof PiSettings; value: string | number | boolean };
   "projects.import.scan": { projectIds: string[] };
   "projects.import.apply": { projectIds: string[] };
   "diff.review": EmptyActionPayload;
@@ -170,6 +173,7 @@ export type DesktopActionResultData = {
   message?: string | null;
   originProjectCount?: number;
   originUrl?: string | null;
+  piSettings?: PiSettings;
   previewed?: boolean;
   projectId?: string;
   projects?: ProjectImportCandidate[];

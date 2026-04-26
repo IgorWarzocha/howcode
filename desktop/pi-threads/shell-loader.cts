@@ -24,6 +24,7 @@ import {
 } from "../dictation/sherpa-onnx.cts";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "../app-settings.cts";
+import { loadPiSettings } from "../pi-settings.cts";
 import {
   getComposerState,
   getComposerSlashCommands,
@@ -407,6 +408,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
   scheduleShellIndexSync(cwd);
   const composer = await getComposerState({ projectId: cwd });
   const appSettings = loadAppSettings();
+  const piSettings = await loadPiSettings(cwd);
   const [resolvedCwd, projects] = await Promise.all([
     resolveProjectPathForComparison(cwd),
     enrichProjectsWithResolvedIds(listProjects(cwd)),
@@ -421,6 +423,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     agentDir,
     sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
     appSettings,
+    piSettings,
     availableHosts: ["Local"],
     composer,
     projects,

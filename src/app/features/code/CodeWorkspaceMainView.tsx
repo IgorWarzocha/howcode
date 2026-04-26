@@ -5,6 +5,7 @@ import type {
   ComposerModel,
   DesktopActionInvoker,
   InboxThread,
+  PiSettings,
   ThreadData,
 } from "../../desktop/types";
 import type { Project, View } from "../../types";
@@ -27,6 +28,7 @@ const SkillsView = lazy(async () => {
 type CodeWorkspaceMainViewProps = {
   activeView: View;
   appSettings: AppSettings;
+  piSettings: PiSettings;
   archivedThreads: ArchivedThread[];
   availableModels: ComposerModel[];
   currentModel: ComposerModel | null;
@@ -50,6 +52,7 @@ type CodeWorkspaceMainViewProps = {
 export function CodeWorkspaceMainView({
   activeView,
   appSettings,
+  piSettings,
   archivedThreads,
   availableModels,
   currentModel,
@@ -100,6 +103,7 @@ export function CodeWorkspaceMainView({
     return (
       <SettingsView
         appSettings={appSettings}
+        piSettings={piSettings}
         availableModels={availableModels}
         currentModel={currentModel}
         projects={projects}

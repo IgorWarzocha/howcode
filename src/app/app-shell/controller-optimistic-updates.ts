@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopAction } from "../desktop/actions";
-import type { ShellState } from "../desktop/types";
+import type { PiSettings, ShellState } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import {
   type ActionPayload,
@@ -149,6 +149,61 @@ export function getOptimisticallyUpdatedShellState(
 export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyUpdatedShellState(currentState ?? null, payload),
+  );
+}
+
+function isPiSettingsKey(value: unknown): value is keyof PiSettings {
+  return (
+    typeof value === "string" &&
+    [
+      "autoCompact",
+      "enableSkillCommands",
+      "hideThinkingBlock",
+      "quietStartup",
+      "showImages",
+      "autoResizeImages",
+      "blockImages",
+      "collapseChangelog",
+      "enableInstallTelemetry",
+      "showHardwareCursor",
+      "clearOnShrink",
+      "transport",
+      "steeringMode",
+      "followUpMode",
+      "doubleEscapeAction",
+      "treeFilterMode",
+      "editorPaddingX",
+      "autocompleteMaxVisible",
+      "imageWidthCells",
+    ].includes(value)
+  );
+}
+
+export function getOptimisticallyUpdatedPiSettingsState(
+  currentState: ShellState | null,
+  payload: ActionPayload,
+) {
+  if (!currentState || !isPiSettingsKey(payload.piSettingsKey)) {
+    return currentState;
+  }
+
+  const currentValue = currentState.piSettings[payload.piSettingsKey];
+  if (typeof payload.value !== typeof currentValue) {
+    return currentState;
+  }
+
+  return {
+    ...currentState,
+    piSettings: {
+      ...currentState.piSettings,
+      [payload.piSettingsKey]: payload.value,
+    },
+  } satisfies ShellState;
+}
+
+export function applyOptimisticPiSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
+  queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
+    getOptimisticallyUpdatedPiSettingsState(currentState ?? null, payload),
   );
 }
 

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
+import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
@@ -155,6 +156,7 @@ export function CodeWorkspaceView({
                     piTuiTakeover: false,
                   }
                 }
+                piSettings={shellState?.piSettings ?? defaultPiSettings}
                 archivedThreads={controller.archivedThreads}
                 availableModels={activeComposerState?.availableModels ?? []}
                 currentModel={activeComposerState?.currentModel ?? null}

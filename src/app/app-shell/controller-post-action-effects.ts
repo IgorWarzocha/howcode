@@ -24,8 +24,10 @@ import {
 
 export {
   applyOptimisticPinUpdate,
+  applyOptimisticPiSettingsUpdate,
   applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
+  getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyPinnedShellState,
   getOptimisticallyRenamedShellState,
   getOptimisticallyUpdatedShellState,

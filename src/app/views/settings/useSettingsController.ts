@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppSettings, DesktopActionInvoker } from "../../desktop/types";
+import type { AppSettings, DesktopActionInvoker, PiSettings } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project } from "../../types";
@@ -188,6 +188,11 @@ export function useSettingsController({
     setProjectDeletionMode: (value: AppSettings["projectDeletionMode"]) =>
       void onAction("settings.update", {
         key: "projectDeletionMode",
+        value,
+      }),
+    updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
+      void onAction("pi-settings.update", {
+        piSettingsKey: key,
         value,
       }),
     togglePiTuiTakeover: () =>
