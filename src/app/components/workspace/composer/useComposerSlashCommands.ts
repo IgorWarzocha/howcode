@@ -6,13 +6,25 @@ import {
 import type { ComposerSlashCommand } from "../../../desktop/types";
 import { getComposerSlashCommandsQuery } from "../../../query/desktop-query";
 
-export const slashCommandSourceLabels: Record<ComposerSlashCommand["source"], string> = {
-  app: "App",
-  builtin: "Pi",
+const slashCommandSourceOrder: Record<ComposerSlashCommand["source"], number> = {
+  prompt: 0,
+  app: 1,
+  builtin: 1,
+  skill: 2,
+  extension: 3,
+};
+
+const slashCommandSourceLabels: Record<ComposerSlashCommand["source"], string> = {
+  app: "System",
+  builtin: "System",
   extension: "Extensions",
   prompt: "Prompts",
   skill: "Skills",
 };
+
+export function getComposerSlashCommandGroupLabel(command: ComposerSlashCommand) {
+  return slashCommandSourceLabels[command.source];
+}
 
 export const composerSlashCommandListboxId = "composer-slash-command-listbox";
 
@@ -62,10 +74,17 @@ export function useComposerSlashCommands({
       return [];
     }
 
-    return commands.filter((command) => {
-      const haystack = `${command.name} ${command.description ?? ""}`.toLowerCase();
-      return haystack.includes(filter);
-    });
+    return commands
+      .filter((command) => command.name.toLowerCase().includes(filter))
+      .sort((left, right) => {
+        const sourceOrder =
+          slashCommandSourceOrder[left.source] - slashCommandSourceOrder[right.source];
+        if (sourceOrder !== 0) {
+          return sourceOrder;
+        }
+
+        return left.name.localeCompare(right.name);
+      });
   }, [commands, filter]);
 
   const selectCommand = (command: ComposerSlashCommand) => {
@@ -75,6 +94,10 @@ export function useComposerSlashCommands({
       return;
     }
 
+    setDraft(`/${command.name} `);
+  };
+
+  const completeCommand = (command: ComposerSlashCommand) => {
     setDraft(`/${command.name} `);
   };
 
@@ -101,11 +124,14 @@ export function useComposerSlashCommands({
     send();
   };
 
-  const dismiss = () => {
+  const dismiss = (options?: { clearDraft?: boolean }) => {
     setDismissedDraft(draft);
     setCommands([]);
     setLoading(false);
     setSelectedIndex(0);
+    if (options?.clearDraft) {
+      setDraft("");
+    }
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -130,6 +156,12 @@ export function useComposerSlashCommands({
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedIndex((current) => Math.max(0, current - 1));
+      return true;
+    }
+
+    if (event.key === "Tab" && !event.shiftKey && filteredCommands[selectedIndex]) {
+      event.preventDefault();
+      completeCommand(filteredCommands[selectedIndex]);
       return true;
     }
 
@@ -210,6 +242,7 @@ export function useComposerSlashCommands({
     listboxId: composerSlashCommandListboxId,
     loading,
     open,
+    dismiss,
     selectCommand,
     selectedIndex,
     setSelectedIndex,

@@ -15,7 +15,7 @@ function getWindowSize(): AppWindowSize | null {
 
 export function SmallWindowOverlay() {
   const [windowSize, setWindowSize] = useState<AppWindowSize | null>(getWindowSize);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const overlayVisible = windowSize ? isSmallAppWindow(windowSize) : false;
   const overlayPresent = useAnimatedPresence(overlayVisible);
 
@@ -58,9 +58,10 @@ export function SmallWindowOverlay() {
       data-open={overlayVisible ? "true" : "false"}
       className={`motion-overlay-panel fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(7,9,16,0.74)] px-6 py-8 backdrop-blur-md ${overlayVisible ? "pointer-events-auto" : "pointer-events-none"}`}
     >
-      <dialog
+      <div
         ref={dialogRef}
-        open={true}
+        // biome-ignore lint/a11y/useSemanticElements: Native dialog applies UA positioning that offsets this small-window overlay in the app shell.
+        role="dialog"
         aria-modal="true"
         aria-labelledby="small-window-overlay-title"
         aria-describedby="small-window-overlay-description"
@@ -109,7 +110,7 @@ export function SmallWindowOverlay() {
             </div>
           </div>
         </div>
-      </dialog>
+      </div>
     </div>
   );
 }

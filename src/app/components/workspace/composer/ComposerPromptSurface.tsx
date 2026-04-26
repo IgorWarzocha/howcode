@@ -1,5 +1,5 @@
 import { Paperclip, Send, Square, X } from "lucide-react";
-import { type ClipboardEvent, type RefObject, useEffect } from "react";
+import { type ClipboardEvent, type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { getPathForFileQuery } from "../../../query/desktop-query";
@@ -16,7 +16,7 @@ import {
 import { useComposerController } from "./useComposerController";
 import {
   getComposerSlashCommandOptionId,
-  slashCommandSourceLabels,
+  getComposerSlashCommandGroupLabel,
   useComposerSlashCommands,
 } from "./useComposerSlashCommands";
 
@@ -117,6 +117,7 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   });
   const dictationTranscribing = dictationInterimText.length > 0;
+  const slashCommandPanelRef = useRef<HTMLDivElement>(null);
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -125,6 +126,73 @@ export function ComposerPromptSurface({
     send,
     onOpenSettingsView,
   });
+  const slashCommandListSignature = slashCommands.commands
+    .map((command) => `${command.source}:${command.name}`)
+    .join("|");
+
+  useEffect(() => {
+    if (!slashCommands.open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (
+        !target ||
+        slashCommandPanelRef.current?.contains(target) ||
+        composerPanelRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      slashCommands.dismiss({ clearDraft: true });
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [composerPanelRef, slashCommands]);
+
+  useEffect(() => {
+    if (!slashCommands.open || !slashCommands.activeDescendantId) {
+      return;
+    }
+
+    // Keep the effect tied to command content changes too: the active id can remain
+    // `...-0` while filtering swaps the actual first row underneath it.
+    void slashCommandListSignature;
+
+    const panel = slashCommandPanelRef.current;
+    const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`);
+    if (!panel || !option) {
+      return;
+    }
+
+    if (slashCommands.selectedIndex === 0) {
+      panel.scrollTop = 0;
+      return;
+    }
+
+    const panelStyles = window.getComputedStyle(panel);
+    const paddingTop = Number.parseFloat(panelStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(panelStyles.paddingBottom) || 0;
+    const visibleTop = panel.scrollTop + paddingTop;
+    const visibleBottom = panel.scrollTop + panel.clientHeight - paddingBottom;
+    const optionTop = option.offsetTop;
+    const optionBottom = optionTop + option.offsetHeight;
+
+    if (optionTop < visibleTop) {
+      panel.scrollTop = optionTop - paddingTop;
+    } else if (optionBottom > visibleBottom) {
+      panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom;
+    }
+  }, [
+    slashCommands.open,
+    slashCommands.activeDescendantId,
+    slashCommands.selectedIndex,
+    slashCommandListSignature,
+  ]);
 
   useEffect(() => {
     if (!pickerOpen && !dictationActive && !dictationTranscribing) {
@@ -225,7 +293,12 @@ export function ComposerPromptSurface({
                   ref={pickerButtonRef}
                   type="button"
                   className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md"
-                  onClick={pickAttachments}
+                  onClick={() => {
+                    if (slashCommands.open) {
+                      slashCommands.dismiss({ clearDraft: true });
+                    }
+                    pickAttachments();
+                  }}
                   aria-label={attachmentButtonLabel}
                   title={attachmentButtonLabel}
                 >
@@ -258,23 +331,28 @@ export function ComposerPromptSurface({
               <div className="min-w-0 flex-1">
                 {slashCommands.open ? (
                   <div
+                    ref={slashCommandPanelRef}
                     id={slashCommands.listboxId}
                     // biome-ignore lint/a11y/useSemanticElements: This is a textarea-owned combobox popup, not a native select.
                     role="listbox"
                     tabIndex={-1}
                     aria-label="Composer slash commands"
-                    className="absolute right-3 bottom-[calc(100%-0.25rem)] left-12 z-20 max-h-64 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
                   >
                     {slashCommands.commands.length > 0 ? (
                       slashCommands.commands.map((command, index) => {
                         const selected = index === slashCommands.selectedIndex;
                         const previous = slashCommands.commands[index - 1];
-                        const showGroup = previous?.source !== command.source;
+                        const groupLabel = getComposerSlashCommandGroupLabel(command);
+                        const previousGroupLabel = previous
+                          ? getComposerSlashCommandGroupLabel(previous)
+                          : null;
+                        const showGroup = previousGroupLabel !== groupLabel;
                         return (
                           <div key={`${command.source}:${command.name}`}>
                             {showGroup ? (
                               <div className="px-2 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--muted-2)]">
-                                {slashCommandSourceLabels[command.source]}
+                                {groupLabel}
                               </div>
                             ) : null}
                             <button
