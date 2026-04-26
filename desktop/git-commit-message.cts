@@ -4,7 +4,11 @@ import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
 import type { CommitMessageContext } from "./project-git.cts";
-import { createComposerSnapshotSession } from "./runtime/composer-state.cts";
+import {
+  clampThinkingLevel,
+  createComposerSnapshotSession,
+  getAvailableThinkingLevelsForModel,
+} from "./runtime/composer-state.cts";
 
 const MAX_FILE_SECTION_CHARS = 12_000;
 const MAX_PATCH_CHARS = 48_000;
@@ -198,8 +202,10 @@ async function getServices() {
   return servicesPromise;
 }
 
-async function resolveCommitMessageModel(request: ComposerStateRequest) {
-  const selectedModel = loadAppSettings().gitCommitMessageModel;
+async function resolveCommitMessageModel(
+  request: ComposerStateRequest,
+  selectedModel: ReturnType<typeof loadAppSettings>["gitCommitMessageModel"],
+) {
   const snapshot = await createComposerSnapshotSession(request);
 
   try {
@@ -233,7 +239,8 @@ export async function generateGitCommitMessage(
   request: ComposerStateRequest,
   context: CommitMessageContext,
 ) {
-  const resolvedModel = await resolveCommitMessageModel(request);
+  const appSettings = loadAppSettings();
+  const resolvedModel = await resolveCommitMessageModel(request, appSettings.gitCommitMessageModel);
   const model = resolvedModel.model;
   if (!model) {
     resolvedModel.dispose();
@@ -249,7 +256,10 @@ export async function generateGitCommitMessage(
       cwd: context.projectId,
       agentDir: services.agentDir,
       model,
-      thinkingLevel: "off",
+      thinkingLevel: clampThinkingLevel(
+        appSettings.gitCommitMessageThinkingLevel,
+        getAvailableThinkingLevelsForModel(model),
+      ),
       modelRegistry: resolvedModel.modelRegistry,
       resourceLoader: services.resourceLoader,
       tools: [],

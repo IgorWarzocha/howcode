@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopAction } from "../desktop/actions";
-import type { PiSettings, ShellState } from "../desktop/types";
+import type { ComposerThinkingLevel, PiSettings, ShellState } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import {
   type ActionPayload,
@@ -20,7 +20,9 @@ export function getOptimisticallyUpdatedShellState(
 
   if (
     payload.key !== "gitCommitMessageModel" &&
+    payload.key !== "gitCommitMessageThinkingLevel" &&
     payload.key !== "skillCreatorModel" &&
+    payload.key !== "skillCreatorThinkingLevel" &&
     payload.key !== "composerStreamingBehavior" &&
     payload.key !== "dictationModelId" &&
     payload.key !== "dictationMaxDurationSeconds" &&
@@ -53,6 +55,24 @@ export function getOptimisticallyUpdatedShellState(
           ? { provider: payload.provider, id: payload.modelId }
           : currentState.appSettings.skillCreatorModel
       : currentState.appSettings.skillCreatorModel;
+
+  const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
+    value === "off" ||
+    value === "minimal" ||
+    value === "low" ||
+    value === "medium" ||
+    value === "high" ||
+    value === "xhigh";
+
+  const nextGitCommitThinkingLevel =
+    payload.key === "gitCommitMessageThinkingLevel" && isThinkingLevel(payload.value)
+      ? payload.value
+      : currentState.appSettings.gitCommitMessageThinkingLevel;
+
+  const nextSkillCreatorThinkingLevel =
+    payload.key === "skillCreatorThinkingLevel" && isThinkingLevel(payload.value)
+      ? payload.value
+      : currentState.appSettings.skillCreatorThinkingLevel;
 
   const nextComposerStreamingBehavior =
     payload.key === "composerStreamingBehavior" &&
@@ -130,7 +150,9 @@ export function getOptimisticallyUpdatedShellState(
     appSettings: {
       ...currentState.appSettings,
       gitCommitMessageModel: nextSelection,
+      gitCommitMessageThinkingLevel: nextGitCommitThinkingLevel,
       skillCreatorModel: nextSkillCreatorSelection,
+      skillCreatorThinkingLevel: nextSkillCreatorThinkingLevel,
       composerStreamingBehavior: nextComposerStreamingBehavior,
       dictationModelId: nextDictationModelId,
       dictationMaxDurationSeconds: nextDictationMaxDurationSeconds,
@@ -179,6 +201,55 @@ function isPiSettingsKey(value: unknown): value is keyof PiSettings {
   );
 }
 
+function getOptimisticPiSettingsValue<Key extends keyof PiSettings>(
+  key: Key,
+  value: unknown,
+  currentValue: PiSettings[Key],
+): PiSettings[Key] | null {
+  if (typeof value !== typeof currentValue) {
+    return null;
+  }
+
+  if (key === "editorPaddingX" || key === "autocompleteMaxVisible" || key === "imageWidthCells") {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return null;
+    }
+
+    const [min, max] =
+      key === "editorPaddingX" ? [0, 3] : key === "autocompleteMaxVisible" ? [3, 20] : [1, 200];
+    return Math.max(min, Math.min(max, Math.floor(value))) as PiSettings[Key];
+  }
+
+  if (key === "transport" && value !== "sse" && value !== "websocket" && value !== "auto") {
+    return null;
+  }
+
+  if (
+    (key === "steeringMode" || key === "followUpMode") &&
+    value !== "all" &&
+    value !== "one-at-a-time"
+  ) {
+    return null;
+  }
+
+  if (key === "doubleEscapeAction" && value !== "fork" && value !== "tree" && value !== "none") {
+    return null;
+  }
+
+  if (
+    key === "treeFilterMode" &&
+    value !== "default" &&
+    value !== "no-tools" &&
+    value !== "user-only" &&
+    value !== "labeled-only" &&
+    value !== "all"
+  ) {
+    return null;
+  }
+
+  return value as PiSettings[Key];
+}
+
 export function getOptimisticallyUpdatedPiSettingsState(
   currentState: ShellState | null,
   payload: ActionPayload,
@@ -188,7 +259,12 @@ export function getOptimisticallyUpdatedPiSettingsState(
   }
 
   const currentValue = currentState.piSettings[payload.piSettingsKey];
-  if (typeof payload.value !== typeof currentValue) {
+  const nextValue = getOptimisticPiSettingsValue(
+    payload.piSettingsKey,
+    payload.value,
+    currentValue,
+  );
+  if (nextValue === null) {
     return currentState;
   }
 
@@ -196,7 +272,7 @@ export function getOptimisticallyUpdatedPiSettingsState(
     ...currentState,
     piSettings: {
       ...currentState.piSettings,
-      [payload.piSettingsKey]: payload.value,
+      [payload.piSettingsKey]: nextValue,
     },
   } satisfies ShellState;
 }

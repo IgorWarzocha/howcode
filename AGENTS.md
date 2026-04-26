@@ -7,3 +7,4 @@
 - This repository uses nested AGENTS.md files to flag folder-specific guidelines. They are loaded automatically. No need to read them.
 - Consider creating new, small AGENTS.md files whenever patterns are observed.
 - AGENTS.md files are here to help you - if they are confusing, they should be edited to suit.
+- Popovers, menus, and custom select dropdowns must close on Escape and when clicking outside, matching native control expectations. Escape handlers for nested popovers must run in capture phase and stop propagation so parent views/dialogs do not also close.

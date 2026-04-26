@@ -155,7 +155,9 @@ export function getGitRepoUrl(payload: DesktopActionPayloadInput) {
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
+    payload.key === "gitCommitMessageThinkingLevel" ||
     payload.key === "skillCreatorModel" ||
+    payload.key === "skillCreatorThinkingLevel" ||
     payload.key === "composerStreamingBehavior" ||
     payload.key === "dictationModelId" ||
     payload.key === "dictationMaxDurationSeconds" ||
@@ -168,6 +170,13 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
+    : null;
+}
+
+export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
+  const level = typeof payload.value === "string" ? payload.value : null;
+  return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
+    ? (level as ComposerThinkingLevel)
     : null;
 }
 

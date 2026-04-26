@@ -51,8 +51,10 @@ export type DesktopActionPayloadInput = {
 export type DesktopSettingsUpdatePayload =
   | { key: "gitCommitMessageModel"; provider: string; modelId: string; reset?: false }
   | { key: "gitCommitMessageModel"; reset: true }
+  | { key: "gitCommitMessageThinkingLevel"; value: ComposerThinkingLevel }
   | { key: "skillCreatorModel"; provider: string; modelId: string; reset?: false }
   | { key: "skillCreatorModel"; reset: true }
+  | { key: "skillCreatorThinkingLevel"; value: ComposerThinkingLevel }
   | { key: "composerStreamingBehavior"; value: ComposerStreamingBehavior }
   | { key: "dictationModelId"; value: DictationModelId | null }
   | { key: "dictationMaxDurationSeconds"; value: number }

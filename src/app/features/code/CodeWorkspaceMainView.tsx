@@ -3,6 +3,7 @@ import type {
   AppSettings,
   ArchivedThread,
   ComposerModel,
+  ComposerThinkingLevel,
   DesktopActionInvoker,
   InboxThread,
   PiSettings,
@@ -31,6 +32,7 @@ type CodeWorkspaceMainViewProps = {
   piSettings: PiSettings;
   archivedThreads: ArchivedThread[];
   availableModels: ComposerModel[];
+  availableThinkingLevels: ComposerThinkingLevel[];
   currentModel: ComposerModel | null;
   currentProjectName: string;
   selectedInboxThread: InboxThread | null;
@@ -55,6 +57,7 @@ export function CodeWorkspaceMainView({
   piSettings,
   archivedThreads,
   availableModels,
+  availableThinkingLevels,
   currentModel,
   currentProjectName,
   selectedInboxThread,
@@ -105,6 +108,7 @@ export function CodeWorkspaceMainView({
         appSettings={appSettings}
         piSettings={piSettings}
         availableModels={availableModels}
+        availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}
         projects={projects}
         onAction={onAction}

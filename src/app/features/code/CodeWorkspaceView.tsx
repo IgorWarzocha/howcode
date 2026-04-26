@@ -142,7 +142,9 @@ export function CodeWorkspaceView({
                 appSettings={
                   shellState?.appSettings ?? {
                     gitCommitMessageModel: null,
+                    gitCommitMessageThinkingLevel: "off",
                     skillCreatorModel: null,
+                    skillCreatorThinkingLevel: "off",
                     composerStreamingBehavior: "followUp",
                     dictationModelId: null,
                     dictationMaxDurationSeconds: 180,
@@ -159,6 +161,7 @@ export function CodeWorkspaceView({
                 piSettings={shellState?.piSettings ?? defaultPiSettings}
                 archivedThreads={controller.archivedThreads}
                 availableModels={activeComposerState?.availableModels ?? []}
+                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 currentModel={activeComposerState?.currentModel ?? null}
                 currentProjectName={currentProjectName}
                 selectedInboxThread={controller.selectedInboxThread}

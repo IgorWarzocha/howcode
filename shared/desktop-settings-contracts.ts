@@ -1,4 +1,8 @@
-import type { ComposerState, ComposerStreamingBehavior } from "./desktop-composer-contracts";
+import type {
+  ComposerState,
+  ComposerStreamingBehavior,
+  ComposerThinkingLevel,
+} from "./desktop-composer-contracts";
 import type { DictationModelId } from "./desktop-dictation-contracts";
 import type { Project } from "./desktop-thread-contracts";
 
@@ -11,7 +15,9 @@ export type ProjectDeletionMode = "pi-only" | "full-clean";
 
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
+  gitCommitMessageThinkingLevel: ComposerThinkingLevel;
   skillCreatorModel: ModelSelection | null;
+  skillCreatorThinkingLevel: ComposerThinkingLevel;
   composerStreamingBehavior: ComposerStreamingBehavior;
   dictationModelId: DictationModelId | null;
   dictationMaxDurationSeconds: number;

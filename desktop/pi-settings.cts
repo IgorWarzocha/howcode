@@ -28,10 +28,15 @@ export async function loadPiSettings(projectPath?: string | null): Promise<PiSet
     showHardwareCursor: settingsManager.getShowHardwareCursor(),
     clearOnShrink: settingsManager.getClearOnShrink(),
     transport: asPiTransport(settingsManager.getTransport()) ?? defaultPiSettings.transport,
-    steeringMode: settingsManager.getSteeringMode(),
-    followUpMode: settingsManager.getFollowUpMode(),
-    doubleEscapeAction: settingsManager.getDoubleEscapeAction(),
-    treeFilterMode: settingsManager.getTreeFilterMode(),
+    steeringMode:
+      asPiQueueMode(settingsManager.getSteeringMode()) ?? defaultPiSettings.steeringMode,
+    followUpMode:
+      asPiQueueMode(settingsManager.getFollowUpMode()) ?? defaultPiSettings.followUpMode,
+    doubleEscapeAction:
+      asPiDoubleEscapeAction(settingsManager.getDoubleEscapeAction()) ??
+      defaultPiSettings.doubleEscapeAction,
+    treeFilterMode:
+      asPiTreeFilterMode(settingsManager.getTreeFilterMode()) ?? defaultPiSettings.treeFilterMode,
     editorPaddingX: settingsManager.getEditorPaddingX(),
     autocompleteMaxVisible: settingsManager.getAutocompleteMaxVisible(),
     imageWidthCells: settingsManager.getImageWidthCells(),

@@ -17,7 +17,9 @@ function buildShellState(): ShellState {
     sessionDir: "/repo/.pi/sessions",
     appSettings: {
       gitCommitMessageModel: null,
+      gitCommitMessageThinkingLevel: "off",
       skillCreatorModel: null,
+      skillCreatorThinkingLevel: "off",
       composerStreamingBehavior: "followUp",
       dictationModelId: null,
       dictationMaxDurationSeconds: 180,
@@ -135,7 +137,9 @@ describe("controller post action effects", () => {
       appSettings: {
         ...buildShellState().appSettings,
         gitCommitMessageModel: { provider: "openai", id: "gpt-5" },
+        gitCommitMessageThinkingLevel: "off",
         skillCreatorModel: { provider: "anthropic", id: "claude" },
+        skillCreatorThinkingLevel: "off",
         preferredProjectLocation: "/tmp/work",
       },
     } satisfies ShellState;

@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  ComposerThinkingLevel,
   ComposerStreamingBehavior,
   DictationModelId,
   ModelSelection,
@@ -12,7 +13,9 @@ import {
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 
 const gitCommitMessageModelKey = "gitCommitMessageModel";
+const gitCommitMessageThinkingLevelKey = "gitCommitMessageThinkingLevel";
 const skillCreatorModelKey = "skillCreatorModel";
+const skillCreatorThinkingLevelKey = "skillCreatorThinkingLevel";
 const composerStreamingBehaviorKey = "composerStreamingBehavior";
 const dictationModelIdKey = "dictationModelId";
 const dictationMaxDurationSecondsKey = "dictationMaxDurationSeconds";
@@ -105,6 +108,28 @@ function parseNumberPreference(valueJson: string | null | undefined): number | n
   }
 }
 
+function parseThinkingLevelPreference(
+  valueJson: string | null | undefined,
+): ComposerThinkingLevel | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "off" ||
+      parsed === "minimal" ||
+      parsed === "low" ||
+      parsed === "medium" ||
+      parsed === "high" ||
+      parsed === "xhigh"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseProjectDeletionModePreference(
   valueJson: string | null | undefined,
 ): ProjectDeletionMode | null {
@@ -184,6 +209,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(gitCommitMessageModelKey) as PreferenceRow | undefined;
+  const gitCommitThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitCommitMessageThinkingLevelKey) as PreferenceRow | undefined;
   const favoriteFoldersRow = db
     .prepare(
       `
@@ -202,6 +236,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(skillCreatorModelKey) as PreferenceRow | undefined;
+  const skillCreatorThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(skillCreatorThinkingLevelKey) as PreferenceRow | undefined;
   const composerStreamingBehaviorRow = db
     .prepare(
       `
@@ -296,7 +339,11 @@ export function loadAppSettings(): AppSettings {
 
   return {
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
+    gitCommitMessageThinkingLevel:
+      parseThinkingLevelPreference(gitCommitThinkingLevelRow?.valueJson) ?? "off",
     skillCreatorModel: parseModelSelection(skillCreatorModelRow?.valueJson),
+    skillCreatorThinkingLevel:
+      parseThinkingLevelPreference(skillCreatorThinkingLevelRow?.valueJson) ?? "off",
     composerStreamingBehavior:
       parseComposerStreamingBehaviorPreference(composerStreamingBehaviorRow?.valueJson) ??
       "followUp",
@@ -327,6 +374,10 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
 }
 
+export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
+  writeAppPreference(gitCommitMessageThinkingLevelKey, JSON.stringify(level));
+}
+
 export function setSkillCreatorModelSelection(selection: ModelSelection | null) {
   if (!selection) {
     deleteAppPreference(skillCreatorModelKey);
@@ -334,6 +385,10 @@ export function setSkillCreatorModelSelection(selection: ModelSelection | null) 
   }
 
   writeAppPreference(skillCreatorModelKey, JSON.stringify(selection));
+}
+
+export function setSkillCreatorThinkingLevel(level: ComposerThinkingLevel) {
+  writeAppPreference(skillCreatorThinkingLevelKey, JSON.stringify(level));
 }
 
 export function setComposerStreamingBehavior(behavior: ComposerStreamingBehavior) {

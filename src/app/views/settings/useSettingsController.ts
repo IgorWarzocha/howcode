@@ -160,6 +160,11 @@ export function useSettingsController({
         key: "dictationMaxDurationSeconds",
         value,
       }),
+    setDictationModelId: (value: AppSettings["dictationModelId"]) =>
+      void onAction("settings.update", {
+        key: "dictationModelId",
+        value,
+      }),
     setShowDictationButton: (value: boolean) =>
       void onAction("settings.update", {
         key: "showDictationButton",
