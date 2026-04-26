@@ -26,6 +26,7 @@ import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import {
   getComposerState,
+  getComposerSlashCommands,
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from "../pi-desktop-runtime.cts";
 import { getPiModule } from "../pi-module.cts";
@@ -430,6 +431,10 @@ export async function loadComposerState(
   request: ComposerStateRequest = {},
 ): Promise<ComposerState> {
   return getComposerState(request);
+}
+
+export async function loadComposerSlashCommands(request: ComposerStateRequest = {}) {
+  return getComposerSlashCommands(request);
 }
 
 export async function getDictationState(): Promise<DictationState> {

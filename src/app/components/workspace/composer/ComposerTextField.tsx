@@ -4,6 +4,9 @@ type ComposerTextFieldProps = {
   value: string;
   placeholder: string;
   ariaLabel: string;
+  ariaActiveDescendant?: string;
+  ariaControls?: string;
+  ariaExpanded?: boolean;
   reservedLineCount?: number;
   onHeightChange?: (height: number) => void;
   onChange: (value: string) => void;
@@ -19,6 +22,9 @@ export function ComposerTextField({
   value,
   placeholder,
   ariaLabel,
+  ariaActiveDescendant,
+  ariaControls,
+  ariaExpanded,
   reservedLineCount = 4,
   onHeightChange,
   onChange,
@@ -106,6 +112,10 @@ export function ComposerTextField({
         onFocus={onFocus}
         onBlur={onBlur}
         aria-label={ariaLabel}
+        aria-activedescendant={ariaActiveDescendant}
+        aria-autocomplete={ariaControls ? "list" : undefined}
+        aria-controls={ariaControls}
+        aria-expanded={ariaExpanded}
         placeholder={placeholder}
       />
     </div>

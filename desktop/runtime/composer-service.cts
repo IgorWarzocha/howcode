@@ -120,18 +120,20 @@ export async function setComposerModel(
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-    suspendDisposal: true,
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    const model = runtime.session.modelRegistry.find(provider, modelId);
+
+    if (!model) {
+      throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
+    }
+
+    await runtime.session.setModel(model);
+    scheduleRuntimeDisposalForRuntime(runtime);
+    return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });
-  const model = runtime.session.modelRegistry.find(provider, modelId);
-
-  if (!model) {
-    throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
-  }
-
-  await runtime.session.setModel(model);
-  scheduleRuntimeDisposalForRuntime(runtime);
-  return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function setComposerThinkingLevel(
@@ -145,12 +147,14 @@ export async function setComposerThinkingLevel(
     return emitComposerUpdate({ ...request, sessionPath: null });
   }
 
-  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-    suspendDisposal: true,
+  await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    runtime.session.setThinkingLevel(level);
+    scheduleRuntimeDisposalForRuntime(runtime);
+    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });
-  runtime.session.setThinkingLevel(level);
-  scheduleRuntimeDisposalForRuntime(runtime);
-  return emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function sendComposerPrompt(

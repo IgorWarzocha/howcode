@@ -2,6 +2,7 @@ import type { PiPackageMutationResult } from "../../shared/desktop-contracts.ts"
 import { listConfiguredPiPackages } from "./configured.cts";
 import { normalizePiPackageSource } from "./helpers.ts";
 import { getPiPackageServices } from "./services.cts";
+import { markRuntimeSettingsStaleForProject } from "../runtime/runtime-registry.cts";
 
 export async function installPiPackage(request: {
   source: string;
@@ -17,6 +18,7 @@ export async function installPiPackage(request: {
 
   const { packageManager } = await getPiPackageServices(request.projectPath);
   await packageManager.installAndPersist(normalizedSource, request.local ? { local: true } : {});
+  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
 
   return {
     source: request.source,
@@ -40,6 +42,7 @@ export async function removePiPackage(request: {
 
   const { packageManager } = await getPiPackageServices(request.projectPath);
   await packageManager.removeAndPersist(source, request.local ? { local: true } : {});
+  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
 
   return {
     source,

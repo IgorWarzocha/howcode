@@ -2,6 +2,7 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
+import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import { publishComposerUpdate, publishThreadUpdate } from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
 
@@ -14,6 +15,17 @@ type RuntimeRecord = {
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
 const runtimeMutationTails = new Map<string, Promise<void>>();
+const settingsRefreshController = createRuntimeSettingsRefreshController({
+  getCachedRuntimeForSessionPath,
+  getRuntimeRecords: () =>
+    [...runtimeRecords.entries()].map(([runtimeKey, record]) => ({
+      runtimeKey,
+      runtimePromise: record.runtimePromise,
+    })),
+  withRuntimeMutationLock,
+  buildComposerState,
+  publishComposerUpdate,
+});
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -46,7 +58,7 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
 
       try {
         const runtime = await record.runtimePromise;
-        if (runtime.session.isStreaming) {
+        if (isRuntimeBusy(runtime)) {
           scheduleRuntimeDisposal(runtimeKey);
           return;
         }
@@ -61,6 +73,26 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
       }
     })();
   }, RUNTIME_IDLE_TIMEOUT_MS);
+}
+
+export async function reloadRuntimeSettingsIfSafe(
+  sessionPath: string,
+  options: { useMutationLock?: boolean } = {},
+): Promise<boolean> {
+  return settingsRefreshController.reloadIfSafe(sessionPath, options);
+}
+
+export async function markRuntimeSettingsStale(sessionPath: string | null | undefined) {
+  const runtimeKey = getPersistedSessionPath(sessionPath ?? null);
+  if (!runtimeKey) {
+    return;
+  }
+
+  settingsRefreshController.markStale(runtimeKey);
+}
+
+export async function markRuntimeSettingsStaleForProject(projectPath?: string | null) {
+  settingsRefreshController.markStaleForProject(projectPath);
 }
 
 async function createRuntime(options: {
@@ -117,8 +149,24 @@ async function createRuntime(options: {
     if (event.type === "agent_end") {
       void publishThreadUpdate(runtime, "end");
 
+      if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
+        void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+          // Keep the stale mark; the next safe point will retry silently.
+        });
+      }
+
       if (runtimeKey) {
         scheduleRuntimeDisposal(runtimeKey);
+      }
+
+      return;
+    }
+
+    if (event.type === "compaction_end") {
+      if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
+        void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+          // Keep the stale mark; the next safe point will retry silently.
+        });
       }
 
       return;
@@ -190,7 +238,11 @@ export async function getOrCreateRuntimeForSessionPath(
       suspendRuntimeDisposal(persistedSessionPath);
     }
 
-    return existingRuntime.runtimePromise;
+    const runtime = await existingRuntime.runtimePromise;
+    if (!isRuntimeBusy(runtime)) {
+      await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+    }
+    return runtime;
   }
 
   const { SessionManager } = await getPiModule();

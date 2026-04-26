@@ -1,8 +1,10 @@
 import { getPersistedSessionPath } from "../../../shared/session-paths";
+import { fallbackAppSlashCommands } from "../../../shared/composer-slash-commands";
 import type {
   ArchivedThread,
   ComposerAttachment,
   ComposerFilePickerState,
+  ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
   DesktopClipboardFilePaths,
@@ -79,6 +81,12 @@ export async function getComposerStateQuery(
   request: ComposerStateRequest = {},
 ): Promise<ComposerState | null> {
   return (await window.piDesktop?.getComposerState?.(request)) ?? null;
+}
+
+export async function getComposerSlashCommandsQuery(
+  request: ComposerStateRequest = {},
+): Promise<ComposerSlashCommand[]> {
+  return (await window.piDesktop?.getComposerSlashCommands?.(request)) ?? fallbackAppSlashCommands;
 }
 
 export async function getProjectGitStateQuery(projectId: string): Promise<ProjectGitState | null> {

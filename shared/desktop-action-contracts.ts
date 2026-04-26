@@ -136,6 +136,7 @@ export type DesktopActionPayloadMap = {
     queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
+  "composer.reload-settings": { projectId?: string | null; sessionPath?: string | null };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
   "composer.host": EmptyActionPayload;

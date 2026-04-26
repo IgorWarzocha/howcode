@@ -9,6 +9,8 @@ export type {
   ComposerFilePickerState,
   ComposerModel,
   ComposerQueuedPrompt,
+  ComposerSlashCommand,
+  ComposerSlashCommandSource,
   ComposerStreamingBehavior,
   ComposerState,
   ComposerStateRequest,

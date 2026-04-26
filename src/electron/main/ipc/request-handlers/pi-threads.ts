@@ -11,6 +11,7 @@ type PiThreadsRequestHandlers = Pick<
   | "captureProjectDiffBaseline"
   | "listProjectCommits"
   | "getComposerState"
+  | "getComposerSlashCommands"
   | "getDictationState"
   | "listDictationModels"
   | "installDictationModel"
@@ -36,6 +37,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     listProjectCommits: ({ projectId, limit }) =>
       piThreads.listProjectCommits(projectId, limit ?? null),
     getComposerState: (request) => piThreads.loadComposerState(request),
+    getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
     getDictationState: () => piThreads.getDictationState(),
     listDictationModels: () => piThreads.listDictationModels(),
     installDictationModel: (request) => piThreads.installDictationModel(request),

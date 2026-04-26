@@ -14,6 +14,11 @@ import {
   hasFilePayloadInClipboardData,
 } from "./composer-paste-attachments";
 import { useComposerController } from "./useComposerController";
+import {
+  getComposerSlashCommandOptionId,
+  slashCommandSourceLabels,
+  useComposerSlashCommands,
+} from "./useComposerSlashCommands";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>;
@@ -108,6 +113,14 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   });
   const dictationTranscribing = dictationInterimText.length > 0;
+  const slashCommands = useComposerSlashCommands({
+    draft,
+    projectId,
+    sessionPath,
+    setDraft,
+    send,
+    onOpenSettingsView,
+  });
 
   useEffect(() => {
     if (!pickerOpen && !dictationActive && !dictationTranscribing) {
@@ -238,6 +251,62 @@ export function ComposerPromptSurface({
               </div>
 
               <div className="min-w-0 flex-1">
+                {slashCommands.open ? (
+                  <div
+                    id={slashCommands.listboxId}
+                    // biome-ignore lint/a11y/useSemanticElements: This is a textarea-owned combobox popup, not a native select.
+                    role="listbox"
+                    tabIndex={-1}
+                    aria-label="Composer slash commands"
+                    className="absolute right-3 bottom-[calc(100%-0.25rem)] left-12 z-20 max-h-64 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                  >
+                    {slashCommands.commands.length > 0 ? (
+                      slashCommands.commands.map((command, index) => {
+                        const selected = index === slashCommands.selectedIndex;
+                        const previous = slashCommands.commands[index - 1];
+                        const showGroup = previous?.source !== command.source;
+                        return (
+                          <div key={`${command.source}:${command.name}`}>
+                            {showGroup ? (
+                              <div className="px-2 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--muted-2)]">
+                                {slashCommandSourceLabels[command.source]}
+                              </div>
+                            ) : null}
+                            <button
+                              id={getComposerSlashCommandOptionId(index)}
+                              type="button"
+                              // biome-ignore lint/a11y/useSemanticElements: Command options remain clickable buttons inside the textarea-owned listbox.
+                              role="option"
+                              aria-selected={selected}
+                              className={cn(
+                                "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left",
+                                selected
+                                  ? "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]"
+                                  : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                              )}
+                              onPointerEnter={() => slashCommands.setSelectedIndex(index)}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => slashCommands.selectCommand(command)}
+                            >
+                              <span className="shrink-0 font-mono text-[12px] text-[color:var(--text)]">
+                                /{command.name}
+                              </span>
+                              {command.description ? (
+                                <span className="min-w-0 truncate text-[12px]">
+                                  {command.description}
+                                </span>
+                              ) : null}
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="px-2 py-2 text-[12px] text-[color:var(--muted)]">
+                        {slashCommands.loading ? "Loading commands…" : "No matching commands"}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
                 <ComposerTextField
                   value={draft}
                   onChange={setDraft}
@@ -247,6 +316,10 @@ export function ComposerPromptSurface({
                     }
                   }}
                   onKeyDown={(event) => {
+                    if (slashCommands.handleKeyDown(event)) {
+                      return;
+                    }
+
                     if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
                       event.preventDefault();
                       void cancelDictation();
@@ -255,7 +328,7 @@ export function ComposerPromptSurface({
 
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();
-                      void send();
+                      slashCommands.submit();
                     }
                   }}
                   onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -281,6 +354,9 @@ export function ComposerPromptSurface({
                     });
                   }}
                   ariaLabel="Prompt composer"
+                  ariaActiveDescendant={slashCommands.activeDescendantId}
+                  ariaControls={slashCommands.open ? slashCommands.listboxId : undefined}
+                  ariaExpanded={slashCommands.open}
                   placeholder={placeholderText}
                   reservedLineCount={1}
                   onHeightChange={onLayoutChange}
@@ -318,7 +394,7 @@ export function ComposerPromptSurface({
                   compactIconButtonClass,
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
-                onClick={() => void send()}
+                onClick={slashCommands.submit}
                 disabled={!canSend}
                 aria-label="Send"
                 title="Send"

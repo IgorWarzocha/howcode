@@ -99,6 +99,7 @@ export function createDesktopApi() {
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest("listComposerAttachmentEntries", request),
     getComposerState: (request = {}) => invokeRequest("getComposerState", request),
+    getComposerSlashCommands: (request = {}) => invokeRequest("getComposerSlashCommands", request),
     getDictationState: () => invokeRequest("getDictationState", {}),
     listDictationModels: () => invokeRequest("listDictationModels", {}),
     installDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") =>

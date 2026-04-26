@@ -87,6 +87,7 @@ const handlers: DesktopRequestHandlerMap = {
   },
   listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
   getComposerState: (request) => piThreads.loadComposerState(request),
+  getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
   getDictationState: () => piThreads.getDictationState(),
   listDictationModels: () => piThreads.listDictationModels(),
   installDictationModel: (request) => piThreads.installDictationModel(request),

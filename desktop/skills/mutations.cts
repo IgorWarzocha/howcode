@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PiSkillMutationResult } from "../../shared/desktop-contracts.ts";
+import { markRuntimeSettingsStaleForProject } from "../runtime/runtime-registry.cts";
 import { type SkillDownloadApiFile, downloadSkillApi } from "./api.cts";
 import { listConfiguredPiSkills } from "./configured-skills.cts";
 import {
@@ -108,6 +109,8 @@ export async function installPiSkill(request: {
     throw error;
   }
 
+  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
+
   return {
     source: request.source,
     normalizedSource: parsedSource.normalizedSource,
@@ -125,14 +128,19 @@ export async function removePiSkill(request: {
   const globalRootPaths = getGlobalSkillsDirs();
   const projectRootPaths = getProjectSkillsDirs(request.projectPath);
 
-  if (
-    !globalRootPaths.some((rootPath) => isPathWithinRootDescendant(installedPath, rootPath)) &&
-    !projectRootPaths.some((rootPath) => isPathWithinRootDescendant(installedPath, rootPath))
-  ) {
+  const isGlobalSkill = globalRootPaths.some((rootPath) =>
+    isPathWithinRootDescendant(installedPath, rootPath),
+  );
+  const isProjectSkill = projectRootPaths.some((rootPath) =>
+    isPathWithinRootDescendant(installedPath, rootPath),
+  );
+
+  if (!isGlobalSkill && !isProjectSkill) {
     throw new Error("That skill cannot be removed from here.");
   }
 
   await rm(installedPath, { recursive: true, force: true });
+  await markRuntimeSettingsStaleForProject(isGlobalSkill ? null : request.projectPath);
 
   return {
     source: installedPath,

@@ -39,6 +39,7 @@ export const desktopActions = [
   "composer.send",
   "composer.stop",
   "composer.dequeue",
+  "composer.reload-settings",
   "composer.host",
   "inbox.mark-read",
   "inbox.dismiss",

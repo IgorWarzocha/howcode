@@ -50,3 +50,12 @@ export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;
 };
+
+export type ComposerSlashCommandSource = "app" | "extension" | "prompt" | "skill";
+
+export type ComposerSlashCommand = {
+  name: string;
+  description?: string;
+  source: ComposerSlashCommandSource;
+  sourceInfo?: unknown;
+};
