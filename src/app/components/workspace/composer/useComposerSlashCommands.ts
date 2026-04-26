@@ -62,10 +62,7 @@ export function useComposerSlashCommands({
       return [];
     }
 
-    return commands.filter((command) => {
-      const haystack = `${command.name} ${command.description ?? ""}`.toLowerCase();
-      return haystack.includes(filter);
-    });
+    return commands.filter((command) => command.name.toLowerCase().includes(filter));
   }, [commands, filter]);
 
   const selectCommand = (command: ComposerSlashCommand) => {
@@ -75,6 +72,10 @@ export function useComposerSlashCommands({
       return;
     }
 
+    setDraft(`/${command.name} `);
+  };
+
+  const completeCommand = (command: ComposerSlashCommand) => {
     setDraft(`/${command.name} `);
   };
 
@@ -101,11 +102,14 @@ export function useComposerSlashCommands({
     send();
   };
 
-  const dismiss = () => {
+  const dismiss = (options?: { clearDraft?: boolean }) => {
     setDismissedDraft(draft);
     setCommands([]);
     setLoading(false);
     setSelectedIndex(0);
+    if (options?.clearDraft) {
+      setDraft("");
+    }
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -130,6 +134,12 @@ export function useComposerSlashCommands({
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedIndex((current) => Math.max(0, current - 1));
+      return true;
+    }
+
+    if (event.key === "Tab" && !event.shiftKey && filteredCommands[0]) {
+      event.preventDefault();
+      completeCommand(filteredCommands[0]);
       return true;
     }
 
@@ -210,6 +220,7 @@ export function useComposerSlashCommands({
     listboxId: composerSlashCommandListboxId,
     loading,
     open,
+    dismiss,
     selectCommand,
     selectedIndex,
     setSelectedIndex,

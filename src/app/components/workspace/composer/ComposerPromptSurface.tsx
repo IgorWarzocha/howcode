@@ -1,5 +1,5 @@
 import { Paperclip, Send, Square, X } from "lucide-react";
-import { type ClipboardEvent, type RefObject, useEffect } from "react";
+import { type ClipboardEvent, type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { getPathForFileQuery } from "../../../query/desktop-query";
@@ -117,6 +117,7 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   });
   const dictationTranscribing = dictationInterimText.length > 0;
+  const slashCommandPanelRef = useRef<HTMLDivElement>(null);
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -125,6 +126,26 @@ export function ComposerPromptSurface({
     send,
     onOpenSettingsView,
   });
+
+  useEffect(() => {
+    if (!slashCommands.open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target || slashCommandPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      slashCommands.dismiss({ clearDraft: true });
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [slashCommands]);
 
   useEffect(() => {
     if (!pickerOpen && !dictationActive && !dictationTranscribing) {
@@ -225,7 +246,12 @@ export function ComposerPromptSurface({
                   ref={pickerButtonRef}
                   type="button"
                   className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md"
-                  onClick={pickAttachments}
+                  onClick={() => {
+                    if (slashCommands.open) {
+                      slashCommands.dismiss({ clearDraft: true });
+                    }
+                    pickAttachments();
+                  }}
                   aria-label={attachmentButtonLabel}
                   title={attachmentButtonLabel}
                 >
@@ -258,12 +284,13 @@ export function ComposerPromptSurface({
               <div className="min-w-0 flex-1">
                 {slashCommands.open ? (
                   <div
+                    ref={slashCommandPanelRef}
                     id={slashCommands.listboxId}
                     // biome-ignore lint/a11y/useSemanticElements: This is a textarea-owned combobox popup, not a native select.
                     role="listbox"
                     tabIndex={-1}
                     aria-label="Composer slash commands"
-                    className="absolute right-3 bottom-[calc(100%-0.25rem)] left-12 z-20 max-h-64 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
                   >
                     {slashCommands.commands.length > 0 ? (
                       slashCommands.commands.map((command, index) => {
