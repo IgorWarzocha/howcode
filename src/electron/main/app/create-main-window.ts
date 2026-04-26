@@ -5,6 +5,14 @@ import { isTrustedRendererUrl, shouldOpenUrlExternally } from "./navigation-secu
 import { getElectronBuildDirectory } from "../runtime/app-paths";
 import { getRendererDistDirectory } from "../runtime/app-paths";
 
+function getWindowIconPath() {
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), "dist", "howcode-icon.png");
+  }
+
+  return path.join(process.env.HOWCODE_REPO_ROOT ?? process.cwd(), "public", "howcode-icon.png");
+}
+
 function getRendererTrustConfig() {
   return {
     rendererDistDirectory: getRendererDistDirectory(),
@@ -25,6 +33,7 @@ export function createMainWindow() {
     height: 980,
     x: 120,
     y: 80,
+    icon: getWindowIconPath(),
     webPreferences: {
       preload: path.join(getElectronBuildDirectory(), "preload", "index.cjs"),
       contextIsolation: true,

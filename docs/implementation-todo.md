@@ -25,6 +25,10 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `src/electron/main/ipc/request-handlers/system.ts`, `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
 - [x] Surface basic composer send/model errors inline
   - files: `desktop/pi-desktop-runtime.cts`, `src/app/components/workspace/Composer.tsx`
+- [x] Stop active composer runs and restore/dequeue queued prompts
+  - files: `desktop/pi-threads/composer-actions.cts`, `desktop/runtime/composer-service.cts`, `src/app/features/code/useQueuedPromptRestore.ts`, `src/app/components/workspace/composer/useComposerSubmission.ts`
+- [x] Wire local dictation capture to sherpa-onnx transcription in the desktop runtime
+  - files: `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
 
 #### 2. New thread creation
 - [x] Implement `thread.new` as a real action
@@ -118,6 +122,11 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [ ] Or intentionally hide/remove these views until real
   - files: `src/app/views/MainView.tsx`, `src/app/views/CardGridView.tsx`, `src/app/data/mock-data.ts`
 
+#### 10b. Skills / extensions
+- [x] Ship real skills and extensions feature lanes with search/install/remove style flows
+  - files: `src/app/features/skills/*`, `src/app/features/extensions/*`, `desktop/skills/*`, `desktop/pi-packages/*`
+- [ ] Keep polishing scoped-project behavior, empty/error states, and skill-creator packaging details
+
 #### 11. Connections / settings shell items
 - [ ] Implement remote connection flow
 - [ ] Revisit post-MVP settings surfaces like rate limits remaining
@@ -130,6 +139,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 ### Electron / desktop backend checklist
 
 - [x] Add real send-thread desktop bridge requests
+- [x] Add real stop/dequeue composer action handling
 - [x] Add real new-thread desktop bridge requests
 - [x] Add stream/event desktop bridge messages for assistant output
 - [x] Replace generic `project.actions` stubs with explicit typed project actions for supported menu items
@@ -158,6 +168,7 @@ Key files:
 - [ ] Finish thread filter/search UX and semantics beyond the current renderer-local filtering
 - [ ] Add proper menus for thread actions / project switching / header split-button actions
 - [ ] Replace mock plugin/automation/debug data or remove views
+- [x] Add real skills/extensions feature lanes separate from the mock plugin/automation/debug card surfaces
 - [ ] Add richer thread block renderers
 
 #### 7a. Thread naming from compaction summaries
@@ -229,7 +240,7 @@ Definition of done:
 - [x] Sidebar updates recency/title/thread presence correctly
 - [x] SQLite stays the local index/cache, not the source of truth for actual Pi conversation content
 
-This milestone is now in place. Next, finish the remaining non-chat composer actions, mock the composer-adjacent git ops flow, and then move to project actions / terminal / diff parity.
+This milestone is now in place. Project actions, terminal, diff rendering, dictation, inbox, and skills/extensions have all moved materially beyond the original mock audit. Next, converge git/diff/review, finish execution-location semantics, and remove or define the remaining mock product surfaces.
 
 ## Hardening progress snapshot
 

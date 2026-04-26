@@ -37,7 +37,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Project create/import actions are wired through the desktop backend, even though surrounding UX/semantics are still partial: `desktop/pi-threads/project-actions.cts`, `src/app/components/sidebar/projects/SidebarProjectsSection.tsx`, `src/app/views/LandingView.tsx`, `src/app/views/settings/useSettingsController.ts`
 - Shared Pi thread/message mapping is real and deduplicated: `shared/pi-message-mapper.ts`, `desktop/runtime/thread-publisher.cts`, `desktop/pi-threads/thread-loader.cts`
 - Assistant thinking/reasoning traces are now rendered from Pi assistant content blocks, auto-expanded while streaming and collapsed after the turn completes: `shared/pi-message-mapper.ts`, `src/app/components/common/ThreadMessage.tsx`, `src/app/components/workspace/thread/VirtualizedThreadTimeline.tsx`
-- Desktop action coverage is explicit and test-backed: `shared/desktop-action-coverage.ts`, `src/test/desktop-action-coverage.test.ts`
+- Desktop action coverage is explicit in `shared/desktop-action-coverage.ts`; keep it in sync with `shared/desktop-actions.ts` and `desktop/pi-threads/*-actions.cts`
+- Composer stop and queued-prompt dequeue are real: `desktop/pi-threads/composer-actions.cts`, `desktop/runtime/composer-service.cts`, `src/app/features/code/useQueuedPromptRestore.ts`
+- Skills and extensions now have real feature lanes rather than being just mock card grids: `src/app/features/skills/*`, `src/app/features/extensions/*`, `desktop/skills/*`, `desktop/pi-packages/*`
 
 ---
 
@@ -54,6 +56,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Streaming thread updates are pushed over Electron IPC messages and rendered live: `src/electron/main/ipc/register-desktop-ipc.ts`, `src/electron/preload/create-desktop-api.ts`, `src/app/app-shell/useAppShellController.ts`
 - Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
 - Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `desktop/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
+- Active runs can be stopped and queued prompts can be restored/dequeued from the app shell: `desktop/pi-threads/composer-actions.cts`, `desktop/runtime/composer-service.cts`, `src/app/features/code/useQueuedPromptRestore.ts`
 - Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Electron desktop runtime; `composer.dictate` action inventory is still unused/no-op while the dedicated IPC path settles: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
 - Still stubbed in this area:
   - `composer.host`
@@ -175,6 +178,18 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Replace `mock-data.ts` cards with real data providers.
 - Implement action routing per card type.
+
+### 7a. Skills / Extensions pages
+
+**Status:** Real feature lanes, still partial/polishing.
+
+- Skills browse/install/configured-skill surfaces are real: `src/app/features/skills/*`, `desktop/skills/*`
+- Extensions/package search and install/remove surfaces are real: `src/app/features/extensions/*`, `desktop/pi-packages/*`
+- These should not be lumped together with the mock Plugins / Automations / Debug card grids anymore.
+
+**Expansion direction:**
+- Polish scoped-project behavior, error/empty states, and skill-creator install/session handling.
+- Decide how these real lanes relate to any future plugin/automation/debug ecosystem.
 
 ### 8. Diff panel
 
@@ -330,6 +345,7 @@ These currently exist in the action contract but are still no-op inventory rathe
   - `workspace.handoff`
   - `workspace.popout`
   - `diff.review`
+  - `terminal.close`
 
 Sources: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/noop-actions.cts`
 

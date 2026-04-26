@@ -25,6 +25,8 @@ export const implementedDesktopActions = [
   "composer.model",
   "composer.thinking",
   "composer.send",
+  "composer.stop",
+  "composer.dequeue",
   "composer.reload-settings",
   "inbox.mark-read",
   "inbox.dismiss",

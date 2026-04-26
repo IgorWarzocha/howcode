@@ -1,5 +1,6 @@
 appId: howcode.desktop.local
 productName: howcode
+icon: public/howcode-icon.png
 directories:
   output: artifacts/electron
 files:

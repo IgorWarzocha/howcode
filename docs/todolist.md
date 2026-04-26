@@ -1,6 +1,6 @@
 # Grouped todo list
 
-Snapshot: April 10, 2026.
+Snapshot: April 26, 2026.
 
 This is the practical working list grouped by what can be done independently, what should land together, and what belongs to larger epics.
 
@@ -15,6 +15,7 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 - [ ] retire or reclassify legacy no-op action/status inventory that no longer matches the real UI path
   - `landing.project-switcher`
   - `threads.filter`
+- [x] mark composer stop/dequeue as implemented desktop actions
 - [ ] keep unsurfaced `feature:header.*` IDs as trace-only inventory; do not re-surface them until the header comes back
 
 ### Small UI shells that can become real quickly
@@ -25,6 +26,7 @@ These are high-value, lower-risk tasks that should make the app feel more honest
 
 - [x] wire the composer mic to renderer audio capture + desktop-runtime sherpa-onnx transcription
 - [ ] validate sherpa-onnx dictation behavior in packaged builds with real downloaded models
+- [ ] decide whether the no-op `composer.dictate` action remains as trace inventory now that dictation uses dedicated IPC
 - [ ] tighten README + status docs whenever mock/partial behavior changes
 
 ## B. Interconnected implementation batches
@@ -80,6 +82,7 @@ These should become one execution-location story.
 
 - [ ] decide whether plugins/automations/debug remain visible before they are real
 - [ ] replace mock card data with real registries/providers if they stay
+- [x] keep skills/extensions as real feature lanes separate from the mock card-grid surfaces
 - [ ] define the first real automation feature
 - [ ] define whether debug becomes a serious inspector/devtools surface
 
