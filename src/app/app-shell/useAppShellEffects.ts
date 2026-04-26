@@ -7,6 +7,7 @@ import type {
   ComposerState,
   DesktopEvent,
   ProjectGitState,
+  ThreadData,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import { isUtilityView } from "../state/workspace";
@@ -14,6 +15,7 @@ import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import type { Project } from "../types";
 
 type QueryClientLike = {
+  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
   setQueriesData: (filters: { queryKey: readonly unknown[] }, updater: unknown) => void;
   invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown;
 };
@@ -67,7 +69,9 @@ export function useAppShellEffects({
   dispatch,
   setArchivedThreads,
   setComposerState,
+  setLiveThreadData,
   setProjectGitState,
+  setThreadHistoryCompactions,
 }: {
   projects: Project[];
   collapsedProjectIds: Record<string, boolean>;
@@ -87,7 +91,9 @@ export function useAppShellEffects({
   dispatch: Dispatch<WorkspaceAction>;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>;
 }) {
   useEffect(() => {
     if (!projects.length) {
@@ -347,10 +353,21 @@ export function useAppShellEffects({
         return;
       }
 
-      queryClient.setQueriesData(
-        { queryKey: desktopQueryKeys.thread(event.sessionPath) },
-        event.thread,
+      queryClient.setQueryData(desktopQueryKeys.thread(event.sessionPath), event.thread);
+
+      const isVisibleThreadUpdate = event.sessionPath === visibleSessionPath;
+      const isCompactionThreadUpdate =
+        event.reason === "compaction-start" || event.reason === "compaction";
+
+      setLiveThreadData((current) =>
+        isVisibleThreadUpdate || current?.sessionPath === event.sessionPath
+          ? event.thread
+          : current,
       );
+
+      if (isCompactionThreadUpdate && isVisibleThreadUpdate) {
+        setThreadHistoryCompactions(0);
+      }
 
       if (event.composer && event.sessionPath === visibleSessionPath) {
         setComposerState(event.composer);
@@ -364,7 +381,9 @@ export function useAppShellEffects({
       ) {
         void loadProjectThreads(event.projectId);
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
-        scheduleShellStateRefresh();
+        if (event.reason !== "compaction") {
+          scheduleShellStateRefresh();
+        }
       }
 
       if (
@@ -427,6 +446,8 @@ export function useAppShellEffects({
     queryClient,
     scheduleShellStateRefresh,
     setComposerState,
+    setLiveThreadData,
     setProjectGitState,
+    setThreadHistoryCompactions,
   ]);
 }

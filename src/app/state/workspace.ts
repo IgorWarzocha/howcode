@@ -173,6 +173,26 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
   };
 }
 
+function findProjectContainingThread(projects: Project[], state: WorkspaceState) {
+  if (state.selectedSessionPath) {
+    return (
+      projects.find((project) =>
+        project.threads.some((thread) => thread.sessionPath === state.selectedSessionPath),
+      ) ?? null
+    );
+  }
+
+  if (!state.selectedThreadId) {
+    return null;
+  }
+
+  return (
+    projects.find((project) =>
+      project.threads.some((thread) => thread.id === state.selectedThreadId),
+    ) ?? null
+  );
+}
+
 export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState {
   switch (action.type) {
     case "sync-projects": {
@@ -182,6 +202,10 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       const selectedProjectId = hasSelectedProject
         ? state.selectedProjectId
         : action.projects[0]?.id || "";
+      const selectedThreadProject = findProjectContainingThread(action.projects, state);
+      const shouldPreserveSelectedThread =
+        state.activeView === "thread" && Boolean(selectedThreadProject);
+      const shouldPreserveProjectSelection = hasSelectedProject || shouldPreserveSelectedThread;
 
       const collapsedProjectIds = Object.fromEntries(
         action.projects.map((project) => [
@@ -190,8 +214,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ]),
       );
 
-      const nextActiveView =
-        hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
+      const nextActiveView = shouldPreserveSelectedThread
+        ? "thread"
+        : hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
           ? state.activeView
           : "code";
 
@@ -199,17 +224,31 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         ...getTerminalStateForNextView(state, nextActiveView),
         activeView: nextActiveView,
-        selectedProjectId,
+        selectedProjectId: selectedThreadProject
+          ? selectedThreadProject.id
+          : shouldPreserveProjectSelection
+            ? state.selectedProjectId
+            : selectedProjectId,
         selectedThreadId:
-          hasSelectedProject || !state.selectedProjectId ? state.selectedThreadId : null,
+          shouldPreserveProjectSelection || !state.selectedProjectId
+            ? state.selectedThreadId
+            : null,
         selectedSessionPath:
-          hasSelectedProject || !state.selectedProjectId ? state.selectedSessionPath : null,
+          shouldPreserveProjectSelection || !state.selectedProjectId
+            ? state.selectedSessionPath
+            : null,
         selectedDiffFilePath:
-          hasSelectedProject || !state.selectedProjectId ? state.selectedDiffFilePath : null,
+          shouldPreserveProjectSelection || !state.selectedProjectId
+            ? state.selectedDiffFilePath
+            : null,
         gitOpsReturnView:
-          hasSelectedProject || !state.selectedProjectId ? state.gitOpsReturnView : "code",
+          shouldPreserveProjectSelection || !state.selectedProjectId
+            ? state.gitOpsReturnView
+            : "code",
         utilityViewReturnState:
-          hasSelectedProject || !state.selectedProjectId ? state.utilityViewReturnState : null,
+          shouldPreserveProjectSelection || !state.selectedProjectId
+            ? state.utilityViewReturnState
+            : null,
         collapsedProjectIds,
       };
     }

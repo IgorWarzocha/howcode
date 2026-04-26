@@ -36,6 +36,8 @@ function buildShellState(): ShellState {
       currentThinkingLevel: "medium",
       availableThinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh"],
       queuedPrompts: [],
+      contextUsage: null,
+      isCompacting: false,
     },
     projects: [
       {

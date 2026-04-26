@@ -122,8 +122,8 @@ export function buildThreadHistorySlice(
 
   return {
     sourceMessages: buildSourceMessagesFromPathEntries([
-      selectedCompaction,
       ...pathEntries.slice(firstKeptIndex, selectedCompactionIndex),
+      selectedCompaction,
       ...pathEntries.slice(selectedCompactionIndex + 1),
     ]),
     previousMessageCount: countDisplayableEntries(pathEntries.slice(0, firstKeptIndex)),

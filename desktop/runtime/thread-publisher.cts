@@ -1,9 +1,13 @@
 import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
-import { getPreviousMessageCount } from "../../shared/pi-message-mapper.ts";
+import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
 import { getLatestInboxAssistantMessage } from "../../shared/thread-inbox.ts";
-import { buildThreadData, setThreadStreamingState } from "../../shared/thread-data.ts";
+import {
+  buildThreadData,
+  setThreadCompactingState,
+  setThreadStreamingState,
+} from "../../shared/thread-data.ts";
 import {
   beginInboxThreadTurn,
   getThreadAssistantSnapshot,
@@ -30,17 +34,21 @@ function buildLiveThreadData(runtime: PiRuntime) {
   }
 
   const streamingMessage = runtime.session.state.streamingMessage;
+  const historySlice = buildThreadHistorySlice(
+    [...(runtime.session.sessionManager.getBranch() as SessionPathEntry[])],
+    0,
+  );
   const sourceMessages = [
-    ...runtime.session.messages,
+    ...historySlice.sourceMessages,
     ...(streamingMessage ? [streamingMessage] : []),
   ] as AgentMessage[];
-  const previousMessageCount = getPreviousMessageCount(runtime.session.sessionManager.getBranch());
 
   return buildThreadData({
     sessionPath,
     sourceMessages,
-    previousMessageCount,
+    previousMessageCount: historySlice.previousMessageCount,
     isStreaming: runtime.session.isStreaming,
+    isCompacting: runtime.session.isCompacting,
   });
 }
 
@@ -80,11 +88,15 @@ export function normalizeThreadDataForReason(
   thread: ThreadData,
   reason: RuntimeThreadReason | "external",
 ): ThreadData {
+  if (reason === "compaction-start") {
+    return setThreadCompactingState(thread, true);
+  }
+
   if (reason !== "end" && reason !== "external" && reason !== "compaction") {
     return thread;
   }
 
-  return setThreadStreamingState(thread, false);
+  return setThreadCompactingState(setThreadStreamingState(thread, false), false);
 }
 
 export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThreadReason) {
@@ -102,7 +114,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
 
   const thread = normalizeThreadDataForReason(liveThread, reason);
 
-  const threadId = runtime.session.sessionId;
+  let threadId = runtime.session.sessionId;
   const projectId = runtime.cwd;
   const timestamp = Date.now();
   let hasPersistedSessionFile = false;
@@ -118,7 +130,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
   rememberSessionPath(sessionPath, projectId);
 
   if (hasPersistedSessionFile) {
-    upsertThreadSummary({
+    threadId = upsertThreadSummary({
       id: threadId,
       cwd: projectId,
       sessionPath,
@@ -128,7 +140,9 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
 
     setThreadRunningState(
       sessionPath,
-      reason === "update" || (reason === "start" && thread.messages.length > 0),
+      reason === "update" ||
+        reason === "compaction-start" ||
+        (reason === "start" && thread.messages.length > 0),
     );
 
     if (reason === "start") {
@@ -160,7 +174,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     threadId,
     sessionPath,
     thread,
-    composer: await buildComposerState(runtime),
+    composer: await buildComposerState(runtime, { includeContextUsage: reason !== "update" }),
   });
 }
 
@@ -181,7 +195,7 @@ export async function publishExternalThreadUpdate({
 
   rememberLiveThread(sessionPath, thread);
   rememberSessionPath(sessionPath, projectId);
-  upsertThreadSummary({
+  threadId = upsertThreadSummary({
     id: threadId,
     cwd: projectId,
     sessionPath,

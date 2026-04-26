@@ -2,10 +2,10 @@ import type { InboxThread, ThreadData } from "./desktop-contracts";
 
 export function getEffectiveThreadRunningState(
   persistedRunning: boolean | number,
-  liveThread: Pick<ThreadData, "isStreaming"> | null,
+  liveThread: Pick<ThreadData, "isStreaming" | "isCompacting"> | null,
 ) {
   if (liveThread) {
-    return liveThread.isStreaming;
+    return liveThread.isStreaming || liveThread.isCompacting;
   }
 
   return Boolean(persistedRunning);

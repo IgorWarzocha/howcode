@@ -3,6 +3,7 @@ export type {
   AppSettings,
   ArchivedThread,
   ComposerAttachment,
+  ComposerContextUsage,
   DesktopClipboardFilePaths,
   DesktopClipboardSnapshot,
   ComposerFilePickerEntry,

@@ -84,6 +84,7 @@ export async function loadThreadSnapshot(
       sourceMessages: historySlice.sourceMessages,
       previousMessageCount: historySlice.previousMessageCount,
       isStreaming: false,
+      isCompacting: false,
     }),
   };
 }
@@ -93,7 +94,10 @@ export async function loadThread(
   options?: { historyCompactions?: number },
 ): Promise<ThreadData> {
   const liveThread = getLiveThread(sessionPath);
-  if (liveThread?.isStreaming && (options?.historyCompactions ?? 0) === 0) {
+  if (
+    (liveThread?.isStreaming || liveThread?.isCompacting) &&
+    (options?.historyCompactions ?? 0) === 0
+  ) {
     return liveThread;
   }
 

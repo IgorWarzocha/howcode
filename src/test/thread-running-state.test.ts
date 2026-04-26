@@ -7,8 +7,15 @@ import {
 
 describe("thread running state", () => {
   it("uses the live runtime state when available", () => {
-    expect(getEffectiveThreadRunningState(false, { isStreaming: true })).toBe(true);
-    expect(getEffectiveThreadRunningState(true, { isStreaming: false })).toBe(false);
+    expect(getEffectiveThreadRunningState(false, { isStreaming: true, isCompacting: false })).toBe(
+      true,
+    );
+    expect(getEffectiveThreadRunningState(false, { isStreaming: false, isCompacting: true })).toBe(
+      true,
+    );
+    expect(getEffectiveThreadRunningState(true, { isStreaming: false, isCompacting: false })).toBe(
+      false,
+    );
   });
 
   it("falls back to the persisted state when no live runtime state is known", () => {

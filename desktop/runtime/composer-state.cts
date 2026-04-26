@@ -2,6 +2,7 @@ import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
 import { supportsXhigh } from "@mariozechner/pi-ai";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
+  ComposerContextUsage,
   ComposerModel,
   ComposerQueuedPrompt,
   ComposerState,
@@ -17,6 +18,11 @@ import type { PiRuntime } from "./types.cts";
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
 
 type ComposerSourceModel = NonNullable<AgentSession["model"]>;
+type BuildComposerStateOptions = {
+  includeContextUsage?: boolean;
+};
+
+const contextUsageCache = new WeakMap<AgentSession, ComposerContextUsage | null>();
 
 function mapComposerModel(
   model: AgentSession["model"] | ComposerSourceModel | null | undefined,
@@ -43,6 +49,34 @@ function buildSessionQueuedPrompts(session: AgentSession): ComposerQueuedPrompt[
     steering: [...session.getSteeringMessages()],
     followUp: [...session.getFollowUpMessages()],
   });
+}
+
+function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
+  const usage = session.getContextUsage();
+  if (!usage) {
+    contextUsageCache.set(session, null);
+    return null;
+  }
+
+  const contextUsage = {
+    tokens: usage.tokens,
+    contextWindow: usage.contextWindow,
+    percent: usage.percent,
+  };
+  contextUsageCache.set(session, contextUsage);
+  return contextUsage;
+}
+
+function getContextUsageForComposerState(
+  session: AgentSession,
+  options: BuildComposerStateOptions = {},
+) {
+  const cachedUsage = contextUsageCache.get(session);
+  if (options.includeContextUsage === false && cachedUsage !== undefined) {
+    return cachedUsage;
+  }
+
+  return mapContextUsage(session);
 }
 
 export function getAvailableThinkingLevelsForModel(
@@ -126,6 +160,7 @@ async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) 
         availableThinkingLevels,
       ),
       availableThinkingLevels,
+      contextUsage: mapContextUsage(session),
     };
   } finally {
     session.dispose();
@@ -195,10 +230,15 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
+    contextUsage: snapshot.contextUsage,
+    isCompacting: false,
   };
 }
 
-export async function buildComposerState(runtime: PiRuntime): Promise<ComposerState> {
+export async function buildComposerState(
+  runtime: PiRuntime,
+  options: BuildComposerStateOptions = {},
+): Promise<ComposerState> {
   const availableModels = (await runtime.session.modelRegistry.getAvailable()).map((model) => ({
     provider: model.provider,
     id: model.id,
@@ -213,5 +253,7 @@ export async function buildComposerState(runtime: PiRuntime): Promise<ComposerSt
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
+    contextUsage: getContextUsageForComposerState(runtime.session, options),
+    isCompacting: runtime.session.isCompacting,
   };
 }

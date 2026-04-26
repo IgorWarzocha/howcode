@@ -33,8 +33,10 @@ export function ComposerPromptSurface({
   mainViewRef,
   workspaceFooterRef,
   model,
+  contextUsage,
   availableModels,
   isStreaming,
+  isCompacting,
   thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -85,6 +87,7 @@ export function ComposerPromptSurface({
     openPickerRoot,
     removeAttachment,
     runComposerAction,
+    compact,
     send,
     setDraft,
     setOpenMenu,
@@ -106,6 +109,7 @@ export function ComposerPromptSurface({
     dictationModelId,
     dictationMaxDurationSeconds,
     isStreaming,
+    isCompacting,
     restoredQueuedPrompt,
     streamingBehaviorPreference,
     onAction,
@@ -420,6 +424,9 @@ export function ComposerPromptSurface({
         composerPanelRef={composerPanelRef}
         diffBaseline={diffBaseline}
         model={model}
+        contextUsage={contextUsage}
+        compactDisabled={isStreaming || isCompacting || !sessionPath}
+        isCompacting={isCompacting}
         modelButtonRef={modelButtonRef}
         modelMenuOpen={modelMenuOpen}
         modelMenuRef={modelMenuRef}
@@ -445,6 +452,7 @@ export function ComposerPromptSurface({
             sessionPath,
           });
         }}
+        onCompact={() => void compact()}
         onSetOpenMenu={setOpenMenu}
         onToggleTerminal={onToggleTerminal}
         projectGitState={projectGitState}

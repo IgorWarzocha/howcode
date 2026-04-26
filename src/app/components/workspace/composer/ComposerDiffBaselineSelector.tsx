@@ -248,36 +248,40 @@ export function ComposerDiffBaselineSelector({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          "group relative inline-flex min-w-[9.5rem] items-center justify-end overflow-hidden text-right text-[12px] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+          "group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[12px] leading-none text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
           open && "text-[color:var(--text)]",
         )}
         onClick={() => setOpen((current) => !current)}
       >
         <span
           className={cn(
-            "flex items-center gap-2 transition-opacity duration-150 ease-out",
+            "flex h-full items-center gap-2 transition-opacity duration-150 ease-out",
             open ? "opacity-0" : "group-hover:opacity-0",
           )}
         >
-          <span className="text-[color:var(--muted)]">{fileCountLabel} files</span>
+          <span className="inline-flex h-full items-center text-[color:var(--muted)]">
+            {fileCountLabel} files
+          </span>
           <span
-            className={
-              counts && counts.insertions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]"
-            }
+            className={cn(
+              "inline-flex h-full items-center",
+              counts && counts.insertions > 0 ? "text-[#7ee0bb]" : "text-[color:var(--muted)]",
+            )}
           >
             +{insertionCountLabel}
           </span>
           <span
-            className={
-              counts && counts.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]"
-            }
+            className={cn(
+              "inline-flex h-full items-center",
+              counts && counts.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]",
+            )}
           >
             -{deletionCountLabel}
           </span>
         </span>
         <span
           className={cn(
-            "pointer-events-none absolute inset-0 flex items-center justify-end truncate text-[12px] text-[color:var(--text)] transition-opacity duration-150 ease-out",
+            "pointer-events-none absolute inset-0 flex h-full items-center justify-end truncate px-2 text-[12px] leading-none text-[color:var(--text)] transition-opacity duration-150 ease-out",
             open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >

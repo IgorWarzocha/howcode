@@ -227,8 +227,10 @@ export function CodeWorkspaceView({
                       activeView={state.activeView}
                       hostLabel={shellState?.availableHosts[0] ?? "Local"}
                       model={activeComposerState?.currentModel ?? null}
+                      contextUsage={activeComposerState?.contextUsage ?? null}
                       availableModels={activeComposerState?.availableModels ?? []}
                       isStreaming={activeThreadData?.isStreaming ?? false}
+                      isCompacting={activeComposerState?.isCompacting ?? false}
                       thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                       streamingBehaviorPreference={

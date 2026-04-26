@@ -76,6 +76,7 @@ export function CodeWorkspaceMainView({
         messages={threadData?.messages ?? []}
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
+        isCompacting={threadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />

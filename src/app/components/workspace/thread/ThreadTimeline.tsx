@@ -12,6 +12,7 @@ type ThreadTimelineProps = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
+  isCompacting: boolean;
   composerLayoutVersion: number;
   onLoadEarlierMessages: () => void;
 };
@@ -20,6 +21,7 @@ export function ThreadTimeline({
   messages,
   previousMessageCount,
   isStreaming,
+  isCompacting,
   composerLayoutVersion,
   onLoadEarlierMessages,
 }: ThreadTimelineProps) {
@@ -219,7 +221,7 @@ export function ThreadTimeline({
   );
 
   return (
-    <div className={chatViewportClass}>
+    <div className={`${chatViewportClass} relative`}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
         <div
           className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
@@ -228,6 +230,16 @@ export function ThreadTimeline({
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
       </div>
+      {isCompacting ? (
+        <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 flex justify-center">
+          <div className="rounded-full border border-[rgba(155,183,255,0.18)] bg-[#2d3040] px-3 py-2 text-[13px] text-[#cbd7ff] shadow-[0_18px_44px_rgba(0,0,0,0.36)]">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[#9bb7ff]" />
+              <span>Compacting session context…</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

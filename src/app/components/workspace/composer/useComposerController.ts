@@ -53,6 +53,7 @@ type UseComposerControllerProps = {
   dictationModelId: string | null;
   dictationMaxDurationSeconds: number;
   isStreaming: boolean;
+  isCompacting: boolean;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
@@ -75,6 +76,7 @@ export function useComposerController({
   dictationModelId,
   dictationMaxDurationSeconds,
   isStreaming,
+  isCompacting,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
   onAction,
@@ -194,7 +196,8 @@ export function useComposerController({
     };
   }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef]);
 
-  const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
+  const canSend =
+    (draft.trim().length > 0 || attachments.length > 0) && !isSending && !isCompacting;
 
   const {
     cancelDictation,
@@ -251,11 +254,12 @@ export function useComposerController({
     }
   };
 
-  const { send, stop } = useComposerSubmission({
+  const { compact, send, stop } = useComposerSubmission({
     composerScopeKey,
     draftThreadId,
     isSending,
     isStreaming,
+    isCompacting,
     onAction,
     projectId,
     sessionPath,
@@ -312,6 +316,7 @@ export function useComposerController({
     openPickerRoot,
     removeAttachment,
     runComposerAction,
+    compact,
     send,
     setDraft: setDraftValue,
     setOpenMenu,

@@ -1,6 +1,7 @@
 import { Bot, GitBranch, Terminal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type {
+  ComposerContextUsage,
   ComposerModel,
   ComposerThinkingLevel,
   ProjectDiffBaseline,
@@ -10,6 +11,7 @@ import { compactCardClass, compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
+import { ComposerContextMeter } from "./ComposerContextMeter";
 import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
 import { ComposerModelPopover } from "./ComposerModelPopover";
 import { getGitOpsEntryButtonClass } from "./git-ops";
@@ -20,11 +22,15 @@ type ComposerFooterProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>;
   diffBaseline: ProjectDiffBaseline;
   model: ComposerModel | null;
+  contextUsage: ComposerContextUsage | null;
+  compactDisabled: boolean;
+  isCompacting: boolean;
   modelButtonRef: RefObject<HTMLButtonElement | null>;
   modelMenuOpen: boolean;
   modelMenuRef: RefObject<HTMLDivElement | null>;
   onOpenGitOps: () => void;
   onOpenTakeoverTerminal: () => void;
+  onCompact: () => void;
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void;
   onSelectModel: (model: ComposerModel) => void;
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void;
@@ -43,11 +49,15 @@ export function ComposerFooter({
   composerPanelRef,
   diffBaseline,
   model,
+  contextUsage,
+  compactDisabled,
+  isCompacting,
   modelButtonRef,
   modelMenuOpen,
   modelMenuRef,
   onOpenGitOps,
   onOpenTakeoverTerminal,
+  onCompact,
   onSelectBaseline,
   onSelectModel,
   onSelectThinkingLevel,
@@ -78,16 +88,25 @@ export function ComposerFooter({
         onClick={onToggleTerminal}
         className={cn(terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]")}
       />
-      <div className="relative">
+      <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
           ref={modelButtonRef}
           label="Agent"
           icon={<Bot size={14} />}
+          className="pr-8"
           onClick={() => onSetOpenMenu((current) => (current === "model" ? null : "model"))}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}
           aria-controls="composer-model-menu"
         />
+        <div className="absolute top-0 right-0">
+          <ComposerContextMeter
+            contextUsage={contextUsage}
+            compactDisabled={compactDisabled}
+            isCompacting={isCompacting}
+            onCompact={onCompact}
+          />
+        </div>
         {modelMenuOpen ? (
           <ComposerModelPopover
             availableModels={availableModels}
@@ -101,7 +120,7 @@ export function ComposerFooter({
           />
         ) : null}
       </div>
-      <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+      <div className="ml-auto flex min-h-7 items-center gap-1.5 max-md:flex-wrap">
         {projectGitState?.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
@@ -115,7 +134,7 @@ export function ComposerFooter({
           <div
             className={cn(
               compactCardClass,
-              "inline-flex max-w-[12rem] px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
+              "inline-flex h-7 max-w-[12rem] items-center px-2.5 py-0 text-[12px] leading-none text-[color:var(--muted)]",
             )}
             title={projectGitState.branch ?? "Detached"}
           >
@@ -124,7 +143,11 @@ export function ComposerFooter({
         ) : null}
         <button
           type="button"
-          className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
+          className={cn(
+            compactIconButtonClass,
+            "h-7 w-7",
+            getGitOpsEntryButtonClass(gitVisualMode),
+          )}
           onClick={onOpenGitOps}
           aria-label="Open git ops"
           title="Open git ops"

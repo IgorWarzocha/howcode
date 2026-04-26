@@ -111,4 +111,5 @@ export type ThreadData = {
   messages: Message[];
   previousMessageCount: number;
   isStreaming: boolean;
+  isCompacting: boolean;
 };

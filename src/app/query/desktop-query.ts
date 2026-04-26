@@ -57,6 +57,7 @@ export const desktopQueryKeys = {
   projectCommitsPrefix: (projectId: string) => ["desktop", "projectCommits", projectId] as const,
   projectCommits: (projectId: string, limit = 50) =>
     ["desktop", "projectCommits", projectId, limit] as const,
+  threadPrefix: (sessionPath: string) => ["desktop", "thread", sessionPath] as const,
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ["desktop", "thread", sessionPath, refreshKey, historyCompactions] as const,
 };

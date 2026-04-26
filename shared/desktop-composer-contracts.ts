@@ -18,12 +18,20 @@ export type ComposerModel = {
   input: Array<"text" | "image">;
 };
 
+export type ComposerContextUsage = {
+  tokens: number | null;
+  contextWindow: number;
+  percent: number | null;
+};
+
 export type ComposerState = {
   currentModel: ComposerModel | null;
   availableModels: ComposerModel[];
   currentThinkingLevel: ComposerThinkingLevel;
   availableThinkingLevels: ComposerThinkingLevel[];
   queuedPrompts: ComposerQueuedPrompt[];
+  contextUsage: ComposerContextUsage | null;
+  isCompacting: boolean;
 };
 
 export type ComposerAttachment = {
