@@ -18,18 +18,19 @@ export function useDesktopDiff(
   baseline: ProjectDiffBaseline | null = null,
   enabled = true,
 ) {
+  const queryEnabled = enabled && Boolean(projectId);
   const query = useQuery<ProjectDiffResult | null, Error>({
     queryKey: projectId
       ? desktopQueryKeys.projectDiff(projectId, baseline)
       : ["desktop", "projectDiff", null],
     queryFn: () => (projectId ? getProjectDiffQuery(projectId, baseline) : Promise.resolve(null)),
-    enabled: enabled && Boolean(projectId),
+    enabled: queryEnabled,
     refetchOnMount: "always",
   });
 
   return {
     diff: query.data ?? null,
     isLoading: query.isLoading || query.isFetching,
-    error: getReadableDesktopDiffError(query.error?.message ?? null),
+    error: queryEnabled ? getReadableDesktopDiffError(query.error?.message ?? null) : null,
   } satisfies DiffState;
 }

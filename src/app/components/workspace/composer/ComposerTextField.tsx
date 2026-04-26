@@ -40,6 +40,7 @@ export function ComposerTextField({
   onBlur,
   onExpandedChange,
 }: ComposerTextFieldProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastReportedHeightRef = useRef<number | null>(null);
   const [reservedHeight, setReservedHeight] = useState<number | null>(null);
@@ -69,10 +70,13 @@ export function ComposerTextField({
     textarea.style.height = "0px";
     const nextHeight = Math.max(textarea.scrollHeight, 24);
     textarea.style.height = `${nextHeight}px`;
-    if (lastReportedHeightRef.current !== nextHeight) {
-      lastReportedHeightRef.current = nextHeight;
-      onHeightChange?.(nextHeight);
-    }
+    window.requestAnimationFrame(() => {
+      const reportedHeight = wrapperRef.current?.getBoundingClientRect().height ?? nextHeight;
+      if (lastReportedHeightRef.current !== reportedHeight) {
+        lastReportedHeightRef.current = reportedHeight;
+        onHeightChange?.(reportedHeight);
+      }
+    });
 
     onExpandedChange?.(nextHeight > reservedHeight + 1);
 
@@ -81,8 +85,19 @@ export function ComposerTextField({
     }
   }, [onExpandedChange, onHeightChange, reservedLineCount, value]);
 
+  useEffect(() => {
+    const height = wrapperRef.current?.getBoundingClientRect().height;
+    if (!height || lastReportedHeightRef.current === height) {
+      return;
+    }
+
+    lastReportedHeightRef.current = height;
+    onHeightChange?.(height);
+  });
+
   return (
     <div
+      ref={wrapperRef}
       className="grid min-w-0 gap-1"
       style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
       onPointerEnter={(event) => {

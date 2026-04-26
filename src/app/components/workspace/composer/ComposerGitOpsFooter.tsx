@@ -1,5 +1,5 @@
 import { ArrowLeft, Columns2, Rows3, Settings } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { ProjectDiffBaseline, ProjectGitState } from "../../../desktop/types";
 import {
   compactIconButtonClass,
@@ -54,6 +54,18 @@ export function ComposerGitOpsFooter({
 }: ComposerGitOpsFooterProps) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsRef = useRef<HTMLDivElement>(null);
+  const originSaveRequestedRef = useRef(false);
+
+  const saveOriginOnce = useCallback(() => {
+    if (hasOrigin || repoUrl.trim().length === 0 || originSaveRequestedRef.current) {
+      return;
+    }
+
+    originSaveRequestedRef.current = true;
+    void Promise.resolve(onSaveOrigin()).finally(() => {
+      originSaveRequestedRef.current = false;
+    });
+  }, [hasOrigin, onSaveOrigin, repoUrl]);
 
   useEffect(() => {
     if (!optionsOpen) {
@@ -66,16 +78,14 @@ export function ComposerGitOpsFooter({
         return;
       }
 
-      if (!hasOrigin && repoUrl.trim().length > 0) {
-        void onSaveOrigin();
-      }
+      saveOriginOnce();
 
       window.setTimeout(() => setOptionsOpen(false), 0);
     };
 
     window.addEventListener("pointerdown", handlePointerDown, true);
     return () => window.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [hasOrigin, onSaveOrigin, optionsOpen, repoUrl]);
+  }, [optionsOpen, saveOriginOnce]);
 
   useEffect(() => {
     if (!optionsOpen) {
@@ -127,12 +137,12 @@ export function ComposerGitOpsFooter({
                     value={repoUrl}
                     onChange={(event) => onSetRepoUrl(event.target.value)}
                     onBlur={() => {
-                      void onSaveOrigin();
+                      saveOriginOnce();
                     }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
-                        void onSaveOrigin();
+                        saveOriginOnce();
                       }
                     }}
                     className="min-h-7 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
