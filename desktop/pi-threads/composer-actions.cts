@@ -1,5 +1,9 @@
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import type {
+  AnyDesktopActionPayload,
+  ComposerAttachment,
+} from "../../shared/desktop-contracts.ts";
+import { isCompactSlashCommand } from "../../shared/composer-slash-commands.ts";
 import {
   getComposerAttachments,
   getComposerModelSelection,
@@ -46,14 +50,18 @@ export async function handleComposerDesktopAction(
 
     case "composer.send": {
       const text = getComposerText(payload);
-      const rawAttachments = getComposerAttachments(payload);
-      const normalizedAttachmentPayload = await normalizeComposerSendAttachments(rawAttachments);
-      const attachments = normalizedAttachmentPayload.attachments;
-      if (normalizedAttachmentPayload.rejected) {
-        return handledAction({
-          error:
-            "Could not send prompt because one or more attached files are no longer available.",
-        });
+      let attachments: ComposerAttachment[] = [];
+
+      if (!isCompactSlashCommand(text)) {
+        const rawAttachments = getComposerAttachments(payload);
+        const normalizedAttachmentPayload = await normalizeComposerSendAttachments(rawAttachments);
+        attachments = normalizedAttachmentPayload.attachments;
+        if (normalizedAttachmentPayload.rejected) {
+          return handledAction({
+            error:
+              "Could not send prompt because one or more attached files are no longer available.",
+          });
+        }
       }
 
       if (!text && attachments.length === 0) {

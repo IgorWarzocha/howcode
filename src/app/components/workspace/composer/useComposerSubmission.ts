@@ -7,6 +7,7 @@ import type {
 } from "../../../desktop/types";
 import { composerDraftStore } from "./composerDraftStore";
 import { withComposerSendLock } from "./composerSendLock";
+import { isCompactSlashCommand } from "../../../../../shared/composer-slash-commands";
 import { submitComposerDraft } from "./submitComposerDraft";
 
 type UseComposerSubmissionProps = {
@@ -81,12 +82,17 @@ export function useComposerSubmission({
         }
 
         const submittedDraft = textToSend;
+        const preserveAttachments = isCompactSlashCommand(submittedDraft);
 
         setErrorMessage(null);
         setOpenMenu(null);
-        skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+        if (!preserveAttachments) {
+          skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+        }
         setDraftValue("");
-        setAttachments([]);
+        if (!preserveAttachments) {
+          setAttachments([]);
+        }
 
         const result = await submitComposerDraft({
           draft: submittedDraft,

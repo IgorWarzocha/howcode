@@ -356,7 +356,12 @@ export function useAppShellEffects({
         setComposerState(event.composer);
       }
 
-      if (event.reason === "start" || event.reason === "end" || event.reason === "external") {
+      if (
+        event.reason === "start" ||
+        event.reason === "end" ||
+        event.reason === "external" ||
+        event.reason === "compaction"
+      ) {
         void loadProjectThreads(event.projectId);
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
         scheduleShellStateRefresh();
