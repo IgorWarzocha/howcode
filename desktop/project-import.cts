@@ -39,8 +39,18 @@ export async function scanKnownProjects(projectIds: string[]): Promise<ProjectIm
 
 export async function importProjects(projectIds: string[]) {
   const candidates = await scanKnownProjects(projectIds);
+  let repoProjectCount = 0;
+  let originProjectCount = 0;
 
   for (const candidate of candidates) {
+    if (candidate.isGitRepo) {
+      repoProjectCount += 1;
+    }
+
+    if (candidate.hasOrigin) {
+      originProjectCount += 1;
+    }
+
     setProjectRepoOrigin(candidate.projectId, candidate.originUrl);
   }
 
@@ -49,7 +59,7 @@ export async function importProjects(projectIds: string[]) {
   return {
     importedProjectIds: candidates.map((candidate) => candidate.projectId),
     checkedProjectCount: candidates.length,
-    repoProjectCount: candidates.filter((candidate) => candidate.isGitRepo).length,
-    originProjectCount: candidates.filter((candidate) => candidate.hasOrigin).length,
+    repoProjectCount,
+    originProjectCount,
   };
 }
