@@ -72,7 +72,14 @@ export type ToolResultMessage = {
   role: "toolResult";
   toolName: string;
   content: string[];
+  images?: ToolResultImage[];
   isError: boolean;
+};
+
+export type ToolResultImage = {
+  src: string;
+  mimeType: string;
+  alt: string;
 };
 
 export type BashExecutionMessage = {
