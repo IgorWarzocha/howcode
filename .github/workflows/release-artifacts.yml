@@ -61,7 +61,12 @@ jobs:
             unzip
 
       - name: Install dependencies
+        if: matrix.name != 'windows-arm64'
         run: bun install --frozen-lockfile
+
+      - name: Install dependencies for Windows ARM64
+        if: matrix.name == 'windows-arm64'
+        run: bun install --frozen-lockfile --os=win32 --cpu=arm64
 
       - name: Verify release version alignment
         shell: bash
