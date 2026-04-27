@@ -15,16 +15,14 @@ This repo is intentionally split around future Pi desktop integration seams.
   - `useScopedProjectViewSync.ts` owns skills/extensions scoped-project reset behavior
 - `src/app/state/workspace.ts`
   - deterministic workspace reducer + selectors
-  - safest place to grow mock state into persisted session state
-- `src/app/data/mock-data.ts`
-  - legacy visual fixtures and card-grid placeholder data only
-  - do not use for real project/thread state; replace or remove remaining card fixtures as product surfaces become real
+  - UI-only workspace transitions and optimistic state helpers
+  - do not add real persistence here; project/thread persistence belongs to the desktop/thread-state lanes
 - `src/app/components/sidebar/*`
   - left rail and settings menu
   - `project-tree/*` holds project/thread row decomposition and dismiss helpers
 - `src/app/components/workspace/*`
   - header, composer, diff, terminal shells
-  - `workspace/composer/*` holds banner, menus, attachments, and controller logic
+  - `workspace/composer/*` holds prompt, git-ops, dictation, attachment, queue, and controller logic
 - `src/app/views/*`
   - main-panel view rendering for presentation-first surfaces like thread, landing, and settings
 - `src/app/features/extensions/*`
@@ -54,7 +52,7 @@ This repo is intentionally split around future Pi desktop integration seams.
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `desktop/pi-threads/*`
   - shell loading, thread hydration, action routing, and payload parsing
-  - `action-router.cts` is a thin dispatcher over `noop-actions.cts`, `project-actions.cts`, `thread-actions.cts`, `composer-actions.cts`, `workspace-actions.cts`, and `settings-actions.cts`
+  - `action-router.cts` is a thin dispatcher over `project-actions.cts`, `thread-actions.cts`, `composer-actions.cts`, `workspace-actions.cts`, and `settings-actions.cts`
 - `desktop/thread-state-db/*`
   - SQLite bootstrap/schema/query/write/mapping split
 - `shared/pi-message-mapper.ts`

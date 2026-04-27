@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mockProjects } from "../data/mock-data";
+import type { Project } from "../types";
 import {
   createInitialWorkspaceState,
   getCurrentTitle,
@@ -8,6 +8,23 @@ import {
   selectThread,
   workspaceReducer,
 } from "./workspace";
+
+const mockProjects: Project[] = [
+  {
+    id: "pi-plugin-codex",
+    name: "pi-plugin-codex",
+    threads: [
+      { id: "inspect-current-repo", title: "Inspect current repo", age: "1d", pinned: true },
+    ],
+  },
+  { id: "codapter", name: "codapter", threads: [] },
+  {
+    id: "claw-phone",
+    name: "claw-phone",
+    collapsed: true,
+    threads: [{ id: "thread-1", title: "Thread", age: "now", sessionPath: "/tmp/thread.jsonl" }],
+  },
+];
 
 describe("workspace state", () => {
   it("creates initial state and hydrates collapse state from synced projects", () => {

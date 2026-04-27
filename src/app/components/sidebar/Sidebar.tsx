@@ -125,7 +125,8 @@ export function Sidebar({
               </span>
             }
             active={activeView === "chat"}
-            onClick={() => onShowView("chat")}
+            disabled
+            title="Coming soon"
           />
           <NavButton
             icon={<PawPrint size={16} />}
@@ -136,7 +137,8 @@ export function Sidebar({
               </span>
             }
             active={activeView === "claw"}
-            onClick={() => onShowView("claw")}
+            disabled
+            title="Coming soon"
           />
           <NavButton
             icon={<BriefcaseBusiness size={16} />}
@@ -147,7 +149,8 @@ export function Sidebar({
               </span>
             }
             active={activeView === "work"}
-            onClick={() => onShowView("work")}
+            disabled
+            title="Coming soon"
           />
           <NavButton
             icon={<Code2 size={16} />}

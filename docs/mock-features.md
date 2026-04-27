@@ -57,9 +57,8 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Real model + thinking selectors are wired to Pi session state: `desktop/runtime/composer-state.cts`, `src/app/components/workspace/Composer.tsx`
 - Composer now surfaces backend/model errors inline, including image-attachment incompatibility with non-image models: `desktop/runtime/composer-service.cts`, `src/app/components/workspace/Composer.tsx`
 - Active runs can be stopped and queued prompts can be restored/dequeued from the app shell: `desktop/pi-threads/composer-actions.cts`, `desktop/runtime/composer-service.cts`, `src/app/features/code/useQueuedPromptRestore.ts`
-- Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Electron desktop runtime; `composer.dictate` action inventory is still unused/no-op while the dedicated IPC path settles: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
+- Local dictation now records microphone audio in the renderer and sends it to a sherpa-onnx Whisper backend in the Electron desktop runtime through dedicated dictation IPC: `src/app/components/workspace/composer/useComposerController.ts`, `src/app/components/workspace/composer/local-dictation.ts`, `desktop/dictation/sherpa-onnx.cts`
 - Still stubbed in this area:
-  - `composer.host`
   - composer-adjacent git ops is still partial: commit actions exist, but the overall git UX is not finished and branch control is still display-only
   - Source of truth: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/action-router.cts`
 
@@ -97,9 +96,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `src/app/app-shell/useAppShellController.ts`
   - `desktop/pi-threads/action-router.cts`
   - `desktop/thread-state-db/*`
-- Deferred / currently unsurfaced:
-  - `project.create-worktree`
-
 **Expansion direction:**
 - Worktree creation remains deferred.
 
@@ -113,8 +109,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - `src/app/components/sidebar/projects/SidebarProjectsSection.tsx`
   - `src/app/components/sidebar/projects/sidebar-projects.helpers.ts`
   - `src/app/components/sidebar/inbox/SidebarInboxSection.tsx`
-- Still stubbed / legacy inventory:
-  - `threads.filter` remains a backend no-op legacy action ID
+- Still partial:
   - thread filtering/search is not yet a coherent end-to-end product flow
 
 **Expansion direction:**
@@ -137,14 +132,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - Local reducer-backed only:
   - terminal toggle
   - diff toggle
-- Stubbed actions:
-  - `thread.actions`
-  - `thread.run-action`
-  - `workspace.open`
-  - `workspace.open-options`
-  - `workspace.handoff`
-  - `workspace.popout`
-
 **Expansion direction:**
 - Add real thread action menu.
 - Define open split-button behavior in the Electron desktop bridge.
@@ -159,37 +146,21 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - UI: `src/app/views/LandingView.tsx`
 - Real project picker opens from the landing surface, selects a project, and starts a real thread via `thread.new`
 - Latest-project affordance also starts a real thread
-- Legacy `landing.project-switcher` still exists as a no-op action/status-inventory ID, but it is not the actual implementation path used by the UI
+- The old landing-project-switcher action inventory has been removed; project picking now stays in the renderer and starts work through `thread.new`.
 
 **Expansion direction:**
 - Keep project switching as ordinary UI selection/thread-start flow rather than a separate desktop action.
 
-### 7. Plugins / Automations / Debug pages
-
-**Status:** Mock card surfaces.
-
-- Views: `src/app/views/MainView.tsx`, `src/app/views/CardGridView.tsx`
-- Card content source: `src/app/data/mock-data.ts`
-- Stub actions:
-  - `plugins.open-card`
-  - `automations.open-card`
-  - `debug.open-card`
-
-**Expansion direction:**
-- Replace `mock-data.ts` cards with real data providers.
-- Implement action routing per card type.
-
-### 7a. Skills / Extensions pages
+### 7. Skills / Extensions pages
 
 **Status:** Real feature lanes, still partial/polishing.
 
 - Skills browse/install/configured-skill surfaces are real: `src/app/features/skills/*`, `desktop/skills/*`
 - Extensions/package search and install/remove surfaces are real: `src/app/features/extensions/*`, `desktop/pi-packages/*`
-- These should not be lumped together with the mock Plugins / Automations / Debug card grids anymore.
 
 **Expansion direction:**
 - Polish scoped-project behavior, error/empty states, and skill-creator install/session handling.
-- Decide how these real lanes relate to any future plugin/automation/debug ecosystem.
+- Keep these as the extension/package lane rather than reviving the removed plugin/automation/debug mock pages.
 
 ### 8. Diff panel
 
@@ -211,7 +182,7 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - checkpoint capture currently runs for completed composer turns only, not every possible Pi session mutation path
 - no placeholder/retry checkpoint lifecycle like t3code's full orchestration stack
 - no sheet/mobile diff layout yet
-- `diff.review` remains a shell action
+- diff comments can be sent back into the active Pi thread; richer review actions are still future work
 
 **Expansion direction:**
 - Extend checkpoint capture to additional turn-completion paths such as takeover session reconciliation if needed.
@@ -258,21 +229,9 @@ These are **not** mock anymore, or at least have real persistence behind them:
 **Expansion direction:**
 - Move from fixed-size client paging to explicit branch/page hydration if very large Pi sessions require it.
 
-### 10. Remote connections banner on home
+### 11. Product / settings items
 
-**Status:** Visual only.
-
-- UI: `src/app/components/workspace/Composer.tsx`
-- Stub actions:
-  - `connections.add`
-  - `connections.dismiss-banner`
-
-**Expansion direction:**
-- Replace with real remote host/account state or remove if not planned.
-
-### 11. Product / settings items that are just shells
-
-**Status:** Mixed: some real navigation, some shell-only inventory.
+**Status:** Real navigation entries with removed shell-only inventory.
 
 - Settings popup UI: `src/app/components/sidebar/SettingsMenu.tsx`
 - Real navigation entries now exist for:
@@ -280,9 +239,6 @@ These are **not** mock anymore, or at least have real persistence behind them:
   - Extensions
   - Archived threads
   - App settings
-- Still just UI shells:
-  - Rate limits remaining
-
 **Expansion direction:**
 - Either route through actual desktop settings screens or reduce surface area until implemented.
 
@@ -332,39 +288,22 @@ These are **not** mock anymore, or at least have real persistence behind them:
 - `desktop/pi-threads/thread-loader.cts`
 - `desktop/pi-threads/action-router.cts`
 
-### 14. Contract-only / no-op actions that still need cleanup
+### 14. Contract-only / no-op actions
 
-These currently exist in the action contract but are still no-op inventory rather than meaningful product behavior:
-
-- no-op and largely legacy / unsurfaced:
-  - `threads.filter`
-  - `landing.project-switcher`
-- no-op but still surfaced in current UI:
-  - `workspace.open`
-  - `workspace.open-options`
-  - `workspace.handoff`
-  - `workspace.popout`
-  - `diff.review`
-  - `terminal.close`
-
-Sources: `shared/desktop-actions.ts`, `shared/desktop-action-coverage.ts`, `desktop/pi-threads/noop-actions.cts`
+The previous no-op desktop actions have been removed from the shared action contract. UI-local flows such as filtering, attach-menu display, dictation, landing project picking, and terminal close now use their dedicated renderer or IPC paths instead of backend no-op actions.
 
 ---
 
 ## Mock data that still exists
 
-- Card surfaces still use mock data: `src/app/data/mock-data.ts`
-- Reducer tests also use mock project fixtures from the same file: `src/app/state/workspace.test.ts`
-
-This is fine for tests, but the card/view content is still placeholder product scaffolding.
+- Reducer tests use local project fixtures in `src/app/state/workspace.test.ts`.
 
 ---
 
 ## Good next expansion order
 
-1. Finish the remaining non-chat parts of the composer flow (host/dictate)
+1. Finish the remaining non-chat parts of the composer flow (dictation polish)
 2. Header/project-switch/product-menu implementation
 3. Finish diff review + converge diff ownership with the intended git/worktree product model
-4. Finish terminal/host/remote/handoff semantics instead of treating them as separate partial shells
-5. Replace plugin/automation/debug mock cards with real registries or remove until ready
+4. Finish terminal semantics instead of treating shell/run-log/takeover as separate partial shells
 6. Improve thread rendering fidelity for tool results and non-chat session entries

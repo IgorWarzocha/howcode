@@ -40,7 +40,6 @@ export type DesktopActionPayloadFields = {
   text?: string;
   threadId?: string;
   threadIds?: string[];
-  title?: string;
   value?: string | number | boolean | null;
 };
 
@@ -69,7 +68,6 @@ export type DesktopSettingsUpdatePayload =
 
 export type DesktopActionPayloadMap = {
   "threads.collapse-all": EmptyActionPayload;
-  "threads.filter": EmptyActionPayload;
   "project.add": { projectName?: string };
   "project.select": { projectId?: string | null; sessionPath?: string | null };
   "project.expand": { projectId: string };
@@ -81,7 +79,6 @@ export type DesktopActionPayloadMap = {
   "project.refresh-repo-origin": { projectId: string };
   "project.archive-threads": { projectId: string; projectName?: string };
   "project.remove-project": { projectId: string; projectName?: string };
-  "project.create-worktree": EmptyActionPayload;
   "thread.new": { projectId?: string | null; sessionPath?: string | null };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };
@@ -91,11 +88,6 @@ export type DesktopActionPayloadMap = {
   "thread.delete": { threadId: string };
   "thread.delete-many": { threadIds: string[]; projectIds?: string[] };
   "thread.pin": { threadId: string; projectId?: string | null };
-  "thread.actions": EmptyActionPayload;
-  "thread.run-action": EmptyActionPayload;
-  "workspace.open": EmptyActionPayload;
-  "workspace.open-options": EmptyActionPayload;
-  "workspace.handoff": EmptyActionPayload;
   "workspace.commit": {
     projectId?: string | null;
     sessionPath?: string | null;
@@ -109,10 +101,6 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | null;
     repoUrl?: string | null;
   };
-  "workspace.popout": EmptyActionPayload;
-  "connections.add": EmptyActionPayload;
-  "connections.dismiss-banner": EmptyActionPayload;
-  "composer.attach-menu": EmptyActionPayload;
   "composer.model": {
     projectId?: string | null;
     sessionPath?: string | null;
@@ -124,7 +112,6 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | null;
     level: ComposerThinkingLevel;
   };
-  "composer.dictate": EmptyActionPayload;
   "composer.send": {
     projectId?: string | null;
     sessionPath?: string | null;
@@ -143,17 +130,10 @@ export type DesktopActionPayloadMap = {
   "composer.reload-settings": { projectId?: string | null; sessionPath?: string | null };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
-  "composer.host": EmptyActionPayload;
-  "plugins.open-card": EmptyActionPayload;
-  "automations.open-card": EmptyActionPayload;
-  "debug.open-card": EmptyActionPayload;
-  "landing.project-switcher": EmptyActionPayload;
   "settings.update": DesktopSettingsUpdatePayload;
   "pi-settings.update": { piSettingsKey: keyof PiSettings; value: string | number | boolean };
   "projects.import.scan": { projectIds: string[] };
   "projects.import.apply": { projectIds: string[] };
-  "diff.review": EmptyActionPayload;
-  "terminal.close": EmptyActionPayload;
 };
 
 export type AnyDesktopActionPayload = DesktopActionPayloadInput;

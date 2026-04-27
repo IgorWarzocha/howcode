@@ -24,6 +24,8 @@ howcode
 
 On first run, the launcher downloads the matching desktop build for your platform and caches it locally.
 
+Linux releases also include an AppImage for direct desktop installs.
+
 ### Renderer note
 
 Release builds now ship with bundled Electron + Chromium on macOS, Linux, and Windows.

@@ -1,4 +1,4 @@
-import { Archive, Clock3, PackagePlus, Settings, Sparkles } from "lucide-react";
+import { Archive, PackagePlus, Settings, Sparkles } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import {
   type FeatureStatusId,
@@ -37,12 +37,6 @@ export function SettingsMenu({
     { icon: <Sparkles size={15} />, title: "Skills", onClick: onOpenSkillsView },
     { icon: <PackagePlus size={15} />, title: "Extensions", onClick: onOpenExtensionsView },
     { icon: <Archive size={15} />, title: "Archived threads", onClick: onOpenArchivedThreads },
-    {
-      icon: <Clock3 size={15} />,
-      title: "Rate limits remaining",
-      disabled: true,
-      statusId: "feature:settings.menu.rate-limits",
-    },
     { icon: <Settings size={15} />, title: "App settings", onClick: onOpenSettingsPanel },
   ];
 
