@@ -30,7 +30,8 @@ Works on my machine™
 ## What you can do
 
 - **Coding with Pi in a desktop environment** — the main dish.
-- **Staying oriented across projects** — sidebar projects, pinned/archived threads, inbox collating all the recent messages.
+- **Sidebar stuff** — pretty much everything you'd expect. 
+- **Inbox view** — collating all the recent messages.
 - **Built in terminal** — with persisted transcript history, apparently.
 - **Git-ops composer** — a separate view tailored to doing things with git.
 - **Reviewing diffs** — comment-based workflow.
