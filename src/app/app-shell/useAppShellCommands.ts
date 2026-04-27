@@ -203,6 +203,7 @@ export function useAppShellCommands({
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
     handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
+    handleCloseTerminalDrawer: () => dispatch({ type: "set-terminal-visible", visible: false }),
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
   };
 }

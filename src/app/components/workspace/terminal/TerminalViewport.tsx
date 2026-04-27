@@ -19,6 +19,7 @@ type TerminalViewportProps = {
   projectId: string;
   sessionPath: string | null;
   launchMode?: "shell" | "pi-session";
+  onProcessExit?: () => void;
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
   closeWhenSessionFileIdleMs?: number;
@@ -462,6 +463,7 @@ export function TerminalViewport({
   projectId,
   sessionPath,
   launchMode = "shell",
+  onProcessExit,
   preserveSessionOnUnmount = false,
   keepAliveMsOnUnmount = 0,
   closeWhenSessionFileIdleMs = 0,
@@ -712,6 +714,7 @@ export function TerminalViewport({
           appendTerminalHistory(
             `\r\n[terminal] Process exited${event.exitCode !== null ? ` (${event.exitCode})` : ""}.\r\n`,
           );
+          onProcessExit?.();
           break;
         case "cleared":
           terminalHistoryRef.current = "";
@@ -858,6 +861,7 @@ export function TerminalViewport({
     handleTerminalResize,
     keepAliveMsOnUnmount,
     maxKeepAliveMsOnUnmount,
+    onProcessExit,
     preserveSessionOnUnmount,
     persistedSessionPath,
     projectId,

@@ -18,6 +18,25 @@ import {
 } from "./session-store.cts";
 import { clearSessionBindings, startProcess } from "./terminal-process.cts";
 
+function isRestartableTerminalStatus(status: TerminalSessionSnapshot["status"]) {
+  return status === "exited" || status === "error";
+}
+
+function ensureProcessStarted(record: TerminalSessionRecord, reason: "started" | "restarted") {
+  if (record.process) {
+    return Promise.resolve();
+  }
+
+  if (record.restartPromise) {
+    return record.restartPromise;
+  }
+
+  record.restartPromise = startProcess(record, reason).finally(() => {
+    record.restartPromise = null;
+  });
+  return record.restartPromise;
+}
+
 export async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
   const cwd = request.cwd ?? request.projectId;
   const sessionId = makeSessionId(request);
@@ -33,6 +52,15 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
 
     if (existing.process) {
       existing.process.resize(request.cols, request.rows);
+    } else if (isRestartableTerminalStatus(existing.snapshot.status)) {
+      existing.snapshot = {
+        ...existing.snapshot,
+        status: "starting",
+        exitCode: null,
+        exitSignal: null,
+        updatedAt: nowIso(),
+      };
+      void ensureProcessStarted(existing, "restarted");
     }
 
     return existing.snapshot;
@@ -57,19 +85,31 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
   const record: TerminalSessionRecord = {
     snapshot,
     process: null,
+    restartPromise: null,
     transcriptPath: getTranscriptPath(sessionId),
     persistTimer: null,
     cleanup: [],
   };
 
   setTerminalSession(sessionId, record);
-  void startProcess(record, "started");
+  void ensureProcessStarted(record, "started");
   return snapshot;
 }
 
 export async function writeTerminal(sessionId: string, data: string) {
   const record = getTerminalSession(sessionId);
   if (!record?.process || !data.length) {
+    if (record && data.length && isRestartableTerminalStatus(record.snapshot.status)) {
+      record.snapshot = {
+        ...record.snapshot,
+        status: "starting",
+        exitCode: null,
+        exitSignal: null,
+        updatedAt: nowIso(),
+      };
+      await ensureProcessStarted(record, "restarted");
+      record.process?.write(data);
+    }
     return;
   }
 
@@ -126,6 +166,7 @@ export async function closeTerminal(request: TerminalCloseRequest) {
   clearSessionBindings(record);
   record.process?.kill();
   record.process = null;
+  record.restartPromise = null;
   flushSession(record);
   deleteTerminalSession(request.sessionId);
 

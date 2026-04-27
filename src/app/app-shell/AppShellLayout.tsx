@@ -204,7 +204,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   <TerminalPanel
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}
-                    onClose={controller.handleToggleTerminal}
+                    onClose={controller.handleCloseTerminalDrawer}
                   />
                 </div>
               </div>

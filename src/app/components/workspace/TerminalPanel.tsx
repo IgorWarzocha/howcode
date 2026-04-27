@@ -59,6 +59,7 @@ export function TerminalPanel({
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="pi-session"
+          onProcessExit={onClose}
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
@@ -140,6 +141,7 @@ export function TerminalPanel({
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
+          onProcessExit={onClose}
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
           className="terminal-viewport--flush terminal-viewport--bottom-reserve absolute inset-0 h-auto min-h-0 rounded-none bg-[color:var(--sidebar)]"

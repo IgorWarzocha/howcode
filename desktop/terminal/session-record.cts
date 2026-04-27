@@ -4,6 +4,7 @@ import type { PtyProcess } from "./types.cts";
 export type TerminalSessionRecord = {
   snapshot: TerminalSessionSnapshot;
   process: PtyProcess | null;
+  restartPromise: Promise<void> | null;
   transcriptPath: string;
   persistTimer: ReturnType<typeof setTimeout> | null;
   cleanup: Array<() => void>;
