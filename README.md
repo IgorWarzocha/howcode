@@ -1,6 +1,5 @@
 > [!IMPORTANT]
-> This is a one-man project. Only so many things I can check.
-> Expect weird edge cases.
+> This is a one-man project. Only so many things I can check. Expect weird edge cases.
 
 # There are many desktop apps for coding with AI, but this one...
 
@@ -64,6 +63,9 @@ bun run dev
 ```
 
 ## Issues and updates
+
+> [!IMPORTANT]
+> I have bundled a skill for writing GH issues. Please use it with your Clanker.
 
 - Bugs / requests: <https://github.com/IgorWarzocha/howcode/issues>
 - Random updates: <https://x.com/Howaboua>
