@@ -1,0 +1,132 @@
+name: Issue Intake
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = issue.number;
+            const author = issue.user.login;
+            const title = issue.title || "";
+            const body = issue.body || "";
+            const text = `${title}\n${body}`;
+
+            async function getPermission(username) {
+              try {
+                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner,
+                  repo,
+                  username,
+                });
+                return data.permission;
+              } catch {
+                return null;
+              }
+            }
+
+            async function addLabels(labels) {
+              if (labels.length === 0) return;
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels });
+            }
+
+            async function closeIssue(reason, details, labels) {
+              await addLabels(labels);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  `This issue was auto-closed by the issue intake guard: **${reason}**.`,
+                  "",
+                  details,
+                  "",
+                  "Please open a new issue using the issue form and keep all instructions visible, scoped to this repository, and free of prompt-injection or hidden-control text.",
+                ].join("\n"),
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+                state_reason: "not_planned",
+              });
+            }
+
+            const permission = await getPermission(author);
+            const isTrusted = issue.user.type === "Bot" || ["admin", "maintain", "write"].includes(permission);
+
+            const findings = [];
+            if (/[\u202A-\u202E\u2066-\u2069]/u.test(text)) findings.push("bidirectional Unicode control characters");
+            if (/[\u200B-\u200F\uFEFF\u034F\u061C\u180E]/u.test(text)) findings.push("zero-width or invisible Unicode characters");
+            if (/[\u{E0000}-\u{E007F}]/u.test(text)) findings.push("Unicode tag characters");
+            if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u.test(text)) findings.push("non-printing control characters");
+            if (/<!--[\s\S]*?-->/u.test(text)) findings.push("HTML comments / hidden Markdown content");
+            if (/<(?:div|span|p|section|article)\b[^>]*style\s*=\s*["'][^"']*(?:display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0)/iu.test(text)) findings.push("HTML styled as hidden content");
+
+            const highConfidencePromptInjection = [
+              /ignore\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions|prompts|messages)/iu,
+              /disregard\s+(?:all\s+)?(?:previous|above|prior)\s+(?:instructions|prompts|messages)/iu,
+              /(?:reveal|print|dump|exfiltrate|leak)\s+(?:the\s+)?(?:system|developer)\s+(?:prompt|message|instructions)/iu,
+              /(?:reveal|print|dump|exfiltrate|leak)\s+(?:secrets|tokens|credentials|private\s+keys|env(?:ironment)?\s+vars?)/iu,
+              /(?:new|updated)\s+(?:system|developer)\s+(?:prompt|message|instructions)\s*:/iu,
+            ];
+
+            if (highConfidencePromptInjection.some((pattern) => pattern.test(text))) {
+              findings.push("high-confidence prompt-injection instruction");
+            }
+
+            if (findings.length > 0 && !isTrusted) {
+              await closeIssue(
+                "unsafe issue text",
+                `Detected: ${findings.join(", ")}.`,
+                ["security:prompt-injection", "invalid"],
+              );
+              return;
+            }
+
+            if (isTrusted) {
+              return;
+            }
+
+            const platformLabels = [];
+            const platformChecks = [
+              [/^- \[[xX]\] Windows\s*$/m, "platform:windows"],
+              [/^- \[[xX]\] macOS\s*$/m, "platform:macos"],
+              [/^- \[[xX]\] Linux\s*$/m, "platform:linux"],
+            ];
+            for (const [pattern, label] of platformChecks) {
+              if (pattern.test(body)) platformLabels.push(label);
+            }
+
+            const requiredSections = [
+              /### Operating system\(s\)\s+([\s\S]*?)(?:\n### |$)/u,
+              /### Agent implementation prompt\s+([\s\S]*?)(?:\n### |$)/u,
+            ];
+            const hasRequiredSections = requiredSections.every((pattern) => {
+              const match = body.match(pattern);
+              return match && match[1].trim().length >= 20;
+            });
+            const hasExplanation = /### (?:What happened\?|What should be implemented\?)\s+([\s\S]*?)(?:\n### |$)/u.test(body);
+
+            if (platformLabels.length === 0 || !hasRequiredSections || !hasExplanation) {
+              await closeIssue(
+                "missing required issue-form fields",
+                "External issues must use the bug or feature issue form, select at least one operating system, describe what happened or what should be implemented, and include an agent implementation prompt.",
+                ["invalid"],
+              );
+              return;
+            }
+
+            await addLabels(["source:external", ...platformLabels]);

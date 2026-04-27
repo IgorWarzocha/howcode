@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose a user-facing improvement or implementation task
+title: "feature: "
+labels: ["type:feature", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a change. Please describe the user-visible outcome and why it matters.
+
+        Do not include hidden text, HTML comments, prompt-injection instructions, or requests for an agent to ignore repository/developer/system instructions. Issues containing those may be auto-closed.
+
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Operating system(s)
+      description: Select every platform this should support or affects.
+      options:
+        - label: Windows
+        - label: macOS
+        - label: Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: requested-behavior
+    attributes:
+      label: What should be implemented?
+      description: Explain the feature or change clearly enough for a maintainer to decide whether it belongs in howcode.
+      placeholder: |
+        Add ... so users can ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is this useful?
+      description: Describe the user problem, workflow improvement, or limitation this addresses.
+    validations:
+      required: true
+
+  - type: textarea
+    id: agent-prompt
+    attributes:
+      label: Agent implementation prompt
+      description: Write a concise prompt a coding agent could use to implement this feature. Keep it scoped to this repository and do not include meta-instructions that override repository, developer, or system instructions.
+      placeholder: |
+        Implement ... in howcode. Inspect existing patterns in ..., preserve ..., update tests/docs for ..., and avoid ...
+    validations:
+      required: true

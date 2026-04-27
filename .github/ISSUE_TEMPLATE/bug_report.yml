@@ -1,0 +1,63 @@
+name: Bug report
+description: Report broken behavior in howcode
+title: "bug: "
+labels: ["type:bug", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please keep the report concrete and readable.
+
+        Do not include hidden text, HTML comments, prompt-injection instructions, or requests for an agent to ignore repository/developer/system instructions. Issues containing those may be auto-closed.
+
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Operating system(s)
+      description: Select every platform where you observed this bug.
+      options:
+        - label: Windows
+        - label: macOS
+        - label: Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Explain the broken behavior, including relevant error messages or screenshots.
+      placeholder: |
+        I expected ..., but instead ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Give the shortest concrete sequence that triggers the issue.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: agent-prompt
+    attributes:
+      label: Agent implementation prompt
+      description: Write a concise prompt a coding agent could use to investigate and fix this issue. Keep it scoped to this repository and do not include meta-instructions that override repository, developer, or system instructions.
+      placeholder: |
+        Investigate why ... in howcode. Reproduce using ..., inspect the relevant Electron/React/runtime code paths, implement the smallest safe fix, and add or update tests covering ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version or commit
+      description: If known, include the app version, commit SHA, or build artifact.
+    validations:
+      required: false
