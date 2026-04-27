@@ -13,15 +13,22 @@ export type SessionPathEntry = {
   firstKeptEntryId?: string;
 };
 
-function countDisplayableEntries(entries: SessionPathEntry[]) {
+function isDisplayableEntry(entry: SessionPathEntry) {
+  return (
+    entry.type === "message" || entry.type === "custom_message" || entry.type === "branch_summary"
+  );
+}
+
+function countDisplayableEntriesInRange(
+  entries: SessionPathEntry[],
+  startIndex: number,
+  endIndex: number,
+) {
   let count = 0;
 
-  for (const entry of entries) {
-    if (
-      entry.type === "message" ||
-      entry.type === "custom_message" ||
-      entry.type === "branch_summary"
-    ) {
+  for (let index = startIndex; index < endIndex; index += 1) {
+    const entry = entries[index];
+    if (entry && isDisplayableEntry(entry)) {
       count += 1;
     }
   }
@@ -76,42 +83,72 @@ function appendEntryMessage(messages: AgentMessage[], entry: SessionPathEntry) {
 export function buildSourceMessagesFromPathEntries(pathEntries: SessionPathEntry[]) {
   const messages: AgentMessage[] = [];
 
-  for (const entry of pathEntries) {
-    appendEntryMessage(messages, entry);
-  }
+  appendSourceMessagesFromEntryRange(messages, pathEntries, 0, pathEntries.length);
 
   return messages;
+}
+
+function appendSourceMessagesFromEntryRange(
+  messages: AgentMessage[],
+  pathEntries: SessionPathEntry[],
+  startIndex: number,
+  endIndex: number,
+) {
+  for (let index = startIndex; index < endIndex; index += 1) {
+    const entry = pathEntries[index];
+    if (entry) {
+      appendEntryMessage(messages, entry);
+    }
+  }
+}
+
+function getSelectedCompactionIndex(pathEntries: SessionPathEntry[], revealedCompactions: number) {
+  if (revealedCompactions < 0) {
+    return -1;
+  }
+
+  let remainingCompactionsToSkip = revealedCompactions;
+
+  for (let index = pathEntries.length - 1; index >= 0; index -= 1) {
+    if (pathEntries[index]?.type !== "compaction") {
+      continue;
+    }
+
+    if (remainingCompactionsToSkip === 0) {
+      return index;
+    }
+
+    remainingCompactionsToSkip -= 1;
+  }
+
+  return -1;
+}
+
+function findEntryIndexById(pathEntries: SessionPathEntry[], entryId: string) {
+  for (let index = 0; index < pathEntries.length; index += 1) {
+    if (pathEntries[index]?.id === entryId) {
+      return index;
+    }
+  }
+
+  return -1;
 }
 
 export function buildThreadHistorySlice(
   pathEntries: SessionPathEntry[],
   revealedCompactions: number,
 ) {
-  const compactionIndexes = pathEntries.flatMap((entry, index) =>
-    entry.type === "compaction" ? [index] : [],
-  );
-
-  if (compactionIndexes.length === 0) {
+  const selectedCompactionIndex = getSelectedCompactionIndex(pathEntries, revealedCompactions);
+  if (selectedCompactionIndex === -1) {
     return {
       sourceMessages: buildSourceMessagesFromPathEntries(pathEntries),
       previousMessageCount: 0,
     };
   }
 
-  const selectedCompactionListIndex = compactionIndexes.length - 1 - revealedCompactions;
-  if (selectedCompactionListIndex < 0) {
-    return {
-      sourceMessages: buildSourceMessagesFromPathEntries(pathEntries),
-      previousMessageCount: 0,
-    };
-  }
-
-  const selectedCompactionIndex = compactionIndexes[selectedCompactionListIndex];
   const selectedCompaction = pathEntries[selectedCompactionIndex];
   const firstKeptEntryId = selectedCompaction?.firstKeptEntryId;
-  const firstKeptIndex = firstKeptEntryId
-    ? pathEntries.findIndex((entry) => entry.id === firstKeptEntryId)
-    : -1;
+  const firstKeptIndex = firstKeptEntryId ? findEntryIndexById(pathEntries, firstKeptEntryId) : -1;
 
   if (!selectedCompaction || firstKeptIndex === -1 || firstKeptIndex > selectedCompactionIndex) {
     return {
@@ -120,12 +157,16 @@ export function buildThreadHistorySlice(
     };
   }
 
+  const sourceMessages: AgentMessage[] = [];
+  appendSourceMessagesFromEntryRange(
+    sourceMessages,
+    pathEntries,
+    firstKeptIndex,
+    pathEntries.length,
+  );
+
   return {
-    sourceMessages: buildSourceMessagesFromPathEntries([
-      ...pathEntries.slice(firstKeptIndex, selectedCompactionIndex),
-      selectedCompaction,
-      ...pathEntries.slice(selectedCompactionIndex + 1),
-    ]),
-    previousMessageCount: countDisplayableEntries(pathEntries.slice(0, firstKeptIndex)),
+    sourceMessages,
+    previousMessageCount: countDisplayableEntriesInRange(pathEntries, 0, firstKeptIndex),
   };
 }
