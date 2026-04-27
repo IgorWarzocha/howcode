@@ -1,7 +1,6 @@
 > [!IMPORTANT]
 > This is a one-man project. Only so many things I can check.
 > Expect weird edge cases.
-> I'll probably find some stuff myself.
 
 # There are many desktop apps for coding with AI, but this one...
 
