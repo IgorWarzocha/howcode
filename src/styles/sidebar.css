@@ -719,15 +719,16 @@
 
 .sidebar-inbox-row {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) 18px;
+  grid-template-columns: 12px minmax(0, 1fr) 18px;
   align-items: start;
-  gap: 0.5rem;
-  padding: 0.5rem 0.625rem;
+  gap: 0.625rem;
+  padding: 0.625rem 0.625rem;
 }
 
 .sidebar-inbox-row[data-selected="true"] {
-  background: rgba(183, 186, 245, 0.12);
+  background: rgba(183, 186, 245, 0.105);
   color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0.045), 0 10px 28px rgba(6, 7, 13, 0.12);
 }
 
 .sidebar-inbox-leading {
@@ -741,7 +742,7 @@
 .sidebar-inbox-content {
   display: grid;
   min-width: 0;
-  gap: 0.25rem;
+  gap: 0.3125rem;
   text-align: left;
 }
 
@@ -752,6 +753,8 @@
   gap: 0.375rem;
   color: var(--muted-2);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1rem;
 }
 
 .sidebar-inbox-terminal {
@@ -765,7 +768,7 @@
   overflow: hidden;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.25rem;
+  line-height: 1.2rem;
   text-overflow: ellipsis;
   transition: color 150ms ease-out;
   white-space: nowrap;
@@ -786,9 +789,10 @@
   overflow: hidden;
   color: var(--muted-2);
   font-size: 12px;
-  line-height: 1.125rem;
+  line-height: 1.2rem;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  text-wrap: pretty;
 }
 
 .sidebar-inbox-dismiss {

@@ -3,7 +3,6 @@ import { cn } from "../utils/cn";
 export type FeatureStatus = "mock" | "partial";
 
 export const featureStatusById = {
-  "feature:sidebar.inbox": { status: "partial", label: "Partial" },
   "feature:sidebar.plugins": { status: "mock", label: "Mock" },
   "feature:sidebar.automations": { status: "mock", label: "Mock" },
   "feature:sidebar.debug": { status: "mock", label: "Mock" },

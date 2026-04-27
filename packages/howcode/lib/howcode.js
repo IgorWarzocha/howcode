@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
+const crypto = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
@@ -126,6 +127,12 @@ async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
   }
 }
 
+async function sha256File(filePath) {
+  const hash = crypto.createHash("sha256");
+  await pipeline(fs.createReadStream(filePath), hash);
+  return hash.digest("hex");
+}
+
 async function resolveLatestRelease(target) {
   const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`;
   const metadata = await fetchJson(updateUrl);
@@ -152,6 +159,15 @@ async function installRelease(target, releaseInfo, paths) {
   await fsp.mkdir(tempRoot, { recursive: true });
   await fsp.mkdir(path.dirname(paths.installDir), { recursive: true });
   await downloadFile(releaseInfo.assetUrl, archivePath);
+
+  const archiveHash = await sha256File(archivePath);
+  if (archiveHash !== releaseInfo.hash) {
+    await fsp.rm(tempRoot, { recursive: true, force: true });
+    throw new Error(
+      `Downloaded archive hash mismatch. Expected ${releaseInfo.hash}, got ${archiveHash}.`,
+    );
+  }
+
   await fsp.mkdir(tempInstallDir, { recursive: true });
 
   const extract = spawnSync("tar", ["-xzf", archivePath, "-C", tempInstallDir], {

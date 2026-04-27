@@ -156,6 +156,13 @@ jobs:
                 continue;
               }
 
+              if (!artifact.name.startsWith("dev-")) {
+                core.info(
+                  `Skipping unrelated artifact ${artifact.name} (${artifact.id}) from dev run ${workflowRun.id}`,
+                );
+                continue;
+              }
+
               core.info(
                 `Deleting artifact ${artifact.name} (${artifact.id}) from dev run ${workflowRun.id}`,
               );

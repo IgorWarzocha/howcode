@@ -6,7 +6,6 @@ import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
 
 type SidebarNavigableView = Exclude<View, "gitops">;
-import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
 import { SidebarInboxSection } from "./inbox/SidebarInboxSection";
@@ -113,12 +112,7 @@ export function Sidebar({
         <nav className="sidebar-mode-nav" aria-label="Primary navigation">
           <NavButton
             icon={<Inbox size={16} />}
-            label={
-              <span className="sidebar-feature-label">
-                <span>Inbox</span>
-                <FeatureStatusBadge statusId="feature:sidebar.inbox" />
-              </span>
-            }
+            label="Inbox"
             active={activeView === "inbox"}
             onClick={() => onShowView("inbox")}
           />

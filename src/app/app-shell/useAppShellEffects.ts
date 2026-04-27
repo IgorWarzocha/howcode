@@ -6,6 +6,7 @@ import type {
   ArchivedThread,
   ComposerState,
   DesktopEvent,
+  InboxThread,
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
@@ -57,6 +58,7 @@ export function useAppShellEffects({
   projects,
   collapsedProjectIds,
   workspaceState,
+  selectedInboxThread,
   composerProjectId,
   shellComposerState,
   shellAppSettings,
@@ -76,6 +78,7 @@ export function useAppShellEffects({
   projects: Project[];
   collapsedProjectIds: Record<string, boolean>;
   workspaceState: WorkspaceState;
+  selectedInboxThread: InboxThread | null;
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
   shellAppSettings: AppSettings | null | undefined;
@@ -178,7 +181,18 @@ export function useAppShellEffects({
   ]);
 
   useEffect(() => {
-    if (!composerProjectId) {
+    const inboxProjectId = selectedInboxThread?.projectId ?? null;
+    const inboxSessionPath = selectedInboxThread?.sessionPath ?? null;
+    const composerStateProjectId =
+      workspaceState.activeView === "inbox" ? inboxProjectId : composerProjectId;
+    const composerStateSessionPath =
+      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+        ? workspaceState.selectedSessionPath
+        : workspaceState.activeView === "inbox"
+          ? inboxSessionPath
+          : null;
+
+    if (!composerStateProjectId) {
       return;
     }
 
@@ -186,11 +200,8 @@ export function useAppShellEffects({
 
     const syncComposerState = async () => {
       const nextComposerState = await loadComposerState({
-        projectId: composerProjectId,
-        sessionPath:
-          workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
-            ? workspaceState.selectedSessionPath
-            : null,
+        projectId: composerStateProjectId,
+        sessionPath: composerStateSessionPath,
       });
 
       if (!cancelled && nextComposerState) {
@@ -204,8 +215,10 @@ export function useAppShellEffects({
       cancelled = true;
     };
   }, [
-    composerProjectId,
     loadComposerState,
+    composerProjectId,
+    selectedInboxThread?.projectId,
+    selectedInboxThread?.sessionPath,
     setComposerState,
     workspaceState.activeView,
     workspaceState.selectedSessionPath,

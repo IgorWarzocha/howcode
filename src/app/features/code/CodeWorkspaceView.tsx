@@ -162,7 +162,10 @@ export function CodeWorkspaceView({
                 archivedThreads={controller.archivedThreads}
                 availableModels={activeComposerState?.availableModels ?? []}
                 availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
+                contextUsage={activeComposerState?.contextUsage ?? null}
                 currentModel={activeComposerState?.currentModel ?? null}
+                currentThinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                isCompacting={activeComposerState?.isCompacting ?? false}
                 currentProjectName={currentProjectName}
                 selectedInboxThread={controller.selectedInboxThread}
                 projects={controller.projects}
@@ -172,7 +175,9 @@ export function CodeWorkspaceView({
                 composerLayoutVersion={composerLayoutVersion}
                 onAction={handleAction}
                 onDismissInboxThread={controller.handleDismissInboxThread}
+                onListAttachmentEntries={listComposerAttachmentEntries}
                 onOpenThread={controller.handleThreadOpen}
+                onOpenSettingsView={() => controller.handleShowView("settings")}
                 onCloseUtilityView={controller.handleCloseUtilityView}
                 onLoadEarlierMessages={handleLoadEarlierMessages}
                 onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
