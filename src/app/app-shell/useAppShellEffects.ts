@@ -181,10 +181,16 @@ export function useAppShellEffects({
   ]);
 
   useEffect(() => {
+    const inboxProjectId = selectedInboxThread?.projectId ?? null;
+    const inboxSessionPath = selectedInboxThread?.sessionPath ?? null;
     const composerStateProjectId =
-      workspaceState.activeView === "inbox" && selectedInboxThread
-        ? selectedInboxThread.projectId
-        : composerProjectId;
+      workspaceState.activeView === "inbox" ? inboxProjectId : composerProjectId;
+    const composerStateSessionPath =
+      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+        ? workspaceState.selectedSessionPath
+        : workspaceState.activeView === "inbox"
+          ? inboxSessionPath
+          : null;
 
     if (!composerStateProjectId) {
       return;
@@ -195,12 +201,7 @@ export function useAppShellEffects({
     const syncComposerState = async () => {
       const nextComposerState = await loadComposerState({
         projectId: composerStateProjectId,
-        sessionPath:
-          workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
-            ? workspaceState.selectedSessionPath
-            : workspaceState.activeView === "inbox"
-              ? workspaceState.selectedInboxSessionPath
-              : null,
+        sessionPath: composerStateSessionPath,
       });
 
       if (!cancelled && nextComposerState) {
@@ -216,10 +217,10 @@ export function useAppShellEffects({
   }, [
     loadComposerState,
     composerProjectId,
-    selectedInboxThread,
+    selectedInboxThread?.projectId,
+    selectedInboxThread?.sessionPath,
     setComposerState,
     workspaceState.activeView,
-    workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
 

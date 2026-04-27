@@ -276,7 +276,7 @@ export function InboxComposer({
         return;
       }
 
-      slashCommands.dismiss();
+      slashCommands.dismiss({ clearDraft: true });
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {

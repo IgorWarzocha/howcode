@@ -103,7 +103,12 @@ export function InboxView({
       return;
     }
 
-    if (result?.result?.composerSendOutcome !== "stopped" && !isCompactCommand) {
+    if (result?.result?.composerSendOutcome !== "stopped" && isCompactCommand) {
+      setDraft("");
+      return;
+    }
+
+    if (result?.result?.composerSendOutcome !== "stopped") {
       setDraft("");
       setAttachments([]);
       onDismissThread(thread);
