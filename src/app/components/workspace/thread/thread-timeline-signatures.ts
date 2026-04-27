@@ -5,6 +5,19 @@ function isToolCallRole(message: Message | undefined) {
   return message?.role === "toolResult" || message?.role === "bashExecution";
 }
 
+function getJoinedLength(parts: string[] | undefined, separatorLength: number) {
+  if (!parts || parts.length === 0) {
+    return 0;
+  }
+
+  let length = separatorLength * (parts.length - 1);
+  for (const part of parts) {
+    length += part.length;
+  }
+
+  return length;
+}
+
 export function getMessageRenderSignature(message: Message | undefined) {
   if (!message) {
     return "empty";
@@ -16,11 +29,11 @@ export function getMessageRenderSignature(message: Message | undefined) {
     case "custom":
     case "branchSummary":
     case "compactionSummary":
-      return `${message.id}:${message.role}:${message.content.join("\n").length}`;
+      return `${message.id}:${message.role}:${getJoinedLength(message.content, 1)}`;
     case "assistant":
-      return `${message.id}:${message.role}:${message.content.join("\n").length}:${message.thinkingContent?.join("\n").length ?? 0}:${message.thinkingHeaders?.join(",").length ?? 0}`;
+      return `${message.id}:${message.role}:${getJoinedLength(message.content, 1)}:${getJoinedLength(message.thinkingContent, 1)}:${getJoinedLength(message.thinkingHeaders, 1)}`;
     case "bashExecution":
-      return `${message.id}:${message.role}:${message.command.length}:${message.output.join("\n").length}`;
+      return `${message.id}:${message.role}:${message.command.length}:${getJoinedLength(message.output, 1)}`;
     default:
       return "unknown";
   }
