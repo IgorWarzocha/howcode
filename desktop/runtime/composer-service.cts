@@ -35,6 +35,7 @@ import {
   publishComposerUpdate,
   subscribeDesktopEvents,
 } from "./thread-publisher.cts";
+import type { PiRuntime } from "./types.cts";
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
@@ -58,6 +59,46 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
     composer,
     runtime,
   };
+}
+
+async function promptAndReturnAfterPreflight({
+  runtime,
+  message,
+  options,
+  request,
+}: {
+  runtime: PiRuntime;
+  message: string;
+  options?: Parameters<PiRuntime["session"]["prompt"]>[1];
+  request: ComposerStateRequest;
+}) {
+  let resolvePreflight: (success: boolean) => void;
+  const preflight = new Promise<boolean>((resolve) => {
+    resolvePreflight = resolve;
+  });
+
+  const promptPromise = runtime.session.prompt(message, {
+    ...options,
+    preflightResult: (success) => resolvePreflight(success),
+  });
+
+  const accepted = await preflight;
+  if (!accepted) {
+    await promptPromise;
+    return;
+  }
+
+  promptPromise
+    .catch((error) => {
+      console.error("Composer prompt failed after dispatch", error);
+      void emitComposerUpdate({
+        ...request,
+        sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
+      });
+    })
+    .finally(() => {
+      scheduleRuntimeDisposalForRuntime(runtime);
+    });
 }
 
 async function setDraftComposerModel(cwd: string, provider: string, modelId: string) {
@@ -213,9 +254,18 @@ export async function sendComposerPrompt(
           return "stopped";
         }
 
-        await runtime.session.prompt(message, { streamingBehavior });
+        await promptAndReturnAfterPreflight({
+          runtime,
+          message,
+          options: { streamingBehavior },
+          request: { ...request, sessionPath: persistedSessionPath },
+        });
       } else {
-        await runtime.session.prompt(message);
+        await promptAndReturnAfterPreflight({
+          runtime,
+          message,
+          request: { ...request, sessionPath: persistedSessionPath },
+        });
       }
 
       return "sent";
@@ -231,6 +281,14 @@ export async function sendComposerPrompt(
     );
   }
 
+  const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
+  if (cachedRuntimePromise) {
+    const cachedRuntime = await cachedRuntimePromise;
+    if (cachedRuntime.session.isStreaming) {
+      return await runSend(cachedRuntime);
+    }
+  }
+
   return await withRuntimeMutationLock(
     persistedSessionPath,
     async () =>
@@ -244,6 +302,17 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   if (!persistedSessionPath) {
     return;
+  }
+
+  const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
+  if (cachedRuntimePromise) {
+    const cachedRuntime = await cachedRuntimePromise;
+    if (cachedRuntime.session.isStreaming) {
+      await cachedRuntime.session.abort();
+      scheduleRuntimeDisposalForRuntime(cachedRuntime);
+      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+      return;
+    }
   }
 
   await withRuntimeMutationLock(persistedSessionPath, async () => {
