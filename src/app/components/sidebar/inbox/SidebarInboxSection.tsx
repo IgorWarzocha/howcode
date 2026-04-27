@@ -123,12 +123,14 @@ export function SidebarInboxSection({
         <div className="sidebar-action-group">
           <IconButton
             label={filterLabel}
+            tooltipPlacement="right"
             icon={filterIcon}
             active={filterMode !== "all"}
             onClick={cycleFilterMode}
           />
           <IconButton
             label="Show unread only"
+            tooltipPlacement="right"
             icon={<ListFilter size={15} />}
             active={showUnreadOnly}
             onClick={() => setShowUnreadOnly((current) => !current)}

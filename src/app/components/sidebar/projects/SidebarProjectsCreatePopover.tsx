@@ -78,6 +78,7 @@ export function SidebarProjectsCreatePopover({
           disabled={!canCreate}
           data-enabled={canCreate ? "true" : "false"}
           aria-label={busy ? "Creating project" : "Create project"}
+          data-tooltip={busy ? "Creating project" : "Create project"}
         >
           <FolderPlus size={15} />
         </button>

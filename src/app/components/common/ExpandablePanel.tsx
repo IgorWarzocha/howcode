@@ -53,6 +53,7 @@ export function ExpandablePanel({
           aria-expanded={expanded}
           aria-controls={panelId}
           aria-label={ariaLabel}
+          data-tooltip={ariaLabel}
         >
           {triggerContent}
         </button>

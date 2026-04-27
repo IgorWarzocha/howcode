@@ -72,3 +72,40 @@
 .three-dots-spinner__dot--third {
   animation-delay: -0.5s;
 }
+
+button[data-tooltip] {
+  position: relative;
+}
+
+button[data-tooltip]::after {
+  pointer-events: none;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  z-index: 120;
+  width: max-content;
+  max-width: 180px;
+  transform: translate(-50%, calc(-100% + 4px));
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: rgba(45, 48, 64, 0.98);
+  padding: 6px 10px;
+  color: var(--text);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  content: attr(data-tooltip);
+  font-size: 11.5px;
+  line-height: 16px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+button[data-tooltip]:is(:hover, :focus-visible)::after {
+  transform: translate(-50%, calc(-100% - 2px));
+  opacity: 1;
+}
+
+button[data-tooltip]:disabled::after,
+button[data-tooltip][aria-disabled="true"]::after {
+  display: none;
+}

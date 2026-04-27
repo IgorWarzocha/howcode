@@ -2,6 +2,7 @@ import { Archive, SquareTerminal, Star } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ActivitySpinner } from "../../common/ActivitySpinner";
+import { Tooltip } from "../../common/Tooltip";
 
 type ThreadRowProps = {
   age: string;
@@ -40,17 +41,19 @@ export function ThreadRow({
       ) : unread ? (
         <span className="sidebar-thread-pin-indicator" aria-hidden="true" />
       ) : (
-        <button
-          type="button"
-          className="sidebar-thread-pin"
-          onClick={onPin}
-          data-pinned={pinned ? "true" : "false"}
-          data-selected={isSelected ? "true" : "false"}
-          aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
-          aria-pressed={pinned}
-        >
-          <Star size={12} className={cn("absolute inset-0 m-auto", pinned && "fill-current")} />
-        </button>
+        <Tooltip content={pinned ? "Unmark favourite" : "Mark favourite"} placement="right">
+          <button
+            type="button"
+            className="sidebar-thread-pin"
+            onClick={onPin}
+            data-pinned={pinned ? "true" : "false"}
+            data-selected={isSelected ? "true" : "false"}
+            aria-label={pinned ? "Unmark favourite" : "Mark favourite"}
+            aria-pressed={pinned}
+          >
+            <Star size={12} className={cn("absolute inset-0 m-auto", pinned && "fill-current")} />
+          </button>
+        </Tooltip>
       )}
 
       <button
@@ -72,17 +75,19 @@ export function ThreadRow({
             {age}
           </span>
         )}
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            "sidebar-thread-meta-action border-transparent bg-transparent hover:bg-transparent",
-          )}
-          onClick={onArchive}
-          aria-label="Archive thread"
-        >
-          <Archive size={12} />
-        </button>
+        <Tooltip content="Archive thread" placement="right" className="sidebar-thread-meta-action">
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-full w-full border-transparent bg-transparent hover:bg-transparent",
+            )}
+            onClick={onArchive}
+            aria-label="Archive thread"
+          >
+            <Archive size={12} />
+          </button>
+        </Tooltip>
       </span>
     </div>
   );

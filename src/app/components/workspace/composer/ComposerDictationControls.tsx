@@ -73,7 +73,7 @@ export function ComposerDictationControls({
               onOpenSettingsView();
             }}
             aria-label="Open app settings to install speech-to-text"
-            title="Open app settings"
+            data-tooltip="Open app settings"
           >
             <Check size={12} />
           </button>
@@ -82,7 +82,7 @@ export function ComposerDictationControls({
             className={cn(compactIconButtonClass, "h-6 w-6 rounded-full")}
             onClick={() => setDictationPromptOpen(false)}
             aria-label="Dismiss dictation setup prompt"
-            title="Dismiss"
+            data-tooltip="Dismiss"
           >
             <X size={12} />
           </button>
@@ -125,7 +125,7 @@ export function ComposerDictationControls({
               : "Dictate"
         }
         aria-pressed={dictationActive || dictationTranscribing || dictationPromptOpen}
-        title={
+        data-tooltip={
           dictationActive
             ? "Stop dictation"
             : dictationTranscribing
@@ -133,8 +133,8 @@ export function ComposerDictationControls({
               : dictationSupported
                 ? "Dictate"
                 : dictationMissingModel
-                  ? "Install speech-to-text model"
-                  : "Dictation unavailable in this runtime"
+                  ? "Install model"
+                  : "Dictation unavailable"
         }
       >
         {dictationActive ? (

@@ -56,7 +56,7 @@ export function DiffCommentAnnotationCard({
               setDraftComment(null);
             }}
             aria-label="Cancel comment"
-            title="Cancel comment"
+            data-tooltip="Cancel comment"
           >
             <X size={14} />
           </button>
@@ -66,7 +66,7 @@ export function DiffCommentAnnotationCard({
             onClick={onPersistDraftComment}
             disabled={(draftComment?.body.trim().length ?? 0) === 0}
             aria-label="Save comment"
-            title="Save comment"
+            data-tooltip="Save comment"
           >
             <Check size={14} />
           </button>
@@ -84,7 +84,7 @@ export function DiffCommentAnnotationCard({
           className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
           onClick={() => onRemoveComment(metadata.id)}
           aria-label="Remove comment"
-          title="Remove comment"
+          data-tooltip="Remove comment"
         >
           <X size={12} />
         </button>

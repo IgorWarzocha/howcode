@@ -7,7 +7,7 @@ import {
 } from "../../features/feature-status";
 import { compactCardClass, compactIconButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
-import { PiLogoMark } from "../common/PiLogoMark";
+import { HowcodeLogoMark } from "../common/HowcodeLogoMark";
 import { ToolbarButton } from "../common/ToolbarButton";
 import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSelector";
 import { getGitOpsEntryButtonClass } from "./composer/git-ops";
@@ -63,18 +63,20 @@ export function TerminalPanel({
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
-          className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--workspace)]"
+          className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
-        <div className="overflow-hidden rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
+        <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
           <div className="h-px bg-[rgba(169,178,215,0.07)]" />
           <div className="flex items-center gap-1.5 rounded-b-[20px] px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
             <ToolbarButton
               label="Desktop"
-              icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+              tooltip="Howcode Desktop"
+              icon={<HowcodeLogoMark className="h-[14px] w-[14px]" />}
               onClick={onClose}
             />
             <ToolbarButton
               label="Terminal"
+              tooltip="Shell terminal"
               icon={<SquareTerminal size={14} />}
               onClick={onOpenDrawerTerminal}
             />
@@ -103,8 +105,8 @@ export function TerminalPanel({
                 type="button"
                 className={cn(compactIconButtonClass, getGitOpsEntryButtonClass(gitVisualMode))}
                 onClick={onOpenGitOps}
-                aria-label="Open desktop git ops"
-                title="Open desktop git ops"
+                aria-label="Git ops"
+                data-tooltip="Git ops"
               >
                 <GitBranch size={14} />
               </button>
@@ -130,8 +132,8 @@ export function TerminalPanel({
           type="button"
           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
           aria-label="Hide terminal"
-          title="Hide terminal"
           onClick={onClose}
+          data-tooltip="Hide terminal"
         >
           <PanelRightClose size={14} />
         </button>

@@ -89,9 +89,7 @@ export function SettingsProjectDefaultsSection({
 
         <div className={settingsListRowClass}>
           <div className="grid gap-0.5">
-            <div className="text-[13px] text-[color:var(--text)]">
-              Initialise git for new projects
-            </div>
+            <div className="text-[13px] text-[color:var(--text)]">Initialise git</div>
             <div className="text-[12px] text-[color:var(--muted)]">
               Enables diffs for new projects.
             </div>
@@ -105,8 +103,9 @@ export function SettingsProjectDefaultsSection({
                 : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
             )}
             onClick={toggleInitializeGitOnProjectCreate}
-            aria-label="Initialise git for new projects"
+            aria-label="Initialise git"
             aria-pressed={appSettings.initializeGitOnProjectCreate}
+            data-tooltip="Initialise git"
           >
             <Check size={13} />
           </button>
@@ -134,7 +133,7 @@ export function SettingsProjectDefaultsSection({
 
         <div className={settingsListRowClass}>
           <div className="grid gap-0.5">
-            <div className="text-[13px] text-[color:var(--text)]">Open conversations in Pi TUI</div>
+            <div className="text-[13px] text-[color:var(--text)]">Open in TUI</div>
             <div className="text-[12px] text-[color:var(--muted)]">
               Uses Pi takeover by default until a conversation is overridden for this app session.
             </div>
@@ -148,8 +147,9 @@ export function SettingsProjectDefaultsSection({
                 : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
             )}
             onClick={togglePiTuiTakeover}
-            aria-label="Open conversations in Pi TUI"
+            aria-label="Open in TUI"
             aria-pressed={appSettings.piTuiTakeover}
+            data-tooltip="Open in TUI"
           >
             <Check size={13} />
           </button>

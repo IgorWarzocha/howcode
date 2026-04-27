@@ -79,6 +79,7 @@ export function ComposerFooter({
     <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
       <ToolbarButton
         label="TUI"
+        tooltip="Pi-TUI takeover"
         icon={<PiLogoMark className="h-[14px] w-[14px]" />}
         onClick={onOpenTakeoverTerminal}
       />
@@ -92,6 +93,7 @@ export function ComposerFooter({
         <ToolbarButton
           ref={modelButtonRef}
           label="Agent"
+          tooltip="Model settings"
           icon={<Bot size={14} />}
           className="pr-8"
           onClick={() => onSetOpenMenu((current) => (current === "model" ? null : "model"))}
@@ -149,8 +151,8 @@ export function ComposerFooter({
             getGitOpsEntryButtonClass(gitVisualMode),
           )}
           onClick={onOpenGitOps}
-          aria-label="Open git ops"
-          title="Open git ops"
+          aria-label="Git ops"
+          data-tooltip="Git ops"
         >
           <GitBranch size={14} />
         </button>

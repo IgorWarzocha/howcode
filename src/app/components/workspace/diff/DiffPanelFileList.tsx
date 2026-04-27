@@ -139,6 +139,7 @@ export function DiffPanelFileList({
                       }}
                       aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
                       aria-expanded={!isCollapsed}
+                      data-tooltip={`${isCollapsed ? "Expand" : "Collapse"} ${filePath}`}
                     >
                       <span className="flex min-w-0 items-center gap-2.5">
                         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--muted)]">
@@ -187,7 +188,7 @@ export function DiffPanelFileList({
                           );
                         }}
                         aria-label={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
-                        title={`Add comment on ${filePath}:${hoveredLine.lineNumber}`}
+                        data-tooltip="Add comment"
                       >
                         <MessageSquarePlus size={12} />
                       </button>

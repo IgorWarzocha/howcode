@@ -69,7 +69,6 @@ export function ComposerFilePickerAttachmentsPanel({
                 className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
                 onClick={() => void openComposerAttachment(attachment)}
                 aria-label={getOpenAttachmentLabel(attachment)}
-                title={getOpenAttachmentLabel(attachment)}
               >
                 {getOpenAttachmentIcon(attachment)}
               </button>
@@ -81,7 +80,6 @@ export function ComposerFilePickerAttachmentsPanel({
                 className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded p-0 text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]"
                 onClick={() => onRemoveAttachment(attachment.path)}
                 aria-label={`Remove ${attachment.name}`}
-                title={`Remove ${attachment.name}`}
               >
                 <X size={11} className="block -translate-y-px" />
               </button>

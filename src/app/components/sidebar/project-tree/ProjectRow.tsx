@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus } from 
 import { useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
+import { Tooltip } from "../../common/Tooltip";
 
 type ProjectRowProps = {
   actionMenuId: string;
@@ -107,27 +108,29 @@ export function ProjectRow({
       data-highlighted={isActive || actionMenuOpen ? "true" : "false"}
       data-dragging={isDragging ? "true" : "false"}
     >
-      <button
-        type="button"
-        className="sidebar-project-toggle"
-        onClick={canToggleExpanded ? onToggleExpanded : undefined}
-        data-can-toggle={canToggleExpanded ? "true" : "false"}
-        aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
-        aria-expanded={isExpanded}
-        aria-controls={threadGroupId}
-        disabled={!canToggleExpanded}
-      >
-        {hasRepoOrigin ? (
-          <Github size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
-        ) : (
-          <Folder size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
-        )}
-        {isExpanded ? (
-          <ChevronDown size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
-        ) : (
-          <ChevronRight size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
-        )}
-      </button>
+      <Tooltip content={isExpanded ? "Collapse folder" : "Expand folder"} placement="right">
+        <button
+          type="button"
+          className="sidebar-project-toggle"
+          onClick={canToggleExpanded ? onToggleExpanded : undefined}
+          data-can-toggle={canToggleExpanded ? "true" : "false"}
+          aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+          aria-expanded={isExpanded}
+          aria-controls={threadGroupId}
+          disabled={!canToggleExpanded}
+        >
+          {hasRepoOrigin ? (
+            <Github size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
+          ) : (
+            <Folder size={12} className="sidebar-project-icon sidebar-project-origin-icon" />
+          )}
+          {isExpanded ? (
+            <ChevronDown size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
+          ) : (
+            <ChevronRight size={12} className="sidebar-project-icon sidebar-project-chevron-icon" />
+          )}
+        </button>
+      </Tooltip>
 
       {isEditing ? (
         <div className="sidebar-project-edit">
@@ -177,30 +180,33 @@ export function ProjectRow({
         data-editing={isEditing ? "true" : "false"}
         data-visible={showActions ? "true" : "false"}
       >
-        <button
-          type="button"
-          className={compactIconButtonClass}
-          onClick={onCreateSession}
-          aria-label={`Start a new session in ${name}`}
-          title="New session"
-        >
-          <Plus size={14} />
-        </button>
+        <Tooltip content="New session" placement="right">
+          <button
+            type="button"
+            className={compactIconButtonClass}
+            onClick={onCreateSession}
+            aria-label={`Start a new session in ${name}`}
+          >
+            <Plus size={14} />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
-          )}
-          onClick={onToggleActions}
-          aria-label="Project actions"
-          aria-haspopup="menu"
-          aria-expanded={actionMenuOpen}
-          aria-controls={actionMenuId}
-        >
-          <MoreHorizontal size={14} />
-        </button>
+        <Tooltip content="Project actions" placement="right">
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              actionMenuOpen && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+            )}
+            onClick={onToggleActions}
+            aria-label="Project actions"
+            aria-haspopup="menu"
+            aria-expanded={actionMenuOpen}
+            aria-controls={actionMenuId}
+          >
+            <MoreHorizontal size={14} />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

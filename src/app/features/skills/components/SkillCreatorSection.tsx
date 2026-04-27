@@ -182,7 +182,7 @@ export function SkillCreatorSection({
                     type="submit"
                     className="absolute inset-y-0 right-2 flex items-center justify-center text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-40"
                     disabled={!canSubmitCreateSkill}
-                    aria-label="Send skill creator message"
+                    aria-label="Send message"
                   >
                     <span className="flex h-3.5 w-3.5 items-center justify-center">
                       <CornerDownLeft size={12} strokeWidth={2} className="block" />

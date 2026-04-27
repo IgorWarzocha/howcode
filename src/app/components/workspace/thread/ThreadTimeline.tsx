@@ -308,8 +308,8 @@ export function ThreadTimeline({
           className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
           onClick={handleFoldEverything}
           disabled={foldableRows.length === 0}
-          aria-label="Fold everything"
-          title="Fold everything"
+          aria-label="Fold all"
+          data-tooltip="Fold all"
         >
           <ListCollapse size={13} strokeWidth={2} />
         </button>
@@ -319,7 +319,7 @@ export function ThreadTimeline({
           onClick={scrollToBottom}
           disabled={nearBottom}
           aria-label="Scroll to bottom"
-          title="Scroll to bottom"
+          data-tooltip="Scroll to bottom"
         >
           <ArrowDownToLine size={13} strokeWidth={2} />
         </button>

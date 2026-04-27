@@ -5,12 +5,13 @@ import { cn } from "../../utils/cn";
 type ToolbarButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   label: ReactNode;
   icon: ReactNode;
+  tooltip?: string;
   trailing?: boolean;
 };
 
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   function ToolbarButton(
-    { label, icon, onClick, trailing, className, type = "button", ...buttonProps },
+    { label, icon, tooltip, onClick, trailing, className, type = "button", ...buttonProps },
     ref,
   ) {
     return (
@@ -19,6 +20,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         type={type}
         className={cn(toolbarButtonClass, className)}
         onClick={onClick}
+        data-tooltip={tooltip ?? (typeof label === "string" ? label : undefined)}
         {...buttonProps}
       >
         {!trailing ? icon : null}

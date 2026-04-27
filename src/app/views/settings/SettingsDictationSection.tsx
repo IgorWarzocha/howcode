@@ -171,7 +171,7 @@ export function SettingsDictationSection({
 
       <div className={settingsListRowClass}>
         <div className="grid gap-0.5">
-          <div className="text-[13px] text-[color:var(--text)]">Show composer dictation button</div>
+          <div className="text-[13px] text-[color:var(--text)]">Toggle dictation</div>
           <div className="text-[12px] text-[color:var(--muted)]">
             If hidden, you can still re-enable it here after dismissing the first-run prompt.
           </div>
@@ -185,8 +185,9 @@ export function SettingsDictationSection({
               : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
           )}
           onClick={() => setShowDictationButton(!appSettings.showDictationButton)}
-          aria-label="Show composer dictation button"
+          aria-label="Toggle dictation"
           aria-pressed={appSettings.showDictationButton}
+          data-tooltip="Toggle dictation"
         >
           <Check size={13} />
         </button>

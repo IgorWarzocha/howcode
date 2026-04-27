@@ -14,6 +14,7 @@ export function NavButton({
   onClick,
   type = "button",
   className,
+  title,
   ...buttonProps
 }: NavButtonProps) {
   return (
@@ -23,6 +24,7 @@ export function NavButton({
       onClick={onClick}
       data-active={active ? "true" : "false"}
       aria-current={active ? "page" : undefined}
+      data-tooltip={typeof title === "string" ? title : undefined}
       {...buttonProps}
     >
       {icon}

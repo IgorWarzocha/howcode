@@ -9,13 +9,17 @@ type PrimaryButtonProps = PropsWithChildren<
 >;
 
 export const PrimaryButton = forwardRef<HTMLButtonElement, PrimaryButtonProps>(
-  function PrimaryButton({ onClick, className, children, type = "button", ...buttonProps }, ref) {
+  function PrimaryButton(
+    { onClick, className, children, type = "button", title, ...buttonProps },
+    ref,
+  ) {
     return (
       <button
         ref={ref}
         type={type}
         className={cn(primaryButtonClass, className)}
         onClick={onClick}
+        data-tooltip={typeof title === "string" ? title : undefined}
         {...buttonProps}
       >
         {children}

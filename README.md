@@ -5,6 +5,8 @@
 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1d7e0599-9509-48a9-948f-23dd381aedb5" />
 
+<br />
+
 I've clanked a LOT. And during that clanking, I used a few apps. None of them really fit how I work. This one does. It's opinionated, focussed on UX and aimed at YOLOing with agents.
 
 You won't find a file editor. You won't see a turn-by-turn diff. Some things might not instantly click. But when they do, you'll understand the idea behind all of it.

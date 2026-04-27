@@ -248,14 +248,14 @@ export function buildSettingsDescriptors({
     {
       id: "common.pi-tui-takeover",
       category: "common",
-      title: "Open conversations in Pi TUI",
+      title: "Open in TUI",
       description:
         "Use Pi takeover by default until a conversation is overridden for this app session.",
       keywords: "takeover terminal tui open conversations",
       render: () => (
         <ToggleBox
           checked={appSettings.piTuiTakeover}
-          label="Open conversations in Pi TUI"
+          label="Open in TUI"
           onClick={controller.togglePiTuiTakeover}
         />
       ),
@@ -573,13 +573,13 @@ export function buildSettingsDescriptors({
     {
       id: "projects.initialize-git",
       category: "projects",
-      title: "Initialise git for new projects",
+      title: "Initialise git",
       description: "Create a git repository for new projects so diffs work immediately.",
       keywords: "git init initialize projects diffs",
       render: () => (
         <ToggleBox
           checked={appSettings.initializeGitOnProjectCreate}
-          label="Initialise git for new projects"
+          label="Initialise git"
           onClick={controller.toggleInitializeGitOnProjectCreate}
         />
       ),
@@ -714,6 +714,7 @@ export function buildSettingsDescriptors({
                       )
                     }
                     aria-label={`Remove ${folder}`}
+                    data-tooltip={`Remove ${folder}`}
                   >
                     ×
                   </button>
@@ -828,13 +829,13 @@ export function buildSettingsDescriptors({
     {
       id: "dictation.show-button",
       category: "dictation",
-      title: "Show composer dictation button",
+      title: "Toggle dictation",
       description: "If hidden, re-enable the composer microphone button here.",
       keywords: "dictation button composer microphone show hide",
       render: () => (
         <ToggleBox
           checked={appSettings.showDictationButton}
-          label="Show composer dictation button"
+          label="Toggle dictation"
           onClick={() => controller.setShowDictationButton(!appSettings.showDictationButton)}
         />
       ),

@@ -39,7 +39,7 @@ export function ComposerFilePickerHeader({
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
             onClick={() => onOpenDirectory(picker.parentPath ?? projectRootPath)}
             aria-label="Go up"
-            title="Go up"
+            data-tooltip="Go up"
           >
             <ChevronLeft size={13} />
           </button>
@@ -58,7 +58,8 @@ export function ComposerFilePickerHeader({
                 : "text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]",
             )}
             onClick={() => onOpenRoot(rootOption.path)}
-            title={rootOption.path}
+            aria-label={`Open ${rootOption.label}`}
+            data-tooltip="Open root"
           >
             {rootOption.iconOnly ? <Home size={13} /> : rootOption.label}
           </button>
@@ -96,7 +97,7 @@ export function ComposerFilePickerHeader({
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.04)] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[color:var(--text)]"
             onClick={() => onSearchExpandedChange(true)}
             aria-label="Search files"
-            title="Search files"
+            data-tooltip="Search files"
           >
             <Search size={13} />
           </button>

@@ -56,8 +56,9 @@ export function QueuedPromptsCard({
                 type="button"
                 className={cn(compactIconButtonClass, "mr-1 shrink-0")}
                 onClick={() => onRemovePrompt(prompt)}
-                aria-label="Remove queued message"
+                aria-label="Remove queued"
                 disabled={isPending}
+                data-tooltip="Remove queued"
               >
                 <X size={12} />
               </button>

@@ -20,6 +20,7 @@ function SkillsMetaLink() {
         className="group inline-flex items-center gap-0.5 p-0 text-[12px]"
         onClick={() => void openExternalUrl("https://skills.sh")}
         aria-label="Open skills.sh"
+        data-tooltip="Open skills.sh"
       >
         <span className="text-[color:var(--muted)] transition-colors duration-150 ease-out group-hover:text-[color:var(--accent)]">
           skills.sh

@@ -4,6 +4,7 @@ import { useAnimatedPresence } from "../../../hooks/useAnimatedPresence";
 import type { Project, View } from "../../../types";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
+import { Tooltip } from "../../common/Tooltip";
 import { EmptyThreadsState } from "./EmptyThreadsState";
 import { ThreadRow } from "./ThreadRow";
 
@@ -84,32 +85,35 @@ function OldSessionsRow({
 }) {
   return (
     <div className="sidebar-row-surface sidebar-old-sessions-row">
-      <button
-        type="button"
-        className="sidebar-old-sessions-toggle"
-        onClick={onToggle}
-        aria-label={expanded ? "Collapse old sessions" : "Expand old sessions"}
-        aria-expanded={expanded}
-      >
-        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-      </button>
+      <Tooltip content={expanded ? "Collapse old" : "Expand old"} placement="right">
+        <button
+          type="button"
+          className="sidebar-old-sessions-toggle"
+          onClick={onToggle}
+          aria-label={expanded ? "Collapse old" : "Expand old"}
+          aria-expanded={expanded}
+        >
+          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </button>
+      </Tooltip>
 
       <button type="button" className="sidebar-old-sessions-button" onClick={onToggle}>
         <span className="truncate">Old sessions</span>
       </button>
 
-      <button
-        type="button"
-        className={cn(
-          compactIconButtonClass,
-          "justify-self-end border-transparent bg-transparent text-[color:var(--muted-2)] hover:bg-transparent hover:text-[color:var(--text)]",
-        )}
-        onClick={onArchiveAll}
-        aria-label="Archive old sessions"
-        title="Archive old sessions"
-      >
-        <Archive size={12} />
-      </button>
+      <Tooltip content="Archive old" placement="right">
+        <button
+          type="button"
+          className={cn(
+            compactIconButtonClass,
+            "justify-self-end border-transparent bg-transparent text-[color:var(--muted-2)] hover:bg-transparent hover:text-[color:var(--text)]",
+          )}
+          onClick={onArchiveAll}
+          aria-label="Archive old"
+        >
+          <Archive size={12} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

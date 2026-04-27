@@ -432,7 +432,7 @@ export function InboxComposer({
                     void pickAttachments();
                   }}
                   aria-label={attachments.length > 0 ? "Manage attachments" : "Add attachment"}
-                  title={attachments.length > 0 ? "Manage attachments" : "Add attachment"}
+                  data-tooltip={attachments.length > 0 ? "Manage attachments" : "Add attachment"}
                 >
                   <span className={cn(compactIconButtonClass, "shrink-0")}>
                     <Paperclip size={16} />
@@ -449,7 +449,7 @@ export function InboxComposer({
                     className={cn(compactIconButtonClass, "h-5 w-5 shrink-0")}
                     onClick={clearAttachments}
                     aria-label="Clear attachments"
-                    title="Clear attachments"
+                    data-tooltip="Clear attachments"
                   >
                     <X size={12} />
                   </button>
@@ -572,7 +572,7 @@ export function InboxComposer({
                 onClick={onStop}
                 disabled={!isStreaming || isSending || localActionPending}
                 aria-label="Stop Pi"
-                title="Stop Pi"
+                data-tooltip="Stop Pi"
               >
                 <Square size={11} fill="currentColor" />
               </button>
@@ -585,7 +585,7 @@ export function InboxComposer({
                 onClick={() => slashCommands.submit()}
                 disabled={!canSend}
                 aria-label="Send"
-                title="Send"
+                data-tooltip="Send"
               >
                 <Send size={14} />
               </button>
@@ -607,6 +607,7 @@ export function InboxComposer({
           <ToolbarButton
             ref={modelButtonRef}
             label="Agent"
+            tooltip="Model settings"
             icon={<Bot size={14} />}
             className="pr-8"
             onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}
@@ -651,10 +652,11 @@ export function InboxComposer({
           ) : null}
         </div>
         <Tooltip content="Dismiss">
-          <IconButton label="Dismiss" icon={<X size={14} />} onClick={onDismiss} />
+          <IconButton tooltip={null} label="Dismiss" icon={<X size={14} />} onClick={onDismiss} />
         </Tooltip>
         <Tooltip content="Open thread">
           <IconButton
+            tooltip={null}
             label="Open thread"
             icon={<ArrowUpRight size={14} />}
             onClick={onOpenThread}

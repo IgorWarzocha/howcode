@@ -300,7 +300,7 @@ export function ComposerPromptSurface({
                     pickAttachments();
                   }}
                   aria-label={attachmentButtonLabel}
-                  title={attachmentButtonLabel}
+                  data-tooltip={attachmentButtonLabel}
                 >
                   <span className={cn(compactIconButtonClass, "shrink-0")}>
                     <Paperclip size={16} />
@@ -320,7 +320,7 @@ export function ComposerPromptSurface({
                       className={cn(compactIconButtonClass, "h-5 w-5 shrink-0")}
                       onClick={clearAttachments}
                       aria-label="Clear attachments"
-                      title="Clear attachments"
+                      data-tooltip="Clear attachments"
                     >
                       <X size={12} />
                     </button>
@@ -469,7 +469,7 @@ export function ComposerPromptSurface({
                 onClick={() => void stop()}
                 disabled={!composerIsStreaming || isSending}
                 aria-label="Stop Pi"
-                title="Stop Pi"
+                data-tooltip="Stop Pi"
               >
                 <Square size={11} fill="currentColor" />
               </button>
@@ -482,7 +482,7 @@ export function ComposerPromptSurface({
                 onClick={slashCommands.submit}
                 disabled={!canSend}
                 aria-label="Send"
-                title="Send"
+                data-tooltip="Send"
               >
                 <Send size={14} />
               </button>

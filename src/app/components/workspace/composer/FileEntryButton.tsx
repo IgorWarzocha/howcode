@@ -79,7 +79,7 @@ export function FileEntryButton({
         setIsDragging(false);
         onDragEnd();
       }}
-      title={attachment.path}
+      aria-label={`${isAlreadyAttached ? "Remove" : "Attach"} ${attachment.name}`}
     >
       <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[color:var(--muted)]">
         {getAttachmentIcon(attachment, isAlreadyAttached)}

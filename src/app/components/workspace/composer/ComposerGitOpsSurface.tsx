@@ -171,6 +171,7 @@ export function ComposerGitOpsSurface({
           : runningPrimaryAction || (isGitRepo ? !canCommit : false)
       }
       aria-label={primaryActionLabel}
+      data-tooltip={primaryActionLabel}
     >
       {primaryActionLabel}
     </button>

@@ -16,6 +16,7 @@ export function ToggleBox({
       onClick={onClick}
       aria-label={label}
       aria-pressed={checked}
+      data-tooltip={label}
     >
       {checked ? <Check size={13} /> : null}
     </button>

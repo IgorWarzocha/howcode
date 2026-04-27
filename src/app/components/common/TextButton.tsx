@@ -9,7 +9,7 @@ type TextButtonProps = PropsWithChildren<
 >;
 
 export const TextButton = forwardRef<HTMLButtonElement, TextButtonProps>(function TextButton(
-  { onClick, className, children, type = "button", ...buttonProps },
+  { onClick, className, children, type = "button", title, ...buttonProps },
   ref,
 ) {
   return (
@@ -18,6 +18,7 @@ export const TextButton = forwardRef<HTMLButtonElement, TextButtonProps>(functio
       type={type}
       className={cn(ghostButtonClass, className)}
       onClick={onClick}
+      data-tooltip={typeof title === "string" ? title : undefined}
       {...buttonProps}
     >
       {children}

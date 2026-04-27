@@ -30,7 +30,7 @@ export function AttachmentChips({
           )}
           onClick={() => onRemove(attachment.path)}
           aria-label={`Remove ${attachment.name}`}
-          title={attachment.path}
+          data-tooltip="Remove file"
         >
           <span>{attachment.name}</span>
         </button>

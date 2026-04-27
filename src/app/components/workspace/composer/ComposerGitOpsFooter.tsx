@@ -118,7 +118,7 @@ export function ComposerGitOpsFooter({
               aria-label="Commit options"
               aria-haspopup="menu"
               aria-expanded={optionsOpen}
-              title="Commit options"
+              data-tooltip="Commit options"
             >
               <Settings size={14} />
             </button>
@@ -182,7 +182,7 @@ export function ComposerGitOpsFooter({
             )}
             onClick={() => onSetDiffRenderMode("stacked")}
             aria-label="Unified diff view"
-            title="Unified diff view"
+            data-tooltip="Unified diff view"
           >
             <Rows3 size={14} />
           </button>
@@ -196,7 +196,7 @@ export function ComposerGitOpsFooter({
             )}
             onClick={() => onSetDiffRenderMode("split")}
             aria-label="Split diff view"
-            title="Split diff view"
+            data-tooltip="Split diff view"
           >
             <Columns2 size={14} />
           </button>
@@ -218,7 +218,7 @@ export function ComposerGitOpsFooter({
           className={cn(compactIconButtonClass, "h-7 w-7")}
           onClick={onBack}
           aria-label="Back"
-          title="Back"
+          data-tooltip="Back"
         >
           <ArrowLeft size={14} />
         </button>

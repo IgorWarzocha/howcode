@@ -186,7 +186,7 @@ export function SettingsView({
           className="inline-flex h-8 w-8 items-center justify-center self-center rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.07)]"
           onClick={closeSettings}
           aria-label="Close app settings"
-          title="Close app settings"
+          data-tooltip="Close app settings"
         >
           <X size={14} />
         </button>

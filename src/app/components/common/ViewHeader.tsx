@@ -40,7 +40,7 @@ export function ViewHeader({
               className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-[color:var(--text)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.07)]"
               onClick={onClose}
               aria-label={closeLabel}
-              title={closeLabel}
+              data-tooltip={closeLabel}
             >
               <X size={14} />
             </button>

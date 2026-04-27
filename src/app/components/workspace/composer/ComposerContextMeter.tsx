@@ -84,7 +84,6 @@ export function ComposerContextMeter({
         onClick={() => setPinned((current) => !current)}
         aria-label={label}
         aria-expanded={open}
-        title={label}
       >
         <span
           className={cn("absolute inset-[7px] rounded-full", isCompacting && "animate-pulse")}
@@ -98,7 +97,7 @@ export function ComposerContextMeter({
       {open ? (
         <div
           ref={popoverRef}
-          className="absolute bottom-full left-0 z-30 grid w-56 gap-2 rounded-xl border border-[rgba(169,178,215,0.18)] bg-[#2d3040] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
+          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[rgba(169,178,215,0.18)] bg-[#2d3040] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
           onMouseDown={(event) => event.preventDefault()}
         >
           <div className="grid gap-1">

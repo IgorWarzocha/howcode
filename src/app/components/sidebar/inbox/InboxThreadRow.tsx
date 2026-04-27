@@ -1,6 +1,7 @@
 import { SquareTerminal, X } from "lucide-react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { ActivitySpinner } from "../../common/ActivitySpinner";
+import { Tooltip } from "../../common/Tooltip";
 
 type InboxThreadRowProps = {
   age: string;
@@ -60,15 +61,17 @@ export function InboxThreadRow({
         </div>
       </button>
 
-      <button
-        type="button"
-        className={`${compactIconButtonClass} sidebar-inbox-dismiss hover:bg-transparent`}
-        onClick={onDismiss}
-        data-visible={selected ? "true" : "false"}
-        aria-label="Dismiss inbox item"
-      >
-        <X size={12} />
-      </button>
+      <Tooltip content="Dismiss item" placement="right">
+        <button
+          type="button"
+          className={`${compactIconButtonClass} sidebar-inbox-dismiss hover:bg-transparent`}
+          onClick={onDismiss}
+          data-visible={selected ? "true" : "false"}
+          aria-label="Dismiss item"
+        >
+          <X size={12} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

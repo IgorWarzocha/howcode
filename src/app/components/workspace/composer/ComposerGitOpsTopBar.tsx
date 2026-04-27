@@ -33,7 +33,8 @@ export function ComposerGitOpsTopBar({
               compactCardClass,
               "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-[color:var(--text)]",
             )}
-            title={projectGitState?.originUrl ?? "origin"}
+            aria-label="Repository origin"
+            data-tooltip="Repository origin"
           >
             {isGitHubOrigin ? <Github size={12} /> : null}
             {projectGitState?.originName ?? "origin"}
@@ -47,7 +48,8 @@ export function ComposerGitOpsTopBar({
               compactCardClass,
               "inline-flex items-center gap-1 px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
             )}
-            title="Branch switching will wire into this control later."
+            aria-label="Current branch"
+            data-tooltip="Current branch"
           >
             <GitBranch size={12} />
             <span>{projectGitState?.branch ?? "Detached"}</span>
@@ -64,7 +66,8 @@ export function ComposerGitOpsTopBar({
                 type="button"
                 className="inline-flex min-w-0 shrink-0 items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.035)] px-2 py-1 text-[11px] leading-none text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[color:var(--text)]"
                 onClick={() => onSelectDiffComment(comment.filePath, comment.id)}
-                title={`${comment.filePath} · ${comment.linesLabel}`}
+                aria-label={`Open comment on ${comment.filePath} ${comment.linesLabel}`}
+                data-tooltip="Open comment"
               >
                 <span className="max-w-40 truncate text-[11px] font-normal text-[color:var(--text)]">
                   {comment.fileName}

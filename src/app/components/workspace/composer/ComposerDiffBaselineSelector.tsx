@@ -79,7 +79,8 @@ function CommitOption({
         selected && "bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]",
       )}
       onClick={onSelect}
-      title={`${commit.subject || "(no subject)"} · ${commit.shortSha}`}
+      aria-label={`Select ${commit.subject || commit.shortSha}`}
+      data-tooltip="Select baseline"
     >
       <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
         {selected ? <Check size={14} /> : null}

@@ -225,6 +225,7 @@ export function SidebarProjectsSection({
           <div className="sidebar-action-group">
             <IconButton
               label={filterLabel}
+              tooltipPlacement="right"
               onClick={cycleFilterMode}
               icon={
                 filterMode === "favourites" ? (
@@ -245,6 +246,7 @@ export function SidebarProjectsSection({
               <IconButton
                 ref={createButtonRef}
                 label="Add new project"
+                tooltipPlacement="right"
                 onClick={() => {
                   if (!appSettings.preferredProjectLocation) {
                     onOpenSettingsPanel();

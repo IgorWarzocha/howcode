@@ -18,6 +18,7 @@ export function SplitButton({
         className="min-h-8 rounded-l-xl border border-r-0 border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)] px-3"
         aria-label={primaryLabel}
         onClick={onPrimary}
+        data-tooltip={primaryLabel}
       >
         {primaryLabel}
       </button>
@@ -26,6 +27,7 @@ export function SplitButton({
         className="inline-flex h-8 w-8 items-center justify-center rounded-r-xl border border-[color:var(--border-strong)] bg-[rgba(39,43,57,0.9)]"
         aria-label={secondaryLabel}
         onClick={onSecondary}
+        data-tooltip={secondaryLabel}
       >
         <span aria-hidden>▾</span>
       </button>
