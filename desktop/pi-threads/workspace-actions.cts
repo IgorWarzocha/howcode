@@ -32,6 +32,8 @@ export async function handleWorkspaceDesktopAction(
           message: getGitCommitMessage(payload),
           preview: getGitPreview(payload),
           push: getGitPush(payload),
+          // AI commit messages are intentionally wired here: when Git Ops sends no explicit
+          // message, commitProjectChanges calls this generator before falling back to defaults.
           generateMessage: (context) =>
             generateGitCommitMessage(getComposerRequest(payload), context),
         }),
