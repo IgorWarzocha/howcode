@@ -1,5 +1,5 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Message } from "./desktop-contracts";
+import type { Message, ToolResultImage } from "./desktop-contracts";
 
 type TextPart = {
   type?: string;
@@ -21,6 +21,7 @@ type RuntimeMessage = {
         | {
             type?: string;
             mimeType?: string;
+            data?: string;
           }
         | {
             type?: string;
@@ -103,6 +104,37 @@ function getImageCount(content: RuntimeMessage["content"]) {
   }
 
   return content.filter((part) => part?.type === "image").length;
+}
+
+function getToolResultImages(content: RuntimeMessage["content"]): ToolResultImage[] {
+  if (!Array.isArray(content)) {
+    return [];
+  }
+
+  return content.flatMap((part, index) => {
+    if (part?.type !== "image") {
+      return [];
+    }
+
+    const imagePart = part as { data?: unknown; mimeType?: unknown };
+    if (typeof imagePart.data !== "string" || imagePart.data.trim().length === 0) {
+      return [];
+    }
+
+    const mimeType =
+      typeof imagePart.mimeType === "string" && imagePart.mimeType.trim().length > 0
+        ? imagePart.mimeType.trim()
+        : "image/png";
+    const data = imagePart.data.trim();
+
+    return [
+      {
+        src: data.startsWith("data:") ? data : `data:${mimeType};base64,${data}`,
+        mimeType,
+        alt: `Tool result image ${index + 1}`,
+      },
+    ];
+  });
 }
 
 function extractUserContent(content: RuntimeMessage["content"]) {
@@ -207,12 +239,14 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
 
     case "toolResult": {
       const text = extractUserContent(runtimeMessage.content);
+      const images = getToolResultImages(runtimeMessage.content);
       return {
         id,
         role: "toolResult",
         toolName: runtimeMessage.toolName ?? "tool",
         content:
           text.length > 0 ? text : [runtimeMessage.isError ? "Tool failed." : "Tool finished."],
+        images: images.length > 0 ? images : undefined,
         isError: Boolean(runtimeMessage.isError),
       };
     }

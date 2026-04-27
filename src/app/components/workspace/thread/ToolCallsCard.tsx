@@ -32,6 +32,18 @@ function renderToolCallBody(message: ToolCallMessage) {
             {paragraph}
           </p>
         ))}
+        {message.images && message.images.length > 0 ? (
+          <div className="grid min-w-0 gap-2">
+            {message.images.map((image, index) => (
+              <img
+                key={`${image.src.slice(0, 48)}:${index}`}
+                src={image.src}
+                alt={image.alt}
+                className="max-h-[420px] max-w-full rounded-lg border border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.03)] object-contain"
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   }

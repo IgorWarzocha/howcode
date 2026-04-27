@@ -94,6 +94,38 @@ describe("pi message mapper", () => {
     ]);
   });
 
+  it("preserves tool result images for desktop rendering", () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: "toolResult",
+          timestamp: 1,
+          toolName: "custom_image_tool",
+          isError: false,
+          content: [
+            { type: "text", text: "Generated image" },
+            { type: "image", data: "iVBORw0KGgo=", mimeType: "image/png" },
+          ],
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: "1-toolResult",
+        role: "toolResult",
+        toolName: "custom_image_tool",
+        content: ["Generated image", "Attached image 1"],
+        images: [
+          {
+            src: "data:image/png;base64,iVBORw0KGgo=",
+            mimeType: "image/png",
+            alt: "Tool result image 2",
+          },
+        ],
+        isError: false,
+      },
+    ]);
+  });
+
   it("preserves thinking-only messages and extracts thinking headers", () => {
     expect(
       mapAgentMessagesToUiMessages([
