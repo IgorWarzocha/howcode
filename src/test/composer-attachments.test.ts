@@ -14,6 +14,12 @@ describe("composer attachment paste helpers", () => {
       kind: "text",
     });
 
+    expect(parseComposerAttachmentReference("git+https://example.com/repo.git")).toEqual({
+      path: "https://example.com/repo.git",
+      name: "repo.git",
+      kind: "text",
+    });
+
     expect(parseComposerAttachmentReference("file:///tmp/screenshot.png")).toEqual({
       path: "/tmp/screenshot.png",
       name: "screenshot.png",
@@ -47,7 +53,7 @@ describe("composer attachment paste helpers", () => {
     expect(
       extractComposerAttachmentsFromPaste(`
         /repo/src/main.ts
-        https://example.com/guide
+        git+https://example.com/guide
         /repo/src/main.ts
       `),
     ).toEqual([
@@ -82,6 +88,12 @@ describe("buildComposerAttachmentPrompt", () => {
   });
 
   it("normalizes local attachments based on path-kind resolution", () => {
+    expect(
+      normalizeComposerAttachments([
+        { path: "git+https://example.com/repo.git", name: "", kind: "text" },
+      ]),
+    ).toEqual([{ path: "https://example.com/repo.git", name: "repo.git", kind: "text" }]);
+
     expect(
       normalizeComposerAttachments([{ path: "/repo/src", name: "src", kind: "text" }], {
         resolveAttachmentKind: (path) => (path === "/repo/src" ? "directory" : null),

@@ -1,11 +1,8 @@
 import path from "node:path";
 import { stat } from "node:fs/promises";
 import type { ComposerAttachment } from "../../shared/desktop-contracts";
-import {
-  getAttachmentKind,
-  isSafeExternalUrl,
-  normalizeComposerAttachments,
-} from "../../shared/composer-attachments";
+import { getSafeExternalUrl, isSafeExternalUrl } from "../../shared/external-url";
+import { getAttachmentKind, normalizeComposerAttachments } from "../../shared/composer-attachments";
 
 const maxConcurrentAttachmentStats = 8;
 function hasControlCharacters(value: string) {
@@ -125,8 +122,9 @@ export async function normalizeComposerSendAttachments(
   const normalizedAttachments = normalizeComposerAttachments(
     attachments.map((attachment) => {
       const trimmedPath = attachment.path.trim();
-      if (isSafeExternalUrl(trimmedPath)) {
-        return { ...attachment, path: trimmedPath };
+      const safeExternalUrl = getSafeExternalUrl(trimmedPath);
+      if (safeExternalUrl) {
+        return { ...attachment, path: safeExternalUrl };
       }
 
       const pathParts = getLocalAttachmentPathParts(attachment.path, platform);
