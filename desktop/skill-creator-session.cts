@@ -7,7 +7,11 @@ import type { Message, SkillCreatorSessionState } from "../shared/desktop-contra
 import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
-import { createComposerSnapshotSession } from "./runtime/composer-state.cts";
+import {
+  clampThinkingLevel,
+  createComposerSnapshotSession,
+  getAvailableThinkingLevelsForModel,
+} from "./runtime/composer-state.cts";
 import {
   getActiveGlobalSkillsRoot,
   getActiveProjectSkillsRoot,
@@ -164,7 +168,8 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   });
   await resourceLoader.reload();
 
-  const selectedModel = loadAppSettings().skillCreatorModel;
+  const appSettings = loadAppSettings();
+  const selectedModel = appSettings.skillCreatorModel;
   const snapshot = await createComposerSnapshotSession({ projectId: projectPath ?? cwd });
   let model = null as Awaited<ReturnType<typeof modelRegistry.getAvailable>>[number] | null;
 
@@ -196,6 +201,10 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
     authStorage,
     modelRegistry,
     model,
+    thinkingLevel: clampThinkingLevel(
+      appSettings.skillCreatorThinkingLevel,
+      getAvailableThinkingLevelsForModel(model),
+    ),
     resourceLoader,
     sessionManager: SessionManager.inMemory(),
     settingsManager: SettingsManager.inMemory(),

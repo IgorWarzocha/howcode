@@ -4,6 +4,7 @@ import {
   getOptimisticallyRenamedShellState,
   getOptimisticallyUpdatedShellState,
 } from "../app/app-shell/controller-post-action-effects";
+import { defaultPiSettings } from "../../shared/default-pi-settings";
 import type { ShellState } from "../app/desktop/types";
 
 function buildShellState(): ShellState {
@@ -16,7 +17,9 @@ function buildShellState(): ShellState {
     sessionDir: "/repo/.pi/sessions",
     appSettings: {
       gitCommitMessageModel: null,
+      gitCommitMessageThinkingLevel: "off",
       skillCreatorModel: null,
+      skillCreatorThinkingLevel: "off",
       composerStreamingBehavior: "followUp",
       dictationModelId: null,
       dictationMaxDurationSeconds: 180,
@@ -29,6 +32,7 @@ function buildShellState(): ShellState {
       useAgentsSkillsPaths: false,
       piTuiTakeover: false,
     },
+    piSettings: defaultPiSettings,
     availableHosts: [],
     composer: {
       currentModel: null,
@@ -133,7 +137,9 @@ describe("controller post action effects", () => {
       appSettings: {
         ...buildShellState().appSettings,
         gitCommitMessageModel: { provider: "openai", id: "gpt-5" },
+        gitCommitMessageThinkingLevel: "off",
         skillCreatorModel: { provider: "anthropic", id: "claude" },
+        skillCreatorThinkingLevel: "off",
         preferredProjectLocation: "/tmp/work",
       },
     } satisfies ShellState;

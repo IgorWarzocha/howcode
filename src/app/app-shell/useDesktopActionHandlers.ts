@@ -16,6 +16,7 @@ import { cleanUserErrorMessage } from "../desktop/error-messages";
 import { buildContextualActionPayload } from "./controller-action-helpers";
 import {
   applyOptimisticPinUpdate,
+  applyOptimisticPiSettingsUpdate,
   applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
@@ -157,6 +158,10 @@ export function useDesktopActionHandlers({
       // while the background write and refresh pipeline converges.
       if (action === "settings.update") {
         applyOptimisticSettingsUpdate(queryClient, payload);
+      }
+
+      if (action === "pi-settings.update") {
+        applyOptimisticPiSettingsUpdate(queryClient, payload);
       }
 
       if (action === "project.edit-name") {

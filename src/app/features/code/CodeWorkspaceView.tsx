@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
+import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
@@ -141,7 +142,9 @@ export function CodeWorkspaceView({
                 appSettings={
                   shellState?.appSettings ?? {
                     gitCommitMessageModel: null,
+                    gitCommitMessageThinkingLevel: "off",
                     skillCreatorModel: null,
+                    skillCreatorThinkingLevel: "off",
                     composerStreamingBehavior: "followUp",
                     dictationModelId: null,
                     dictationMaxDurationSeconds: 180,
@@ -155,8 +158,10 @@ export function CodeWorkspaceView({
                     piTuiTakeover: false,
                   }
                 }
+                piSettings={shellState?.piSettings ?? defaultPiSettings}
                 archivedThreads={controller.archivedThreads}
                 availableModels={activeComposerState?.availableModels ?? []}
+                availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 currentModel={activeComposerState?.currentModel ?? null}
                 currentProjectName={currentProjectName}
                 selectedInboxThread={controller.selectedInboxThread}

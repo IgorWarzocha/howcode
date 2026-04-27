@@ -2,7 +2,7 @@ import { Check, Download, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { ActivitySpinner } from "../../components/common/ActivitySpinner";
 import type { DictationModelId, DictationModelSummary } from "../../desktop/types";
-import { settingsListRowClass } from "../../ui/classes";
+import { composerTextActionButtonClass, settingsListRowClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import type { DictationPendingAction } from "./useSettingsDictationController";
 
@@ -25,10 +25,9 @@ function ModelActionButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        primary
-          ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
-          : "border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] text-[color:var(--muted)] hover:text-[color:var(--text)]",
+        composerTextActionButtonClass,
+        "min-h-7 gap-1 rounded-lg px-2.5 text-[11px]",
+        primary && "border-[rgba(169,178,215,0.22)] bg-[rgba(255,255,255,0.1)]",
       )}
     >
       {icon}

@@ -87,7 +87,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appSettings={
               controller.shellState?.appSettings ?? {
                 gitCommitMessageModel: null,
+                gitCommitMessageThinkingLevel: "off",
                 skillCreatorModel: null,
+                skillCreatorThinkingLevel: "off",
                 composerStreamingBehavior: "followUp",
                 dictationModelId: null,
                 dictationMaxDurationSeconds: 180,

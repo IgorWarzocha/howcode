@@ -48,6 +48,7 @@ export const desktopActions = [
   "debug.open-card",
   "landing.project-switcher",
   "settings.update",
+  "pi-settings.update",
   "projects.import.scan",
   "projects.import.apply",
   "diff.review",

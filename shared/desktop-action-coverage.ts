@@ -33,6 +33,7 @@ export const implementedDesktopActions = [
   "workspace.commit",
   "workspace.commit-options",
   "settings.update",
+  "pi-settings.update",
   "projects.import.scan",
   "projects.import.apply",
 ] as const satisfies readonly DesktopAction[];

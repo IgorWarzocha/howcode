@@ -1,5 +1,6 @@
 import { ChevronDown, FilePenLine, GitCommitHorizontal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { SectionIntro } from "../../components/common/SectionIntro";
 import { ComposerMenu } from "../../components/workspace/composer/ComposerMenu";
 import type { ComposerModel, ModelSelection } from "../../desktop/types";
 import { settingsSectionClass, settingsSelectButtonClass } from "../../ui/classes";
@@ -53,6 +54,11 @@ export function SettingsModelSection({
 }: SettingsModelSectionProps) {
   return (
     <section className={cn(settingsSectionClass, "gap-2")}>
+      <SectionIntro
+        title="Models"
+        description="Choose which model howcode uses for generated commit messages and skill creation."
+      />
+
       <div className="relative">
         <button
           ref={gitCommitButtonRef}

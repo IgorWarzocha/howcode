@@ -12,6 +12,7 @@ import {
   getSettingsProjectDeletionMode,
   getSettingsProjectImportState,
   getSettingsReset,
+  getSettingsThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
   setComposerStreamingBehavior,
@@ -19,6 +20,7 @@ import {
   setDictationModelId,
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
+  setGitCommitMessageThinkingLevel,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
@@ -26,6 +28,7 @@ import {
   setProjectImportState,
   setShowDictationButton,
   setSkillCreatorModelSelection,
+  setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from "../app-settings.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
@@ -120,6 +123,22 @@ export function handleSettingsDesktopAction(
     const selection = getSettingsModelSelection(payload);
     if (selection) {
       setSkillCreatorModelSelection(selection);
+    }
+    return handledAction();
+  }
+
+  if (key === "gitCommitMessageThinkingLevel") {
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setGitCommitMessageThinkingLevel(level);
+    }
+    return handledAction();
+  }
+
+  if (key === "skillCreatorThinkingLevel") {
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setSkillCreatorThinkingLevel(level);
     }
     return handledAction();
   }
