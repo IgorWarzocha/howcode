@@ -61,12 +61,11 @@ jobs:
             unzip
 
       - name: Install dependencies
-        if: matrix.name != 'windows-arm64'
         run: bun install --frozen-lockfile
 
-      - name: Install dependencies for Windows ARM64
+      - name: Install Windows ARM64 Rollup native package
         if: matrix.name == 'windows-arm64'
-        run: bun install --frozen-lockfile --os=win32 --cpu=arm64
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @rollup/rollup-win32-arm64-msvc@4.60.2
 
       - name: Verify release version alignment
         shell: bash
