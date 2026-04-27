@@ -47,6 +47,7 @@ const MIN_INITIAL_TERMINAL_COLS = 20;
 const MIN_INITIAL_TERMINAL_ROWS = 5;
 const MIN_USABLE_TERMINAL_COLS = 2;
 const MIN_USABLE_TERMINAL_ROWS = 2;
+const TERMINAL_STICKY_BOTTOM_THRESHOLD_PX = 24;
 const DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT = 12 * 60 * 60 * 1_000;
 const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2;
 type SessionFileStat = { mtimeMs: number; size: number };
@@ -450,6 +451,13 @@ function terminalStyleVars(backgroundCssVar: TerminalBackgroundCssVar): CSSPrope
   } as CSSProperties;
 }
 
+function isTerminalElementNearBottom(element: HTMLElement) {
+  return (
+    element.scrollHeight - element.clientHeight - element.scrollTop <=
+    TERMINAL_STICKY_BOTTOM_THRESHOLD_PX
+  );
+}
+
 export function TerminalViewport({
   projectId,
   sessionPath,
@@ -463,6 +471,7 @@ export function TerminalViewport({
 }: TerminalViewportProps) {
   const terminalHandleRef = useRef<TerminalHandle | null>(null);
   const terminalInstanceRef = useRef<WTerm | null>(null);
+  const pendingScrollFrameRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const attachFailedRef = useRef(false);
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
@@ -480,9 +489,51 @@ export function TerminalViewport({
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar]);
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
 
-  const writeToTerminal = useCallback((data: string | Uint8Array) => {
-    terminalHandleRef.current?.write(data);
+  const scrollTerminalToBottom = useCallback(() => {
+    const terminalElement = terminalInstanceRef.current?.element;
+    if (!terminalElement) {
+      return;
+    }
+
+    terminalElement.scrollTop = terminalElement.scrollHeight;
   }, []);
+
+  const scheduleTerminalScrollToBottom = useCallback(() => {
+    if (pendingScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(pendingScrollFrameRef.current);
+    }
+
+    pendingScrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollTerminalToBottom();
+      pendingScrollFrameRef.current = window.requestAnimationFrame(() => {
+        scrollTerminalToBottom();
+        pendingScrollFrameRef.current = null;
+      });
+    });
+  }, [scrollTerminalToBottom]);
+
+  const writeToTerminal = useCallback(
+    (data: string | Uint8Array) => {
+      const terminalElement = terminalInstanceRef.current?.element;
+      const shouldStickToBottom = !terminalElement || isTerminalElementNearBottom(terminalElement);
+
+      terminalHandleRef.current?.write(data);
+
+      if (shouldStickToBottom) {
+        scheduleTerminalScrollToBottom();
+      }
+    },
+    [scheduleTerminalScrollToBottom],
+  );
+
+  useEffect(
+    () => () => {
+      if (pendingScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingScrollFrameRef.current);
+      }
+    },
+    [],
+  );
 
   const resetTerminal = useCallback(
     (history = "") => {

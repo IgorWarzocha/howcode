@@ -117,7 +117,7 @@ export function TerminalPanel({
   return (
     <section
       aria-label="Terminal drawer"
-      className="flex h-full min-h-0 flex-col overflow-hidden border-l border-[rgba(169,178,215,0.08)] bg-[color:var(--workspace)]"
+      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-l border-[rgba(169,178,215,0.08)] bg-[color:var(--workspace)]"
       {...getFeatureStatusDataAttributes(statusId)}
     >
       <div className="flex h-11 items-center justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-3">
@@ -135,14 +135,14 @@ export function TerminalPanel({
           <PanelRightClose size={14} />
         </button>
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 bg-[color:var(--sidebar)]">
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
-          className="terminal-viewport--flush h-full rounded-none bg-[color:var(--sidebar)]"
+          className="terminal-viewport--flush terminal-viewport--bottom-reserve absolute inset-0 h-auto min-h-0 rounded-none bg-[color:var(--sidebar)]"
         />
       </div>
     </section>

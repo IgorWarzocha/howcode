@@ -27,7 +27,6 @@ type CodeWorkspaceViewProps = {
 };
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
-const TERMINAL_DRAWER_FOOTER_OFFSET = `calc(${TERMINAL_DRAWER_OFFSET} + 1.25rem)`;
 
 export function CodeWorkspaceView({
   controller,
@@ -100,21 +99,15 @@ export function CodeWorkspaceView({
     terminalSessionPath,
   });
 
-  const terminalDrawerPaddingStyle = showDesktopTerminalDrawer
-    ? { paddingRight: TERMINAL_DRAWER_OFFSET }
-    : undefined;
-  const terminalDrawerFooterPaddingStyle = showDesktopTerminalDrawer
-    ? { paddingRight: TERMINAL_DRAWER_FOOTER_OFFSET }
+  const terminalDrawerInsetStyle = showDesktopTerminalDrawer
+    ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined;
 
   return (
-    <div
-      className="motion-terminal-drawer-offset relative min-h-0 flex-1 overflow-hidden"
-      style={terminalDrawerPaddingStyle}
-    >
+    <div className="relative min-h-0 flex-1 overflow-hidden">
       <div
-        className="absolute inset-x-0 top-0 overflow-hidden px-5"
-        style={{ bottom: `${footerInset}px` }}
+        className="motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden px-5"
+        style={{ ...terminalDrawerInsetStyle, bottom: `${footerInset}px` }}
       >
         <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">
           <main
@@ -193,7 +186,7 @@ export function CodeWorkspaceView({
         <footer
           ref={footerRef}
           className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
-          style={terminalDrawerFooterPaddingStyle}
+          style={terminalDrawerInsetStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
             <div className={workspaceContentClass}>
