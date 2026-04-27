@@ -109,27 +109,37 @@ export function getRowStructureSignature(
   rows: TimelineRow[],
   collapsedRowIds: Record<string, boolean>,
 ) {
-  return rows
-    .map((row) => {
-      if (row.kind === "history-divider") {
-        return `${row.id}:${row.hiddenCount}`;
-      }
+  let signature = "";
 
-      if (row.kind === "turn") {
-        return `${row.id}:${collapsedRowIds[row.id] ? "collapsed" : "expanded"}:${row.items.length}`;
-      }
+  for (const row of rows) {
+    if (signature) {
+      signature += "||";
+    }
 
-      if (row.kind === "summary") {
-        return `${row.id}:${collapsedRowIds[row.id] ? "collapsed" : "expanded"}`;
-      }
+    if (row.kind === "history-divider") {
+      signature += `${row.id}:${row.hiddenCount}`;
+      continue;
+    }
 
-      if (row.kind === "tool-group") {
-        return `${row.id}:${row.messages.length}`;
-      }
+    if (row.kind === "turn") {
+      signature += `${row.id}:${collapsedRowIds[row.id] ? "collapsed" : "expanded"}:${row.items.length}`;
+      continue;
+    }
 
-      return `${row.id}:${row.message.id}`;
-    })
-    .join("||");
+    if (row.kind === "summary") {
+      signature += `${row.id}:${collapsedRowIds[row.id] ? "collapsed" : "expanded"}`;
+      continue;
+    }
+
+    if (row.kind === "tool-group") {
+      signature += `${row.id}:${row.messages.length}`;
+      continue;
+    }
+
+    signature += `${row.id}:${row.message.id}`;
+  }
+
+  return signature;
 }
 
 export function getFoldableRows(rows: TimelineRow[]) {
