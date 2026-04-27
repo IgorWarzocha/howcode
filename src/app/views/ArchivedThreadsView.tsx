@@ -35,14 +35,22 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
     () => visibleThreads.map((thread) => thread.id),
     [visibleThreads],
   );
-  const selectedVisibleThreads = useMemo(
-    () => visibleThreads.filter((thread) => selectedThreadIdSet.has(thread.id)),
-    [selectedThreadIdSet, visibleThreads],
-  );
-  const selectedVisibleProjectIds = useMemo(
-    () => [...new Set(selectedVisibleThreads.map((thread) => thread.projectId))],
-    [selectedVisibleThreads],
-  );
+  const visibleProjectIds = useMemo(() => {
+    const projectIds = new Set<string>();
+    for (const thread of visibleThreads) {
+      projectIds.add(thread.projectId);
+    }
+    return [...projectIds];
+  }, [visibleThreads]);
+  const selectedVisibleProjectIds = useMemo(() => {
+    const projectIds = new Set<string>();
+    for (const thread of visibleThreads) {
+      if (selectedThreadIdSet.has(thread.id)) {
+        projectIds.add(thread.projectId);
+      }
+    }
+    return [...projectIds];
+  }, [selectedThreadIdSet, visibleThreads]);
 
   useEffect(() => {
     const threadIds = new Set(threads.map((thread) => thread.id));
@@ -166,7 +174,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.delete-many",
                     busyState: "delete",
-                    projectIds: [...new Set(visibleThreads.map((thread) => thread.projectId))],
+                    projectIds: visibleProjectIds,
                     threadIds: visibleThreadIds,
                   });
                 }}
@@ -203,13 +211,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.restore-many",
                     busyState: "restore",
-                    projectIds: [
-                      ...new Set(
-                        visibleThreads
-                          .filter((thread) => selectedThreadIdSet.has(thread.id))
-                          .map((thread) => thread.projectId),
-                      ),
-                    ],
+                    projectIds: selectedVisibleProjectIds,
                     threadIds: selectedThreadIds,
                   });
                 }}
