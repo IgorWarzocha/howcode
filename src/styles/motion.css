@@ -91,7 +91,8 @@
 }
 
 .motion-terminal-drawer-offset {
-  transition: padding-right 180ms var(--motion-ease-standard);
+  transition: padding-right 180ms var(--motion-ease-standard), right 180ms
+    var(--motion-ease-standard);
 }
 
 .motion-terminal-drawer {

@@ -20,6 +20,10 @@
   padding: 0 0 0 14px;
 }
 
+.terminal-viewport--bottom-reserve .wterm {
+  padding-bottom: var(--term-row-height, 17px);
+}
+
 .terminal-viewport .wterm .term-grid {
   min-height: 100%;
 }

@@ -194,12 +194,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
             {terminalDrawerPresent ? (
               <div
-                className="pointer-events-none absolute inset-y-0 right-0 z-20"
+                className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
                 style={{ width: TERMINAL_DRAWER_WIDTH }}
               >
                 <div
                   data-open={terminalDrawerVisible ? "true" : "false"}
-                  className={`motion-terminal-drawer h-full ${terminalDrawerVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+                  className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${terminalDrawerVisible ? "pointer-events-auto" : "pointer-events-none"}`}
                 >
                   <TerminalPanel
                     projectId={composerProjectId}

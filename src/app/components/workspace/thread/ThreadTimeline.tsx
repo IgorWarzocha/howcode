@@ -28,7 +28,9 @@ export function ThreadTimeline({
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const programmaticScrollFrameRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const pendingHistoryPrependRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null);
 
@@ -94,13 +96,45 @@ export function ThreadTimeline({
       return;
     }
 
-    const bottomSentinel = bottomSentinelRef.current;
-    if (bottomSentinel) {
-      bottomSentinel.scrollIntoView({ block: "end" });
-    } else {
-      container.scrollTop = container.scrollHeight;
+    if (programmaticScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(programmaticScrollFrameRef.current);
     }
+
+    container.scrollTop = container.scrollHeight;
+    programmaticScrollFrameRef.current = window.requestAnimationFrame(() => {
+      programmaticScrollFrameRef.current = null;
+    });
   }, []);
+
+  useEffect(
+    () => () => {
+      if (programmaticScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(programmaticScrollFrameRef.current);
+      }
+    },
+    [],
+  );
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (shouldStickToBottomRef.current) {
+        scrollToBottom();
+      }
+    });
+
+    observer.observe(container);
+    observer.observe(content);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [scrollToBottom]);
 
   useLayoutEffect(() => {
     void bottomAnchorKey;
@@ -132,6 +166,10 @@ export function ThreadTimeline({
   const handleScroll = useCallback(() => {
     const container = containerRef.current;
     if (!container) {
+      return;
+    }
+
+    if (programmaticScrollFrameRef.current !== null) {
       return;
     }
 
@@ -224,6 +262,7 @@ export function ThreadTimeline({
     <div className={`${chatViewportClass} relative`}>
       <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
         <div
+          ref={contentRef}
           className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
         >
           <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
