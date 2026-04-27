@@ -61,7 +61,11 @@ export type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
+  TerminalSessionFileStat,
+  TerminalSessionFileStatRequest,
   TerminalSessionSnapshot,
   TerminalStatus,
+  TerminalStatusRequest,
+  TerminalStatusSnapshot,
   TerminalWriteRequest,
 } from "../../../shared/terminal-contracts.js";

@@ -35,6 +35,7 @@ import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalSessionSnapshot,
+  TerminalStatusSnapshot,
 } from "../../../../shared/terminal-contracts";
 
 export type PiThreadsModule = {
@@ -99,9 +100,11 @@ export type PiThreadsModule = {
 
 export type TerminalManagerModule = {
   closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
+  getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>;
   listTerminals: () => Promise<TerminalSessionSnapshot[]>;
   openTerminal: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>;
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<void>;
+  statSessionFile: (sessionId: string) => Promise<{ mtimeMs: number; size: number } | null>;
   subscribeTerminalEvents: (listener: (event: TerminalEvent) => void) => () => void;
   writeTerminal: (sessionId: string, data: string) => Promise<void>;
 };

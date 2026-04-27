@@ -26,6 +26,24 @@ export type TerminalCloseRequest = {
   deleteHistory?: boolean;
 };
 
+export type TerminalSessionFileStatRequest = {
+  sessionId: string;
+};
+
+export type TerminalSessionFileStat = {
+  mtimeMs: number;
+  size: number;
+};
+
+export type TerminalStatusRequest = {
+  sessionId: string;
+};
+
+export type TerminalStatusSnapshot = {
+  sessionId: string;
+  status: TerminalStatus;
+} | null;
+
 export type TerminalSessionSnapshot = {
   sessionId: string;
   projectId: string;

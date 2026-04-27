@@ -40,7 +40,11 @@ import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
+  TerminalSessionFileStat,
+  TerminalSessionFileStatRequest,
   TerminalSessionSnapshot,
+  TerminalStatusRequest,
+  TerminalStatusSnapshot,
   TerminalWriteRequest,
 } from "./terminal-contracts";
 
@@ -160,6 +164,11 @@ export type DesktopRequestMap = {
   terminalWrite: { params: TerminalWriteRequest; response: { ok: boolean } };
   terminalResize: { params: TerminalResizeRequest; response: { ok: boolean } };
   terminalClose: { params: TerminalCloseRequest; response: { ok: boolean } };
+  terminalSessionFileStat: {
+    params: TerminalSessionFileStatRequest;
+    response: TerminalSessionFileStat | null;
+  };
+  terminalStatus: { params: TerminalStatusRequest; response: TerminalStatusSnapshot };
   openExternal: { params: { url: string }; response: { ok: boolean } };
   openPath: { params: { path: string }; response: { ok: boolean } };
 };

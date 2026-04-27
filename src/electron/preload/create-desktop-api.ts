@@ -132,6 +132,9 @@ export function createDesktopApi() {
     closeTerminal: async (request: { sessionId: string; deleteHistory?: boolean }) => {
       await invokeRequest("terminalClose", request);
     },
+    statTerminalSessionFile: (sessionId: string) =>
+      invokeRequest("terminalSessionFileStat", { sessionId }),
+    getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
     openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
     openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
     subscribe: (listener: (event: DesktopEvent) => void) =>

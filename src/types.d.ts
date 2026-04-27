@@ -36,7 +36,9 @@ import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalResizeRequest,
+  TerminalSessionFileStat,
   TerminalSessionSnapshot,
+  TerminalStatusSnapshot,
   Thread,
   ThreadData,
 } from "./app/desktop/types";
@@ -144,6 +146,8 @@ declare global {
       writeTerminal?: (sessionId: string, data: string) => Promise<void>;
       resizeTerminal?: (request: TerminalResizeRequest) => Promise<void>;
       closeTerminal?: (request: TerminalCloseRequest) => Promise<void>;
+      statTerminalSessionFile?: (sessionId: string) => Promise<TerminalSessionFileStat | null>;
+      getTerminalStatus?: (sessionId: string) => Promise<TerminalStatusSnapshot>;
       subscribeTerminal?: (listener: (event: TerminalEvent) => void) => () => void;
       openExternal?: (url: string) => Promise<boolean>;
       openPath?: (path: string) => Promise<boolean>;
