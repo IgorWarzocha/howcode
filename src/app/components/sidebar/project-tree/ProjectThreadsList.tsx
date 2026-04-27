@@ -30,15 +30,18 @@ function partitionProjectThreads(project: Project) {
   }
 
   const cutoffMs = Date.now() - OLD_THREAD_THRESHOLD_MS;
+  const recentThreads: Project["threads"] = [];
+  const oldThreads: Project["threads"] = [];
 
-  return {
-    recentThreads: project.threads.filter(
-      (thread) => (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) >= cutoffMs,
-    ),
-    oldThreads: project.threads.filter(
-      (thread) => (thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) < cutoffMs,
-    ),
-  };
+  for (const thread of project.threads) {
+    if ((thread.lastModifiedMs ?? Number.MAX_SAFE_INTEGER) >= cutoffMs) {
+      recentThreads.push(thread);
+    } else {
+      oldThreads.push(thread);
+    }
+  }
+
+  return { recentThreads, oldThreads };
 }
 
 function ProjectThreadsGroup({

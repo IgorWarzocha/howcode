@@ -83,9 +83,14 @@ function getTextParts(content: RuntimeMessage["content"]) {
     return [] as string[];
   }
 
-  return content
-    .filter((part) => part?.type === "text" && typeof (part as TextPart).text === "string")
-    .map((part) => (part as TextPart).text ?? "");
+  const textParts: string[] = [];
+  for (const part of content) {
+    if (part?.type === "text" && typeof (part as TextPart).text === "string") {
+      textParts.push((part as TextPart).text ?? "");
+    }
+  }
+
+  return textParts;
 }
 
 function getThinkingParts(content: RuntimeMessage["content"]) {
@@ -93,9 +98,14 @@ function getThinkingParts(content: RuntimeMessage["content"]) {
     return [] as ThinkingPart[];
   }
 
-  return content.filter(
-    (part) => part?.type === "thinking" && typeof (part as ThinkingPart).thinking === "string",
-  ) as ThinkingPart[];
+  const thinkingParts: ThinkingPart[] = [];
+  for (const part of content) {
+    if (part?.type === "thinking" && typeof (part as ThinkingPart).thinking === "string") {
+      thinkingParts.push(part as ThinkingPart);
+    }
+  }
+
+  return thinkingParts;
 }
 
 function getImageCount(content: RuntimeMessage["content"]) {
@@ -103,7 +113,14 @@ function getImageCount(content: RuntimeMessage["content"]) {
     return 0;
   }
 
-  return content.filter((part) => part?.type === "image").length;
+  let imageCount = 0;
+  for (const part of content) {
+    if (part?.type === "image") {
+      imageCount += 1;
+    }
+  }
+
+  return imageCount;
 }
 
 function getToolResultImages(content: RuntimeMessage["content"]): ToolResultImage[] {
@@ -111,14 +128,15 @@ function getToolResultImages(content: RuntimeMessage["content"]): ToolResultImag
     return [];
   }
 
-  return content.flatMap((part, index) => {
+  const images: ToolResultImage[] = [];
+  for (const [index, part] of content.entries()) {
     if (part?.type !== "image") {
-      return [];
+      continue;
     }
 
     const imagePart = part as { data?: unknown; mimeType?: unknown };
     if (typeof imagePart.data !== "string" || imagePart.data.trim().length === 0) {
-      return [];
+      continue;
     }
 
     const mimeType =
@@ -127,14 +145,14 @@ function getToolResultImages(content: RuntimeMessage["content"]): ToolResultImag
         : "image/png";
     const data = imagePart.data.trim();
 
-    return [
-      {
-        src: data.startsWith("data:") ? data : `data:${mimeType};base64,${data}`,
-        mimeType,
-        alt: `Tool result image ${index + 1}`,
-      },
-    ];
-  });
+    images.push({
+      src: data.startsWith("data:") ? data : `data:${mimeType};base64,${data}`,
+      mimeType,
+      alt: `Tool result image ${index + 1}`,
+    });
+  }
+
+  return images;
 }
 
 function extractUserContent(content: RuntimeMessage["content"]) {
@@ -174,13 +192,19 @@ function extractAssistantContent(message: RuntimeMessage) {
 
 function extractAssistantThinking(message: RuntimeMessage) {
   const thinkingParts = getThinkingParts(message.content);
-  const thinkingContent = thinkingParts
-    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
-    .filter(Boolean);
-  const thinkingHeaders = thinkingParts
-    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
-    .map(normalizeThinkingHeader)
-    .filter((value): value is string => Boolean(value));
+  const thinkingContent: string[] = [];
+  const thinkingHeaders: string[] = [];
+
+  for (const part of thinkingParts) {
+    for (const paragraph of splitParagraphs(part.thinking ?? "")) {
+      thinkingContent.push(paragraph);
+
+      const heading = normalizeThinkingHeader(paragraph);
+      if (heading) {
+        thinkingHeaders.push(heading);
+      }
+    }
+  }
 
   return {
     thinkingContent,
@@ -309,14 +333,18 @@ export function getFirstUserTurnTitle(messages: Message[]) {
 }
 
 export function getPreviousMessageCount(entries: SessionBranchEntry[]) {
-  const latestCompactionIndex = [...entries]
-    .reverse()
-    .findIndex((entry) => entry.type === "compaction");
-  if (latestCompactionIndex === -1) {
+  let compactionIndex = -1;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (entries[index]?.type === "compaction") {
+      compactionIndex = index;
+      break;
+    }
+  }
+
+  if (compactionIndex === -1) {
     return 0;
   }
 
-  const compactionIndex = entries.length - latestCompactionIndex - 1;
   const compactionEntry = entries[compactionIndex];
   const firstKeptEntryId = compactionEntry?.firstKeptEntryId;
 

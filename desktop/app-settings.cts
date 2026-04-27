@@ -424,9 +424,14 @@ export function setShowDictationButton(enabled: boolean) {
 }
 
 export function setFavoriteFolders(favoriteFolders: string[]) {
-  const normalizedFavoriteFolders = [
-    ...new Set(favoriteFolders.map((folder) => folder.trim()).filter(Boolean)),
-  ];
+  const normalizedFavoriteFolderSet = new Set<string>();
+  for (const folder of favoriteFolders) {
+    const trimmedFolder = folder.trim();
+    if (trimmedFolder) {
+      normalizedFavoriteFolderSet.add(trimmedFolder);
+    }
+  }
+  const normalizedFavoriteFolders = [...normalizedFavoriteFolderSet];
 
   if (normalizedFavoriteFolders.length === 0) {
     deleteAppPreference(favoriteFoldersKey);

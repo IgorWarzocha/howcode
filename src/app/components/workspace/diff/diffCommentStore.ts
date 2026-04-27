@@ -175,6 +175,7 @@ export function createDiffCommentStore({
     recordKey: "contextsById",
     toEntry: toContext,
   });
+  let contextCount = Object.keys(contextsById).length;
   const listeners = new Set<DiffCommentStoreListener>();
 
   const notifyListeners = () => {
@@ -188,18 +189,25 @@ export function createDiffCommentStore({
     storageKey,
     debounceMs,
     beforeUnloadTarget,
-    hasEntries: () => Object.keys(contextsById).length > 0,
+    hasEntries: () => contextCount > 0,
     serialize: () => serializeContexts(contextsById),
   });
 
   const writeContext = (contextId: string, context: DiffCommentContext) => {
     if (isContextEmpty(context)) {
-      delete contextsById[contextId];
+      if (contextId in contextsById) {
+        delete contextsById[contextId];
+        contextCount -= 1;
+      }
     } else {
+      const addsContext = !(contextId in contextsById);
       contextsById = {
         ...contextsById,
         [contextId]: cloneContext(context),
       };
+      if (addsContext) {
+        contextCount += 1;
+      }
     }
 
     notifyListeners();
@@ -221,6 +229,7 @@ export function createDiffCommentStore({
       }
 
       delete contextsById[contextId];
+      contextCount -= 1;
       notifyListeners();
       persistence.schedulePersist();
     },

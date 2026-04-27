@@ -7,6 +7,7 @@ import {
   openExternalQuery,
   openPathQuery,
 } from "../../../query/desktop-query";
+import { buildLocalAttachmentKindLookup } from "./composer-attachment-kind-lookup";
 import { getComposerAttachmentsFromClipboardData } from "./composer-paste-attachments";
 
 export type ComposerFilePickerRootOption = {
@@ -111,14 +112,7 @@ export async function getDroppedComposerAttachments(dataTransfer: DataTransfer) 
   const rawAttachments = getComposerAttachmentsFromClipboardData(dataTransfer, {
     resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
   });
-  const localPaths = [
-    ...new Set(rawAttachments.map((attachment) => attachment.path.trim())),
-  ].filter((path) => path.length > 0 && !/^https?:\/\//i.test(path));
-  const fallbackKindsByPath = Object.fromEntries(
-    rawAttachments
-      .filter((attachment) => !/^https?:\/\//i.test(attachment.path.trim()))
-      .map((attachment) => [attachment.path, attachment.kind] as const),
-  );
+  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(rawAttachments);
   let kindsByPath: Record<string, ComposerAttachment["kind"] | null> | null = null;
 
   try {

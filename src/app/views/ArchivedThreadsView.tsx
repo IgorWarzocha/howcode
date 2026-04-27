@@ -22,22 +22,35 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
   const deleteAllButtonRef = useRef<HTMLButtonElement>(null);
   const deleteSelectedButtonRef = useRef<HTMLButtonElement>(null);
 
+  const optimisticallyHiddenThreadIdSet = useMemo(
+    () => new Set(optimisticallyHiddenThreadIds),
+    [optimisticallyHiddenThreadIds],
+  );
+  const selectedThreadIdSet = useMemo(() => new Set(selectedThreadIds), [selectedThreadIds]);
   const visibleThreads = useMemo(
-    () => threads.filter((thread) => !optimisticallyHiddenThreadIds.includes(thread.id)),
-    [optimisticallyHiddenThreadIds, threads],
+    () => threads.filter((thread) => !optimisticallyHiddenThreadIdSet.has(thread.id)),
+    [optimisticallyHiddenThreadIdSet, threads],
   );
   const visibleThreadIds = useMemo(
     () => visibleThreads.map((thread) => thread.id),
     [visibleThreads],
   );
-  const selectedVisibleThreads = useMemo(
-    () => visibleThreads.filter((thread) => selectedThreadIds.includes(thread.id)),
-    [selectedThreadIds, visibleThreads],
-  );
-  const selectedVisibleProjectIds = useMemo(
-    () => [...new Set(selectedVisibleThreads.map((thread) => thread.projectId))],
-    [selectedVisibleThreads],
-  );
+  const visibleProjectIds = useMemo(() => {
+    const projectIds = new Set<string>();
+    for (const thread of visibleThreads) {
+      projectIds.add(thread.projectId);
+    }
+    return [...projectIds];
+  }, [visibleThreads]);
+  const selectedVisibleProjectIds = useMemo(() => {
+    const projectIds = new Set<string>();
+    for (const thread of visibleThreads) {
+      if (selectedThreadIdSet.has(thread.id)) {
+        projectIds.add(thread.projectId);
+      }
+    }
+    return [...projectIds];
+  }, [selectedThreadIdSet, visibleThreads]);
 
   useEffect(() => {
     const threadIds = new Set(threads.map((thread) => thread.id));
@@ -83,7 +96,10 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
 
     setBusyAction(busyState);
     setOptimisticallyHiddenThreadIds((current) => [...new Set([...current, ...threadIds])]);
-    setSelectedThreadIds((current) => current.filter((threadId) => !threadIds.includes(threadId)));
+    const mutationThreadIdSet = new Set(threadIds);
+    setSelectedThreadIds((current) =>
+      current.filter((threadId) => !mutationThreadIdSet.has(threadId)),
+    );
 
     try {
       const result = await onAction(
@@ -106,20 +122,22 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
               (threadId): threadId is string => typeof threadId === "string",
             )
           : [];
+        const deletedThreadIdSet = new Set(deletedThreadIds);
         const restoredThreadIds =
           failedThreadIds.length > 0
             ? failedThreadIds
             : deletedThreadIds.length > 0
-              ? threadIds.filter((threadId) => !deletedThreadIds.includes(threadId))
+              ? threadIds.filter((threadId) => !deletedThreadIdSet.has(threadId))
               : threadIds;
+        const restoredThreadIdSet = new Set(restoredThreadIds);
 
         setOptimisticallyHiddenThreadIds((current) =>
-          current.filter((threadId) => !restoredThreadIds.includes(threadId)),
+          current.filter((threadId) => !restoredThreadIdSet.has(threadId)),
         );
       }
     } catch {
       setOptimisticallyHiddenThreadIds((current) =>
-        current.filter((threadId) => !threadIds.includes(threadId)),
+        current.filter((threadId) => !mutationThreadIdSet.has(threadId)),
       );
     }
 
@@ -156,7 +174,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.delete-many",
                     busyState: "delete",
-                    projectIds: [...new Set(visibleThreads.map((thread) => thread.projectId))],
+                    projectIds: visibleProjectIds,
                     threadIds: visibleThreadIds,
                   });
                 }}
@@ -193,13 +211,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   void runArchivedThreadMutation({
                     action: "thread.restore-many",
                     busyState: "restore",
-                    projectIds: [
-                      ...new Set(
-                        visibleThreads
-                          .filter((thread) => selectedThreadIds.includes(thread.id))
-                          .map((thread) => thread.projectId),
-                      ),
-                    ],
+                    projectIds: selectedVisibleProjectIds,
                     threadIds: selectedThreadIds,
                   });
                 }}
@@ -249,7 +261,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-[color:var(--accent)]"
-                checked={selectedThreadIds.includes(thread.id)}
+                checked={selectedThreadIdSet.has(thread.id)}
                 onChange={() =>
                   setSelectedThreadIds((current) =>
                     current.includes(thread.id)

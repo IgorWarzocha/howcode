@@ -4,6 +4,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
 import { getPiModule } from "../pi-module.cts";
+import { mapWithConcurrency } from "./map-with-concurrency.cts";
 
 export type SessionSummary = {
   id: string;
@@ -37,6 +38,8 @@ type SessionIndexReadResult = {
   partialFailure: boolean;
 };
 
+const SESSION_SUMMARY_READ_CONCURRENCY = 12;
+
 function isNodeErrorWithCode(error: unknown, code: string) {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }
@@ -60,10 +63,16 @@ function getMessageText(entry: SessionFileEntry) {
   }
 
   if (Array.isArray(content)) {
-    return content
-      .filter((block) => block.type === "text" && typeof block.text === "string")
-      .map((block) => block.text)
-      .join(" ");
+    let text = "";
+    for (const block of content) {
+      if (block.type !== "text" || typeof block.text !== "string") {
+        continue;
+      }
+
+      text += text ? ` ${block.text}` : block.text;
+    }
+
+    return text;
   }
 
   return "";
@@ -227,7 +236,11 @@ export async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
     sessionFilePaths.push(...result.filePaths);
   }
 
-  const sessionResults = await Promise.all(sessionFilePaths.map(readSessionSummary));
+  const sessionResults = await mapWithConcurrency(
+    sessionFilePaths,
+    SESSION_SUMMARY_READ_CONCURRENCY,
+    readSessionSummary,
+  );
   const sessions = sessionResults
     .map((result) => result.summary)
     .filter((session): session is SessionSummary => session !== null);

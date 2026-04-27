@@ -18,6 +18,10 @@ function messageEntry(
   };
 }
 
+function messageSignature(slice: ReturnType<typeof buildThreadHistorySlice>) {
+  return slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`);
+}
+
 describe("buildThreadHistorySlice", () => {
   const pathEntries: SessionPathEntry[] = [
     messageEntry("u1", 1, "user", "u1"),
@@ -50,7 +54,7 @@ describe("buildThreadHistorySlice", () => {
     const slice = buildThreadHistorySlice(pathEntries, 0);
 
     expect(slice.previousMessageCount).toBe(4);
-    expect(slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`)).toEqual([
+    expect(messageSignature(slice)).toEqual([
       "6:user",
       "7:assistant",
       "8:compactionSummary",
@@ -63,7 +67,7 @@ describe("buildThreadHistorySlice", () => {
     const slice = buildThreadHistorySlice(pathEntries, 1);
 
     expect(slice.previousMessageCount).toBe(2);
-    expect(slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`)).toEqual([
+    expect(messageSignature(slice)).toEqual([
       "3:user",
       "4:assistant",
       "5:compactionSummary",
@@ -79,7 +83,7 @@ describe("buildThreadHistorySlice", () => {
     const slice = buildThreadHistorySlice(pathEntries, 2);
 
     expect(slice.previousMessageCount).toBe(0);
-    expect(slice.sourceMessages.map((message) => `${message.timestamp}:${message.role}`)).toEqual([
+    expect(messageSignature(slice)).toEqual([
       "1:user",
       "2:assistant",
       "3:user",
@@ -91,5 +95,86 @@ describe("buildThreadHistorySlice", () => {
       "9:user",
       "10:assistant",
     ]);
+  });
+
+  it("falls back to full history when compaction metadata is unusable", () => {
+    const missingFirstKeptId = buildThreadHistorySlice(
+      [
+        messageEntry("u1", 1, "user", "u1"),
+        {
+          type: "compaction",
+          id: "c1",
+          summary: "summary 1",
+          timestamp: 2,
+          tokensBefore: 100,
+        },
+        messageEntry("u2", 3, "user", "u2"),
+      ],
+      0,
+    );
+    expect(missingFirstKeptId.previousMessageCount).toBe(0);
+    expect(messageSignature(missingFirstKeptId)).toEqual([
+      "1:user",
+      "2:compactionSummary",
+      "3:user",
+    ]);
+
+    const firstKeptAfterCompaction = buildThreadHistorySlice(
+      [
+        messageEntry("u1", 1, "user", "u1"),
+        {
+          type: "compaction",
+          id: "c1",
+          summary: "summary 1",
+          firstKeptEntryId: "u2",
+          timestamp: 2,
+          tokensBefore: 100,
+        },
+        messageEntry("u2", 3, "user", "u2"),
+      ],
+      0,
+    );
+    expect(firstKeptAfterCompaction.previousMessageCount).toBe(0);
+    expect(messageSignature(firstKeptAfterCompaction)).toEqual([
+      "1:user",
+      "2:compactionSummary",
+      "3:user",
+    ]);
+  });
+
+  it("preserves current display/count behavior for non-message entries", () => {
+    const slice = buildThreadHistorySlice(
+      [
+        messageEntry("u1", 1, "user", "u1"),
+        {
+          type: "custom_message",
+          id: "hidden-custom",
+          customType: "notice",
+          content: "hidden",
+          display: false,
+          timestamp: 2,
+        },
+        {
+          type: "branch_summary",
+          id: "branch-summary",
+          summary: "branch summary",
+          timestamp: 3,
+        },
+        messageEntry("u2", 4, "user", "u2"),
+        {
+          type: "compaction",
+          id: "c1",
+          summary: "summary 1",
+          firstKeptEntryId: "u2",
+          timestamp: 5,
+          tokensBefore: 100,
+        },
+        messageEntry("a2", 6, "assistant", "a2"),
+      ],
+      0,
+    );
+
+    expect(slice.previousMessageCount).toBe(3);
+    expect(messageSignature(slice)).toEqual(["4:user", "5:compactionSummary", "6:assistant"]);
   });
 });

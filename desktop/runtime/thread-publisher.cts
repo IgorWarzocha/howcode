@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ComposerState, ThreadData } from "../../shared/desktop-contracts.ts";
+import type { ComposerState, ProseMessage, ThreadData } from "../../shared/desktop-contracts.ts";
 import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
 import { getLatestInboxAssistantMessage } from "../../shared/thread-inbox.ts";
 import {
@@ -72,11 +72,16 @@ function hasAssistantMessageChanged(
 }
 
 function getLatestUserPrompt(thread: ThreadData) {
-  const latestUserMessage = [...thread.messages]
-    .reverse()
-    .find((message) => message.role === "user");
+  let latestUserMessage: ProseMessage | undefined;
+  for (let index = thread.messages.length - 1; index >= 0; index -= 1) {
+    const message = thread.messages[index];
+    if (message?.role === "user") {
+      latestUserMessage = message as ProseMessage;
+      break;
+    }
+  }
 
-  if (!latestUserMessage || latestUserMessage.role !== "user") {
+  if (!latestUserMessage) {
     return null;
   }
 
