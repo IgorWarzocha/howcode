@@ -174,13 +174,19 @@ function extractAssistantContent(message: RuntimeMessage) {
 
 function extractAssistantThinking(message: RuntimeMessage) {
   const thinkingParts = getThinkingParts(message.content);
-  const thinkingContent = thinkingParts
-    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
-    .filter(Boolean);
-  const thinkingHeaders = thinkingParts
-    .flatMap((part) => splitParagraphs(part.thinking ?? ""))
-    .map(normalizeThinkingHeader)
-    .filter((value): value is string => Boolean(value));
+  const thinkingContent: string[] = [];
+  const thinkingHeaders: string[] = [];
+
+  for (const part of thinkingParts) {
+    for (const paragraph of splitParagraphs(part.thinking ?? "")) {
+      thinkingContent.push(paragraph);
+
+      const heading = normalizeThinkingHeader(paragraph);
+      if (heading) {
+        thinkingHeaders.push(heading);
+      }
+    }
+  }
 
   return {
     thinkingContent,
