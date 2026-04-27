@@ -3,6 +3,8 @@ import type {
   AppSettings,
   ArchivedThread,
   ComposerModel,
+  ComposerContextUsage,
+  ComposerFilePickerState,
   ComposerThinkingLevel,
   DesktopActionInvoker,
   InboxThread,
@@ -33,7 +35,9 @@ type CodeWorkspaceMainViewProps = {
   archivedThreads: ArchivedThread[];
   availableModels: ComposerModel[];
   availableThinkingLevels: ComposerThinkingLevel[];
+  contextUsage: ComposerContextUsage | null;
   currentModel: ComposerModel | null;
+  currentThinkingLevel: ComposerThinkingLevel;
   currentProjectName: string;
   selectedInboxThread: InboxThread | null;
   projects: Project[];
@@ -43,8 +47,14 @@ type CodeWorkspaceMainViewProps = {
   composerLayoutVersion: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
+  onListAttachmentEntries: (request: {
+    projectId?: string | null;
+    path?: string | null;
+    rootPath?: string | null;
+  }) => Promise<ComposerFilePickerState | null>;
   onCloseUtilityView: () => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
+  onOpenSettingsView: () => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
   onSetSkillsProjectScopeActive: (active: boolean) => void;
@@ -58,7 +68,9 @@ export function CodeWorkspaceMainView({
   archivedThreads,
   availableModels,
   availableThinkingLevels,
+  contextUsage,
   currentModel,
+  currentThinkingLevel,
   currentProjectName,
   selectedInboxThread,
   projects,
@@ -68,8 +80,10 @@ export function CodeWorkspaceMainView({
   composerLayoutVersion,
   onAction,
   onDismissInboxThread,
+  onListAttachmentEntries,
   onCloseUtilityView,
   onOpenThread,
+  onOpenSettingsView,
   onLoadEarlierMessages,
   onSetExtensionsProjectScopeActive,
   onSetSkillsProjectScopeActive,
@@ -94,10 +108,20 @@ export function CodeWorkspaceMainView({
       <InboxView
         key={selectedInboxThread?.sessionPath ?? "inbox-empty"}
         appSettings={appSettings}
+        availableModels={availableModels}
+        availableThinkingLevels={availableThinkingLevels}
+        contextUsage={contextUsage}
+        currentModel={currentModel}
+        currentThinkingLevel={currentThinkingLevel}
+        favoriteFolders={appSettings.favoriteFolders}
+        isCompacting={threadData?.isCompacting ?? false}
+        showDictationButton={appSettings.showDictationButton}
         thread={selectedInboxThread}
         onAction={onAction}
         onDismissThread={onDismissInboxThread}
+        onListAttachmentEntries={onListAttachmentEntries}
         onOpenThread={onOpenThread}
+        onOpenSettingsView={onOpenSettingsView}
       />
     );
   }
