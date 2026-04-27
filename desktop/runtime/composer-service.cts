@@ -88,13 +88,17 @@ async function promptAndReturnAfterPreflight({
     return;
   }
 
-  promptPromise.catch((error) => {
-    console.error("Composer prompt failed after dispatch", error);
-    void emitComposerUpdate({
-      ...request,
-      sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
+  promptPromise
+    .catch((error) => {
+      console.error("Composer prompt failed after dispatch", error);
+      void emitComposerUpdate({
+        ...request,
+        sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
+      });
+    })
+    .finally(() => {
+      scheduleRuntimeDisposalForRuntime(runtime);
     });
-  });
 }
 
 async function setDraftComposerModel(cwd: string, provider: string, modelId: string) {
