@@ -37,6 +37,8 @@ type SessionIndexReadResult = {
   partialFailure: boolean;
 };
 
+const SESSION_SUMMARY_READ_CONCURRENCY = 12;
+
 function isNodeErrorWithCode(error: unknown, code: string) {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }
@@ -94,6 +96,28 @@ function getSessionModifiedDate(
   const headerTimestampMs =
     typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
   return Number.isNaN(headerTimestampMs) ? fileModified : new Date(headerTimestampMs);
+}
+
+async function mapWithConcurrency<TInput, TOutput>(
+  inputs: TInput[],
+  concurrency: number,
+  mapper: (input: TInput) => Promise<TOutput>,
+) {
+  const results = new Array<TOutput>(inputs.length);
+  let nextIndex = 0;
+
+  const workerCount = Math.min(concurrency, inputs.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < inputs.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await mapper(inputs[currentIndex] as TInput);
+      }
+    }),
+  );
+
+  return results;
 }
 
 async function readSessionSummary(filePath: string): Promise<SessionSummaryReadResult> {
@@ -227,7 +251,11 @@ export async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
     sessionFilePaths.push(...result.filePaths);
   }
 
-  const sessionResults = await Promise.all(sessionFilePaths.map(readSessionSummary));
+  const sessionResults = await mapWithConcurrency(
+    sessionFilePaths,
+    SESSION_SUMMARY_READ_CONCURRENCY,
+    readSessionSummary,
+  );
   const sessions = sessionResults
     .map((result) => result.summary)
     .filter((session): session is SessionSummary => session !== null);
