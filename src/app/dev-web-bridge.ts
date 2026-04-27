@@ -173,6 +173,9 @@ export function installDevWebDesktopBridge() {
     closeTerminal: async (request) => {
       await invokeRequest("terminalClose", request);
     },
+    statTerminalSessionFile: (sessionId: string) =>
+      invokeRequest("terminalSessionFileStat", { sessionId }),
+    getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
     openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
     openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
     subscribe: (listener: (event: DesktopEvent) => void) =>

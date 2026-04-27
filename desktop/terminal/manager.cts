@@ -1,4 +1,6 @@
 import { rmSync } from "node:fs";
+import { stat } from "node:fs/promises";
+import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import type {
   TerminalCloseRequest,
   TerminalOpenRequest,
@@ -86,6 +88,33 @@ export async function resizeTerminal(sessionId: string, cols: number, rows: numb
 
 export async function listTerminals(): Promise<TerminalSessionSnapshot[]> {
   return listTerminalSessions().map((record) => record.snapshot);
+}
+
+export async function getTerminalStatus(sessionId: string) {
+  const record = getTerminalSession(sessionId);
+  return record ? { sessionId, status: record.snapshot.status } : null;
+}
+
+export async function statSessionFile(sessionId: string) {
+  const record = getTerminalSession(sessionId);
+  const persistedSessionPath = getPersistedSessionPath(record?.snapshot.sessionPath ?? null);
+  if (!persistedSessionPath) {
+    return null;
+  }
+
+  try {
+    const fileStat = await stat(persistedSessionPath);
+    if (!fileStat.isFile()) {
+      return null;
+    }
+
+    return {
+      mtimeMs: fileStat.mtimeMs,
+      size: fileStat.size,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function closeTerminal(request: TerminalCloseRequest) {

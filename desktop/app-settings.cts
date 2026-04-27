@@ -308,7 +308,6 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
-
   const dictationModelIdRow = db
     .prepare(
       `

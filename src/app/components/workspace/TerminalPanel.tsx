@@ -14,6 +14,7 @@ import { getGitOpsEntryButtonClass } from "./composer/git-ops";
 import { TerminalViewport } from "./terminal/TerminalViewport";
 
 const PI_TUI_KEEP_ALIVE_MS = 300_000;
+const PI_TUI_SESSION_FILE_IDLE_POLL_MS = 5 * 60_000;
 
 type TerminalPanelProps = {
   projectId: string;
@@ -59,6 +60,7 @@ export function TerminalPanel({
           sessionPath={sessionPath}
           launchMode="pi-session"
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
+          closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
           className="terminal-viewport--flush min-h-0 rounded-none bg-[color:var(--workspace)]"
         />

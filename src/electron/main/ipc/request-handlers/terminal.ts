@@ -3,7 +3,13 @@ import type { TerminalManagerModule } from "../../runtime/desktop-runtime-contra
 
 type TerminalRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  "listTerminals" | "terminalOpen" | "terminalWrite" | "terminalResize" | "terminalClose"
+  | "listTerminals"
+  | "terminalOpen"
+  | "terminalWrite"
+  | "terminalResize"
+  | "terminalClose"
+  | "terminalSessionFileStat"
+  | "terminalStatus"
 >;
 
 export function createTerminalHandlers(
@@ -24,5 +30,7 @@ export function createTerminalHandlers(
       await terminalManager.closeTerminal(request);
       return { ok: true };
     },
+    terminalSessionFileStat: ({ sessionId }) => terminalManager.statSessionFile(sessionId),
+    terminalStatus: ({ sessionId }) => terminalManager.getTerminalStatus(sessionId),
   };
 }

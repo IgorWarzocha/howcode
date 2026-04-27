@@ -4,8 +4,10 @@ import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
 import {
   closeDesktopTerminal,
+  getDesktopTerminalStatus,
   openDesktopTerminal,
   resizeDesktopTerminal,
+  statDesktopTerminalSessionFile,
   subscribeDesktopTerminal,
   writeDesktopTerminal,
 } from "../../../hooks/useDesktopTerminal";
@@ -19,6 +21,8 @@ type TerminalViewportProps = {
   launchMode?: "shell" | "pi-session";
   preserveSessionOnUnmount?: boolean;
   keepAliveMsOnUnmount?: number;
+  closeWhenSessionFileIdleMs?: number;
+  maxKeepAliveMsOnUnmount?: number;
   backgroundCssVar?: TerminalBackgroundCssVar;
   className?: string;
 };
@@ -30,6 +34,7 @@ type TerminalLinkMatch = {
 };
 
 const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const pendingTerminalCloseGenerations = new Map<string, number>();
 
 const CLEAR_TERMINAL_SEQUENCE = "\u001b[2J\u001b[3J\u001b[H";
 const MAX_PENDING_TERMINAL_EVENTS = 200;
@@ -42,26 +47,209 @@ const MIN_INITIAL_TERMINAL_COLS = 20;
 const MIN_INITIAL_TERMINAL_ROWS = 5;
 const MIN_USABLE_TERMINAL_COLS = 2;
 const MIN_USABLE_TERMINAL_ROWS = 2;
+const DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT = 12 * 60 * 60 * 1_000;
+const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2;
+type SessionFileStat = { mtimeMs: number; size: number };
+
+function closeScheduledTerminal(sessionId: string, generation: number) {
+  if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
+    return;
+  }
+
+  pendingTerminalCloseTimers.delete(sessionId);
+  void closeDesktopTerminal({ sessionId }).finally(() => {
+    if (pendingTerminalCloseGenerations.get(sessionId) === generation) {
+      pendingTerminalCloseGenerations.delete(sessionId);
+    }
+  });
+}
 
 function cancelScheduledTerminalClose(sessionId: string) {
   const timer = pendingTerminalCloseTimers.get(sessionId);
   if (!timer) {
+    pendingTerminalCloseGenerations.delete(sessionId);
     return;
   }
 
+  pendingTerminalCloseGenerations.set(
+    sessionId,
+    (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1,
+  );
   clearTimeout(timer);
   pendingTerminalCloseTimers.delete(sessionId);
 }
 
 function scheduleTerminalClose(sessionId: string, delayMs: number) {
   cancelScheduledTerminalClose(sessionId);
+  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1;
+  pendingTerminalCloseGenerations.set(sessionId, generation);
 
   const timer = setTimeout(() => {
-    pendingTerminalCloseTimers.delete(sessionId);
-    void closeDesktopTerminal({ sessionId });
+    if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
+      return;
+    }
+
+    closeScheduledTerminal(sessionId, generation);
   }, delayMs);
 
   pendingTerminalCloseTimers.set(sessionId, timer);
+}
+
+async function pollSessionFileBeforeClosing({
+  sessionId,
+  pollMs,
+  maxKeepAliveMs,
+  previousStat,
+  statusFailureCount,
+  startedAt,
+  generation,
+}: {
+  sessionId: string;
+  pollMs: number;
+  maxKeepAliveMs: number;
+  previousStat: SessionFileStat | null;
+  statusFailureCount: number;
+  startedAt: number;
+  generation: number;
+}) {
+  if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
+    return;
+  }
+
+  if (Date.now() - startedAt >= maxKeepAliveMs) {
+    closeScheduledTerminal(sessionId, generation);
+    return;
+  }
+
+  const [currentStat, terminalStatus] = await Promise.all([
+    statDesktopTerminalSessionFile(sessionId).catch(() => null),
+    getDesktopTerminalStatus(sessionId).catch(() => undefined),
+  ]);
+
+  if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
+    return;
+  }
+
+  const terminalStillRunning =
+    terminalStatus?.status === "starting" || terminalStatus?.status === "running";
+
+  if (terminalStatus === undefined) {
+    if (statusFailureCount + 1 >= MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE) {
+      closeScheduledTerminal(sessionId, generation);
+      return;
+    }
+
+    scheduleTerminalCloseWhenSessionFileIdle({
+      sessionId,
+      pollMs,
+      maxKeepAliveMs,
+      previousStat,
+      statusFailureCount: statusFailureCount + 1,
+      startedAt,
+      generation,
+    });
+    return;
+  }
+
+  if (!terminalStillRunning) {
+    closeScheduledTerminal(sessionId, generation);
+    return;
+  }
+
+  if (!currentStat) {
+    if (!previousStat) {
+      closeScheduledTerminal(sessionId, generation);
+      return;
+    }
+
+    scheduleTerminalCloseWhenSessionFileIdle({
+      sessionId,
+      pollMs,
+      maxKeepAliveMs,
+      previousStat: null,
+      statusFailureCount: 0,
+      startedAt,
+      generation,
+    });
+    return;
+  }
+
+  if (
+    previousStat &&
+    currentStat.mtimeMs === previousStat.mtimeMs &&
+    currentStat.size === previousStat.size
+  ) {
+    closeScheduledTerminal(sessionId, generation);
+    return;
+  }
+
+  scheduleTerminalCloseWhenSessionFileIdle({
+    sessionId,
+    pollMs,
+    maxKeepAliveMs,
+    previousStat: currentStat,
+    statusFailureCount: 0,
+    startedAt,
+    generation,
+  });
+}
+
+function scheduleTerminalCloseWhenSessionFileIdle({
+  sessionId,
+  pollMs,
+  maxKeepAliveMs,
+  previousStat,
+  statusFailureCount,
+  startedAt,
+  generation,
+}: {
+  sessionId: string;
+  pollMs: number;
+  maxKeepAliveMs: number;
+  previousStat: SessionFileStat | null;
+  statusFailureCount: number;
+  startedAt: number;
+  generation: number;
+}) {
+  const timer = setTimeout(() => {
+    void pollSessionFileBeforeClosing({
+      sessionId,
+      pollMs,
+      maxKeepAliveMs,
+      previousStat,
+      statusFailureCount,
+      startedAt,
+      generation,
+    });
+  }, pollMs);
+
+  pendingTerminalCloseTimers.set(sessionId, timer);
+}
+
+async function scheduleTerminalCloseAfterSessionFileIdle(
+  sessionId: string,
+  pollMs: number,
+  maxKeepAliveMs: number,
+) {
+  cancelScheduledTerminalClose(sessionId);
+  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1;
+  pendingTerminalCloseGenerations.set(sessionId, generation);
+  const startedAt = Date.now();
+  const initialStat = await statDesktopTerminalSessionFile(sessionId).catch(() => null);
+
+  if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
+    return;
+  }
+
+  scheduleTerminalCloseWhenSessionFileIdle({
+    sessionId,
+    pollMs,
+    maxKeepAliveMs,
+    previousStat: initialStat,
+    statusFailureCount: 0,
+    startedAt,
+    generation,
+  });
 }
 
 function writeSystemMessage(write: (data: string) => void, message: string) {
@@ -268,6 +456,8 @@ export function TerminalViewport({
   launchMode = "shell",
   preserveSessionOnUnmount = false,
   keepAliveMsOnUnmount = 0,
+  closeWhenSessionFileIdleMs = 0,
+  maxKeepAliveMsOnUnmount = DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
   backgroundCssVar = "--terminal-bg",
   className,
 }: TerminalViewportProps) {
@@ -597,7 +787,13 @@ export function TerminalViewport({
       unsubscribe();
 
       if (sessionId && !preserveSessionOnUnmount) {
-        if (keepAliveMsOnUnmount > 0) {
+        if (closeWhenSessionFileIdleMs > 0 && persistedSessionPath) {
+          void scheduleTerminalCloseAfterSessionFileIdle(
+            sessionId,
+            closeWhenSessionFileIdleMs,
+            maxKeepAliveMsOnUnmount,
+          );
+        } else if (keepAliveMsOnUnmount > 0) {
           scheduleTerminalClose(sessionId, keepAliveMsOnUnmount);
         } else {
           void closeDesktopTerminal({ sessionId });
@@ -607,9 +803,12 @@ export function TerminalViewport({
   }, [
     effectiveLaunchMode,
     appendTerminalHistory,
+    closeWhenSessionFileIdleMs,
     handleTerminalResize,
     keepAliveMsOnUnmount,
+    maxKeepAliveMsOnUnmount,
     preserveSessionOnUnmount,
+    persistedSessionPath,
     projectId,
     resetTerminal,
     terminalReadyRevision,
