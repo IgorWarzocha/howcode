@@ -309,14 +309,18 @@ export function getFirstUserTurnTitle(messages: Message[]) {
 }
 
 export function getPreviousMessageCount(entries: SessionBranchEntry[]) {
-  const latestCompactionIndex = [...entries]
-    .reverse()
-    .findIndex((entry) => entry.type === "compaction");
-  if (latestCompactionIndex === -1) {
+  let compactionIndex = -1;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (entries[index]?.type === "compaction") {
+      compactionIndex = index;
+      break;
+    }
+  }
+
+  if (compactionIndex === -1) {
     return 0;
   }
 
-  const compactionIndex = entries.length - latestCompactionIndex - 1;
   const compactionEntry = entries[compactionIndex];
   const firstKeptEntryId = compactionEntry?.firstKeptEntryId;
 

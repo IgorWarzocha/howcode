@@ -44,7 +44,8 @@ export async function loadInboxThreadList(): Promise<InboxThread[]> {
         const loadedThread = await loadThread(thread.sessionPath);
         let prompt: string | null = null;
 
-        for (const message of [...loadedThread.messages].reverse()) {
+        for (let index = loadedThread.messages.length - 1; index >= 0; index -= 1) {
+          const message = loadedThread.messages[index];
           if (message.role === "user") {
             const nextPrompt = message.content.join("\n\n").trim();
             prompt = nextPrompt.length > 0 ? nextPrompt : null;

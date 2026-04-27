@@ -3,23 +3,25 @@ import type { Message, ProseMessage } from "./desktop-contracts";
 type AssistantMessage = ProseMessage & { role: "assistant" };
 
 export function getLatestInboxAssistantMessage(messages: Message[]) {
-  const lastUserMessageIndex = [...messages]
-    .map((message, index) => ({ message, index }))
-    .reverse()
-    .find(({ message }) => message.role === "user")?.index;
+  let lastUserMessageIndex: number | undefined;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      lastUserMessageIndex = index;
+      break;
+    }
+  }
 
   const turnMessages =
     typeof lastUserMessageIndex === "number" ? messages.slice(lastUserMessageIndex + 1) : messages;
 
-  const latestAssistantMessage = [...turnMessages]
-    .reverse()
-    .find((message): message is AssistantMessage => {
-      if (message.role !== "assistant") {
-        return false;
-      }
-
-      return message.content.some((part) => part.trim().length > 0);
-    });
+  let latestAssistantMessage: AssistantMessage | undefined;
+  for (let index = turnMessages.length - 1; index >= 0; index -= 1) {
+    const message = turnMessages[index];
+    if (message?.role === "assistant" && message.content.some((part) => part.trim().length > 0)) {
+      latestAssistantMessage = message as AssistantMessage;
+      break;
+    }
+  }
 
   if (!latestAssistantMessage) {
     return null;

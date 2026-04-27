@@ -31,10 +31,14 @@ export function getStreamingAssistantMessageId(messages: Message[], isStreaming:
     return null;
   }
 
-  const latestAssistantMessage = [...messages]
-    .reverse()
-    .find((message) => message.role === "assistant");
-  return latestAssistantMessage?.id ?? null;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "assistant") {
+      return message.id;
+    }
+  }
+
+  return null;
 }
 
 export function getStreamingToolGroupId(
@@ -51,7 +55,12 @@ export function getStreamingToolGroupId(
     return null;
   }
 
-  for (const row of [...rows].reverse()) {
+  for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+    const row = rows[rowIndex];
+    if (!row) {
+      continue;
+    }
+
     if (row.kind === "tool-group") {
       if (row.messages.some((message) => message.id === latestMessage.id)) {
         return row.id;
@@ -64,7 +73,12 @@ export function getStreamingToolGroupId(
       continue;
     }
 
-    for (const item of [...row.items].reverse()) {
+    for (let itemIndex = row.items.length - 1; itemIndex >= 0; itemIndex -= 1) {
+      const item = row.items[itemIndex];
+      if (!item) {
+        continue;
+      }
+
       if (item.kind !== "tool-group") {
         continue;
       }

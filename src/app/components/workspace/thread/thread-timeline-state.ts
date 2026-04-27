@@ -20,7 +20,14 @@ function getExpandedStateSignature(
 }
 
 function getLatestTurnRowId(rows: TimelineRow[]) {
-  return [...rows].reverse().find((row) => row.kind === "turn")?.id ?? null;
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index];
+    if (row?.kind === "turn") {
+      return row.id;
+    }
+  }
+
+  return null;
 }
 
 function getStreamingTurnRowId({
