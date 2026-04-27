@@ -148,7 +148,23 @@ export function createComposerDraftStore({
       return false;
     }
 
-    return JSON.stringify(left) === JSON.stringify(right);
+    if (
+      left.prompt !== right.prompt ||
+      left.pickerOpen !== right.pickerOpen ||
+      left.attachments.length !== right.attachments.length
+    ) {
+      return false;
+    }
+
+    return left.attachments.every((leftAttachment, index) => {
+      const rightAttachment = right.attachments[index];
+      return (
+        rightAttachment !== undefined &&
+        leftAttachment.path === rightAttachment.path &&
+        leftAttachment.name === rightAttachment.name &&
+        leftAttachment.kind === rightAttachment.kind
+      );
+    });
   };
 
   const writeDraft = (threadId: string, nextDraft: ComposerDraft) => {
