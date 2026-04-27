@@ -1,23 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useReducer, useState } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
-import type {
-  ArchivedThread,
-  ComposerState,
-  InboxThread,
-  ProjectGitState,
-  ThreadData,
-} from "../desktop/types";
+import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
 import { useDesktopThread } from "../hooks/useDesktopThread";
 import { useToast } from "../hooks/useToast";
-import { desktopQueryKeys } from "../query/desktop-query";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
-import type { View } from "../types";
 import { deriveControllerViewModel } from "./controller-view-model";
-import { getProjectSelectionAction } from "./scoped-project-view";
+import { useAppShellCommands } from "./useAppShellCommands";
 import { useAppShellEffects } from "./useAppShellEffects";
 import { useDesktopActionHandlers } from "./useDesktopActionHandlers";
 import { useInboxAutoReadSync } from "./useInboxAutoReadSync";
@@ -154,18 +146,6 @@ export function useAppShellController() {
     skillsProjectScopeActive,
   });
 
-  const resetProjectDiffCaches = (projectId: string) => {
-    queryClient.removeQueries({
-      queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-    });
-  };
-
   useInboxAutoReadSync({
     dispatch,
     inboxQueryIsSuccess: inboxQuery.isSuccess,
@@ -176,126 +156,20 @@ export function useAppShellController() {
     workspaceState: state,
   });
 
-  const handleShowView = (view: Exclude<View, "gitops">) => {
-    dispatch({ type: "show-view", view });
-  };
-
-  const handleCloseUtilityView = () => {
-    dispatch({ type: "close-utility-view" });
-  };
-
-  const handleCollapseAll = () => {
-    dispatch({ type: "collapse-all-projects" });
-    void handleAction("threads.collapse-all");
-  };
-
-  const handleToggleProjectCollapse = (projectId: string) => {
-    const nextCollapsed = !collapsedProjectIds[projectId];
-    dispatch({ type: "toggle-project-collapse", projectId });
-    void handleAction(nextCollapsed ? "project.collapse" : "project.expand", { projectId });
-  };
-
-  const handleThreadOpen = (projectId: string, threadId: string, sessionPath: string) => {
-    setThreadHistoryCompactions(0);
-    dispatch({ type: "open-thread", projectId, threadId, sessionPath });
-    void handleAction("thread.open", { projectId, threadId, sessionPath });
-  };
-
-  const handleSelectInboxThread = (thread: InboxThread) => {
-    dispatch({ type: "select-inbox-thread", sessionPath: thread.sessionPath });
-
-    if (thread.unread) {
-      void handleAction("inbox.mark-read", {
-        projectId: thread.projectId,
-        sessionPath: thread.sessionPath,
-      });
-    }
-  };
-
-  const handleDismissInboxThread = (thread: InboxThread) => {
-    void handleAction("inbox.dismiss", {
-      projectId: thread.projectId,
-      sessionPath: thread.sessionPath,
-    });
-  };
-
-  const handleLoadEarlierMessages = () => {
-    setThreadHistoryCompactions((current) => current + 1);
-  };
-
-  const handleOpenGitOpsView = (options: { filePath?: string | null } = {}) => {
-    if (composerProjectId) {
-      resetProjectDiffCaches(composerProjectId);
-    }
-
-    dispatch({
-      type: "open-gitops",
-      filePath: options.filePath ?? null,
-    });
-  };
-
-  const handleCloseGitOpsView = () => {
-    dispatch({ type: "close-gitops" });
-  };
-
-  const handleOpenWorktreeDiffFile = (filePath: string) => {
-    handleOpenGitOpsView({ filePath });
-  };
-
-  const handleProjectReorder = async (projectIds: string[]) => {
-    applyProjectOrder(projectIds);
-    await runDesktopAction("project.reorder", { projectIds });
-    scheduleShellStateRefresh();
-  };
-
-  const setTakeoverOverrideForSelectedSession = (visible: boolean) => {
-    const sessionPath = state.selectedSessionPath;
-    const globalTakeoverVisible = shellState?.appSettings?.piTuiTakeover;
-
-    if (!sessionPath || typeof globalTakeoverVisible !== "boolean") {
-      return;
-    }
-
-    dispatch({
-      type: "set-session-takeover-override",
-      sessionPath,
-      visible: visible === globalTakeoverVisible ? null : visible,
-    });
-  };
-
-  const handleShowTakeoverTerminal = () => {
-    dispatch({ type: "set-takeover-visible", visible: true });
-    setTakeoverOverrideForSelectedSession(true);
-  };
-
-  const closeTakeover = async ({
-    preserveSessionOverride = false,
-    refreshThread = true,
-  }: {
-    preserveSessionOverride?: boolean;
-    refreshThread?: boolean;
-  } = {}) => {
-    dispatch({ type: "set-takeover-visible", visible: false });
-
-    if (!preserveSessionOverride) {
-      setTakeoverOverrideForSelectedSession(false);
-    }
-
-    if (refreshThread) {
-      setThreadRefreshKey((current) => current + 1);
-    }
-
-    if (state.selectedSessionPath) {
-      await handleAction("composer.reload-settings", {
-        projectId: composerProjectId,
-        sessionPath: state.selectedSessionPath,
-      });
-    }
-  };
-
-  const handleReturnToDesktopFromTakeover = () => {
-    void closeTakeover();
-  };
+  const commands = useAppShellCommands({
+    applyProjectOrder,
+    collapsedProjectIds,
+    composerProjectId,
+    dispatch,
+    handleAction,
+    queryClient,
+    runDesktopAction,
+    scheduleShellStateRefresh,
+    setThreadHistoryCompactions,
+    setThreadRefreshKey,
+    shellState,
+    workspaceState: state,
+  });
 
   return {
     activeComposerState,
@@ -306,32 +180,9 @@ export function useAppShellController() {
     currentProjectName,
     currentTitle,
     handleAction,
-    handleCollapseAll,
-    handleOpenSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: true }),
-    handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
-    handleCloseTakeoverTerminal: closeTakeover,
-    handleCloseGitOpsView,
-    handleCloseUtilityView,
-    handleOpenWorktreeDiffFile,
-    handleLoadEarlierMessages,
-    handleDismissInboxThread,
+    ...commands,
     inboxThreads,
-    handleProjectSelect: (projectId: string) =>
-      dispatch({
-        type: getProjectSelectionAction(state.activeView),
-        projectId,
-      }),
-    handleProjectReorder,
     handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
-    handleShowView,
-    handleSelectInboxThread,
-    handleThreadOpen,
-    handleShowTakeoverTerminal,
-    handleReturnToDesktopFromTakeover,
-    handleOpenGitOpsView,
-    handleToggleProjectCollapse,
-    handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
-    handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     handleLoadProjectThreads: loadProjectThreads,
     listComposerAttachmentEntries,
