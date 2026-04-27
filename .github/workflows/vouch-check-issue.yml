@@ -15,6 +15,8 @@ jobs:
       - uses: mitchellh/vouch/action/check-issue@v1.4.2
         with:
           issue-number: ${{ github.event.issue.number }}
+          # Let unknown users open issues for now; only auto-close explicitly denounced users.
+          require-vouch: false
           auto-close: true
           vouched-file: .github/VOUCHED.td
         env:
