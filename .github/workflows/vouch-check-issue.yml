@@ -1,0 +1,21 @@
+name: Vouch - Check Issue
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: mitchellh/vouch/action/check-issue@v1.4.2
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          auto-close: true
+          vouched-file: .github/VOUCHED.td
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
