@@ -124,13 +124,14 @@ export function createComposerDraftStore({
     recordKey: "draftsByThreadId",
     toEntry: toDraft,
   });
+  let draftCount = Object.keys(draftsByThreadId).length;
 
   const persistence = createStoragePersistence({
     storage,
     storageKey,
     debounceMs,
     beforeUnloadTarget,
-    hasEntries: () => Object.keys(draftsByThreadId).length > 0,
+    hasEntries: () => draftCount > 0,
     serialize: () => serializeDrafts(draftsByThreadId),
   });
 
@@ -176,17 +177,26 @@ export function createComposerDraftStore({
       nextDraft.attachments.length === 0 &&
       !nextDraft.pickerOpen
     ) {
-      delete draftsByThreadId[threadId];
+      if (threadId in draftsByThreadId) {
+        delete draftsByThreadId[threadId];
+        draftCount -= 1;
+      }
 
       if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
         delete draftsByThreadId[mirroredThreadId];
+        draftCount -= 1;
       }
     } else {
+      const addsThreadDraft = !(threadId in draftsByThreadId);
+      const addsMirroredDraft = Boolean(
+        mirroredThreadId && !(mirroredThreadId in draftsByThreadId),
+      );
       draftsByThreadId = {
         ...draftsByThreadId,
         [threadId]: cloneDraft(nextDraft),
         ...(mirroredThreadId ? { [mirroredThreadId]: cloneDraft(nextDraft) } : {}),
       };
+      draftCount += (addsThreadDraft ? 1 : 0) + (addsMirroredDraft ? 1 : 0);
     }
 
     persistence.schedulePersist();
@@ -236,17 +246,13 @@ export function createComposerDraftStore({
       const mirroredThreadId = getMirroredProjectDraftThreadId(threadId);
       const previousDraft = draftsByThreadId[threadId];
 
-      draftsByThreadId = Object.fromEntries(
-        Object.entries(draftsByThreadId).filter(
-          ([currentThreadId, currentDraft]) =>
-            currentThreadId !== threadId &&
-            !(
-              mirroredThreadId &&
-              currentThreadId === mirroredThreadId &&
-              areDraftsEqual(currentDraft, previousDraft)
-            ),
-        ),
-      );
+      delete draftsByThreadId[threadId];
+      draftCount -= 1;
+
+      if (mirroredThreadId && areDraftsEqual(draftsByThreadId[mirroredThreadId], previousDraft)) {
+        delete draftsByThreadId[mirroredThreadId];
+        draftCount -= 1;
+      }
       persistence.schedulePersist();
     },
     flush: persistence.flush,
