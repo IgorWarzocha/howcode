@@ -365,6 +365,29 @@ export function InboxComposer({
     }
   };
 
+  const updateComposerOption = async (
+    action: "composer.model" | "composer.thinking",
+    payload: NonNullable<Parameters<DesktopActionInvoker>[1]>,
+  ) => {
+    onChangeErrorMessage(null);
+
+    try {
+      const result = await onAction(action, payload);
+      const actionErrorMessage = getDesktopActionErrorMessage(
+        result,
+        "Could not update the composer.",
+      );
+      if (actionErrorMessage) {
+        onChangeErrorMessage(actionErrorMessage);
+        return;
+      }
+
+      setOpenMenu(null);
+    } catch (error) {
+      onChangeErrorMessage(getErrorMessage(error, "Could not update the composer."));
+    }
+  };
+
   return (
     <div
       ref={composerPanelRef}
@@ -396,7 +419,12 @@ export function InboxComposer({
                   ref={pickerButtonRef}
                   type="button"
                   className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md"
-                  onClick={pickAttachments}
+                  onClick={() => {
+                    if (slashCommands.open) {
+                      slashCommands.dismiss({ clearDraft: true });
+                    }
+                    void pickAttachments();
+                  }}
                   aria-label={attachments.length > 0 ? "Manage attachments" : "Add attachment"}
                   title={attachments.length > 0 ? "Manage attachments" : "Add attachment"}
                 >
@@ -485,6 +513,11 @@ export function InboxComposer({
                 <ComposerTextField
                   value={draft}
                   onChange={setDraftValue}
+                  onInput={() => {
+                    if (errorMessage) {
+                      onChangeErrorMessage(null);
+                    }
+                  }}
                   onKeyDown={(event) => {
                     if (slashCommands.handleKeyDown(event)) {
                       return;
@@ -594,21 +627,19 @@ export function InboxComposer({
               panelRef={modelMenuRef}
               thinkingLevelLabels={thinkingLevelLabels}
               onSelectModel={(availableModel) => {
-                void onAction("composer.model", {
+                void updateComposerOption("composer.model", {
                   provider: availableModel.provider,
                   modelId: availableModel.id,
                   projectId: thread.projectId,
                   sessionPath: thread.sessionPath,
                 });
-                setOpenMenu(null);
               }}
               onSelectThinkingLevel={(level) => {
-                void onAction("composer.thinking", {
+                void updateComposerOption("composer.thinking", {
                   level,
                   projectId: thread.projectId,
                   sessionPath: thread.sessionPath,
                 });
-                setOpenMenu(null);
               }}
             />
           ) : null}

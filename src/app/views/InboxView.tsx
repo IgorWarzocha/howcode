@@ -67,6 +67,7 @@ export function InboxView({
     const draftToSend = input?.draft ?? draft;
     const attachmentsToSend = input?.attachments ?? attachments;
     const nextDraft = draftToSend.trim();
+    const isCompactCommand = isCompactSlashCommand(nextDraft);
     if (
       !thread ||
       (nextDraft.length === 0 && attachmentsToSend.length === 0) ||
@@ -86,7 +87,7 @@ export function InboxView({
         projectId: thread.projectId,
         sessionPath: thread.sessionPath,
         text: nextDraft,
-        attachments: isCompactSlashCommand(nextDraft) ? [] : attachmentsToSend,
+        attachments: isCompactCommand ? [] : attachmentsToSend,
         streamingBehavior: appSettings.composerStreamingBehavior,
       });
     } catch (error) {
@@ -102,7 +103,7 @@ export function InboxView({
       return;
     }
 
-    if (result?.result?.composerSendOutcome !== "stopped") {
+    if (result?.result?.composerSendOutcome !== "stopped" && !isCompactCommand) {
       setDraft("");
       setAttachments([]);
       onDismissThread(thread);
