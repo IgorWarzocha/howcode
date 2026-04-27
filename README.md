@@ -1,6 +1,7 @@
 > [!IMPORTANT]
-> This is a one-man project. Only so many things I can check. Expect weird edge cases.
-> Current release is the first properly working one, so I'll probably find some stuff myself.
+> This is a one-man project. Only so many things I can check.
+> Expect weird edge cases.
+> I'll probably find some stuff myself.
 
 # There are many desktop apps for coding with AI, but this one...
 
@@ -19,9 +20,13 @@ npm i -g howcode
 howcode
 ```
 
-On first run, the launcher downloads the matching desktop build for your platform and caches it locally.
+There's a launcher. It downloads the correct version.
 
-Check releases tabs for latest stable-ish version you can just download. Built on Linux, compatible with Mac and Windows.
+Or check releases tabs for latest stable-ish version you can just download. 
+
+Built on Linux, compatible with Mac and Windows (hopefully).
+
+Works on my machine™
 
 ## What you can do
 
@@ -30,7 +35,7 @@ Check releases tabs for latest stable-ish version you can just download. Built o
 - **Built in terminal** — with persisted transcript history, apparently.
 - **Git-ops composer** — a separate view tailored to doing things with git.
 - **Reviewing diffs** — comment-based workflow.
-- **Pi as-is when you want it** — a Pi TUI takeover mode embedded inside the app.
+- **Pi as-is when you want it** — an embedded Pi TUI takeover mode.
 - **Voice input** — local dictation through sherpa-ONNX, running on CPU.
 - **Skills and extensions** — browse, install, remove, and configure Pi skills/extensions from inside the app.
 
@@ -38,16 +43,16 @@ Check releases tabs for latest stable-ish version you can just download. Built o
 
 The near-term direction is:
 
-- more cards
-- worktrees
+- more cards /s
+- worktrees - please use only one session per project
 - per-project automations
 - multiple terminals per session
 - external terminal control for agents
 - responsive-layout polish
 - background mode when Pi has a server, unless I find a workaround
-- remote sessions over SSH, likely tied to that same server feature or me working around the lack of it
+- remote sessions over SSH... see above?
 
-And additional views for just chatting, claw-like sidekick for the app and co-work-style environment.
+And additional views for just chatting, with some basic websearch etc., a claw-like sidekick for the app that can use it for/with you and co-work-style environment.
 
 ## For developers
 
@@ -62,3 +67,4 @@ bun run dev
 
 - Bugs / requests: <https://github.com/IgorWarzocha/howcode/issues>
 - Random updates: <https://x.com/Howaboua>
+- This project uses Vouch.
