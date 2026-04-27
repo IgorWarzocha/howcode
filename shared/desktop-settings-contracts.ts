@@ -69,6 +69,5 @@ export type ShellState = {
   projects: Project[];
   appSettings: AppSettings;
   piSettings: PiSettings;
-  availableHosts: string[];
   composer: ComposerState;
 };

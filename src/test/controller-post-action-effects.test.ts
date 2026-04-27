@@ -33,7 +33,6 @@ function buildShellState(): ShellState {
       piTuiTakeover: false,
     },
     piSettings: defaultPiSettings,
-    availableHosts: [],
     composer: {
       currentModel: null,
       availableModels: [],

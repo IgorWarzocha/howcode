@@ -3,37 +3,17 @@ import { cn } from "../utils/cn";
 export type FeatureStatus = "mock" | "partial";
 
 export const featureStatusById = {
-  "feature:sidebar.plugins": { status: "mock", label: "Mock" },
-  "feature:sidebar.automations": { status: "mock", label: "Mock" },
-  "feature:sidebar.debug": { status: "mock", label: "Mock" },
-  "feature:sidebar.threads.filter": { status: "partial", label: "Partial" },
   "feature:sidebar.project.add": { status: "partial", label: "Partial" },
   "feature:header.project-switch": { status: "mock", label: "Mock" },
-  "feature:header.thread-actions": { status: "mock", label: "Mock" },
-  "feature:header.thread-run-action": { status: "mock", label: "Mock" },
-  "feature:header.open": { status: "mock", label: "Mock" },
-  "feature:header.open-options": { status: "mock", label: "Mock" },
-  "feature:header.handoff": { status: "mock", label: "Mock" },
   "feature:header.commit": { status: "partial", label: "Partial" },
   "feature:header.commit-options": { status: "partial", label: "Partial" },
-  "feature:header.workspace-popout": { status: "mock", label: "Mock" },
-  "feature:composer.remote-connections": { status: "mock", label: "Mock" },
-  "feature:composer.connections.add": { status: "mock", label: "Mock" },
-  "feature:composer.connections.dismiss": { status: "mock", label: "Mock" },
-  "feature:composer.dictate": { status: "partial", label: "Partial" },
   "feature:composer.git-ops": { status: "partial", label: "Partial" },
   "feature:composer.terminal-toggle": { status: "partial", label: "Partial" },
-  "feature:composer.host": { status: "mock", label: "Mock" },
-  "feature:views.plugins": { status: "mock", label: "Mock" },
-  "feature:views.automations": { status: "mock", label: "Mock" },
-  "feature:views.debug": { status: "mock", label: "Mock" },
   "feature:skills.create": { status: "partial", label: "Partial" },
   "feature:diff.panel": { status: "partial", label: "Partial" },
-  "feature:diff.review": { status: "mock", label: "Mock" },
   "feature:terminal.panel": { status: "partial", label: "Partial" },
   "feature:settings.menu.skills": { status: "partial", label: "Partial" },
   "feature:settings.menu.settings": { status: "partial", label: "Partial" },
-  "feature:settings.menu.rate-limits": { status: "mock", label: "Mock" },
 } as const satisfies Record<string, { status: FeatureStatus; label: string }>;
 
 export type FeatureStatusId = keyof typeof featureStatusById;

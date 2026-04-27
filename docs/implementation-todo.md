@@ -50,15 +50,7 @@ This turns `docs/mock-features.md` into an execution backlog.
   - [ ] create permanent worktree
   - files: `desktop/pi-threads/action-router.cts`, `desktop/thread-state-db/*`, `src/app/components/sidebar/ProjectActionMenu.tsx`, `src/app/components/sidebar/ProjectActionDialog.tsx`
 
-#### 4. Thread action menu / run action
-- [ ] Implement `thread.actions`
-- [ ] Implement `thread.run-action`
-  - files: `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
-
 #### 4b. Header open / commit controls
-- [ ] Implement `workspace.open`
-- [ ] Implement `workspace.open-options`
-- [ ] Implement `workspace.handoff`
 - [x] Implement `workspace.commit`
 - [x] Implement `workspace.commit-options`
   - branch control in the composer git surface is still display-only
@@ -87,7 +79,6 @@ This turns `docs/mock-features.md` into an execution backlog.
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/workspace/composer/*`
 - [ ] Replace per-turn checkpoint diff ownership with a git-native project/worktree diff model if the mock lands well
   - files: `desktop/diff/*`, `desktop/project-git.cts`, `src/app/components/workspace/diff/*`, `src/app/components/workspace/composer/*`, `shared/desktop-contracts.ts`
-- [ ] Implement `diff.review`
   - files: `desktop/pi-threads/action-router.cts`, `src/app/components/workspace/DiffPanel.tsx`
 
 ### P2 — Improve fidelity and non-core navigation
@@ -103,7 +94,7 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 8. Sidebar utility controls
 - [ ] Finish thread filtering/search as a coherent end-to-end flow
-  - current sidebar + inbox filtering/search is renderer-local only; legacy `threads.filter` remains a backend no-op
+  - current sidebar + inbox filtering/search is renderer-local only
 - [ ] Finish add/import project flow UX + semantics
   - `project.add`, `projects.import.scan`, and `projects.import.apply` are already wired; remaining work is product behavior/polish
 - [x] Add drag-and-drop project reordering with persisted sidebar order
@@ -112,23 +103,17 @@ This turns `docs/mock-features.md` into an execution backlog.
 
 #### 9. Landing project switcher
 - [x] Ship the landing project picker flow via project selection + `thread.new`
-- [ ] Retire or reclassify legacy `landing.project-switcher` action/status inventory
+- [x] Remove legacy landing project-switcher action/status inventory
   - files: `src/app/views/LandingView.tsx`, `src/app/app-shell/AppShellWorkspace.tsx`, `desktop/pi-threads/action-router.cts`
 
 ### P3 — Secondary product areas
 
-#### 10. Plugins / Automations / Debug pages
-- [ ] Replace placeholder cards with real registries/data
-- [ ] Or intentionally hide/remove these views until real
-  - files: `src/app/views/MainView.tsx`, `src/app/views/CardGridView.tsx`, `src/app/data/mock-data.ts`
-
-#### 10b. Skills / extensions
+#### 10. Skills / extensions
 - [x] Ship real skills and extensions feature lanes with search/install/remove style flows
   - files: `src/app/features/skills/*`, `src/app/features/extensions/*`, `desktop/skills/*`, `desktop/pi-packages/*`
 - [ ] Keep polishing scoped-project behavior, empty/error states, and skill-creator packaging details
 
 #### 11. Connections / settings shell items
-- [ ] Implement remote connection flow
 - [ ] Revisit post-MVP settings surfaces like rate limits remaining
   - files: `src/app/components/workspace/Composer.tsx`, `src/app/components/sidebar/SettingsMenu.tsx`
 
@@ -143,7 +128,6 @@ This turns `docs/mock-features.md` into an execution backlog.
 - [x] Add real new-thread desktop bridge requests
 - [x] Add stream/event desktop bridge messages for assistant output
 - [x] Replace generic `project.actions` stubs with explicit typed project actions for supported menu items
-- [ ] Implement diff review backend
 - [x] Implement PTY-backed terminal backend
 - [ ] Decide whether a separate run-log backend/product mode is still needed
 - [ ] Implement filter/search backend if needed
@@ -166,9 +150,7 @@ Key files:
 - [x] Add optimistic / streaming thread UI state
 - [x] Refresh shell + thread state coherently after mutations
 - [ ] Finish thread filter/search UX and semantics beyond the current renderer-local filtering
-- [ ] Add proper menus for thread actions / project switching / header split-button actions
-- [ ] Replace mock plugin/automation/debug data or remove views
-- [x] Add real skills/extensions feature lanes separate from the mock plugin/automation/debug card surfaces
+- [x] Add real skills/extensions feature lanes
 - [ ] Add richer thread block renderers
 
 #### 7a. Thread naming from compaction summaries

@@ -32,6 +32,8 @@ jobs:
             runs_on: ubuntu-24.04-arm
           - name: windows-x64
             runs_on: windows-2025
+          - name: windows-arm64
+            runs_on: windows-11-arm
           - name: macos-arm64
             runs_on: macos-15
           - name: macos-x64
@@ -119,6 +121,7 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
 
   cleanup-dev-artifacts:
     name: Cleanup old dev artifacts
@@ -190,13 +193,13 @@ jobs:
           path: release-assets
 
       - name: List release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' \) -print | sort
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1

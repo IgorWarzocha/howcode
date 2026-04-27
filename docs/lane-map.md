@@ -16,7 +16,6 @@ This repo is intentionally split around future Pi desktop integration seams.
 - `src/app/state/workspace.ts`
   - deterministic workspace reducer + selectors
   - safest place to grow mock state into persisted session state
-- `src/app/data/mock-data.ts`
   - legacy visual fixtures and card-grid placeholder data only
   - do not use for real project/thread state; replace or remove remaining card fixtures as product surfaces become real
 - `src/app/components/sidebar/*`
@@ -54,7 +53,7 @@ This repo is intentionally split around future Pi desktop integration seams.
   - Pi runtime lane: registry, composer state, attachments, thread publishing, session-path mapping
 - `desktop/pi-threads/*`
   - shell loading, thread hydration, action routing, and payload parsing
-  - `action-router.cts` is a thin dispatcher over `noop-actions.cts`, `project-actions.cts`, `thread-actions.cts`, `composer-actions.cts`, `workspace-actions.cts`, and `settings-actions.cts`
+  - `action-router.cts` is a thin dispatcher over `project-actions.cts`, `thread-actions.cts`, `composer-actions.cts`, `workspace-actions.cts`, and `settings-actions.cts`
 - `desktop/thread-state-db/*`
   - SQLite bootstrap/schema/query/write/mapping split
 - `shared/pi-message-mapper.ts`

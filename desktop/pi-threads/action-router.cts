@@ -5,7 +5,6 @@ import type {
 } from "../../shared/desktop-contracts.ts";
 import { assertUnhandledDesktopAction } from "./action-router-result.cts";
 import { handleComposerDesktopAction } from "./composer-actions.cts";
-import { handleNoopDesktopAction } from "./noop-actions.cts";
 import { handlePiSettingsDesktopAction } from "./pi-settings-actions.cts";
 import { handleProjectDesktopAction } from "./project-actions.cts";
 import { handleSettingsDesktopAction } from "./settings-actions.cts";
@@ -19,7 +18,6 @@ export async function handleDesktopAction(
   // Keep the public router thin: each domain owns its own action family and can grow
   // without turning this entrypoint back into a switch-based godfile.
   const handlers = [
-    handleNoopDesktopAction(action),
     await handleProjectDesktopAction(action, payload),
     await handleThreadDesktopAction(action, payload),
     await handleComposerDesktopAction(action, payload),

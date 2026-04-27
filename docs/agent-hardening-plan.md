@@ -188,7 +188,6 @@ Evidence:
 
 Target split:
 
-- `src/app/components/workspace/composer/ComposerBanner.tsx`
 - `src/app/components/workspace/composer/AttachmentChips.tsx`
 - `src/app/components/workspace/composer/ModelMenu.tsx`
 - `src/app/components/workspace/composer/ThinkingMenu.tsx`

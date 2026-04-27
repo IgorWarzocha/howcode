@@ -37,12 +37,14 @@ bun run release:prepare
 This produces:
 
 - `artifacts/electron/` — Electron unpacked release artifacts
+- `artifacts/electron/*.AppImage` — Linux AppImage artifacts on Linux builds
 - `artifacts/npm-launcher/` — launcher archives consumed by the npm package
 
 For a GitHub release, upload both:
 
 - `stable-<os>-<arch>-update.json`
 - Electron unpacked bundle artifacts
+- Linux `.AppImage` artifacts
 - `howcode-<os>-<arch>.tar.gz`
 
 Launcher base URL:

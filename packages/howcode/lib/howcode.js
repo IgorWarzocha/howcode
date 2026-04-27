@@ -3,9 +3,10 @@ const fsp = require("node:fs/promises");
 const crypto = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
-const { spawn, spawnSync } = require("node:child_process");
+const { spawn } = require("node:child_process");
 const { pipeline } = require("node:stream/promises");
 const { Readable } = require("node:stream");
+const tar = require("tar");
 
 const packageJson = require("../package.json");
 
@@ -36,7 +37,7 @@ const TARGETS = {
   },
   "win32:arm64": {
     os: "win",
-    arch: "x64",
+    arch: "arm64",
     executable: `${APP_NAME}/${APP_NAME}.exe`,
   },
   "win32:x64": {
@@ -170,13 +171,7 @@ async function installRelease(target, releaseInfo, paths) {
 
   await fsp.mkdir(tempInstallDir, { recursive: true });
 
-  const extract = spawnSync("tar", ["-xzf", archivePath, "-C", tempInstallDir], {
-    stdio: "inherit",
-  });
-
-  if (extract.status !== 0) {
-    throw new Error("Failed to extract downloaded archive with `tar -xzf`.");
-  }
+  await tar.x({ file: archivePath, cwd: tempInstallDir });
 
   if (!fs.existsSync(path.join(tempInstallDir, target.executable))) {
     throw new Error(`Downloaded archive did not contain ${target.executable}.`);

@@ -36,6 +36,16 @@
   color: var(--text);
 }
 
+.sidebar-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sidebar-nav-button:disabled:hover {
+  background: transparent;
+  color: var(--muted);
+}
+
 .sidebar-nav-button[data-active="true"] {
   background: rgba(183, 186, 245, 0.09);
   box-shadow: inset 0 0 0 1px rgba(183, 186, 245, 0.03);

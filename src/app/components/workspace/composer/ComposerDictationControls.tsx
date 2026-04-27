@@ -1,7 +1,6 @@
 import { AudioLines, Check, FileAudio, Mic, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DesktopActionInvoker } from "../../../desktop/types";
-import { getFeatureStatusButtonClass } from "../../../features/feature-status";
 import { useAnimatedPresence } from "../../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { compactCardClass, compactIconButtonClass, iconButtonClass } from "../../../ui/classes";
@@ -111,7 +110,6 @@ export function ComposerDictationControls({
         }}
         className={cn(
           iconButtonClass,
-          getFeatureStatusButtonClass("feature:composer.dictate"),
           dictationActive &&
             "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1]",
           dictationTranscribing &&

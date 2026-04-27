@@ -69,13 +69,6 @@ export function ProjectActionMenu({
       title: pinned ? "Unmark Favourite" : "Mark Favourite",
       action: "project.pin",
     },
-    // {
-    //   icon: <GitBranchPlus size={14} />,
-    //   title: "Create Worktree",
-    //   action: "project.create-worktree",
-    //   className:
-    //     "text-[#f2a7a7] hover:text-[#ffd1d1] [&>span:first-child]:text-[#f2a7a7] [&:hover>span:first-child]:text-[#ffd1d1] [&>div>div>span]:text-[#f2a7a7] [&:hover>div>div>span]:text-[#ffd1d1]",
-    // },
     {
       icon: <Archive size={14} />,
       title: "Archive all",

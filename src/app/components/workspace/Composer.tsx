@@ -15,7 +15,6 @@ import type { SavedDiffComment } from "./diff/diffCommentStore";
 
 export type ComposerProps = {
   activeView: View;
-  hostLabel: string;
   model: ComposerModel | null;
   contextUsage: ComposerContextUsage | null;
   availableModels: ComposerModel[];

@@ -38,26 +38,4 @@ export const implementedDesktopActions = [
   "projects.import.apply",
 ] as const satisfies readonly DesktopAction[];
 
-// These actions are intentionally accepted by the bridge but currently no-op on the
-// backend until their renderer/desktop integrations are implemented.
-export const unimplementedDesktopActions = [
-  "threads.filter",
-  "project.create-worktree",
-  "thread.actions",
-  "thread.run-action",
-  "workspace.open",
-  "workspace.open-options",
-  "workspace.handoff",
-  "workspace.popout",
-  "connections.add",
-  "connections.dismiss-banner",
-  "composer.attach-menu",
-  "composer.dictate",
-  "composer.host",
-  "plugins.open-card",
-  "automations.open-card",
-  "debug.open-card",
-  "landing.project-switcher",
-  "diff.review",
-  "terminal.close",
-] as const satisfies readonly DesktopAction[];
+export const unimplementedDesktopActions = [] as const satisfies readonly DesktopAction[];

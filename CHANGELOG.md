@@ -1,31 +1,15 @@
-# Changelog
+### Might be rough around the edges, but it's a diamond and will only get better.
 
-## Next up
+This app is heavily optimised towards coding with agents on YOLO. No file viewer, because it's not an IDE. No turn-by-turn diffs, because I do not believe anybody reads them. Just you and your composer.
 
-- tighten visible mock/partial status drift
-- finish git + diff + review convergence
-- improve terminal and execution-location UX
-- keep the npm launcher and release packaging flow smooth
+- Code view - with known suspects: composer, git-operations and terminal.
+- Desktop chat mode optimised around UX/readability.
+- Git-ops composer with diff review mode, comments-based review-flow & more.
+- Pi-TUI mode that embeds Pi "as it is" inside of the app.
+- Sidebar with projects/sessions management.
+- Local dictation via sherpa-ONNX (CPU - it's fast enough)
+- Browse, install, remove, and configure Pi skills/extensions.
 
-See `docs/roadmap.md` for the broader product direction.
+Submit any issues to https://github.com/IgorWarzocha/howcode/issues
 
-## 0.1.2 - CEF renderer rollout
-
-- ship macOS, Linux, and Windows builds with bundled CEF and default to the CEF renderer
-- remove the old Linux DMABUF workaround from app startup and the npm launcher
-- document the renderer change and the larger bundle-size tradeoff
-
-## 0.1.1 - Packaging fix release
-
-- bundle the Pi runtime into packaged desktop builds
-- ship launcher archives with the real extracted app payload
-- launch Linux builds with `WEBKIT_DISABLE_DMABUF_RENDERER=1` by default from the npm launcher
-- document the Linux white-screen workaround for direct asset launches
-
-## 0.1.0 - Initial release
-
-- first public Howcode release
-- desktop app packaged through Electrobun
-- npm launcher package for `npx howcode` and `npm i -g howcode`
-- first-run platform download + local caching flow
-
+Follow on https://x.com/Howaboua for random updates.
