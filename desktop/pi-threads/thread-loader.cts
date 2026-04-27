@@ -15,12 +15,15 @@ import {
   listProjectThreads,
   upsertInboxThreadPrompt,
 } from "../thread-state-db.cts";
+import { mapWithConcurrency } from "./map-with-concurrency.cts";
 
 export type LoadedThreadSnapshot = {
   projectId: string;
   threadId: string;
   thread: ThreadData;
 };
+
+const INBOX_PROMPT_BACKFILL_CONCURRENCY = 6;
 
 export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
   ensureProject(projectId);
@@ -34,37 +37,35 @@ export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {
 export async function loadInboxThreadList(): Promise<InboxThread[]> {
   const threads = listInboxThreads();
 
-  return Promise.all(
-    threads.map(async (thread) => {
-      try {
-        if (thread.prompt?.trim()) {
-          return thread;
-        }
-
-        const loadedThread = await loadThread(thread.sessionPath);
-        let prompt: string | null = null;
-
-        for (let index = loadedThread.messages.length - 1; index >= 0; index -= 1) {
-          const message = loadedThread.messages[index];
-          if (message.role === "user") {
-            const nextPrompt = message.content.join("\n\n").trim();
-            prompt = nextPrompt.length > 0 ? nextPrompt : null;
-            break;
-          }
-        }
-
-        if (!prompt) {
-          return thread;
-        }
-
-        upsertInboxThreadPrompt(thread.sessionPath, prompt);
-        return { ...thread, prompt };
-      } catch (error) {
-        console.warn(`Failed to backfill inbox prompt for ${thread.sessionPath}.`, error);
+  return mapWithConcurrency(threads, INBOX_PROMPT_BACKFILL_CONCURRENCY, async (thread) => {
+    try {
+      if (thread.prompt?.trim()) {
         return thread;
       }
-    }),
-  );
+
+      const loadedThread = await loadThread(thread.sessionPath);
+      let prompt: string | null = null;
+
+      for (let index = loadedThread.messages.length - 1; index >= 0; index -= 1) {
+        const message = loadedThread.messages[index];
+        if (message.role === "user") {
+          const nextPrompt = message.content.join("\n\n").trim();
+          prompt = nextPrompt.length > 0 ? nextPrompt : null;
+          break;
+        }
+      }
+
+      if (!prompt) {
+        return thread;
+      }
+
+      upsertInboxThreadPrompt(thread.sessionPath, prompt);
+      return { ...thread, prompt };
+    } catch (error) {
+      console.warn(`Failed to backfill inbox prompt for ${thread.sessionPath}.`, error);
+      return thread;
+    }
+  });
 }
 
 export async function loadThreadSnapshot(

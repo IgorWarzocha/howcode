@@ -4,6 +4,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
 import { getPiModule } from "../pi-module.cts";
+import { mapWithConcurrency } from "./map-with-concurrency.cts";
 
 export type SessionSummary = {
   id: string;
@@ -96,28 +97,6 @@ function getSessionModifiedDate(
   const headerTimestampMs =
     typeof header.timestamp === "string" ? Date.parse(header.timestamp) : Number.NaN;
   return Number.isNaN(headerTimestampMs) ? fileModified : new Date(headerTimestampMs);
-}
-
-async function mapWithConcurrency<TInput, TOutput>(
-  inputs: TInput[],
-  concurrency: number,
-  mapper: (input: TInput) => Promise<TOutput>,
-) {
-  const results = new Array<TOutput>(inputs.length);
-  let nextIndex = 0;
-
-  const workerCount = Math.min(concurrency, inputs.length);
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (nextIndex < inputs.length) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-        results[currentIndex] = await mapper(inputs[currentIndex] as TInput);
-      }
-    }),
-  );
-
-  return results;
 }
 
 async function readSessionSummary(filePath: string): Promise<SessionSummaryReadResult> {
