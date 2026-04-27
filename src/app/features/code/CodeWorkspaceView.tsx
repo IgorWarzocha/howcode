@@ -165,6 +165,7 @@ export function CodeWorkspaceView({
                 contextUsage={activeComposerState?.contextUsage ?? null}
                 currentModel={activeComposerState?.currentModel ?? null}
                 currentThinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                isCompacting={activeComposerState?.isCompacting ?? false}
                 currentProjectName={currentProjectName}
                 selectedInboxThread={controller.selectedInboxThread}
                 projects={controller.projects}

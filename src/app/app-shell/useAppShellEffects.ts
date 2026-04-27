@@ -6,6 +6,7 @@ import type {
   ArchivedThread,
   ComposerState,
   DesktopEvent,
+  InboxThread,
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
@@ -57,6 +58,7 @@ export function useAppShellEffects({
   projects,
   collapsedProjectIds,
   workspaceState,
+  selectedInboxThread,
   composerProjectId,
   shellComposerState,
   shellAppSettings,
@@ -76,6 +78,7 @@ export function useAppShellEffects({
   projects: Project[];
   collapsedProjectIds: Record<string, boolean>;
   workspaceState: WorkspaceState;
+  selectedInboxThread: InboxThread | null;
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
   shellAppSettings: AppSettings | null | undefined;
@@ -178,7 +181,12 @@ export function useAppShellEffects({
   ]);
 
   useEffect(() => {
-    if (!composerProjectId) {
+    const composerStateProjectId =
+      workspaceState.activeView === "inbox" && selectedInboxThread
+        ? selectedInboxThread.projectId
+        : composerProjectId;
+
+    if (!composerStateProjectId) {
       return;
     }
 
@@ -186,11 +194,13 @@ export function useAppShellEffects({
 
     const syncComposerState = async () => {
       const nextComposerState = await loadComposerState({
-        projectId: composerProjectId,
+        projectId: composerStateProjectId,
         sessionPath:
           workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
             ? workspaceState.selectedSessionPath
-            : null,
+            : workspaceState.activeView === "inbox"
+              ? workspaceState.selectedInboxSessionPath
+              : null,
       });
 
       if (!cancelled && nextComposerState) {
@@ -204,10 +214,12 @@ export function useAppShellEffects({
       cancelled = true;
     };
   }, [
-    composerProjectId,
     loadComposerState,
+    composerProjectId,
+    selectedInboxThread,
     setComposerState,
     workspaceState.activeView,
+    workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
 

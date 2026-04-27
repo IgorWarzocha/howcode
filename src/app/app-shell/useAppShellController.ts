@@ -104,6 +104,7 @@ export function useAppShellController() {
     projects,
     collapsedProjectIds,
     workspaceState: state,
+    selectedInboxThread,
     composerProjectId,
     shellComposerState: shellState?.composer,
     shellAppSettings: shellState?.appSettings,

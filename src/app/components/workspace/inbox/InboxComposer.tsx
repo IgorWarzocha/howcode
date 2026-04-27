@@ -1,5 +1,7 @@
 import { ArrowUpRight, Bot, Paperclip, Send, Square, X } from "lucide-react";
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
+import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
+import { getErrorMessage } from "../../../desktop/error-messages";
 import type {
   AppSettings,
   ComposerAttachment,
@@ -66,7 +68,7 @@ type InboxComposerProps = {
   }) => Promise<ComposerFilePickerState | null>;
   onOpenThread: () => void;
   onOpenSettingsView: () => void;
-  onSend: () => void;
+  onSend: (input: { draft: string; attachments: ComposerAttachment[] }) => Promise<void> | void;
   onStop: () => void;
 };
 
@@ -103,7 +105,42 @@ export function InboxComposer({
   const pickerPanelRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
-  const canSend = (draft.trim().length > 0 || attachments.length > 0) && !isSending;
+  const slashCommandPanelRef = useRef<HTMLDivElement>(null);
+  const draftValueRef = useRef(draft);
+  const attachmentsRef = useRef(attachments);
+  const sendLockRef = useRef(false);
+  const [localActionPending, setLocalActionPending] = useState(false);
+  const canSend =
+    (draft.trim().length > 0 || attachments.length > 0) &&
+    !isSending &&
+    !isCompacting &&
+    !localActionPending;
+
+  useEffect(() => {
+    draftValueRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+  }, [attachments]);
+
+  const setDraftValue: Dispatch<SetStateAction<string>> = (value) => {
+    const nextValue =
+      typeof value === "function"
+        ? (value as (current: string) => string)(draftValueRef.current)
+        : value;
+    draftValueRef.current = nextValue;
+    onChangeDraft(nextValue);
+  };
+
+  const setAttachmentValue: Dispatch<SetStateAction<ComposerAttachment[]>> = (value) => {
+    const nextValue =
+      typeof value === "function"
+        ? (value as (current: ComposerAttachment[]) => ComposerAttachment[])(attachmentsRef.current)
+        : value;
+    attachmentsRef.current = nextValue;
+    onChangeAttachments(nextValue);
+  };
 
   useDismissibleLayer({
     open: openMenu === "model",
@@ -166,7 +203,7 @@ export function InboxComposer({
     openMenu,
     pickerRootPath: thread.projectId,
     pickerSessionKey: thread.sessionPath,
-    setAttachments: onChangeAttachments,
+    setAttachments: setAttachmentValue,
     setErrorMessage: onChangeErrorMessage,
     setOpenMenu,
     onListAttachmentEntries,
@@ -187,37 +224,145 @@ export function InboxComposer({
     draftThreadId: thread.threadId,
     projectId: thread.projectId,
     sessionPath: thread.sessionPath,
-    setDraftValue: onChangeDraft,
+    setDraftValue,
     setErrorMessage: onChangeErrorMessage,
   });
 
   const send = async () => {
-    await stopDictationAndFlush();
-    onSend();
+    if (sendLockRef.current || isSending || isCompacting || localActionPending) {
+      return;
+    }
+
+    sendLockRef.current = true;
+    setLocalActionPending(true);
+    try {
+      await stopDictationAndFlush();
+      await onSend({ draft: draftValueRef.current, attachments: attachmentsRef.current });
+    } finally {
+      sendLockRef.current = false;
+      setLocalActionPending(false);
+    }
   };
 
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId: thread.projectId,
     sessionPath: thread.sessionPath,
-    setDraft: onChangeDraft,
+    setDraft: setDraftValue,
     send: () => void send(),
     onOpenSettingsView,
   });
 
-  const compact = async () => {
-    if (isSending || isStreaming || isCompacting || !thread.sessionPath) {
+  const slashCommandListSignature = slashCommands.commands
+    .map((command) => `${command.source}:${command.name}`)
+    .join("|");
+
+  useEffect(() => {
+    if (!slashCommands.open) {
       return;
     }
 
-    await stopDictationAndFlush();
-    await onAction("composer.send", {
-      projectId: thread.projectId,
-      sessionPath: thread.sessionPath,
-      text: "/compact",
-      attachments: [],
-      streamingBehavior: appSettings.composerStreamingBehavior,
-    });
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+
+      if (!target) {
+        return;
+      }
+
+      if (
+        slashCommandPanelRef.current?.contains(target) ||
+        composerPanelRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      slashCommands.dismiss();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      slashCommands.dismiss();
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [slashCommands]);
+
+  useEffect(() => {
+    if (!slashCommands.open || !slashCommands.activeDescendantId) {
+      return;
+    }
+
+    void slashCommandListSignature;
+
+    const panel = slashCommandPanelRef.current;
+    const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`);
+    if (!panel || !option) {
+      return;
+    }
+
+    if (slashCommands.selectedIndex === 0) {
+      panel.scrollTop = 0;
+      return;
+    }
+
+    const panelStyles = window.getComputedStyle(panel);
+    const paddingTop = Number.parseFloat(panelStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(panelStyles.paddingBottom) || 0;
+    const visibleTop = panel.scrollTop + paddingTop;
+    const visibleBottom = panel.scrollTop + panel.clientHeight - paddingBottom;
+    const optionTop = option.offsetTop;
+    const optionBottom = optionTop + option.offsetHeight;
+
+    if (optionTop < visibleTop) {
+      panel.scrollTop = optionTop - paddingTop;
+    } else if (optionBottom > visibleBottom) {
+      panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom;
+    }
+  }, [
+    slashCommands.open,
+    slashCommands.activeDescendantId,
+    slashCommands.selectedIndex,
+    slashCommandListSignature,
+  ]);
+
+  const compact = async () => {
+    if (sendLockRef.current || isSending || isStreaming || isCompacting || !thread.sessionPath) {
+      return;
+    }
+
+    sendLockRef.current = true;
+    setLocalActionPending(true);
+    onChangeErrorMessage(null);
+    try {
+      await stopDictationAndFlush();
+      const result = await onAction("composer.send", {
+        projectId: thread.projectId,
+        sessionPath: thread.sessionPath,
+        text: "/compact",
+        attachments: [],
+        streamingBehavior: appSettings.composerStreamingBehavior,
+      });
+
+      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not compact context.");
+      if (actionErrorMessage) {
+        onChangeErrorMessage(actionErrorMessage);
+      }
+    } catch (error) {
+      onChangeErrorMessage(getErrorMessage(error, "Could not compact context."));
+    } finally {
+      sendLockRef.current = false;
+      setLocalActionPending(false);
+    }
   };
 
   return (
@@ -279,6 +424,7 @@ export function InboxComposer({
               <div className="min-w-0 flex-1">
                 {slashCommands.open ? (
                   <div
+                    ref={slashCommandPanelRef}
                     id={slashCommands.listboxId}
                     // biome-ignore lint/a11y/useSemanticElements: This is a textarea-owned combobox popup, not a native select.
                     role="listbox"
@@ -338,7 +484,7 @@ export function InboxComposer({
                 ) : null}
                 <ComposerTextField
                   value={draft}
-                  onChange={onChangeDraft}
+                  onChange={setDraftValue}
                   onKeyDown={(event) => {
                     if (slashCommands.handleKeyDown(event)) {
                       return;
@@ -385,7 +531,7 @@ export function InboxComposer({
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={onStop}
-                disabled={!isStreaming || isSending}
+                disabled={!isStreaming || isSending || localActionPending}
                 aria-label="Stop Pi"
                 title="Stop Pi"
               >
@@ -432,7 +578,9 @@ export function InboxComposer({
           <div className="absolute top-0 right-0">
             <ComposerContextMeter
               contextUsage={contextUsage}
-              compactDisabled={isStreaming || isCompacting || !thread.sessionPath}
+              compactDisabled={
+                isStreaming || isCompacting || localActionPending || !thread.sessionPath
+              }
               isCompacting={isCompacting}
               onCompact={() => void compact()}
             />

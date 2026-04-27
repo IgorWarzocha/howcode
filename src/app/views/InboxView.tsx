@@ -60,9 +60,19 @@ export function InboxView({
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSend = async () => {
-    const nextDraft = draft.trim();
-    if (!thread || (nextDraft.length === 0 && attachments.length === 0) || isSending) {
+  const handleSend = async (input?: {
+    draft: string;
+    attachments: ComposerAttachment[];
+  }) => {
+    const draftToSend = input?.draft ?? draft;
+    const attachmentsToSend = input?.attachments ?? attachments;
+    const nextDraft = draftToSend.trim();
+    if (
+      !thread ||
+      (nextDraft.length === 0 && attachmentsToSend.length === 0) ||
+      isSending ||
+      isCompacting
+    ) {
       return;
     }
 
@@ -76,7 +86,7 @@ export function InboxView({
         projectId: thread.projectId,
         sessionPath: thread.sessionPath,
         text: nextDraft,
-        attachments: isCompactSlashCommand(nextDraft) ? [] : attachments,
+        attachments: isCompactSlashCommand(nextDraft) ? [] : attachmentsToSend,
         streamingBehavior: appSettings.composerStreamingBehavior,
       });
     } catch (error) {
@@ -203,7 +213,7 @@ export function InboxView({
             onListAttachmentEntries={onListAttachmentEntries}
             onOpenThread={() => onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)}
             onOpenSettingsView={onOpenSettingsView}
-            onSend={handleSend}
+            onSend={(sendInput) => handleSend(sendInput)}
             onStop={handleStop}
           />
         </div>

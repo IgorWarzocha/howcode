@@ -38,6 +38,7 @@ type CodeWorkspaceMainViewProps = {
   contextUsage: ComposerContextUsage | null;
   currentModel: ComposerModel | null;
   currentThinkingLevel: ComposerThinkingLevel;
+  isCompacting: boolean;
   currentProjectName: string;
   selectedInboxThread: InboxThread | null;
   projects: Project[];
@@ -71,6 +72,7 @@ export function CodeWorkspaceMainView({
   contextUsage,
   currentModel,
   currentThinkingLevel,
+  isCompacting,
   currentProjectName,
   selectedInboxThread,
   projects,
@@ -114,7 +116,7 @@ export function CodeWorkspaceMainView({
         currentModel={currentModel}
         currentThinkingLevel={currentThinkingLevel}
         favoriteFolders={appSettings.favoriteFolders}
-        isCompacting={threadData?.isCompacting ?? false}
+        isCompacting={isCompacting}
         showDictationButton={appSettings.showDictationButton}
         thread={selectedInboxThread}
         onAction={onAction}
