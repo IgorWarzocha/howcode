@@ -63,10 +63,16 @@ function getMessageText(entry: SessionFileEntry) {
   }
 
   if (Array.isArray(content)) {
-    return content
-      .filter((block) => block.type === "text" && typeof block.text === "string")
-      .map((block) => block.text)
-      .join(" ");
+    let text = "";
+    for (const block of content) {
+      if (block.type !== "text" || typeof block.text !== "string") {
+        continue;
+      }
+
+      text += text ? ` ${block.text}` : block.text;
+    }
+
+    return text;
   }
 
   return "";
