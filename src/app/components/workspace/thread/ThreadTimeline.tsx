@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ArrowDownToLine, ListCollapse } from "lucide-react";
 import type { Message } from "../../../types";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { CHAT_TEXT_MAX_WIDTH_CLASS } from "../../../ui/layout";
+import { cn } from "../../../utils/cn";
 import { ThreadTimelineRow } from "./ThreadTimelineRow";
 import { buildTimelineRows } from "./buildTimelineRows";
 import { CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX, isScrollContainerNearBottom } from "./chat-scroll";
@@ -17,6 +20,9 @@ type ThreadTimelineProps = {
   onLoadEarlierMessages: () => void;
 };
 
+const timelineQuickActionButtonClass =
+  "pointer-events-auto shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
+
 export function ThreadTimeline({
   messages,
   previousMessageCount,
@@ -27,6 +33,7 @@ export function ThreadTimeline({
 }: ThreadTimelineProps) {
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
   const [expandedToolGroupIds, setExpandedToolGroupIds] = useState<Record<string, boolean>>({});
+  const [nearBottom, setNearBottom] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -101,6 +108,8 @@ export function ThreadTimeline({
     }
 
     container.scrollTop = container.scrollHeight;
+    shouldStickToBottomRef.current = true;
+    setNearBottom(true);
     programmaticScrollFrameRef.current = window.requestAnimationFrame(() => {
       programmaticScrollFrameRef.current = null;
     });
@@ -173,7 +182,7 @@ export function ThreadTimeline({
       return;
     }
 
-    shouldStickToBottomRef.current = isScrollContainerNearBottom(
+    const nextNearBottom = isScrollContainerNearBottom(
       {
         scrollTop: container.scrollTop,
         clientHeight: container.clientHeight,
@@ -181,7 +190,21 @@ export function ThreadTimeline({
       },
       CHAT_AUTO_SCROLL_BOTTOM_THRESHOLD_PX,
     );
+    shouldStickToBottomRef.current = nextNearBottom;
+    setNearBottom(nextNearBottom);
   }, []);
+
+  const handleFoldEverything = useCallback(() => {
+    shouldStickToBottomRef.current = true;
+    setExpandedToolGroupIds({});
+    setCollapsedRowIds(
+      foldableRows.reduce<Record<string, boolean>>((nextCollapsedRowIds, row) => {
+        nextCollapsedRowIds[row.id] = row.id !== streamingTurnRowId;
+        return nextCollapsedRowIds;
+      }, {}),
+    );
+    window.requestAnimationFrame(scrollToBottom);
+  }, [foldableRows, scrollToBottom, streamingTurnRowId]);
 
   const handleToggleRowCollapse = useCallback(
     (rowId: string) => {
@@ -279,6 +302,28 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
+      <div className="pointer-events-none absolute right-4 bottom-4 z-10 flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+          onClick={handleFoldEverything}
+          disabled={foldableRows.length === 0}
+          aria-label="Fold everything"
+          title="Fold everything"
+        >
+          <ListCollapse size={13} strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
+          onClick={scrollToBottom}
+          disabled={nearBottom}
+          aria-label="Scroll to bottom"
+          title="Scroll to bottom"
+        >
+          <ArrowDownToLine size={13} strokeWidth={2} />
+        </button>
+      </div>
     </div>
   );
 }
