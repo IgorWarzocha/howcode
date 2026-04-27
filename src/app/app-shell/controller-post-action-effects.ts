@@ -92,7 +92,8 @@ export async function runPostDesktopActionEffects({
           ? getPayloadThreadIds(contextualPayload)
           : [];
 
-    if (archivedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
+    const selectedThreadId = workspaceState.selectedThreadId;
+    if (selectedThreadId && new Set(archivedThreadIds).has(selectedThreadId)) {
       dispatch({ type: "show-view", view: "code" });
     }
 
@@ -133,7 +134,8 @@ export async function runPostDesktopActionEffects({
             : getPayloadThreadIds(contextualPayload)
           : [];
 
-    if (deletedThreadIds.includes(workspaceState.selectedThreadId ?? "")) {
+    const selectedThreadId = workspaceState.selectedThreadId;
+    if (selectedThreadId && new Set(deletedThreadIds).has(selectedThreadId)) {
       dispatch({ type: "show-view", view: "code" });
     }
 
