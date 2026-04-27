@@ -1,17 +1,14 @@
->[!IMPORTANT] 
->If you somehow ended up here before I said I am ready, do yourself a favour and use the dev version via `bun run dev`. Things are changing rapidly. Releases will be built only when I feel like a milestone is feature-ready and without any experience-breaking bugs. Current initial release was mostly to see if it builds and if I can use the app to build itself. I kinda can.
+> [!IMPORTANT]
+> This is a one-man project. Only so many things I can check. Expect weird edge cases.
+> Current release is the first properly working one, so I'll probably find some stuff myself.
 
-# howcode
+# There are many desktop apps for coding with AI, but this one...
 
-Howcode is a desktop shell for Pi that makes local coding workflows feel fast, native, and focused.
+I've clanked a LOT. And during that clanking, I used a few apps. None of them really fit how I work. This one does. It's opinionated, focussed on UX and aimed at YOLOing with agents.
 
-It combines:
+You won't find a file editor. You won't see a turn-by-turn diff. Some things might not instantly click. But when they do, you'll understand the idea behind all of it.
 
-- threaded Pi conversations
-- project-aware sidebars and inbox flows
-- a built-in terminal
-- diff views for coding work
-- local-first desktop behavior
+The UI is meant to speak for itself. When it doesn't, it's a fail. So if you don't "get it", file an issue. Tell me how to improve it. I might agree.
 
 ## Install
 
@@ -24,35 +21,44 @@ howcode
 
 On first run, the launcher downloads the matching desktop build for your platform and caches it locally.
 
-Linux releases also include an AppImage for direct desktop installs.
+Check releases tabs for latest stable-ish version you can just download. Built on Linux, compatible with Mac and Windows.
 
-### Renderer note
+## What you can do
 
-Release builds now ship with bundled Electron + Chromium on macOS, Linux, and Windows.
+- **Coding with Pi in a desktop environment** — the main dish.
+- **Staying oriented across projects** — sidebar projects, pinned/archived threads, inbox collating all the recent messages.
+- **Built in terminal** — with persisted transcript history, apparently.
+- **Git-ops composer** — a separate view tailored to doing things with git.
+- **Reviewing diffs** — comment-based workflow.
+- **Pi as-is when you want it** — a Pi TUI takeover mode embedded inside the app.
+- **Voice input** — local dictation through sherpa-ONNX, running on CPU.
+- **Skills and extensions** — browse, install, remove, and configure Pi skills/extensions from inside the app.
 
-The tradeoff is larger downloads in exchange for a more consistent renderer.
+## Coming next
 
-## Current status
+The near-term direction is:
 
-Howcode is early, but already useful.
+- more cards
+- worktrees
+- per-project automations
+- multiple terminals per session
+- external terminal control for agents
+- responsive-layout polish
+- background mode when Pi has a server, unless I find a workaround
+- remote sessions over SSH, likely tied to that same server feature or me working around the lack of it
 
-Today the app includes real:
+And additional views for just chatting, claw-like sidekick for the app and co-work-style environment.
 
-- Pi composer send + streaming
-- project and thread persistence
-- PTY-backed terminal support
-- checkpoint-backed diff rendering
-- project actions and partial git/commit actions
-- project-aware sidebar and inbox flows
-- skills/extensions browse and install surfaces
+## For developers
 
-## Docs
+If you want to run from source:
 
-- `DEVELOPER.md` — local setup, architecture, release flow, packaging
-- `CHANGELOG.md` — release history and short-term roadmap
-- `docs/roadmap.md` — broader product direction
-- `docs/mock-features.md` — current real vs mock inventory
+```bash
+bun install
+bun run dev
+```
 
-## Issues
+## Issues and updates
 
-- Bugs / requests: https://github.com/IgorWarzocha/howcode/issues
+- Bugs / requests: <https://github.com/IgorWarzocha/howcode/issues>
+- Random updates: <https://x.com/Howaboua>
