@@ -1,6 +1,13 @@
 import { getLocalDraftProjectId } from "../../../../../shared/session-paths";
 
 import type { ComposerAttachment } from "../../../desktop/types";
+import {
+  type PersistedRecordStoreOptions,
+  createStoragePersistence,
+  getBeforeUnloadTarget,
+  getBrowserStorage,
+  hydratePersistedRecordMap,
+} from "../persistence/persistedRecordStore";
 
 type ComposerDraft = {
   prompt: string;
@@ -19,16 +26,7 @@ type PersistedComposerDraftState = {
   draftsByThreadId: Record<string, PersistedComposerDraft>;
 };
 
-type StorageLike = Pick<Storage, "getItem" | "removeItem" | "setItem">;
-
-type BeforeUnloadTarget = Pick<Window, "addEventListener" | "removeEventListener">;
-
-type ComposerDraftStoreOptions = {
-  storage?: StorageLike | null;
-  storageKey?: string;
-  debounceMs?: number;
-  beforeUnloadTarget?: BeforeUnloadTarget | null;
-};
+type ComposerDraftStoreOptions = PersistedRecordStoreOptions;
 
 const DEFAULT_STORAGE_KEY = "howcode:composer-drafts:v1";
 const DEFAULT_DEBOUNCE_MS = 320;
@@ -79,45 +77,6 @@ function toDraft(value: unknown): ComposerDraft | null {
   return { prompt, attachments, pickerOpen };
 }
 
-function hydrateDrafts(storage: StorageLike | null, storageKey: string) {
-  if (!storage) {
-    return {} satisfies Record<string, ComposerDraft>;
-  }
-
-  try {
-    const rawValue = storage.getItem(storageKey);
-    if (!rawValue) {
-      return {} satisfies Record<string, ComposerDraft>;
-    }
-
-    const parsed = JSON.parse(rawValue) as PersistedComposerDraftState;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      parsed.version !== 1 ||
-      !parsed.draftsByThreadId ||
-      typeof parsed.draftsByThreadId !== "object"
-    ) {
-      return {} satisfies Record<string, ComposerDraft>;
-    }
-
-    const draftsByThreadId = Object.entries(parsed.draftsByThreadId).reduce<
-      Record<string, ComposerDraft>
-    >((current, [threadId, draftValue]) => {
-      const draft = toDraft(draftValue);
-      if (draft) {
-        current[threadId] = draft;
-      }
-
-      return current;
-    }, {});
-
-    return draftsByThreadId;
-  } catch {
-    return {} satisfies Record<string, ComposerDraft>;
-  }
-}
-
 function serializeDrafts(
   draftsByThreadId: Record<string, ComposerDraft>,
 ): PersistedComposerDraftState {
@@ -136,26 +95,6 @@ function serializeDrafts(
       ]),
     ),
   };
-}
-
-function getBrowserStorage() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function getBeforeUnloadTarget() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return window;
 }
 
 export function getComposerDraftThreadId({
@@ -178,47 +117,22 @@ export function createComposerDraftStore({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   beforeUnloadTarget = getBeforeUnloadTarget(),
 }: ComposerDraftStoreOptions = {}) {
-  let draftsByThreadId = hydrateDrafts(storage, storageKey);
-  let persistTimeout: ReturnType<typeof setTimeout> | null = null;
+  let draftsByThreadId = hydratePersistedRecordMap({
+    storage,
+    storageKey,
+    version: 1,
+    recordKey: "draftsByThreadId",
+    toEntry: toDraft,
+  });
 
-  const clearPersistTimeout = () => {
-    if (persistTimeout === null) {
-      return;
-    }
-
-    clearTimeout(persistTimeout);
-    persistTimeout = null;
-  };
-
-  const flush = () => {
-    clearPersistTimeout();
-
-    if (!storage) {
-      return;
-    }
-
-    try {
-      if (Object.keys(draftsByThreadId).length === 0) {
-        storage.removeItem(storageKey);
-        return;
-      }
-
-      storage.setItem(storageKey, JSON.stringify(serializeDrafts(draftsByThreadId)));
-    } catch {
-      // Ignore storage failures and keep the in-memory draft cache available.
-    }
-  };
-
-  const schedulePersist = () => {
-    if (!storage) {
-      return;
-    }
-
-    clearPersistTimeout();
-    persistTimeout = setTimeout(() => {
-      flush();
-    }, debounceMs);
-  };
+  const persistence = createStoragePersistence({
+    storage,
+    storageKey,
+    debounceMs,
+    beforeUnloadTarget,
+    hasEntries: () => Object.keys(draftsByThreadId).length > 0,
+    serialize: () => serializeDrafts(draftsByThreadId),
+  });
 
   const getMirroredProjectDraftThreadId = (threadId: string) => {
     if (!threadId.startsWith("session:")) {
@@ -259,7 +173,7 @@ export function createComposerDraftStore({
       };
     }
 
-    schedulePersist();
+    persistence.schedulePersist();
   };
 
   const updateDraft = (
@@ -273,12 +187,6 @@ export function createComposerDraftStore({
     };
     writeDraft(threadId, updater(currentDraft));
   };
-
-  const handleBeforeUnload = () => {
-    flush();
-  };
-
-  beforeUnloadTarget?.addEventListener("beforeunload", handleBeforeUnload);
 
   return {
     storageKey,
@@ -323,12 +231,11 @@ export function createComposerDraftStore({
             ),
         ),
       );
-      schedulePersist();
+      persistence.schedulePersist();
     },
-    flush,
+    flush: persistence.flush,
     destroy() {
-      clearPersistTimeout();
-      beforeUnloadTarget?.removeEventListener("beforeunload", handleBeforeUnload);
+      persistence.destroy();
     },
   };
 }

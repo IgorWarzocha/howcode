@@ -1,4 +1,5 @@
 import type { ComposerAttachment } from "./desktop-data-contracts";
+import { getSafeExternalUrl } from "./external-url";
 
 const imageAttachmentPattern = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 
@@ -68,15 +69,6 @@ export function getAttachmentKind(filePath: string): ComposerAttachment["kind"] 
   return imageAttachmentPattern.test(filePath) ? "image" : "text";
 }
 
-export function isSafeExternalUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 export function mergeComposerAttachments(
   current: ComposerAttachment[],
   next: ComposerAttachment[],
@@ -100,14 +92,16 @@ export function normalizeComposerAttachments(
     [],
     attachments
       .map((attachment) => {
-        const path = attachment.path.trim();
-        if (!path) {
+        const trimmedPath = attachment.path.trim();
+        if (!trimmedPath) {
           return null;
         }
 
+        const safeExternalUrl = getSafeExternalUrl(trimmedPath);
+        const path = safeExternalUrl ?? trimmedPath;
         let resolvedKind: ComposerAttachment["kind"];
 
-        if (isSafeExternalUrl(path)) {
+        if (safeExternalUrl) {
           resolvedKind = "text";
         } else if (options?.resolveAttachmentKind) {
           const nextKind = options.resolveAttachmentKind(path);
@@ -152,9 +146,10 @@ export function parseComposerAttachmentReference(rawReference: string): Composer
     }
   }
 
-  if (isSafeExternalUrl(candidate)) {
-    const url = new URL(candidate);
-    return toAttachment(candidate, getUrlAttachmentName(url));
+  const safeExternalUrl = getSafeExternalUrl(candidate);
+  if (safeExternalUrl) {
+    const url = new URL(safeExternalUrl);
+    return toAttachment(safeExternalUrl, getUrlAttachmentName(url));
   }
 
   if (isLikelyLocalFilePath(candidate)) {

@@ -1,14 +1,13 @@
 import type { PiConfiguredSkill, PiSkillCatalogItem } from "../../desktop/types";
-import { isSafeExternalUrl } from "../../../../shared/composer-attachments";
+import { getSafeExternalUrl } from "../../../../shared/external-url";
+import { getActionError } from "../../utils/action-error";
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
 
-export function getActionError(error: unknown) {
-  return error instanceof Error ? error.message : "Something went wrong.";
-}
+export { getActionError };
 
 export function formatInstalls(installs: number) {
   return `${compactNumberFormatter.format(installs)} installs`;
@@ -27,15 +26,16 @@ export function isDesktopSkillsAvailable() {
 }
 
 export async function openExternalUrl(url: string) {
-  if (!isSafeExternalUrl(url)) {
+  const safeUrl = getSafeExternalUrl(url);
+  if (!safeUrl) {
     return false;
   }
 
   if (window.piDesktop?.openExternal) {
-    return window.piDesktop.openExternal(url);
+    return window.piDesktop.openExternal(safeUrl);
   }
 
-  window.open(url, "_blank", "noopener,noreferrer");
+  window.open(safeUrl, "_blank", "noopener,noreferrer");
   return true;
 }
 

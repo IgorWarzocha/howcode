@@ -1,7 +1,5 @@
-import {
-  isSafeExternalUrl,
-  normalizeComposerAttachments,
-} from "../../../../../shared/composer-attachments";
+import { normalizeComposerAttachments } from "../../../../../shared/composer-attachments";
+import { isSafeExternalUrl } from "../../../../../shared/external-url";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import {
   getAttachmentKindsForPathsQuery,

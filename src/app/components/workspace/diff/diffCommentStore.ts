@@ -1,3 +1,11 @@
+import {
+  type PersistedRecordStoreOptions,
+  createStoragePersistence,
+  getBeforeUnloadTarget,
+  getBrowserStorage,
+  hydratePersistedRecordMap,
+} from "../persistence/persistedRecordStore";
+
 type AnnotationSide = "deletions" | "additions";
 
 export type DiffCommentDraft = {
@@ -30,41 +38,12 @@ type PersistedDiffCommentState = {
   contextsById: Record<string, PersistedDiffCommentContext>;
 };
 
-type StorageLike = Pick<Storage, "getItem" | "removeItem" | "setItem">;
-
-type BeforeUnloadTarget = Pick<Window, "addEventListener" | "removeEventListener">;
-
-type DiffCommentStoreOptions = {
-  storage?: StorageLike | null;
-  storageKey?: string;
-  debounceMs?: number;
-  beforeUnloadTarget?: BeforeUnloadTarget | null;
-};
+type DiffCommentStoreOptions = PersistedRecordStoreOptions;
 
 type DiffCommentStoreListener = () => void;
 
 const DEFAULT_STORAGE_KEY = "howcode:diff-comments:v1";
 const DEFAULT_DEBOUNCE_MS = 320;
-
-function getBrowserStorage() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function getBeforeUnloadTarget() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return window;
-}
 
 function isAnnotationSide(value: unknown): value is AnnotationSide {
   return value === "deletions" || value === "additions";
@@ -140,49 +119,18 @@ function isContextEmpty(context: DiffCommentContext) {
   return context.comments.length === 0 && !context.draft;
 }
 
-function hydrateContexts(storage: StorageLike | null, storageKey: string) {
-  if (!storage) {
-    return {} satisfies Record<string, DiffCommentContext>;
+function toContext(value: unknown): DiffCommentContext | null {
+  if (!value || typeof value !== "object") {
+    return null;
   }
 
-  try {
-    const rawValue = storage.getItem(storageKey);
-    if (!rawValue) {
-      return {} satisfies Record<string, DiffCommentContext>;
-    }
+  const candidate = value as PersistedDiffCommentContext;
+  const draft = toDraft(candidate.draft);
+  const comments = Array.isArray(candidate.comments)
+    ? candidate.comments.map(toSavedComment).filter((comment) => comment !== null)
+    : [];
 
-    const parsed = JSON.parse(rawValue) as PersistedDiffCommentState;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      parsed.version !== 1 ||
-      !parsed.contextsById ||
-      typeof parsed.contextsById !== "object"
-    ) {
-      return {} satisfies Record<string, DiffCommentContext>;
-    }
-
-    return Object.entries(parsed.contextsById).reduce<Record<string, DiffCommentContext>>(
-      (current, [contextId, value]) => {
-        const draft = toDraft(value?.draft);
-        const comments = Array.isArray(value?.comments)
-          ? value.comments.map(toSavedComment).filter((comment) => comment !== null)
-          : [];
-        if (comments.length === 0 && !draft) {
-          return current;
-        }
-
-        current[contextId] = {
-          comments: comments as SavedDiffComment[],
-          draft,
-        };
-        return current;
-      },
-      {},
-    );
-  } catch {
-    return {} satisfies Record<string, DiffCommentContext>;
-  }
+  return comments.length === 0 && !draft ? null : { comments, draft };
 }
 
 function serializeContexts(
@@ -220,8 +168,13 @@ export function createDiffCommentStore({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   beforeUnloadTarget = getBeforeUnloadTarget(),
 }: DiffCommentStoreOptions = {}) {
-  let contextsById = hydrateContexts(storage, storageKey);
-  let persistTimeout: ReturnType<typeof setTimeout> | null = null;
+  let contextsById = hydratePersistedRecordMap({
+    storage,
+    storageKey,
+    version: 1,
+    recordKey: "contextsById",
+    toEntry: toContext,
+  });
   const listeners = new Set<DiffCommentStoreListener>();
 
   const notifyListeners = () => {
@@ -230,44 +183,14 @@ export function createDiffCommentStore({
     }
   };
 
-  const clearPersistTimeout = () => {
-    if (persistTimeout === null) {
-      return;
-    }
-
-    clearTimeout(persistTimeout);
-    persistTimeout = null;
-  };
-
-  const flush = () => {
-    clearPersistTimeout();
-
-    if (!storage) {
-      return;
-    }
-
-    try {
-      if (Object.keys(contextsById).length === 0) {
-        storage.removeItem(storageKey);
-        return;
-      }
-
-      storage.setItem(storageKey, JSON.stringify(serializeContexts(contextsById)));
-    } catch {
-      // Ignore storage failures and keep the in-memory cache available.
-    }
-  };
-
-  const schedulePersist = () => {
-    if (!storage) {
-      return;
-    }
-
-    clearPersistTimeout();
-    persistTimeout = setTimeout(() => {
-      flush();
-    }, debounceMs);
-  };
+  const persistence = createStoragePersistence({
+    storage,
+    storageKey,
+    debounceMs,
+    beforeUnloadTarget,
+    hasEntries: () => Object.keys(contextsById).length > 0,
+    serialize: () => serializeContexts(contextsById),
+  });
 
   const writeContext = (contextId: string, context: DiffCommentContext) => {
     if (isContextEmpty(context)) {
@@ -280,14 +203,8 @@ export function createDiffCommentStore({
     }
 
     notifyListeners();
-    schedulePersist();
+    persistence.schedulePersist();
   };
-
-  const handleBeforeUnload = () => {
-    flush();
-  };
-
-  beforeUnloadTarget?.addEventListener("beforeunload", handleBeforeUnload);
 
   return {
     storageKey,
@@ -305,7 +222,7 @@ export function createDiffCommentStore({
 
       delete contextsById[contextId];
       notifyListeners();
-      schedulePersist();
+      persistence.schedulePersist();
     },
     subscribe(listener: DiffCommentStoreListener) {
       listeners.add(listener);
@@ -314,10 +231,9 @@ export function createDiffCommentStore({
         listeners.delete(listener);
       };
     },
-    flush,
+    flush: persistence.flush,
     destroy() {
-      clearPersistTimeout();
-      beforeUnloadTarget?.removeEventListener("beforeunload", handleBeforeUnload);
+      persistence.destroy();
     },
   };
 }

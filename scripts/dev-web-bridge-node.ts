@@ -1,8 +1,9 @@
 import { stat } from "node:fs/promises";
 import http from "node:http";
 
-import { getAttachmentKind, isSafeExternalUrl } from "../shared/composer-attachments";
+import { getAttachmentKind } from "../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory";
+import { getSafeExternalUrl } from "../shared/external-url";
 import type {
   DesktopEventMap,
   DesktopRequestChannel,
@@ -137,9 +138,10 @@ const handlers: DesktopRequestHandlerMap = {
     await terminalManager.closeTerminal(request);
     return { ok: true };
   },
-  openExternal: async ({ url }) => ({
-    ok: isSafeExternalUrl(url) && (await openPathWithSystem(url)),
-  }),
+  openExternal: async ({ url }) => {
+    const safeUrl = getSafeExternalUrl(url);
+    return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) };
+  },
   openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
 };
 

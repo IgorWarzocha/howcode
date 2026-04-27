@@ -3,8 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 import type {
   ArchivedThread,
-  ComposerAttachment,
-  ComposerFilePickerState,
   ComposerState,
   ComposerStateRequest,
   ProjectGitState,
@@ -162,37 +160,37 @@ export function useDesktopShell() {
   );
 
   const loadArchivedThreads = useCallback(async () => {
-    return queryClient.fetchQuery({
+    return queryClient.fetchQuery<ArchivedThread[]>({
       queryKey: desktopQueryKeys.archivedThreads(),
       queryFn: getArchivedThreadsQuery,
       staleTime: 0,
-    }) as Promise<ArchivedThread[]>;
+    });
   }, [queryClient]);
 
   const loadComposerState = useCallback(
     async (request: ComposerStateRequest = {}) => {
-      return queryClient.fetchQuery({
+      return queryClient.fetchQuery<ComposerState | null>({
         queryKey: desktopQueryKeys.composerState(request),
         queryFn: () => getComposerStateQuery(request),
         staleTime: 0,
-      }) as Promise<ComposerState | null>;
+      });
     },
     [queryClient],
   );
 
   const loadProjectGitState = useCallback(
     async (projectId: string) => {
-      return queryClient.fetchQuery({
+      return queryClient.fetchQuery<ProjectGitState | null>({
         queryKey: desktopQueryKeys.projectGitState(projectId),
         queryFn: () => getProjectGitStateQuery(projectId),
         staleTime: 0,
-      }) as Promise<ProjectGitState | null>;
+      });
     },
     [queryClient],
   );
 
   const pickComposerAttachments = useCallback(async (projectId?: string | null) => {
-    return pickComposerAttachmentsQuery(projectId ?? null) as Promise<ComposerAttachment[]>;
+    return pickComposerAttachmentsQuery(projectId ?? null);
   }, []);
 
   const listComposerAttachmentEntries = useCallback(
@@ -201,7 +199,7 @@ export function useDesktopShell() {
       path?: string | null;
       rootPath?: string | null;
     }) => {
-      return listComposerAttachmentEntriesQuery(request) as Promise<ComposerFilePickerState | null>;
+      return listComposerAttachmentEntriesQuery(request);
     },
     [],
   );

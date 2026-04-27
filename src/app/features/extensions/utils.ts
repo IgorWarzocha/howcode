@@ -1,50 +1,15 @@
 import type { PiConfiguredPackage } from "../../desktop/types";
+import { getSafeExternalUrl, pickSafeExternalUrl } from "../../../../shared/external-url";
+import { getActionError } from "../../utils/action-error";
 
 const compactNumberFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-const allowedExternalProtocols = new Set(["http:", "https:"]);
-
-export function getActionError(error: unknown) {
-  return error instanceof Error ? error.message : "Something went wrong.";
-}
+export { getActionError, getSafeExternalUrl, pickSafeExternalUrl };
 
 export function formatDownloads(downloads: number) {
   return `${compactNumberFormatter.format(downloads)}/mo`;
-}
-
-function normalizeExternalUrl(url: string) {
-  return url.replace(/^git\+/, "");
-}
-
-export function getSafeExternalUrl(url: string | null | undefined) {
-  if (typeof url !== "string") {
-    return null;
-  }
-
-  const normalizedUrl = normalizeExternalUrl(url.trim());
-  if (normalizedUrl.length === 0) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(normalizedUrl);
-    return allowedExternalProtocols.has(parsedUrl.protocol) ? parsedUrl.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
-export function pickSafeExternalUrl(urls: Array<string | null | undefined>) {
-  for (const url of urls) {
-    const safeUrl = getSafeExternalUrl(url);
-    if (safeUrl) {
-      return safeUrl;
-    }
-  }
-
-  return null;
 }
 
 export function isDesktopPackagesAvailable() {

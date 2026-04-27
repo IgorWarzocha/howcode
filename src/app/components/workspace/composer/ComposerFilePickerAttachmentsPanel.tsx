@@ -1,6 +1,6 @@
 import { File, Folder, Globe, X } from "lucide-react";
 import type { DragEvent } from "react";
-import { isSafeExternalUrl } from "../../../../../shared/composer-attachments";
+import { isSafeExternalUrl } from "../../../../../shared/external-url";
 import type { ComposerAttachment } from "../../../desktop/types";
 import { cn } from "../../../utils/cn";
 import {

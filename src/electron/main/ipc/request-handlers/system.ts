@@ -1,6 +1,7 @@
 import { stat } from "node:fs/promises";
 import { clipboard, dialog, shell } from "electron";
-import { getAttachmentKind, isSafeExternalUrl } from "../../../../../shared/composer-attachments";
+import { getAttachmentKind } from "../../../../../shared/composer-attachments";
+import { getSafeExternalUrl } from "../../../../../shared/external-url";
 import {
   listComposerAttachmentEntries,
   normalizeDialogFilePaths,
@@ -83,12 +84,13 @@ export function createSystemHandlers(): SystemRequestHandlers {
     },
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
     openExternal: async ({ url }) => {
-      if (!isSafeExternalUrl(url)) {
+      const safeUrl = getSafeExternalUrl(url);
+      if (!safeUrl) {
         return { ok: false };
       }
 
       try {
-        await shell.openExternal(url);
+        await shell.openExternal(safeUrl);
         return { ok: true };
       } catch {
         return { ok: false };
