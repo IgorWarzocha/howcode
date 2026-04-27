@@ -258,6 +258,12 @@ export function InboxComposer({
     .join("|");
 
   useEffect(() => {
+    if (slashCommands.open) {
+      setOpenMenu((current) => (current === "picker" ? null : current));
+    }
+  }, [slashCommands.open]);
+
+  useEffect(() => {
     if (!slashCommands.open) {
       return;
     }

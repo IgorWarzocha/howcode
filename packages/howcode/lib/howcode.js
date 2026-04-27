@@ -162,7 +162,7 @@ async function installRelease(target, releaseInfo, paths) {
 
   const archiveHash = await sha256File(archivePath);
   if (archiveHash !== releaseInfo.hash) {
-    await fsp.rm(archivePath, { force: true });
+    await fsp.rm(tempRoot, { recursive: true, force: true });
     throw new Error(
       `Downloaded archive hash mismatch. Expected ${releaseInfo.hash}, got ${archiveHash}.`,
     );
