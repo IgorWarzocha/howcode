@@ -11,6 +11,9 @@ import type {
 export type RuntimeHostRequestMap = {
   getComposerState: { request: ComposerStateRequest };
   getComposerSlashCommands: { request: ComposerStateRequest };
+  startNewThread: { request: ComposerStateRequest };
+  selectProjectRuntime: { request: ComposerStateRequest };
+  openThreadRuntime: { request: ComposerStateRequest };
   setComposerModel: { request: ComposerStateRequest; provider: string; modelId: string };
   setComposerThinkingLevel: { request: ComposerStateRequest; level: ComposerThinkingLevel };
   sendComposerPrompt: ComposerStateRequest & {
@@ -29,6 +32,14 @@ export type RuntimeHostRequestMap = {
 export type RuntimeHostResponseMap = {
   getComposerState: ComposerState;
   getComposerSlashCommands: ComposerSlashCommand[];
+  startNewThread: {
+    composer: ComposerState;
+    projectId: string;
+    sessionPath: string;
+    threadId: string;
+  };
+  selectProjectRuntime: ComposerState;
+  openThreadRuntime: ComposerState;
   setComposerModel: { ok: true };
   setComposerThinkingLevel: { ok: true };
   sendComposerPrompt: "sent" | "stopped";

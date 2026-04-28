@@ -15,15 +15,11 @@ import {
   upsertInboxThreadMessage,
   upsertThreadSummary,
 } from "./thread-state-db.cts";
+import { getLiveThread, rememberLiveThread } from "./runtime/live-thread-store.cts";
 import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client.cts";
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
 
-export {
-  getLiveThread,
-  openThreadRuntime,
-  selectProjectRuntime,
-  startNewThread,
-} from "./runtime/composer-service.cts";
+export { getLiveThread };
 
 function getLatestUserPrompt(thread: ThreadData) {
   let latestUserMessage: ProseMessage | undefined;
@@ -84,6 +80,7 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
   const unsubscribeLocal = subscribeLocalDesktopEvents(listener);
   const unsubscribeHost = subscribeRuntimeHostEvents((event) => {
     if (event.type === "thread-update") {
+      rememberLiveThread(event.sessionPath, event.thread);
       persistHostThreadUpdate(event);
     }
     listener(event);
@@ -93,6 +90,18 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
     unsubscribeLocal();
     unsubscribeHost();
   };
+}
+
+export function startNewThread(request: ComposerStateRequest = {}) {
+  return invokeRuntimeHost("startNewThread", { request });
+}
+
+export function selectProjectRuntime(request: ComposerStateRequest = {}) {
+  return invokeRuntimeHost("selectProjectRuntime", { request });
+}
+
+export function openThreadRuntime(request: ComposerStateRequest) {
+  return invokeRuntimeHost("openThreadRuntime", { request });
 }
 
 export function getComposerSlashCommands(request: ComposerStateRequest = {}) {

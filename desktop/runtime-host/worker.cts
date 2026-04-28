@@ -7,10 +7,13 @@ import {
   dequeueComposerPrompt,
   getComposerSlashCommands,
   getComposerState,
+  openThreadRuntime,
+  selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
   setRuntimeHostEventSink,
+  startNewThread,
   stopComposerRun,
 } from "./host-service.cts";
 
@@ -31,6 +34,21 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"getComposerSlashCommands">["payload"];
       return (await getComposerSlashCommands(payload.request)) as RuntimeHostResponseMap[TName];
+    }
+    case "startNewThread": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"startNewThread">["payload"];
+      return (await startNewThread(payload.request)) as RuntimeHostResponseMap[TName];
+    }
+    case "selectProjectRuntime": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"selectProjectRuntime">["payload"];
+      return (await selectProjectRuntime(payload.request)) as RuntimeHostResponseMap[TName];
+    }
+    case "openThreadRuntime": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"openThreadRuntime">["payload"];
+      return (await openThreadRuntime(payload.request)) as RuntimeHostResponseMap[TName];
     }
     case "setComposerModel": {
       const payload =
