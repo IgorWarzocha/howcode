@@ -26,13 +26,15 @@ export function ToggleBox({
 export function SettingRow({ setting }: { setting: SettingDescriptor }) {
   return (
     <div
-      className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-start gap-5 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0"
+      className="grid min-h-10 min-w-0 grid-cols-1 items-start gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5"
       data-setting-id={setting.id}
     >
       <div className="min-w-0 truncate pt-2 text-[13px] text-[color:var(--text)]">
         {setting.title}
       </div>
-      <div className="min-w-0 justify-self-end">{setting.render()}</div>
+      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">
+        {setting.render()}
+      </div>
     </div>
   );
 }

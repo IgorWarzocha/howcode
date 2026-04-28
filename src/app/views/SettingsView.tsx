@@ -163,7 +163,7 @@ export function SettingsView({
       className="h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden pb-0"
       maxWidthClassName="max-w-[1120px]"
     >
-      <div className="grid items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
+      <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
         <ViewHeader title="App settings" className="items-center" />
         <div className="hidden h-10 items-center lg:flex">
           <label className="relative block w-[min(460px,42vw)]">
@@ -192,8 +192,8 @@ export function SettingsView({
         </button>
       </div>
 
-      <div className="grid min-h-0 items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <nav className="sticky top-0 hidden rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid">
+      <div className="grid min-h-0 min-w-0 items-stretch gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
+        <nav className="hidden min-h-0 overflow-y-auto rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid lg:self-stretch">
           <button
             type="button"
             className={cn(
@@ -223,7 +223,7 @@ export function SettingsView({
           ))}
         </nav>
 
-        <div className="grid max-h-full min-h-0 gap-4 overflow-y-auto pr-1 pb-6">
+        <div className="grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6">
           <label className="relative block lg:hidden">
             <Search
               size={15}
@@ -268,7 +268,7 @@ export function SettingsView({
 
           {visibleGroups.length > 0 ? (
             visibleGroups.map((group) => (
-              <section key={group.id} className={cn(settingsSectionClass, "gap-1 p-2.5")}>
+              <section key={group.id} className={cn(settingsSectionClass, "min-w-0 gap-1 p-2.5")}>
                 <div className="flex items-baseline justify-between gap-3 px-1 pb-1">
                   <h2 className="text-[15px] font-semibold text-[color:var(--text)]">
                     {group.label}
