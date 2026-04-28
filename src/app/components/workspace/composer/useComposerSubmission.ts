@@ -11,6 +11,108 @@ import { withComposerSendLock } from "./composerSendLock";
 import { isCompactSlashCommand } from "../../../../../shared/composer-slash-commands";
 import { submitComposerDraft } from "./submitComposerDraft";
 
+function isSameSubmittedDraft(currentDraft: string, submittedRawDraft: string) {
+  return currentDraft === submittedRawDraft;
+}
+
+function areSameAttachments(
+  currentAttachments: ComposerAttachment[],
+  submittedAttachments: ComposerAttachment[],
+) {
+  if (currentAttachments === submittedAttachments) {
+    return true;
+  }
+
+  if (currentAttachments.length !== submittedAttachments.length) {
+    return false;
+  }
+
+  return currentAttachments.every((attachment, index) => {
+    const submittedAttachment = submittedAttachments[index];
+    return (
+      attachment.path === submittedAttachment?.path &&
+      attachment.name === submittedAttachment.name &&
+      attachment.kind === submittedAttachment.kind
+    );
+  });
+}
+
+function isSameAttachment(left: ComposerAttachment, right: ComposerAttachment) {
+  return left.path === right.path && left.name === right.name && left.kind === right.kind;
+}
+
+function removeSubmittedAttachments(
+  currentAttachments: ComposerAttachment[],
+  submittedAttachments: ComposerAttachment[],
+) {
+  const remainingSubmittedAttachments = [...submittedAttachments];
+
+  return currentAttachments.filter((attachment) => {
+    const submittedIndex = remainingSubmittedAttachments.findIndex((submittedAttachment) =>
+      isSameAttachment(attachment, submittedAttachment),
+    );
+
+    if (submittedIndex === -1) {
+      return true;
+    }
+
+    remainingSubmittedAttachments.splice(submittedIndex, 1);
+    return false;
+  });
+}
+
+export type ComposerPostSendCleanup = {
+  clearStoredDraft: boolean;
+  clearStoredPrompt: boolean;
+  clearDraft: boolean;
+  nextAttachments: ComposerAttachment[] | null;
+  skipNextDraftPersistence: boolean;
+};
+
+export function getComposerPostSendCleanup({
+  activeDraftThreadId,
+  submittedDraftThreadId,
+  preserveAttachments,
+  currentDraft,
+  submittedRawDraft,
+  currentAttachments,
+  submittedAttachments,
+}: {
+  activeDraftThreadId: string | null;
+  submittedDraftThreadId: string | null;
+  preserveAttachments: boolean;
+  currentDraft: string;
+  submittedRawDraft: string;
+  currentAttachments: ComposerAttachment[];
+  submittedAttachments: ComposerAttachment[];
+}): ComposerPostSendCleanup {
+  const isActiveSubmittedDraft = activeDraftThreadId === submittedDraftThreadId;
+  const draftUnchanged = currentDraft === submittedRawDraft;
+  const attachmentsUnchanged = areSameAttachments(currentAttachments, submittedAttachments);
+  const nextAttachments =
+    isActiveSubmittedDraft && !preserveAttachments
+      ? removeSubmittedAttachments(currentAttachments, submittedAttachments)
+      : null;
+  const shouldClearStoredDraft = Boolean(
+    submittedDraftThreadId &&
+      !preserveAttachments &&
+      (!isActiveSubmittedDraft || (draftUnchanged && attachmentsUnchanged)),
+  );
+  const shouldClearStoredPrompt = Boolean(
+    submittedDraftThreadId && preserveAttachments && (!isActiveSubmittedDraft || draftUnchanged),
+  );
+  const clearDraft = isActiveSubmittedDraft && draftUnchanged;
+
+  return {
+    clearStoredDraft: shouldClearStoredDraft,
+    clearStoredPrompt: shouldClearStoredPrompt,
+    clearDraft,
+    nextAttachments,
+    skipNextDraftPersistence:
+      shouldClearStoredDraft && isActiveSubmittedDraft && draftUnchanged && attachmentsUnchanged,
+  };
+}
+
 type UseComposerSubmissionProps = {
   composerScopeKey: string;
   draftThreadId: string | null;
@@ -78,7 +180,8 @@ export function useComposerSubmission({
           return;
         }
 
-        const textToSend = draftValueRef.current.trim();
+        const submittedRawDraft = draftValueRef.current;
+        const textToSend = submittedRawDraft.trim();
         const submittedAttachments = attachmentsRef.current;
         if (textToSend.length === 0 && submittedAttachments.length === 0) {
           return;
@@ -89,34 +192,59 @@ export function useComposerSubmission({
 
         setErrorMessage(null);
         setOpenMenu(null);
-        if (!preserveAttachments) {
-          skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-        }
-        setDraftValue("");
-        if (!preserveAttachments) {
-          setAttachments([]);
-        }
 
         const result = await submitComposerDraft({
           draft: submittedDraft,
           attachments: submittedAttachments,
-          draftThreadId: submittedDraftThreadId,
           isSending: false,
           projectId: submittedProjectId,
           sessionPath: submittedSessionPath,
           streamingBehaviorPreference,
           onAction,
-          clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
         });
+
+        if (result.status === "sent") {
+          const cleanup = getComposerPostSendCleanup({
+            activeDraftThreadId: activeDraftThreadIdRef.current,
+            submittedDraftThreadId,
+            preserveAttachments,
+            currentDraft: draftValueRef.current,
+            submittedRawDraft,
+            currentAttachments: attachmentsRef.current,
+            submittedAttachments,
+          });
+
+          if (cleanup.clearStoredDraft && submittedDraftThreadId) {
+            if (cleanup.skipNextDraftPersistence) {
+              skipNextDraftPersistenceRef.current = submittedDraftThreadId;
+            }
+            composerDraftStore.clearThreadDraft(submittedDraftThreadId);
+          }
+
+          if (cleanup.clearStoredPrompt && submittedDraftThreadId) {
+            composerDraftStore.setPrompt(submittedDraftThreadId, "");
+          }
+
+          if (cleanup.clearDraft) {
+            setDraftValue("");
+          }
+
+          if (cleanup.nextAttachments !== null) {
+            setAttachments(cleanup.nextAttachments);
+          }
+        }
 
         if (
           result.status === "error" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
-          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-          setAttachments((currentAttachments) =>
-            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-          );
+          if (
+            isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
+            areSameAttachments(attachmentsRef.current, submittedAttachments)
+          ) {
+            setDraftValue(result.text);
+            setAttachments(submittedAttachments);
+          }
           setErrorMessage(result.errorMessage);
         }
 
@@ -124,10 +252,13 @@ export function useComposerSubmission({
           result.status === "stopped" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
-          setDraftValue((currentDraft) => (currentDraft.length === 0 ? result.text : currentDraft));
-          setAttachments((currentAttachments) =>
-            currentAttachments.length === 0 ? submittedAttachments : currentAttachments,
-          );
+          if (
+            isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
+            areSameAttachments(attachmentsRef.current, submittedAttachments)
+          ) {
+            setDraftValue(result.text);
+            setAttachments(submittedAttachments);
+          }
         }
       } finally {
         setIsSending(false);
@@ -196,13 +327,11 @@ export function useComposerSubmission({
         const result = await submitComposerDraft({
           draft: "/compact",
           attachments: [],
-          draftThreadId: null,
           isSending: false,
           projectId,
           sessionPath,
           streamingBehaviorPreference,
           onAction,
-          clearStoredDraft: (threadId) => composerDraftStore.clearThreadDraft(threadId),
         });
 
         if (result.status === "error") {
