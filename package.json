@@ -7,7 +7,7 @@
   "license": "MIT",
   "author": "Igor Warzocha",
   "main": "build/electron/main/index.cjs",
-  "packageManager": "bun@1.3.9",
+  "packageManager": "bun@1.3.10",
   "engines": {
     "node": ">=24.15.0"
   },
@@ -21,7 +21,7 @@
     "dev:desktop": "bun ./scripts/dev-electron.ts",
     "build:runtime": "bun ./scripts/build-electron-runtime.ts",
     "build": "vite build && bun run build:runtime && electron-builder --dir --config electron-builder.yml",
-    "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml",
+    "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",
     "build:launcher-artifacts": "bun ./scripts/package-launcher-artifacts.ts",
     "release:prepare": "bun run build:release && bun run build:launcher-artifacts",
     "pack:howcode": "cd packages/howcode && npm pack",
