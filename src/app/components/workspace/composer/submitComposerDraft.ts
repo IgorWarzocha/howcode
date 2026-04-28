@@ -16,25 +16,21 @@ type SubmitComposerDraftResult =
 type SubmitComposerDraftOptions = {
   draft: string;
   attachments: ComposerAttachment[];
-  draftThreadId: string | null;
   isSending: boolean;
   projectId: string;
   sessionPath: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
-  clearStoredDraft: (threadId: string) => void;
 };
 
 export async function submitComposerDraft({
   draft,
   attachments,
-  draftThreadId,
   isSending,
   projectId,
   sessionPath,
   streamingBehaviorPreference,
   onAction,
-  clearStoredDraft,
 }: SubmitComposerDraftOptions): Promise<SubmitComposerDraftResult> {
   const text = draft.trim();
   if ((text.length === 0 && attachments.length === 0) || isSending) {
@@ -62,10 +58,6 @@ export async function submitComposerDraft({
 
     if (actionResult?.result?.composerSendOutcome === "stopped") {
       return { status: "stopped", text };
-    }
-
-    if (draftThreadId && !isCompactSlashCommand(text)) {
-      clearStoredDraft(draftThreadId);
     }
 
     return { status: "sent", text };

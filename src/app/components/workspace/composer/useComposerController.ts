@@ -121,15 +121,24 @@ export function useComposerController({
     setDraft(nextValue);
   }, []);
 
+  const setAttachmentValue = useCallback((value: SetStateAction<ComposerAttachment[]>) => {
+    const nextValue =
+      typeof value === "function"
+        ? (value as (current: ComposerAttachment[]) => ComposerAttachment[])(attachmentsRef.current)
+        : value;
+    attachmentsRef.current = nextValue;
+    setAttachments(nextValue);
+  }, []);
+
   useEffect(() => {
     skipNextDraftPersistenceRef.current = draftThreadId;
 
     const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
     setDraftValue(persistedDraft?.prompt ?? "");
-    setAttachments(persistedDraft?.attachments ?? []);
+    setAttachmentValue(persistedDraft?.attachments ?? []);
     setOpenMenu(persistedDraft?.pickerOpen ? "picker" : null);
     setErrorMessage(null);
-  }, [draftThreadId, setDraftValue]);
+  }, [draftThreadId, setAttachmentValue, setDraftValue]);
 
   useEffect(() => {
     if (!draftThreadId) {
@@ -233,7 +242,7 @@ export function useComposerController({
     openMenu,
     pickerRootPath: projectId,
     pickerSessionKey: draftThreadId,
-    setAttachments,
+    setAttachments: setAttachmentValue,
     setErrorMessage,
     setOpenMenu,
     onListAttachmentEntries,
@@ -264,7 +273,7 @@ export function useComposerController({
     onAction,
     projectId,
     sessionPath,
-    setAttachments,
+    setAttachments: setAttachmentValue,
     setDraftValue,
     setErrorMessage,
     setIsSending,
@@ -282,7 +291,7 @@ export function useComposerController({
   const modelLabel = useMemo(() => getModelLabel(model), [model]);
 
   const { handleDrop, handlePaste } = useComposerClipboardHandlers({
-    setAttachments,
+    setAttachments: setAttachmentValue,
     setDraftValue,
     setErrorMessage,
   });

@@ -31,20 +31,16 @@ function buildActionSuccessResult(outcome: "sent" | "stopped" = "sent") {
 }
 
 describe("submitComposerDraft", () => {
-  it("clears the stored draft after a successful send", async () => {
+  it("sends a draft successfully", async () => {
     const onAction = vi.fn(async () => buildActionSuccessResult());
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "  ship it  ",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "followUp",
       onAction,
-      clearStoredDraft,
     });
 
     expect(result).toEqual({ status: "sent", text: "ship it" });
@@ -55,16 +51,12 @@ describe("submitComposerDraft", () => {
       sessionPath: "/repo/thread.json",
       streamingBehavior: "followUp",
     });
-    expect(clearStoredDraft).toHaveBeenCalledWith("session:/repo/thread.json");
   });
 
   it("keeps the stored draft when send fails", async () => {
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "retry me",
       attachments: [],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
@@ -72,7 +64,6 @@ describe("submitComposerDraft", () => {
       onAction: vi.fn(async () => {
         throw new Error("network down");
       }),
-      clearStoredDraft,
     });
 
     expect(result).toEqual({
@@ -80,22 +71,17 @@ describe("submitComposerDraft", () => {
       errorMessage: "network down",
       text: "retry me",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("treats non-throwing send failures as errors", async () => {
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "retry me",
       attachments: [],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "followUp",
       onAction: vi.fn(async () => buildActionFailureResult("composer.send", "bridge failed")),
-      clearStoredDraft,
     });
 
     expect(result).toEqual({
@@ -103,22 +89,17 @@ describe("submitComposerDraft", () => {
       errorMessage: "bridge failed",
       text: "retry me",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("treats null action results as errors", async () => {
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "retry me",
       attachments: [],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "followUp",
       onAction: vi.fn(async () => null),
-      clearStoredDraft,
     });
 
     expect(result).toEqual({
@@ -126,22 +107,17 @@ describe("submitComposerDraft", () => {
       errorMessage: "Could not send prompt.",
       text: "retry me",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("treats non-throwing stop-mode send failures as errors", async () => {
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "stop me",
       attachments: [],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "stop",
       onAction: vi.fn(async () => buildActionFailureResult("composer.send", "stop failed")),
-      clearStoredDraft,
     });
 
     expect(result).toEqual({
@@ -149,67 +125,52 @@ describe("submitComposerDraft", () => {
       errorMessage: "stop failed",
       text: "stop me",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("returns stopped when runtime converts stop-mode send into a stop", async () => {
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "stop me",
       attachments: [],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "stop",
       onAction: vi.fn(async () => buildActionSuccessResult("stopped")),
-      clearStoredDraft,
     });
 
     expect(result).toEqual({
       status: "stopped",
       text: "stop me",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("skips blank drafts without dispatching", async () => {
     const onAction = vi.fn(async () => null);
-    const clearStoredDraft = vi.fn();
-
     await expect(
       submitComposerDraft({
         draft: "   ",
         attachments: [],
-        draftThreadId: "session:/repo/thread.json",
         isSending: false,
         projectId: "/repo",
         sessionPath: "/repo/thread.json",
         streamingBehaviorPreference: "followUp",
         onAction,
-        clearStoredDraft,
       }),
     ).resolves.toEqual({ status: "skipped" });
 
     expect(onAction).not.toHaveBeenCalled();
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("sends attachment-only drafts", async () => {
     const onAction = vi.fn(async () => buildActionSuccessResult());
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "   ",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "followUp",
       onAction,
-      clearStoredDraft,
     });
 
     expect(result).toEqual({ status: "sent", text: "" });
@@ -220,23 +181,18 @@ describe("submitComposerDraft", () => {
       sessionPath: "/repo/thread.json",
       streamingBehavior: "followUp",
     });
-    expect(clearStoredDraft).toHaveBeenCalledWith("session:/repo/thread.json");
   });
 
   it("sends compact commands without attachments and keeps stored attachments available", async () => {
     const onAction = vi.fn(async () => buildActionSuccessResult());
-    const clearStoredDraft = vi.fn();
-
     const result = await submitComposerDraft({
       draft: "  /compact keep repo state  ",
       attachments: [{ path: "/repo/file.ts", name: "file.ts", kind: "text" }],
-      draftThreadId: "session:/repo/thread.json",
       isSending: false,
       projectId: "/repo",
       sessionPath: "/repo/thread.json",
       streamingBehaviorPreference: "followUp",
       onAction,
-      clearStoredDraft,
     });
 
     expect(result).toEqual({ status: "sent", text: "/compact keep repo state" });
@@ -247,7 +203,6 @@ describe("submitComposerDraft", () => {
       sessionPath: "/repo/thread.json",
       streamingBehavior: "followUp",
     });
-    expect(clearStoredDraft).not.toHaveBeenCalled();
   });
 
   it("skips sends while a request is already in flight", async () => {
@@ -257,13 +212,11 @@ describe("submitComposerDraft", () => {
       submitComposerDraft({
         draft: "ship it",
         attachments: [],
-        draftThreadId: "session:/repo/thread.json",
         isSending: true,
         projectId: "/repo",
         sessionPath: "/repo/thread.json",
         streamingBehaviorPreference: "followUp",
         onAction,
-        clearStoredDraft: vi.fn(),
       }),
     ).resolves.toEqual({ status: "skipped" });
 
