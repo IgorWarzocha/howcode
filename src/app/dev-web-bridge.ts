@@ -112,6 +112,7 @@ export function installDevWebDesktopBridge() {
   window.__howcodeDevWebBridge = true;
 
   window.piDesktop = {
+    clearClipboardImages: () => invokeRequest("clearClipboardImages", {}),
     getShellState: () => invokeRequest("getShellState", {}),
     getProjectGitState: (projectId: string) => invokeRequest("getProjectGitState", { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
@@ -138,6 +139,7 @@ export function installDevWebDesktopBridge() {
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest("readClipboardSnapshot", { formats }),
     readClipboardFilePaths: () => invokeRequest("readClipboardFilePaths", {}),
+    readClipboardImage: () => invokeRequest("readClipboardImage", {}),
     getAttachmentKindsForPaths: (paths: string[]) =>
       invokeRequest("getAttachmentKindsForPaths", { paths }),
     getPathForFile: () => null,

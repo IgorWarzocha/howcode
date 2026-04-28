@@ -22,7 +22,7 @@ export async function handleDesktopAction(
     await handleThreadDesktopAction(action, payload),
     await handleComposerDesktopAction(action, payload),
     await handleWorkspaceDesktopAction(action, payload),
-    handleSettingsDesktopAction(action, payload),
+    await handleSettingsDesktopAction(action, payload),
     await handlePiSettingsDesktopAction(action, payload),
   ];
 

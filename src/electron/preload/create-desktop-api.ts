@@ -41,6 +41,7 @@ function subscribeToEvent<K extends DesktopEventChannel>(
 
 export function createDesktopApi() {
   return {
+    clearClipboardImages: () => invokeRequest("clearClipboardImages", {}),
     getShellState: () => invokeRequest("getShellState", {}),
     getProjectGitState: (projectId: string) => invokeRequest("getProjectGitState", { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
@@ -87,6 +88,7 @@ export function createDesktopApi() {
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest("readClipboardSnapshot", { formats }),
     readClipboardFilePaths: () => invokeRequest("readClipboardFilePaths", {}),
+    readClipboardImage: () => invokeRequest("readClipboardImage", {}),
     getAttachmentKindsForPaths: (paths: string[]) =>
       invokeRequest("getAttachmentKindsForPaths", { paths }),
     getPathForFile: (file: File) => {

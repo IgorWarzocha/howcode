@@ -12,6 +12,7 @@ import {
   getAttachmentKindsForPathsQuery,
   getPathForFileQuery,
   readClipboardFilePathsQuery,
+  readClipboardImageQuery,
   readClipboardSnapshotQuery,
 } from "../../../query/desktop-query";
 import {
@@ -23,6 +24,7 @@ import {
   getPreferredClipboardTextFromClipboardFilePaths,
   getPreferredClipboardTextFromClipboardSnapshot,
   hasAttachmentHintInClipboardData,
+  hasFilePayloadInClipboardData,
 } from "./composer-paste-attachments";
 import { buildLocalAttachmentKindLookup } from "./composer-attachment-kind-lookup";
 
@@ -83,10 +85,13 @@ export function useComposerClipboardHandlers({
     }) => {
       const { clipboardData, textarea } = request;
       const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData);
+      const hasDirectAttachmentHint = hasAttachmentHintInClipboardData(clipboardData);
+      const hasDirectFilePayload = hasFilePayloadInClipboardData(clipboardData);
 
       const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
         resolveFilePath: resolveDesktopFilePath,
       });
+      const hasDirectAttachmentCandidate = directAttachments.length > 0;
       const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments);
       if (normalizedDirectAttachments.length > 0) {
         setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
@@ -94,7 +99,7 @@ export function useComposerClipboardHandlers({
         return;
       }
 
-      if (directPastedText && !hasAttachmentHintInClipboardData(clipboardData)) {
+      if (directPastedText && !hasDirectAttachmentHint) {
         setDraftValue(applyPastedTextToTextarea(textarea, directPastedText));
         setErrorMessage(null);
         return;
@@ -134,12 +139,33 @@ export function useComposerClipboardHandlers({
         return;
       }
 
+      if (hasDirectFilePayload) {
+        const clipboardImageAttachment = await readClipboardImageQuery().catch(() => null);
+        if (clipboardImageAttachment) {
+          setAttachments((current) =>
+            mergeComposerAttachments(current, [clipboardImageAttachment]),
+          );
+          setErrorMessage(null);
+          return;
+        }
+      }
+
       const pastedText =
         directPastedText ||
         getPreferredClipboardTextFromClipboardFilePaths(fallbackClipboardFilePaths) ||
         getPreferredClipboardTextFromClipboardSnapshot(fallbackSnapshot);
 
       if (!pastedText) {
+        if (hasDirectAttachmentHint) {
+          setErrorMessage(
+            "Could not attach the pasted file path. Check that the file still exists.",
+          );
+        }
+        return;
+      }
+
+      if (hasDirectAttachmentCandidate && hasDirectAttachmentHint) {
+        setErrorMessage("Could not attach the pasted file path. Check that the file still exists.");
         return;
       }
 

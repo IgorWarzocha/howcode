@@ -44,6 +44,7 @@ terminalManager.subscribeTerminalEvents((event) => {
 });
 
 const handlers: DesktopRequestHandlerMap = {
+  clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
   getProjectDiff: ({ projectId, baseline }) =>
@@ -67,6 +68,7 @@ const handlers: DesktopRequestHandlerMap = {
   pickComposerAttachments: () => [],
   readClipboardSnapshot: () => ({ formats: [], valuesByFormat: {} }),
   readClipboardFilePaths: () => ({ filePaths: [], text: null }),
+  readClipboardImage: () => null,
   getAttachmentKindsForPaths: async ({ paths }) => {
     const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
       (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0,

@@ -209,7 +209,10 @@ function getClipboardTextAttachments(clipboardData: ComposerClipboardDataLike) {
 
     attachments = mergeComposerAttachments(
       attachments,
-      extractComposerAttachmentsFromPaste(normalizedValue, { sourceType: type }),
+      extractComposerAttachmentsFromPaste(normalizedValue, {
+        sourceType: type,
+        allowPartial: attachmentHintClipboardTypes.has(type),
+      }),
     );
   }
 
@@ -300,7 +303,7 @@ export function getComposerAttachmentsFromClipboardFilePaths(
     return pathAttachments;
   }
 
-  return extractComposerAttachmentsFromPaste(clipboardFilePaths.text ?? "");
+  return extractComposerAttachmentsFromPaste(clipboardFilePaths.text ?? "", { allowPartial: true });
 }
 
 function createClipboardSnapshotSource(

@@ -1,4 +1,7 @@
-import { stat } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { clipboard, dialog, shell } from "electron";
 import { getAttachmentKind } from "../../../../../shared/composer-attachments";
 import { getSafeExternalUrl } from "../../../../../shared/external-url";
@@ -12,17 +15,67 @@ import type { DesktopRequestHandlerMap } from "../../../../../shared/desktop-ipc
 
 type SystemRequestHandlers = Pick<
   DesktopRequestHandlerMap,
+  | "clearClipboardImages"
   | "pickComposerAttachments"
   | "readClipboardSnapshot"
   | "readClipboardFilePaths"
+  | "readClipboardImage"
   | "getAttachmentKindsForPaths"
   | "listComposerAttachmentEntries"
   | "openExternal"
   | "openPath"
 >;
 
+const clipboardImageTempDir = path.join(tmpdir(), "howcode-clipboard-images");
+const maxClipboardImagePixels = 32_000_000;
+const maxClipboardImageBytes = 25 * 1024 * 1024;
+
+function isClipboardImageWithinLimits(size: { width: number; height: number }) {
+  const width = Math.max(0, Math.floor(size.width));
+  const height = Math.max(0, Math.floor(size.height));
+  return width > 0 && height > 0 && width * height <= maxClipboardImagePixels;
+}
+
+async function writeClipboardImageToTempFile(buffer: Buffer) {
+  if (buffer.length === 0 || buffer.length > maxClipboardImageBytes) {
+    return null;
+  }
+
+  await mkdir(clipboardImageTempDir, { recursive: true, mode: 0o700 });
+
+  const filePath = path.join(clipboardImageTempDir, `howcode-clipboard-${randomUUID()}.png`);
+  await writeFile(filePath, buffer, { mode: 0o600 });
+  return filePath;
+}
+
+async function clearClipboardImageTempFiles() {
+  let entries: Array<{ isFile(): boolean; name: string }>;
+  try {
+    entries = await readdir(clipboardImageTempDir, { withFileTypes: true });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return { clearedCount: 0, clearFailedCount: 0 };
+    }
+
+    return { clearedCount: 0, clearFailedCount: 1 };
+  }
+
+  const targets = entries.filter(
+    (entry) =>
+      entry.isFile() && entry.name.startsWith("howcode-clipboard-") && entry.name.endsWith(".png"),
+  );
+  const results = await Promise.allSettled(
+    targets.map((entry) => rm(path.join(clipboardImageTempDir, entry.name), { force: true })),
+  );
+  return {
+    clearedCount: results.filter((result) => result.status === "fulfilled").length,
+    clearFailedCount: results.filter((result) => result.status === "rejected").length,
+  };
+}
+
 export function createSystemHandlers(): SystemRequestHandlers {
   return {
+    clearClipboardImages: clearClipboardImageTempFiles,
     pickComposerAttachments: async ({ projectId }) => {
       const result = await dialog.showOpenDialog({
         defaultPath: projectId ?? getDesktopWorkingDirectory(),
@@ -64,6 +117,23 @@ export function createSystemHandlers(): SystemRequestHandlers {
       return { formats, valuesByFormat };
     },
     readClipboardFilePaths: () => readNativeClipboardFilePaths(),
+    readClipboardImage: async () => {
+      const image = clipboard.readImage();
+      if (image.isEmpty()) {
+        return null;
+      }
+
+      if (!isClipboardImageWithinLimits(image.getSize())) {
+        return null;
+      }
+
+      const filePath = await writeClipboardImageToTempFile(image.toPNG());
+      if (!filePath) {
+        return null;
+      }
+
+      return { path: filePath, mimeType: "image/png" };
+    },
     getAttachmentKindsForPaths: async ({ paths }) => {
       const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
         (path): path is string => typeof path === "string" && path.trim().length > 0,
