@@ -126,6 +126,48 @@ describe("pi message mapper", () => {
     ]);
   });
 
+  it("preserves displayed extension and system messages", () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: "custom",
+          timestamp: 1,
+          customType: "review-extension",
+          content: "Review queued\n\nWaiting for Codex",
+        },
+        {
+          role: "system",
+          timestamp: 2,
+          content: [{ type: "text", text: "Extension loaded" }],
+        },
+        {
+          role: "extensionNotice",
+          timestamp: 3,
+          content: [{ type: "text", text: "A non-standard Pi message" }],
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: "1-custom",
+        role: "custom",
+        customType: "review-extension",
+        content: ["Review queued", "Waiting for Codex"],
+      },
+      {
+        id: "2-system",
+        role: "system",
+        label: "System",
+        content: ["Extension loaded"],
+      },
+      {
+        id: "3-extensionNotice",
+        role: "system",
+        label: "extensionNotice",
+        content: ["A non-standard Pi message"],
+      },
+    ]);
+  });
+
   it("preserves thinking-only messages and extracts thinking headers", () => {
     expect(
       mapAgentMessagesToUiMessages([

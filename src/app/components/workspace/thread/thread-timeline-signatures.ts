@@ -27,6 +27,7 @@ export function getMessageRenderSignature(message: Message | undefined) {
     case "user":
     case "toolResult":
     case "custom":
+    case "system":
     case "branchSummary":
     case "compactionSummary":
       return `${message.id}:${message.role}:${getJoinedLength(message.content, 1)}`;

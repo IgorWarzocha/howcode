@@ -245,11 +245,22 @@ export const ThreadMessage = memo(function ThreadMessage({
 
   if (message.role === "custom") {
     return (
-      <div className="grid min-w-0 gap-2 rounded-2xl border border-dashed border-[color:var(--border)] px-4 py-3 text-[13px] text-[color:var(--text)]/84">
+      <div className="grid min-w-0 gap-2 rounded-2xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.012)] px-4 py-3 text-[13px] text-[color:var(--text)]/84">
         <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
           {message.customType}
         </div>
         {renderProse(message.content)}
+      </div>
+    );
+  }
+
+  if (message.role === "system") {
+    return (
+      <div className="grid min-w-0 gap-2 rounded-xl border border-[rgba(169,178,215,0.05)] bg-[rgba(255,255,255,0.01)] px-3 py-2 text-[12.5px] italic text-[color:var(--muted)]/92">
+        <div className="break-words text-[11px] not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]">
+          {message.label}
+        </div>
+        {renderThinking(message.content)}
       </div>
     );
   }
