@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch, SetStateAction } from "react";
+import { useCallback } from "react";
 import type { DesktopActionResult, InboxThread, ShellState } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
@@ -64,6 +65,12 @@ export function useAppShellCommands({
   shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
+  const handleToggleTerminal = useCallback(() => dispatch({ type: "toggle-terminal" }), [dispatch]);
+  const handleCloseTerminalDrawer = useCallback(
+    () => dispatch({ type: "set-terminal-visible", visible: false }),
+    [dispatch],
+  );
+
   const handleShowView = (view: Exclude<View, "gitops">) => {
     dispatch({ type: "show-view", view });
   };
@@ -202,8 +209,8 @@ export function useAppShellCommands({
     handleThreadOpen,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: "toggle-settings" }),
-    handleToggleTerminal: () => dispatch({ type: "toggle-terminal" }),
-    handleCloseTerminalDrawer: () => dispatch({ type: "set-terminal-visible", visible: false }),
+    handleToggleTerminal,
+    handleCloseTerminalDrawer,
     handleCloseSettingsPanel: () => dispatch({ type: "set-settings-panel-open", open: false }),
   };
 }

@@ -1,5 +1,6 @@
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import type { ProjectDiffBaseline } from "../desktop/types";
+import { useCallback, useRef } from "react";
 import type { AppShellController } from "./useAppShellController";
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
@@ -29,7 +30,17 @@ export function AppShellOverlays({
   onOpenGitOps,
   onSetDiffBaseline,
 }: AppShellOverlaysProps) {
-  const { handleReturnToDesktopFromTakeover, handleToggleTerminal, projectGitState } = controller;
+  const controllerRef = useRef(controller);
+  const { projectGitState } = controller;
+  controllerRef.current = controller;
+
+  const handleReturnToDesktopFromTakeover = useCallback(() => {
+    controllerRef.current.handleReturnToDesktopFromTakeover();
+  }, []);
+
+  const handleToggleTerminal = useCallback(() => {
+    controllerRef.current.handleToggleTerminal();
+  }, []);
 
   return takeoverPresent ? (
     <div

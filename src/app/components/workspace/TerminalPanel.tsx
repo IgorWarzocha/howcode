@@ -1,5 +1,5 @@
 import { GitBranch, PanelRightClose, SquareTerminal } from "lucide-react";
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import type { ProjectDiffBaseline, ProjectGitState } from "../../desktop/types";
 import {
   type FeatureStatusId,
@@ -28,7 +28,7 @@ type TerminalPanelProps = {
   onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
 };
 
-export function TerminalPanel({
+export const TerminalPanel = memo(function TerminalPanel({
   projectId,
   sessionPath,
   onClose,
@@ -151,4 +151,4 @@ export function TerminalPanel({
       </div>
     </section>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
@@ -18,6 +18,7 @@ type AppShellLayoutProps = {
 };
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
+  const controllerRef = useRef(controller);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     baseline: ProjectDiffBaseline;
@@ -62,6 +63,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
     takeoverVisible,
   });
+  controllerRef.current = controller;
 
   useEffect(() => {
     setDiffBaselineState((current) => {
@@ -75,6 +77,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       };
     });
   }, [composerProjectId]);
+
+  const handleSetDiffBaseline = useCallback(
+    (baseline: ProjectDiffBaseline) => {
+      setDiffBaselineState({
+        projectId: composerProjectId,
+        baseline,
+      });
+    },
+    [composerProjectId],
+  );
+
+  const handleOpenGitOpsFromTakeover = useCallback(async () => {
+    controllerRef.current.handleOpenGitOpsView();
+    await controllerRef.current.handleCloseTakeoverTerminal({
+      preserveSessionOverride: true,
+      refreshThread: false,
+    });
+  }, []);
 
   return (
     <>
@@ -159,12 +179,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 terminalDrawerVisible={terminalDrawerVisible}
                 terminalSessionPath={terminalSessionPath}
                 workspaceContentClass={workspaceContentClass}
-                onSetDiffBaseline={(baseline) => {
-                  setDiffBaselineState({
-                    projectId: composerProjectId,
-                    baseline,
-                  });
-                }}
+                onSetDiffBaseline={handleSetDiffBaseline}
               />
             </div>
 
@@ -177,19 +192,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               terminalDrawerVisible={terminalDrawerVisible}
               terminalSessionPath={terminalSessionPath}
               workspaceContentClass={workspaceContentClass}
-              onOpenGitOps={async () => {
-                controller.handleOpenGitOpsView();
-                await controller.handleCloseTakeoverTerminal({
-                  preserveSessionOverride: true,
-                  refreshThread: false,
-                });
-              }}
-              onSetDiffBaseline={(baseline) => {
-                setDiffBaselineState({
-                  projectId: composerProjectId,
-                  baseline,
-                });
-              }}
+              onOpenGitOps={handleOpenGitOpsFromTakeover}
+              onSetDiffBaseline={handleSetDiffBaseline}
             />
 
             {terminalDrawerPresent ? (

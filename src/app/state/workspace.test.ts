@@ -148,7 +148,7 @@ describe("workspace state", () => {
       type: "open-thread",
       projectId: "claw-phone",
       threadId: "thread-a",
-      sessionPath: "local:/claw-phone/draft",
+      sessionPath: "local://claw-phone/draft",
     });
     const visibleDraftThread = workspaceReducer(draftThread, {
       type: "set-terminal-visible",
@@ -162,6 +162,60 @@ describe("workspace state", () => {
     });
     expect(persistedThread.terminalVisible).toBe(true);
     expect(persistedThread.terminalVisibleBySession["/tmp/thread-a.jsonl"]).toBe(true);
+
+    const draftThreadWithExistingPersistedPreference = workspaceReducer(
+      {
+        ...createInitialWorkspaceState(mockProjects),
+        terminalVisibleBySession: { "/tmp/thread-a.jsonl": false },
+      },
+      {
+        type: "open-thread",
+        projectId: "claw-phone",
+        threadId: "thread-a",
+        sessionPath: "local://claw-phone/draft-with-existing-preference",
+      },
+    );
+    const visibleDraftThreadWithExistingPersistedPreference = workspaceReducer(
+      draftThreadWithExistingPersistedPreference,
+      {
+        type: "set-terminal-visible",
+        visible: true,
+      },
+    );
+    const persistedThreadWithExistingPreference = workspaceReducer(
+      visibleDraftThreadWithExistingPersistedPreference,
+      {
+        type: "open-thread",
+        projectId: "claw-phone",
+        threadId: "thread-a",
+        sessionPath: "/tmp/thread-a.jsonl",
+      },
+    );
+    expect(persistedThreadWithExistingPreference.terminalVisible).toBe(false);
+    expect(
+      persistedThreadWithExistingPreference.terminalVisibleBySession["/tmp/thread-a.jsonl"],
+    ).toBe(false);
+
+    const draftThreadWithRuntimeId = workspaceReducer(createInitialWorkspaceState(mockProjects), {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "local-thread-a",
+      sessionPath: "local://claw-phone/draft-with-runtime-id",
+    });
+    const visibleDraftThreadWithRuntimeId = workspaceReducer(draftThreadWithRuntimeId, {
+      type: "set-terminal-visible",
+      visible: true,
+    });
+    const persistedThreadWithNewId = workspaceReducer(visibleDraftThreadWithRuntimeId, {
+      type: "open-thread",
+      projectId: "claw-phone",
+      threadId: "persisted-thread-a",
+      sessionPath: "/tmp/persisted-thread-a.jsonl",
+    });
+    expect(persistedThreadWithNewId.terminalVisible).toBe(false);
+    expect(persistedThreadWithNewId.terminalVisibleBySession["/tmp/persisted-thread-a.jsonl"]).toBe(
+      undefined,
+    );
   });
 
   it("preserves non-code views when selecting another project", () => {
