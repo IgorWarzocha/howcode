@@ -413,8 +413,10 @@
 }
 
 .sidebar-project-tree {
+  flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-right: 0.25rem;
 }
 
