@@ -36,7 +36,7 @@ async function startElectronProcess() {
     stdio: "inherit",
     env: {
       ...process.env,
-      HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || projectRoot,
+      HOWCODE_REPO_ROOT: projectRoot,
     },
   });
 

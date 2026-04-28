@@ -29,7 +29,7 @@
     "preview": "vite preview",
     "prepare": "test -d .git && husky || true",
     "postinstall": "node ./node_modules/electron/install.js && electron-builder install-app-deps",
-    "lint": "biome check .",
+    "lint": "biome check --organize-imports-enabled=false .",
     "format": "biome format --write .",
     "typecheck": "bun run typecheck:web && bun run typecheck:desktop && bun run typecheck:electron && bun run typecheck:scripts",
     "typecheck:web": "tsc --noEmit",
@@ -41,7 +41,9 @@
     "check": "bun run lint && bun run typecheck && bun run test && bun run build"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": ["biome check --no-errors-on-unmatched"]
+    "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
+      "biome check --organize-imports-enabled=false --no-errors-on-unmatched"
+    ]
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

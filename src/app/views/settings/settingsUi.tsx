@@ -26,13 +26,15 @@ export function ToggleBox({
 export function SettingRow({ setting }: { setting: SettingDescriptor }) {
   return (
     <div
-      className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-start gap-5 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0"
+      className="grid min-h-10 min-w-0 grid-cols-1 items-start gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5"
       data-setting-id={setting.id}
     >
       <div className="min-w-0 truncate pt-2 text-[13px] text-[color:var(--text)]">
         {setting.title}
       </div>
-      <div className="min-w-0 justify-self-end">{setting.render()}</div>
+      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">
+        {setting.render()}
+      </div>
     </div>
   );
 }
@@ -55,11 +57,12 @@ export function InlineSelect({
   onOpenChange: (open: boolean) => void;
 }) {
   const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null;
+  const alignMenuRight = className?.includes("justify-self-end") ?? false;
   const compactOptionClass =
     "flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]";
 
   return (
-    <span className={cn("relative block", className)} data-inline-select-root>
+    <span className={cn("relative block max-w-full", className, "w-52")} data-inline-select-root>
       <button
         type="button"
         className={cn(
@@ -89,7 +92,9 @@ export function InlineSelect({
           role="menu"
           className={cn(
             popoverPanelClass,
-            "absolute top-[calc(100%+6px)] left-0 z-[60] grid max-h-64 w-full min-w-44 overflow-y-auto rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+            options.length > 10 && "max-h-64 overflow-y-auto",
+            "absolute top-[calc(100%+6px)] z-[60] grid max-w-[min(34rem,calc(100vw-2rem))] min-w-full rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+            alignMenuRight ? "right-0" : "left-0",
           )}
         >
           {options.map((option) => (

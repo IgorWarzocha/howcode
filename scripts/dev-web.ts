@@ -16,6 +16,7 @@ import {
 } from "../shared/dev-server";
 
 const projectRoot = process.cwd();
+const devRepoRoot = projectRoot;
 const require = createRequire(import.meta.url);
 const electronPath = require("electron") as string;
 const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH);
@@ -66,7 +67,7 @@ async function startDevWebBridge() {
     cwd: projectRoot,
     env: {
       ...process.env,
-      HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || projectRoot,
+      HOWCODE_REPO_ROOT: devRepoRoot,
       HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
       HOWCODE_DEV_WEB_BRIDGE_PORT: "0",
       HOWCODE_DEV_WEB_BRIDGE_TOKEN: bridgeToken,

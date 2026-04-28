@@ -119,6 +119,28 @@ function getTerminalVisibilityForSession(
   return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false;
 }
 
+function shouldMigrateTerminalVisibilityForOpenedThread(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: "open-thread" }>,
+) {
+  if (
+    state.activeView !== "thread" ||
+    !state.selectedSessionPath ||
+    state.selectedSessionPath === action.sessionPath
+  ) {
+    return false;
+  }
+
+  if (state.selectedThreadId === action.threadId) {
+    return !Object.prototype.hasOwnProperty.call(
+      state.terminalVisibleBySession,
+      action.sessionPath,
+    );
+  }
+
+  return false;
+}
+
 function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
   if (state.activeView !== "gitops") {
     return {
@@ -309,19 +331,18 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         selectedProjectId: action.projectId,
       };
     case "open-thread": {
-      const nextTerminalVisibleBySession =
-        state.activeView === "thread" &&
-        state.selectedThreadId === action.threadId &&
-        state.selectedSessionPath &&
-        state.selectedSessionPath !== action.sessionPath
-          ? {
-              ...state.terminalVisibleBySession,
-              [action.sessionPath]: getTerminalVisibilityForSession(
-                state.terminalVisibleBySession,
-                state.selectedSessionPath,
-              ),
-            }
-          : state.terminalVisibleBySession;
+      const nextTerminalVisibleBySession = shouldMigrateTerminalVisibilityForOpenedThread(
+        state,
+        action,
+      )
+        ? {
+            ...state.terminalVisibleBySession,
+            [action.sessionPath]: getTerminalVisibilityForSession(
+              state.terminalVisibleBySession,
+              state.selectedSessionPath,
+            ),
+          }
+        : state.terminalVisibleBySession;
 
       return {
         ...state,

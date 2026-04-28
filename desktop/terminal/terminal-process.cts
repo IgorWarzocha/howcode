@@ -2,7 +2,11 @@ import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
 import { clampHistory, flushSession, nowIso, persistSession } from "./session-history.cts";
 import type { TerminalSessionRecord } from "./session-record.cts";
 import { emitTerminalEvent, getTerminalSession } from "./session-store.cts";
-import { getTerminalAdapter, resolveTerminalCommand } from "./terminal-command.cts";
+import {
+  getTerminalAdapter,
+  resolveTerminalCommand,
+  resolveTerminalEnv,
+} from "./terminal-command.cts";
 import { hasVisibleTerminalContent } from "./terminal-visibility.cts";
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
@@ -16,14 +20,15 @@ export function clearSessionBindings(record: TerminalSessionRecord) {
 export async function startProcess(record: TerminalSessionRecord, reason: "started" | "restarted") {
   clearSessionBindings(record);
   const adapter = getTerminalAdapter();
-  const command = resolveTerminalCommand({
+  const request = {
     projectId: record.snapshot.projectId,
     sessionPath: record.snapshot.sessionPath,
     cwd: record.snapshot.cwd,
     launchMode: record.snapshot.launchMode,
     cols: record.snapshot.cols,
     rows: record.snapshot.rows,
-  } as TerminalOpenRequest);
+  } as TerminalOpenRequest;
+  const command = resolveTerminalCommand(request);
 
   try {
     const processHandle = await adapter.spawn({
@@ -32,7 +37,7 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
       cwd: record.snapshot.cwd,
       cols: record.snapshot.cols,
       rows: record.snapshot.rows,
-      env: { ...process.env, TERM: "xterm-256color" },
+      env: resolveTerminalEnv(request),
     });
 
     if (getTerminalSession(record.snapshot.sessionId) !== record) {
