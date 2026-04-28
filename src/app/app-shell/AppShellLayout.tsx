@@ -17,16 +17,20 @@ const TERMINAL_DRAWER_WIDTH = "min(28rem, calc(100% - 2.5rem))";
 type TakeoverTerminalKeyState = {
   key: string;
   projectId: string;
+  threadId: string | null;
   sessionPath: string | null;
 };
 
 function isLocalToPersistedTakeoverTransition(
   previous: TakeoverTerminalKeyState,
   nextProjectId: string,
+  nextThreadId: string | null,
   nextSessionPath: string | null,
 ) {
   return (
     previous.projectId === nextProjectId &&
+    previous.threadId !== null &&
+    previous.threadId === nextThreadId &&
     isLocalSessionPath(previous.sessionPath) &&
     getPersistedSessionPath(nextSessionPath) !== null
   );
@@ -89,6 +93,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const nextTakeoverTerminalKeyState: TakeoverTerminalKeyState = {
     key: nextTakeoverTerminalKey,
     projectId: composerProjectId,
+    threadId: state.selectedThreadId,
     sessionPath: terminalSessionPath,
   };
 
@@ -101,6 +106,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     !isLocalToPersistedTakeoverTransition(
       takeoverTerminalKeyRef.current,
       composerProjectId,
+      state.selectedThreadId,
       terminalSessionPath,
     )
   ) {
