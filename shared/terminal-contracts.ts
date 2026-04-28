@@ -55,6 +55,7 @@ export type TerminalSessionSnapshot = {
   cols: number;
   rows: number;
   history: string;
+  hasVisibleContent: boolean;
   exitCode: number | null;
   exitSignal: number | null;
   updatedAt: string;
@@ -75,6 +76,11 @@ export type TerminalOutputEvent = TerminalEventBase & {
   data: string;
 };
 
+export type TerminalUpdatedEvent = TerminalEventBase & {
+  type: "updated";
+  snapshot: TerminalSessionSnapshot;
+};
+
 export type TerminalExitedEvent = TerminalEventBase & {
   type: "exited";
   exitCode: number | null;
@@ -88,10 +94,12 @@ export type TerminalErrorEvent = TerminalEventBase & {
 
 export type TerminalClearedEvent = TerminalEventBase & {
   type: "cleared";
+  snapshot: TerminalSessionSnapshot;
 };
 
 export type TerminalEvent =
   | TerminalStartedEvent
+  | TerminalUpdatedEvent
   | TerminalOutputEvent
   | TerminalExitedEvent
   | TerminalErrorEvent

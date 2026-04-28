@@ -3,6 +3,7 @@ import { clampHistory, flushSession, nowIso, persistSession } from "./session-hi
 import type { TerminalSessionRecord } from "./session-record.cts";
 import { emitTerminalEvent, getTerminalSession } from "./session-store.cts";
 import { getTerminalAdapter, resolveTerminalCommand } from "./terminal-command.cts";
+import { hasVisibleTerminalContent } from "./terminal-visibility.cts";
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
   for (const dispose of record.cleanup) {
@@ -54,6 +55,9 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
         record.snapshot = {
           ...record.snapshot,
           history: clampHistory(record.snapshot.history + data),
+          hasVisibleContent:
+            record.snapshot.hasVisibleContent ||
+            (!record.suppressOutputVisibilityUntilInput && hasVisibleTerminalContent(data)),
           updatedAt: nowIso(),
         };
         persistSession(record);

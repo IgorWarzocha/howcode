@@ -14,6 +14,13 @@ function isRunningShellSnapshot(snapshot: TerminalSessionSnapshot) {
   );
 }
 
+function shouldShowTerminalSnapshot(
+  snapshot: TerminalSessionSnapshot,
+  openedInThisSession = false,
+) {
+  return isRunningShellSnapshot(snapshot) && (openedInThisSession || snapshot.hasVisibleContent);
+}
+
 export function useRunningTerminalSessions() {
   const terminalEventTouchedSessionIdsRef = useRef(new Set<string>());
   const [runningTerminalSessionsById, setRunningTerminalSessionsById] = useState<
@@ -30,7 +37,7 @@ export function useRunningTerminalSessions() {
           snapshots
             .filter(
               (snapshot) =>
-                isRunningShellSnapshot(snapshot) && !touchedSessionIds.has(snapshot.sessionId),
+                !touchedSessionIds.has(snapshot.sessionId) && shouldShowTerminalSnapshot(snapshot),
             )
             .map((snapshot) => [
               snapshot.sessionId,
@@ -65,7 +72,31 @@ export function useRunningTerminalSessions() {
         return;
       }
 
-      if (event.type === "exited" || event.type === "error") {
+      if (event.type === "updated") {
+        if (!shouldShowTerminalSnapshot(event.snapshot)) {
+          setRunningTerminalSessionsById((current) => {
+            if (!(event.sessionId in current)) {
+              return current;
+            }
+
+            const next = { ...current };
+            delete next[event.sessionId];
+            return next;
+          });
+          return;
+        }
+
+        setRunningTerminalSessionsById((current) => ({
+          ...current,
+          [event.sessionId]: {
+            projectId: event.snapshot.projectId,
+            sessionPath: event.snapshot.sessionPath,
+          },
+        }));
+        return;
+      }
+
+      if (event.type === "cleared" || event.type === "exited" || event.type === "error") {
         setRunningTerminalSessionsById((current) => {
           if (!(event.sessionId in current)) {
             return current;

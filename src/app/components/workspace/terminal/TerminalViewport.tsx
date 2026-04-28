@@ -51,7 +51,20 @@ const MIN_USABLE_TERMINAL_ROWS = 2;
 const TERMINAL_STICKY_BOTTOM_THRESHOLD_PX = 24;
 const DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT = 12 * 60 * 60 * 1_000;
 const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2;
+const ANSI_ESCAPE = String.fromCharCode(27);
 type SessionFileStat = { mtimeMs: number; size: number };
+
+function hasVisibleTerminalHistory(history: string) {
+  return (
+    history
+      .split(ANSI_ESCAPE)
+      .map((segment, index) =>
+        index === 0 ? segment : segment.replace(/^\[[0-?]*[ -/]*[@-~]/, ""),
+      )
+      .join("")
+      .trim().length > 0
+  );
+}
 
 function closeScheduledTerminal(sessionId: string, generation: number) {
   if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
@@ -840,17 +853,30 @@ export function TerminalViewport({
 
       unsubscribe();
 
-      if (sessionId && !preserveSessionOnUnmount) {
-        if (closeWhenSessionFileIdleMs > 0 && persistedSessionPath) {
+      if (!sessionId) {
+        return;
+      }
+
+      const shouldCloseEmptyPreservedSession =
+        preserveSessionOnUnmount &&
+        effectiveLaunchMode === "shell" &&
+        !hasVisibleTerminalHistory(terminalHistoryRef.current);
+
+      if (!preserveSessionOnUnmount || shouldCloseEmptyPreservedSession) {
+        if (
+          !shouldCloseEmptyPreservedSession &&
+          closeWhenSessionFileIdleMs > 0 &&
+          persistedSessionPath
+        ) {
           void scheduleTerminalCloseAfterSessionFileIdle(
             sessionId,
             closeWhenSessionFileIdleMs,
             maxKeepAliveMsOnUnmount,
           );
-        } else if (keepAliveMsOnUnmount > 0) {
+        } else if (!shouldCloseEmptyPreservedSession && keepAliveMsOnUnmount > 0) {
           scheduleTerminalClose(sessionId, keepAliveMsOnUnmount);
         } else {
-          void closeDesktopTerminal({ sessionId });
+          void closeDesktopTerminal({ sessionId, deleteHistory: shouldCloseEmptyPreservedSession });
         }
       }
     };

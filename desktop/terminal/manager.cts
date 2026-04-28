@@ -11,12 +11,83 @@ import { makeSessionId } from "./session-id.cts";
 import type { TerminalSessionRecord } from "./session-record.cts";
 import {
   deleteTerminalSession,
+  emitTerminalEvent,
   getTerminalSession,
   listTerminalSessions,
   setTerminalSession,
   subscribeTerminalEvents,
 } from "./session-store.cts";
 import { clearSessionBindings, startProcess } from "./terminal-process.cts";
+import { hasVisibleTerminalContent } from "./terminal-visibility.cts";
+
+function applyTerminalInputToBuffer(buffer: string, data: string) {
+  let nextBuffer = buffer;
+  const submittedLines: string[] = [];
+
+  for (const char of data) {
+    if (char === "\r" || char === "\n") {
+      submittedLines.push(nextBuffer);
+      nextBuffer = "";
+      continue;
+    }
+
+    if (char === "\u0003" || char === "\u0015") {
+      nextBuffer = "";
+      continue;
+    }
+
+    if (char === "\b" || char === "\u007f") {
+      nextBuffer = nextBuffer.slice(0, -1);
+      continue;
+    }
+
+    if (char >= " ") {
+      nextBuffer += char;
+    }
+  }
+
+  return { nextBuffer, submittedLines };
+}
+
+function clearTerminalHistory(record: TerminalSessionRecord) {
+  if (record.persistTimer) {
+    clearTimeout(record.persistTimer);
+    record.persistTimer = null;
+  }
+
+  record.snapshot = {
+    ...record.snapshot,
+    history: "",
+    hasVisibleContent: false,
+    updatedAt: nowIso(),
+  };
+  record.suppressOutputVisibilityUntilInput = true;
+  rmSync(record.transcriptPath, { force: true });
+  emitTerminalEvent({
+    type: "cleared",
+    sessionId: record.snapshot.sessionId,
+    snapshot: record.snapshot,
+    createdAt: nowIso(),
+  });
+}
+
+function markTerminalVisible(record: TerminalSessionRecord) {
+  if (record.snapshot.hasVisibleContent) {
+    return;
+  }
+
+  record.snapshot = {
+    ...record.snapshot,
+    hasVisibleContent: true,
+    updatedAt: nowIso(),
+  };
+  emitTerminalEvent({
+    type: "updated",
+    sessionId: record.snapshot.sessionId,
+    snapshot: record.snapshot,
+    createdAt: nowIso(),
+  });
+}
 
 function isRestartableTerminalStatus(status: TerminalSessionSnapshot["status"]) {
   return status === "exited" || status === "error";
@@ -66,6 +137,7 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     return existing.snapshot;
   }
 
+  const history = readTranscript(getTranscriptPath(sessionId));
   const snapshot: TerminalSessionSnapshot = {
     sessionId,
     projectId: request.projectId,
@@ -76,7 +148,9 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     pid: null,
     cols: request.cols,
     rows: request.rows,
-    history: readTranscript(getTranscriptPath(sessionId)),
+    history,
+    hasVisibleContent:
+      (request.launchMode ?? "shell") === "shell" || hasVisibleTerminalContent(history),
     exitCode: null,
     exitSignal: null,
     updatedAt: nowIso(),
@@ -87,6 +161,8 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     process: null,
     restartPromise: null,
     transcriptPath: getTranscriptPath(sessionId),
+    inputBuffer: "",
+    suppressOutputVisibilityUntilInput: false,
     persistTimer: null,
     cleanup: [],
   };
@@ -98,6 +174,16 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
 
 export async function writeTerminal(sessionId: string, data: string) {
   const record = getTerminalSession(sessionId);
+  const input = record ? applyTerminalInputToBuffer(record.inputBuffer, data) : null;
+
+  if (record && input) {
+    record.inputBuffer = input.nextBuffer;
+    if (input.submittedLines.some((line) => line.trim() && line.trim() !== "clear")) {
+      record.suppressOutputVisibilityUntilInput = false;
+      markTerminalVisible(record);
+    }
+  }
+
   if (!record?.process || !data.length) {
     if (record && data.length && isRestartableTerminalStatus(record.snapshot.status)) {
       record.snapshot = {
@@ -109,11 +195,18 @@ export async function writeTerminal(sessionId: string, data: string) {
       };
       await ensureProcessStarted(record, "restarted");
       record.process?.write(data);
+      if (input?.submittedLines.some((line) => line.trim() === "clear")) {
+        clearTerminalHistory(record);
+      }
     }
     return;
   }
 
   record.process.write(data);
+
+  if (input?.submittedLines.some((line) => line.trim() === "clear")) {
+    clearTerminalHistory(record);
+  }
 }
 
 export async function resizeTerminal(sessionId: string, cols: number, rows: number) {
@@ -173,6 +266,14 @@ export async function closeTerminal(request: TerminalCloseRequest) {
   if (request.deleteHistory) {
     rmSync(record.transcriptPath, { force: true });
   }
+
+  emitTerminalEvent({
+    type: "exited",
+    sessionId: request.sessionId,
+    exitCode: null,
+    exitSignal: null,
+    createdAt: nowIso(),
+  });
 }
 
 export { subscribeTerminalEvents };

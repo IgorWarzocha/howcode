@@ -6,6 +6,8 @@ export type TerminalSessionRecord = {
   process: PtyProcess | null;
   restartPromise: Promise<void> | null;
   transcriptPath: string;
+  inputBuffer: string;
+  suppressOutputVisibilityUntilInput: boolean;
   persistTimer: ReturnType<typeof setTimeout> | null;
   cleanup: Array<() => void>;
 };
