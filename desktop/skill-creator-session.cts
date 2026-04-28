@@ -7,6 +7,7 @@ import type { Message, SkillCreatorSessionState } from "../shared/desktop-contra
 import { mapAgentMessagesToUiMessages } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
+import { bindHeadlessAgentSessionExtensions } from "./runtime/agent-session-extensions.cts";
 import {
   clampThinkingLevel,
   createComposerSnapshotSession,
@@ -195,7 +196,7 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
     throw new Error("No skill creator model is available.");
   }
 
-  return await createAgentSession({
+  const result = await createAgentSession({
     cwd,
     agentDir,
     authStorage,
@@ -209,6 +210,8 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
     sessionManager: SessionManager.inMemory(),
     settingsManager: SettingsManager.inMemory(),
   });
+  await bindHeadlessAgentSessionExtensions(result.session);
+  return result;
 }
 
 async function runSkillCreatorPrompt(
