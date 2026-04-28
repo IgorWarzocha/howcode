@@ -61,7 +61,7 @@ export function InlineSelect({
     "flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]";
 
   return (
-    <span className={cn("relative block max-w-full", className, "w-64")} data-inline-select-root>
+    <span className={cn("relative block max-w-full", className, "w-52")} data-inline-select-root>
       <button
         type="button"
         className={cn(
@@ -91,6 +91,7 @@ export function InlineSelect({
           role="menu"
           className={cn(
             popoverPanelClass,
+            options.length > 10 && "max-h-64 overflow-y-auto",
             "absolute top-[calc(100%+6px)] left-0 z-[60] grid w-max min-w-full rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
           )}
         >

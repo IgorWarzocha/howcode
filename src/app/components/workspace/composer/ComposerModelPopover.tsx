@@ -41,7 +41,7 @@ function TriggerButton({
       type="button"
       className={cn(
         toolbarButtonClass,
-        "grid w-64 gap-0.5 rounded-xl px-2.5 py-2 text-left hover:bg-[rgba(255,255,255,0.045)]",
+        "grid w-52 gap-0.5 rounded-xl px-2.5 py-2 text-left hover:bg-[rgba(255,255,255,0.045)]",
         active && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
       )}
       onClick={onClick}
@@ -54,7 +54,7 @@ function TriggerButton({
 
 function MenuList({ items }: { items: MenuOption[] }) {
   return (
-    <div className="-mx-1.5 -mt-1.5 pr-0">
+    <div className={cn("-mx-1.5 -mt-1.5 pr-0", items.length > 10 && "max-h-72 overflow-y-auto")}>
       <div className="grid pl-1 pt-1.5 pr-0 pb-2.5">
         {items.map((item) => (
           <button
@@ -184,7 +184,7 @@ export function ComposerModelPopover({
       ref={panelRef}
       id="composer-model-menu"
       role="menu"
-      className={`absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-max min-w-64 rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
+      className={`absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-max min-w-52 rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
     >
       {openMenuItems.length > 0 ? (
         <>
