@@ -8,6 +8,7 @@ files:
   - build/electron/**
   - build/desktop/**
   - package.json
+asar: false
 extraResources:
   - from: desktop/resources
     to: resources
