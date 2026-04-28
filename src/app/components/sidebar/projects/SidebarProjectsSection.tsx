@@ -96,23 +96,20 @@ export function SidebarProjectsSection({
   );
 
   useEffect(() => {
-    if (filterMode !== "terminal" && filterMode !== "recent" && searchQuery.trim().length === 0) {
+    if (filterMode !== "terminal" && filterMode !== "recent") {
       return;
     }
 
     for (const project of visibleProjects) {
       const sourceProject = projects.find((candidate) => candidate.id === project.id);
 
-      const shouldLoadSearchedProject = searchQuery.trim().length > 0;
-      const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0;
-
-      if (project.threadsLoaded || (!shouldLoadSearchedProject && !hasIndexedThreads)) {
+      if (project.threadsLoaded || (sourceProject?.threadCount ?? 0) === 0) {
         continue;
       }
 
       void onLoadProjectThreads(project.id);
     }
-  }, [filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects]);
+  }, [filterMode, onLoadProjectThreads, projects, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {
