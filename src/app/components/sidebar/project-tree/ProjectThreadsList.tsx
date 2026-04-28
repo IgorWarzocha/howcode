@@ -101,12 +101,12 @@ function OldSessionsRow({
         <span className="truncate">Old sessions</span>
       </button>
 
-      <Tooltip content="Archive old" placement="right">
+      <Tooltip content="Archive old" placement="right" className="sidebar-old-sessions-action">
         <button
           type="button"
           className={cn(
             compactIconButtonClass,
-            "justify-self-end border-transparent bg-transparent text-[color:var(--muted-2)] hover:bg-transparent hover:text-[color:var(--text)]",
+            "h-full w-full border-transparent bg-transparent text-[color:var(--muted-2)] hover:bg-transparent hover:text-[color:var(--text)]",
           )}
           onClick={onArchiveAll}
           aria-label="Archive old"
