@@ -3,6 +3,14 @@ import path from "node:path";
 import { getPersistedSessionPath } from "../../shared/session-paths";
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
 
+const hostTerminalCapabilityEnvKeys = [
+  "GHOSTTY_RESOURCES_DIR",
+  "ITERM_SESSION_ID",
+  "KITTY_WINDOW_ID",
+  "TERM_PROGRAM",
+  "WEZTERM_PANE",
+];
+
 export function findExecutable(name: string, pathValue = process.env.PATH ?? "") {
   const pathEntries = pathValue.split(path.delimiter);
 
@@ -55,4 +63,25 @@ export function resolveTerminalCommand(
     shell: env.SHELL || "/bin/bash",
     args: ["-i"],
   };
+}
+
+export function resolveTerminalEnv(
+  request: TerminalOpenRequest,
+  env: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const nextEnv: NodeJS.ProcessEnv = { ...env, TERM: "xterm-256color" };
+
+  if (request.launchMode !== "pi-session") {
+    return nextEnv;
+  }
+
+  for (const key of hostTerminalCapabilityEnvKeys) {
+    delete nextEnv[key];
+  }
+
+  nextEnv.TERM_PROGRAM = "howcode";
+  nextEnv.COLORTERM = nextEnv.COLORTERM ?? "truecolor";
+  nextEnv.HOWCODE_EMBEDDED_TERMINAL = "1";
+  nextEnv.PI_CLEAR_ON_SHRINK = "1";
+  return nextEnv;
 }

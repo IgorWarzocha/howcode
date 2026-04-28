@@ -7,6 +7,8 @@
   cursor: text;
   overflow-y: scroll;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
   scrollbar-gutter: stable;
   scrollbar-width: auto;
 }

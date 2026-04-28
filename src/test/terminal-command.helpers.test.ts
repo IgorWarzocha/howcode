@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { makeSessionId } from "../../desktop/terminal/session-id";
-import { resolveTerminalCommand } from "../../desktop/terminal/terminal-command.helpers";
+import {
+  resolveTerminalCommand,
+  resolveTerminalEnv,
+} from "../../desktop/terminal/terminal-command.helpers";
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts";
 
 describe("terminal command helpers", () => {
@@ -95,5 +98,34 @@ describe("terminal command helpers", () => {
         },
       ),
     ).toEqual({ shell: "C:/Windows/System32/cmd.exe", args: [] });
+  });
+
+  it("scrubs host image-capability env from embedded Pi TUI sessions", () => {
+    const env = resolveTerminalEnv(
+      {
+        projectId: "/repo",
+        sessionPath: "local://%2Frepo/first",
+        launchMode: "pi-session",
+        cols: 80,
+        rows: 24,
+      },
+      {
+        TERM: "xterm-ghostty",
+        TERM_PROGRAM: "ghostty",
+        GHOSTTY_RESOURCES_DIR: "/usr/share/ghostty",
+        KITTY_WINDOW_ID: "1",
+        WEZTERM_PANE: "2",
+        ITERM_SESSION_ID: "3",
+      } as NodeJS.ProcessEnv,
+    );
+
+    expect(env.TERM).toBe("xterm-256color");
+    expect(env.TERM_PROGRAM).toBe("howcode");
+    expect(env.GHOSTTY_RESOURCES_DIR).toBeUndefined();
+    expect(env.KITTY_WINDOW_ID).toBeUndefined();
+    expect(env.WEZTERM_PANE).toBeUndefined();
+    expect(env.ITERM_SESSION_ID).toBeUndefined();
+    expect(env.HOWCODE_EMBEDDED_TERMINAL).toBe("1");
+    expect(env.PI_CLEAR_ON_SHRINK).toBe("1");
   });
 });

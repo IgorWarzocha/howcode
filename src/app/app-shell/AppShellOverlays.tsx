@@ -47,7 +47,7 @@ export function AppShellOverlays({
   return takeoverPresent ? (
     <div
       data-open={takeoverVisible ? "true" : "false"}
-      className="motion-takeover-panel absolute inset-0 z-10 bg-[color:var(--workspace)] px-5 pb-4"
+      className="motion-takeover-panel absolute inset-0 z-10 h-full min-h-0 overflow-hidden bg-[color:var(--workspace)] px-5 pb-4"
     >
       <div
         className="motion-terminal-drawer-offset relative h-full min-h-0 overflow-hidden"
