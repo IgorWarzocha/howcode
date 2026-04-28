@@ -43,16 +43,7 @@ export function useAppShellController() {
     scheduleShellStateRefresh,
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
-  const shellProjects = shellState?.projects ?? [];
-  const projects = useMemo(() => {
-    const shellCwd = shellState?.cwd ?? null;
-
-    if (!shellCwd || shellProjects.length <= 1) {
-      return shellProjects;
-    }
-
-    return shellProjects.filter((project) => project.id !== shellCwd);
-  }, [shellProjects, shellState?.cwd]);
+  const projects = shellState?.projects ?? [];
   const threadData = useDesktopThread(
     state.selectedSessionPath,
     threadRefreshKey,
