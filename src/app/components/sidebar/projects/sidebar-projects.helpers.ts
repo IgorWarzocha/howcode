@@ -65,6 +65,22 @@ function getVisibleProjectThreads(
   return project.threads.filter((thread) => Boolean(thread.pinned));
 }
 
+function getVisibleProjectThreadCount(
+  project: Project,
+  visibleThreads: Project["threads"],
+  filterMode: SidebarProjectsFilterMode,
+) {
+  if (!project.threadsLoaded && filterMode !== "favourites") {
+    return project.threadCount ?? visibleThreads.length;
+  }
+
+  if (!project.threadsLoaded && filterMode === "favourites" && project.pinned) {
+    return project.threadCount ?? visibleThreads.length;
+  }
+
+  return visibleThreads.length;
+}
+
 export function getSidebarVisibleProjects(input: {
   projects: Project[];
   searchQuery: string;
@@ -101,7 +117,7 @@ export function getSidebarVisibleProjects(input: {
         {
           ...project,
           threads: visibleThreads,
-          threadCount: visibleThreads.length,
+          threadCount: getVisibleProjectThreadCount(project, visibleThreads, input.filterMode),
         },
       ];
     }
@@ -121,7 +137,9 @@ export function getSidebarVisibleProjects(input: {
       {
         ...project,
         threads: projectMatchesQuery ? visibleThreads : matchingThreads,
-        threadCount: projectMatchesQuery ? visibleThreads.length : matchingThreads.length,
+        threadCount: projectMatchesQuery
+          ? getVisibleProjectThreadCount(project, visibleThreads, input.filterMode)
+          : matchingThreads.length,
         threadsLoaded: project.threadsLoaded || matchingThreads.length > 0,
       },
     ];
