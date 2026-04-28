@@ -16,6 +16,44 @@ describe("terminal command helpers", () => {
 
     expect(makeSessionId(request)).toBe(makeSessionId({ ...request, cols: 80, rows: 24 }));
     expect(makeSessionId(request)).not.toBe(makeSessionId({ ...request, launchMode: "shell" }));
+    expect(
+      makeSessionId({
+        projectId: "/repo",
+        sessionPath: null,
+        cwd: "/repo",
+        launchMode: "pi-session",
+        cols: 80,
+        rows: 24,
+      }),
+    ).not.toBe(
+      makeSessionId({
+        projectId: "/repo",
+        sessionPath: null,
+        cwd: "/repo",
+        launchMode: "shell",
+        cols: 80,
+        rows: 24,
+      }),
+    );
+    expect(
+      makeSessionId({
+        projectId: "/repo",
+        sessionPath: "local://%2Frepo/first",
+        cwd: "/repo",
+        launchMode: "pi-session",
+        cols: 80,
+        rows: 24,
+      }),
+    ).not.toBe(
+      makeSessionId({
+        projectId: "/repo",
+        sessionPath: "local://%2Frepo/second",
+        cwd: "/repo",
+        launchMode: "pi-session",
+        cols: 80,
+        rows: 24,
+      }),
+    );
 
     expect(
       resolveTerminalCommand(

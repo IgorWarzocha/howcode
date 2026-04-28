@@ -492,15 +492,20 @@ export function TerminalViewport({
   const pendingEventsRef = useRef<TerminalEvent[]>([]);
   const replayingBufferedEventsRef = useRef(false);
   const terminalHistoryRef = useRef("");
+  const piSessionPathRef = useRef<{ value: string | null } | null>(null);
   const lastKnownSizeRef = useRef({ cols: DEFAULT_TERMINAL_COLS, rows: DEFAULT_TERMINAL_ROWS });
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null);
-  const persistedSessionPath = getPersistedSessionPath(sessionPath);
-  const effectiveLaunchMode =
-    launchMode === "pi-session" && !persistedSessionPath ? "shell" : launchMode;
+  const effectiveLaunchMode = launchMode;
+  if (effectiveLaunchMode === "pi-session" && piSessionPathRef.current === null) {
+    piSessionPathRef.current = { value: sessionPath };
+  }
   const terminalSessionPath =
-    effectiveLaunchMode === "pi-session" ? persistedSessionPath : sessionPath;
+    effectiveLaunchMode === "pi-session" ? piSessionPathRef.current?.value : sessionPath;
+  const terminalPersistedSessionPath =
+    getPersistedSessionPath(terminalSessionPath) ??
+    (effectiveLaunchMode === "pi-session" ? getPersistedSessionPath(sessionPath) : null);
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar]);
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
 
@@ -866,7 +871,7 @@ export function TerminalViewport({
         if (
           !shouldCloseEmptyPreservedSession &&
           closeWhenSessionFileIdleMs > 0 &&
-          persistedSessionPath
+          terminalPersistedSessionPath
         ) {
           void scheduleTerminalCloseAfterSessionFileIdle(
             sessionId,
@@ -889,7 +894,7 @@ export function TerminalViewport({
     maxKeepAliveMsOnUnmount,
     onProcessExit,
     preserveSessionOnUnmount,
-    persistedSessionPath,
+    terminalPersistedSessionPath,
     projectId,
     resetTerminal,
     terminalReadyRevision,

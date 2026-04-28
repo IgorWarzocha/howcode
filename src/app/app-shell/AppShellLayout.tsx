@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getPersistedSessionPath, isLocalSessionPath } from "../../../shared/session-paths";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
@@ -12,6 +13,24 @@ import type { AppShellController } from "./useAppShellController";
 import { useAppShellLayoutState } from "./useAppShellLayoutState";
 
 const TERMINAL_DRAWER_WIDTH = "min(28rem, calc(100% - 2.5rem))";
+
+type TakeoverTerminalKeyState = {
+  key: string;
+  projectId: string;
+  sessionPath: string | null;
+};
+
+function isLocalToPersistedTakeoverTransition(
+  previous: TakeoverTerminalKeyState,
+  nextProjectId: string,
+  nextSessionPath: string | null,
+) {
+  return (
+    previous.projectId === nextProjectId &&
+    isLocalSessionPath(previous.sessionPath) &&
+    getPersistedSessionPath(nextSessionPath) !== null
+  );
+}
 
 type AppShellLayoutProps = {
   controller: AppShellController;
@@ -63,6 +82,34 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
     takeoverVisible,
   });
+  const takeoverTerminalKeyRef = useRef<TakeoverTerminalKeyState | null>(null);
+  const nextTakeoverTerminalKey = `${composerProjectId}:${
+    state.selectedThreadId ?? terminalSessionPath ?? "none"
+  }`;
+  const nextTakeoverTerminalKeyState: TakeoverTerminalKeyState = {
+    key: nextTakeoverTerminalKey,
+    projectId: composerProjectId,
+    sessionPath: terminalSessionPath,
+  };
+
+  if (takeoverVisible && takeoverTerminalKeyRef.current === null) {
+    takeoverTerminalKeyRef.current = nextTakeoverTerminalKeyState;
+  } else if (
+    takeoverVisible &&
+    takeoverTerminalKeyRef.current !== null &&
+    takeoverTerminalKeyRef.current.key !== nextTakeoverTerminalKey &&
+    !isLocalToPersistedTakeoverTransition(
+      takeoverTerminalKeyRef.current,
+      composerProjectId,
+      terminalSessionPath,
+    )
+  ) {
+    takeoverTerminalKeyRef.current = nextTakeoverTerminalKeyState;
+  } else if (!takeoverVisible && !takeoverPresent) {
+    takeoverTerminalKeyRef.current = null;
+  }
+
+  const takeoverTerminalKey = takeoverTerminalKeyRef.current?.key ?? nextTakeoverTerminalKey;
   controllerRef.current = controller;
 
   useEffect(() => {
@@ -189,6 +236,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               diffBaseline={diffBaseline}
               takeoverPresent={takeoverPresent}
               takeoverVisible={takeoverVisible}
+              takeoverTerminalKey={takeoverTerminalKey}
               terminalDrawerVisible={terminalDrawerVisible}
               terminalSessionPath={terminalSessionPath}
               workspaceContentClass={workspaceContentClass}

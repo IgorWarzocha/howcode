@@ -11,6 +11,7 @@ type AppShellOverlaysProps = {
   diffBaseline: ProjectDiffBaseline;
   takeoverPresent: boolean;
   takeoverVisible: boolean;
+  takeoverTerminalKey: string;
   terminalDrawerVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
@@ -24,6 +25,7 @@ export function AppShellOverlays({
   diffBaseline,
   takeoverPresent,
   takeoverVisible,
+  takeoverTerminalKey,
   terminalDrawerVisible,
   terminalSessionPath,
   workspaceContentClass,
@@ -53,6 +55,7 @@ export function AppShellOverlays({
       >
         <div className={`${workspaceContentClass} h-full min-h-0`}>
           <TerminalPanel
+            key={takeoverTerminalKey}
             projectId={composerProjectId}
             sessionPath={terminalSessionPath}
             onClose={handleReturnToDesktopFromTakeover}
