@@ -192,8 +192,8 @@ export function SettingsView({
         </button>
       </div>
 
-      <div className="grid min-h-0 min-w-0 items-stretch gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
-        <nav className="hidden min-h-0 overflow-y-auto rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid lg:self-stretch">
+      <div className="grid min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
+        <nav className="sticky top-0 hidden max-h-full overflow-y-auto rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid">
           <button
             type="button"
             className={cn(
