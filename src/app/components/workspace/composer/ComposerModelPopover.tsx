@@ -47,7 +47,7 @@ function TriggerButton({
       onClick={onClick}
     >
       <span className="text-[12px] text-[color:var(--muted)]">{label}</span>
-      <span className="whitespace-nowrap text-[13px] text-[color:var(--text)]">{value}</span>
+      <span className="min-w-0 truncate text-[13px] text-[color:var(--text)]">{value}</span>
     </button>
   );
 }
@@ -55,7 +55,7 @@ function TriggerButton({
 function MenuList({ items }: { items: MenuOption[] }) {
   return (
     <div className={cn("-mx-1.5 -mt-1.5 pr-0", items.length > 10 && "max-h-72 overflow-y-auto")}>
-      <div className="grid pl-1 pt-1.5 pr-0 pb-2.5">
+      <div className="grid min-w-0 pl-1 pt-1.5 pr-0 pb-2.5">
         {items.map((item) => (
           <button
             key={item.id}
@@ -64,15 +64,15 @@ function MenuList({ items }: { items: MenuOption[] }) {
             aria-checked={item.selected}
             className={cn(
               menuOptionClass,
-              "mr-1 grid-cols-[max-content] text-[color:var(--text)]",
+              "mr-1 grid-cols-[minmax(0,1fr)] text-[color:var(--text)]",
               item.selected && "bg-[rgba(255,255,255,0.06)]",
             )}
             onClick={item.onSelect}
           >
-            <span>
-              <span className="block whitespace-nowrap">{item.label}</span>
+            <span className="min-w-0">
+              <span className="block truncate">{item.label}</span>
               {item.description ? (
-                <span className="block whitespace-nowrap text-[11px] text-[color:var(--muted)]">
+                <span className="block truncate text-[11px] text-[color:var(--muted)]">
                   {item.description}
                 </span>
               ) : null}
@@ -184,7 +184,7 @@ export function ComposerModelPopover({
       ref={panelRef}
       id="composer-model-menu"
       role="menu"
-      className={`absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-max min-w-52 rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
+      className={`absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)] ${popoverPanelClass}`}
     >
       {openMenuItems.length > 0 ? (
         <>

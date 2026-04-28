@@ -193,7 +193,7 @@ export function buildSettingsDescriptors({
     selectModel: (id: string) => void,
     selectThinkingLevel: (value: ComposerThinkingLevel) => void,
   ) => (
-    <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3">
       {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
       {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
       {renderThinkingSelector(
