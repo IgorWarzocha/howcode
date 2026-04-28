@@ -61,7 +61,7 @@ export function InlineSelect({
     "flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]";
 
   return (
-    <span className={cn("relative block", className)} data-inline-select-root>
+    <span className={cn("relative block max-w-full", className, "w-64")} data-inline-select-root>
       <button
         type="button"
         className={cn(
@@ -91,7 +91,7 @@ export function InlineSelect({
           role="menu"
           className={cn(
             popoverPanelClass,
-            "absolute top-[calc(100%+6px)] left-0 z-[60] grid max-h-64 w-full min-w-44 overflow-y-auto rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+            "absolute top-[calc(100%+6px)] left-0 z-[60] grid w-max min-w-full rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
           )}
         >
           {options.map((option) => (
@@ -109,10 +109,10 @@ export function InlineSelect({
                 onOpenChange(false);
               }}
             >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate leading-4">{option.label}</span>
+              <span className="flex-1">
+                <span className="block whitespace-nowrap leading-4">{option.label}</span>
                 {option.description ? (
-                  <span className="block truncate text-[10px] leading-3 text-[color:var(--muted)]">
+                  <span className="block whitespace-nowrap text-[10px] leading-3 text-[color:var(--muted)]">
                     {option.description}
                   </span>
                 ) : null}

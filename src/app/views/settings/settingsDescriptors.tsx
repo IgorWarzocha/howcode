@@ -114,7 +114,6 @@ export function buildSettingsDescriptors({
   ) => (
     <InlineSelect
       id={id}
-      className="w-full"
       value={selection?.provider ?? "composer-default"}
       open={openSelectId === id}
       options={[
@@ -143,7 +142,6 @@ export function buildSettingsDescriptors({
     return (
       <InlineSelect
         id={id}
-        className="w-full"
         value={selection ? `${selection.provider}/${selection.id}` : "composer-default"}
         open={openSelectId === id}
         options={[
@@ -178,7 +176,6 @@ export function buildSettingsDescriptors({
   ) => (
     <InlineSelect
       id={id}
-      className="w-full min-w-0 sm:w-[9.5rem]"
       value={levels.includes(value) ? value : (levels[0] ?? "off")}
       open={openSelectId === id}
       options={levels.map((level) => ({
@@ -196,7 +193,7 @@ export function buildSettingsDescriptors({
     selectModel: (id: string) => void,
     selectThinkingLevel: (value: ComposerThinkingLevel) => void,
   ) => (
-    <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(7rem,9rem)_minmax(10rem,1fr)_minmax(7.5rem,9.5rem)]">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
       {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
       {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
       {renderThinkingSelector(
