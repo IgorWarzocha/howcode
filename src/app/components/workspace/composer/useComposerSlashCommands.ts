@@ -87,10 +87,18 @@ export function useComposerSlashCommands({
       });
   }, [commands, filter]);
 
+  const isExactCommandDraft = (command: ComposerSlashCommand) =>
+    draft.trim() === `/${command.name}` && !draft.endsWith(" ");
+
   const selectCommand = (command: ComposerSlashCommand) => {
     if (command.source === "app" && command.name === "settings") {
       setDraft("");
       onOpenSettingsView();
+      return;
+    }
+
+    if (isExactCommandDraft(command)) {
+      send();
       return;
     }
 

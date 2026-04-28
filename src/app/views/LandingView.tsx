@@ -112,7 +112,8 @@ export function LandingView({ className }: LandingViewProps) {
 
         <div className="grid w-full max-w-[680px] gap-0">
           <div
-            className="grid grid-cols-3 border-b border-[rgba(169,178,215,0.08)]"
+            className="grid border-b border-[rgba(169,178,215,0.08)]"
+            style={{ gridTemplateColumns: `repeat(${content.sections.length}, minmax(0, 1fr))` }}
             role="tablist"
             aria-label={content.title}
           >

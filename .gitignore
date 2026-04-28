@@ -8,3 +8,6 @@ artifacts/
 coverage/
 
 .pi/semantic-grep.sqlite
+
+.pi/semantic-grep.sqlite-shm
+.pi/semantic-grep.sqlite-wal
