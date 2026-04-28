@@ -131,6 +131,7 @@ export type DesktopActionPayloadMap = {
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
   "settings.update": DesktopSettingsUpdatePayload;
+  "settings.clear-clipboard-images": EmptyActionPayload;
   "pi-settings.update": { piSettingsKey: keyof PiSettings; value: string | number | boolean };
   "projects.import.scan": { projectIds: string[] };
   "projects.import.apply": { projectIds: string[] };
@@ -143,6 +144,8 @@ export type DesktopActionPayload<A extends DesktopAction = DesktopAction> =
 
 export type DesktopActionResultData = {
   checkedProjectCount?: number;
+  clearedCount?: number;
+  clearFailedCount?: number;
   committed?: boolean;
   composer?: ComposerState;
   composerSendOutcome?: "sent" | "stopped";

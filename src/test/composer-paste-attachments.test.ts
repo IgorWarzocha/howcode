@@ -62,6 +62,40 @@ describe("getComposerAttachmentsFromClipboardData", () => {
         }),
       ),
     ).toEqual([{ path: "/Users/igorw/Desktop/example.txt", name: "example.txt", kind: "text" }]);
+
+    expect(
+      getComposerAttachmentsFromClipboardData(
+        createClipboardData({
+          data: { "text/plain": '"/home/igorw/Pictures/My\\ Screenshot.png"' },
+        }),
+      ),
+    ).toEqual([
+      {
+        path: "/home/igorw/Pictures/My Screenshot.png",
+        name: "My Screenshot.png",
+        kind: "image",
+      },
+    ]);
+  });
+
+  it("allows partial extraction for file-manager payloads but not plain prose", () => {
+    expect(
+      getComposerAttachmentsFromClipboardData(
+        createClipboardData({
+          data: {
+            "text/uri-list": "# copied from file manager\nfile:///tmp/first.png\nnot-a-path",
+          },
+        }),
+      ),
+    ).toEqual([{ path: "/tmp/first.png", name: "first.png", kind: "image" }]);
+
+    expect(
+      getComposerAttachmentsFromClipboardData(
+        createClipboardData({
+          data: { "text/plain": "/tmp/first.png\nnot-a-path" },
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it("prefers visible clipboard text unless the copied text is the attachment itself", () => {

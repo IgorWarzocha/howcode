@@ -227,6 +227,10 @@ export async function pickComposerAttachmentsQuery(
   return (await window.piDesktop?.pickComposerAttachments?.(projectId ?? null)) ?? [];
 }
 
+export async function clearClipboardImagesQuery() {
+  return (await window.piDesktop?.clearClipboardImages?.()) ?? { clearedCount: 0 };
+}
+
 export async function listComposerAttachmentEntriesQuery(
   request: {
     projectId?: string | null;
@@ -245,6 +249,19 @@ export async function readClipboardSnapshotQuery(
 
 export async function readClipboardFilePathsQuery(): Promise<DesktopClipboardFilePaths | null> {
   return (await window.piDesktop?.readClipboardFilePaths?.()) ?? null;
+}
+
+export async function readClipboardImageQuery(): Promise<ComposerAttachment | null> {
+  const image = await window.piDesktop?.readClipboardImage?.();
+  if (!image) {
+    return null;
+  }
+
+  return {
+    path: image.path,
+    name: image.path.split(/[\\/]/).pop() ?? image.path,
+    kind: "image",
+  };
 }
 
 export async function getAttachmentKindsForPathsQuery(paths: string[]) {

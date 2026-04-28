@@ -4,6 +4,7 @@ import type {
   ArchivedThread,
   ComposerAttachment,
   DesktopClipboardFilePaths,
+  DesktopClipboardImage,
   DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerSlashCommand,
@@ -47,6 +48,7 @@ declare global {
   interface Window {
     __howcodeDevWebBridge?: boolean;
     piDesktop?: {
+      clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>;
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;
       getProjectDiff?: (
@@ -112,6 +114,7 @@ declare global {
       pickComposerAttachments?: (projectId?: string | null) => Promise<ComposerAttachment[]>;
       readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>;
       readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>;
+      readClipboardImage?: () => Promise<DesktopClipboardImage>;
       getAttachmentKindsForPaths?: (
         paths: string[],
       ) => Promise<Record<string, ComposerAttachment["kind"] | null>>;

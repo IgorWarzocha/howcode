@@ -32,6 +32,8 @@ export function useSettingsController({
   const [importBusy, setImportBusy] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
   const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
+  const [clearImagesBusy, setClearImagesBusy] = useState(false);
+  const [clearImagesStatusMessage, setClearImagesStatusMessage] = useState<string | null>(null);
   const gitCommitButtonRef = useRef<HTMLButtonElement>(null);
   const gitCommitPanelRef = useRef<HTMLDivElement>(null);
   const gitCommitMenuPresent = useAnimatedPresence(gitCommitMenuOpen);
@@ -127,6 +129,36 @@ export function useSettingsController({
     }
   };
 
+  const handleClearClipboardImages = async () => {
+    if (!desktopBridgeAvailable) {
+      setClearImagesStatusMessage(desktopBridgeUnavailableMessage);
+      return;
+    }
+
+    setClearImagesBusy(true);
+    setClearImagesStatusMessage(null);
+    try {
+      const result = await onAction("settings.clear-clipboard-images", {});
+      const error = getActionError(result);
+      if (error) {
+        setClearImagesStatusMessage(error);
+        return;
+      }
+
+      const clearedCount = result?.result?.clearedCount ?? 0;
+      const failedCount = result?.result?.clearFailedCount ?? 0;
+      const deletedMessage =
+        clearedCount === 1
+          ? "Deleted 1 clipboard image."
+          : `Deleted ${clearedCount} clipboard images.`;
+      setClearImagesStatusMessage(
+        failedCount > 0 ? `${deletedMessage} ${failedCount} failed.` : deletedMessage,
+      );
+    } finally {
+      setClearImagesBusy(false);
+    }
+  };
+
   return {
     addFavoriteFolder,
     deleteDictationModel: dictation.deleteDictationModel,
@@ -135,6 +167,8 @@ export function useSettingsController({
     dictationModels: dictation.dictationModels,
     dictationPendingAction: dictation.dictationPendingAction,
     dictationState: dictation.dictationState,
+    clearImagesBusy,
+    clearImagesStatusMessage,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
@@ -207,6 +241,7 @@ export function useSettingsController({
       }),
     updateFavoriteFolders,
     handleImportProjectUi,
+    handleClearClipboardImages,
     showFirstLaunchReminderAgain: () =>
       void onAction("settings.update", {
         key: "projectImportState",

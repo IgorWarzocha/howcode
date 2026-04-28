@@ -723,6 +723,32 @@ export function buildSettingsDescriptors({
       ),
     },
     {
+      id: "projects.clipboard-images",
+      category: "projects",
+      title: "Clipboard images",
+      description:
+        "Delete temp images created when pasted clipboard screenshots become attachments.",
+      keywords: "clipboard images screenshots attachments delete cleanup temp",
+      render: () => (
+        <div className="grid justify-items-end gap-1.5">
+          <button
+            type="button"
+            className={cn(composerTextActionButtonClass, "text-[#f2a7a7]")}
+            onClick={() => void controller.handleClearClipboardImages()}
+            disabled={controller.clearImagesBusy || !controller.desktopBridgeAvailable}
+          >
+            <Trash2 size={12} />
+            {controller.clearImagesBusy ? "Deleting…" : "Delete images"}
+          </button>
+          {controller.clearImagesStatusMessage ? (
+            <div className="text-right text-[12px] text-[color:var(--muted)]">
+              {controller.clearImagesStatusMessage}
+            </div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
       id: "dictation.models",
       category: "dictation",
       title: "Speech-to-text model",

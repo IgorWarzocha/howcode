@@ -4,6 +4,7 @@ import type {
   ArchivedThread,
   ComposerAttachment,
   DesktopClipboardFilePaths,
+  DesktopClipboardImage,
   DesktopClipboardSnapshot,
   ComposerFilePickerState,
   ComposerSlashCommand,
@@ -49,6 +50,10 @@ import type {
 } from "./terminal-contracts";
 
 export type DesktopRequestMap = {
+  clearClipboardImages: {
+    params: Record<string, never>;
+    response: { clearedCount: number; clearFailedCount: number };
+  };
   getShellState: { params: Record<string, never>; response: ShellState };
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null };
   getProjectDiff: {
@@ -122,6 +127,10 @@ export type DesktopRequestMap = {
   readClipboardFilePaths: {
     params: Record<string, never>;
     response: DesktopClipboardFilePaths;
+  };
+  readClipboardImage: {
+    params: Record<string, never>;
+    response: DesktopClipboardImage;
   };
   getAttachmentKindsForPaths: {
     params: { paths: string[] };

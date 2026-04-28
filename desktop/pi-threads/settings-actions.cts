@@ -1,3 +1,6 @@
+import { readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
 import {
@@ -34,10 +37,41 @@ import {
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
 
-export function handleSettingsDesktopAction(
+const clipboardImageTempDir = path.join(tmpdir(), "howcode-clipboard-images");
+
+async function clearClipboardImageTempFiles() {
+  let entries: Array<{ isFile(): boolean; name: string }>;
+  try {
+    entries = await readdir(clipboardImageTempDir, { withFileTypes: true });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return { clearedCount: 0, clearFailedCount: 0 };
+    }
+
+    return { clearedCount: 0, clearFailedCount: 1 };
+  }
+
+  const targets = entries.filter(
+    (entry) =>
+      entry.isFile() && entry.name.startsWith("howcode-clipboard-") && entry.name.endsWith(".png"),
+  );
+  const results = await Promise.allSettled(
+    targets.map((entry) => rm(path.join(clipboardImageTempDir, entry.name), { force: true })),
+  );
+  return {
+    clearedCount: results.filter((result) => result.status === "fulfilled").length,
+    clearFailedCount: results.filter((result) => result.status === "rejected").length,
+  };
+}
+
+export async function handleSettingsDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
-): ActionHandlerResult {
+): Promise<ActionHandlerResult> {
+  if (action === "settings.clear-clipboard-images") {
+    return handledAction(await clearClipboardImageTempFiles());
+  }
+
   if (action !== "settings.update") {
     return unhandledAction();
   }

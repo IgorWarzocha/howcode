@@ -2,9 +2,15 @@ import type { ComposerAttachment } from "./desktop-data-contracts";
 import { getSafeExternalUrl } from "./external-url";
 
 const imageAttachmentPattern = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+const wrappingWhitespacePattern =
+  /^[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+|[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+$/g;
+
+function trimWrappingWhitespace(value: string) {
+  return value.replace(wrappingWhitespacePattern, "");
+}
 
 function stripWrappingCharacters(value: string) {
-  const trimmed = value.trim();
+  const trimmed = trimWrappingWhitespace(value);
 
   if (trimmed.length >= 2) {
     const first = trimmed[0];
@@ -15,11 +21,21 @@ function stripWrappingCharacters(value: string) {
       (first === "'" && last === "'") ||
       (first === "<" && last === ">")
     ) {
-      return trimmed.slice(1, -1).trim();
+      return trimWrappingWhitespace(trimmed.slice(1, -1));
     }
   }
 
   return trimmed;
+}
+
+function unescapeShellPath(value: string) {
+  // File paths copied from shells are often escaped as `/tmp/My\ Image.png`.
+  // Only do this for POSIX-looking paths so Windows separators stay intact.
+  if (!value.startsWith("/")) {
+    return value;
+  }
+
+  return value.replace(/\\([\\\s'"()\[\]{}&;!$`*?|<>])/g, "$1");
 }
 
 function decodeFileUrlPath(url: URL) {
@@ -127,7 +143,7 @@ export function normalizeComposerAttachments(
 }
 
 export function parseComposerAttachmentReference(rawReference: string): ComposerAttachment | null {
-  const candidate = stripWrappingCharacters(rawReference);
+  const candidate = unescapeShellPath(stripWrappingCharacters(rawReference));
   if (!candidate) {
     return null;
   }
@@ -161,7 +177,7 @@ export function parseComposerAttachmentReference(rawReference: string): Composer
 
 export function extractComposerAttachmentsFromPaste(
   pastedText: string,
-  options?: { sourceType?: string | null },
+  options?: { sourceType?: string | null; allowPartial?: boolean },
 ): ComposerAttachment[] {
   const trimmed = pastedText.trim();
   if (!trimmed) {
@@ -179,5 +195,9 @@ export function extractComposerAttachmentsFromPaste(
     .map((candidate) => parseComposerAttachmentReference(candidate))
     .filter((attachment): attachment is ComposerAttachment => attachment !== null);
 
-  return attachments.length === candidates.length ? mergeComposerAttachments([], attachments) : [];
+  if (attachments.length === candidates.length || options?.allowPartial) {
+    return mergeComposerAttachments([], attachments);
+  }
+
+  return [];
 }

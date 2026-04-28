@@ -5,6 +5,7 @@ export type {
   ComposerAttachment,
   ComposerContextUsage,
   DesktopClipboardFilePaths,
+  DesktopClipboardImage,
   DesktopClipboardSnapshot,
   ComposerFilePickerEntry,
   ComposerFilePickerState,

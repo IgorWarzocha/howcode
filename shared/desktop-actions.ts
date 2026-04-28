@@ -31,6 +31,7 @@ export const desktopActions = [
   "inbox.mark-read",
   "inbox.dismiss",
   "settings.update",
+  "settings.clear-clipboard-images",
   "pi-settings.update",
   "projects.import.scan",
   "projects.import.apply",
