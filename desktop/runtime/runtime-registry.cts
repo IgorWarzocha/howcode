@@ -3,10 +3,16 @@ import { getPiModule } from "../pi-module.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
-import { publishComposerUpdate, publishThreadUpdate } from "./thread-publisher.cts";
+import {
+  clearRuntimeToolProgress,
+  publishComposerUpdate,
+  publishThreadUpdate,
+  rememberRuntimeToolProgress,
+} from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
 
 const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
+const LIVE_THREAD_UPDATE_THROTTLE_MS = 50;
 
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>;
@@ -15,6 +21,7 @@ type RuntimeRecord = {
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
 const runtimeMutationTails = new Map<string, Promise<void>>();
+const liveThreadUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>();
 const settingsRefreshController = createRuntimeSettingsRefreshController({
   getCachedRuntimeForSessionPath,
   getRuntimeRecords: () =>
@@ -73,6 +80,51 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
       }
     })();
   }, RUNTIME_IDLE_TIMEOUT_MS);
+}
+
+function publishLiveThreadUpdate(runtime: PiRuntime) {
+  void publishThreadUpdate(runtime, "update");
+}
+
+function cancelLiveThreadUpdate(runtime: PiRuntime) {
+  const timer = liveThreadUpdateTimers.get(runtime);
+  if (!timer) {
+    return;
+  }
+
+  clearTimeout(timer);
+  liveThreadUpdateTimers.delete(runtime);
+}
+
+function deferLiveThreadUpdate(runtime: PiRuntime, options: { requireStreaming?: boolean } = {}) {
+  cancelLiveThreadUpdate(runtime);
+  const timer = setTimeout(() => {
+    liveThreadUpdateTimers.delete(runtime);
+    if (options.requireStreaming !== false && !runtime.session.isStreaming) {
+      return;
+    }
+
+    publishLiveThreadUpdate(runtime);
+  }, 0);
+
+  liveThreadUpdateTimers.set(runtime, timer);
+}
+
+function scheduleLiveThreadUpdate(runtime: PiRuntime) {
+  if (liveThreadUpdateTimers.has(runtime)) {
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    liveThreadUpdateTimers.delete(runtime);
+    if (!runtime.session.isStreaming) {
+      return;
+    }
+
+    publishLiveThreadUpdate(runtime);
+  }, LIVE_THREAD_UPDATE_THROTTLE_MS);
+
+  liveThreadUpdateTimers.set(runtime, timer);
 }
 
 export async function reloadRuntimeSettingsIfSafe(
@@ -134,9 +186,24 @@ async function createRuntime(options: {
       suspendRuntimeDisposal(runtimeKey);
     }
 
+    if (event.type === "message_start") {
+      scheduleLiveThreadUpdate(runtime);
+      return;
+    }
+
     if (event.type === "message_end") {
       if (event.message.role === "user") {
+        cancelLiveThreadUpdate(runtime);
         void publishThreadUpdate(runtime, "start");
+      } else {
+        if (event.message.role === "toolResult") {
+          const toolCallId = "toolCallId" in event.message ? event.message.toolCallId : undefined;
+          clearRuntimeToolProgress(runtime, {
+            toolCallId: typeof toolCallId === "string" ? toolCallId : undefined,
+            toolName: event.message.toolName,
+          });
+        }
+        deferLiveThreadUpdate(runtime, { requireStreaming: event.message.role === "toolResult" });
       }
 
       if (runtimeKey) {
@@ -147,6 +214,7 @@ async function createRuntime(options: {
     }
 
     if (event.type === "agent_end") {
+      cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "end");
 
       if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
@@ -163,6 +231,7 @@ async function createRuntime(options: {
     }
 
     if (event.type === "compaction_start") {
+      cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "compaction-start");
 
       void buildComposerState(runtime)
@@ -181,6 +250,7 @@ async function createRuntime(options: {
 
     if (event.type === "compaction_end") {
       setTimeout(() => {
+        cancelLiveThreadUpdate(runtime);
         void publishThreadUpdate(runtime, "compaction");
 
         void buildComposerState(runtime)
@@ -204,8 +274,30 @@ async function createRuntime(options: {
       return;
     }
 
-    if (event.type === "message_update" && event.message.role === "assistant") {
-      void publishThreadUpdate(runtime, "update");
+    if (event.type === "message_update") {
+      scheduleLiveThreadUpdate(runtime);
+      return;
+    }
+
+    if (
+      event.type === "tool_execution_start" ||
+      event.type === "tool_execution_update" ||
+      event.type === "tool_execution_end"
+    ) {
+      rememberRuntimeToolProgress(runtime, {
+        toolCallId: event.toolCallId,
+        toolName: event.toolName,
+        args: "args" in event ? event.args : undefined,
+        partialResult:
+          event.type === "tool_execution_update"
+            ? event.partialResult
+            : event.type === "tool_execution_end"
+              ? event.result
+              : undefined,
+        isError: event.type === "tool_execution_end" ? event.isError : false,
+        terminal: event.type === "tool_execution_end",
+      });
+      scheduleLiveThreadUpdate(runtime);
       return;
     }
 

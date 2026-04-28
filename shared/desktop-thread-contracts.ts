@@ -99,6 +99,13 @@ export type CustomThreadMessage = {
   content: string[];
 };
 
+export type SystemThreadMessage = {
+  id: string;
+  role: "system";
+  label: string;
+  content: string[];
+};
+
 export type SummaryThreadMessage = {
   id: string;
   role: "branchSummary" | "compactionSummary";
@@ -110,6 +117,7 @@ export type Message =
   | ToolResultMessage
   | BashExecutionMessage
   | CustomThreadMessage
+  | SystemThreadMessage
   | SummaryThreadMessage;
 
 export type ThreadData = {

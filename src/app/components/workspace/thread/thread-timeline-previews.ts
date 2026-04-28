@@ -6,6 +6,7 @@ export function getMessagePreview(message: Message) {
   switch (message.role) {
     case "user":
     case "custom":
+    case "system":
     case "branchSummary":
     case "compactionSummary":
       return message.content.join(" ").trim();

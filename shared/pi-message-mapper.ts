@@ -174,6 +174,30 @@ function extractUserContent(content: RuntimeMessage["content"]) {
   return [text, ...imageLabels].filter(Boolean);
 }
 
+function extractDisplayContent(content: RuntimeMessage["content"]) {
+  if (typeof content === "string") {
+    return splitParagraphs(content);
+  }
+
+  if (!Array.isArray(content)) {
+    return [] as string[];
+  }
+
+  const textParts = getTextParts(content).flatMap((part) => splitParagraphs(part));
+  const imageCount = getImageCount(content);
+  const imageLabels = Array.from(
+    { length: imageCount },
+    (_, index) => `Attached image ${index + 1}`,
+  );
+
+  return [...textParts, ...imageLabels].filter(Boolean);
+}
+
+function normalizeSystemLabel(role: string | undefined) {
+  const label = role?.trim() || "message";
+  return label === "system" ? "System" : label;
+}
+
 function extractAssistantContent(message: RuntimeMessage) {
   const content = getTextParts(message.content)
     .flatMap((part) => splitParagraphs(part))
@@ -288,7 +312,7 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
     }
 
     case "custom": {
-      const content = extractUserContent(runtimeMessage.content);
+      const content = extractDisplayContent(runtimeMessage.content);
       if (content.length === 0) {
         return null;
       }
@@ -297,6 +321,20 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
         id,
         role: "custom",
         customType: runtimeMessage.customType ?? "custom",
+        content,
+      };
+    }
+
+    case "system": {
+      const content = extractDisplayContent(runtimeMessage.content);
+      if (content.length === 0) {
+        return null;
+      }
+
+      return {
+        id,
+        role: "system",
+        label: "System",
         content,
       };
     }
@@ -314,8 +352,19 @@ export function mapAgentMessageToUiMessage(message: AgentMessage, index: number)
       };
     }
 
-    default:
-      return null;
+    default: {
+      const content = extractDisplayContent(runtimeMessage.content);
+      if (content.length === 0) {
+        return null;
+      }
+
+      return {
+        id,
+        role: "system",
+        label: normalizeSystemLabel(runtimeMessage.role),
+        content,
+      };
+    }
   }
 }
 
