@@ -80,8 +80,8 @@ function PixelHLogo() {
 
 export function LandingView({ className }: LandingViewProps) {
   const content = getLandingOverviewContent();
-  const [activeSection, setActiveSection] = useState<"roadmap" | "changelog">("roadmap");
-  const activeContent = activeSection === "roadmap" ? content.roadmap : content.changelog;
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+  const activeContent = content.sections[activeSectionIndex] ?? content.sections[0];
   const activePanelId = "landing-overview-panel";
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -90,10 +90,12 @@ export function LandingView({ className }: LandingViewProps) {
     }
 
     event.preventDefault();
-    const nextSection = activeSection === "roadmap" ? "changelog" : "roadmap";
-    setActiveSection(nextSection);
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const nextSectionIndex =
+      (activeSectionIndex + direction + content.sections.length) % content.sections.length;
+    setActiveSectionIndex(nextSectionIndex);
     window.requestAnimationFrame(() => {
-      document.getElementById(`landing-${nextSection}-tab`)?.focus();
+      document.getElementById(`landing-section-${nextSectionIndex}-tab`)?.focus();
     });
   };
 
@@ -110,54 +112,42 @@ export function LandingView({ className }: LandingViewProps) {
 
         <div className="grid w-full max-w-[680px] gap-0">
           <div
-            className="grid grid-cols-2 border-b border-[rgba(169,178,215,0.08)]"
+            className="grid grid-cols-3 border-b border-[rgba(169,178,215,0.08)]"
             role="tablist"
             aria-label={content.title}
           >
-            <button
-              type="button"
-              id="landing-roadmap-tab"
-              role="tab"
-              className={cn(
-                "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
-                activeSection === "roadmap"
-                  ? "border-[color:var(--accent)] text-[color:var(--text)]"
-                  : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
-              )}
-              onClick={() => setActiveSection("roadmap")}
-              onKeyDown={handleTabKeyDown}
-              aria-selected={activeSection === "roadmap"}
-              aria-controls={activePanelId}
-              tabIndex={activeSection === "roadmap" ? 0 : -1}
-            >
-              {content.roadmap.title}
-            </button>
+            {content.sections.map((section, index) => {
+              const selected = activeSectionIndex === index;
 
-            <button
-              type="button"
-              id="landing-changelog-tab"
-              role="tab"
-              className={cn(
-                "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
-                activeSection === "changelog"
-                  ? "border-[color:var(--accent)] text-[color:var(--text)]"
-                  : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
-              )}
-              onClick={() => setActiveSection("changelog")}
-              onKeyDown={handleTabKeyDown}
-              aria-selected={activeSection === "changelog"}
-              aria-controls={activePanelId}
-              tabIndex={activeSection === "changelog" ? 0 : -1}
-            >
-              {content.changelog.title}
-            </button>
+              return (
+                <button
+                  key={section.title}
+                  type="button"
+                  id={`landing-section-${index}-tab`}
+                  role="tab"
+                  className={cn(
+                    "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
+                    selected
+                      ? "border-[color:var(--accent)] text-[color:var(--text)]"
+                      : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
+                  )}
+                  onClick={() => setActiveSectionIndex(index)}
+                  onKeyDown={handleTabKeyDown}
+                  aria-selected={selected}
+                  aria-controls={activePanelId}
+                  tabIndex={selected ? 0 : -1}
+                >
+                  {section.title}
+                </button>
+              );
+            })}
           </div>
 
           <div
             id={activePanelId}
             className="pt-4 text-left"
             role="tabpanel"
-            aria-labelledby={`landing-${activeSection}-tab`}
+            aria-labelledby={`landing-section-${activeSectionIndex}-tab`}
           >
             <MarkdownContent markdown={activeContent.markdown} className="gap-2 text-[13px]" />
           </div>
