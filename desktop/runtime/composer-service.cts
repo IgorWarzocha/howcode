@@ -33,6 +33,7 @@ import {
 import {
   getLiveThread,
   publishComposerUpdate,
+  publishThreadUpdate,
   subscribeDesktopEvents,
 } from "./thread-publisher.cts";
 import type { PiRuntime } from "./types.cts";
@@ -268,6 +269,9 @@ export async function sendComposerPrompt(
         });
       }
 
+      await publishThreadUpdate(runtime, "update").catch((error) => {
+        console.error("Composer prompt accepted but thread update publish failed", error);
+      });
       return "sent";
     } catch (error) {
       scheduleRuntimeDisposalForRuntime(runtime);

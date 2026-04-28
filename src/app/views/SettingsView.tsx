@@ -274,7 +274,7 @@ export function SettingsView({
                     {group.label}
                   </h2>
                 </div>
-                <div className="grid gap-2">
+                <div className="grid">
                   {group.settings.map((setting) => (
                     <SettingRow key={setting.id} setting={setting} />
                   ))}

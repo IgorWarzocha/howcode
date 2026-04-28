@@ -730,21 +730,21 @@ export function buildSettingsDescriptors({
         "Delete temp images created when pasted clipboard screenshots become attachments.",
       keywords: "clipboard images screenshots attachments delete cleanup temp",
       render: () => (
-        <div className="grid justify-items-end gap-1.5">
+        <div className="flex max-w-full items-center justify-end gap-2">
+          {controller.clearImagesStatusMessage ? (
+            <div className="min-w-0 truncate text-right text-[12px] text-[color:var(--muted)]">
+              {controller.clearImagesStatusMessage}
+            </div>
+          ) : null}
           <button
             type="button"
-            className={cn(composerTextActionButtonClass, "text-[#f2a7a7]")}
+            className={cn(composerTextActionButtonClass, "shrink-0 text-[#f2a7a7]")}
             onClick={() => void controller.handleClearClipboardImages()}
             disabled={controller.clearImagesBusy || !controller.desktopBridgeAvailable}
           >
             <Trash2 size={12} />
             {controller.clearImagesBusy ? "Deleting…" : "Delete images"}
           </button>
-          {controller.clearImagesStatusMessage ? (
-            <div className="text-right text-[12px] text-[color:var(--muted)]">
-              {controller.clearImagesStatusMessage}
-            </div>
-          ) : null}
         </div>
       ),
     },
@@ -755,8 +755,8 @@ export function buildSettingsDescriptors({
       description: "Download and choose one of the curated sherpa-onnx int8 Whisper models.",
       keywords: "dictation model whisper download tiny base small speech transcription",
       render: () => (
-        <div className="grid w-[27rem] max-w-full gap-2">
-          <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] items-center gap-2">
+        <div className="grid w-[27rem] max-w-full gap-1.5">
+          <div className="flex items-center justify-end gap-2">
             <InlineSelect
               id="dictation-model"
               className="min-w-0"

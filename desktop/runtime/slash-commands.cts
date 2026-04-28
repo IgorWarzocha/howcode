@@ -5,6 +5,7 @@ import {
   compactSlashCommand,
 } from "../../shared/composer-slash-commands.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
+import { discoverHeadlessAgentSessionResources } from "./agent-session-extensions.cts";
 import { createComposerSnapshotSession } from "./composer-state.cts";
 import {
   getCachedRuntimeForSessionPath,
@@ -91,6 +92,9 @@ export async function getComposerSlashCommands(
   });
 
   try {
+    await discoverHeadlessAgentSessionResources(snapshot.session).catch((error) => {
+      console.warn("Pi extension resource discovery failed", error);
+    });
     return mapSessionCommands(snapshot.session);
   } finally {
     snapshot.session.dispose();

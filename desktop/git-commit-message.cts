@@ -4,6 +4,7 @@ import { mapAgentMessageToUiMessage } from "../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "./app-settings.cts";
 import { getPiModule } from "./pi-module.cts";
 import type { CommitMessageContext } from "./project-git.cts";
+import { bindHeadlessAgentSessionExtensions } from "./runtime/agent-session-extensions.cts";
 import {
   clampThinkingLevel,
   createComposerSnapshotSession,
@@ -267,6 +268,7 @@ export async function generateGitCommitMessage(
       settingsManager: services.SettingsManager.inMemory(),
     });
     session = createdSession.session;
+    await bindHeadlessAgentSessionExtensions(session);
 
     await session.prompt(buildPrompt(context));
     const message = getLastAssistantText(session.messages as AgentMessage[]);
