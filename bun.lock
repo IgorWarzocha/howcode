@@ -18,8 +18,8 @@
         "@tanstack/react-pacer": "^0.21.1",
         "@tanstack/react-query": "^5.96.1",
         "@tanstack/react-virtual": "^3.13.23",
-        "@wterm/dom": "0.1.9",
-        "@wterm/react": "0.1.9",
+        "@wterm/dom": "0.2.0",
+        "@wterm/react": "0.2.0",
         "better-sqlite3": "^12.2.0",
         "clip-filepaths": "^0.3.0",
         "lucide-react": "^0.525.0",
@@ -56,6 +56,8 @@
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",
     "@aws-sdk/core": "^3.974.5",
     "@aws-sdk/xml-builder": "^3.972.19",
+    "@wterm/core": "0.2.0",
+    "@wterm/dom": "0.2.0",
     "uuid": "^14.0.0",
   },
   "packages": {
@@ -667,11 +669,11 @@
 
     "@webgpu/types": ["@webgpu/types@0.1.69", "", {}, "sha512-RPmm6kgRbI8e98zSD3RVACvnuktIja5+yLgDAkTmxLr90BEwdTXRQWNLF3ETTTyH/8mKhznZuN5AveXYFEsMGQ=="],
 
-    "@wterm/core": ["@wterm/core@0.1.9", "", {}, "sha512-RqyS/w7SU3sLCY2yfsw5p+T7wYIIgCYzOMQIWkoJHKN7o+n/uerr2nTNygR3MBQ2FOcznilFm30w9aOJ2OK3GQ=="],
+    "@wterm/core": ["@wterm/core@0.2.0", "", {}, "sha512-nqtrGz/tqTkPrvB/Ag/43KuUZOcAjZaj+UM+caf1w1IYLfxQPexpZs3JOrYav4sDoYNFdJJWtybtRflHGeMW2Q=="],
 
-    "@wterm/dom": ["@wterm/dom@0.1.9", "", { "dependencies": { "@wterm/core": "0.1.9" } }, "sha512-jccLWVW36loRWWnieY3iRLmDgvTgvCroMQfkcuMUeLmTSwnmrm6dB7RAAngal+udQ6VaTp0QF0gLpA+kq1R1fw=="],
+    "@wterm/dom": ["@wterm/dom@0.2.0", "", { "dependencies": { "@wterm/core": "workspace:*" } }, "sha512-AntxyafwaxVrD/+OBfjRW7DarSV1JFKYjpnQUMDhRfWbzZdfAqqo66Zm+FhFKPY4veLuB3kF9C/4Rss2Vd9OYw=="],
 
-    "@wterm/react": ["@wterm/react@0.1.9", "", { "peerDependencies": { "@wterm/dom": "0.1.9", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-WUSjiYLYaEjgAO3X768fgWIlNfJhZSgcQw3x++8iBFu6I2KUKFiSzd9QM8Yjsqe00aGxhEs+5HZVPGwOt9bkGw=="],
+    "@wterm/react": ["@wterm/react@0.2.0", "", { "peerDependencies": { "@wterm/dom": "workspace:*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-JX8ewIhZeOBX5KLJzZjE3/k41PTSIAgeh89LRd+hqpC2CyKM+dkjO7DfI0Yw9WG0ViE8jF6CQRCa8Io5sRmdTg=="],
 
     "@xmldom/xmldom": ["@xmldom/xmldom@0.8.13", "", {}, "sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw=="],
 
