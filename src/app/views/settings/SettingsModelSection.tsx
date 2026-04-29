@@ -1,7 +1,7 @@
 import { ChevronDown, FilePenLine, GitCommitHorizontal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { SectionIntro } from "../../components/common/SectionIntro";
-import { ComposerMenu } from "../../components/workspace/composer/ComposerMenu";
+import { SettingsComposerMenu } from "./SettingsComposerMenu";
 import type { ComposerModel, ModelSelection } from "../../desktop/types";
 import { settingsSectionClass, settingsSelectButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
@@ -90,7 +90,7 @@ export function SettingsModelSection({
         </button>
 
         {gitCommitMenuPresent ? (
-          <ComposerMenu
+          <SettingsComposerMenu
             items={buildModelMenuItems(selectedGitCommitModel, currentModel, availableModels)}
             menuId={gitCommitMenuId}
             panelRef={gitCommitPanelRef}
@@ -131,7 +131,7 @@ export function SettingsModelSection({
         </button>
 
         {skillCreatorMenuPresent ? (
-          <ComposerMenu
+          <SettingsComposerMenu
             items={buildModelMenuItems(selectedSkillCreatorModel, currentModel, availableModels)}
             menuId={skillCreatorMenuId}
             panelRef={skillCreatorPanelRef}
