@@ -41,6 +41,7 @@ function buildShellState(): ShellState {
       queuedPrompts: [],
       contextUsage: null,
       isCompacting: false,
+      isExtensionCommandRunning: false,
     },
     projects: [
       {

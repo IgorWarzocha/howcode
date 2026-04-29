@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   appSettingsSlashCommand,
   fallbackAppSlashCommands,
@@ -45,12 +45,20 @@ function getSlashCommandFilter(draft: string) {
   return query.toLowerCase();
 }
 
+function shouldWaitForSlashCommands(draft: string) {
+  const trimmedDraft = draft.trim();
+  return (
+    trimmedDraft.startsWith("/") && !trimmedDraft.includes(" ") && trimmedDraft !== "/settings"
+  );
+}
+
 type UseComposerSlashCommandsOptions = {
   draft: string;
   projectId: string;
   sessionPath: string | null;
   setDraft: (draft: string) => void;
   send: () => void;
+  sendExtensionCommand?: () => void;
   onOpenSettingsView: () => void;
 };
 
@@ -60,6 +68,7 @@ export function useComposerSlashCommands({
   sessionPath,
   setDraft,
   send,
+  sendExtensionCommand,
   onOpenSettingsView,
 }: UseComposerSlashCommandsOptions) {
   const [commands, setCommands] = useState<ComposerSlashCommand[]>([]);
@@ -69,6 +78,11 @@ export function useComposerSlashCommands({
   const candidateFilter = getSlashCommandFilter(draft);
   const filter = draft === dismissedDraft ? null : candidateFilter;
   const open = filter !== null;
+  const commandScopeKey = `${projectId}\0${sessionPath ?? ""}`;
+  const draftRef = useRef(draft);
+  const commandScopeKeyRef = useRef(commandScopeKey);
+  draftRef.current = draft;
+  commandScopeKeyRef.current = commandScopeKey;
   const filteredCommands = useMemo(() => {
     if (filter === null) {
       return [];
@@ -90,6 +104,13 @@ export function useComposerSlashCommands({
   const isExactCommandDraft = (command: ComposerSlashCommand) =>
     draft.trim() === `/${command.name}` && !draft.endsWith(" ");
 
+  const getDraftCommand = () => {
+    const trimmedDraft = draft.trim();
+    if (!trimmedDraft.startsWith("/")) return null;
+    const commandName = trimmedDraft.slice(1).split(/\s+/, 1)[0];
+    return commands.find((command) => command.name === commandName) ?? null;
+  };
+
   const selectCommand = (command: ComposerSlashCommand) => {
     if (command.source === "app" && command.name === "settings") {
       setDraft("");
@@ -98,7 +119,12 @@ export function useComposerSlashCommands({
     }
 
     if (isExactCommandDraft(command)) {
-      send();
+      dismiss();
+      if (command.source === "extension" && sendExtensionCommand) {
+        sendExtensionCommand();
+      } else {
+        send();
+      }
       return;
     }
 
@@ -117,7 +143,7 @@ export function useComposerSlashCommands({
         return;
       }
 
-      if (loading && draft.trim() !== "/settings") {
+      if (loading && shouldWaitForSlashCommands(draft)) {
         return;
       }
     }
@@ -127,6 +153,39 @@ export function useComposerSlashCommands({
     if (draft === "/settings") {
       selectCommand(appSettingsSlashCommand);
       return;
+    }
+
+    if (draft.trim().startsWith("/")) {
+      const draftCommand = getDraftCommand();
+      dismiss();
+      if (draftCommand?.source === "extension" && sendExtensionCommand) {
+        sendExtensionCommand();
+        return;
+      }
+      if (!draftCommand && sendExtensionCommand && (loading || commands.length === 0)) {
+        const submittedDraft = draft;
+        const submittedScopeKey = commandScopeKey;
+        void getComposerSlashCommandsQuery({ projectId, sessionPath })
+          .then((nextCommands) => {
+            if (
+              draftRef.current !== submittedDraft ||
+              commandScopeKeyRef.current !== submittedScopeKey
+            ) {
+              return;
+            }
+            const commandName = submittedDraft.trim().slice(1).split(/\s+/, 1)[0];
+            const resolvedCommand = nextCommands.find((command) => command.name === commandName);
+            if (resolvedCommand?.source === "extension") {
+              sendExtensionCommand();
+            } else if (resolvedCommand) {
+              send();
+            }
+          })
+          .catch(() => {
+            // Keep slash text in the editor rather than leaking an unresolved command to the model.
+          });
+        return;
+      }
     }
 
     send();
@@ -185,7 +244,7 @@ export function useComposerSlashCommands({
       return true;
     }
 
-    if (event.key === "Enter" && !event.shiftKey && loading) {
+    if (event.key === "Enter" && !event.shiftKey && loading && shouldWaitForSlashCommands(draft)) {
       event.preventDefault();
       return true;
     }
@@ -196,7 +255,6 @@ export function useComposerSlashCommands({
   useEffect(() => {
     if (!open) {
       setSelectedIndex(0);
-      setCommands([]);
       setLoading(false);
       return;
     }
@@ -226,6 +284,11 @@ export function useComposerSlashCommands({
       cancelled = true;
     };
   }, [open, projectId, sessionPath]);
+
+  useEffect(() => {
+    void commandScopeKey;
+    setCommands([]);
+  }, [commandScopeKey]);
 
   useEffect(() => {
     if (selectedIndex >= filteredCommands.length) {

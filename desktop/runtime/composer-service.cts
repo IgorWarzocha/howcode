@@ -29,6 +29,8 @@ import {
   getOrCreateRuntimeForSessionPath,
   scheduleRuntimeDisposalForRuntime,
   withRuntimeMutationLock,
+  abortRuntimeExtensionCommand,
+  isRuntimeExtensionCommandRunning,
 } from "./runtime-registry.cts";
 import {
   getLiveThread,
@@ -60,6 +62,12 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
     composer,
     runtime,
   };
+}
+
+function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
+  if (!text.startsWith("/")) return false;
+  const commandName = text.slice(1).split(/\s+/, 1)[0];
+  return Boolean(runtime.session.extensionRunner.getCommand(commandName));
 }
 
 async function promptAndReturnAfterPreflight({
@@ -213,6 +221,10 @@ export async function sendComposerPrompt(
   const runSend = async (runtime: Awaited<ReturnType<typeof getOrCreateRuntimeForSessionPath>>) => {
     if (compactInstructions !== null) {
       try {
+        if (isRuntimeExtensionCommandRunning(runtime)) {
+          throw new Error("Wait for the current extension command to finish before compacting.");
+        }
+
         if (runtime.session.isStreaming) {
           throw new Error("Wait for the current response to finish before compacting.");
         }
@@ -250,15 +262,19 @@ export async function sendComposerPrompt(
 
       if (runtime.session.isStreaming) {
         if (streamingBehavior === "stop") {
-          await runtime.session.abort();
-          await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-          return "stopped";
+          if (!isExtensionCommandPrompt(runtime, request.text)) {
+            await runtime.session.abort();
+            await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+            return "stopped";
+          }
         }
 
+        const promptStreamingBehavior =
+          streamingBehavior === "stop" ? "followUp" : streamingBehavior;
         await promptAndReturnAfterPreflight({
           runtime,
           message,
-          options: { streamingBehavior },
+          options: { streamingBehavior: promptStreamingBehavior },
           request: { ...request, sessionPath: persistedSessionPath },
         });
       } else {
@@ -288,7 +304,7 @@ export async function sendComposerPrompt(
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
-    if (cachedRuntime.session.isStreaming) {
+    if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
       return await runSend(cachedRuntime);
     }
   }
@@ -311,8 +327,11 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
-    if (cachedRuntime.session.isStreaming) {
-      await cachedRuntime.session.abort();
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime);
+    if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
+      if (cachedRuntime.session.isStreaming) {
+        await cachedRuntime.session.abort();
+      }
       scheduleRuntimeDisposalForRuntime(cachedRuntime);
       await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
       return;
@@ -324,7 +343,12 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
       suspendDisposal: true,
     });
 
-    await runtime.session.abort();
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
+    const wasStreaming = runtime.session.isStreaming;
+    if (wasStreaming) {
+      await runtime.session.abort();
+    }
+    if (!abortedExtensionCommand && !wasStreaming) await runtime.session.abort();
     scheduleRuntimeDisposalForRuntime(runtime);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

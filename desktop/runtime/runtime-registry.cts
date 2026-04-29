@@ -1,6 +1,11 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { bindHeadlessAgentSessionExtensions } from "./agent-session-extensions.cts";
+import {
+  abortHeadlessExtensionCommand,
+  bindHeadlessAgentSessionExtensions,
+  isHeadlessExtensionCommandRunning,
+  refreshHeadlessAgentSessionExtensionBindings,
+} from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
@@ -31,9 +36,15 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
       runtimePromise: record.runtimePromise,
     })),
   withRuntimeMutationLock,
+  afterReload: (runtime) => refreshRuntimeExtensionBindings(runtime),
+  isRuntimeBusy: isHowcodeRuntimeBusy,
   buildComposerState,
   publishComposerUpdate,
 });
+
+function isHowcodeRuntimeBusy(runtime: PiRuntime) {
+  return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime);
+}
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -66,7 +77,7 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
 
       try {
         const runtime = await record.runtimePromise;
-        if (isRuntimeBusy(runtime)) {
+        if (isHowcodeRuntimeBusy(runtime)) {
           scheduleRuntimeDisposal(runtimeKey);
           return;
         }
@@ -173,7 +184,6 @@ async function createRuntime(options: {
     settingsManager,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
-
   const runtime = {
     cwd: options.cwd,
     session,
@@ -321,9 +331,63 @@ async function createRuntime(options: {
     }
   });
 
-  await bindHeadlessAgentSessionExtensions(session);
+  await bindHeadlessAgentSessionExtensions(session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        });
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
+    },
+  });
 
   return runtime;
+}
+
+export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
+  return abortHeadlessExtensionCommand(runtime.session);
+}
+
+export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
+  return isHeadlessExtensionCommandRunning(runtime.session);
+}
+
+export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        });
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
+    },
+  });
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
@@ -366,7 +430,7 @@ export async function getOrCreateRuntimeForSessionPath(
     }
 
     const runtime = await existingRuntime.runtimePromise;
-    if (!isRuntimeBusy(runtime)) {
+    if (!isHowcodeRuntimeBusy(runtime)) {
       await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     }
     return runtime;

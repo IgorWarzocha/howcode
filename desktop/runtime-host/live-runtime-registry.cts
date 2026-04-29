@@ -1,7 +1,12 @@
 import path from "node:path";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
+import {
+  abortHeadlessExtensionCommand,
+  bindHeadlessAgentSessionExtensions,
+  isHeadlessExtensionCommandRunning,
+  refreshHeadlessAgentSessionExtensionBindings,
+} from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
@@ -13,6 +18,12 @@ import {
 } from "./live-thread-publisher.cts";
 import { emitDesktopEvent } from "./host-events.cts";
 import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from "./live-tool-progress.cts";
+
+function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
+  if (extensionPath.startsWith("command:")) return `/${extensionPath.slice("command:".length)}`;
+  if (extensionPath.startsWith("<")) return extensionPath.replace(/[<>]/g, "");
+  return path.basename(extensionPath).replace(/\.(ts|js)$/, "");
+}
 
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>;
@@ -46,7 +57,11 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
       if (!currentRecord || currentRecord !== record) return;
       try {
         const runtime = await record.runtimePromise;
-        if (runtime.session.isStreaming || runtime.session.isCompacting) {
+        if (
+          runtime.session.isStreaming ||
+          runtime.session.isCompacting ||
+          isRuntimeExtensionCommandRunning(runtime)
+        ) {
           scheduleRuntimeDisposal(runtimeKey);
           return;
         }
@@ -203,18 +218,68 @@ async function createRuntime(options: {
   });
 
   await bindHeadlessAgentSessionExtensions(session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) =>
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          }),
+        )
+        .catch((error) => console.warn("Failed to publish extension command state", error));
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
+    },
     onExtensionError: (error) => {
+      const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath);
       emitDesktopEvent({
         type: "runtime-diagnostic",
         severity: "error",
-        message: `Extension error (${error.extensionPath}): ${error.error}`,
-        details: error,
+        message: `${extensionLabel} extension error: ${error.error}`,
+        details: { ...error, extensionLabel },
         projectId: runtime.cwd,
         sessionPath: runtime.session.sessionFile ?? null,
       });
     },
   });
   return runtime;
+}
+
+export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
+  return abortHeadlessExtensionCommand(runtime.session);
+}
+
+export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
+  return isHeadlessExtensionCommandRunning(runtime.session);
+}
+
+export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) =>
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          }),
+        )
+        .catch((error) => console.warn("Failed to publish extension command state", error));
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
+    },
+  });
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
@@ -287,8 +352,14 @@ async function reloadRuntimeSettings(
   runtime: PiRuntime,
   staleGeneration: number,
 ) {
-  if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
+  if (
+    runtime.session.isStreaming ||
+    runtime.session.isCompacting ||
+    isRuntimeExtensionCommandRunning(runtime)
+  )
+    return false;
   await runtime.session.reload();
+  await refreshRuntimeExtensionBindings(runtime);
   const composer = await buildComposerState(runtime);
   publishComposerUpdate(composer, {
     projectId: runtime.cwd,

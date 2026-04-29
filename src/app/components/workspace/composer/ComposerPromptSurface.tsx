@@ -1,4 +1,4 @@
-import { Paperclip, Send, Square, X } from "lucide-react";
+import { Loader2, Paperclip, Send, Square, X } from "lucide-react";
 import { type ClipboardEvent, type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -37,6 +37,7 @@ export function ComposerPromptSurface({
   availableModels,
   isStreaming,
   isCompacting,
+  isExtensionCommandRunning,
   thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -72,6 +73,7 @@ export function ComposerPromptSurface({
     dictationMissingModel,
     dictationSupported,
     errorMessage,
+    extensionCommandRunning,
     isSending,
     isStreaming: composerIsStreaming,
     pickerButtonRef,
@@ -89,6 +91,7 @@ export function ComposerPromptSurface({
     runComposerAction,
     compact,
     send,
+    sendExtensionCommand,
     setDraft,
     setOpenMenu,
     stop,
@@ -110,6 +113,7 @@ export function ComposerPromptSurface({
     dictationMaxDurationSeconds,
     isStreaming,
     isCompacting,
+    isExtensionCommandRunning,
     restoredQueuedPrompt,
     streamingBehaviorPreference,
     onAction,
@@ -124,6 +128,7 @@ export function ComposerPromptSurface({
     sessionPath,
     setDraft,
     send,
+    sendExtensionCommand,
     onOpenSettingsView,
   });
   const slashCommandListSignature = slashCommands.commands
@@ -255,6 +260,7 @@ export function ComposerPromptSurface({
     };
   }, [handleDrop]);
 
+  const extensionRunning = extensionCommandRunning;
   const placeholderText =
     errorMessage ??
     (activeView === "thread"
@@ -467,12 +473,18 @@ export function ComposerPromptSurface({
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={() => void stop()}
-                disabled={!composerIsStreaming || isSending}
+                disabled={(!composerIsStreaming && !extensionRunning) || isSending || !sessionPath}
                 aria-label="Stop Pi"
                 data-tooltip="Stop Pi"
               >
                 <Square size={11} fill="currentColor" />
               </button>
+              {extensionRunning ? (
+                <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Pi extension running</span>
+                </div>
+              ) : null}
               <button
                 type="button"
                 className={cn(

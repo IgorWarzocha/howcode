@@ -1,4 +1,10 @@
-import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import {
+  useCallback,
+  useRef,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from "react";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { getErrorMessage } from "../../../desktop/error-messages";
 import type {
@@ -119,12 +125,14 @@ type UseComposerSubmissionProps = {
   isSending: boolean;
   isStreaming: boolean;
   isCompacting: boolean;
+  extensionCommandRunning: boolean;
   onAction: DesktopActionInvoker;
   projectId: string;
   sessionPath: string | null;
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setDraftValue: Dispatch<SetStateAction<string>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
+  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>;
   setIsSending: Dispatch<SetStateAction<boolean>>;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
   stopDictationAndFlush: () => Promise<void>;
@@ -143,12 +151,14 @@ export function useComposerSubmission({
   isSending,
   isStreaming,
   isCompacting,
+  extensionCommandRunning,
   onAction,
   projectId,
   sessionPath,
   setAttachments,
   setDraftValue,
   setErrorMessage,
+  setExtensionCommandRunning,
   setIsSending,
   setOpenMenu,
   stopDictationAndFlush,
@@ -160,6 +170,87 @@ export function useComposerSubmission({
   sendLockRef,
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
+  const extensionCommandRunIdRef = useRef(0);
+
+  const sendExtensionCommand = useCallback(() => {
+    if (isCompacting || extensionCommandRunning || sendLockRef.current) {
+      return;
+    }
+
+    const runId = extensionCommandRunIdRef.current + 1;
+    extensionCommandRunIdRef.current = runId;
+    setErrorMessage(null);
+    setOpenMenu(null);
+    setExtensionCommandRunning(true);
+
+    void withComposerSendLock(sendLockRef, async () => {
+      const submittedScopeKey = composerScopeKey;
+      const submittedDraftThreadId = draftThreadId;
+
+      try {
+        await stopDictationAndFlush();
+
+        if (activeComposerScopeKeyRef.current !== submittedScopeKey) {
+          return;
+        }
+
+        const submittedDraft = draftValueRef.current.trim();
+        if (submittedDraft.length === 0) {
+          return;
+        }
+
+        setDraftValue("");
+        if (submittedDraftThreadId) {
+          composerDraftStore.setPrompt(submittedDraftThreadId, "");
+        }
+
+        const result = await submitComposerDraft({
+          draft: submittedDraft,
+          attachments: [],
+          isSending: false,
+          projectId,
+          sessionPath,
+          streamingBehaviorPreference,
+          onAction,
+        });
+
+        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+          if (result.status === "error") {
+            setDraftValue(result.text);
+            setErrorMessage(result.errorMessage);
+          } else if (result.status === "stopped") {
+            setDraftValue(result.text);
+          }
+        }
+      } catch (error) {
+        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+          setErrorMessage(getErrorMessage(error, "Could not send prompt."));
+        }
+      } finally {
+        if (extensionCommandRunIdRef.current === runId) {
+          setExtensionCommandRunning(false);
+        }
+      }
+    });
+  }, [
+    activeComposerScopeKeyRef,
+    composerScopeKey,
+    draftThreadId,
+    draftValueRef,
+    extensionCommandRunning,
+    isCompacting,
+    onAction,
+    projectId,
+    sessionPath,
+    sendLockRef,
+    setDraftValue,
+    setErrorMessage,
+    setExtensionCommandRunning,
+    setOpenMenu,
+    stopDictationAndFlush,
+    streamingBehaviorPreference,
+  ]);
+
   const send = useCallback(async () => {
     if (isSending || isCompacting || sendLockRef.current) {
       return;
@@ -288,7 +379,7 @@ export function useComposerSubmission({
   ]);
 
   const stop = useCallback(async () => {
-    if (!isStreaming || isSending) {
+    if ((!isStreaming && !extensionCommandRunning) || isSending || !sessionPath) {
       return;
     }
 
@@ -310,7 +401,16 @@ export function useComposerSubmission({
     } finally {
       setIsSending(false);
     }
-  }, [isSending, isStreaming, onAction, projectId, sessionPath, setErrorMessage, setIsSending]);
+  }, [
+    extensionCommandRunning,
+    isSending,
+    isStreaming,
+    onAction,
+    projectId,
+    sessionPath,
+    setErrorMessage,
+    setIsSending,
+  ]);
 
   const compact = useCallback(async () => {
     if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
@@ -358,6 +458,7 @@ export function useComposerSubmission({
   return {
     compact,
     send,
+    sendExtensionCommand,
     stop,
   };
 }

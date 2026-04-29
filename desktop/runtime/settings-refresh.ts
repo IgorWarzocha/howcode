@@ -12,6 +12,8 @@ type RuntimeSettingsRefreshControllerOptions = {
   getCachedRuntimeForSessionPath: (sessionPath: string) => Promise<PiRuntime> | null;
   getRuntimeRecords: () => RuntimeRecordSnapshot[];
   withRuntimeMutationLock: <T>(runtimeKey: string, task: () => Promise<T>) => Promise<T>;
+  afterReload?: (runtime: PiRuntime) => Promise<void>;
+  isRuntimeBusy?: (runtime: PiRuntime) => boolean;
   buildComposerState: (runtime: PiRuntime) => Promise<ComposerState>;
   publishComposerUpdate: (
     composer: ComposerState,
@@ -27,6 +29,8 @@ export function createRuntimeSettingsRefreshController({
   getCachedRuntimeForSessionPath,
   getRuntimeRecords,
   withRuntimeMutationLock,
+  afterReload,
+  isRuntimeBusy: isRuntimeBusyOption = isRuntimeBusy,
   buildComposerState,
   publishComposerUpdate,
 }: RuntimeSettingsRefreshControllerOptions) {
@@ -34,7 +38,7 @@ export function createRuntimeSettingsRefreshController({
   const activeReloads = new Map<string, Promise<void>>();
 
   async function reloadRuntimeSettings(runtimeKey: string, runtime: PiRuntime) {
-    if (isRuntimeBusy(runtime)) {
+    if (isRuntimeBusyOption(runtime)) {
       return false;
     }
 
@@ -44,11 +48,15 @@ export function createRuntimeSettingsRefreshController({
       return false;
     }
 
-    const reload = runtime.session.reload().finally(() => {
-      if (activeReloads.get(runtimeKey) === reload) {
-        activeReloads.delete(runtimeKey);
-      }
-    });
+    const reload = runtime.session
+      .reload()
+      .then(() => afterReload?.(runtime))
+      .then(() => undefined)
+      .finally(() => {
+        if (activeReloads.get(runtimeKey) === reload) {
+          activeReloads.delete(runtimeKey);
+        }
+      });
 
     activeReloads.set(runtimeKey, reload);
     await reload;
@@ -80,7 +88,7 @@ export function createRuntimeSettingsRefreshController({
     try {
       let reloaded = false;
       let reloadedGeneration: number | null = null;
-      while (!isRuntimeBusy(runtime)) {
+      while (!isRuntimeBusyOption(runtime)) {
         const generation = staleGenerations.get(runtimeKey);
         if (generation === undefined) {
           break;

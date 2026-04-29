@@ -55,6 +55,7 @@ type UseComposerControllerProps = {
   dictationMaxDurationSeconds: number;
   isStreaming: boolean;
   isCompacting: boolean;
+  isExtensionCommandRunning: boolean;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
@@ -78,6 +79,7 @@ export function useComposerController({
   dictationMaxDurationSeconds,
   isStreaming,
   isCompacting,
+  isExtensionCommandRunning,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
   onAction,
@@ -91,6 +93,7 @@ export function useComposerController({
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
+  const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const composerScopeKey = useMemo(
@@ -206,8 +209,14 @@ export function useComposerController({
     };
   }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef]);
 
+  const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning;
   const canSend =
     (draft.trim().length > 0 || attachments.length > 0) && !isSending && !isCompacting;
+
+  useEffect(() => {
+    void composerScopeKey;
+    setLocalExtensionCommandRunning(false);
+  }, [composerScopeKey]);
 
   const {
     cancelDictation,
@@ -264,7 +273,7 @@ export function useComposerController({
     }
   };
 
-  const { compact, send, stop } = useComposerSubmission({
+  const { compact, send, sendExtensionCommand, stop } = useComposerSubmission({
     composerScopeKey,
     draftThreadId,
     isSending,
@@ -276,6 +285,8 @@ export function useComposerController({
     setAttachments: setAttachmentValue,
     setDraftValue,
     setErrorMessage,
+    extensionCommandRunning,
+    setExtensionCommandRunning: setLocalExtensionCommandRunning,
     setIsSending,
     setOpenMenu,
     stopDictationAndFlush,
@@ -310,6 +321,7 @@ export function useComposerController({
     dictationMissingModel,
     dictationSupported,
     errorMessage,
+    extensionCommandRunning,
     isSending,
     pickerButtonRef,
     pickerLoading,
@@ -328,6 +340,7 @@ export function useComposerController({
     runComposerAction,
     compact,
     send,
+    sendExtensionCommand,
     setDraft: setDraftValue,
     setOpenMenu,
     stop,

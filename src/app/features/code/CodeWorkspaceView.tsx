@@ -240,6 +240,9 @@ export function CodeWorkspaceView({
                       availableModels={activeComposerState?.availableModels ?? []}
                       isStreaming={activeThreadData?.isStreaming ?? false}
                       isCompacting={activeComposerState?.isCompacting ?? false}
+                      isExtensionCommandRunning={
+                        activeComposerState?.isExtensionCommandRunning ?? false
+                      }
                       thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                       restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                       streamingBehaviorPreference={
