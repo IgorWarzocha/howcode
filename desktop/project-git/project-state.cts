@@ -1,4 +1,5 @@
 import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
+import { getThreadStateDatabase } from "../thread-state-db/db.cts";
 import { hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
 
 function parseShortStat(output: string) {
@@ -93,6 +94,20 @@ function deriveOriginName(originUrl: string | null) {
   return lastPart.replace(/\.git$/i, "") || "origin";
 }
 
+function getProjectGitOpsModeOverride(projectId: string) {
+  const row = getThreadStateDatabase()
+    .prepare(
+      `
+        SELECT git_ops_mode AS gitOpsMode
+        FROM projects
+        WHERE cwd = ?
+      `,
+    )
+    .get(projectId) as { gitOpsMode?: string | null } | undefined;
+
+  return row?.gitOpsMode === "commit" || row?.gitOpsMode === "commit-push" ? row.gitOpsMode : null;
+}
+
 export async function getBranch(projectId: string) {
   try {
     const { stdout } = await runGit(projectId, ["branch", "--show-current"]);
@@ -132,6 +147,8 @@ async function getDiffStats(projectId: string) {
 }
 
 export async function loadProjectGitState(projectId: string): Promise<ProjectGitState> {
+  const gitOpsModeOverride = getProjectGitOpsModeOverride(projectId);
+
   if (!(await isGitRepository(projectId))) {
     return {
       projectId,
@@ -145,6 +162,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       hasOrigin: false,
       originName: null,
       originUrl: null,
+      gitOpsModeOverride,
     };
   }
 
@@ -167,5 +185,6 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     hasOrigin: originUrl !== null,
     originName: deriveOriginName(originUrl),
     originUrl,
+    gitOpsModeOverride,
   };
 }

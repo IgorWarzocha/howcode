@@ -6,6 +6,7 @@ type ComposerTextFieldProps = {
   placeholder: string;
   placeholderTone?: "muted" | "error";
   statusMessage?: string | null;
+  statusTone?: "error" | "success";
   ariaLabel: string;
   ariaActiveDescendant?: string;
   ariaControls?: string;
@@ -26,6 +27,7 @@ export function ComposerTextField({
   placeholder,
   placeholderTone = "muted",
   statusMessage = null,
+  statusTone = "error",
   ariaLabel,
   ariaActiveDescendant,
   ariaControls,
@@ -121,7 +123,14 @@ export function ComposerTextField({
       }}
     >
       {statusMessage ? (
-        <div className="truncate text-[12px] leading-4 text-[#f2a7a7]">{statusMessage}</div>
+        <div
+          className={cn(
+            "truncate text-[12px] leading-4",
+            statusTone === "success" ? "text-[color:var(--green)]" : "text-[#f2a7a7]",
+          )}
+        >
+          {statusMessage}
+        </div>
       ) : null}
       <textarea
         ref={textareaRef}

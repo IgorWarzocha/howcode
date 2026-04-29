@@ -12,6 +12,7 @@ export type ModelSelection = {
 };
 
 export type ProjectDeletionMode = "pi-only" | "full-clean";
+export type GitOpsMode = "commit" | "commit-push";
 
 export type AppSettings = {
   gitCommitMessageModel: ModelSelection | null;
@@ -26,6 +27,7 @@ export type AppSettings = {
   projectImportState: boolean | null;
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
+  gitOpsDefaultMode: GitOpsMode;
   projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
   piTuiTakeover: boolean;

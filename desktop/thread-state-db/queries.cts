@@ -43,6 +43,7 @@ export function listProjects(cwd: string): Project[] {
           projects.collapsed AS collapsed,
           projects.repo_origin_url AS repoOriginUrl,
           projects.repo_origin_checked AS repoOriginChecked,
+          projects.git_ops_mode AS gitOpsMode,
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
@@ -55,7 +56,8 @@ export function listProjects(cwd: string): Project[] {
           projects.pinned,
           projects.collapsed,
           projects.repo_origin_url,
-          projects.repo_origin_checked
+          projects.repo_origin_checked,
+          projects.git_ops_mode
         ORDER BY
           projects.pinned DESC,
           CASE WHEN projects.order_index IS NULL THEN 1 ELSE 0 END,

@@ -28,6 +28,7 @@ function buildShellState(): ShellState {
       projectImportState: null,
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
+      gitOpsDefaultMode: "commit",
       projectDeletionMode: "pi-only",
       useAgentsSkillsPaths: false,
       piTuiTakeover: false,
@@ -122,6 +123,13 @@ describe("controller post action effects", () => {
         value: "full-clean",
       }),
     ).toMatchObject({ appSettings: { projectDeletionMode: "full-clean" } });
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "gitOpsDefaultMode",
+        value: "commit-push",
+      }),
+    ).toMatchObject({ appSettings: { gitOpsDefaultMode: "commit-push" } });
 
     expect(
       getOptimisticallyUpdatedShellState(state, {

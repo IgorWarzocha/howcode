@@ -1,6 +1,7 @@
 import { type RefObject, useEffect, useMemo } from "react";
 import type {
   DesktopActionInvoker,
+  AppSettings,
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
@@ -24,6 +25,7 @@ type ComposerGitOpsSurfaceProps = {
   projectId: string;
   sessionPath: string | null;
   showDictationButton: boolean;
+  appSettings: AppSettings;
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
@@ -49,6 +51,7 @@ export function ComposerGitOpsSurface({
   projectId,
   sessionPath,
   showDictationButton,
+  appSettings,
   diffBaseline,
   diffRenderMode,
   diffComments,
@@ -68,6 +71,7 @@ export function ComposerGitOpsSurface({
 
   const {
     actionErrorMessage,
+    actionStatusMessage,
     canCommit,
     commentCards,
     commitFocused,
@@ -91,8 +95,10 @@ export function ComposerGitOpsSurface({
     setIncludeUnstaged,
     setPushEnabled,
     setRepoUrl,
+    saveProjectGitOpsMode,
     togglePreviewEnabled,
   } = useComposerGitOpsState({
+    appSettings,
     diffComments,
     diffCommentsSending,
     onAction,
@@ -203,6 +209,7 @@ export function ComposerGitOpsSurface({
         {!hasDiffComments ? (
           <ComposerGitOpsMessageField
             actionErrorMessage={actionErrorMessage}
+            actionStatusMessage={actionStatusMessage}
             commitFocused={commitFocused}
             diffCommentError={diffCommentError ?? diffLoadError}
             hasDiffComments={false}
@@ -231,6 +238,7 @@ export function ComposerGitOpsSurface({
       {hasDiffComments ? (
         <ComposerGitOpsMessageField
           actionErrorMessage={actionErrorMessage}
+          actionStatusMessage={actionStatusMessage}
           commitFocused={commitFocused}
           diffCommentError={diffCommentError ?? diffLoadError}
           hasDiffComments
@@ -273,6 +281,7 @@ export function ComposerGitOpsSurface({
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}
         onTogglePush={() => setPushEnabled((current) => !current)}
+        onSaveProjectGitOpsMode={saveProjectGitOpsMode}
         previewEnabled={previewEnabled}
         projectGitState={projectGitState}
         pushEnabled={pushEnabled}

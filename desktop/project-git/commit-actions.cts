@@ -44,7 +44,7 @@ export async function commitProjectChanges(
   try {
     const context = await prepareCommitMessageContext(projectId, options.includeUnstaged);
     if (!context) {
-      return { committed: false, message: null, previewed: false };
+      return { committed: false, message: null, previewed: false, pushed: false };
     }
 
     const generatedMessage = options.message ? null : await options.generateMessage?.(context);
@@ -55,6 +55,7 @@ export async function commitProjectChanges(
         committed: false,
         message: commitMessage,
         previewed: true,
+        pushed: false,
       };
     }
 
@@ -69,6 +70,7 @@ export async function commitProjectChanges(
         committed: true,
         message: commitMessage,
         previewed: false,
+        pushed: false,
       };
     }
 
@@ -90,6 +92,7 @@ export async function commitProjectChanges(
           committed: true,
           message: commitMessage,
           previewed: false,
+          pushed: false,
           pushFailed: true,
           error: `Committed locally, but push failed: ${formatGitCommandError(pushError)}`,
         };
@@ -100,12 +103,14 @@ export async function commitProjectChanges(
       committed: true,
       message: commitMessage,
       previewed: false,
+      pushed: true,
     };
   } catch (error) {
     return {
       committed: false,
       message: null,
       previewed: false,
+      pushed: false,
       error: formatGitCommandError(error),
     };
   }

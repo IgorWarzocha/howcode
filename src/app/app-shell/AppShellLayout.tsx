@@ -171,6 +171,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 projectImportState: null,
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
+                gitOpsDefaultMode: "commit",
                 projectDeletionMode: "pi-only",
                 useAgentsSkillsPaths: false,
                 piTuiTakeover: false,

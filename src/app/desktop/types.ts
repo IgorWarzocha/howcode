@@ -31,6 +31,7 @@ export type {
   DictationState,
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
+  GitOpsMode,
   ModelSelection,
   PiSettings,
   PiConfiguredPackage,

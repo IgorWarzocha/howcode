@@ -24,6 +24,7 @@ import {
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setGitCommitMessageThinkingLevel,
+  setGitOpsDefaultMode,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
@@ -136,6 +137,14 @@ export async function handleSettingsDesktopAction(
     const value = getSettingsBooleanValue(payload);
     if (value !== null) {
       setInitializeGitOnProjectCreate(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "gitOpsDefaultMode") {
+    const value = payload.value;
+    if (value === "commit" || value === "commit-push") {
+      setGitOpsDefaultMode(value);
     }
     return handledAction();
   }

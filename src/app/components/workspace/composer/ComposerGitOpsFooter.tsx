@@ -1,6 +1,6 @@
 import { ArrowLeft, Columns2, Rows3, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { ProjectDiffBaseline, ProjectGitState } from "../../../desktop/types";
+import type { GitOpsMode, ProjectDiffBaseline, ProjectGitState } from "../../../desktop/types";
 import {
   compactIconButtonClass,
   diffPanelIconButtonClass,
@@ -26,6 +26,7 @@ type ComposerGitOpsFooterProps = {
   onToggleIncludeUnstaged: () => void;
   onTogglePreview: () => void;
   onTogglePush: () => void;
+  onSaveProjectGitOpsMode: (mode: GitOpsMode | null) => void;
   previewEnabled: boolean;
   projectGitState: ProjectGitState | null;
   pushEnabled: boolean;
@@ -47,6 +48,7 @@ export function ComposerGitOpsFooter({
   onToggleIncludeUnstaged,
   onTogglePreview,
   onTogglePush,
+  onSaveProjectGitOpsMode,
   previewEnabled,
   projectGitState,
   pushEnabled,
@@ -166,7 +168,19 @@ export function ComposerGitOpsFooter({
                   label="Commit & push"
                   checked={pushEnabled}
                   disabled={!hasOrigin}
-                  onClick={onTogglePush}
+                  onClick={() => {
+                    const nextMode = pushEnabled ? "commit" : "commit-push";
+                    onTogglePush();
+                    void onSaveProjectGitOpsMode(nextMode);
+                  }}
+                  toggleSide="left"
+                />
+                <PlainToggle
+                  label="Use app default"
+                  checked={projectGitState?.gitOpsModeOverride === null}
+                  onClick={() => {
+                    void onSaveProjectGitOpsMode(null);
+                  }}
                   toggleSide="left"
                 />
               </div>
