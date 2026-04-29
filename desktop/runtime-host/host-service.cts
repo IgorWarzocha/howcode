@@ -7,10 +7,10 @@ export {
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
-  setRuntimeHostEventSink,
   startNewThread,
   stopComposerRun,
 } from "./live-runtime-service.cts";
+export { setRuntimeHostEventSink } from "./host-events.cts";
 
 export { generateGitCommitMessage } from "./git-commit-message-service.cts";
 
