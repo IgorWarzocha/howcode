@@ -30,3 +30,17 @@ export async function enrichProjectsWithResolvedIds(projects: Project[]) {
     })),
   );
 }
+
+export async function isProtectedProjectDeletionTarget(projectId: string, activeProjectId: string) {
+  const [resolvedProjectId, resolvedActiveProjectId] = await Promise.all([
+    resolveProjectPathForComparison(projectId),
+    resolveProjectPathForComparison(activeProjectId),
+  ]);
+  const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId);
+  const isOutsideCandidate =
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath);
+
+  return relativePath.length === 0 || !isOutsideCandidate;
+}

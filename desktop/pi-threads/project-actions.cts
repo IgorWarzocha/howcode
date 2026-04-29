@@ -1,4 +1,4 @@
-import { readdir, realpath, rm, unlink } from "node:fs/promises";
+import { readdir, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 import type { DesktopAction } from "../../shared/desktop-actions.ts";
 import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
@@ -33,6 +33,7 @@ import {
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
 import { resolveProjectImportActionResult } from "./project-import-action.ts";
+import { isProtectedProjectDeletionTarget } from "./project-paths.cts";
 import { refreshShellIndex } from "./shell-loader.cts";
 
 async function unlinkIfPresent(filePath: string) {
@@ -117,40 +118,6 @@ async function deleteProjectPiFiles(projectId: string) {
     deletedSessionPaths,
     failedSessionPaths,
   };
-}
-
-async function resolveProjectPathForComparison(projectId: string) {
-  const resolvedProjectId = path.resolve(projectId);
-
-  try {
-    return await realpath(resolvedProjectId);
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      typeof error.code === "string" &&
-      error.code !== "ENOENT"
-    ) {
-      console.warn(`Failed to resolve project path for comparison: ${resolvedProjectId}`, error);
-    }
-
-    return resolvedProjectId;
-  }
-}
-
-async function isProtectedProjectDeletionTarget(projectId: string, activeProjectId: string) {
-  const [resolvedProjectId, resolvedActiveProjectId] = await Promise.all([
-    resolveProjectPathForComparison(projectId),
-    resolveProjectPathForComparison(activeProjectId),
-  ]);
-  const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId);
-  const isOutsideCandidate =
-    relativePath === ".." ||
-    relativePath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativePath);
-
-  return relativePath.length === 0 || !isOutsideCandidate;
 }
 
 async function isBusyProjectDeletionTarget(projectId: string) {
