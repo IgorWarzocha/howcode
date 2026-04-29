@@ -221,6 +221,10 @@ export async function sendComposerPrompt(
   const runSend = async (runtime: Awaited<ReturnType<typeof getOrCreateRuntimeForSessionPath>>) => {
     if (compactInstructions !== null) {
       try {
+        if (isRuntimeExtensionCommandRunning(runtime)) {
+          throw new Error("Wait for the current extension command to finish before compacting.");
+        }
+
         if (runtime.session.isStreaming) {
           throw new Error("Wait for the current response to finish before compacting.");
         }

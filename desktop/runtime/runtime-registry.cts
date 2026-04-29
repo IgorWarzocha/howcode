@@ -343,6 +343,14 @@ async function createRuntime(options: {
         .catch(() => {
           // Ignore transient composer snapshot errors; a later runtime event will republish state.
         });
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
     },
   });
 
@@ -370,6 +378,14 @@ export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
         .catch(() => {
           // Ignore transient composer snapshot errors; a later runtime event will republish state.
         });
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
     },
   });
 }

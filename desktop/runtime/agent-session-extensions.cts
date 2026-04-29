@@ -165,9 +165,7 @@ function createHeadlessCommandContextActions(
     switchSession: async () => extensionCommandCancelledResult,
     reload: async () => {
       await session.reload();
-      bindHowcodeContextFilter(session);
-      bindHeadlessCommandAbort(session, options);
-      await applyHeadlessPiTheme(session);
+      await refreshHeadlessAgentSessionExtensionBindings(session, options);
     },
   };
 }

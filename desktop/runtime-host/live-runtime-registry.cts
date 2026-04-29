@@ -227,6 +227,14 @@ async function createRuntime(options: {
           }),
         )
         .catch((error) => console.warn("Failed to publish extension command state", error));
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
     },
     onExtensionError: (error) => {
       const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath);
@@ -262,6 +270,14 @@ export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
           }),
         )
         .catch((error) => console.warn("Failed to publish extension command state", error));
+      if (!isRuntimeExtensionCommandRunning(runtime)) {
+        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+        if (runtimeKey) {
+          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+            // Keep stale settings marked; the next safe point retries silently.
+          });
+        }
+      }
     },
   });
 }
