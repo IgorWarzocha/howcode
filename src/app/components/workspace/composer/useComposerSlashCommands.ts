@@ -78,6 +78,7 @@ export function useComposerSlashCommands({
   const candidateFilter = getSlashCommandFilter(draft);
   const filter = draft === dismissedDraft ? null : candidateFilter;
   const open = filter !== null;
+  const commandScopeKey = `${projectId}\0${sessionPath ?? ""}`;
   const filteredCommands = useMemo(() => {
     if (filter === null) {
       return [];
@@ -98,6 +99,13 @@ export function useComposerSlashCommands({
 
   const isExactCommandDraft = (command: ComposerSlashCommand) =>
     draft.trim() === `/${command.name}` && !draft.endsWith(" ");
+
+  const getDraftCommand = () => {
+    const trimmedDraft = draft.trim();
+    if (!trimmedDraft.startsWith("/")) return null;
+    const commandName = trimmedDraft.slice(1).split(/\s+/, 1)[0];
+    return commands.find((command) => command.name === commandName) ?? null;
+  };
 
   const selectCommand = (command: ComposerSlashCommand) => {
     if (command.source === "app" && command.name === "settings") {
@@ -144,7 +152,12 @@ export function useComposerSlashCommands({
     }
 
     if (draft.trim().startsWith("/")) {
+      const draftCommand = getDraftCommand();
       dismiss();
+      if (draftCommand?.source === "extension" && sendExtensionCommand) {
+        sendExtensionCommand();
+        return;
+      }
     }
 
     send();
@@ -214,7 +227,6 @@ export function useComposerSlashCommands({
   useEffect(() => {
     if (!open) {
       setSelectedIndex(0);
-      setCommands([]);
       setLoading(false);
       return;
     }
@@ -244,6 +256,11 @@ export function useComposerSlashCommands({
       cancelled = true;
     };
   }, [open, projectId, sessionPath]);
+
+  useEffect(() => {
+    void commandScopeKey;
+    setCommands([]);
+  }, [commandScopeKey]);
 
   useEffect(() => {
     if (selectedIndex >= filteredCommands.length) {

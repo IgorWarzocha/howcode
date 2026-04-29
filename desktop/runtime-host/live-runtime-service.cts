@@ -34,6 +34,7 @@ import {
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
   abortRuntimeExtensionCommand,
+  isRuntimeExtensionCommandRunning,
 } from "./live-runtime-registry.cts";
 import { mapSessionCommands } from "./slash-command-service.cts";
 
@@ -263,7 +264,9 @@ export async function sendComposerPrompt(
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
-    if (cachedRuntime.session.isStreaming) return await runSend(cachedRuntime);
+    if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
+      return await runSend(cachedRuntime);
+    }
   }
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
@@ -276,14 +279,29 @@ export async function sendComposerPrompt(
 export async function stopComposerRun(request: ComposerStateRequest) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   if (!persistedSessionPath) return { ok: true as const };
+  const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
+  if (cachedRuntimePromise) {
+    const cachedRuntime = await cachedRuntimePromise;
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime);
+    if (cachedRuntime.session.isStreaming) {
+      await cachedRuntime.session.abort();
+    }
+    if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
+      scheduleRuntimeDisposal(persistedSessionPath);
+      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+      return { ok: true as const };
+    }
+  }
   await withRuntimeMutationLock(persistedSessionPath, async () => {
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
-    if (!abortRuntimeExtensionCommand(runtime)) {
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
+    if (runtime.session.isStreaming) {
       await runtime.session.abort();
     }
+    if (!abortedExtensionCommand && !runtime.session.isStreaming) await runtime.session.abort();
     scheduleRuntimeDisposal(persistedSessionPath);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

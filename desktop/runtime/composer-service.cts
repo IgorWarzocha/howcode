@@ -30,6 +30,7 @@ import {
   scheduleRuntimeDisposalForRuntime,
   withRuntimeMutationLock,
   abortRuntimeExtensionCommand,
+  isRuntimeExtensionCommandRunning,
 } from "./runtime-registry.cts";
 import {
   getLiveThread,
@@ -289,7 +290,7 @@ export async function sendComposerPrompt(
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
-    if (cachedRuntime.session.isStreaming) {
+    if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
       return await runSend(cachedRuntime);
     }
   }
@@ -314,7 +315,7 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
     const cachedRuntime = await cachedRuntimePromise;
     const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime);
     if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
-      if (!abortedExtensionCommand) {
+      if (cachedRuntime.session.isStreaming) {
         await cachedRuntime.session.abort();
       }
       scheduleRuntimeDisposalForRuntime(cachedRuntime);
@@ -328,9 +329,11 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
       suspendDisposal: true,
     });
 
-    if (!abortRuntimeExtensionCommand(runtime)) {
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
+    if (runtime.session.isStreaming) {
       await runtime.session.abort();
     }
+    if (!abortedExtensionCommand && !runtime.session.isStreaming) await runtime.session.abort();
     scheduleRuntimeDisposalForRuntime(runtime);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

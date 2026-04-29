@@ -4,9 +4,10 @@ import { getPiModule } from "../pi-module.cts";
 import {
   abortHeadlessExtensionCommand,
   bindHeadlessAgentSessionExtensions,
+  isHeadlessExtensionCommandRunning,
+  refreshHeadlessAgentSessionExtensionBindings,
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
-import { applyHeadlessPiTheme } from "../runtime/headless-pi-theme.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
   cancelLiveThreadUpdate,
@@ -96,7 +97,6 @@ async function createRuntime(options: {
     settingsManager,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
-  await applyHeadlessPiTheme(session);
   const runtime = { cwd: options.cwd, session } satisfies PiRuntime;
 
   session.subscribe((event) => {
@@ -243,6 +243,25 @@ export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
   return abortHeadlessExtensionCommand(runtime.session);
 }
 
+export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
+  return isHeadlessExtensionCommandRunning(runtime.session);
+}
+
+export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) =>
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          }),
+        )
+        .catch((error) => console.warn("Failed to publish extension command state", error));
+    },
+  });
+}
+
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
   staleRuntimeGenerations.delete(runtimeKey);
   const record: RuntimeRecord = { runtimePromise, disposeTimeout: null };
@@ -315,7 +334,7 @@ async function reloadRuntimeSettings(
 ) {
   if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
   await runtime.session.reload();
-  await applyHeadlessPiTheme(runtime.session);
+  await refreshRuntimeExtensionBindings(runtime);
   const composer = await buildComposerState(runtime);
   publishComposerUpdate(composer, {
     projectId: runtime.cwd,

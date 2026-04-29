@@ -484,21 +484,20 @@ export function ComposerPromptSurface({
                   <Loader2 size={12} className="animate-spin" />
                   <span>Pi extension running</span>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className={cn(
-                    compactIconButtonClass,
-                    "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
-                  )}
-                  onClick={slashCommands.submit}
-                  disabled={!canSend}
-                  aria-label="Send"
-                  data-tooltip="Send"
-                >
-                  <Send size={14} />
-                </button>
-              )}
+              ) : null}
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
+                )}
+                onClick={slashCommands.submit}
+                disabled={!canSend}
+                aria-label="Send"
+                data-tooltip="Send"
+              >
+                <Send size={14} />
+              </button>
             </div>
           </div>
         </div>

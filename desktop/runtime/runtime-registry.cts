@@ -3,9 +3,10 @@ import { getPiModule } from "../pi-module.cts";
 import {
   abortHeadlessExtensionCommand,
   bindHeadlessAgentSessionExtensions,
+  isHeadlessExtensionCommandRunning,
+  refreshHeadlessAgentSessionExtensionBindings,
 } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
-import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -35,7 +36,7 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
       runtimePromise: record.runtimePromise,
     })),
   withRuntimeMutationLock,
-  afterReload: (runtime) => applyHeadlessPiTheme(runtime.session),
+  afterReload: (runtime) => refreshRuntimeExtensionBindings(runtime),
   buildComposerState,
   publishComposerUpdate,
 });
@@ -178,8 +179,6 @@ async function createRuntime(options: {
     settingsManager,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
-  await applyHeadlessPiTheme(session);
-
   const runtime = {
     cwd: options.cwd,
     session,
@@ -347,6 +346,27 @@ async function createRuntime(options: {
 
 export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
   return abortHeadlessExtensionCommand(runtime.session);
+}
+
+export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
+  return isHeadlessExtensionCommandRunning(runtime.session);
+}
+
+export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        });
+    },
+  });
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {

@@ -6,8 +6,8 @@ import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 
 const howcodeExtensionErrorMessageType = "howcode.extension.error";
 const extensionCommandCancelledResult = { cancelled: true };
-const sessionsWithHowcodeContextFilter = new WeakSet<AgentSession>();
-const sessionsWithCommandAbort = new WeakSet<AgentSession>();
+const runnersWithHowcodeContextFilter = new WeakSet<object>();
+const runnersWithCommandAbort = new WeakSet<object>();
 const activeExtensionCommands = new WeakMap<
   AgentSession,
   { commandName: string; abortController: AbortController }
@@ -111,11 +111,12 @@ function isHowcodeExtensionErrorMessage(message: AgentMessage) {
 }
 
 function bindHowcodeContextFilter(session: AgentSession) {
-  if (sessionsWithHowcodeContextFilter.has(session)) return;
-  sessionsWithHowcodeContextFilter.add(session);
+  const extensionRunner = session.extensionRunner;
+  if (runnersWithHowcodeContextFilter.has(extensionRunner)) return;
+  runnersWithHowcodeContextFilter.add(extensionRunner);
 
-  const originalEmitContext = session.extensionRunner.emitContext.bind(session.extensionRunner);
-  session.extensionRunner.emitContext = async (messages: AgentMessage[]) => {
+  const originalEmitContext = extensionRunner.emitContext.bind(extensionRunner);
+  extensionRunner.emitContext = async (messages: AgentMessage[]) => {
     const nextMessages = await originalEmitContext(messages);
     return nextMessages.filter((message) => !isHowcodeExtensionErrorMessage(message));
   };
@@ -146,6 +147,7 @@ async function reportHeadlessExtensionError(
 
 function createHeadlessCommandContextActions(
   session: AgentSession,
+  options: HeadlessAgentSessionExtensionOptions,
 ): ExtensionCommandContextActions {
   return {
     waitForIdle: () => session.agent.waitForIdle(),
@@ -163,6 +165,8 @@ function createHeadlessCommandContextActions(
     switchSession: async () => extensionCommandCancelledResult,
     reload: async () => {
       await session.reload();
+      bindHowcodeContextFilter(session);
+      bindHeadlessCommandAbort(session, options);
       await applyHeadlessPiTheme(session);
     },
   };
@@ -172,10 +176,10 @@ function bindHeadlessCommandAbort(
   session: AgentSession,
   options: HeadlessAgentSessionExtensionOptions,
 ) {
-  if (sessionsWithCommandAbort.has(session)) return;
-  sessionsWithCommandAbort.add(session);
-
   const extensionRunner = session.extensionRunner;
+  if (runnersWithCommandAbort.has(extensionRunner)) return;
+  runnersWithCommandAbort.add(extensionRunner);
+
   const originalGetCommand = extensionRunner.getCommand.bind(extensionRunner);
   type ExtensionCommand = NonNullable<ReturnType<typeof originalGetCommand>>;
   type ExtensionCommandContext = Parameters<ExtensionCommand["handler"]>[1];
@@ -229,19 +233,26 @@ export async function discoverHeadlessAgentSessionResources(session: AgentSessio
   session.resourceLoader.extendResources(extensionPaths);
 }
 
-export async function bindHeadlessAgentSessionExtensions(
+export async function refreshHeadlessAgentSessionExtensionBindings(
   session: AgentSession,
   options: HeadlessAgentSessionExtensionOptions = {},
 ) {
   bindHowcodeContextFilter(session);
   bindHeadlessCommandAbort(session, options);
   await applyHeadlessPiTheme(session);
+}
+
+export async function bindHeadlessAgentSessionExtensions(
+  session: AgentSession,
+  options: HeadlessAgentSessionExtensionOptions = {},
+) {
+  await refreshHeadlessAgentSessionExtensionBindings(session, options);
   await session.bindExtensions({
-    commandContextActions: createHeadlessCommandContextActions(session),
+    commandContextActions: createHeadlessCommandContextActions(session, options),
     shutdownHandler: () => undefined,
     onError: (error) => {
       void reportHeadlessExtensionError(session, error, options);
     },
   });
-  await applyHeadlessPiTheme(session);
+  await refreshHeadlessAgentSessionExtensionBindings(session, options);
 }
