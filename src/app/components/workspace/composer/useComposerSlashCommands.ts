@@ -134,6 +134,10 @@ export function useComposerSlashCommands({
       return;
     }
 
+    if (draft.trim().startsWith("/")) {
+      dismiss();
+    }
+
     send();
   };
 
