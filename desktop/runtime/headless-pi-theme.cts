@@ -1,9 +1,9 @@
-import { createRequire } from "node:module";
+import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 
-const require = createRequire(import.meta.url);
+const piPackagePath = path.join("node_modules", "@mariozechner", "pi-coding-agent");
 
 type PiThemeModule = {
   initTheme(themeName?: string, enableWatcher?: boolean): void;
@@ -18,11 +18,28 @@ type PiThemeModule = {
 
 let themeModulePromise: Promise<PiThemeModule> | null = null;
 
+function findPiPackageRoot() {
+  let directory = path.dirname(fileURLToPath(import.meta.url));
+
+  while (true) {
+    const candidate = path.join(directory, piPackagePath);
+    if (fs.existsSync(path.join(candidate, "package.json"))) {
+      return candidate;
+    }
+
+    const parent = path.dirname(directory);
+    if (parent === directory) {
+      throw new Error("Could not locate @mariozechner/pi-coding-agent package root.");
+    }
+    directory = parent;
+  }
+}
+
 async function getPiThemeModule() {
   if (!themeModulePromise) {
-    const piEntryPath = require.resolve("@mariozechner/pi-coding-agent");
     const themeModulePath = path.join(
-      path.dirname(piEntryPath),
+      findPiPackageRoot(),
+      "dist",
       "modes/interactive/theme/theme.js",
     );
     themeModulePromise = import(pathToFileURL(themeModulePath).href) as Promise<PiThemeModule>;
