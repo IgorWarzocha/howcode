@@ -62,6 +62,8 @@ type UseComposerSlashCommandsOptions = {
   onOpenSettingsView: () => void;
 };
 
+export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>;
+
 export function useComposerSlashCommands({
   draft,
   projectId,

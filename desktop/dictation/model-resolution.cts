@@ -11,7 +11,7 @@ import {
   dictationModelDefinitions,
   getDictationModelDefinition,
 } from "../../shared/dictation-models.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { getDesktopUserDataPath } from "../user-data-path.cts";
 
 export type DictationModelFiles = ResolvedWhisperModelFiles;

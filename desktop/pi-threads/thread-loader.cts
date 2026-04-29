@@ -5,7 +5,7 @@ import type {
   ThreadData,
 } from "../../shared/desktop-contracts.ts";
 import { getLiveThread } from "../pi-desktop-runtime.cts";
-import { invokeRuntimeHost } from "../runtime-host/client.cts";
+import { invokeRuntimeHost } from "../runtime-host/client-bridge.cts";
 import {
   ensureProject,
   getThreadDiffPreferences,

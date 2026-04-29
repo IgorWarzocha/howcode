@@ -1,7 +1,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ComposerStateRequest } from "../../shared/desktop-contracts.ts";
 import { mapAgentMessageToUiMessage } from "../../shared/pi-message-mapper.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { getPiModule } from "../pi-module.cts";
 import type { CommitMessageContext } from "../project-git.cts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";

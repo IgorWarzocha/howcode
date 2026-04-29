@@ -15,26 +15,25 @@ import {
   publishThreadUpdate,
   rememberRuntimeToolProgress,
 } from "./thread-publisher.cts";
+import {
+  cancelLiveThreadUpdate,
+  deferLiveThreadUpdate,
+  deleteRuntimeRecordIfCurrent,
+  getRuntimeRecord,
+  getRuntimeRecordSnapshots,
+  registerRuntime,
+  scheduleLiveThreadUpdate,
+  scheduleRuntimeDisposal,
+  suspendRuntimeDisposal,
+  withRuntimeMutationLock,
+} from "./registry/runtime-registry-state.cts";
+export { withRuntimeMutationLock } from "./registry/runtime-registry-state.cts";
+import type { RuntimeRecord } from "./registry/runtime-registry-state.cts";
 import type { PiRuntime } from "./types.cts";
 
-const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
-const LIVE_THREAD_UPDATE_THROTTLE_MS = 50;
-
-type RuntimeRecord = {
-  runtimePromise: Promise<PiRuntime>;
-  disposeTimeout: ReturnType<typeof setTimeout> | null;
-};
-
-const runtimeRecords = new Map<string, RuntimeRecord>();
-const runtimeMutationTails = new Map<string, Promise<void>>();
-const liveThreadUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>();
 const settingsRefreshController = createRuntimeSettingsRefreshController({
   getCachedRuntimeForSessionPath,
-  getRuntimeRecords: () =>
-    [...runtimeRecords.entries()].map(([runtimeKey, record]) => ({
-      runtimeKey,
-      runtimePromise: record.runtimePromise,
-    })),
+  getRuntimeRecords: getRuntimeRecordSnapshots,
   withRuntimeMutationLock,
   afterReload: (runtime) => refreshRuntimeExtensionBindings(runtime),
   isRuntimeBusy: isHowcodeRuntimeBusy,
@@ -46,97 +45,33 @@ function isHowcodeRuntimeBusy(runtime: PiRuntime) {
   return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime);
 }
 
-function clearRuntimeDisposeTimeout(runtimeKey: string) {
-  const record = runtimeRecords.get(runtimeKey);
-  if (!record?.disposeTimeout) {
-    return;
-  }
-
-  clearTimeout(record.disposeTimeout);
-  record.disposeTimeout = null;
+function publishRuntimeComposerState(runtime: PiRuntime) {
+  return buildComposerState(runtime)
+    .then((composer) => {
+      publishComposerUpdate(composer, {
+        projectId: runtime.cwd,
+        sessionPath: runtime.session.sessionFile,
+      });
+    })
+    .catch(() => {
+      // Ignore transient composer snapshot errors; a later runtime event will republish state.
+    });
 }
 
-function suspendRuntimeDisposal(runtimeKey: string) {
-  clearRuntimeDisposeTimeout(runtimeKey);
-}
-
-function scheduleRuntimeDisposal(runtimeKey: string) {
-  const record = runtimeRecords.get(runtimeKey);
-  if (!record) {
-    return;
+function handleExtensionCommandStateChange(runtime: PiRuntime) {
+  publishRuntimeComposerState(runtime);
+  if (!isRuntimeExtensionCommandRunning(runtime)) {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+    if (runtimeKey) {
+      void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+        // Keep stale settings marked; the next safe point retries silently.
+      });
+    }
   }
-
-  clearRuntimeDisposeTimeout(runtimeKey);
-
-  record.disposeTimeout = setTimeout(() => {
-    void (async () => {
-      const currentRecord = runtimeRecords.get(runtimeKey);
-      if (!currentRecord || currentRecord !== record) {
-        return;
-      }
-
-      try {
-        const runtime = await record.runtimePromise;
-        if (isHowcodeRuntimeBusy(runtime)) {
-          scheduleRuntimeDisposal(runtimeKey);
-          return;
-        }
-
-        runtime.session.dispose();
-      } catch {
-        // Ignore runtime disposal races after failed creation.
-      } finally {
-        if (runtimeRecords.get(runtimeKey) === record) {
-          runtimeRecords.delete(runtimeKey);
-        }
-      }
-    })();
-  }, RUNTIME_IDLE_TIMEOUT_MS);
 }
 
 function publishLiveThreadUpdate(runtime: PiRuntime) {
   void publishThreadUpdate(runtime, "update");
-}
-
-function cancelLiveThreadUpdate(runtime: PiRuntime) {
-  const timer = liveThreadUpdateTimers.get(runtime);
-  if (!timer) {
-    return;
-  }
-
-  clearTimeout(timer);
-  liveThreadUpdateTimers.delete(runtime);
-}
-
-function deferLiveThreadUpdate(runtime: PiRuntime, options: { requireStreaming?: boolean } = {}) {
-  cancelLiveThreadUpdate(runtime);
-  const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime);
-    if (options.requireStreaming !== false && !runtime.session.isStreaming) {
-      return;
-    }
-
-    publishLiveThreadUpdate(runtime);
-  }, 0);
-
-  liveThreadUpdateTimers.set(runtime, timer);
-}
-
-function scheduleLiveThreadUpdate(runtime: PiRuntime) {
-  if (liveThreadUpdateTimers.has(runtime)) {
-    return;
-  }
-
-  const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime);
-    if (!runtime.session.isStreaming) {
-      return;
-    }
-
-    publishLiveThreadUpdate(runtime);
-  }, LIVE_THREAD_UPDATE_THROTTLE_MS);
-
-  liveThreadUpdateTimers.set(runtime, timer);
 }
 
 export async function reloadRuntimeSettingsIfSafe(
@@ -198,7 +133,7 @@ async function createRuntime(options: {
     }
 
     if (event.type === "message_start") {
-      scheduleLiveThreadUpdate(runtime);
+      scheduleLiveThreadUpdate(runtime, publishLiveThreadUpdate);
       return;
     }
 
@@ -214,11 +149,13 @@ async function createRuntime(options: {
             toolName: event.message.toolName,
           });
         }
-        deferLiveThreadUpdate(runtime, { requireStreaming: event.message.role === "toolResult" });
+        deferLiveThreadUpdate(runtime, publishLiveThreadUpdate, {
+          requireStreaming: event.message.role === "toolResult",
+        });
       }
 
       if (runtimeKey) {
-        scheduleRuntimeDisposal(runtimeKey);
+        scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy);
       }
 
       return;
@@ -235,7 +172,7 @@ async function createRuntime(options: {
       }
 
       if (runtimeKey) {
-        scheduleRuntimeDisposal(runtimeKey);
+        scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy);
       }
 
       return;
@@ -245,16 +182,7 @@ async function createRuntime(options: {
       cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "compaction-start");
 
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; compaction_end will publish again.
-        });
+      publishRuntimeComposerState(runtime);
 
       return;
     }
@@ -264,16 +192,7 @@ async function createRuntime(options: {
         cancelLiveThreadUpdate(runtime);
         void publishThreadUpdate(runtime, "compaction");
 
-        void buildComposerState(runtime)
-          .then((composer) => {
-            publishComposerUpdate(composer, {
-              projectId: runtime.cwd,
-              sessionPath: runtime.session.sessionFile,
-            });
-          })
-          .catch(() => {
-            // Ignore transient composer snapshot errors; a later runtime event will republish state.
-          });
+        publishRuntimeComposerState(runtime);
       }, 0);
 
       if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
@@ -286,7 +205,7 @@ async function createRuntime(options: {
     }
 
     if (event.type === "message_update") {
-      scheduleLiveThreadUpdate(runtime);
+      scheduleLiveThreadUpdate(runtime, publishLiveThreadUpdate);
       return;
     }
 
@@ -308,49 +227,22 @@ async function createRuntime(options: {
         isError: event.type === "tool_execution_end" ? event.isError : false,
         terminal: event.type === "tool_execution_end",
       });
-      scheduleLiveThreadUpdate(runtime);
+      scheduleLiveThreadUpdate(runtime, publishLiveThreadUpdate);
       return;
     }
 
     if (event.type === "queue_update") {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        })
-        .finally(() => {
-          if (runtimeKey && !runtime.session.isStreaming) {
-            scheduleRuntimeDisposal(runtimeKey);
-          }
-        });
+      void publishRuntimeComposerState(runtime).finally(() => {
+        if (runtimeKey && !runtime.session.isStreaming) {
+          scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy);
+        }
+      });
     }
   });
 
   await bindHeadlessAgentSessionExtensions(session, {
     onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        });
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          });
-        }
-      }
+      handleExtensionCommandStateChange(runtime);
     },
   });
 
@@ -368,36 +260,9 @@ export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
 export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
   await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
     onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        });
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          });
-        }
-      }
+      handleExtensionCommandStateChange(runtime);
     },
   });
-}
-
-function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
-  const record: RuntimeRecord = {
-    runtimePromise,
-    disposeTimeout: null,
-  };
-
-  runtimeRecords.set(runtimeKey, record);
-  return record;
 }
 
 export function getCachedRuntimeForSessionPath(sessionPath: string) {
@@ -406,7 +271,7 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
     return null;
   }
 
-  const record = runtimeRecords.get(persistedSessionPath);
+  const record = getRuntimeRecord(persistedSessionPath);
   if (!record) {
     return null;
   }
@@ -423,7 +288,7 @@ export async function getOrCreateRuntimeForSessionPath(
     throw new Error("A persisted session path is required to open a live runtime.");
   }
 
-  const existingRuntime = runtimeRecords.get(persistedSessionPath);
+  const existingRuntime = getRuntimeRecord(persistedSessionPath);
   if (existingRuntime) {
     if (options.suspendDisposal) {
       suspendRuntimeDisposal(persistedSessionPath);
@@ -443,8 +308,8 @@ export async function getOrCreateRuntimeForSessionPath(
     cwd: sessionManager.getCwd(),
     sessionManager,
   }).catch((error) => {
-    if (record && runtimeRecords.get(persistedSessionPath) === record) {
-      runtimeRecords.delete(persistedSessionPath);
+    if (record) {
+      deleteRuntimeRecordIfCurrent(persistedSessionPath, record);
     }
 
     throw error;
@@ -459,7 +324,7 @@ export async function createRuntimeForNewSession(cwd: string) {
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
 
   if (runtimeKey) {
-    const existingRuntime = runtimeRecords.get(runtimeKey);
+    const existingRuntime = getRuntimeRecord(runtimeKey);
     if (existingRuntime) {
       suspendRuntimeDisposal(runtimeKey);
       runtime.session.dispose();
@@ -475,30 +340,6 @@ export async function createRuntimeForNewSession(cwd: string) {
 export function scheduleRuntimeDisposalForRuntime(runtime: PiRuntime) {
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
   if (runtimeKey) {
-    scheduleRuntimeDisposal(runtimeKey);
-  }
-}
-
-export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () => Promise<T>) {
-  const previousTail = runtimeMutationTails.get(runtimeKey) ?? Promise.resolve();
-  let releaseCurrentTail: (() => void) | undefined;
-  const currentTail = new Promise<void>((resolve) => {
-    releaseCurrentTail = resolve;
-  });
-
-  const nextTail = previousTail.then(() => currentTail);
-  runtimeMutationTails.set(runtimeKey, nextTail);
-
-  await previousTail;
-
-  try {
-    return await task();
-  } finally {
-    if (releaseCurrentTail) {
-      releaseCurrentTail();
-    }
-    if (runtimeMutationTails.get(runtimeKey) === nextTail) {
-      runtimeMutationTails.delete(runtimeKey);
-    }
+    scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy);
   }
 }

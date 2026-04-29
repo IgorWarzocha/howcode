@@ -1,6 +1,6 @@
 - Use Bun for installs and scripts; keep the app runtime on Node.js/Electron.
 - In dev, assume the app dev server is already running; do not start it manually, and use Electron CDP at `127.0.0.1:39217`.
-- You MUST NOT run typechecks and tests; pre-commit hooks run these.
+- You MUST NOT run typechecks and tests manually; however, do not bypass pre-commit/pre-push hooks. Let hooks run their configured checks when committing or pushing unless the user explicitly instructs otherwise.
 - Prefer `src/electron/main/**`, `src/electron/preload/**`, and `shared/*` contracts over ad-hoc desktop IPC shims.
 - Keep UI changes optimistic and reuse existing patterns over one-offs.
 - For major changes, validate with a commit and leave the repo committed.

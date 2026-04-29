@@ -38,7 +38,7 @@ import {
   setSkillCreatorModelSelection,
   setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
-} from "../app-settings.cts";
+} from "../app-settings/writers.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
 

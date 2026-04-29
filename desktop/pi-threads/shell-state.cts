@@ -1,9 +1,9 @@
 import type { ShellState } from "../../shared/desktop-contracts.ts";
 import path from "node:path";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { loadPiSettings } from "../pi-settings.cts";
 import { getComposerState } from "../pi-desktop-runtime.cts";
-import { invokeRuntimeHost } from "../runtime-host/client.cts";
+import { invokeRuntimeHost } from "../runtime-host/client-bridge.cts";
 import { ensureProject, listProjects } from "../thread-state-db.cts";
 import {
   enrichProjectsWithResolvedIds,

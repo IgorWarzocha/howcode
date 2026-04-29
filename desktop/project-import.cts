@@ -1,6 +1,6 @@
 import type { ProjectImportCandidate } from "../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory.ts";
-import { setProjectImportState } from "./app-settings.cts";
+import { setProjectImportState } from "./app-settings/writers.cts";
 import { getOriginUrl, isGitRepository } from "./project-git/project-state.cts";
 import { listProjects, setProjectRepoOrigin } from "./thread-state-db.cts";
 

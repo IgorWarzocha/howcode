@@ -1,5 +1,5 @@
 import type { SkillCreatorSessionState } from "../shared/desktop-contracts.ts";
-import { invokeRuntimeHost } from "./runtime-host/client.cts";
+import { invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
 
 export function startSkillCreatorSession(request: {
   prompt: string;

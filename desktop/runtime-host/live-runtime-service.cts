@@ -8,7 +8,7 @@ import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.t
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { discoverHeadlessAgentSessionResources } from "../runtime/agent-session-extensions.cts";
 import { buildComposerAttachmentPrompt } from "../runtime/attachments.cts";
 import {

@@ -1,31 +1,31 @@
 import { Check } from "lucide-react";
 import type { RefObject } from "react";
-import { menuOptionClass, popoverPanelClass } from "../../../ui/classes";
-import { cn } from "../../../utils/cn";
-import { SurfacePanel } from "../../common/SurfacePanel";
+import { menuOptionClass, popoverPanelClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
+import { SurfacePanel } from "../../components/common/SurfacePanel";
 
-type ComposerMenuItem = {
+type SettingsComposerMenuItem = {
   description?: string;
   id: string;
   label: string;
   selected: boolean;
 };
 
-type ComposerMenuProps = {
-  items: ComposerMenuItem[];
+type SettingsComposerMenuProps = {
+  items: SettingsComposerMenuItem[];
   menuId: string;
   panelRef: RefObject<HTMLDivElement | null>;
   onSelect: (id: string) => void;
   widthClassName: string;
 };
 
-export function ComposerMenu({
+export function SettingsComposerMenu({
   items,
   menuId,
   panelRef,
   onSelect,
   widthClassName,
-}: ComposerMenuProps) {
+}: SettingsComposerMenuProps) {
   return (
     <SurfacePanel
       ref={panelRef}

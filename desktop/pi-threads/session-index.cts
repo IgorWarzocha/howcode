@@ -3,7 +3,7 @@ import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
-import { invokeRuntimeHost } from "../runtime-host/client.cts";
+import { invokeRuntimeHost } from "../runtime-host/client-bridge.cts";
 import { mapWithConcurrency } from "./map-with-concurrency.cts";
 
 export type SessionSummary = {
