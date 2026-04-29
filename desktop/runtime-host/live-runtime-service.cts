@@ -92,11 +92,12 @@ async function promptAndReturnAfterPreflight({
 
 export async function getComposerSlashCommands(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const runtimePromise = persistedSessionPath
-    ? getCachedRuntimeForSessionPath(persistedSessionPath)
-    : null;
-  if (runtimePromise) {
-    return mapSessionCommands((await runtimePromise).session);
+  if (persistedSessionPath) {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    scheduleRuntimeDisposal(persistedSessionPath);
+    return mapSessionCommands(runtime.session);
   }
 
   const snapshot = await createComposerSnapshotSession({
@@ -116,12 +117,15 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
 
 export async function getComposerState(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const runtimePromise = persistedSessionPath
-    ? getCachedRuntimeForSessionPath(persistedSessionPath)
-    : null;
-  return runtimePromise
-    ? await buildComposerState(await runtimePromise)
-    : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
+  if (persistedSessionPath) {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    scheduleRuntimeDisposal(persistedSessionPath);
+    return await buildComposerState(runtime);
+  }
+
+  return await buildComposerStateSnapshot({ ...request, sessionPath: null });
 }
 
 export async function setComposerModel(
@@ -361,9 +365,20 @@ export async function selectProjectRuntime(request: ComposerStateRequest = {}) {
 }
 
 export async function openThreadRuntime(request: ComposerStateRequest) {
-  const { composer } = await emitComposerUpdate({
-    ...request,
-    sessionPath: getPersistedSessionPath(request.sessionPath),
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  if (!persistedSessionPath) {
+    const { composer } = await emitComposerUpdate({ ...request, sessionPath: null });
+    return composer;
+  }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
   });
+  const composer = await buildComposerState(runtime);
+  publishComposerUpdate(composer, {
+    projectId: request.projectId ?? runtime.cwd,
+    sessionPath: persistedSessionPath,
+  });
+  scheduleRuntimeDisposal(persistedSessionPath);
   return composer;
 }

@@ -36,17 +36,16 @@ function buildExtensionResourcePaths(entries: ExtensionResourceEntry[]) {
   });
 }
 
-async function reportHeadlessExtensionError(
-  session: AgentSession,
+type HeadlessAgentSessionExtensionOptions = {
+  onExtensionError?: (error: Parameters<NonNullable<ExtensionBindings["onError"]>>[0]) => void;
+};
+
+function reportHeadlessExtensionError(
   error: Parameters<NonNullable<ExtensionBindings["onError"]>>[0],
+  options: HeadlessAgentSessionExtensionOptions = {},
 ) {
   console.warn("Pi extension error", error);
-  await session.sendCustomMessage({
-    customType: "howcode.extension.error",
-    content: `Extension error (${error.extensionPath}): ${error.error}`,
-    display: true,
-    details: error,
-  });
+  options.onExtensionError?.(error);
 }
 
 function createHeadlessCommandContextActions(
@@ -90,14 +89,13 @@ export async function discoverHeadlessAgentSessionResources(session: AgentSessio
   session.resourceLoader.extendResources(extensionPaths);
 }
 
-export async function bindHeadlessAgentSessionExtensions(session: AgentSession) {
+export async function bindHeadlessAgentSessionExtensions(
+  session: AgentSession,
+  options: HeadlessAgentSessionExtensionOptions = {},
+) {
   await session.bindExtensions({
     commandContextActions: createHeadlessCommandContextActions(session),
     shutdownHandler: () => undefined,
-    onError: (error) => {
-      void reportHeadlessExtensionError(session, error).catch((reportError) => {
-        console.warn("Could not report Pi extension error", reportError);
-      });
-    },
+    onError: (error) => reportHeadlessExtensionError(error, options),
   });
 }

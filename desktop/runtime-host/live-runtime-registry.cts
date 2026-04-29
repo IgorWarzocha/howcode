@@ -11,6 +11,7 @@ import {
   publishThreadUpdate,
   scheduleLiveThreadUpdate,
 } from "./live-thread-publisher.cts";
+import { emitDesktopEvent } from "./host-events.cts";
 import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from "./live-tool-progress.cts";
 
 type RuntimeRecord = {
@@ -195,7 +196,18 @@ async function createRuntime(options: {
     }
   });
 
-  await bindHeadlessAgentSessionExtensions(session);
+  await bindHeadlessAgentSessionExtensions(session, {
+    onExtensionError: (error) => {
+      emitDesktopEvent({
+        type: "runtime-diagnostic",
+        severity: "error",
+        message: `Extension error (${error.extensionPath}): ${error.error}`,
+        details: error,
+        projectId: runtime.cwd,
+        sessionPath: runtime.session.sessionFile ?? null,
+      });
+    },
+  });
   return runtime;
 }
 

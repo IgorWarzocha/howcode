@@ -208,6 +208,12 @@ function clearHostIdleTimer(host: HostConnection) {
   host.idleTimer = null;
 }
 
+function isHostRunningOrStarting(host: HostConnection) {
+  return Boolean(
+    host.startPromise || (host.process && !host.process.killed && host.process.exitCode === null),
+  );
+}
+
 function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessage) {
   if (!message || typeof message !== "object") {
     return;
@@ -407,7 +413,7 @@ export async function invalidateRuntimeHostSettings(
   }
 
   await Promise.all(
-    [...targets].map((host) =>
+    [...targets].filter(isHostRunningOrStarting).map((host) =>
       invokeRuntimeHostOnHost(host, "invalidateRuntimeSettings", request).catch((error) => {
         console.warn(`Failed to invalidate Pi runtime host settings (${host.label}).`, error);
       }),
