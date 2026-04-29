@@ -1,10 +1,10 @@
 import type { ComposerAttachment } from "../../../desktop/types";
 
-function isSameSubmittedDraft(currentDraft: string, submittedRawDraft: string) {
+export function isSameSubmittedDraft(currentDraft: string, submittedRawDraft: string) {
   return currentDraft === submittedRawDraft;
 }
 
-function areSameAttachments(
+export function areSameAttachments(
   currentAttachments: ComposerAttachment[],
   submittedAttachments: ComposerAttachment[],
 ) {
