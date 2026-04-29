@@ -54,6 +54,10 @@ function splitParagraphs(text: string) {
     .filter(Boolean);
 }
 
+function trimTextDocuments(parts: string[]) {
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
 function normalizeThinkingHeader(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -199,9 +203,7 @@ function normalizeSystemLabel(role: string | undefined) {
 }
 
 function extractAssistantContent(message: RuntimeMessage) {
-  const content = getTextParts(message.content)
-    .flatMap((part) => splitParagraphs(part))
-    .filter(Boolean);
+  const content = trimTextDocuments(getTextParts(message.content));
 
   if (content.length > 0) {
     return content;

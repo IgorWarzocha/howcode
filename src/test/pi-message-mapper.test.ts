@@ -67,7 +67,7 @@ describe("pi message mapper", () => {
       {
         id: "2-assistant",
         role: "assistant",
-        content: ["First paragraph", "Second paragraph"],
+        content: ["First paragraph\n\nSecond paragraph"],
         thinkingContent: ["Need to inspect the state flow first"],
       },
       {
@@ -90,6 +90,35 @@ describe("pi message mapper", () => {
         id: "5-branchSummary",
         role: "branchSummary",
         content: ["Kept the main branch summary"],
+      },
+    ]);
+  });
+
+  it("keeps assistant markdown as complete documents", () => {
+    const markdown = [
+      "Validation",
+      [
+        "```sh",
+        "bunx biome check src/app/components/common/MarkdownContent.tsx \\",
+        "  shared/pi-message-mapper.ts",
+        "```",
+      ].join("\n"),
+      "No tests run.",
+    ].join("\n\n");
+
+    const messages = mapAgentMessagesToUiMessages([
+      {
+        role: "assistant",
+        timestamp: 1,
+        content: [{ type: "text", text: markdown }],
+      },
+    ] as never[]);
+
+    expect(messages).toEqual([
+      {
+        id: "1-assistant",
+        role: "assistant",
+        content: [markdown],
       },
     ]);
   });
