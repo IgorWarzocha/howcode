@@ -23,7 +23,7 @@ const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
 const runtimeMutationTails = new Map<string, Promise<void>>();
-const staleRuntimeKeys = new Set<string>();
+const staleRuntimeGenerations = new Map<string, number>();
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -52,10 +52,10 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
         }
         runtime.session.dispose();
         if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
-        staleRuntimeKeys.delete(runtimeKey);
+        staleRuntimeGenerations.delete(runtimeKey);
       } catch {
         if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
-        staleRuntimeKeys.delete(runtimeKey);
+        staleRuntimeGenerations.delete(runtimeKey);
       }
     })();
   }, RUNTIME_IDLE_TIMEOUT_MS);
@@ -218,7 +218,7 @@ async function createRuntime(options: {
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
-  staleRuntimeKeys.delete(runtimeKey);
+  staleRuntimeGenerations.delete(runtimeKey);
   const record: RuntimeRecord = { runtimePromise, disposeTimeout: null };
   runtimeRecords.set(runtimeKey, record);
   return record;
@@ -250,7 +250,7 @@ export async function getOrCreateRuntimeForSessionPath(
     (error) => {
       if (record && runtimeRecords.get(persistedSessionPath) === record)
         runtimeRecords.delete(persistedSessionPath);
-      staleRuntimeKeys.delete(persistedSessionPath);
+      staleRuntimeGenerations.delete(persistedSessionPath);
       throw error;
     },
   );
@@ -282,7 +282,11 @@ export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () =>
   }
 }
 
-async function reloadRuntimeSettings(runtimeKey: string, runtime: PiRuntime) {
+async function reloadRuntimeSettings(
+  runtimeKey: string,
+  runtime: PiRuntime,
+  staleGeneration: number,
+) {
   if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
   await runtime.session.reload();
   const composer = await buildComposerState(runtime);
@@ -290,7 +294,9 @@ async function reloadRuntimeSettings(runtimeKey: string, runtime: PiRuntime) {
     projectId: runtime.cwd,
     sessionPath: runtime.session.sessionFile ?? null,
   });
-  staleRuntimeKeys.delete(runtimeKey);
+  if (staleRuntimeGenerations.get(runtimeKey) === staleGeneration) {
+    staleRuntimeGenerations.delete(runtimeKey);
+  }
   return true;
 }
 
@@ -299,7 +305,9 @@ export async function reloadRuntimeSettingsIfSafe(
   options: { useMutationLock?: boolean } = {},
 ): Promise<boolean> {
   const runtimeKey = getPersistedSessionPath(sessionPath);
-  if (!runtimeKey || !staleRuntimeKeys.has(runtimeKey)) return false;
+  if (!runtimeKey) return false;
+  const staleGeneration = staleRuntimeGenerations.get(runtimeKey);
+  if (staleGeneration === undefined) return false;
 
   if (options.useMutationLock ?? true) {
     return await withRuntimeMutationLock(runtimeKey, () =>
@@ -309,12 +317,14 @@ export async function reloadRuntimeSettingsIfSafe(
 
   const runtimePromise = getCachedRuntimeForSessionPath(runtimeKey);
   if (!runtimePromise) {
-    staleRuntimeKeys.delete(runtimeKey);
+    if (staleRuntimeGenerations.get(runtimeKey) === staleGeneration) {
+      staleRuntimeGenerations.delete(runtimeKey);
+    }
     return false;
   }
 
   try {
-    return await reloadRuntimeSettings(runtimeKey, await runtimePromise);
+    return await reloadRuntimeSettings(runtimeKey, await runtimePromise, staleGeneration);
   } catch {
     // Keep stale; next safe point retries.
     return false;
@@ -322,13 +332,13 @@ export async function reloadRuntimeSettingsIfSafe(
 }
 
 async function markRuntimeRecordStale(runtimeKey: string, record: RuntimeRecord) {
-  staleRuntimeKeys.add(runtimeKey);
+  staleRuntimeGenerations.set(runtimeKey, (staleRuntimeGenerations.get(runtimeKey) ?? 0) + 1);
   clearRuntimeDisposeTimeout(runtimeKey);
   try {
     await record.runtimePromise;
   } catch {
     if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
-    staleRuntimeKeys.delete(runtimeKey);
+    staleRuntimeGenerations.delete(runtimeKey);
     return;
   }
   await reloadRuntimeSettingsIfSafe(runtimeKey);
@@ -357,7 +367,7 @@ export async function invalidateRuntimeSettings(
         runtime = await record.runtimePromise;
       } catch {
         if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
-        staleRuntimeKeys.delete(runtimeKey);
+        staleRuntimeGenerations.delete(runtimeKey);
         return;
       }
       if (resolvedProjectPath && path.resolve(runtime.cwd) !== resolvedProjectPath) return;
@@ -370,7 +380,7 @@ export async function invalidateRuntimeSettings(
 export async function disposeAllRuntimeHosts() {
   const entries = [...runtimeRecords.entries()];
   runtimeRecords.clear();
-  staleRuntimeKeys.clear();
+  staleRuntimeGenerations.clear();
   await Promise.all(
     entries.map(async ([runtimeKey, record]) => {
       clearRuntimeDisposeTimeout(runtimeKey);

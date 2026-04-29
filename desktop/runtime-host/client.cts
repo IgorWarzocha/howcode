@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
+import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import type {
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
@@ -391,14 +392,14 @@ function shouldUseThreadHost<TName extends RuntimeHostRequestName>(
   if (name === "startNewThread" || name === "selectProjectRuntime") return false;
   if (name === "loadThreadSnapshot") return false;
   if (name === "getComposerSlashCommands" && !getRequestSessionPath(name, payload)) return false;
-  return Boolean(getRequestSessionPath(name, payload));
+  return Boolean(getPersistedSessionPath(getRequestSessionPath(name, payload)));
 }
 
 function getHostForRequest<TName extends RuntimeHostRequestName>(
   name: TName,
   payload: RuntimeHostRequestMap[TName],
 ) {
-  const sessionPath = getRequestSessionPath(name, payload);
+  const sessionPath = getPersistedSessionPath(getRequestSessionPath(name, payload));
   if (!shouldUseThreadHost(name, payload)) {
     return serviceHost;
   }
