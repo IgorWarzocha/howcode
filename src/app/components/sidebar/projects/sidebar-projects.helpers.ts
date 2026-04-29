@@ -8,7 +8,12 @@ function projectMatchesFilter(
   terminalRunningProjectIds: ReadonlySet<string>,
   terminalRunningSessionPaths: ReadonlySet<string>,
   appLaunchedAtMs: number,
+  priorityProjectIds: ReadonlySet<string>,
 ) {
+  if (priorityProjectIds.has(project.id)) {
+    return true;
+  }
+
   if (filterMode === "github") {
     return Boolean(project.repoOriginUrl);
   }
@@ -88,9 +93,11 @@ export function getSidebarVisibleProjects(input: {
   terminalRunningProjectIds: ReadonlySet<string>;
   terminalRunningSessionPaths: ReadonlySet<string>;
   appLaunchedAtMs: number;
+  priorityProjectIds?: readonly string[];
 }) {
   const normalizedQuery = input.searchQuery.trim().toLowerCase();
   const autoExpandedProjectIds = new Set<string>();
+  const priorityProjectIds = new Set(input.priorityProjectIds ?? []);
 
   const projects = input.projects.flatMap((project) => {
     if (
@@ -100,6 +107,7 @@ export function getSidebarVisibleProjects(input: {
         input.terminalRunningProjectIds,
         input.terminalRunningSessionPaths,
         input.appLaunchedAtMs,
+        priorityProjectIds,
       )
     ) {
       return [];
@@ -127,7 +135,11 @@ export function getSidebarVisibleProjects(input: {
       thread.title.toLowerCase().includes(normalizedQuery),
     );
 
-    if (!projectMatchesQuery && matchingThreads.length === 0) {
+    if (
+      !priorityProjectIds.has(project.id) &&
+      !projectMatchesQuery &&
+      matchingThreads.length === 0
+    ) {
       return [];
     }
 
@@ -143,6 +155,25 @@ export function getSidebarVisibleProjects(input: {
         threadsLoaded: project.threadsLoaded || matchingThreads.length > 0,
       },
     ];
+  });
+
+  projects.sort((left, right) => {
+    const leftPriority = input.priorityProjectIds?.indexOf(left.id) ?? -1;
+    const rightPriority = input.priorityProjectIds?.indexOf(right.id) ?? -1;
+
+    if (leftPriority === -1 && rightPriority === -1) {
+      return 0;
+    }
+
+    if (leftPriority === -1) {
+      return 1;
+    }
+
+    if (rightPriority === -1) {
+      return -1;
+    }
+
+    return leftPriority - rightPriority;
   });
 
   return {
