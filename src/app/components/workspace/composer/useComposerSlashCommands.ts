@@ -117,7 +117,7 @@ export function useComposerSlashCommands({
         return;
       }
 
-      if (loading && draft.trim() !== "/settings") {
+      if (loading && draft.trim() !== "/settings" && draft.trim().length <= 1) {
         return;
       }
     }

@@ -13,7 +13,7 @@ import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directo
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { buildQueuedPrompts } from "./composer-queue";
-import { initHeadlessPiTheme } from "./headless-pi-theme.cts";
+import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -185,7 +185,6 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  await initHeadlessPiTheme(settingsManager);
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();
@@ -198,6 +197,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     sessionManager,
     tools: [],
   });
+  await applyHeadlessPiTheme(session);
 
   return {
     cwd,

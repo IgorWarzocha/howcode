@@ -12,6 +12,7 @@ type RuntimeSettingsRefreshControllerOptions = {
   getCachedRuntimeForSessionPath: (sessionPath: string) => Promise<PiRuntime> | null;
   getRuntimeRecords: () => RuntimeRecordSnapshot[];
   withRuntimeMutationLock: <T>(runtimeKey: string, task: () => Promise<T>) => Promise<T>;
+  afterReload?: (runtime: PiRuntime) => Promise<void>;
   buildComposerState: (runtime: PiRuntime) => Promise<ComposerState>;
   publishComposerUpdate: (
     composer: ComposerState,
@@ -27,6 +28,7 @@ export function createRuntimeSettingsRefreshController({
   getCachedRuntimeForSessionPath,
   getRuntimeRecords,
   withRuntimeMutationLock,
+  afterReload,
   buildComposerState,
   publishComposerUpdate,
 }: RuntimeSettingsRefreshControllerOptions) {
@@ -52,6 +54,7 @@ export function createRuntimeSettingsRefreshController({
 
     activeReloads.set(runtimeKey, reload);
     await reload;
+    await afterReload?.(runtime);
     return true;
   }
 

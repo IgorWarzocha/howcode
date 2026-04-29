@@ -3,7 +3,7 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
-import { initHeadlessPiTheme } from "../runtime/headless-pi-theme.cts";
+import { applyHeadlessPiTheme } from "../runtime/headless-pi-theme.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
   cancelLiveThreadUpdate,
@@ -78,7 +78,6 @@ async function createRuntime(options: {
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(options.cwd, agentDir);
-  await initHeadlessPiTheme(settingsManager);
   const sessionDir = settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
     cwd: options.cwd,
@@ -88,6 +87,7 @@ async function createRuntime(options: {
     settingsManager,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
+  await applyHeadlessPiTheme(session);
   const runtime = { cwd: options.cwd, session } satisfies PiRuntime;
 
   session.subscribe((event) => {
@@ -291,6 +291,7 @@ async function reloadRuntimeSettings(
 ) {
   if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
   await runtime.session.reload();
+  await applyHeadlessPiTheme(runtime.session);
   const composer = await buildComposerState(runtime);
   publishComposerUpdate(composer, {
     projectId: runtime.cwd,

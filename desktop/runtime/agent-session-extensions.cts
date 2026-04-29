@@ -1,13 +1,16 @@
 import path from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
+import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 
 const howcodeExtensionErrorMessageType = "howcode.extension.error";
+const howcodeExtensionStatusMessageType = "howcode.extension.status";
 const extensionCommandCancelledResult = { cancelled: true };
 const sessionsWithHowcodeContextFilter = new WeakSet<AgentSession>();
 
 type ExtensionBindings = Parameters<AgentSession["bindExtensions"]>[0];
 type ExtensionCommandContextActions = NonNullable<ExtensionBindings["commandContextActions"]>;
+type ExtensionUIContext = NonNullable<ExtensionBindings["uiContext"]>;
 type ResourceExtensionPaths = Parameters<AgentSession["resourceLoader"]["extendResources"]>[0];
 
 type ExtensionResourceEntry = { path: string; extensionPath: string };
@@ -47,7 +50,8 @@ function isHowcodeExtensionErrorMessage(message: AgentMessage) {
   return (
     message.role === "custom" &&
     "customType" in message &&
-    message.customType === howcodeExtensionErrorMessageType
+    (message.customType === howcodeExtensionErrorMessageType ||
+      message.customType === howcodeExtensionStatusMessageType)
   );
 }
 
@@ -82,6 +86,41 @@ async function reportHeadlessExtensionError(
     console.warn("Failed to surface Pi extension error in session", messageError);
   }
   options.onExtensionError?.(error);
+}
+
+function sendHeadlessExtensionStatus(
+  session: AgentSession,
+  content: string,
+  details?: Record<string, unknown>,
+) {
+  void session
+    .sendCustomMessage(
+      {
+        customType: howcodeExtensionStatusMessageType,
+        content,
+        display: true,
+        details,
+      },
+      { triggerTurn: false },
+    )
+    .catch((error) => {
+      console.warn("Failed to surface Pi extension status in session", error);
+    });
+}
+
+function createHeadlessUIContext(session: AgentSession): ExtensionUIContext {
+  const baseContext = session.extensionRunner.getUIContext() as ExtensionUIContext;
+
+  return {
+    ...baseContext,
+    notify: (message, level) => {
+      sendHeadlessExtensionStatus(session, message, { kind: "notification", level });
+    },
+    setWorkingMessage: (message) => {
+      if (!message) return;
+      sendHeadlessExtensionStatus(session, message, { kind: "working" });
+    },
+  };
 }
 
 function createHeadlessCommandContextActions(
@@ -123,6 +162,7 @@ export async function discoverHeadlessAgentSessionResources(session: AgentSessio
     themePaths: buildExtensionResourcePaths(themePaths),
   };
   session.resourceLoader.extendResources(extensionPaths);
+  await applyHeadlessPiTheme(session);
 }
 
 export async function bindHeadlessAgentSessionExtensions(
@@ -130,11 +170,14 @@ export async function bindHeadlessAgentSessionExtensions(
   options: HeadlessAgentSessionExtensionOptions = {},
 ) {
   bindHowcodeContextFilter(session);
+  await applyHeadlessPiTheme(session);
   await session.bindExtensions({
+    uiContext: createHeadlessUIContext(session),
     commandContextActions: createHeadlessCommandContextActions(session),
     shutdownHandler: () => undefined,
     onError: (error) => {
       void reportHeadlessExtensionError(session, error, options);
     },
   });
+  await applyHeadlessPiTheme(session);
 }
