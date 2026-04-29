@@ -6,6 +6,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionPayloadInput,
   DictationModelId,
+  GitOpsMode,
   ModelSelection,
   ProjectDeletionMode,
 } from "./desktop-contracts";
@@ -153,6 +154,22 @@ export function getGitRepoUrl(payload: DesktopActionPayloadInput) {
   return repoUrl.length > 0 ? repoUrl : null;
 }
 
+export function getGitOpsMode(
+  payload: DesktopActionPayloadInput,
+): GitOpsMode | null | undefined | "invalid" {
+  if (!("gitOpsMode" in payload) || payload.gitOpsMode === undefined) {
+    return undefined;
+  }
+
+  if (payload.gitOpsMode === null) {
+    return null;
+  }
+
+  return payload.gitOpsMode === "commit" || payload.gitOpsMode === "commit-push"
+    ? payload.gitOpsMode
+    : "invalid";
+}
+
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "gitCommitMessageThinkingLevel" ||
@@ -166,6 +183,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "projectImportState" ||
     payload.key === "preferredProjectLocation" ||
     payload.key === "initializeGitOnProjectCreate" ||
+    payload.key === "gitOpsDefaultMode" ||
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"

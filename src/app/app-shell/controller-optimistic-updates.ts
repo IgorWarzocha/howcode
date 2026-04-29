@@ -31,6 +31,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "projectImportState" &&
     payload.key !== "preferredProjectLocation" &&
     payload.key !== "initializeGitOnProjectCreate" &&
+    payload.key !== "gitOpsDefaultMode" &&
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "piTuiTakeover"
@@ -135,6 +136,12 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.projectDeletionMode;
 
+  const nextGitOpsDefaultMode =
+    payload.key === "gitOpsDefaultMode" &&
+    (payload.value === "commit" || payload.value === "commit-push")
+      ? payload.value
+      : currentState.appSettings.gitOpsDefaultMode;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
@@ -161,6 +168,7 @@ export function getOptimisticallyUpdatedShellState(
       projectImportState: nextProjectImportState,
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
+      gitOpsDefaultMode: nextGitOpsDefaultMode,
       projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       piTuiTakeover: nextPiTuiTakeover,

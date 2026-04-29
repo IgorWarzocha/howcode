@@ -146,6 +146,7 @@ export function CodeWorkspaceView({
                     projectImportState: null,
                     preferredProjectLocation: null,
                     initializeGitOnProjectCreate: false,
+                    gitOpsDefaultMode: "commit",
                     projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
                     piTuiTakeover: false,
@@ -201,6 +202,26 @@ export function CodeWorkspaceView({
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}
                     showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                    appSettings={
+                      shellState?.appSettings ?? {
+                        gitCommitMessageModel: null,
+                        gitCommitMessageThinkingLevel: "off",
+                        skillCreatorModel: null,
+                        skillCreatorThinkingLevel: "off",
+                        composerStreamingBehavior: "followUp",
+                        dictationModelId: null,
+                        dictationMaxDurationSeconds: 180,
+                        showDictationButton: true,
+                        favoriteFolders: [],
+                        projectImportState: null,
+                        preferredProjectLocation: null,
+                        initializeGitOnProjectCreate: false,
+                        gitOpsDefaultMode: "commit",
+                        projectDeletionMode: "pi-only",
+                        useAgentsSkillsPaths: false,
+                        piTuiTakeover: false,
+                      }
+                    }
                     diffBaseline={diffBaseline}
                     diffRenderMode={diffRenderMode}
                     diffComments={diffComments}

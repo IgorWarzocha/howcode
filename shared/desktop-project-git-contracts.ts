@@ -1,3 +1,5 @@
+import type { GitOpsMode } from "./desktop-settings-contracts";
+
 export type ProjectGitState = {
   projectId: string;
   isGitRepo: boolean;
@@ -10,6 +12,7 @@ export type ProjectGitState = {
   hasOrigin: boolean;
   originName: string | null;
   originUrl: string | null;
+  gitOpsModeOverride: GitOpsMode | null;
 };
 
 export type ProjectDiffBaseline =

@@ -16,6 +16,10 @@ export function getActionResultCommitted(result: DesktopActionResult | null) {
   return result?.result?.committed === true;
 }
 
+export function getActionResultPushed(result: DesktopActionResult | null) {
+  return result?.result?.pushed === true;
+}
+
 export function getActionResultPreviewed(result: DesktopActionResult | null) {
   return result?.result?.previewed === true;
 }

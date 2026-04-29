@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { getErrorMessage } from "../../../desktop/error-messages";
-import type { DesktopActionInvoker, ProjectGitState } from "../../../desktop/types";
+import type {
+  AppSettings,
+  DesktopActionInvoker,
+  GitOpsMode,
+  ProjectGitState,
+} from "../../../desktop/types";
 import type { SavedDiffComment } from "../diff/diffCommentStore";
 import {
   buildGitOpsCommentCards,
@@ -9,6 +14,7 @@ import {
   getActionResultError,
   getActionResultMessage,
   getActionResultPreviewed,
+  getActionResultPushed,
 } from "./composer-git-ops.helpers";
 
 export function useComposerGitOpsState({
@@ -16,12 +22,14 @@ export function useComposerGitOpsState({
   diffCommentsSending,
   onAction,
   onSendDiffComments,
+  appSettings,
   projectGitState,
 }: {
   diffComments: SavedDiffComment[];
   diffCommentsSending: boolean;
   onAction: DesktopActionInvoker;
   onSendDiffComments: (message?: string | null) => void;
+  appSettings: AppSettings;
   projectGitState: ProjectGitState | null;
 }) {
   const [includeUnstaged, setIncludeUnstaged] = useState(true);
@@ -33,6 +41,7 @@ export function useComposerGitOpsState({
   const [persistedCleanMessage, setPersistedCleanMessage] = useState<string | null>(null);
   const [runningPrimaryAction, setRunningPrimaryAction] = useState(false);
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
+  const [actionStatusMessage, setActionStatusMessage] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
   const previousProjectIdRef = useRef<string | null>(projectGitState?.projectId ?? null);
   const commitMessageRef = useRef(commitMessage);
@@ -41,6 +50,7 @@ export function useComposerGitOpsState({
 
   const isGitRepo = projectGitState?.isGitRepo ?? false;
   const hasOrigin = projectGitState?.hasOrigin ?? false;
+  const effectiveGitOpsMode = projectGitState?.gitOpsModeOverride ?? appSettings.gitOpsDefaultMode;
   const isGitHubOrigin = projectGitState?.originUrl?.includes("github.com") ?? false;
   const isTreeClean = isGitRepo && (projectGitState?.fileCount ?? 0) === 0;
   const hasDiffComments = diffComments.length > 0;
@@ -69,6 +79,10 @@ export function useComposerGitOpsState({
   }, [hasOrigin]);
 
   useEffect(() => {
+    setPushEnabled(hasOrigin && effectiveGitOpsMode === "commit-push");
+  }, [effectiveGitOpsMode, hasOrigin]);
+
+  useEffect(() => {
     const nextProjectId = projectGitState?.projectId ?? null;
     if (previousProjectIdRef.current === nextProjectId) {
       return;
@@ -79,12 +93,14 @@ export function useComposerGitOpsState({
     setCommitFocused(false);
     setPersistedCleanMessage(null);
     setPreviewPendingCommit(false);
+    setActionStatusMessage(null);
   }, [projectGitState]);
 
   useEffect(() => {
     if (!isTreeClean && persistedCleanMessage && commitMessage === persistedCleanMessage) {
       setCommitMessage("");
       setPersistedCleanMessage(null);
+      setActionStatusMessage(null);
     }
   }, [commitMessage, isTreeClean, persistedCleanMessage]);
 
@@ -94,6 +110,9 @@ export function useComposerGitOpsState({
       if (actionErrorMessage) {
         setActionErrorMessage(null);
       }
+      if (actionStatusMessage) {
+        setActionStatusMessage(null);
+      }
       if (nextMessage.trim().length === 0) {
         setPreviewPendingCommit(false);
       }
@@ -101,7 +120,45 @@ export function useComposerGitOpsState({
         setPersistedCleanMessage(null);
       }
     },
-    [actionErrorMessage, persistedCleanMessage],
+    [actionErrorMessage, actionStatusMessage, persistedCleanMessage],
+  );
+
+  const saveProjectGitOpsMode = useCallback(
+    async (mode: GitOpsMode | null) => {
+      if (!isGitRepo) {
+        return;
+      }
+
+      const previousPushEnabled = pushEnabled;
+      setPushEnabled(
+        hasOrigin &&
+          (mode === null
+            ? appSettings.gitOpsDefaultMode === "commit-push"
+            : mode === "commit-push"),
+      );
+
+      try {
+        const result = await onAction("workspace.commit-options", { gitOpsMode: mode });
+        const actionErrorMessage = getDesktopActionErrorMessage(
+          result,
+          "Could not update the project GitOps default.",
+        );
+        if (actionErrorMessage) {
+          setPushEnabled(previousPushEnabled);
+          setActionErrorMessage(actionErrorMessage);
+          return;
+        }
+        setActionErrorMessage(null);
+        setActionStatusMessage(null);
+      } catch (error) {
+        setPushEnabled(previousPushEnabled);
+        setActionErrorMessage(
+          getErrorMessage(error, "Could not update the project GitOps default."),
+        );
+        setActionStatusMessage(null);
+      }
+    },
+    [appSettings.gitOpsDefaultMode, hasOrigin, isGitRepo, onAction, pushEnabled],
   );
 
   const setCommitMessageValue = useCallback(
@@ -130,9 +187,11 @@ export function useComposerGitOpsState({
         return;
       }
       setActionErrorMessage(null);
+      setActionStatusMessage(null);
       setRepoUrl("");
     } catch (error) {
       setActionErrorMessage(getErrorMessage(error, "Could not update the repository remote."));
+      setActionStatusMessage(null);
     }
   }, [isGitRepo, onAction, repoUrl]);
 
@@ -175,6 +234,7 @@ export function useComposerGitOpsState({
 
     try {
       setActionErrorMessage(null);
+      setActionStatusMessage(null);
       const result = await onAction("workspace.commit", {
         includeUnstaged,
         message: trimmedCommitMessage.length > 0 ? trimmedCommitMessage : null,
@@ -201,10 +261,19 @@ export function useComposerGitOpsState({
           setCommitMessage(finalMessage);
           setPersistedCleanMessage(finalMessage);
         }
+        const resultError = getActionResultError(result);
+        setActionStatusMessage(
+          resultError
+            ? null
+            : getActionResultPushed(result)
+              ? "Committed and pushed successfully."
+              : "Committed successfully.",
+        );
       }
       setActionErrorMessage(getActionResultError(result));
     } catch (error) {
       setActionErrorMessage(getErrorMessage(error, "Could not commit changes."));
+      setActionStatusMessage(null);
     } finally {
       setRunningPrimaryAction(false);
     }
@@ -229,6 +298,7 @@ export function useComposerGitOpsState({
 
   return {
     actionErrorMessage,
+    actionStatusMessage,
     canCommit,
     commentCards,
     commitFocused,
@@ -247,6 +317,7 @@ export function useComposerGitOpsState({
     pushEnabled,
     repoUrl,
     runningPrimaryAction,
+    saveProjectGitOpsMode,
     setCommitFocused,
     setActionErrorMessage,
     setIncludeUnstaged,

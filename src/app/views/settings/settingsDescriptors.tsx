@@ -582,6 +582,36 @@ export function buildSettingsDescriptors({
       ),
     },
     {
+      id: "projects.gitops-default",
+      category: "projects",
+      title: "GitOps default",
+      description: "Default commit action for projects that do not have their own override.",
+      keywords: "gitops commit push default project",
+      render: () => (
+        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+          {[
+            ["commit", "Commit"],
+            ["commit-push", "Commit & push"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
+                appSettings.gitOpsDefaultMode === value &&
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+              )}
+              onClick={() =>
+                controller.setGitOpsDefaultMode(value as AppSettings["gitOpsDefaultMode"])
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ),
+    },
+    {
       id: "projects.deletion-mode",
       category: "projects",
       title: "Project deletion cleanup",

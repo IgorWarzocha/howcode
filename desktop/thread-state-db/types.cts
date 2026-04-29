@@ -16,6 +16,7 @@ export type ProjectRow = {
   latestModifiedMs: number;
   repoOriginUrl: string | null;
   repoOriginChecked: number;
+  gitOpsMode: string | null;
 };
 
 export type ThreadRow = {

@@ -141,6 +141,7 @@ export function ensureThreadStateSchema(database: Database) {
       collapsed INTEGER NOT NULL DEFAULT 1,
       repo_origin_url TEXT,
       repo_origin_checked INTEGER NOT NULL DEFAULT 0,
+      git_ops_mode TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -210,6 +211,10 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "projects", "repo_origin_checked")) {
     database.exec("ALTER TABLE projects ADD COLUMN repo_origin_checked INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "projects", "git_ops_mode")) {
+    database.exec("ALTER TABLE projects ADD COLUMN git_ops_mode TEXT");
   }
 
   if (!hasColumn(database, "threads", "last_assistant_message_json")) {

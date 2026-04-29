@@ -4,6 +4,7 @@ import {
   getComposerRequest,
   getGitCommitMessage,
   getGitIncludeUnstaged,
+  getGitOpsMode,
   getGitPreview,
   getGitPush,
   getGitRepoUrl,
@@ -11,7 +12,7 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import { generateGitCommitMessage } from "../git-commit-message.cts";
 import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from "../project-git.cts";
-import { setProjectRepoOrigin } from "../thread-state-db.cts";
+import { setProjectGitOpsMode, setProjectRepoOrigin } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
 
@@ -47,6 +48,20 @@ export async function handleWorkspaceDesktopAction(
       }
 
       const repoUrl = getGitRepoUrl(payload);
+      const gitOpsMode = getGitOpsMode(payload);
+
+      if (gitOpsMode === "invalid") {
+        return handledAction({ error: "Invalid GitOps mode." });
+      }
+
+      if (gitOpsMode !== undefined && repoUrl) {
+        return handledAction({ error: "GitOps mode and repository URL must be saved separately." });
+      }
+
+      if (gitOpsMode !== undefined) {
+        setProjectGitOpsMode(projectId, gitOpsMode);
+        return handledAction();
+      }
 
       if (repoUrl) {
         await setProjectOrigin(projectId, repoUrl);

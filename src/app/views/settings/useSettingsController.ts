@@ -229,6 +229,11 @@ export function useSettingsController({
         key: "projectDeletionMode",
         value,
       }),
+    setGitOpsDefaultMode: (value: AppSettings["gitOpsDefaultMode"]) =>
+      void onAction("settings.update", {
+        key: "gitOpsDefaultMode",
+        value,
+      }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
       void onAction("pi-settings.update", {
         piSettingsKey: key,

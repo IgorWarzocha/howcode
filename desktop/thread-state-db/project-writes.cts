@@ -83,6 +83,17 @@ export function setProjectRepoOrigin(projectId: string, originUrl: string | null
   ).run(originUrl, projectId);
 }
 
+export function setProjectGitOpsMode(projectId: string, mode: "commit" | "commit-push" | null) {
+  const db = getThreadStateDatabase();
+  db.prepare(
+    `
+      UPDATE projects
+      SET git_ops_mode = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE cwd = ?
+    `,
+  ).run(mode, projectId);
+}
+
 export function reorderProjects(projectIds: string[]) {
   if (projectIds.length === 0) {
     return;

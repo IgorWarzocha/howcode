@@ -3,6 +3,7 @@ import type {
   ComposerThinkingLevel,
   ComposerStreamingBehavior,
   DictationModelId,
+  GitOpsMode,
   ModelSelection,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
@@ -24,6 +25,7 @@ const favoriteFoldersKey = "favoriteFolders";
 const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
+const gitOpsDefaultModeKey = "gitOpsDefaultMode";
 const projectDeletionModeKey = "projectDeletionMode";
 const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 const piTuiTakeoverKey = "piTuiTakeover";
@@ -140,6 +142,19 @@ function parseProjectDeletionModePreference(
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return parsed === "pi-only" || parsed === "full-clean" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseGitOpsModePreference(valueJson: string | null | undefined): GitOpsMode | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "commit" || parsed === "commit-push" ? parsed : null;
   } catch {
     return null;
   }
@@ -290,6 +305,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(projectDeletionModeKey) as PreferenceRow | undefined;
+  const gitOpsDefaultModeRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitOpsDefaultModeKey) as PreferenceRow | undefined;
   const useAgentsSkillsPathsRow = db
     .prepare(
       `
@@ -357,6 +381,7 @@ export function loadAppSettings(): AppSettings {
     preferredProjectLocation: parseStringPreference(preferredProjectLocationRow?.valueJson),
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
+    gitOpsDefaultMode: parseGitOpsModePreference(gitOpsDefaultModeRow?.valueJson) ?? "commit",
     projectDeletionMode:
       parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
@@ -462,6 +487,15 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled));
+}
+
+export function setGitOpsDefaultMode(mode: GitOpsMode) {
+  if (mode === "commit") {
+    deleteAppPreference(gitOpsDefaultModeKey);
+    return;
+  }
+
+  writeAppPreference(gitOpsDefaultModeKey, JSON.stringify(mode));
 }
 
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {

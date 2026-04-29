@@ -30,6 +30,7 @@ export {
   renameProject,
   restoreThreads,
   restoreThread,
+  setProjectGitOpsMode,
   setProjectRepoOrigin,
   setProjectCollapsed,
   syncSessionSummaries,

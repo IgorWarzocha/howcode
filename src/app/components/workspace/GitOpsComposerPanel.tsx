@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type {
   DesktopActionInvoker,
+  AppSettings,
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../desktop/types";
@@ -14,6 +15,7 @@ type GitOpsComposerPanelProps = {
   projectId: string;
   sessionPath: string | null;
   showDictationButton: boolean;
+  appSettings: AppSettings;
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: "stacked" | "split";
   diffComments: SavedDiffComment[];
@@ -38,6 +40,7 @@ export function GitOpsComposerPanel({
   projectId,
   sessionPath,
   showDictationButton,
+  appSettings,
   diffBaseline,
   diffRenderMode,
   diffComments,
@@ -71,6 +74,7 @@ export function GitOpsComposerPanel({
         projectId={projectId}
         sessionPath={sessionPath}
         showDictationButton={showDictationButton}
+        appSettings={appSettings}
         diffBaseline={diffBaseline}
         diffRenderMode={diffRenderMode}
         diffComments={diffComments}

@@ -6,6 +6,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
+  GitOpsMode,
   PiSettings,
   ProjectDeletionMode,
   ProjectImportCandidate,
@@ -17,6 +18,7 @@ export type DesktopActionPayloadFields = {
   attachments?: ComposerAttachment[];
   folders?: string[];
   imported?: boolean | null;
+  gitOpsMode?: GitOpsMode | null;
   includeUnstaged?: boolean;
   key?: keyof AppSettings;
   piSettingsKey?: keyof PiSettings;
@@ -62,6 +64,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "projectImportState"; imported: boolean | null }
   | { key: "preferredProjectLocation"; value: string | null }
   | { key: "initializeGitOnProjectCreate"; value: boolean }
+  | { key: "gitOpsDefaultMode"; value: GitOpsMode }
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
   | { key: "piTuiTakeover"; value: boolean };
@@ -100,6 +103,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | null;
     sessionPath?: string | null;
     repoUrl?: string | null;
+    gitOpsMode?: GitOpsMode | null;
   };
   "composer.model": {
     projectId?: string | null;
@@ -162,6 +166,7 @@ export type DesktopActionResultData = {
   previewed?: boolean;
   projectId?: string;
   projects?: ProjectImportCandidate[];
+  pushed?: boolean;
   pushFailed?: boolean;
   repoProjectCount?: number;
   sessionPath?: string | null;
