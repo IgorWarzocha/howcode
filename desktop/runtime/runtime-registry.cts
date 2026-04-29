@@ -94,6 +94,31 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
   }, RUNTIME_IDLE_TIMEOUT_MS);
 }
 
+function publishRuntimeComposerState(runtime: PiRuntime) {
+  return buildComposerState(runtime)
+    .then((composer) => {
+      publishComposerUpdate(composer, {
+        projectId: runtime.cwd,
+        sessionPath: runtime.session.sessionFile,
+      });
+    })
+    .catch(() => {
+      // Ignore transient composer snapshot errors; a later runtime event will republish state.
+    });
+}
+
+function handleExtensionCommandStateChange(runtime: PiRuntime) {
+  publishRuntimeComposerState(runtime);
+  if (!isRuntimeExtensionCommandRunning(runtime)) {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+    if (runtimeKey) {
+      void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
+        // Keep stale settings marked; the next safe point retries silently.
+      });
+    }
+  }
+}
+
 function publishLiveThreadUpdate(runtime: PiRuntime) {
   void publishThreadUpdate(runtime, "update");
 }
@@ -245,16 +270,7 @@ async function createRuntime(options: {
       cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "compaction-start");
 
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; compaction_end will publish again.
-        });
+      publishRuntimeComposerState(runtime);
 
       return;
     }
@@ -264,16 +280,7 @@ async function createRuntime(options: {
         cancelLiveThreadUpdate(runtime);
         void publishThreadUpdate(runtime, "compaction");
 
-        void buildComposerState(runtime)
-          .then((composer) => {
-            publishComposerUpdate(composer, {
-              projectId: runtime.cwd,
-              sessionPath: runtime.session.sessionFile,
-            });
-          })
-          .catch(() => {
-            // Ignore transient composer snapshot errors; a later runtime event will republish state.
-          });
+        publishRuntimeComposerState(runtime);
       }, 0);
 
       if (runtimeKey && settingsRefreshController.isStale(runtimeKey)) {
@@ -313,44 +320,17 @@ async function createRuntime(options: {
     }
 
     if (event.type === "queue_update") {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        })
-        .finally(() => {
-          if (runtimeKey && !runtime.session.isStreaming) {
-            scheduleRuntimeDisposal(runtimeKey);
-          }
-        });
+      void publishRuntimeComposerState(runtime).finally(() => {
+        if (runtimeKey && !runtime.session.isStreaming) {
+          scheduleRuntimeDisposal(runtimeKey);
+        }
+      });
     }
   });
 
   await bindHeadlessAgentSessionExtensions(session, {
     onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        });
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          });
-        }
-      }
+      handleExtensionCommandStateChange(runtime);
     },
   });
 
@@ -368,24 +348,7 @@ export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
 export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
   await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
     onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) => {
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          });
-        })
-        .catch(() => {
-          // Ignore transient composer snapshot errors; a later runtime event will republish state.
-        });
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          });
-        }
-      }
+      handleExtensionCommandStateChange(runtime);
     },
   });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getComposerPostSendCleanup } from "../app/components/workspace/composer/useComposerSubmission";
+import { getComposerPostSendCleanup } from "../app/components/workspace/composer/composer-submission-cleanup";
 import type { ComposerAttachment } from "../app/desktop/types";
 
 const submittedAttachments: ComposerAttachment[] = [
