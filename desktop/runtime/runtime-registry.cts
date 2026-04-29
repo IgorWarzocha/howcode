@@ -2,6 +2,7 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { bindHeadlessAgentSessionExtensions } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
+import { initHeadlessPiTheme } from "./headless-pi-theme.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -164,6 +165,7 @@ async function createRuntime(options: {
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(options.cwd, agentDir);
+  await initHeadlessPiTheme(settingsManager);
   const sessionDir = settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
     cwd: options.cwd,
