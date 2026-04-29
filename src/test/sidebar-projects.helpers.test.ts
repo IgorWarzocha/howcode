@@ -207,4 +207,18 @@ describe("sidebar projects helpers", () => {
     expect(result.projects[0]?.threadsLoaded).toBe(false);
     expect(result.autoExpandedProjectIds.has("/howcode")).toBe(true);
   });
+
+  it("keeps newly created projects visible at the top regardless of filter or search", () => {
+    const result = getSidebarVisibleProjects({
+      projects,
+      searchQuery: "missing",
+      filterMode: "favourites",
+      terminalRunningProjectIds: emptyRunningProjectIds,
+      terminalRunningSessionPaths: emptyRunningSessionPaths,
+      appLaunchedAtMs: 0,
+      priorityProjectIds: ["/beta", "/alpha"],
+    });
+
+    expect(result.projects.map((project) => project.id)).toEqual(["/beta", "/alpha"]);
+  });
 });

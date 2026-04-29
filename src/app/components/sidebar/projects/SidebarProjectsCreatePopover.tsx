@@ -67,8 +67,8 @@ export function SidebarProjectsCreatePopover({
             }
           }}
           className="sidebar-project-create-input"
-          placeholder="Project name"
-          aria-label="Project name"
+          placeholder="Project name or GitHub URL"
+          aria-label="Project name or GitHub repository URL"
         />
 
         <button
@@ -77,13 +77,12 @@ export function SidebarProjectsCreatePopover({
           onClick={onCreate}
           disabled={!canCreate}
           data-enabled={canCreate ? "true" : "false"}
-          aria-label={busy ? "Creating project" : "Create project"}
-          data-tooltip={busy ? "Creating project" : "Create project"}
+          aria-label={busy ? "Adding project" : "Add project"}
+          data-tooltip={busy ? "Adding project" : "Add project"}
         >
           <FolderPlus size={15} />
         </button>
       </div>
-
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}
     </dialog>
   );

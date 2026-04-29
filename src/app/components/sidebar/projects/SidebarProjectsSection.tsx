@@ -1,5 +1,6 @@
 import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parseGitHubRepositoryUrl } from "../../../../../shared/github-repository-url";
 import type { AppSettings, DesktopActionInvoker } from "../../../desktop/types";
 import { useDesktopBridgeAvailable } from "../../../hooks/useDesktopBridge";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
@@ -12,6 +13,11 @@ import {
   type SidebarProjectsFilterMode,
   getSidebarVisibleProjects,
 } from "./sidebar-projects.helpers";
+
+type PendingProject = {
+  key: string;
+  name: string;
+};
 
 type SidebarProjectsSectionProps = {
   activeView: View;
@@ -71,6 +77,8 @@ export function SidebarProjectsSection({
   const [projectNameDraft, setProjectNameDraft] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
   const [createErrorMessage, setCreateErrorMessage] = useState<string | null>(null);
+  const [createdProjectIds, setCreatedProjectIds] = useState<string[]>([]);
+  const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
   const desktopBridgeAvailable = useDesktopBridgeAvailable();
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const createPanelRef = useRef<HTMLDialogElement>(null);
@@ -84,9 +92,11 @@ export function SidebarProjectsSection({
         terminalRunningProjectIds,
         terminalRunningSessionPaths,
         appLaunchedAtMs,
+        priorityProjectIds: createdProjectIds,
       }),
     [
       appLaunchedAtMs,
+      createdProjectIds,
       filterMode,
       projects,
       searchQuery,
@@ -181,24 +191,45 @@ export function SidebarProjectsSection({
       return;
     }
 
-    const projectName = projectNameDraft.trim();
-    if (!projectName) {
+    const draft = projectNameDraft.trim();
+    if (!draft) {
       return;
     }
 
+    const repository = parseGitHubRepositoryUrl(draft);
+    const pendingProjectName = repository?.folderName ?? draft;
+    setPendingProject({ key: `${Date.now()}:${draft}`, name: pendingProjectName });
+    setProjectNameDraft("");
+    setCreateOpen(false);
     setCreateBusy(true);
 
     try {
-      const result = await onAction("project.add", { projectName });
+      const result = await onAction(
+        "project.add",
+        repository ? { repoUrl: repository.canonicalUrl } : { projectName: draft },
+      );
       const error = typeof result?.result?.error === "string" ? result.result.error : null;
 
       if (error) {
         setCreateErrorMessage(error);
+        setProjectNameDraft(draft);
+        setCreateOpen(true);
+        setPendingProject(null);
         return;
       }
 
-      setProjectNameDraft("");
-      setCreateOpen(false);
+      const projectId =
+        typeof result?.result?.projectId === "string" ? result.result.projectId : null;
+      if (projectId) {
+        setCreatedProjectIds((current) => [projectId, ...current.filter((id) => id !== projectId)]);
+      }
+
+      setPendingProject(null);
+    } catch (error) {
+      setCreateErrorMessage(error instanceof Error ? error.message : "Unable to add project.");
+      setProjectNameDraft(draft);
+      setCreateOpen(true);
+      setPendingProject(null);
     } finally {
       setCreateBusy(false);
     }
@@ -286,23 +317,46 @@ export function SidebarProjectsSection({
         ) : null}
       </div>
 
-      {visibleProjects.length > 0 ? (
-        <ProjectTree
-          projects={visibleProjects}
-          protectedProjectId={protectedProjectId}
-          selectedProjectId={selectedProjectId}
-          selectedThreadId={selectedThreadId}
-          terminalRunningSessionPaths={terminalRunningSessionPaths}
-          activeView={activeView}
-          selectionModeActive={selectionModeActive}
-          revealOldThreads={searchQuery.trim().length > 0}
-          collapsedProjectIds={effectiveCollapsedProjectIds}
-          onAction={onAction}
-          onProjectSelect={onProjectSelect}
-          onProjectReorder={onProjectReorder}
-          onThreadOpen={onThreadOpen}
-          onToggleProjectCollapse={onToggleProjectCollapse}
-        />
+      {visibleProjects.length > 0 || pendingProject ? (
+        <>
+          {pendingProject ? (
+            <div className="sidebar-tree-item" aria-live="polite">
+              <div className="sidebar-project-row sidebar-row-surface motion-surface-pulse">
+                <span className="sidebar-project-toggle" data-can-toggle="false">
+                  <FolderPlus
+                    size={12}
+                    className="sidebar-project-icon sidebar-project-origin-icon"
+                  />
+                </span>
+                <div
+                  className="sidebar-project-button"
+                  aria-label={`Adding ${pendingProject.name}`}
+                >
+                  <span className="sidebar-project-title">{pendingProject.name}</span>
+                </div>
+                <span className="text-[11px] text-[color:var(--muted-2)]">Adding…</span>
+              </div>
+            </div>
+          ) : null}
+          {visibleProjects.length > 0 ? (
+            <ProjectTree
+              projects={visibleProjects}
+              protectedProjectId={protectedProjectId}
+              selectedProjectId={selectedProjectId}
+              selectedThreadId={selectedThreadId}
+              terminalRunningSessionPaths={terminalRunningSessionPaths}
+              activeView={activeView}
+              selectionModeActive={selectionModeActive}
+              revealOldThreads={searchQuery.trim().length > 0}
+              collapsedProjectIds={effectiveCollapsedProjectIds}
+              onAction={onAction}
+              onProjectSelect={onProjectSelect}
+              onProjectReorder={onProjectReorder}
+              onThreadOpen={onThreadOpen}
+              onToggleProjectCollapse={onToggleProjectCollapse}
+            />
+          ) : null}
+        </>
       ) : !desktopBridgeAvailable ? (
         <div className="px-2.5 py-2 text-[12px] leading-5 text-[color:var(--muted-2)]">
           Project sync needs the desktop bridge. Restart the dev server or use{" "}

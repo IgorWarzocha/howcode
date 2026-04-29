@@ -71,7 +71,7 @@ export type DesktopSettingsUpdatePayload =
 
 export type DesktopActionPayloadMap = {
   "threads.collapse-all": EmptyActionPayload;
-  "project.add": { projectName?: string };
+  "project.add": { projectName?: string; repoUrl?: string | null };
   "project.select": { projectId?: string | null; sessionPath?: string | null };
   "project.expand": { projectId: string };
   "project.collapse": { projectId: string };

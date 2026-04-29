@@ -11,7 +11,7 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import { selectProjectRuntime } from "../pi-desktop-runtime.cts";
-import { createProject } from "../project-create.cts";
+import { createProject, createProjectFromGitHubUrl } from "../project-create.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
 import { importProjects, scanKnownProjects } from "../project-import.cts";
 import { openPathWithSystem } from "../system-open-path.cts";
@@ -173,12 +173,18 @@ export async function handleProjectDesktopAction(
   switch (action) {
     case "project.add": {
       const appSettings = loadAppSettings();
+      const repoUrl = typeof payload.repoUrl === "string" ? payload.repoUrl.trim() : "";
       return handledAction(
-        await createProject({
-          preferredProjectLocation: appSettings.preferredProjectLocation,
-          projectName: getProjectName(payload) ?? "",
-          initializeGit: appSettings.initializeGitOnProjectCreate,
-        }),
+        repoUrl
+          ? await createProjectFromGitHubUrl({
+              preferredProjectLocation: appSettings.preferredProjectLocation,
+              repositoryUrl: repoUrl,
+            })
+          : await createProject({
+              preferredProjectLocation: appSettings.preferredProjectLocation,
+              projectName: getProjectName(payload) ?? "",
+              initializeGit: appSettings.initializeGitOnProjectCreate,
+            }),
       );
     }
 
