@@ -62,6 +62,7 @@ const hosts = brokerState.hosts;
 const THREAD_HOST_IDLE_MS = 5 * 60 * 1000;
 
 let registeredHostShutdownHandlers = false;
+let cachedNodeExecutable: string | null = null;
 
 function killAllRuntimeHosts() {
   for (const host of hosts) {
@@ -132,17 +133,26 @@ function discoverNodeFromShell() {
 }
 
 function getNodeExecutable() {
+  if (cachedNodeExecutable) return cachedNodeExecutable;
+
   for (const candidate of [process.env.HOWCODE_NODE_PATH, process.env.NODE]) {
     const normalized = candidate?.trim();
-    if (normalized) return normalized;
+    if (normalized) {
+      cachedNodeExecutable = normalized;
+      return cachedNodeExecutable;
+    }
   }
 
   const shellNode = discoverNodeFromShell();
-  if (shellNode) return shellNode;
+  if (shellNode) {
+    cachedNodeExecutable = shellNode;
+    return cachedNodeExecutable;
+  }
 
   // Do not use Electron's process.execPath here: it would put native extensions back on the
   // Electron ABI. If discovery reaches this fallback, spawn will fail with a clear host error.
-  return "node";
+  cachedNodeExecutable = "node";
+  return cachedNodeExecutable;
 }
 
 function getElectronResourcesPath() {
@@ -293,6 +303,9 @@ async function ensureRuntimeHost(host: HostConnection) {
       settled = true;
       host.startPromise = null;
       host.process = null;
+      if (host.role === "thread") {
+        forgetHost(host);
+      }
       reject(error);
     };
 

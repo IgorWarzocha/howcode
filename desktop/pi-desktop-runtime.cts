@@ -86,6 +86,40 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: "thr
   }
 }
 
+const threadUpdateForwardingBySession = new Map<string, Promise<void>>();
+
+function enqueueHostThreadUpdate(
+  event: Extract<DesktopEvent, { type: "thread-update" }>,
+  listener: (event: DesktopEvent) => void,
+) {
+  const sessionPath = event.sessionPath;
+  const previous = threadUpdateForwardingBySession.get(sessionPath) ?? Promise.resolve();
+  const next = previous
+    .catch(() => {
+      // Keep the per-session queue moving after an earlier failed update.
+    })
+    .then(async () => {
+      markInternalThreadUpdate(sessionPath);
+      rememberLiveThread(sessionPath, event.thread);
+      try {
+        await persistHostThreadUpdate(event);
+      } catch (error) {
+        console.warn(`Failed to persist Pi runtime host thread update: ${sessionPath}`, error);
+      }
+      listener({ ...event });
+    })
+    .catch((error) => {
+      console.warn(`Failed to forward Pi runtime host thread update: ${sessionPath}`, error);
+    })
+    .finally(() => {
+      if (threadUpdateForwardingBySession.get(sessionPath) === next) {
+        threadUpdateForwardingBySession.delete(sessionPath);
+      }
+    });
+
+  threadUpdateForwardingBySession.set(sessionPath, next);
+}
+
 export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
   const unsubscribeLocal = subscribeLocalDesktopEvents(listener);
   const unsubscribeHost = subscribeRuntimeHostEvents((event) => {
@@ -99,12 +133,7 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
       return;
     }
 
-    void (async () => {
-      markInternalThreadUpdate(event.sessionPath);
-      rememberLiveThread(event.sessionPath, event.thread);
-      await persistHostThreadUpdate(event);
-      listener({ ...event });
-    })();
+    enqueueHostThreadUpdate(event, listener);
   });
 
   return () => {

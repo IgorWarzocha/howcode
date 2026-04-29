@@ -143,8 +143,9 @@ export async function setComposerModel(
     const model = modelRegistry.find(provider, modelId);
     if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
     const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });
-    SettingsManager.create(cwd, agentDir).setDefaultModelAndProvider(provider, modelId);
-    SettingsManager.create(cwd, agentDir).setDefaultThinkingLevel(
+    const settingsManager = SettingsManager.create(cwd, agentDir);
+    settingsManager.setDefaultModelAndProvider(provider, modelId);
+    settingsManager.setDefaultThinkingLevel(
       clampThinkingLevel(
         currentComposer.currentThinkingLevel,
         getAvailableThinkingLevelsForModel(model),
