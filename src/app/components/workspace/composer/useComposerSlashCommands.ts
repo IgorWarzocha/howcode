@@ -45,6 +45,11 @@ function getSlashCommandFilter(draft: string) {
   return query.toLowerCase();
 }
 
+function shouldWaitForSlashCommands(draft: string) {
+  const trimmedDraft = draft.trim();
+  return trimmedDraft.length <= 1 && trimmedDraft !== "/settings";
+}
+
 type UseComposerSlashCommandsOptions = {
   draft: string;
   projectId: string;
@@ -117,7 +122,7 @@ export function useComposerSlashCommands({
         return;
       }
 
-      if (loading && draft.trim() !== "/settings" && draft.trim().length <= 1) {
+      if (loading && shouldWaitForSlashCommands(draft)) {
         return;
       }
     }
@@ -185,7 +190,7 @@ export function useComposerSlashCommands({
       return true;
     }
 
-    if (event.key === "Enter" && !event.shiftKey && loading) {
+    if (event.key === "Enter" && !event.shiftKey && loading && shouldWaitForSlashCommands(draft)) {
       event.preventDefault();
       return true;
     }

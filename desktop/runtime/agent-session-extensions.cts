@@ -144,7 +144,10 @@ function createHeadlessCommandContextActions(
       return { cancelled: result.cancelled };
     },
     switchSession: async () => extensionCommandCancelledResult,
-    reload: () => session.reload(),
+    reload: async () => {
+      await session.reload();
+      await applyHeadlessPiTheme(session);
+    },
   };
 }
 
