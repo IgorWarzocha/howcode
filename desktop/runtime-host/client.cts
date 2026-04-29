@@ -1,5 +1,7 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
@@ -58,8 +60,56 @@ function getRuntimeHostPath() {
   return fileURLToPath(new URL("./worker.mjs", import.meta.url));
 }
 
+function isExecutableFile(filePath: string) {
+  try {
+    return existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
+
+function discoverNodeFromShell() {
+  const shells = [process.env.SHELL, "/bin/bash", "/bin/zsh", "/bin/sh"].filter(
+    (shell): shell is string => Boolean(shell),
+  );
+  for (const shell of [...new Set(shells)]) {
+    if (!isExecutableFile(shell)) continue;
+    const result = spawnSync(shell, ["-lc", "command -v node"], {
+      encoding: "utf8",
+      timeout: 2_000,
+    });
+    const candidate = result.stdout.trim().split("\n")[0];
+    if (candidate && path.isAbsolute(candidate) && isExecutableFile(candidate)) return candidate;
+  }
+  return null;
+}
+
 function getNodeExecutable() {
-  return process.env.HOWCODE_NODE_PATH?.trim() || process.env.NODE || "node";
+  for (const candidate of [process.env.HOWCODE_NODE_PATH, process.env.NODE]) {
+    const normalized = candidate?.trim();
+    if (normalized) return normalized;
+  }
+
+  const shellNode = discoverNodeFromShell();
+  if (shellNode) return shellNode;
+
+  // Do not use Electron's process.execPath here: it would put native extensions back on the
+  // Electron ABI. If discovery reaches this fallback, spawn will fail with a clear host error.
+  return "node";
+}
+
+function getElectronResourcesPath() {
+  const processWithResourcesPath = process as NodeJS.Process & { resourcesPath?: string };
+  return (
+    process.env.HOWCODE_ELECTRON_RESOURCES_PATH?.trim() ||
+    processWithResourcesPath.resourcesPath ||
+    ""
+  );
+}
+
+function getBundledSkillsPath() {
+  const resourcesPath = getElectronResourcesPath();
+  return resourcesPath ? path.join(resourcesPath, "resources", "skills") : "";
 }
 
 function emitDesktopEvent(event: DesktopEvent) {
@@ -175,6 +225,8 @@ async function ensureRuntimeHost(host: HostConnection) {
       env: {
         ...process.env,
         HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
+        HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
+        HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
       },
       stdio: ["ignore", "pipe", "pipe", "ipc"],
     });
