@@ -46,15 +46,18 @@ export function createRuntimeSettingsRefreshController({
       return false;
     }
 
-    const reload = runtime.session.reload().finally(() => {
-      if (activeReloads.get(runtimeKey) === reload) {
-        activeReloads.delete(runtimeKey);
-      }
-    });
+    const reload = runtime.session
+      .reload()
+      .then(() => afterReload?.(runtime))
+      .then(() => undefined)
+      .finally(() => {
+        if (activeReloads.get(runtimeKey) === reload) {
+          activeReloads.delete(runtimeKey);
+        }
+      });
 
     activeReloads.set(runtimeKey, reload);
     await reload;
-    await afterReload?.(runtime);
     return true;
   }
 

@@ -169,7 +169,6 @@ export async function discoverHeadlessAgentSessionResources(session: AgentSessio
     themePaths: buildExtensionResourcePaths(themePaths),
   };
   session.resourceLoader.extendResources(extensionPaths);
-  await applyHeadlessPiTheme(session);
 }
 
 export async function bindHeadlessAgentSessionExtensions(

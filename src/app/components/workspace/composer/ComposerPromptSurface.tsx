@@ -72,6 +72,7 @@ export function ComposerPromptSurface({
     dictationMissingModel,
     dictationSupported,
     errorMessage,
+    extensionCommandRunning,
     isSending,
     isStreaming: composerIsStreaming,
     pickerButtonRef,
@@ -89,6 +90,7 @@ export function ComposerPromptSurface({
     runComposerAction,
     compact,
     send,
+    sendExtensionCommand,
     setDraft,
     setOpenMenu,
     stop,
@@ -124,6 +126,7 @@ export function ComposerPromptSurface({
     sessionPath,
     setDraft,
     send,
+    sendExtensionCommand,
     onOpenSettingsView,
   });
   const slashCommandListSignature = slashCommands.commands
@@ -255,7 +258,7 @@ export function ComposerPromptSurface({
     };
   }, [handleDrop]);
 
-  const extensionRunning = isSending && !composerIsStreaming && !isCompacting;
+  const extensionRunning = extensionCommandRunning;
   const placeholderText =
     errorMessage ??
     (activeView === "thread"

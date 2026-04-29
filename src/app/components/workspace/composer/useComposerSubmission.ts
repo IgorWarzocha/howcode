@@ -125,6 +125,7 @@ type UseComposerSubmissionProps = {
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setDraftValue: Dispatch<SetStateAction<string>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
+  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>;
   setIsSending: Dispatch<SetStateAction<boolean>>;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
   stopDictationAndFlush: () => Promise<void>;
@@ -149,6 +150,7 @@ export function useComposerSubmission({
   setAttachments,
   setDraftValue,
   setErrorMessage,
+  setExtensionCommandRunning,
   setIsSending,
   setOpenMenu,
   stopDictationAndFlush,
@@ -160,6 +162,67 @@ export function useComposerSubmission({
   sendLockRef,
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
+  const sendExtensionCommand = useCallback(() => {
+    if (isCompacting || sendLockRef.current) {
+      return;
+    }
+
+    const submittedScopeKey = composerScopeKey;
+    const submittedDraftThreadId = draftThreadId;
+    const submittedDraft = draftValueRef.current.trim();
+    if (submittedDraft.length === 0) {
+      return;
+    }
+
+    const submittedAttachments = attachmentsRef.current;
+    setErrorMessage(null);
+    setOpenMenu(null);
+    setExtensionCommandRunning(true);
+
+    if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+      setDraftValue("");
+      if (submittedDraftThreadId) {
+        composerDraftStore.setPrompt(submittedDraftThreadId, "");
+      }
+    }
+
+    void submitComposerDraft({
+      draft: submittedDraft,
+      attachments: submittedAttachments,
+      isSending: false,
+      projectId,
+      sessionPath,
+      streamingBehaviorPreference,
+      onAction,
+    })
+      .then((result) => {
+        if (result.status === "error" && activeComposerScopeKeyRef.current === submittedScopeKey) {
+          setErrorMessage(result.errorMessage);
+        }
+      })
+      .finally(() => {
+        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+          setExtensionCommandRunning(false);
+        }
+      });
+  }, [
+    activeComposerScopeKeyRef,
+    attachmentsRef,
+    composerScopeKey,
+    draftThreadId,
+    draftValueRef,
+    isCompacting,
+    onAction,
+    projectId,
+    sendLockRef,
+    sessionPath,
+    setDraftValue,
+    setErrorMessage,
+    setExtensionCommandRunning,
+    setOpenMenu,
+    streamingBehaviorPreference,
+  ]);
+
   const send = useCallback(async () => {
     if (isSending || isCompacting || sendLockRef.current) {
       return;
@@ -358,6 +421,7 @@ export function useComposerSubmission({
   return {
     compact,
     send,
+    sendExtensionCommand,
     stop,
   };
 }

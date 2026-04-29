@@ -13,7 +13,6 @@ import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directo
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { buildQueuedPrompts } from "./composer-queue";
-import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -197,7 +196,6 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     sessionManager,
     tools: [],
   });
-  await applyHeadlessPiTheme(session);
 
   return {
     cwd,

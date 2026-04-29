@@ -56,6 +56,7 @@ type UseComposerSlashCommandsOptions = {
   sessionPath: string | null;
   setDraft: (draft: string) => void;
   send: () => void;
+  sendExtensionCommand?: () => void;
   onOpenSettingsView: () => void;
 };
 
@@ -65,6 +66,7 @@ export function useComposerSlashCommands({
   sessionPath,
   setDraft,
   send,
+  sendExtensionCommand,
   onOpenSettingsView,
 }: UseComposerSlashCommandsOptions) {
   const [commands, setCommands] = useState<ComposerSlashCommand[]>([]);
@@ -103,7 +105,12 @@ export function useComposerSlashCommands({
     }
 
     if (isExactCommandDraft(command)) {
-      send();
+      dismiss();
+      if (command.source === "extension" && sendExtensionCommand) {
+        sendExtensionCommand();
+      } else {
+        send();
+      }
       return;
     }
 
