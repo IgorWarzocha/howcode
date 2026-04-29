@@ -49,6 +49,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
   if (!sessionPath) return;
   const liveThread = buildLiveThreadData(runtime);
   if (!liveThread) return;
+  emitDesktopEvent({ type: "internal-thread-update", sessionPath });
   emitDesktopEvent({
     type: "thread-update",
     reason,

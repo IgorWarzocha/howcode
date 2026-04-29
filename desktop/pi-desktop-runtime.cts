@@ -89,6 +89,11 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: "thr
 export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
   const unsubscribeLocal = subscribeLocalDesktopEvents(listener);
   const unsubscribeHost = subscribeRuntimeHostEvents((event) => {
+    if (event.type === "internal-thread-update") {
+      markInternalThreadUpdate(event.sessionPath);
+      return;
+    }
+
     if (event.type !== "thread-update") {
       listener(event);
       return;

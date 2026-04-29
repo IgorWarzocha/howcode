@@ -115,7 +115,11 @@ async function createRuntime(options: {
     if (event.type === "agent_end") {
       cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "end");
-      if (runtimeKey) scheduleRuntimeDisposal(runtimeKey);
+      if (runtimeKey) {
+        void disposeStaleRuntimeIfIdle(runtimeKey).then((disposed) => {
+          if (!disposed) scheduleRuntimeDisposal(runtimeKey);
+        });
+      }
       return;
     }
     if (event.type === "compaction_start") {
@@ -142,7 +146,13 @@ async function createRuntime(options: {
               sessionPath: runtime.session.sessionFile,
             }),
           )
-          .catch(() => {});
+          .finally(() => {
+            if (runtimeKey) {
+              void disposeStaleRuntimeIfIdle(runtimeKey).then((disposed) => {
+                if (!disposed) scheduleRuntimeDisposal(runtimeKey);
+              });
+            }
+          });
       }, 0);
       return;
     }
@@ -294,6 +304,17 @@ async function invalidateRuntimeRecord(runtimeKey: string, record: RuntimeRecord
   if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
   staleRuntimeKeys.delete(runtimeKey);
   runtime.session.dispose();
+}
+
+export async function disposeStaleRuntimeIfIdle(runtimeKey: string) {
+  if (!staleRuntimeKeys.has(runtimeKey)) return false;
+  const record = runtimeRecords.get(runtimeKey);
+  if (!record) {
+    staleRuntimeKeys.delete(runtimeKey);
+    return false;
+  }
+  await withRuntimeMutationLock(runtimeKey, () => invalidateRuntimeRecord(runtimeKey, record));
+  return true;
 }
 
 export async function invalidateRuntimeSettings(

@@ -15,6 +15,10 @@ export type DesktopEvent =
       isError: boolean;
     }
   | {
+      type: "internal-thread-update";
+      sessionPath: string;
+    }
+  | {
       type: "thread-update";
       reason: "start" | "update" | "end" | "external" | "compaction-start" | "compaction";
       projectId: string;

@@ -39,6 +39,24 @@ function isAllowedRuntimeFile(repoPath: string) {
   return allowedPiRuntimeImportPrefixes.some((prefix) => repoPath.startsWith(prefix));
 }
 
+function resolveImportSpecifier(importerPath: string, specifier: string) {
+  if (!specifier.startsWith(".")) return specifier;
+  return toRepoPath(path.resolve(path.dirname(importerPath), specifier));
+}
+
+function isForbiddenRuntimeSpecifier(resolvedSpecifier: string) {
+  return (
+    resolvedSpecifier === "./pi-module.cts" ||
+    resolvedSpecifier === "../pi-module.cts" ||
+    resolvedSpecifier.includes("/pi-module.cts") ||
+    resolvedSpecifier.startsWith("desktop/runtime/composer-service.cts") ||
+    resolvedSpecifier.startsWith("desktop/runtime/composer-state.cts") ||
+    resolvedSpecifier.startsWith("desktop/runtime/runtime-registry.cts") ||
+    resolvedSpecifier.startsWith("desktop/runtime/thread-publisher.cts") ||
+    resolvedSpecifier.startsWith("@mariozechner/pi-")
+  );
+}
+
 describe("Pi runtime import boundary", () => {
   it("keeps Pi SDK/runtime imports out of Electron-main-facing desktop modules", () => {
     const violations = walkFiles(desktopRoot)
@@ -52,17 +70,15 @@ describe("Pi runtime import boundary", () => {
         ];
         return matches
           .map((match) => match[1])
-          .filter(
-            (specifier) =>
-              specifier === "./pi-module.cts" ||
-              specifier === "../pi-module.cts" ||
-              specifier.includes("/pi-module.cts") ||
-              specifier.includes("/runtime/thread-publisher.cts") ||
-              specifier.includes("/runtime/composer-state.cts") ||
-              specifier.includes("/runtime/runtime-registry.cts") ||
-              specifier.startsWith("@mariozechner/pi-"),
-          )
-          .map((specifier) => `${repoPath} imports ${specifier}`);
+          .map((specifier) => ({
+            specifier,
+            resolvedSpecifier: resolveImportSpecifier(filePath, specifier),
+          }))
+          .filter(({ resolvedSpecifier }) => isForbiddenRuntimeSpecifier(resolvedSpecifier))
+          .map(
+            ({ specifier, resolvedSpecifier }) =>
+              `${repoPath} imports ${specifier} (${resolvedSpecifier})`,
+          );
       });
 
     expect(violations).toEqual([]);
