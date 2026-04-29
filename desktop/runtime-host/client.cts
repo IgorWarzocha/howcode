@@ -220,7 +220,8 @@ function getRequestSessionPath<TName extends RuntimeHostRequestName>(
 ) {
   if (name === "startNewThread" || name === "selectProjectRuntime") return null;
   if ("request" in payload) return payload.request.sessionPath ?? null;
-  return payload.sessionPath ?? null;
+  if ("sessionPath" in payload) return payload.sessionPath ?? null;
+  return null;
 }
 
 function shouldUseThreadHost<TName extends RuntimeHostRequestName>(

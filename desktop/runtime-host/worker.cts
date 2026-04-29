@@ -6,15 +6,26 @@ import type {
 import {
   dequeueComposerPrompt,
   getComposerSlashCommands,
+  generateGitCommitMessage,
   getComposerState,
+  getPiSessionStorage,
+  installPiPackage,
+  listConfiguredPiPackages,
+  loadPiSettings,
+  loadThreadSnapshot,
   openThreadRuntime,
   selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
   setRuntimeHostEventSink,
+  closeSkillCreatorSession,
+  continueSkillCreatorSession,
   startNewThread,
+  startSkillCreatorSession,
   stopComposerRun,
+  removePiPackage,
+  updatePiSetting,
 } from "./host-service.cts";
 
 setRuntimeHostEventSink((event) => {
@@ -49,6 +60,68 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"openThreadRuntime">["payload"];
       return (await openThreadRuntime(payload.request)) as RuntimeHostResponseMap[TName];
+    }
+    case "getPiSessionStorage": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"getPiSessionStorage">["payload"];
+      return (await getPiSessionStorage(payload.projectPath)) as RuntimeHostResponseMap[TName];
+    }
+    case "loadPiSettings": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"loadPiSettings">["payload"];
+      return (await loadPiSettings(payload.projectPath)) as RuntimeHostResponseMap[TName];
+    }
+    case "updatePiSetting": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"updatePiSetting">["payload"];
+      return (await updatePiSetting(
+        payload.key,
+        payload.value,
+        payload.projectPath,
+      )) as RuntimeHostResponseMap[TName];
+    }
+    case "listConfiguredPiPackages": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"listConfiguredPiPackages">["payload"];
+      return (await listConfiguredPiPackages(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "installPiPackage": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"installPiPackage">["payload"];
+      return (await installPiPackage(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "removePiPackage": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"removePiPackage">["payload"];
+      return (await removePiPackage(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "loadThreadSnapshot": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"loadThreadSnapshot">["payload"];
+      return (await loadThreadSnapshot(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "startSkillCreatorSession": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"startSkillCreatorSession">["payload"];
+      return (await startSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "continueSkillCreatorSession": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"continueSkillCreatorSession">["payload"];
+      return (await continueSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "closeSkillCreatorSession": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"closeSkillCreatorSession">["payload"];
+      return (await closeSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "generateGitCommitMessage": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"generateGitCommitMessage">["payload"];
+      return (await generateGitCommitMessage(
+        payload.request,
+        payload.context,
+      )) as RuntimeHostResponseMap[TName];
     }
     case "setComposerModel": {
       const payload =

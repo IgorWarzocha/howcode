@@ -1,3 +1,4 @@
+import type { CommitMessageContext } from "../project-git.cts";
 import type {
   ComposerSlashCommand,
   ComposerState,
@@ -6,6 +7,11 @@ import type {
   ComposerThinkingLevel,
   DesktopEvent,
   ComposerAttachment,
+  PiSettings,
+  PiConfiguredPackage,
+  PiPackageMutationResult,
+  ThreadData,
+  SkillCreatorSessionState,
 } from "../../shared/desktop-contracts.ts";
 
 export type RuntimeHostRequestMap = {
@@ -14,6 +20,22 @@ export type RuntimeHostRequestMap = {
   startNewThread: { request: ComposerStateRequest };
   selectProjectRuntime: { request: ComposerStateRequest };
   openThreadRuntime: { request: ComposerStateRequest };
+  getPiSessionStorage: { projectPath?: string | null };
+  loadPiSettings: { projectPath?: string | null };
+  updatePiSetting: { key: keyof PiSettings; value: unknown; projectPath?: string | null };
+  listConfiguredPiPackages: { projectPath?: string | null };
+  installPiPackage: {
+    source: string;
+    kind?: "npm" | "git";
+    local?: boolean;
+    projectPath?: string | null;
+  };
+  removePiPackage: { source: string; local?: boolean; projectPath?: string | null };
+  loadThreadSnapshot: { sessionPath: string; historyCompactions?: number };
+  startSkillCreatorSession: { prompt: string; local?: boolean; projectPath?: string | null };
+  continueSkillCreatorSession: { sessionId: string; prompt: string };
+  closeSkillCreatorSession: { sessionId: string };
+  generateGitCommitMessage: { request: ComposerStateRequest; context: CommitMessageContext };
   setComposerModel: { request: ComposerStateRequest; provider: string; modelId: string };
   setComposerThinkingLevel: { request: ComposerStateRequest; level: ComposerThinkingLevel };
   sendComposerPrompt: ComposerStateRequest & {
@@ -40,6 +62,17 @@ export type RuntimeHostResponseMap = {
   };
   selectProjectRuntime: ComposerState;
   openThreadRuntime: ComposerState;
+  getPiSessionStorage: { agentDir: string; sessionDir: string };
+  loadPiSettings: PiSettings;
+  updatePiSetting: PiSettings;
+  listConfiguredPiPackages: PiConfiguredPackage[];
+  installPiPackage: PiPackageMutationResult;
+  removePiPackage: PiPackageMutationResult;
+  loadThreadSnapshot: { projectId: string; threadId: string; thread: ThreadData };
+  startSkillCreatorSession: SkillCreatorSessionState;
+  continueSkillCreatorSession: SkillCreatorSessionState;
+  closeSkillCreatorSession: { ok: boolean };
+  generateGitCommitMessage: string | null;
   setComposerModel: { ok: true };
   setComposerThinkingLevel: { ok: true };
   sendComposerPrompt: "sent" | "stopped";

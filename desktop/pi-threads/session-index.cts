@@ -3,7 +3,7 @@ import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { normalizeThreadTitle } from "../../shared/pi-message-mapper.ts";
-import { getPiModule } from "../pi-module.cts";
+import { invokeRuntimeHost } from "../runtime-host/client.cts";
 import { mapWithConcurrency } from "./map-with-concurrency.cts";
 
 export type SessionSummary = {
@@ -199,8 +199,8 @@ export function mapSessionSummaryToRecord(cwd: string, session: SessionSummary) 
 }
 
 export async function listAllSessionsStrict(): Promise<SessionIndexReadResult> {
-  const { getAgentDir } = await getPiModule();
-  const sessionsDir = path.join(getAgentDir(), "sessions");
+  const { agentDir } = await invokeRuntimeHost("getPiSessionStorage", {});
+  const sessionsDir = path.join(agentDir, "sessions");
   const sessionDirectories = (await readDirectoryIfPresent(sessionsDir)).filter((entry) =>
     entry.isDirectory(),
   );

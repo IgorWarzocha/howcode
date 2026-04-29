@@ -21,6 +21,22 @@ import {
   setThreadStreamingState,
 } from "../../shared/thread-data.ts";
 import { getPiModule } from "../pi-module.cts";
+import { generateGitCommitMessage } from "./git-commit-message-service.cts";
+import { listConfiguredPiPackages as listConfiguredPiPackagesInHost } from "../pi-packages/configured.cts";
+import {
+  installPiPackage as installPiPackageInHost,
+  removePiPackage as removePiPackageInHost,
+} from "../pi-packages/mutations.cts";
+import {
+  getPiSessionStorage,
+  loadPiSettingsInHost,
+  updatePiSettingInHost,
+} from "./settings-service.cts";
+import {
+  closeSkillCreatorSession,
+  continueSkillCreatorSession,
+  startSkillCreatorSession,
+} from "./skill-creator-service.cts";
 import {
   bindHeadlessAgentSessionExtensions,
   discoverHeadlessAgentSessionResources,
@@ -824,3 +840,66 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
   });
   return composer;
 }
+
+export { getPiSessionStorage };
+
+export function loadPiSettings(projectPath?: string | null) {
+  return loadPiSettingsInHost(projectPath);
+}
+
+export function updatePiSetting(
+  key: Parameters<typeof updatePiSettingInHost>[0],
+  value: unknown,
+  projectPath?: string | null,
+) {
+  return updatePiSettingInHost(key, value, projectPath);
+}
+
+export function listConfiguredPiPackages(request: { projectPath?: string | null } = {}) {
+  return listConfiguredPiPackagesInHost(request);
+}
+
+export function installPiPackage(request: {
+  source: string;
+  kind?: "npm" | "git";
+  local?: boolean;
+  projectPath?: string | null;
+}) {
+  return installPiPackageInHost(request);
+}
+
+export function removePiPackage(request: {
+  source: string;
+  local?: boolean;
+  projectPath?: string | null;
+}) {
+  return removePiPackageInHost(request);
+}
+
+export async function loadThreadSnapshot(request: {
+  sessionPath: string;
+  historyCompactions?: number;
+}) {
+  const { SessionManager } = await getPiModule();
+  const manager = SessionManager.open(request.sessionPath);
+  const historySlice = buildThreadHistorySlice(
+    [...(manager.getBranch() as SessionPathEntry[])],
+    request.historyCompactions ?? 0,
+  );
+
+  return {
+    projectId: manager.getCwd(),
+    threadId: manager.getSessionId(),
+    thread: buildThreadData({
+      sessionPath: request.sessionPath,
+      sourceMessages: historySlice.sourceMessages,
+      previousMessageCount: historySlice.previousMessageCount,
+      isStreaming: false,
+      isCompacting: false,
+    }),
+  };
+}
+
+export { closeSkillCreatorSession, continueSkillCreatorSession, startSkillCreatorSession };
+
+export { generateGitCommitMessage };

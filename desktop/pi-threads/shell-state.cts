@@ -2,7 +2,7 @@ import type { ShellState } from "../../shared/desktop-contracts.ts";
 import { loadAppSettings } from "../app-settings.cts";
 import { loadPiSettings } from "../pi-settings.cts";
 import { getComposerState } from "../pi-desktop-runtime.cts";
-import { getPiModule } from "../pi-module.cts";
+import { invokeRuntimeHost } from "../runtime-host/client.cts";
 import { ensureProject, listProjects } from "../thread-state-db.cts";
 import {
   enrichProjectsWithResolvedIds,
@@ -10,25 +10,13 @@ import {
 } from "./project-paths.cts";
 import { scheduleShellIndexSync } from "./shell-index.cts";
 
-type SessionStorage = {
-  agentDir: string;
-  sessionDir: string | null;
-};
+type SessionStorage = { agentDir: string; sessionDir: string };
 
-async function getSessionStorage(cwd: string): Promise<SessionStorage> {
-  const { SettingsManager, getAgentDir } = await getPiModule();
-  const agentDir = getAgentDir();
-  const settingsManager = SettingsManager.create(cwd, agentDir);
-  const configuredSessionDir = settingsManager.getSessionDir();
-
-  return {
-    agentDir,
-    sessionDir: configuredSessionDir ?? null,
-  };
+function getSessionStorage(cwd: string): Promise<SessionStorage> {
+  return invokeRuntimeHost("getPiSessionStorage", { projectPath: cwd });
 }
 
 export async function loadShellState(cwd: string): Promise<ShellState> {
-  const { SessionManager } = await getPiModule();
   const { agentDir, sessionDir } = await getSessionStorage(cwd);
 
   ensureProject(cwd);
@@ -48,7 +36,7 @@ export async function loadShellState(cwd: string): Promise<ShellState> {
     cwd,
     resolvedCwd,
     agentDir,
-    sessionDir: sessionDir ?? SessionManager.create(cwd).getSessionDir(),
+    sessionDir,
     appSettings,
     piSettings,
     composer,
