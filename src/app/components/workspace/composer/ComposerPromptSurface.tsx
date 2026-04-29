@@ -1,4 +1,4 @@
-import { Paperclip, Send, Square, X } from "lucide-react";
+import { Loader2, Paperclip, Send, Square, X } from "lucide-react";
 import { type ClipboardEvent, type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -255,9 +255,9 @@ export function ComposerPromptSurface({
     };
   }, [handleDrop]);
 
+  const extensionRunning = isSending && !composerIsStreaming && !isCompacting;
   const placeholderText =
     errorMessage ??
-    (isSending && !composerIsStreaming && !isCompacting ? "Pi extension running…" : null) ??
     (activeView === "thread"
       ? "Ask for follow-up changes"
       : "Ask Pi anything, @ to add files, / for commands, $ for skills");
@@ -443,13 +443,7 @@ export function ComposerPromptSurface({
                   ariaExpanded={slashCommands.open}
                   placeholder={placeholderText}
                   placeholderTone={errorMessage ? "error" : "muted"}
-                  statusMessage={
-                    errorMessage && draft.length > 0
-                      ? errorMessage
-                      : isSending && !composerIsStreaming && !isCompacting
-                        ? "Pi extension running…"
-                        : null
-                  }
+                  statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                   reservedLineCount={1}
                   onHeightChange={onLayoutChange}
                 />
@@ -480,19 +474,26 @@ export function ComposerPromptSurface({
               >
                 <Square size={11} fill="currentColor" />
               </button>
-              <button
-                type="button"
-                className={cn(
-                  compactIconButtonClass,
-                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
-                )}
-                onClick={slashCommands.submit}
-                disabled={!canSend}
-                aria-label={isSending && !composerIsStreaming ? "Pi extension running" : "Send"}
-                data-tooltip={isSending && !composerIsStreaming ? "Pi extension running" : "Send"}
-              >
-                <Send size={14} />
-              </button>
+              {extensionRunning ? (
+                <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Pi extension running</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={cn(
+                    compactIconButtonClass,
+                    "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
+                  )}
+                  onClick={slashCommands.submit}
+                  disabled={!canSend}
+                  aria-label="Send"
+                  data-tooltip="Send"
+                >
+                  <Send size={14} />
+                </button>
+              )}
             </div>
           </div>
         </div>
