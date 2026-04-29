@@ -18,6 +18,12 @@ type PiThemeModule = {
 
 let themeModulePromise: Promise<PiThemeModule> | null = null;
 
+async function resolvePiPackageRootFromImport() {
+  const entryUrl = await import.meta.resolve("@mariozechner/pi-coding-agent");
+  const entryPath = fileURLToPath(entryUrl);
+  return path.resolve(path.dirname(entryPath), "..");
+}
+
 function findPiPackageRoot() {
   let directory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,11 +43,8 @@ function findPiPackageRoot() {
 
 async function getPiThemeModule() {
   if (!themeModulePromise) {
-    const themeModulePath = path.join(
-      findPiPackageRoot(),
-      "dist",
-      "modes/interactive/theme/theme.js",
-    );
+    const piPackageRoot = await resolvePiPackageRootFromImport().catch(() => findPiPackageRoot());
+    const themeModulePath = path.join(piPackageRoot, "dist", "modes/interactive/theme/theme.js");
     themeModulePromise = import(pathToFileURL(themeModulePath).href) as Promise<PiThemeModule>;
   }
 
