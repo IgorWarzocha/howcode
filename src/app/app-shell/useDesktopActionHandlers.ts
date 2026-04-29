@@ -9,6 +9,7 @@ import type {
   DesktopActionInvoker,
   DesktopActionResult,
   ProjectGitState,
+  ThreadData,
 } from "../desktop/types";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import type { View } from "../types";
@@ -40,6 +41,7 @@ type UseDesktopActionHandlersArgs = {
   selectedSessionPath: string | null;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   showToast: (message: string) => void;
   workspaceState: WorkspaceState;
@@ -64,7 +66,8 @@ function shouldShowGlobalActionError(action: DesktopAction) {
     action === "composer.send" ||
     action === "composer.stop" ||
     action === "workspace.commit" ||
-    action === "workspace.commit-options"
+    action === "workspace.commit-options" ||
+    action === "workspace.diff-preferences"
   );
 }
 
@@ -81,6 +84,7 @@ export function useDesktopActionHandlers({
   selectedSessionPath,
   setArchivedThreads,
   setComposerState,
+  setLiveThreadData,
   setProjectGitState,
   showToast,
   workspaceState,
@@ -118,6 +122,7 @@ export function useDesktopActionHandlers({
         refreshShellState,
         setArchivedThreads,
         setComposerState,
+        setLiveThreadData,
         setProjectGitState,
         queryClient,
       });
@@ -142,6 +147,7 @@ export function useDesktopActionHandlers({
       selectedSessionPath,
       setArchivedThreads,
       setComposerState,
+      setLiveThreadData,
       setProjectGitState,
       showToast,
       workspaceState,

@@ -46,6 +46,8 @@ export type {
   ProjectDeletionMode,
   ProjectCommitEntry,
   ProjectDiffBaseline,
+  ProjectDiffDefaultBaseline,
+  ProjectDiffRenderMode,
   ProjectDiffResolvedBaseline,
   ProjectDiffResult,
   ProjectDiffStatsResult,

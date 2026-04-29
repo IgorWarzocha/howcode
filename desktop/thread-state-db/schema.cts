@@ -157,6 +157,8 @@ export function ensureThreadStateSchema(database: Database) {
       running INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
+      diff_baseline_json TEXT,
+      diff_render_mode TEXT,
       last_modified_ms INTEGER NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -231,6 +233,14 @@ export function ensureThreadStateSchema(database: Database) {
 
   if (!hasColumn(database, "threads", "running")) {
     database.exec("ALTER TABLE threads ADD COLUMN running INTEGER NOT NULL DEFAULT 0");
+  }
+
+  if (!hasColumn(database, "threads", "diff_baseline_json")) {
+    database.exec("ALTER TABLE threads ADD COLUMN diff_baseline_json TEXT");
+  }
+
+  if (!hasColumn(database, "threads", "diff_render_mode")) {
+    database.exec("ALTER TABLE threads ADD COLUMN diff_render_mode TEXT");
   }
 
   if (!hasColumn(database, "inbox_items", "last_user_prompt")) {

@@ -1,5 +1,13 @@
 import type { GitOpsMode } from "./desktop-settings-contracts";
 
+export type ProjectDiffRenderMode = "stacked" | "split";
+export type ProjectDiffDefaultBaseline =
+  | { kind: "head" }
+  | { kind: "previous" }
+  | { kind: "yesterday" }
+  | { kind: "main-branch" }
+  | { kind: "dev-branch" };
+
 export type ProjectGitState = {
   projectId: string;
   isGitRepo: boolean;
@@ -23,6 +31,11 @@ export type ProjectDiffBaseline =
   | { kind: "main-branch" }
   | { kind: "dev-branch" }
   | { kind: "commit"; sha: string };
+
+export type ProjectDiffPreferences = {
+  baseline: ProjectDiffBaseline | null;
+  renderMode: ProjectDiffRenderMode | null;
+};
 
 export type ProjectDiffResolvedBaseline = {
   kind: ProjectDiffBaseline["kind"];

@@ -5,6 +5,8 @@ import type {
   DictationModelId,
   GitOpsMode,
   ModelSelection,
+  ProjectDiffDefaultBaseline,
+  ProjectDiffRenderMode,
   ProjectDeletionMode,
 } from "../shared/desktop-contracts.ts";
 import {
@@ -26,6 +28,8 @@ const projectImportStateKey = "projectImportState";
 const preferredProjectLocationKey = "preferredProjectLocation";
 const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
 const gitOpsDefaultModeKey = "gitOpsDefaultMode";
+const gitDiffBaselineDefaultKey = "gitDiffBaselineDefault";
+const gitDiffRenderModeDefaultKey = "gitDiffRenderModeDefault";
 const projectDeletionModeKey = "projectDeletionMode";
 const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 const piTuiTakeoverKey = "piTuiTakeover";
@@ -155,6 +159,46 @@ function parseGitOpsModePreference(valueJson: string | null | undefined): GitOps
   try {
     const parsed = JSON.parse(valueJson) as unknown;
     return parsed === "commit" || parsed === "commit-push" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseGitDiffBaselineDefaultPreference(
+  valueJson: string | null | undefined,
+): ProjectDiffDefaultBaseline | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+    const baseline = parsed as { kind?: unknown };
+    return baseline.kind === "head" ||
+      baseline.kind === "previous" ||
+      baseline.kind === "yesterday" ||
+      baseline.kind === "main-branch" ||
+      baseline.kind === "dev-branch"
+      ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseGitDiffRenderModePreference(
+  valueJson: string | null | undefined,
+): ProjectDiffRenderMode | null {
+  if (!valueJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(valueJson) as unknown;
+    return parsed === "stacked" || parsed === "split" ? parsed : null;
   } catch {
     return null;
   }
@@ -314,6 +358,24 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(gitOpsDefaultModeKey) as PreferenceRow | undefined;
+  const gitDiffBaselineDefaultRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitDiffBaselineDefaultKey) as PreferenceRow | undefined;
+  const gitDiffRenderModeDefaultRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitDiffRenderModeDefaultKey) as PreferenceRow | undefined;
   const useAgentsSkillsPathsRow = db
     .prepare(
       `
@@ -382,6 +444,11 @@ export function loadAppSettings(): AppSettings {
     initializeGitOnProjectCreate:
       parseBooleanPreference(initializeGitOnProjectCreateRow?.valueJson) ?? false,
     gitOpsDefaultMode: parseGitOpsModePreference(gitOpsDefaultModeRow?.valueJson) ?? "commit",
+    gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(
+      gitDiffBaselineDefaultRow?.valueJson,
+    ) ?? { kind: "head" },
+    gitDiffRenderModeDefault:
+      parseGitDiffRenderModePreference(gitDiffRenderModeDefaultRow?.valueJson) ?? "stacked",
     projectDeletionMode:
       parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
@@ -496,6 +563,24 @@ export function setGitOpsDefaultMode(mode: GitOpsMode) {
   }
 
   writeAppPreference(gitOpsDefaultModeKey, JSON.stringify(mode));
+}
+
+export function setGitDiffBaselineDefault(baseline: ProjectDiffDefaultBaseline) {
+  if (baseline.kind === "head") {
+    deleteAppPreference(gitDiffBaselineDefaultKey);
+    return;
+  }
+
+  writeAppPreference(gitDiffBaselineDefaultKey, JSON.stringify(baseline));
+}
+
+export function setGitDiffRenderModeDefault(mode: ProjectDiffRenderMode) {
+  if (mode === "stacked") {
+    deleteAppPreference(gitDiffRenderModeDefaultKey);
+    return;
+  }
+
+  writeAppPreference(gitDiffRenderModeDefaultKey, JSON.stringify(mode));
 }
 
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {

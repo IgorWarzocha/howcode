@@ -4,6 +4,10 @@ import type {
   ComposerThinkingLevel,
 } from "./desktop-composer-contracts";
 import type { DictationModelId } from "./desktop-dictation-contracts";
+import type {
+  ProjectDiffDefaultBaseline,
+  ProjectDiffRenderMode,
+} from "./desktop-project-git-contracts";
 import type { Project } from "./desktop-thread-contracts";
 
 export type ModelSelection = {
@@ -28,6 +32,8 @@ export type AppSettings = {
   preferredProjectLocation: string | null;
   initializeGitOnProjectCreate: boolean;
   gitOpsDefaultMode: GitOpsMode;
+  gitDiffBaselineDefault: ProjectDiffDefaultBaseline;
+  gitDiffRenderModeDefault: ProjectDiffRenderMode;
   projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
   piTuiTakeover: boolean;

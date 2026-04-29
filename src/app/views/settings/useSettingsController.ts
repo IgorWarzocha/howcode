@@ -234,6 +234,16 @@ export function useSettingsController({
         key: "gitOpsDefaultMode",
         value,
       }),
+    setGitDiffBaselineDefault: (value: AppSettings["gitDiffBaselineDefault"]) =>
+      void onAction("settings.update", {
+        key: "gitDiffBaselineDefault",
+        value,
+      }),
+    setGitDiffRenderModeDefault: (value: AppSettings["gitDiffRenderModeDefault"]) =>
+      void onAction("settings.update", {
+        key: "gitDiffRenderModeDefault",
+        value,
+      }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
       void onAction("pi-settings.update", {
         piSettingsKey: key,

@@ -32,6 +32,7 @@ export const implementedDesktopActions = [
   "inbox.dismiss",
   "workspace.commit",
   "workspace.commit-options",
+  "workspace.diff-preferences",
   "settings.update",
   "pi-settings.update",
   "projects.import.scan",

@@ -74,6 +74,11 @@ export type ThreadPathRow = {
   sessionPath: string;
 };
 
+export type ThreadDiffPreferencesRow = {
+  diffBaselineJson: string | null;
+  diffRenderMode: string | null;
+};
+
 export type ThreadCwdRow = {
   cwd: string;
 };

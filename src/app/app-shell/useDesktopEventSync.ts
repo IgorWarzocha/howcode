@@ -104,7 +104,22 @@ export function useDesktopEventSync({
         return;
       }
 
-      queryClient.setQueryData(desktopQueryKeys.thread(event.sessionPath), event.thread);
+      let threadWithPreferences = event.thread;
+      let hadCachedThread = false;
+      queryClient.setQueryData(desktopQueryKeys.thread(event.sessionPath), (current: unknown) => {
+        const currentThread = current as ThreadData | null | undefined;
+        hadCachedThread = Boolean(currentThread);
+        threadWithPreferences = {
+          ...event.thread,
+          diffPreferences: event.thread.diffPreferences ?? currentThread?.diffPreferences,
+        };
+        return threadWithPreferences;
+      });
+      if (!event.thread.diffPreferences && !hadCachedThread) {
+        void queryClient.invalidateQueries({
+          queryKey: desktopQueryKeys.threadPrefix(event.sessionPath),
+        });
+      }
 
       const isVisibleThreadUpdate = event.sessionPath === visibleSessionPath;
       const isCompactionThreadUpdate =
@@ -112,7 +127,10 @@ export function useDesktopEventSync({
 
       setLiveThreadData((current) =>
         isVisibleThreadUpdate || current?.sessionPath === event.sessionPath
-          ? event.thread
+          ? {
+              ...threadWithPreferences,
+              diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
+            }
           : current,
       );
 
