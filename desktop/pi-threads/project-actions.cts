@@ -9,7 +9,7 @@ import {
   getProjectIds,
   getProjectName,
 } from "../../shared/pi-thread-action-payloads.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { selectProjectRuntime } from "../pi-desktop-runtime.cts";
 import { createProject, createProjectFromGitHubUrl } from "../project-create.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";

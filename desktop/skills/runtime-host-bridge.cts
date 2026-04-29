@@ -1,5 +1,8 @@
 import type { PiConfiguredSkill, PiSkillMutationResult } from "../../shared/desktop-contracts.ts";
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from "../runtime-host/client.cts";
+import {
+  invalidateRuntimeHostSettings,
+  invokeRuntimeHost,
+} from "../runtime-host/client-bridge.cts";
 
 export function listConfiguredPiSkills(
   request: { projectPath?: string | null } = {},

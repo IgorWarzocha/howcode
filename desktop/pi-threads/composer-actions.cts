@@ -15,7 +15,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
-import { invalidateRuntimeHostSettings } from "../runtime-host/client.cts";
+import { invalidateRuntimeHostSettings } from "../runtime-host/client-bridge.cts";
 import {
   dequeueComposerPrompt,
   sendComposerPrompt,

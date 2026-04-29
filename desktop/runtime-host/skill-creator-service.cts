@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Message, SkillCreatorSessionState } from "../../shared/desktop-contracts.ts";
 import { mapAgentMessagesToUiMessages } from "../../shared/pi-message-mapper.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { getPiModule } from "../pi-module.cts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
 import {

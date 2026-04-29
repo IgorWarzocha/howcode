@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 
 export async function pathExists(targetPath: string) {
   try {

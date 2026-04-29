@@ -2,7 +2,10 @@ import type {
   PiPackageMutationResult,
   PiConfiguredPackage,
 } from "../../shared/desktop-contracts.ts";
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from "../runtime-host/client.cts";
+import {
+  invalidateRuntimeHostSettings,
+  invokeRuntimeHost,
+} from "../runtime-host/client-bridge.cts";
 
 export function listConfiguredPiPackages(
   request: { projectPath?: string | null } = {},

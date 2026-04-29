@@ -21,7 +21,7 @@ import {
   markInternalThreadUpdate,
   rememberLiveThread,
 } from "./runtime/live-thread-store.cts";
-import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client.cts";
+import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
 
 export { getLiveThread };

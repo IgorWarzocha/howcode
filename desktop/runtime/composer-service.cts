@@ -8,7 +8,7 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
-import { loadAppSettings } from "../app-settings.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { getPiModule } from "../pi-module.cts";
 import { buildComposerAttachmentPrompt } from "./attachments.cts";
 import {

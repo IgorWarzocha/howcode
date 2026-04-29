@@ -1,5 +1,5 @@
 import type { PiSettings } from "../shared/desktop-contracts.ts";
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from "./runtime-host/client.cts";
+import { invalidateRuntimeHostSettings, invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
 
 export type PiSettingsKey = keyof PiSettings;
 
