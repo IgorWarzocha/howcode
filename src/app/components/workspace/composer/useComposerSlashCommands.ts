@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   appSettingsSlashCommand,
   fallbackAppSlashCommands,
@@ -79,6 +79,10 @@ export function useComposerSlashCommands({
   const filter = draft === dismissedDraft ? null : candidateFilter;
   const open = filter !== null;
   const commandScopeKey = `${projectId}\0${sessionPath ?? ""}`;
+  const draftRef = useRef(draft);
+  const commandScopeKeyRef = useRef(commandScopeKey);
+  draftRef.current = draft;
+  commandScopeKeyRef.current = commandScopeKey;
   const filteredCommands = useMemo(() => {
     if (filter === null) {
       return [];
@@ -159,17 +163,27 @@ export function useComposerSlashCommands({
         return;
       }
       if (!draftCommand && sendExtensionCommand && (loading || commands.length === 0)) {
+        const submittedDraft = draft;
+        const submittedScopeKey = commandScopeKey;
         void getComposerSlashCommandsQuery({ projectId, sessionPath })
           .then((nextCommands) => {
-            const commandName = draft.trim().slice(1).split(/\s+/, 1)[0];
+            if (
+              draftRef.current !== submittedDraft ||
+              commandScopeKeyRef.current !== submittedScopeKey
+            ) {
+              return;
+            }
+            const commandName = submittedDraft.trim().slice(1).split(/\s+/, 1)[0];
             const resolvedCommand = nextCommands.find((command) => command.name === commandName);
             if (resolvedCommand?.source === "extension") {
               sendExtensionCommand();
-            } else {
+            } else if (resolvedCommand) {
               send();
             }
           })
-          .catch(() => send());
+          .catch(() => {
+            // Keep slash text in the editor rather than leaking an unresolved command to the model.
+          });
         return;
       }
     }

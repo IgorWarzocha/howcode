@@ -239,7 +239,9 @@ export async function refreshHeadlessAgentSessionExtensionBindings(
 ) {
   bindHowcodeContextFilter(session);
   bindHeadlessCommandAbort(session, options);
-  await applyHeadlessPiTheme(session);
+  await applyHeadlessPiTheme(session).catch((error) => {
+    console.warn("Failed to initialize headless Pi theme", error);
+  });
 }
 
 export async function bindHeadlessAgentSessionExtensions(

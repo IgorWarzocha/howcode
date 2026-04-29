@@ -37,9 +37,14 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
     })),
   withRuntimeMutationLock,
   afterReload: (runtime) => refreshRuntimeExtensionBindings(runtime),
+  isRuntimeBusy: isHowcodeRuntimeBusy,
   buildComposerState,
   publishComposerUpdate,
 });
+
+function isHowcodeRuntimeBusy(runtime: PiRuntime) {
+  return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime);
+}
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
@@ -72,7 +77,7 @@ function scheduleRuntimeDisposal(runtimeKey: string) {
 
       try {
         const runtime = await record.runtimePromise;
-        if (isRuntimeBusy(runtime)) {
+        if (isHowcodeRuntimeBusy(runtime)) {
           scheduleRuntimeDisposal(runtimeKey);
           return;
         }
@@ -409,7 +414,7 @@ export async function getOrCreateRuntimeForSessionPath(
     }
 
     const runtime = await existingRuntime.runtimePromise;
-    if (!isRuntimeBusy(runtime)) {
+    if (!isHowcodeRuntimeBusy(runtime)) {
       await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     }
     return runtime;

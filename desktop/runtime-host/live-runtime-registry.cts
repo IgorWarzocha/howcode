@@ -57,7 +57,11 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
       if (!currentRecord || currentRecord !== record) return;
       try {
         const runtime = await record.runtimePromise;
-        if (runtime.session.isStreaming || runtime.session.isCompacting) {
+        if (
+          runtime.session.isStreaming ||
+          runtime.session.isCompacting ||
+          isRuntimeExtensionCommandRunning(runtime)
+        ) {
           scheduleRuntimeDisposal(runtimeKey);
           return;
         }
@@ -332,7 +336,12 @@ async function reloadRuntimeSettings(
   runtime: PiRuntime,
   staleGeneration: number,
 ) {
-  if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
+  if (
+    runtime.session.isStreaming ||
+    runtime.session.isCompacting ||
+    isRuntimeExtensionCommandRunning(runtime)
+  )
+    return false;
   await runtime.session.reload();
   await refreshRuntimeExtensionBindings(runtime);
   const composer = await buildComposerState(runtime);

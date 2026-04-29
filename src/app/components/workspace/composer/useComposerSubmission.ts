@@ -379,7 +379,7 @@ export function useComposerSubmission({
   ]);
 
   const stop = useCallback(async () => {
-    if ((!isStreaming && !extensionCommandRunning) || isSending) {
+    if ((!isStreaming && !extensionCommandRunning) || isSending || !sessionPath) {
       return;
     }
 

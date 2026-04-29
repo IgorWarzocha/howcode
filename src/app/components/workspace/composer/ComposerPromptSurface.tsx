@@ -473,7 +473,7 @@ export function ComposerPromptSurface({
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={() => void stop()}
-                disabled={(!composerIsStreaming && !extensionRunning) || isSending}
+                disabled={(!composerIsStreaming && !extensionRunning) || isSending || !sessionPath}
                 aria-label="Stop Pi"
                 data-tooltip="Stop Pi"
               >
