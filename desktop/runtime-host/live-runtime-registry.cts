@@ -116,9 +116,9 @@ async function createRuntime(options: {
       cancelLiveThreadUpdate(runtime);
       void publishThreadUpdate(runtime, "end");
       if (runtimeKey) {
-        void disposeStaleRuntimeIfIdle(runtimeKey).then((disposed) => {
-          if (!disposed) scheduleRuntimeDisposal(runtimeKey);
-        });
+        void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
+          scheduleRuntimeDisposal(runtimeKey),
+        );
       }
       return;
     }
@@ -148,9 +148,9 @@ async function createRuntime(options: {
           )
           .finally(() => {
             if (runtimeKey) {
-              void disposeStaleRuntimeIfIdle(runtimeKey).then((disposed) => {
-                if (!disposed) scheduleRuntimeDisposal(runtimeKey);
-              });
+              void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
+                scheduleRuntimeDisposal(runtimeKey),
+              );
             }
           });
       }, 0);
@@ -208,18 +208,9 @@ function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>)
 
 export function getCachedRuntimeForSessionPath(sessionPath: string) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
-  if (!persistedSessionPath || staleRuntimeKeys.has(persistedSessionPath)) return null;
-  return runtimeRecords.get(persistedSessionPath)?.runtimePromise ?? null;
-}
-
-export async function getCachedRuntimeForRead(sessionPath: string) {
-  const persistedSessionPath = getPersistedSessionPath(sessionPath);
-  if (!persistedSessionPath) return null;
-  const record = runtimeRecords.get(persistedSessionPath);
-  if (!record) return null;
-  if (!staleRuntimeKeys.has(persistedSessionPath)) return record.runtimePromise;
-  const runtime = await record.runtimePromise;
-  return runtime.session.isStreaming || runtime.session.isCompacting ? runtime : null;
+  return persistedSessionPath
+    ? (runtimeRecords.get(persistedSessionPath)?.runtimePromise ?? null)
+    : null;
 }
 
 export async function getOrCreateRuntimeForSessionPath(
@@ -231,16 +222,8 @@ export async function getOrCreateRuntimeForSessionPath(
     throw new Error("A persisted session path is required to open a live runtime.");
   const existingRuntime = runtimeRecords.get(persistedSessionPath);
   if (existingRuntime) {
-    const runtime = await existingRuntime.runtimePromise;
-    if (!staleRuntimeKeys.has(persistedSessionPath)) {
-      if (options.suspendDisposal) suspendRuntimeDisposal(persistedSessionPath);
-      return runtime;
-    }
-    if (runtime.session.isStreaming || runtime.session.isCompacting) {
-      if (options.suspendDisposal) suspendRuntimeDisposal(persistedSessionPath);
-      return runtime;
-    }
-    await invalidateRuntimeRecord(persistedSessionPath, existingRuntime);
+    if (options.suspendDisposal) suspendRuntimeDisposal(persistedSessionPath);
+    return await existingRuntime.runtimePromise;
   }
   const { SessionManager } = await getPiModule();
   const sessionManager = SessionManager.open(persistedSessionPath);
@@ -281,40 +264,56 @@ export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () =>
   }
 }
 
-async function invalidateRuntimeRecord(runtimeKey: string, record: RuntimeRecord) {
-  let runtime: PiRuntime;
+async function reloadRuntimeSettings(runtimeKey: string, runtime: PiRuntime) {
+  if (runtime.session.isStreaming || runtime.session.isCompacting) return false;
+  await runtime.session.reload();
+  const composer = await buildComposerState(runtime);
+  publishComposerUpdate(composer, {
+    projectId: runtime.cwd,
+    sessionPath: runtime.session.sessionFile ?? null,
+  });
+  staleRuntimeKeys.delete(runtimeKey);
+  return true;
+}
+
+export async function reloadRuntimeSettingsIfSafe(
+  sessionPath: string,
+  options: { useMutationLock?: boolean } = {},
+): Promise<boolean> {
+  const runtimeKey = getPersistedSessionPath(sessionPath);
+  if (!runtimeKey || !staleRuntimeKeys.has(runtimeKey)) return false;
+
+  if (options.useMutationLock ?? true) {
+    return await withRuntimeMutationLock(runtimeKey, () =>
+      reloadRuntimeSettingsIfSafe(runtimeKey, { useMutationLock: false }),
+    );
+  }
+
+  const runtimePromise = getCachedRuntimeForSessionPath(runtimeKey);
+  if (!runtimePromise) {
+    staleRuntimeKeys.delete(runtimeKey);
+    return false;
+  }
+
   try {
-    runtime = await record.runtimePromise;
+    return await reloadRuntimeSettings(runtimeKey, await runtimePromise);
+  } catch {
+    // Keep stale; next safe point retries.
+    return false;
+  }
+}
+
+async function markRuntimeRecordStale(runtimeKey: string, record: RuntimeRecord) {
+  staleRuntimeKeys.add(runtimeKey);
+  clearRuntimeDisposeTimeout(runtimeKey);
+  try {
+    await record.runtimePromise;
   } catch {
     if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
     staleRuntimeKeys.delete(runtimeKey);
     return;
   }
-
-  staleRuntimeKeys.add(runtimeKey);
-
-  if (runtime.session.isStreaming || runtime.session.isCompacting) {
-    // Do not kill an active run. The next end/compaction event schedules immediate idle disposal
-    // because this runtime key is marked stale.
-    clearRuntimeDisposeTimeout(runtimeKey);
-    return;
-  }
-
-  clearRuntimeDisposeTimeout(runtimeKey);
-  if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
-  staleRuntimeKeys.delete(runtimeKey);
-  runtime.session.dispose();
-}
-
-export async function disposeStaleRuntimeIfIdle(runtimeKey: string) {
-  if (!staleRuntimeKeys.has(runtimeKey)) return false;
-  const record = runtimeRecords.get(runtimeKey);
-  if (!record) {
-    staleRuntimeKeys.delete(runtimeKey);
-    return false;
-  }
-  await withRuntimeMutationLock(runtimeKey, () => invalidateRuntimeRecord(runtimeKey, record));
-  return true;
+  await reloadRuntimeSettingsIfSafe(runtimeKey);
 }
 
 export async function invalidateRuntimeSettings(
@@ -326,10 +325,7 @@ export async function invalidateRuntimeSettings(
   const sessionPath = getPersistedSessionPath(request.sessionPath);
   if (sessionPath) {
     const record = runtimeRecords.get(sessionPath);
-    if (record)
-      await withRuntimeMutationLock(sessionPath, () =>
-        invalidateRuntimeRecord(sessionPath, record),
-      );
+    if (record) await markRuntimeRecordStale(sessionPath, record);
     return { ok: true as const };
   }
 
@@ -347,7 +343,7 @@ export async function invalidateRuntimeSettings(
         return;
       }
       if (resolvedProjectPath && path.resolve(runtime.cwd) !== resolvedProjectPath) return;
-      await withRuntimeMutationLock(runtimeKey, () => invalidateRuntimeRecord(runtimeKey, record));
+      await markRuntimeRecordStale(runtimeKey, record);
     }),
   );
   return { ok: true as const };

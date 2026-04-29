@@ -28,9 +28,9 @@ import type { PiRuntime } from "../runtime/types.cts";
 import { publishComposerUpdate, publishThreadUpdate } from "./live-thread-publisher.cts";
 import {
   createRuntimeForNewSession,
-  getCachedRuntimeForRead,
   getCachedRuntimeForSessionPath,
   getOrCreateRuntimeForSessionPath,
+  reloadRuntimeSettingsIfSafe,
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
 } from "./live-runtime-registry.cts";
@@ -116,9 +116,11 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
 
 export async function getComposerState(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const runtime = persistedSessionPath ? await getCachedRuntimeForRead(persistedSessionPath) : null;
-  return runtime
-    ? await buildComposerState(runtime)
+  const runtimePromise = persistedSessionPath
+    ? getCachedRuntimeForSessionPath(persistedSessionPath)
+    : null;
+  return runtimePromise
+    ? await buildComposerState(await runtimePromise)
     : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
 }
 
@@ -148,6 +150,7 @@ export async function setComposerModel(
     return { ok: true as const };
   }
   await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
@@ -176,6 +179,7 @@ export async function setComposerThinkingLevel(
     return { ok: true as const };
   }
   await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
@@ -254,19 +258,19 @@ export async function sendComposerPrompt(
     const cachedRuntime = await cachedRuntimePromise;
     if (cachedRuntime.session.isStreaming) return await runSend(cachedRuntime);
   }
-  return await withRuntimeMutationLock(
-    persistedSessionPath,
-    async () =>
-      await runSend(
-        await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true }),
-      ),
-  );
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+    return await runSend(
+      await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true }),
+    );
+  });
 }
 
 export async function stopComposerRun(request: ComposerStateRequest) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   if (!persistedSessionPath) return { ok: true as const };
   await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
@@ -287,6 +291,7 @@ export async function dequeueComposerPrompt(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   if (!persistedSessionPath) return null;
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
