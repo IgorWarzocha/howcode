@@ -54,12 +54,12 @@ type ComposerPromptInputPanelProps = {
   onLayoutChange?: () => void;
   onOpenSettingsView: () => void;
   openPickerDirectory: Parameters<typeof ComposerFilePicker>[0]["onOpenDirectory"];
-  openPickerRoot: () => void;
+  openPickerRoot: Parameters<typeof ComposerFilePicker>[0]["onOpenRoot"];
   pickAttachments: () => void;
   removeAttachment: (path: string) => void;
   setDraft: (value: string) => void;
   stop: () => Promise<void>;
-  toggleDictation: () => void;
+  toggleDictation: Parameters<typeof ComposerDictationControls>[0]["toggleDictation"];
   togglePendingPickerAttachment: Parameters<typeof ComposerFilePicker>[0]["onToggleFile"];
 };
 
