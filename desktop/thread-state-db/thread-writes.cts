@@ -1,3 +1,4 @@
+import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../shared/desktop-contracts.ts";
 import { getThreadStateDatabase } from "./db.cts";
 import { runInTransaction } from "./write-transaction.cts";
 
@@ -10,6 +11,43 @@ export function setThreadRunningState(sessionPath: string, running: boolean) {
       WHERE session_path = ? AND running != ?
     `,
   ).run(running ? 1 : 0, sessionPath, running ? 1 : 0);
+}
+
+export function setThreadDiffPreferences(
+  sessionPath: string,
+  preferences: {
+    baseline?: ProjectDiffBaseline | null;
+    renderMode?: ProjectDiffRenderMode | null;
+  },
+): boolean {
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+
+  if ("baseline" in preferences) {
+    assignments.push("diff_baseline_json = ?");
+    values.push(preferences.baseline ? JSON.stringify(preferences.baseline) : null);
+  }
+
+  if ("renderMode" in preferences) {
+    assignments.push("diff_render_mode = ?");
+    values.push(preferences.renderMode ?? null);
+  }
+
+  if (assignments.length === 0) {
+    return true;
+  }
+
+  const db = getThreadStateDatabase();
+  const result = db
+    .prepare(
+      `
+      UPDATE threads
+      SET ${assignments.join(", ")}, updated_at = CURRENT_TIMESTAMP
+      WHERE session_path = ?
+    `,
+    )
+    .run(...values, sessionPath) as { changes: number };
+  return result.changes > 0;
 }
 
 export function toggleThreadPinned(threadId: string) {

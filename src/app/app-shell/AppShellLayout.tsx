@@ -3,7 +3,7 @@ import { getPersistedSessionPath, isLocalSessionPath } from "../../../shared/ses
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
-import type { ProjectDiffBaseline } from "../desktop/types";
+import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
@@ -36,6 +36,45 @@ function isLocalToPersistedTakeoverTransition(
   );
 }
 
+function areDiffBaselinesEqual(left: ProjectDiffBaseline, right: ProjectDiffBaseline) {
+  if (left.kind !== right.kind) {
+    return false;
+  }
+
+  if (left.kind === "commit" && right.kind === "commit") {
+    return left.sha === right.sha;
+  }
+
+  if (left.kind === "last-opened" && right.kind === "last-opened") {
+    return left.rev === right.rev;
+  }
+
+  return true;
+}
+
+function isSameDraftPromotion({
+  activeThreadId,
+  messageCount,
+  previousSessionPath,
+  previousThreadId,
+  nextSessionPath,
+}: {
+  activeThreadId: string | null;
+  messageCount: number | null;
+  previousSessionPath: string | null;
+  previousThreadId: string | null;
+  nextSessionPath: string | null;
+}) {
+  return (
+    isLocalSessionPath(previousSessionPath) &&
+    previousThreadId !== null &&
+    previousThreadId.startsWith("local-thread-") &&
+    activeThreadId !== null &&
+    getPersistedSessionPath(nextSessionPath) !== null &&
+    (messageCount === null || messageCount <= 1)
+  );
+}
+
 type AppShellLayoutProps = {
   controller: AppShellController;
 };
@@ -44,10 +83,29 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const controllerRef = useRef(controller);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
+    threadId: string | null;
+    sessionPath: string | null;
     baseline: ProjectDiffBaseline;
+    source: "init" | "override" | "default";
   }>({
     projectId: "",
+    threadId: null,
+    sessionPath: null,
     baseline: defaultDiffBaseline,
+    source: "init",
+  });
+  const [diffRenderModeState, setDiffRenderModeState] = useState<{
+    projectId: string;
+    threadId: string | null;
+    sessionPath: string | null;
+    renderMode: ProjectDiffRenderMode;
+    source: "init" | "override" | "default";
+  }>({
+    projectId: "",
+    threadId: null,
+    sessionPath: null,
+    renderMode: "stacked",
+    source: "init",
   });
   const {
     activeComposerState,
@@ -76,13 +134,27 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     state.activeView === "thread" || state.activeView === "gitops"
       ? state.selectedSessionPath
       : null;
+  const activeThreadId =
+    state.activeView === "thread" || state.activeView === "gitops" ? state.selectedThreadId : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
-    diffBaselineState.projectId === composerProjectId
+    diffBaselineState.projectId === composerProjectId &&
+    diffBaselineState.threadId === activeThreadId &&
+    diffBaselineState.sessionPath === terminalSessionPath
       ? diffBaselineState.baseline
-      : defaultDiffBaseline;
+      : (controller.activeThreadData?.diffPreferences?.baseline ??
+        controller.shellState?.appSettings.gitDiffBaselineDefault ??
+        defaultDiffBaseline);
+  const diffRenderMode =
+    diffRenderModeState.projectId === composerProjectId &&
+    diffRenderModeState.threadId === activeThreadId &&
+    diffRenderModeState.sessionPath === terminalSessionPath
+      ? diffRenderModeState.renderMode
+      : (controller.activeThreadData?.diffPreferences?.renderMode ??
+        controller.shellState?.appSettings.gitDiffRenderModeDefault ??
+        "stacked");
   const { mainSectionRef, takeoverPresent, workspaceContentClass } = useAppShellLayoutState({
     takeoverVisible,
   });
@@ -120,25 +192,150 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
   useEffect(() => {
     setDiffBaselineState((current) => {
-      if (current.projectId === composerProjectId && current.baseline.kind === "head") {
+      const nextBaseline =
+        controller.activeThreadData?.diffPreferences?.baseline ??
+        controller.shellState?.appSettings.gitDiffBaselineDefault ??
+        defaultDiffBaseline;
+      if (
+        current.projectId === composerProjectId &&
+        current.source === "override" &&
+        isSameDraftPromotion({
+          activeThreadId,
+          messageCount: controller.activeThreadData?.messages.length ?? null,
+          previousSessionPath: current.sessionPath,
+          previousThreadId: current.threadId,
+          nextSessionPath: terminalSessionPath,
+        })
+      ) {
+        const appDefault = controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault;
+        const nextBaseline =
+          appDefault && areDiffBaselinesEqual(current.baseline, appDefault)
+            ? null
+            : current.baseline;
+        void controllerRef.current.handleAction("workspace.diff-preferences", {
+          diffBaseline: nextBaseline,
+        });
+        return {
+          ...current,
+          threadId: activeThreadId,
+          sessionPath: terminalSessionPath,
+        };
+      }
+
+      if (
+        current.projectId === composerProjectId &&
+        current.threadId === activeThreadId &&
+        current.sessionPath === terminalSessionPath &&
+        (current.source === "override" || areDiffBaselinesEqual(current.baseline, nextBaseline))
+      ) {
         return current;
       }
 
       return {
         projectId: composerProjectId,
-        baseline: defaultDiffBaseline,
+        threadId: activeThreadId,
+        sessionPath: terminalSessionPath,
+        baseline: nextBaseline,
+        source: "init",
       };
     });
-  }, [composerProjectId]);
+  }, [
+    activeThreadId,
+    composerProjectId,
+    controller.activeThreadData,
+    controller.shellState,
+    terminalSessionPath,
+  ]);
+
+  useEffect(() => {
+    setDiffRenderModeState((current) => {
+      const nextRenderMode =
+        controller.activeThreadData?.diffPreferences?.renderMode ??
+        controller.shellState?.appSettings.gitDiffRenderModeDefault ??
+        "stacked";
+      if (
+        current.projectId === composerProjectId &&
+        current.source === "override" &&
+        isSameDraftPromotion({
+          activeThreadId,
+          messageCount: controller.activeThreadData?.messages.length ?? null,
+          previousSessionPath: current.sessionPath,
+          previousThreadId: current.threadId,
+          nextSessionPath: terminalSessionPath,
+        })
+      ) {
+        const appDefault = controllerRef.current.shellState?.appSettings.gitDiffRenderModeDefault;
+        const nextRenderMode = appDefault === current.renderMode ? null : current.renderMode;
+        void controllerRef.current.handleAction("workspace.diff-preferences", {
+          diffRenderMode: nextRenderMode,
+        });
+        return {
+          ...current,
+          threadId: activeThreadId,
+          sessionPath: terminalSessionPath,
+        };
+      }
+
+      if (
+        current.projectId === composerProjectId &&
+        current.threadId === activeThreadId &&
+        current.sessionPath === terminalSessionPath &&
+        (current.source === "override" || current.renderMode === nextRenderMode)
+      ) {
+        return current;
+      }
+
+      return {
+        projectId: composerProjectId,
+        threadId: activeThreadId,
+        sessionPath: terminalSessionPath,
+        renderMode: nextRenderMode,
+        source: "init",
+      };
+    });
+  }, [
+    activeThreadId,
+    composerProjectId,
+    controller.activeThreadData,
+    controller.shellState,
+    terminalSessionPath,
+  ]);
 
   const handleSetDiffBaseline = useCallback(
     (baseline: ProjectDiffBaseline) => {
+      const appDefault = controllerRef.current.shellState?.appSettings.gitDiffBaselineDefault;
+      const nextBaseline =
+        appDefault && areDiffBaselinesEqual(baseline, appDefault) ? null : baseline;
       setDiffBaselineState({
         projectId: composerProjectId,
+        threadId: activeThreadId,
+        sessionPath: terminalSessionPath,
         baseline,
+        source: nextBaseline ? "override" : "default",
+      });
+      void controllerRef.current.handleAction("workspace.diff-preferences", {
+        diffBaseline: nextBaseline,
       });
     },
-    [composerProjectId],
+    [activeThreadId, composerProjectId, terminalSessionPath],
+  );
+
+  const handleSetDiffRenderMode = useCallback(
+    (renderMode: ProjectDiffRenderMode) => {
+      const appDefault = controllerRef.current.shellState?.appSettings.gitDiffRenderModeDefault;
+      const nextRenderMode = appDefault === renderMode ? null : renderMode;
+      setDiffRenderModeState({
+        projectId: composerProjectId,
+        threadId: activeThreadId,
+        sessionPath: terminalSessionPath,
+        renderMode,
+        source: nextRenderMode ? "override" : "default",
+      });
+      void controllerRef.current.handleAction("workspace.diff-preferences", {
+        diffRenderMode: nextRenderMode,
+      });
+    },
+    [activeThreadId, composerProjectId, terminalSessionPath],
   );
 
   const handleOpenGitOpsFromTakeover = useCallback(async () => {
@@ -172,6 +369,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 preferredProjectLocation: null,
                 initializeGitOnProjectCreate: false,
                 gitOpsDefaultMode: "commit",
+                gitDiffBaselineDefault: { kind: "head" },
+                gitDiffRenderModeDefault: "stacked",
                 projectDeletionMode: "pi-only",
                 useAgentsSkillsPaths: false,
                 piTuiTakeover: false,
@@ -230,10 +429,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 composerProjectId={composerProjectId}
                 currentProjectName={currentProjectName}
                 diffBaseline={diffBaseline}
+                diffRenderMode={diffRenderMode}
                 terminalDrawerVisible={terminalDrawerVisible}
                 terminalSessionPath={terminalSessionPath}
                 workspaceContentClass={workspaceContentClass}
                 onSetDiffBaseline={handleSetDiffBaseline}
+                onSetDiffRenderMode={handleSetDiffRenderMode}
               />
             </div>
 

@@ -12,6 +12,8 @@ import {
   getSettingsModelSelection,
   getSettingsNumberValue,
   getSettingsPreferredProjectLocation,
+  getSettingsProjectDiffBaselineDefault,
+  getSettingsProjectDiffRenderModeDefault,
   getSettingsProjectDeletionMode,
   getSettingsProjectImportState,
   getSettingsReset,
@@ -24,6 +26,8 @@ import {
   setFavoriteFolders,
   setGitCommitMessageModelSelection,
   setGitCommitMessageThinkingLevel,
+  setGitDiffBaselineDefault,
+  setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
@@ -145,6 +149,22 @@ export async function handleSettingsDesktopAction(
     const value = payload.value;
     if (value === "commit" || value === "commit-push") {
       setGitOpsDefaultMode(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "gitDiffBaselineDefault") {
+    const value = getSettingsProjectDiffBaselineDefault(payload);
+    if (value) {
+      setGitDiffBaselineDefault(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "gitDiffRenderModeDefault") {
+    const value = getSettingsProjectDiffRenderModeDefault(payload);
+    if (value) {
+      setGitDiffRenderModeDefault(value);
     }
     return handledAction();
   }

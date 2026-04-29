@@ -1,4 +1,4 @@
-import type { ProjectDiffBaseline } from "../desktop/types";
+import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../desktop/types";
 import { CodeWorkspaceView } from "../features/code/CodeWorkspaceView";
 import { mainPanelClass } from "../ui/classes";
 import { MainView } from "../views/MainView";
@@ -11,10 +11,12 @@ type AppShellWorkspaceProps = {
   composerProjectId: string;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
+  diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
+  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
 export function AppShellWorkspace({
@@ -24,10 +26,12 @@ export function AppShellWorkspace({
   composerProjectId,
   currentProjectName,
   diffBaseline,
+  diffRenderMode,
   terminalDrawerVisible,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
+  onSetDiffRenderMode,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
 
@@ -49,10 +53,12 @@ export function AppShellWorkspace({
       composerProjectId={composerProjectId}
       currentProjectName={currentProjectName}
       diffBaseline={diffBaseline}
+      diffRenderMode={diffRenderMode}
       terminalDrawerVisible={terminalDrawerVisible}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
+      onSetDiffRenderMode={onSetDiffRenderMode}
     />
   );
 }

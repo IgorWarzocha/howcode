@@ -8,6 +8,7 @@ import { getLiveThread } from "../pi-desktop-runtime.cts";
 import { invokeRuntimeHost } from "../runtime-host/client.cts";
 import {
   ensureProject,
+  getThreadDiffPreferences,
   listArchivedThreads,
   listInboxThreads,
   listProjectThreads,
@@ -20,6 +21,13 @@ export type LoadedThreadSnapshot = {
   threadId: string;
   thread: ThreadData;
 };
+
+function attachThreadDiffPreferences(thread: ThreadData): ThreadData {
+  return {
+    ...thread,
+    diffPreferences: getThreadDiffPreferences(thread.sessionPath),
+  };
+}
 
 const INBOX_PROMPT_BACKFILL_CONCURRENCY = 6;
 
@@ -70,10 +78,15 @@ export async function loadThreadSnapshot(
   sessionPath: string,
   options?: { historyCompactions?: number },
 ): Promise<LoadedThreadSnapshot> {
-  return invokeRuntimeHost("loadThreadSnapshot", {
+  const snapshot = await invokeRuntimeHost("loadThreadSnapshot", {
     sessionPath,
     historyCompactions: options?.historyCompactions,
   });
+
+  return {
+    ...snapshot,
+    thread: attachThreadDiffPreferences(snapshot.thread),
+  };
 }
 
 export async function loadThread(
@@ -85,7 +98,7 @@ export async function loadThread(
     (liveThread?.isStreaming || liveThread?.isCompacting) &&
     (options?.historyCompactions ?? 0) === 0
   ) {
-    return liveThread;
+    return attachThreadDiffPreferences(liveThread);
   }
 
   return (await loadThreadSnapshot(sessionPath, options)).thread;

@@ -22,6 +22,7 @@ export const desktopActions = [
   "thread.pin",
   "workspace.commit",
   "workspace.commit-options",
+  "workspace.diff-preferences",
   "composer.model",
   "composer.thinking",
   "composer.send",

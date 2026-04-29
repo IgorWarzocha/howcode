@@ -29,6 +29,8 @@ function buildShellState(): ShellState {
       preferredProjectLocation: null,
       initializeGitOnProjectCreate: false,
       gitOpsDefaultMode: "commit",
+      gitDiffBaselineDefault: { kind: "head" },
+      gitDiffRenderModeDefault: "stacked",
       projectDeletionMode: "pi-only",
       useAgentsSkillsPaths: false,
       piTuiTakeover: false,
@@ -130,6 +132,20 @@ describe("controller post action effects", () => {
         value: "commit-push",
       }),
     ).toMatchObject({ appSettings: { gitOpsDefaultMode: "commit-push" } });
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "gitDiffBaselineDefault",
+        value: { kind: "previous" },
+      }),
+    ).toMatchObject({ appSettings: { gitDiffBaselineDefault: { kind: "previous" } } });
+
+    expect(
+      getOptimisticallyUpdatedShellState(state, {
+        key: "gitDiffRenderModeDefault",
+        value: "split",
+      }),
+    ).toMatchObject({ appSettings: { gitDiffRenderModeDefault: "split" } });
 
     expect(
       getOptimisticallyUpdatedShellState(state, {

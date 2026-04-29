@@ -1,6 +1,11 @@
 import { ArrowLeft, Columns2, Rows3, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { GitOpsMode, ProjectDiffBaseline, ProjectGitState } from "../../../desktop/types";
+import type {
+  GitOpsMode,
+  ProjectDiffBaseline,
+  ProjectDiffRenderMode,
+  ProjectGitState,
+} from "../../../desktop/types";
 import {
   compactIconButtonClass,
   diffPanelIconButtonClass,
@@ -14,14 +19,14 @@ import { PlainToggle } from "./PlainToggle";
 type ComposerGitOpsFooterProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>;
   diffBaseline: ProjectDiffBaseline;
-  diffRenderMode: "stacked" | "split";
+  diffRenderMode: ProjectDiffRenderMode;
   hasOrigin: boolean;
   includeUnstaged: boolean;
   isGitRepo: boolean;
   onSaveOrigin: () => void;
   onBack: () => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
-  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void;
   onSetRepoUrl: (repoUrl: string) => void;
   onToggleIncludeUnstaged: () => void;
   onTogglePreview: () => void;

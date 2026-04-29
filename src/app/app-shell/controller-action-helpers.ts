@@ -21,7 +21,8 @@ export function buildContextualActionPayload({
     action === "composer.stop" ||
     action === "composer.thinking" ||
     action === "workspace.commit" ||
-    action === "workspace.commit-options"
+    action === "workspace.commit-options" ||
+    action === "workspace.diff-preferences"
     ? {
         projectId: composerProjectId,
         sessionPath:

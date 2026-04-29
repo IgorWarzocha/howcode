@@ -5,7 +5,7 @@ import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
-import type { ProjectDiffBaseline } from "../../desktop/types";
+import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
@@ -20,10 +20,12 @@ type CodeWorkspaceViewProps = {
   composerProjectId: string;
   currentProjectName: string;
   diffBaseline: ProjectDiffBaseline;
+  diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
+  onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
@@ -35,14 +37,15 @@ export function CodeWorkspaceView({
   composerProjectId,
   currentProjectName,
   diffBaseline,
+  diffRenderMode,
   terminalDrawerVisible,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
+  onSetDiffRenderMode,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
-  const [diffRenderMode, setDiffRenderMode] = useState<"stacked" | "split">("stacked");
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
@@ -147,6 +150,8 @@ export function CodeWorkspaceView({
                     preferredProjectLocation: null,
                     initializeGitOnProjectCreate: false,
                     gitOpsDefaultMode: "commit",
+                    gitDiffBaselineDefault: { kind: "head" },
+                    gitDiffRenderModeDefault: "stacked",
                     projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
                     piTuiTakeover: false,
@@ -217,6 +222,8 @@ export function CodeWorkspaceView({
                         preferredProjectLocation: null,
                         initializeGitOnProjectCreate: false,
                         gitOpsDefaultMode: "commit",
+                        gitDiffBaselineDefault: { kind: "head" },
+                        gitDiffRenderModeDefault: "stacked",
                         projectDeletionMode: "pi-only",
                         useAgentsSkillsPaths: false,
                         piTuiTakeover: false,
@@ -230,7 +237,7 @@ export function CodeWorkspaceView({
                     diffCommentError={diffCommentError}
                     diffLoadError={diffLoadError}
                     onSetDiffBaseline={onSetDiffBaseline}
-                    onSetDiffRenderMode={setDiffRenderMode}
+                    onSetDiffRenderMode={onSetDiffRenderMode}
                     onSendDiffComments={(message) => {
                       void handleSendDiffComments(message);
                     }}
@@ -288,7 +295,7 @@ export function CodeWorkspaceView({
                       diffCommentsSending={diffCommentsSending}
                       diffCommentError={diffCommentError}
                       onSetDiffBaseline={onSetDiffBaseline}
-                      onSetDiffRenderMode={setDiffRenderMode}
+                      onSetDiffRenderMode={onSetDiffRenderMode}
                       onSendDiffComments={(message) => {
                         void handleSendDiffComments(message);
                       }}

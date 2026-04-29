@@ -1,6 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopAction } from "../desktop/actions";
-import type { ComposerThinkingLevel, PiSettings, ShellState } from "../desktop/types";
+import type {
+  ComposerThinkingLevel,
+  PiSettings,
+  ProjectDiffDefaultBaseline,
+  ShellState,
+} from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import {
   type ActionPayload,
@@ -32,6 +37,8 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "preferredProjectLocation" &&
     payload.key !== "initializeGitOnProjectCreate" &&
     payload.key !== "gitOpsDefaultMode" &&
+    payload.key !== "gitDiffBaselineDefault" &&
+    payload.key !== "gitDiffRenderModeDefault" &&
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "piTuiTakeover"
@@ -142,6 +149,26 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.gitOpsDefaultMode;
 
+  const nextGitDiffBaselineDefault =
+    payload.key === "gitDiffBaselineDefault" && payload.value && typeof payload.value === "object"
+      ? (() => {
+          const baseline = payload.value as { kind?: unknown };
+          return baseline.kind === "head" ||
+            baseline.kind === "previous" ||
+            baseline.kind === "yesterday" ||
+            baseline.kind === "main-branch" ||
+            baseline.kind === "dev-branch"
+            ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
+            : currentState.appSettings.gitDiffBaselineDefault;
+        })()
+      : currentState.appSettings.gitDiffBaselineDefault;
+
+  const nextGitDiffRenderModeDefault =
+    payload.key === "gitDiffRenderModeDefault" &&
+    (payload.value === "stacked" || payload.value === "split")
+      ? payload.value
+      : currentState.appSettings.gitDiffRenderModeDefault;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
@@ -169,6 +196,8 @@ export function getOptimisticallyUpdatedShellState(
       preferredProjectLocation: nextPreferredProjectLocation,
       initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
       gitOpsDefaultMode: nextGitOpsDefaultMode,
+      gitDiffBaselineDefault: nextGitDiffBaselineDefault,
+      gitDiffRenderModeDefault: nextGitDiffRenderModeDefault,
       projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       piTuiTakeover: nextPiTuiTakeover,

@@ -118,6 +118,7 @@ export function useAppShellController() {
     selectedSessionPath: state.selectedSessionPath,
     setArchivedThreads,
     setComposerState,
+    setLiveThreadData,
     setProjectGitState,
     showToast,
     workspaceState: state,

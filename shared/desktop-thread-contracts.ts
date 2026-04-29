@@ -1,3 +1,5 @@
+import type { ProjectDiffPreferences } from "./desktop-project-git-contracts";
+
 export type Thread = {
   id: string;
   title: string;
@@ -127,4 +129,5 @@ export type ThreadData = {
   previousMessageCount: number;
   isStreaming: boolean;
   isCompacting: boolean;
+  diffPreferences?: ProjectDiffPreferences;
 };

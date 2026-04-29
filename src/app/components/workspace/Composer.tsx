@@ -7,6 +7,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   ProjectDiffBaseline,
+  ProjectDiffRenderMode,
   ProjectGitState,
 } from "../../desktop/types";
 import type { View } from "../../types";
@@ -33,13 +34,13 @@ export type ComposerProps = {
   dictationMaxDurationSeconds: number;
   favoriteFolders: string[];
   showDictationButton: boolean;
-  diffRenderMode: "stacked" | "split";
+  diffRenderMode: ProjectDiffRenderMode;
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
-  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void;
   onSendDiffComments: (message?: string | null) => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
   promptResetKey: number;

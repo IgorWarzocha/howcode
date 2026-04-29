@@ -5,7 +5,10 @@ import type {
   ArchivedThread,
   ComposerState,
   DesktopActionResult,
+  ProjectDiffBaseline,
+  ProjectDiffRenderMode,
   ProjectGitState,
+  ThreadData,
 } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
@@ -47,6 +50,7 @@ type RunPostDesktopActionEffectsInput = {
   refreshShellState: () => Promise<unknown>;
   setArchivedThreads: (threads: ArchivedThread[]) => void;
   setComposerState: (state: ComposerState | null) => void;
+  setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void;
   setProjectGitState: (state: ProjectGitState | null) => void;
   queryClient: QueryClient;
 };
@@ -65,6 +69,7 @@ export async function runPostDesktopActionEffects({
   refreshShellState,
   setArchivedThreads,
   setComposerState,
+  setLiveThreadData,
   setProjectGitState,
   queryClient,
 }: RunPostDesktopActionEffectsInput) {
@@ -293,6 +298,52 @@ export async function runPostDesktopActionEffects({
     }
 
     await refreshShellState();
+  }
+
+  if (action === "workspace.diff-preferences" && !hasActionError(actionResult)) {
+    const sessionPath =
+      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
+    if (sessionPath) {
+      const hasBaseline = "diffBaseline" in contextualPayload;
+      const hasRenderMode = "diffRenderMode" in contextualPayload;
+      const nextBaseline = (contextualPayload.diffBaseline ?? null) as ProjectDiffBaseline | null;
+      const nextRenderMode = (contextualPayload.diffRenderMode ??
+        null) as ProjectDiffRenderMode | null;
+      queryClient.setQueryData(desktopQueryKeys.thread(sessionPath), (current: unknown) => {
+        const currentThread = current as ThreadData | null | undefined;
+        if (!currentThread) {
+          return currentThread;
+        }
+
+        return {
+          ...currentThread,
+          diffPreferences: {
+            baseline: hasBaseline
+              ? nextBaseline
+              : (currentThread.diffPreferences?.baseline ?? null),
+            renderMode: hasRenderMode
+              ? nextRenderMode
+              : (currentThread.diffPreferences?.renderMode ?? null),
+          },
+        };
+      });
+      setLiveThreadData((current) =>
+        current?.sessionPath === sessionPath
+          ? {
+              ...current,
+              diffPreferences: {
+                baseline: hasBaseline ? nextBaseline : (current.diffPreferences?.baseline ?? null),
+                renderMode: hasRenderMode
+                  ? nextRenderMode
+                  : (current.diffPreferences?.renderMode ?? null),
+              },
+            }
+          : current,
+      );
+      await queryClient.invalidateQueries({
+        queryKey: desktopQueryKeys.threadPrefix(sessionPath),
+      });
+    }
   }
 
   if (action === "workspace.commit") {

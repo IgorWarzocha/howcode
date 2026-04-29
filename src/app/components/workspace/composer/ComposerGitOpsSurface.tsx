@@ -3,6 +3,7 @@ import type {
   DesktopActionInvoker,
   AppSettings,
   ProjectDiffBaseline,
+  ProjectDiffRenderMode,
   ProjectGitState,
 } from "../../../desktop/types";
 import { getFeatureStatusDataAttributes } from "../../../features/feature-status";
@@ -27,14 +28,14 @@ type ComposerGitOpsSurfaceProps = {
   showDictationButton: boolean;
   appSettings: AppSettings;
   diffBaseline: ProjectDiffBaseline;
-  diffRenderMode: "stacked" | "split";
+  diffRenderMode: ProjectDiffRenderMode;
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
   diffCommentsSending: boolean;
   diffCommentError: string | null;
   diffLoadError: string | null;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
-  onSetDiffRenderMode: (mode: "stacked" | "split") => void;
+  onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void;
   onSendDiffComments: (message?: string | null) => void;
   onSelectDiffComment: (filePath: string, commentId: string) => void;
   onAction: DesktopActionInvoker;

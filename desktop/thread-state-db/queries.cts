@@ -19,12 +19,17 @@ import type {
   ArchivedThreadRow,
   InboxPathRow,
   InboxThreadRow,
+  ThreadDiffPreferencesRow,
   ProjectRow,
   ThreadAssistantSnapshotRow,
   ThreadCwdRow,
   ThreadPathRow,
   ThreadRow,
 } from "./types.cts";
+import type {
+  ProjectDiffBaseline,
+  ProjectDiffPreferences,
+} from "../../shared/desktop-contracts.ts";
 import { getLiveThread } from "../runtime/live-thread-store.cts";
 import { ensureProject } from "./writes.cts";
 
@@ -104,6 +109,66 @@ export function hasRunningProjectThread(projectId: string) {
   return rows.some((row) =>
     getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)),
   );
+}
+
+function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const baseline = parsed as Record<string, unknown>;
+    switch (baseline.kind) {
+      case "head":
+      case "previous":
+      case "yesterday":
+      case "main-branch":
+      case "dev-branch":
+        return { kind: baseline.kind };
+      case "last-opened":
+        return typeof baseline.rev === "string" && baseline.rev.trim().length > 0
+          ? {
+              kind: "last-opened",
+              rev: baseline.rev,
+              capturedAt: baseline.capturedAt as string | null | undefined,
+            }
+          : null;
+      case "commit":
+        return typeof baseline.sha === "string" && baseline.sha.trim().length > 0
+          ? { kind: "commit", sha: baseline.sha }
+          : null;
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPreferences {
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT
+          diff_baseline_json AS diffBaselineJson,
+          diff_render_mode AS diffRenderMode
+        FROM threads
+        WHERE session_path = ?
+      `,
+    )
+    .get(sessionPath) as ThreadDiffPreferencesRow | undefined;
+  const renderMode = row?.diffRenderMode;
+
+  return {
+    baseline: parseDiffBaseline(row?.diffBaselineJson ?? null),
+    renderMode: renderMode === "stacked" || renderMode === "split" ? renderMode : null,
+  };
 }
 
 export function listProjectThreads(projectId: string): Thread[] {

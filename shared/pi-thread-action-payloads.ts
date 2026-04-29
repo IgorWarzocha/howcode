@@ -8,6 +8,9 @@ import type {
   DictationModelId,
   GitOpsMode,
   ModelSelection,
+  ProjectDiffBaseline,
+  ProjectDiffDefaultBaseline,
+  ProjectDiffRenderMode,
   ProjectDeletionMode,
 } from "./desktop-contracts";
 import { getPersistedSessionPath } from "./session-paths";
@@ -170,6 +173,77 @@ export function getGitOpsMode(
     : "invalid";
 }
 
+function isProjectDiffBaseline(value: unknown): value is ProjectDiffBaseline {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const baseline = value as Record<string, unknown>;
+  switch (baseline.kind) {
+    case "head":
+    case "previous":
+    case "yesterday":
+    case "main-branch":
+    case "dev-branch":
+      return true;
+    case "last-opened":
+      return typeof baseline.rev === "string" && baseline.rev.trim().length > 0;
+    case "commit":
+      return typeof baseline.sha === "string" && baseline.sha.trim().length > 0;
+    default:
+      return false;
+  }
+}
+
+export function getProjectDiffBaselinePreference(
+  payload: DesktopActionPayloadInput,
+): ProjectDiffBaseline | null | undefined | "invalid" {
+  if (!("diffBaseline" in payload) || payload.diffBaseline === undefined) {
+    return undefined;
+  }
+
+  if (payload.diffBaseline === null) {
+    return null;
+  }
+
+  return isProjectDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : "invalid";
+}
+
+export function getProjectDiffRenderModePreference(
+  payload: DesktopActionPayloadInput,
+): ProjectDiffRenderMode | null | undefined | "invalid" {
+  if (!("diffRenderMode" in payload) || payload.diffRenderMode === undefined) {
+    return undefined;
+  }
+
+  if (payload.diffRenderMode === null) {
+    return null;
+  }
+
+  return payload.diffRenderMode === "stacked" || payload.diffRenderMode === "split"
+    ? payload.diffRenderMode
+    : "invalid";
+}
+
+export function getSettingsProjectDiffBaselineDefault(
+  payload: DesktopActionPayloadInput,
+): ProjectDiffDefaultBaseline | null {
+  return isProjectDiffBaseline(payload.value) &&
+    (payload.value.kind === "head" ||
+      payload.value.kind === "previous" ||
+      payload.value.kind === "yesterday" ||
+      payload.value.kind === "main-branch" ||
+      payload.value.kind === "dev-branch")
+    ? payload.value
+    : null;
+}
+
+export function getSettingsProjectDiffRenderModeDefault(
+  payload: DesktopActionPayloadInput,
+): ProjectDiffRenderMode | null {
+  return payload.value === "stacked" || payload.value === "split" ? payload.value : null;
+}
+
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
   return payload.key === "gitCommitMessageModel" ||
     payload.key === "gitCommitMessageThinkingLevel" ||
@@ -184,6 +258,8 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "preferredProjectLocation" ||
     payload.key === "initializeGitOnProjectCreate" ||
     payload.key === "gitOpsDefaultMode" ||
+    payload.key === "gitDiffBaselineDefault" ||
+    payload.key === "gitDiffRenderModeDefault" ||
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"

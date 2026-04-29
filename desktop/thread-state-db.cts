@@ -9,6 +9,7 @@ export {
   hasInboxItem,
   listInboxThreads,
   listArchivedThreads,
+  getThreadDiffPreferences,
   listProjectThreads,
   listProjects,
 } from "./thread-state-db/queries.cts";
@@ -35,6 +36,7 @@ export {
   setProjectCollapsed,
   syncSessionSummaries,
   setThreadRunningState,
+  setThreadDiffPreferences,
   toggleProjectPinned,
   toggleThreadPinned,
   upsertInboxThreadPrompt,

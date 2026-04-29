@@ -8,6 +8,9 @@ import type {
   DictationModelId,
   GitOpsMode,
   PiSettings,
+  ProjectDiffBaseline,
+  ProjectDiffDefaultBaseline,
+  ProjectDiffRenderMode,
   ProjectDeletionMode,
   ProjectImportCandidate,
 } from "./desktop-data-contracts";
@@ -19,6 +22,8 @@ export type DesktopActionPayloadFields = {
   folders?: string[];
   imported?: boolean | null;
   gitOpsMode?: GitOpsMode | null;
+  diffBaseline?: ProjectDiffBaseline | null;
+  diffRenderMode?: ProjectDiffRenderMode | null;
   includeUnstaged?: boolean;
   key?: keyof AppSettings;
   piSettingsKey?: keyof PiSettings;
@@ -42,7 +47,7 @@ export type DesktopActionPayloadFields = {
   text?: string;
   threadId?: string;
   threadIds?: string[];
-  value?: string | number | boolean | null;
+  value?: string | number | boolean | ProjectDiffDefaultBaseline | null;
 };
 
 export type DesktopActionPayloadInput = {
@@ -65,6 +70,8 @@ export type DesktopSettingsUpdatePayload =
   | { key: "preferredProjectLocation"; value: string | null }
   | { key: "initializeGitOnProjectCreate"; value: boolean }
   | { key: "gitOpsDefaultMode"; value: GitOpsMode }
+  | { key: "gitDiffBaselineDefault"; value: ProjectDiffDefaultBaseline }
+  | { key: "gitDiffRenderModeDefault"; value: ProjectDiffRenderMode }
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
   | { key: "piTuiTakeover"; value: boolean };
@@ -104,6 +111,12 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | null;
     repoUrl?: string | null;
     gitOpsMode?: GitOpsMode | null;
+  };
+  "workspace.diff-preferences": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    diffBaseline?: ProjectDiffBaseline | null;
+    diffRenderMode?: ProjectDiffRenderMode | null;
   };
   "composer.model": {
     projectId?: string | null;

@@ -612,6 +612,72 @@ export function buildSettingsDescriptors({
       ),
     },
     {
+      id: "projects.git-diff-baseline-default",
+      category: "projects",
+      title: "Diff comparison default",
+      description: "Default baseline for the files and lines changed summary.",
+      keywords: "git diff baseline comparison files lines default",
+      render: () => (
+        <div className="grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)] xl:grid-cols-5">
+          {[
+            [{ kind: "head" }, "Last"],
+            [{ kind: "previous" }, "Prev"],
+            [{ kind: "dev-branch" }, "Dev"],
+            [{ kind: "main-branch" }, "Main"],
+            [{ kind: "yesterday" }, "Yesterday"],
+          ].map(([value, label]) => {
+            const baseline = value as AppSettings["gitDiffBaselineDefault"];
+            return (
+              <button
+                key={baseline.kind}
+                type="button"
+                className={cn(
+                  "rounded-xl px-3 py-1 transition-colors active:scale-[0.96]",
+                  appSettings.gitDiffBaselineDefault.kind === baseline.kind &&
+                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                )}
+                onClick={() => controller.setGitDiffBaselineDefault(baseline)}
+              >
+                {label as string}
+              </button>
+            );
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "projects.git-diff-render-default",
+      category: "projects",
+      title: "Diff view default",
+      description: "Default layout for the GitOps diff panel.",
+      keywords: "git diff layout stacked split default",
+      render: () => (
+        <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
+          {[
+            ["stacked", "Unified"],
+            ["split", "Split"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
+                appSettings.gitDiffRenderModeDefault === value &&
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+              )}
+              onClick={() =>
+                controller.setGitDiffRenderModeDefault(
+                  value as AppSettings["gitDiffRenderModeDefault"],
+                )
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ),
+    },
+    {
       id: "projects.deletion-mode",
       category: "projects",
       title: "Project deletion cleanup",
