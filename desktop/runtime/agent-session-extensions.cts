@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
@@ -12,6 +13,46 @@ type ExtensionCommandContextActions = NonNullable<ExtensionBindings["commandCont
 type ResourceExtensionPaths = Parameters<AgentSession["resourceLoader"]["extendResources"]>[0];
 
 type ExtensionResourceEntry = { path: string; extensionPath: string };
+
+function findPackageName(startPath: string) {
+  let directory =
+    fs.existsSync(startPath) && fs.statSync(startPath).isDirectory()
+      ? startPath
+      : path.dirname(startPath);
+
+  while (true) {
+    const packageJsonPath = path.join(directory, "package.json");
+    if (fs.existsSync(packageJsonPath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as { name?: unknown };
+        if (typeof parsed.name === "string" && parsed.name.trim().length > 0) {
+          return parsed.name;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    const parent = path.dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+}
+
+function getExtensionDisplayLabel(extensionPath: string) {
+  if (extensionPath.startsWith("command:")) {
+    return `/${extensionPath.slice("command:".length)}`;
+  }
+
+  if (extensionPath.startsWith("<")) {
+    return extensionPath.replace(/[<>]/g, "");
+  }
+
+  const packageName = findPackageName(extensionPath);
+  if (packageName) return packageName;
+
+  return path.basename(extensionPath).replace(/\.(ts|js)$/, "");
+}
 
 function getExtensionSourceLabel(extensionPath: string) {
   if (extensionPath.startsWith("<")) {
@@ -69,13 +110,14 @@ async function reportHeadlessExtensionError(
   options: HeadlessAgentSessionExtensionOptions = {},
 ) {
   console.warn("Pi extension error", error);
+  const extensionLabel = getExtensionDisplayLabel(error.extensionPath);
   try {
     await session.sendCustomMessage(
       {
         customType: howcodeExtensionErrorMessageType,
-        content: `Extension error (${error.extensionPath}): ${error.error}`,
+        content: `${extensionLabel} extension error: ${error.error}`,
         display: true,
-        details: error,
+        details: { ...error, extensionLabel },
       },
       { triggerTurn: false },
     );

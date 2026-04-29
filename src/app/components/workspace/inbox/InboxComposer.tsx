@@ -544,9 +544,20 @@ export function InboxComposer({
                   ariaActiveDescendant={slashCommands.activeDescendantId}
                   ariaControls={slashCommands.open ? slashCommands.listboxId : undefined}
                   ariaExpanded={slashCommands.open}
-                  placeholder={errorMessage ?? "Reply to this thread…"}
+                  placeholder={
+                    errorMessage ??
+                    (isSending && !isStreaming && !isCompacting
+                      ? "Pi extension running…"
+                      : "Reply to this thread…")
+                  }
                   placeholderTone={errorMessage ? "error" : "muted"}
-                  statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
+                  statusMessage={
+                    errorMessage && draft.length > 0
+                      ? errorMessage
+                      : isSending && !isStreaming && !isCompacting
+                        ? "Pi extension running…"
+                        : null
+                  }
                   reservedLineCount={1}
                 />
               </div>

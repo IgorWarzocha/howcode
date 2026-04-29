@@ -15,6 +15,12 @@ import {
 import { emitDesktopEvent } from "./host-events.cts";
 import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from "./live-tool-progress.cts";
 
+function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
+  if (extensionPath.startsWith("command:")) return `/${extensionPath.slice("command:".length)}`;
+  if (extensionPath.startsWith("<")) return extensionPath.replace(/[<>]/g, "");
+  return path.basename(extensionPath).replace(/\.(ts|js)$/, "");
+}
+
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>;
   disposeTimeout: ReturnType<typeof setTimeout> | null;
@@ -206,11 +212,12 @@ async function createRuntime(options: {
 
   await bindHeadlessAgentSessionExtensions(session, {
     onExtensionError: (error) => {
+      const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath);
       emitDesktopEvent({
         type: "runtime-diagnostic",
         severity: "error",
-        message: `Extension error (${error.extensionPath}): ${error.error}`,
-        details: error,
+        message: `${extensionLabel} extension error: ${error.error}`,
+        details: { ...error, extensionLabel },
         projectId: runtime.cwd,
         sessionPath: runtime.session.sessionFile ?? null,
       });

@@ -257,6 +257,7 @@ export function ComposerPromptSurface({
 
   const placeholderText =
     errorMessage ??
+    (isSending && !composerIsStreaming && !isCompacting ? "Pi extension running…" : null) ??
     (activeView === "thread"
       ? "Ask for follow-up changes"
       : "Ask Pi anything, @ to add files, / for commands, $ for skills");
@@ -442,7 +443,13 @@ export function ComposerPromptSurface({
                   ariaExpanded={slashCommands.open}
                   placeholder={placeholderText}
                   placeholderTone={errorMessage ? "error" : "muted"}
-                  statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
+                  statusMessage={
+                    errorMessage && draft.length > 0
+                      ? errorMessage
+                      : isSending && !composerIsStreaming && !isCompacting
+                        ? "Pi extension running…"
+                        : null
+                  }
                   reservedLineCount={1}
                   onHeightChange={onLayoutChange}
                 />
@@ -481,8 +488,8 @@ export function ComposerPromptSurface({
                 )}
                 onClick={slashCommands.submit}
                 disabled={!canSend}
-                aria-label="Send"
-                data-tooltip="Send"
+                aria-label={isSending && !composerIsStreaming ? "Pi extension running" : "Send"}
+                data-tooltip={isSending && !composerIsStreaming ? "Pi extension running" : "Send"}
               >
                 <Send size={14} />
               </button>
