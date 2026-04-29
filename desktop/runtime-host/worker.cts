@@ -5,6 +5,7 @@ import type {
 } from "./protocol.cts";
 import {
   dequeueComposerPrompt,
+  disposeAllRuntimeHosts,
   getComposerSlashCommands,
   generateGitCommitMessage,
   getComposerState,
@@ -221,4 +222,28 @@ process.on("unhandledRejection", (error) => {
     error: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
   });
+});
+
+let isShuttingDown = false;
+
+async function shutdownRuntimeHost() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  try {
+    await disposeAllRuntimeHosts();
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.once("disconnect", () => {
+  void shutdownRuntimeHost();
+});
+
+process.once("SIGTERM", () => {
+  void shutdownRuntimeHost();
+});
+
+process.once("SIGINT", () => {
+  void shutdownRuntimeHost();
 });

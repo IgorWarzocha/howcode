@@ -1,3 +1,4 @@
+import path from "node:path";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
@@ -38,7 +39,6 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey);
   if (!record) return;
   clearRuntimeDisposeTimeout(runtimeKey);
-  const delayMs = staleRuntimeKeys.has(runtimeKey) ? 0 : RUNTIME_IDLE_TIMEOUT_MS;
   record.disposeTimeout = setTimeout(() => {
     void (async () => {
       const currentRecord = runtimeRecords.get(runtimeKey);
@@ -50,14 +50,14 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
           return;
         }
         runtime.session.dispose();
+        if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
+        staleRuntimeKeys.delete(runtimeKey);
       } catch {
-        // Ignore runtime disposal races.
-      } finally {
         if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
         staleRuntimeKeys.delete(runtimeKey);
       }
     })();
-  }, delayMs);
+  }, RUNTIME_IDLE_TIMEOUT_MS);
 }
 
 async function createRuntime(options: {
@@ -313,6 +313,7 @@ export async function invalidateRuntimeSettings(
   }
 
   const projectPath = request.projectPath?.trim() || null;
+  const resolvedProjectPath = projectPath ? path.resolve(projectPath) : null;
   const entries = [...runtimeRecords.entries()];
   await Promise.all(
     entries.map(async ([runtimeKey, record]) => {
@@ -324,9 +325,25 @@ export async function invalidateRuntimeSettings(
         staleRuntimeKeys.delete(runtimeKey);
         return;
       }
-      if (projectPath && runtime.cwd !== projectPath) return;
+      if (resolvedProjectPath && path.resolve(runtime.cwd) !== resolvedProjectPath) return;
       await withRuntimeMutationLock(runtimeKey, () => invalidateRuntimeRecord(runtimeKey, record));
     }),
   );
   return { ok: true as const };
+}
+
+export async function disposeAllRuntimeHosts() {
+  const entries = [...runtimeRecords.entries()];
+  runtimeRecords.clear();
+  staleRuntimeKeys.clear();
+  await Promise.all(
+    entries.map(async ([runtimeKey, record]) => {
+      clearRuntimeDisposeTimeout(runtimeKey);
+      try {
+        (await record.runtimePromise).session.dispose();
+      } catch {
+        // Ignore shutdown races.
+      }
+    }),
+  );
 }

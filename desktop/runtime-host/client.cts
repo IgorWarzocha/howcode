@@ -61,6 +61,28 @@ const hosts = brokerState.hosts;
 
 const THREAD_HOST_IDLE_MS = 5 * 60 * 1000;
 
+let registeredHostShutdownHandlers = false;
+
+function killAllRuntimeHosts() {
+  for (const host of hosts) {
+    host.process?.kill();
+  }
+}
+
+function registerHostShutdownHandlers() {
+  if (registeredHostShutdownHandlers) return;
+  registeredHostShutdownHandlers = true;
+  process.once("exit", killAllRuntimeHosts);
+  process.once("SIGTERM", () => {
+    killAllRuntimeHosts();
+    process.exit(0);
+  });
+  process.once("SIGINT", () => {
+    killAllRuntimeHosts();
+    process.exit(0);
+  });
+}
+
 const serviceHost: HostConnection =
   brokerState.serviceHost ?? createHostConnection("service", "service");
 brokerState.serviceHost = serviceHost;
@@ -234,6 +256,7 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
 }
 
 async function ensureRuntimeHost(host: HostConnection) {
+  registerHostShutdownHandlers();
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host);
     return host.process;

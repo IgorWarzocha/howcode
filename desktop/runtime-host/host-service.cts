@@ -11,7 +11,7 @@ export {
   stopComposerRun,
 } from "./live-runtime-service.cts";
 export { setRuntimeHostEventSink } from "./host-events.cts";
-export { invalidateRuntimeSettings } from "./live-runtime-registry.cts";
+export { disposeAllRuntimeHosts, invalidateRuntimeSettings } from "./live-runtime-registry.cts";
 
 export { generateGitCommitMessage } from "./git-commit-message-service.cts";
 

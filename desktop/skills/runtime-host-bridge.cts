@@ -22,6 +22,6 @@ export async function removePiSkill(request: {
   projectPath?: string | null;
 }): Promise<PiSkillMutationResult> {
   const result = await invokeRuntimeHost("removePiSkill", request);
-  await invalidateRuntimeHostSettings({ projectPath: request.projectPath ?? null });
+  await invalidateRuntimeHostSettings();
   return result;
 }
