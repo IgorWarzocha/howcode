@@ -32,13 +32,38 @@ type HostConnection = {
   busy: boolean;
 };
 
-const desktopListeners = new Set<(event: DesktopEvent) => void>();
-const hostByAlias = new Map<string, HostConnection>();
-const hosts = new Set<HostConnection>();
+type RuntimeHostBrokerState = {
+  desktopListeners: Set<(event: DesktopEvent) => void>;
+  hostByAlias: Map<string, HostConnection>;
+  hosts: Set<HostConnection>;
+  serviceHost: HostConnection | null;
+};
+
+const brokerStateKey = Symbol.for("howcode.runtimeHostBrokerState");
+const runtimeHostGlobal = globalThis as typeof globalThis & {
+  [brokerStateKey]?: RuntimeHostBrokerState;
+};
+
+if (!runtimeHostGlobal[brokerStateKey]) {
+  runtimeHostGlobal[brokerStateKey] = {
+    desktopListeners: new Set<(event: DesktopEvent) => void>(),
+    hostByAlias: new Map<string, HostConnection>(),
+    hosts: new Set<HostConnection>(),
+    serviceHost: null,
+  };
+}
+
+const brokerState = runtimeHostGlobal[brokerStateKey];
+
+const desktopListeners = brokerState.desktopListeners;
+const hostByAlias = brokerState.hostByAlias;
+const hosts = brokerState.hosts;
 
 const THREAD_HOST_IDLE_MS = 5 * 60 * 1000;
 
-const serviceHost: HostConnection = createHostConnection("service", "service");
+const serviceHost: HostConnection =
+  brokerState.serviceHost ?? createHostConnection("service", "service");
+brokerState.serviceHost = serviceHost;
 
 function createHostConnection(role: HostRole, label: string): HostConnection {
   const host: HostConnection = {

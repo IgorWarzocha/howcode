@@ -202,6 +202,16 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
   return runtimeRecords.get(persistedSessionPath)?.runtimePromise ?? null;
 }
 
+export async function getCachedRuntimeForRead(sessionPath: string) {
+  const persistedSessionPath = getPersistedSessionPath(sessionPath);
+  if (!persistedSessionPath) return null;
+  const record = runtimeRecords.get(persistedSessionPath);
+  if (!record) return null;
+  if (!staleRuntimeKeys.has(persistedSessionPath)) return record.runtimePromise;
+  const runtime = await record.runtimePromise;
+  return runtime.session.isStreaming || runtime.session.isCompacting ? runtime : null;
+}
+
 export async function getOrCreateRuntimeForSessionPath(
   sessionPath: string,
   options: { suspendDisposal?: boolean } = {},
@@ -295,7 +305,10 @@ export async function invalidateRuntimeSettings(
   const sessionPath = getPersistedSessionPath(request.sessionPath);
   if (sessionPath) {
     const record = runtimeRecords.get(sessionPath);
-    if (record) await invalidateRuntimeRecord(sessionPath, record);
+    if (record)
+      await withRuntimeMutationLock(sessionPath, () =>
+        invalidateRuntimeRecord(sessionPath, record),
+      );
     return { ok: true as const };
   }
 
@@ -312,7 +325,7 @@ export async function invalidateRuntimeSettings(
         return;
       }
       if (projectPath && runtime.cwd !== projectPath) return;
-      await invalidateRuntimeRecord(runtimeKey, record);
+      await withRuntimeMutationLock(runtimeKey, () => invalidateRuntimeRecord(runtimeKey, record));
     }),
   );
   return { ok: true as const };

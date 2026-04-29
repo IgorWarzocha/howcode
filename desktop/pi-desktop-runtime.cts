@@ -1,3 +1,4 @@
+import { stat } from "node:fs/promises";
 import type {
   ComposerStateRequest,
   ComposerStreamingBehavior,
@@ -43,7 +44,12 @@ function getLatestUserPrompt(thread: ThreadData) {
   return prompt.length > 0 ? prompt : null;
 }
 
-function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: "thread-update" }>) {
+async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: "thread-update" }>) {
+  try {
+    await stat(event.sessionPath);
+  } catch {
+    return;
+  }
   const timestamp = Date.now();
   const threadId = upsertThreadSummary({
     id: event.threadId,
@@ -86,7 +92,7 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
     if (event.type === "thread-update") {
       markInternalThreadUpdate(event.sessionPath);
       rememberLiveThread(event.sessionPath, event.thread);
-      persistHostThreadUpdate(event);
+      void persistHostThreadUpdate(event);
     }
     listener(event);
   });

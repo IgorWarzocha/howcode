@@ -14,6 +14,7 @@ const allowedPiRuntimeImportPrefixes = [
   "desktop/pi-packages/services.cts",
   "desktop/pi-packages/configured.cts",
   "desktop/pi-packages/mutations.cts",
+  "desktop/skills/mutations.cts",
 ];
 
 function walkFiles(dir: string): string[] {
@@ -56,6 +57,9 @@ describe("Pi runtime import boundary", () => {
               specifier === "./pi-module.cts" ||
               specifier === "../pi-module.cts" ||
               specifier.includes("/pi-module.cts") ||
+              specifier.includes("/runtime/thread-publisher.cts") ||
+              specifier.includes("/runtime/composer-state.cts") ||
+              specifier.includes("/runtime/runtime-registry.cts") ||
               specifier.startsWith("@mariozechner/pi-"),
           )
           .map((specifier) => `${repoPath} imports ${specifier}`);

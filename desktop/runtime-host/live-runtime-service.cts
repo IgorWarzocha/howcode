@@ -28,6 +28,7 @@ import type { PiRuntime } from "../runtime/types.cts";
 import { publishComposerUpdate, publishThreadUpdate } from "./live-thread-publisher.cts";
 import {
   createRuntimeForNewSession,
+  getCachedRuntimeForRead,
   getCachedRuntimeForSessionPath,
   getOrCreateRuntimeForSessionPath,
   scheduleRuntimeDisposal,
@@ -115,11 +116,9 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
 
 export async function getComposerState(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
-  const runtimePromise = persistedSessionPath
-    ? getCachedRuntimeForSessionPath(persistedSessionPath)
-    : null;
-  return runtimePromise
-    ? await buildComposerState(await runtimePromise)
+  const runtime = persistedSessionPath ? await getCachedRuntimeForRead(persistedSessionPath) : null;
+  return runtime
+    ? await buildComposerState(runtime)
     : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
 }
 
