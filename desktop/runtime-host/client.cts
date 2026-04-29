@@ -1,5 +1,5 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { accessSync, constants, statSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,40 +110,66 @@ function getRuntimeHostPath() {
 
 function isExecutableFile(filePath: string) {
   try {
-    return existsSync(filePath);
+    if (!statSync(filePath).isFile()) return false;
+    accessSync(filePath, constants.X_OK);
+    return true;
   } catch {
     return false;
   }
 }
 
-function discoverNodeFromShell() {
+function runShellNodeProbe(shell: string) {
+  return new Promise<string | null>((resolve) => {
+    const child = spawn(shell, ["-lc", "command -v node"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    let output = "";
+    const timeout = setTimeout(() => {
+      child.kill();
+      resolve(null);
+    }, 2_000);
+    child.stdout?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk) => {
+      output += chunk;
+    });
+    child.once("error", () => {
+      clearTimeout(timeout);
+      resolve(null);
+    });
+    child.once("exit", () => {
+      clearTimeout(timeout);
+      const candidate = output.trim().split("\n")[0];
+      resolve(
+        candidate && path.isAbsolute(candidate) && isExecutableFile(candidate) ? candidate : null,
+      );
+    });
+  });
+}
+
+async function discoverNodeFromShell() {
   const shells = [process.env.SHELL, "/bin/bash", "/bin/zsh", "/bin/sh"].filter(
     (shell): shell is string => Boolean(shell),
   );
   for (const shell of [...new Set(shells)]) {
     if (!isExecutableFile(shell)) continue;
-    const result = spawnSync(shell, ["-lc", "command -v node"], {
-      encoding: "utf8",
-      timeout: 2_000,
-    });
-    const candidate = result.stdout.trim().split("\n")[0];
-    if (candidate && path.isAbsolute(candidate) && isExecutableFile(candidate)) return candidate;
+    const candidate = await runShellNodeProbe(shell);
+    if (candidate) return candidate;
   }
   return null;
 }
 
-function getNodeExecutable() {
+async function getNodeExecutable() {
   if (cachedNodeExecutable) return cachedNodeExecutable;
 
   for (const candidate of [process.env.HOWCODE_NODE_PATH, process.env.NODE]) {
     const normalized = candidate?.trim();
-    if (normalized) {
+    if (normalized && isExecutableFile(normalized)) {
       cachedNodeExecutable = normalized;
       return cachedNodeExecutable;
     }
   }
 
-  const shellNode = discoverNodeFromShell();
+  const shellNode = await discoverNodeFromShell();
   if (shellNode) {
     cachedNodeExecutable = shellNode;
     return cachedNodeExecutable;
@@ -283,58 +309,67 @@ async function ensureRuntimeHost(host: HostConnection) {
   }
 
   clearHostIdleTimer(host);
-  host.startPromise = new Promise((resolve, reject) => {
-    const child = spawn(getNodeExecutable(), [getRuntimeHostPath()], {
-      cwd: getDesktopWorkingDirectory(),
-      env: {
-        ...process.env,
-        HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
-        HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
-        HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
-      },
-      stdio: ["ignore", "pipe", "pipe", "ipc"],
-    });
+  host.startPromise = (async () => {
+    const nodeExecutable = await getNodeExecutable();
+    return await new Promise<ChildProcess>((resolve, reject) => {
+      const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
+        cwd: getDesktopWorkingDirectory(),
+        env: {
+          ...process.env,
+          HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
+          HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
+          HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
+        },
+        stdio: ["ignore", "pipe", "pipe", "ipc"],
+      }) as ChildProcess;
 
-    let settled = false;
-    const settleFailure = (error: Error) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      host.startPromise = null;
-      host.process = null;
-      if (host.role === "thread") {
-        forgetHost(host);
-      }
-      reject(error);
-    };
-
-    child.once("spawn", () => {
-      settled = true;
-      host.process = child;
-      host.startPromise = null;
-      resolve(child);
-    });
-    child.once("error", settleFailure);
-    child.once("exit", (code, signal) => {
-      if (host.process === child) {
+      let settled = false;
+      const settleFailure = (error: Error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        host.startPromise = null;
         host.process = null;
-      }
-      host.startPromise = null;
-      rejectPendingRequests(
-        host,
-        new Error(
-          `Pi runtime host ${host.label} exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}.`,
-        ),
+        if (host.role === "thread") {
+          forgetHost(host);
+        }
+        reject(error);
+      };
+
+      child.once("spawn", () => {
+        settled = true;
+        host.process = child;
+        host.startPromise = null;
+        resolve(child);
+      });
+      child.once("error", settleFailure);
+      child.once("exit", (code: number | null, signal: NodeJS.Signals | null) => {
+        if (host.process === child) {
+          host.process = null;
+        }
+        host.startPromise = null;
+        rejectPendingRequests(
+          host,
+          new Error(
+            `Pi runtime host ${host.label} exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}.`,
+          ),
+        );
+        if (host.role === "thread") {
+          forgetHost(host);
+        }
+      });
+      child.on("message", (message: unknown) =>
+        handleHostMessage(host, message as RuntimeHostToMainMessage),
       );
-      if (host.role === "thread") {
-        forgetHost(host);
-      }
+      child.stdout?.on("data", (chunk: Buffer | string) =>
+        process.stdout.write(`[pi-host:${host.label}] ${chunk}`),
+      );
+      child.stderr?.on("data", (chunk: Buffer | string) =>
+        process.stderr.write(`[pi-host:${host.label}] ${chunk}`),
+      );
     });
-    child.on("message", (message) => handleHostMessage(host, message as RuntimeHostToMainMessage));
-    child.stdout?.on("data", (chunk) => process.stdout.write(`[pi-host:${host.label}] ${chunk}`));
-    child.stderr?.on("data", (chunk) => process.stderr.write(`[pi-host:${host.label}] ${chunk}`));
-  });
+  })();
 
   return host.startPromise;
 }
@@ -354,6 +389,7 @@ function shouldUseThreadHost<TName extends RuntimeHostRequestName>(
   payload: RuntimeHostRequestMap[TName],
 ) {
   if (name === "startNewThread" || name === "selectProjectRuntime") return false;
+  if (name === "loadThreadSnapshot") return false;
   if (name === "getComposerSlashCommands" && !getRequestSessionPath(name, payload)) return false;
   return Boolean(getRequestSessionPath(name, payload));
 }

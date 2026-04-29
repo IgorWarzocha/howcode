@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 const repoRoot = path.resolve(__dirname, "../..");
@@ -41,7 +41,11 @@ function isAllowedRuntimeFile(repoPath: string) {
 
 function resolveImportSpecifier(importerPath: string, specifier: string) {
   if (!specifier.startsWith(".")) return specifier;
-  return toRepoPath(path.resolve(path.dirname(importerPath), specifier));
+  const resolved = path.resolve(path.dirname(importerPath), specifier);
+  for (const candidate of [resolved, `${resolved}.cts`, `${resolved}.ts`, `${resolved}.mts`]) {
+    if (existsSync(candidate)) return toRepoPath(candidate);
+  }
+  return toRepoPath(resolved);
 }
 
 function isForbiddenRuntimeSpecifier(resolvedSpecifier: string) {
