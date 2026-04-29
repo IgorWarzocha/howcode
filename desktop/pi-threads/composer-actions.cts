@@ -15,7 +15,7 @@ import {
   getComposerText,
   getComposerThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
-import { markRuntimeSettingsStale } from "../runtime/runtime-registry.cts";
+import { invalidateRuntimeHostSettings } from "../runtime-host/client.cts";
 import {
   dequeueComposerPrompt,
   sendComposerPrompt,
@@ -102,7 +102,9 @@ export async function handleComposerDesktopAction(
     }
 
     case "composer.reload-settings": {
-      await markRuntimeSettingsStale(getComposerRequest(payload).sessionPath);
+      await invalidateRuntimeHostSettings({
+        sessionPath: getComposerRequest(payload).sessionPath,
+      });
       return handledAction();
     }
 

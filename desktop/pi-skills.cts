@@ -1,3 +1,6 @@
-export { listConfiguredPiSkills } from "./skills/configured-skills.cts";
 export { searchPiSkills } from "./skills/catalog.cts";
-export { installPiSkill, removePiSkill } from "./skills/mutations.cts";
+export {
+  installPiSkill,
+  listConfiguredPiSkills,
+  removePiSkill,
+} from "./skills/runtime-host-bridge.cts";

@@ -15,7 +15,11 @@ import {
   upsertInboxThreadMessage,
   upsertThreadSummary,
 } from "./thread-state-db.cts";
-import { getLiveThread, rememberLiveThread } from "./runtime/live-thread-store.cts";
+import {
+  getLiveThread,
+  markInternalThreadUpdate,
+  rememberLiveThread,
+} from "./runtime/live-thread-store.cts";
 import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client.cts";
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
 
@@ -80,6 +84,7 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
   const unsubscribeLocal = subscribeLocalDesktopEvents(listener);
   const unsubscribeHost = subscribeRuntimeHostEvents((event) => {
     if (event.type === "thread-update") {
+      markInternalThreadUpdate(event.sessionPath);
       rememberLiveThread(event.sessionPath, event.thread);
       persistHostThreadUpdate(event);
     }

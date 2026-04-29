@@ -248,3 +248,44 @@ export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () =>
     if (runtimeMutationTails.get(runtimeKey) === nextTail) runtimeMutationTails.delete(runtimeKey);
   }
 }
+
+export async function invalidateRuntimeSettings(
+  request: {
+    sessionPath?: string | null;
+    projectPath?: string | null;
+  } = {},
+) {
+  const sessionPath = getPersistedSessionPath(request.sessionPath);
+  if (sessionPath) {
+    const record = runtimeRecords.get(sessionPath);
+    if (record) {
+      clearRuntimeDisposeTimeout(sessionPath);
+      runtimeRecords.delete(sessionPath);
+      try {
+        (await record.runtimePromise).session.dispose();
+      } catch {
+        // Ignore races while invalidating runtime settings.
+      }
+    }
+    return { ok: true as const };
+  }
+
+  const projectPath = request.projectPath?.trim() || null;
+  const entries = [...runtimeRecords.entries()];
+  await Promise.all(
+    entries.map(async ([runtimeKey, record]) => {
+      let runtime: PiRuntime;
+      try {
+        runtime = await record.runtimePromise;
+      } catch {
+        if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
+        return;
+      }
+      if (projectPath && runtime.cwd !== projectPath) return;
+      clearRuntimeDisposeTimeout(runtimeKey);
+      if (runtimeRecords.get(runtimeKey) === record) runtimeRecords.delete(runtimeKey);
+      runtime.session.dispose();
+    }),
+  );
+  return { ok: true as const };
+}

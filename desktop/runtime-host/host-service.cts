@@ -11,6 +11,7 @@ export {
   stopComposerRun,
 } from "./live-runtime-service.cts";
 export { setRuntimeHostEventSink } from "./host-events.cts";
+export { invalidateRuntimeSettings } from "./live-runtime-registry.cts";
 
 export { generateGitCommitMessage } from "./git-commit-message-service.cts";
 
@@ -25,6 +26,8 @@ export {
   removePiPackage,
 } from "../pi-packages/mutations.cts";
 export { listConfiguredPiPackages } from "../pi-packages/configured.cts";
+export { listConfiguredPiSkills } from "../skills/configured-skills.cts";
+export { installPiSkill, removePiSkill } from "../skills/mutations.cts";
 
 export { loadThreadSnapshot } from "./thread-snapshot-service.cts";
 

@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import type {
@@ -10,6 +11,7 @@ import type {
 } from "./protocol.cts";
 
 type PendingRequest = {
+  name: RuntimeHostRequestName;
   resolve: (value: RuntimeHostResponseMap[RuntimeHostRequestName]) => void;
   reject: (error: Error) => void;
 };
@@ -53,7 +55,7 @@ function createHostConnection(role: HostRole, label: string): HostConnection {
 }
 
 function getRuntimeHostPath() {
-  return new URL("./worker.mjs", import.meta.url).pathname;
+  return fileURLToPath(new URL("./worker.mjs", import.meta.url));
 }
 
 function getNodeExecutable() {
@@ -67,6 +69,7 @@ function emitDesktopEvent(event: DesktopEvent) {
 }
 
 function rejectPendingRequests(host: HostConnection, error: Error) {
+  host.busy = false;
   for (const [, pending] of host.pendingRequests) {
     pending.reject(error);
   }
@@ -139,6 +142,9 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
     }
 
     host.pendingRequests.delete(message.id);
+    if (pending.name === "sendComposerPrompt" && (!message.ok || message.result !== "sent")) {
+      host.busy = false;
+    }
     scheduleThreadHostIdleStop(host);
     if (message.ok) {
       pending.resolve(message.result);
@@ -267,6 +273,7 @@ export async function invokeRuntimeHost<TName extends RuntimeHostRequestName>(
     }
 
     host.pendingRequests.set(id, {
+      name,
       resolve: (value) => resolve(value as RuntimeHostResponseMap[TName]),
       reject,
     });
@@ -275,6 +282,56 @@ export async function invokeRuntimeHost<TName extends RuntimeHostRequestName>(
       if (!error) {
         return;
       }
+      host.pendingRequests.delete(id);
+      if (name === "sendComposerPrompt") {
+        host.busy = false;
+      }
+      scheduleThreadHostIdleStop(host);
+      reject(error);
+    });
+  });
+}
+
+export async function invalidateRuntimeHostSettings(
+  request: {
+    sessionPath?: string | null;
+    projectPath?: string | null;
+  } = {},
+) {
+  const targets = new Set<HostConnection>();
+  if (request.sessionPath) {
+    const host = hostByAlias.get(request.sessionPath);
+    if (host) targets.add(host);
+  } else {
+    for (const host of hosts) targets.add(host);
+  }
+
+  await Promise.all(
+    [...targets].map((host) =>
+      invokeRuntimeHostOnHost(host, "invalidateRuntimeSettings", request).catch((error) => {
+        console.warn(`Failed to invalidate Pi runtime host settings (${host.label}).`, error);
+      }),
+    ),
+  );
+}
+
+async function invokeRuntimeHostOnHost<TName extends RuntimeHostRequestName>(
+  host: HostConnection,
+  name: TName,
+  payload: RuntimeHostRequestMap[TName],
+): Promise<RuntimeHostResponseMap[TName]> {
+  const child = await ensureRuntimeHost(host);
+  const id = randomUUID();
+
+  return await new Promise<RuntimeHostResponseMap[TName]>((resolve, reject) => {
+    host.pendingRequests.set(id, {
+      name,
+      resolve: (value) => resolve(value as RuntimeHostResponseMap[TName]),
+      reject,
+    });
+
+    child.send({ type: "request", id, name, payload }, (error) => {
+      if (!error) return;
       host.pendingRequests.delete(id);
       scheduleThreadHostIdleStop(host);
       reject(error);

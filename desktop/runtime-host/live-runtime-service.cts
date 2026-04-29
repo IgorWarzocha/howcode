@@ -8,6 +8,7 @@ import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.t
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { loadAppSettings } from "../app-settings.cts";
 import { discoverHeadlessAgentSessionResources } from "../runtime/agent-session-extensions.cts";
 import { buildComposerAttachmentPrompt } from "../runtime/attachments.cts";
 import {
@@ -214,7 +215,8 @@ export async function sendComposerPrompt(
       }
       const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
       const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
-      const streamingBehavior = request.streamingBehavior ?? "followUp";
+      const streamingBehavior =
+        request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
       if (runtime.session.isCompacting)
         throw new Error("Wait for the current compaction to finish before sending another prompt.");
       if (runtime.session.isStreaming) {
@@ -317,9 +319,24 @@ export async function dequeueComposerPrompt(
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
         return null;
       }
-      await replayComposerQueue(runtime.session, dequeueResult.nextQueue);
-      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-      return dequeueResult.dequeuedText;
+      try {
+        await replayComposerQueue(runtime.session, dequeueResult.nextQueue);
+        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        return dequeueResult.dequeuedText;
+      } catch (error) {
+        runtime.session.clearQueue();
+        try {
+          await replayComposerQueue(runtime.session, clearedQueue);
+          await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+        } catch (rollbackError) {
+          throw new Error(
+            rollbackError instanceof Error
+              ? `Could not restore queued prompts after dequeue replay failure: ${rollbackError.message}`
+              : "Could not restore queued prompts after dequeue replay failure.",
+          );
+        }
+        throw error;
+      }
     } finally {
       scheduleRuntimeDisposal(persistedSessionPath);
     }

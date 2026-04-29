@@ -10,6 +10,8 @@ import type {
   PiSettings,
   PiConfiguredPackage,
   PiPackageMutationResult,
+  PiConfiguredSkill,
+  PiSkillMutationResult,
   ThreadData,
   SkillCreatorSessionState,
 } from "../../shared/desktop-contracts.ts";
@@ -20,6 +22,7 @@ export type RuntimeHostRequestMap = {
   startNewThread: { request: ComposerStateRequest };
   selectProjectRuntime: { request: ComposerStateRequest };
   openThreadRuntime: { request: ComposerStateRequest };
+  invalidateRuntimeSettings: { sessionPath?: string | null; projectPath?: string | null };
   getPiSessionStorage: { projectPath?: string | null };
   loadPiSettings: { projectPath?: string | null };
   updatePiSetting: { key: keyof PiSettings; value: unknown; projectPath?: string | null };
@@ -31,6 +34,9 @@ export type RuntimeHostRequestMap = {
     projectPath?: string | null;
   };
   removePiPackage: { source: string; local?: boolean; projectPath?: string | null };
+  listConfiguredPiSkills: { projectPath?: string | null };
+  installPiSkill: { source: string; local?: boolean; projectPath?: string | null };
+  removePiSkill: { installedPath: string; projectPath?: string | null };
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number };
   startSkillCreatorSession: { prompt: string; local?: boolean; projectPath?: string | null };
   continueSkillCreatorSession: { sessionId: string; prompt: string };
@@ -62,12 +68,16 @@ export type RuntimeHostResponseMap = {
   };
   selectProjectRuntime: ComposerState;
   openThreadRuntime: ComposerState;
+  invalidateRuntimeSettings: { ok: true };
   getPiSessionStorage: { agentDir: string; sessionDir: string };
   loadPiSettings: PiSettings;
   updatePiSetting: PiSettings;
   listConfiguredPiPackages: PiConfiguredPackage[];
   installPiPackage: PiPackageMutationResult;
   removePiPackage: PiPackageMutationResult;
+  listConfiguredPiSkills: PiConfiguredSkill[];
+  installPiSkill: PiSkillMutationResult;
+  removePiSkill: PiSkillMutationResult;
   loadThreadSnapshot: { projectId: string; threadId: string; thread: ThreadData };
   startSkillCreatorSession: SkillCreatorSessionState;
   continueSkillCreatorSession: SkillCreatorSessionState;

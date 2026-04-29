@@ -9,8 +9,11 @@ import {
   generateGitCommitMessage,
   getComposerState,
   getPiSessionStorage,
+  invalidateRuntimeSettings,
   installPiPackage,
+  installPiSkill,
   listConfiguredPiPackages,
+  listConfiguredPiSkills,
   loadPiSettings,
   loadThreadSnapshot,
   openThreadRuntime,
@@ -25,6 +28,7 @@ import {
   startSkillCreatorSession,
   stopComposerRun,
   removePiPackage,
+  removePiSkill,
   updatePiSetting,
 } from "./host-service.cts";
 
@@ -61,6 +65,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
         message.payload as unknown as RuntimeHostRequestMessage<"openThreadRuntime">["payload"];
       return (await openThreadRuntime(payload.request)) as RuntimeHostResponseMap[TName];
     }
+    case "invalidateRuntimeSettings": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"invalidateRuntimeSettings">["payload"];
+      return (await invalidateRuntimeSettings(payload)) as RuntimeHostResponseMap[TName];
+    }
     case "getPiSessionStorage": {
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"getPiSessionStorage">["payload"];
@@ -84,6 +93,21 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"listConfiguredPiPackages">["payload"];
       return (await listConfiguredPiPackages(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "listConfiguredPiSkills": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"listConfiguredPiSkills">["payload"];
+      return (await listConfiguredPiSkills(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "installPiSkill": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"installPiSkill">["payload"];
+      return (await installPiSkill(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "removePiSkill": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"removePiSkill">["payload"];
+      return (await removePiSkill(payload)) as RuntimeHostResponseMap[TName];
     }
     case "installPiPackage": {
       const payload =
