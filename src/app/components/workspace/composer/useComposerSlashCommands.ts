@@ -158,6 +158,20 @@ export function useComposerSlashCommands({
         sendExtensionCommand();
         return;
       }
+      if (!draftCommand && sendExtensionCommand && (loading || commands.length === 0)) {
+        void getComposerSlashCommandsQuery({ projectId, sessionPath })
+          .then((nextCommands) => {
+            const commandName = draft.trim().slice(1).split(/\s+/, 1)[0];
+            const resolvedCommand = nextCommands.find((command) => command.name === commandName);
+            if (resolvedCommand?.source === "extension") {
+              sendExtensionCommand();
+            } else {
+              send();
+            }
+          })
+          .catch(() => send());
+        return;
+      }
     }
 
     send();

@@ -54,6 +54,12 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   return { composer, runtime };
 }
 
+function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
+  if (!text.startsWith("/")) return false;
+  const commandName = text.slice(1).split(/\s+/, 1)[0];
+  return Boolean(runtime.session.extensionRunner.getCommand(commandName));
+}
+
 async function promptAndReturnAfterPreflight({
   runtime,
   message,
@@ -232,14 +238,18 @@ export async function sendComposerPrompt(
         throw new Error("Wait for the current compaction to finish before sending another prompt.");
       if (runtime.session.isStreaming) {
         if (streamingBehavior === "stop") {
-          await runtime.session.abort();
-          await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-          return "stopped" as const;
+          if (!isExtensionCommandPrompt(runtime, request.text)) {
+            await runtime.session.abort();
+            await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+            return "stopped" as const;
+          }
         }
+        const promptStreamingBehavior =
+          streamingBehavior === "stop" ? "followUp" : streamingBehavior;
         await promptAndReturnAfterPreflight({
           runtime,
           message,
-          options: { streamingBehavior },
+          options: { streamingBehavior: promptStreamingBehavior },
           request: { ...request, sessionPath: persistedSessionPath },
         });
       } else {
@@ -299,10 +309,11 @@ export async function stopComposerRun(request: ComposerStateRequest) {
       suspendDisposal: true,
     });
     const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
-    if (runtime.session.isStreaming) {
+    const wasStreaming = runtime.session.isStreaming;
+    if (wasStreaming) {
       await runtime.session.abort();
     }
-    if (!abortedExtensionCommand && !runtime.session.isStreaming) await runtime.session.abort();
+    if (!abortedExtensionCommand && !wasStreaming) await runtime.session.abort();
     scheduleRuntimeDisposal(persistedSessionPath);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

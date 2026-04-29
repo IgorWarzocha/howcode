@@ -173,7 +173,7 @@ export function useComposerSubmission({
   const extensionCommandRunIdRef = useRef(0);
 
   const sendExtensionCommand = useCallback(() => {
-    if (isCompacting || extensionCommandRunning) {
+    if (isCompacting || extensionCommandRunning || sendLockRef.current) {
       return;
     }
 
@@ -183,7 +183,7 @@ export function useComposerSubmission({
     setOpenMenu(null);
     setExtensionCommandRunning(true);
 
-    void (async () => {
+    void withComposerSendLock(sendLockRef, async () => {
       const submittedScopeKey = composerScopeKey;
       const submittedDraftThreadId = draftThreadId;
 
@@ -214,9 +214,13 @@ export function useComposerSubmission({
           onAction,
         });
 
-        if (result.status === "error" && activeComposerScopeKeyRef.current === submittedScopeKey) {
-          setDraftValue(result.text);
-          setErrorMessage(result.errorMessage);
+        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+          if (result.status === "error") {
+            setDraftValue(result.text);
+            setErrorMessage(result.errorMessage);
+          } else if (result.status === "stopped") {
+            setDraftValue(result.text);
+          }
         }
       } catch (error) {
         if (activeComposerScopeKeyRef.current === submittedScopeKey) {
@@ -227,7 +231,7 @@ export function useComposerSubmission({
           setExtensionCommandRunning(false);
         }
       }
-    })();
+    });
   }, [
     activeComposerScopeKeyRef,
     composerScopeKey,
@@ -238,6 +242,7 @@ export function useComposerSubmission({
     onAction,
     projectId,
     sessionPath,
+    sendLockRef,
     setDraftValue,
     setErrorMessage,
     setExtensionCommandRunning,
