@@ -158,13 +158,13 @@ gh pr edit <pr-number> --body-file <file>
 Post this exact PR comment after the PR is up:
 
 ```text
-@codex please review this PR and give me 10-20 issues if any
+@codex please review this PR and give me 10-20 issues if any. Categorize findings as required, recommended, or optional.
 ```
 
 Useful command:
 
 ```bash
-gh pr comment <pr-number-or-url> --body "@codex please review this PR and give me 10-20 issues if any"
+gh pr comment <pr-number-or-url> --body-file <review-request-file>
 ```
 
 ### 9. Triage Codex feedback on request
