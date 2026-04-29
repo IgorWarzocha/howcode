@@ -1,30 +1,20 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-  type SetStateAction,
-} from "react";
-import type { DesktopAction } from "../../../desktop/actions";
-import { getErrorMessage } from "../../../desktop/error-messages";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import type { DesktopAction } from "../../../../desktop/actions";
+import { getErrorMessage } from "../../../../desktop/error-messages";
 import type {
-  ComposerAttachment,
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-} from "../../../desktop/types";
-import type { View } from "../../../types";
-import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
-import { mergeDraftWithRestoredQueuedPrompt } from "./composer-queue.helpers";
-import { composerDraftStore, getComposerDraftThreadId } from "./composerDraftStore";
-import { useComposerAttachmentPicker } from "./useComposerAttachmentPicker";
-import { useComposerClipboardHandlers } from "./useComposerClipboardHandlers";
-import { useComposerDictation } from "./useComposerDictation";
-import { useComposerSubmission } from "./useComposerSubmission";
+} from "../../../../desktop/types";
+import type { View } from "../../../../types";
+import { useDismissibleLayer } from "../../../../hooks/useDismissibleLayer";
+import { useComposerAttachmentPicker } from "../useComposerAttachmentPicker";
+import { useComposerClipboardHandlers } from "../useComposerClipboardHandlers";
+import { useComposerDictation } from "../useComposerDictation";
+import { useComposerSubmission } from "../useComposerSubmission";
+import { useComposerDraftState } from "./useComposerDraftState";
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   off: "Off",
@@ -86,91 +76,36 @@ export function useComposerController({
   onRestoredQueuedPromptApplied,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
-  const draftThreadId = useMemo(
-    () => getComposerDraftThreadId({ projectId, sessionPath }),
-    [projectId, sessionPath],
-  );
-  const [draft, setDraft] = useState("");
-  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
   const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const composerScopeKey = useMemo(
-    () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
-    [draftThreadId, projectId, sessionPath],
-  );
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
   const pickerPanelRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
-  const activeComposerScopeKeyRef = useRef(composerScopeKey);
-  const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
-  const skipNextDraftPersistenceRef = useRef<string | null>(null);
-  const attachmentsRef = useRef<ComposerAttachment[]>([]);
-  const draftValueRef = useRef("");
   const sendLockRef = useRef(false);
-
-  activeDraftThreadIdRef.current = draftThreadId;
-  activeComposerScopeKeyRef.current = composerScopeKey;
-  attachmentsRef.current = attachments;
-
-  const setDraftValue = useCallback((value: SetStateAction<string>) => {
-    const nextValue =
-      typeof value === "function"
-        ? (value as (current: string) => string)(draftValueRef.current)
-        : value;
-    draftValueRef.current = nextValue;
-    setDraft(nextValue);
-  }, []);
-
-  const setAttachmentValue = useCallback((value: SetStateAction<ComposerAttachment[]>) => {
-    const nextValue =
-      typeof value === "function"
-        ? (value as (current: ComposerAttachment[]) => ComposerAttachment[])(attachmentsRef.current)
-        : value;
-    attachmentsRef.current = nextValue;
-    setAttachments(nextValue);
-  }, []);
-
-  useEffect(() => {
-    skipNextDraftPersistenceRef.current = draftThreadId;
-
-    const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
-    setDraftValue(persistedDraft?.prompt ?? "");
-    setAttachmentValue(persistedDraft?.attachments ?? []);
-    setOpenMenu(persistedDraft?.pickerOpen ? "picker" : null);
-    setErrorMessage(null);
-  }, [draftThreadId, setAttachmentValue, setDraftValue]);
-
-  useEffect(() => {
-    if (!draftThreadId) {
-      return;
-    }
-
-    if (skipNextDraftPersistenceRef.current === draftThreadId) {
-      skipNextDraftPersistenceRef.current = null;
-      return;
-    }
-
-    composerDraftStore.setDraft(draftThreadId, {
-      prompt: draft,
-      attachments,
-      pickerOpen: openMenu === "picker",
-    });
-  }, [attachments, draft, draftThreadId, openMenu]);
-
-  useEffect(() => {
-    if (!restoredQueuedPrompt) {
-      return;
-    }
-
-    setDraftValue((currentDraft) =>
-      mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
-    );
-    setErrorMessage(null);
-    onRestoredQueuedPromptApplied();
-  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue]);
+  const {
+    activeComposerScopeKeyRef,
+    activeDraftThreadIdRef,
+    attachments,
+    attachmentsRef,
+    composerScopeKey,
+    draft,
+    draftThreadId,
+    draftValueRef,
+    setAttachmentValue,
+    setDraftValue,
+    skipNextDraftPersistenceRef,
+  } = useComposerDraftState({
+    projectId,
+    sessionPath,
+    openMenu,
+    setOpenMenu,
+    setErrorMessage,
+    restoredQueuedPrompt,
+    onRestoredQueuedPromptApplied,
+  });
 
   useDismissibleLayer({
     open: openMenu === "model",

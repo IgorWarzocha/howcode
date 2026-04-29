@@ -3,7 +3,7 @@ import type { ComposerProps } from "../Composer";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerPromptInputPanel } from "./ComposerPromptInputPanel";
 import { hasFilePayloadInClipboardData } from "./composer-paste-attachments";
-import { useComposerController } from "./useComposerController";
+import { useComposerController } from "./controller/useComposerController";
 import { useComposerSlashCommands } from "./useComposerSlashCommands";
 
 type ComposerPromptSurfaceProps = ComposerProps & {
