@@ -147,6 +147,9 @@ async function createRuntime(options: {
               sessionPath: runtime.session.sessionFile,
             }),
           )
+          .catch((error) => {
+            console.warn("Failed to publish composer state after compaction end", error);
+          })
           .finally(() => {
             if (runtimeKey) {
               void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
@@ -190,6 +193,9 @@ async function createRuntime(options: {
             sessionPath: runtime.session.sessionFile,
           }),
         )
+        .catch((error) => {
+          console.warn("Failed to publish composer state after queue update", error);
+        })
         .finally(() => {
           if (runtimeKey && !runtime.session.isStreaming) scheduleRuntimeDisposal(runtimeKey);
         });

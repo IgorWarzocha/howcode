@@ -96,6 +96,7 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath);
     scheduleRuntimeDisposal(persistedSessionPath);
     return mapSessionCommands(runtime.session);
   }

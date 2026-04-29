@@ -207,14 +207,21 @@ process.on("message", (message: RuntimeHostRequestMessage) => {
     });
 });
 
-process.on("uncaughtException", (error) => {
-  process.send?.({
-    type: "host-error",
-    error: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
-  });
-  process.exitCode = 1;
-});
+function reportFatalHostError(error: unknown) {
+  process.send?.(
+    {
+      type: "host-error",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    },
+    () => {
+      process.exit(1);
+    },
+  );
+  setTimeout(() => process.exit(1), 100).unref();
+}
+
+process.on("uncaughtException", reportFatalHostError);
 
 process.on("unhandledRejection", (error) => {
   process.send?.({
