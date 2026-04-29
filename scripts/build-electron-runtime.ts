@@ -25,6 +25,7 @@ const buildTargets = [
       path.join(projectRoot, "desktop", "pi-threads.cts"),
       path.join(projectRoot, "desktop", "pi-skills.cts"),
       path.join(projectRoot, "desktop", "skill-creator-session.cts"),
+      path.join(projectRoot, "desktop", "runtime-host", "worker.cts"),
     ],
     outdir: path.join(buildRoot, "desktop"),
     root: path.join(projectRoot, "desktop"),

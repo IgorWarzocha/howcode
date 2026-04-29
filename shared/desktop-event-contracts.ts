@@ -15,6 +15,18 @@ export type DesktopEvent =
       isError: boolean;
     }
   | {
+      type: "runtime-diagnostic";
+      severity: "info" | "warning" | "error";
+      message: string;
+      details?: unknown;
+      sessionPath?: string | null;
+      projectId?: string | null;
+    }
+  | {
+      type: "internal-thread-update";
+      sessionPath: string;
+    }
+  | {
       type: "thread-update";
       reason: "start" | "update" | "end" | "external" | "compaction-start" | "compaction";
       projectId: string;

@@ -4,10 +4,8 @@ import type {
   Thread,
   ThreadData,
 } from "../../shared/desktop-contracts.ts";
-import { buildThreadData } from "../../shared/thread-data.ts";
-import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
 import { getLiveThread } from "../pi-desktop-runtime.cts";
-import { getPiModule } from "../pi-module.cts";
+import { invokeRuntimeHost } from "../runtime-host/client.cts";
 import {
   ensureProject,
   listArchivedThreads,
@@ -72,23 +70,10 @@ export async function loadThreadSnapshot(
   sessionPath: string,
   options?: { historyCompactions?: number },
 ): Promise<LoadedThreadSnapshot> {
-  const { SessionManager } = await getPiModule();
-  const manager = SessionManager.open(sessionPath);
-  const historyCompactions = options?.historyCompactions ?? 0;
-  const pathEntries = [...(manager.getBranch() as SessionPathEntry[])];
-  const historySlice = buildThreadHistorySlice(pathEntries, historyCompactions);
-
-  return {
-    projectId: manager.getCwd(),
-    threadId: manager.getSessionId(),
-    thread: buildThreadData({
-      sessionPath,
-      sourceMessages: historySlice.sourceMessages,
-      previousMessageCount: historySlice.previousMessageCount,
-      isStreaming: false,
-      isCompacting: false,
-    }),
-  };
+  return invokeRuntimeHost("loadThreadSnapshot", {
+    sessionPath,
+    historyCompactions: options?.historyCompactions,
+  });
 }
 
 export async function loadThread(
