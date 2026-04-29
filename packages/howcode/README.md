@@ -24,9 +24,13 @@ This npm package is a small launcher.
 On first run, it downloads the matching desktop app for your platform from GitHub Releases and caches it locally.
 After the first successful download, it can fall back to the cached app if release metadata is temporarily unavailable.
 
+On Windows, the first successful run also creates a Start Menu shortcut for `howcode`, so you do
+not need to find the cached executable or add the cache directory to `PATH`.
+
 ## What you actually get
 
 - macOS, Linux, and Windows desktop builds
+- Windows installer artifacts in GitHub Releases
 - Linux AppImage artifacts for direct installs
 - local cached installs after first download
 - desktop builds that bundle Electron/Chromium for a more consistent renderer

@@ -22,9 +22,11 @@ npm i -g howcode
 howcode
 ```
 
-There's a launcher. It downloads the correct version.
+There's a launcher. It downloads the correct version and relaunches the cached desktop app.
+On Windows, the launcher also creates a Start Menu shortcut after the first successful download.
 
-Or check releases tabs for latest stable-ish version you can just download. 
+Or check releases tabs for latest stable-ish version you can just download. Windows releases include
+an installer; Linux releases include an AppImage.
 
 Built on Linux, compatible with Mac and Windows (hopefully).
 

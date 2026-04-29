@@ -88,12 +88,132 @@ function getPaths(target, releaseInfo) {
   const versionsRoot = path.join(cacheRoot, "versions");
   const releaseKey = `${releaseInfo.version}-${releaseInfo.hash}`;
   const installDir = path.join(versionsRoot, releaseKey);
+  const launcherWorkingDirectory = path.dirname(path.join(installDir, target.executable));
   return {
     cacheRoot,
     currentFile: path.join(cacheRoot, "current.json"),
+    windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
+    launcherWorkingDirectory,
     installDir,
     executablePath: path.join(installDir, target.executable),
   };
+}
+
+function getWindowsStartMenuShortcutPath() {
+  const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+  return path.join(appData, "Microsoft", "Windows", "Start Menu", "Programs", `${APP_NAME}.lnk`);
+}
+
+function escapeWindowsCommandValue(value) {
+  return value.replace(/%/g, "%%");
+}
+
+function getWindowsScriptHostPath(executableName) {
+  const systemRoot = process.env.SystemRoot || process.env.SYSTEMROOT;
+  if (systemRoot) {
+    return path.join(systemRoot, "System32", executableName);
+  }
+
+  return path.join("C:", "Windows", "System32", executableName);
+}
+
+async function writeWindowsCommandLauncher(paths) {
+  const commandContents = [
+    "@echo off",
+    "chcp 65001 >nul",
+    "setlocal",
+    "set NODE_TLS_REJECT_UNAUTHORIZED=",
+    `set \"HOWCODE_EXE=${escapeWindowsCommandValue(paths.executablePath)}\"`,
+    `set \"HOWCODE_REPO_ROOT=${escapeWindowsCommandValue(paths.launcherWorkingDirectory)}\"`,
+    'if not exist "%HOWCODE_EXE%" (',
+    `  echo ${APP_NAME}: installed app executable was not found.`,
+    `  echo Run npx ${APP_NAME} to repair the local install.`,
+    "  exit /b 1",
+    ")",
+    'start "" /D "%HOWCODE_REPO_ROOT%" "%HOWCODE_EXE%"',
+    "endlocal",
+    "",
+  ].join("\r\n");
+
+  await fsp.writeFile(paths.windowsCommandFile, commandContents, "utf8");
+}
+
+async function createWindowsStartMenuShortcut(paths) {
+  const shortcutPath = getWindowsStartMenuShortcutPath();
+  const shortcutScriptPath = path.join(
+    paths.cacheRoot,
+    `.create-${APP_NAME}-shortcut-${process.pid}.js`,
+  );
+  await fsp.mkdir(path.dirname(shortcutPath), { recursive: true });
+  await fsp.writeFile(
+    shortcutScriptPath,
+    [
+      "var shell = WScript.CreateObject('WScript.Shell');",
+      "var shortcut = shell.CreateShortcut(WScript.Arguments.Item(0));",
+      "shortcut.TargetPath = WScript.Arguments.Item(1);",
+      "shortcut.WorkingDirectory = WScript.Arguments.Item(2);",
+      "shortcut.IconLocation = WScript.Arguments.Item(3);",
+      "shortcut.Description = WScript.Arguments.Item(4);",
+      "shortcut.Save();",
+      "",
+    ].join("\r\n"),
+    "utf8",
+  );
+
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawn(
+        getWindowsScriptHostPath("cscript.exe"),
+        [
+          "//NoLogo",
+          shortcutScriptPath,
+          shortcutPath,
+          paths.windowsCommandFile,
+          paths.launcherWorkingDirectory,
+          `${paths.executablePath},0`,
+          "howcode",
+        ],
+        { stdio: "ignore", windowsHide: true },
+      );
+      child.on("error", reject);
+      child.on("exit", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`cscript exited with code ${code} while creating Start Menu shortcut.`));
+        }
+      });
+    });
+  } finally {
+    await fsp.rm(shortcutScriptPath, { force: true });
+  }
+
+  return shortcutPath;
+}
+
+async function ensureWindowsLaunchIntegration(target, paths) {
+  if (target.os !== "win") {
+    return true;
+  }
+
+  try {
+    await writeWindowsCommandLauncher(paths);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`${APP_NAME}: could not create command launcher: ${message}`);
+    console.warn(`${APP_NAME}: Start Menu shortcut was not updated.`);
+    return false;
+  }
+
+  try {
+    await createWindowsStartMenuShortcut(paths);
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`${APP_NAME}: could not create Start Menu shortcut: ${message}`);
+    console.warn(`${APP_NAME}: you can still relaunch with ${paths.windowsCommandFile}`);
+    return false;
+  }
 }
 
 async function fetchJson(url) {
@@ -216,16 +336,19 @@ async function pruneOldVersions(cacheRoot, keepDir) {
 }
 
 function spawnLauncherProcess(executablePath, options = {}) {
+  const env = {
+    ...process.env,
+    HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
+    ...(options.env || {}),
+  };
+  Reflect.deleteProperty(env, "NODE_TLS_REJECT_UNAUTHORIZED");
+
   return spawn(executablePath, [], {
     detached: true,
     stdio: options.stdio || "ignore",
     windowsHide: true,
     cwd: path.dirname(executablePath),
-    env: {
-      ...process.env,
-      HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
-      ...(options.env || {}),
-    },
+    env,
   });
 }
 
@@ -247,6 +370,14 @@ async function main() {
     releaseInfo = await resolveLatestRelease(target);
   } catch (error) {
     if (current?.executablePath && fs.existsSync(current.executablePath)) {
+      await ensureWindowsLaunchIntegration(target, {
+        cacheRoot,
+        currentFile: path.join(cacheRoot, "current.json"),
+        windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
+        installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
+        launcherWorkingDirectory: path.dirname(current.executablePath),
+        executablePath: current.executablePath,
+      });
       await launch(current.executablePath);
       return;
     }
@@ -255,10 +386,15 @@ async function main() {
   }
 
   const paths = getPaths(target, releaseInfo);
+  const didInstall = !fs.existsSync(paths.executablePath);
   if (!fs.existsSync(paths.executablePath)) {
     await installRelease(target, releaseInfo, paths);
   }
 
+  const launchIntegrationReady = await ensureWindowsLaunchIntegration(target, paths);
+  if (target.os === "win" && didInstall && launchIntegrationReady) {
+    console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`);
+  }
   await pruneOldVersions(cacheRoot, paths.installDir);
   await launch(paths.executablePath);
 }

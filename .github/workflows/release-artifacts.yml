@@ -126,6 +126,7 @@ jobs:
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
             artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
   cleanup-dev-artifacts:
     name: Cleanup old dev artifacts
@@ -197,13 +198,13 @@ jobs:
           path: release-assets
 
       - name: List release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1
