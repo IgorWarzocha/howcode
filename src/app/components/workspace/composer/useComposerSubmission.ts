@@ -1,4 +1,10 @@
-import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import {
+  useCallback,
+  useRef,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from "react";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { getErrorMessage } from "../../../desktop/error-messages";
 import type {
@@ -119,6 +125,7 @@ type UseComposerSubmissionProps = {
   isSending: boolean;
   isStreaming: boolean;
   isCompacting: boolean;
+  extensionCommandRunning: boolean;
   onAction: DesktopActionInvoker;
   projectId: string;
   sessionPath: string | null;
@@ -144,6 +151,7 @@ export function useComposerSubmission({
   isSending,
   isStreaming,
   isCompacting,
+  extensionCommandRunning,
   onAction,
   projectId,
   sessionPath,
@@ -162,19 +170,22 @@ export function useComposerSubmission({
   sendLockRef,
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
+  const extensionCommandRunIdRef = useRef(0);
+
   const sendExtensionCommand = useCallback(() => {
-    if (isCompacting || sendLockRef.current) {
+    if (isCompacting || extensionCommandRunning) {
       return;
     }
 
     const submittedScopeKey = composerScopeKey;
     const submittedDraftThreadId = draftThreadId;
     const submittedDraft = draftValueRef.current.trim();
+    const runId = extensionCommandRunIdRef.current + 1;
+    extensionCommandRunIdRef.current = runId;
     if (submittedDraft.length === 0) {
       return;
     }
 
-    const submittedAttachments = attachmentsRef.current;
     setErrorMessage(null);
     setOpenMenu(null);
     setExtensionCommandRunning(true);
@@ -188,7 +199,7 @@ export function useComposerSubmission({
 
     void submitComposerDraft({
       draft: submittedDraft,
-      attachments: submittedAttachments,
+      attachments: [],
       isSending: false,
       projectId,
       sessionPath,
@@ -197,24 +208,24 @@ export function useComposerSubmission({
     })
       .then((result) => {
         if (result.status === "error" && activeComposerScopeKeyRef.current === submittedScopeKey) {
+          setDraftValue(result.text);
           setErrorMessage(result.errorMessage);
         }
       })
       .finally(() => {
-        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+        if (extensionCommandRunIdRef.current === runId) {
           setExtensionCommandRunning(false);
         }
       });
   }, [
     activeComposerScopeKeyRef,
-    attachmentsRef,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
+    extensionCommandRunning,
     isCompacting,
     onAction,
     projectId,
-    sendLockRef,
     sessionPath,
     setDraftValue,
     setErrorMessage,
@@ -351,7 +362,7 @@ export function useComposerSubmission({
   ]);
 
   const stop = useCallback(async () => {
-    if (!isStreaming || isSending) {
+    if ((!isStreaming && !extensionCommandRunning) || isSending) {
       return;
     }
 
@@ -373,7 +384,16 @@ export function useComposerSubmission({
     } finally {
       setIsSending(false);
     }
-  }, [isSending, isStreaming, onAction, projectId, sessionPath, setErrorMessage, setIsSending]);
+  }, [
+    extensionCommandRunning,
+    isSending,
+    isStreaming,
+    onAction,
+    projectId,
+    sessionPath,
+    setErrorMessage,
+    setIsSending,
+  ]);
 
   const compact = useCallback(async () => {
     if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {

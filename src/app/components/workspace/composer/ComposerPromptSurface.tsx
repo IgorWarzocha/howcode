@@ -37,6 +37,7 @@ export function ComposerPromptSurface({
   availableModels,
   isStreaming,
   isCompacting,
+  isExtensionCommandRunning,
   thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -112,6 +113,7 @@ export function ComposerPromptSurface({
     dictationMaxDurationSeconds,
     isStreaming,
     isCompacting,
+    isExtensionCommandRunning,
     restoredQueuedPrompt,
     streamingBehaviorPreference,
     onAction,
@@ -471,7 +473,7 @@ export function ComposerPromptSurface({
                   "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={() => void stop()}
-                disabled={!composerIsStreaming || isSending}
+                disabled={(!composerIsStreaming && !extensionRunning) || isSending}
                 aria-label="Stop Pi"
                 data-tooltip="Stop Pi"
               >

@@ -32,6 +32,7 @@ export type ComposerState = {
   queuedPrompts: ComposerQueuedPrompt[];
   contextUsage: ComposerContextUsage | null;
   isCompacting: boolean;
+  isExtensionCommandRunning: boolean;
 };
 
 export type ComposerAttachment = {

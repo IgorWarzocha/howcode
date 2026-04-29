@@ -1,7 +1,10 @@
 import path from "node:path";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
+import {
+  abortHeadlessExtensionCommand,
+  bindHeadlessAgentSessionExtensions,
+} from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import { applyHeadlessPiTheme } from "../runtime/headless-pi-theme.cts";
 import type { PiRuntime } from "../runtime/types.cts";
@@ -211,6 +214,16 @@ async function createRuntime(options: {
   });
 
   await bindHeadlessAgentSessionExtensions(session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) =>
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          }),
+        )
+        .catch((error) => console.warn("Failed to publish extension command state", error));
+    },
     onExtensionError: (error) => {
       const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath);
       emitDesktopEvent({
@@ -224,6 +237,10 @@ async function createRuntime(options: {
     },
   });
   return runtime;
+}
+
+export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
+  return abortHeadlessExtensionCommand(runtime.session);
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {

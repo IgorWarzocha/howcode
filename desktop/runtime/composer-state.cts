@@ -12,6 +12,7 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
 import type { PiRuntime } from "./types.cts";
 
@@ -232,6 +233,7 @@ export async function buildComposerStateSnapshot(
     queuedPrompts: [],
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
+    isExtensionCommandRunning: false,
   };
 }
 
@@ -255,5 +257,6 @@ export async function buildComposerState(
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
+    isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),
   };
 }

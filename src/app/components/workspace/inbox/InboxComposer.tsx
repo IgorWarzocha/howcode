@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bot, Loader2, Paperclip, Send, Square, X } from "lucide-react";
+import { ArrowUpRight, Bot, Paperclip, Send, Square, X } from "lucide-react";
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
 import { getErrorMessage } from "../../../desktop/error-messages";
@@ -109,7 +109,6 @@ export function InboxComposer({
   const draftValueRef = useRef(draft);
   const attachmentsRef = useRef(attachments);
   const sendLockRef = useRef(false);
-  const extensionRunning = isSending && !isStreaming && !isCompacting;
   const [localActionPending, setLocalActionPending] = useState(false);
   const canSend =
     (draft.trim().length > 0 || attachments.length > 0) &&
@@ -577,26 +576,19 @@ export function InboxComposer({
               >
                 <Square size={11} fill="currentColor" />
               </button>
-              {extensionRunning ? (
-                <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
-                  <Loader2 size={12} className="animate-spin" />
-                  <span>Pi extension running</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={cn(
-                    compactIconButtonClass,
-                    "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
-                  )}
-                  onClick={() => slashCommands.submit()}
-                  disabled={!canSend}
-                  aria-label="Send"
-                  data-tooltip="Send"
-                >
-                  <Send size={14} />
-                </button>
-              )}
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
+                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
+                )}
+                onClick={() => slashCommands.submit()}
+                disabled={!canSend}
+                aria-label="Send"
+                data-tooltip="Send"
+              >
+                <Send size={14} />
+              </button>
             </div>
           </div>
         </div>

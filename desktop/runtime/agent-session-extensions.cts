@@ -7,6 +7,11 @@ import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 const howcodeExtensionErrorMessageType = "howcode.extension.error";
 const extensionCommandCancelledResult = { cancelled: true };
 const sessionsWithHowcodeContextFilter = new WeakSet<AgentSession>();
+const sessionsWithCommandAbort = new WeakSet<AgentSession>();
+const activeExtensionCommands = new WeakMap<
+  AgentSession,
+  { commandName: string; abortController: AbortController }
+>();
 
 type ExtensionBindings = Parameters<AgentSession["bindExtensions"]>[0];
 type ExtensionCommandContextActions = NonNullable<ExtensionBindings["commandContextActions"]>;
@@ -83,7 +88,19 @@ function buildExtensionResourcePaths(entries: ExtensionResourceEntry[]) {
 
 type HeadlessAgentSessionExtensionOptions = {
   onExtensionError?: (error: Parameters<NonNullable<ExtensionBindings["onError"]>>[0]) => void;
+  onExtensionCommandStateChange?: () => void;
 };
+
+export function isHeadlessExtensionCommandRunning(session: AgentSession) {
+  return activeExtensionCommands.has(session);
+}
+
+export function abortHeadlessExtensionCommand(session: AgentSession) {
+  const activeCommand = activeExtensionCommands.get(session);
+  if (!activeCommand) return false;
+  activeCommand.abortController.abort();
+  return true;
+}
 
 function isHowcodeExtensionErrorMessage(message: AgentMessage) {
   return (
@@ -151,6 +168,47 @@ function createHeadlessCommandContextActions(
   };
 }
 
+function bindHeadlessCommandAbort(
+  session: AgentSession,
+  options: HeadlessAgentSessionExtensionOptions,
+) {
+  if (sessionsWithCommandAbort.has(session)) return;
+  sessionsWithCommandAbort.add(session);
+
+  const extensionRunner = session.extensionRunner;
+  const originalGetCommand = extensionRunner.getCommand.bind(extensionRunner);
+  type ExtensionCommand = NonNullable<ReturnType<typeof originalGetCommand>>;
+  type ExtensionCommandContext = Parameters<ExtensionCommand["handler"]>[1];
+
+  extensionRunner.getCommand = (name: string) => {
+    const command = originalGetCommand(name);
+    if (!command) return command;
+
+    return {
+      ...command,
+      handler: async (args: string, ctx: ExtensionCommandContext) => {
+        const abortController = new AbortController();
+        activeExtensionCommands.set(session, { commandName: name, abortController });
+        options.onExtensionCommandStateChange?.();
+        Object.defineProperty(ctx, "signal", {
+          configurable: true,
+          get: () => abortController.signal,
+        });
+        ctx.abort = () => abortController.abort();
+
+        try {
+          await command.handler?.(args, ctx);
+        } finally {
+          if (activeExtensionCommands.get(session)?.abortController === abortController) {
+            activeExtensionCommands.delete(session);
+            options.onExtensionCommandStateChange?.();
+          }
+        }
+      },
+    };
+  };
+}
+
 export async function discoverHeadlessAgentSessionResources(session: AgentSession) {
   if (!session.extensionRunner.hasHandlers("resources_discover")) {
     return;
@@ -176,6 +234,7 @@ export async function bindHeadlessAgentSessionExtensions(
   options: HeadlessAgentSessionExtensionOptions = {},
 ) {
   bindHowcodeContextFilter(session);
+  bindHeadlessCommandAbort(session, options);
   await applyHeadlessPiTheme(session);
   await session.bindExtensions({
     commandContextActions: createHeadlessCommandContextActions(session),

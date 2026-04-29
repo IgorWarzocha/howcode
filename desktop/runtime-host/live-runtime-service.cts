@@ -33,6 +33,7 @@ import {
   reloadRuntimeSettingsIfSafe,
   scheduleRuntimeDisposal,
   withRuntimeMutationLock,
+  abortRuntimeExtensionCommand,
 } from "./live-runtime-registry.cts";
 import { mapSessionCommands } from "./slash-command-service.cts";
 
@@ -280,7 +281,9 @@ export async function stopComposerRun(request: ComposerStateRequest) {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
-    await runtime.session.abort();
+    if (!abortRuntimeExtensionCommand(runtime)) {
+      await runtime.session.abort();
+    }
     scheduleRuntimeDisposal(persistedSessionPath);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

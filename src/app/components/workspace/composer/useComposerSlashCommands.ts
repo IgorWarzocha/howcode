@@ -47,7 +47,9 @@ function getSlashCommandFilter(draft: string) {
 
 function shouldWaitForSlashCommands(draft: string) {
   const trimmedDraft = draft.trim();
-  return trimmedDraft.length <= 1 && trimmedDraft !== "/settings";
+  return (
+    trimmedDraft.startsWith("/") && !trimmedDraft.includes(" ") && trimmedDraft !== "/settings"
+  );
 }
 
 type UseComposerSlashCommandsOptions = {

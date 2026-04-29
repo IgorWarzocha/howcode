@@ -37,6 +37,7 @@ describe("runtime settings refresh", () => {
         queuedPrompts: [],
         contextUsage: null,
         isCompacting: false,
+        isExtensionCommandRunning: false,
       }),
       publishComposerUpdate,
     });
@@ -65,6 +66,7 @@ describe("runtime settings refresh", () => {
         queuedPrompts: [],
         contextUsage: null,
         isCompacting: false,
+        isExtensionCommandRunning: false,
       }),
       publishComposerUpdate: vi.fn(),
     });

@@ -29,6 +29,7 @@ import {
   getOrCreateRuntimeForSessionPath,
   scheduleRuntimeDisposalForRuntime,
   withRuntimeMutationLock,
+  abortRuntimeExtensionCommand,
 } from "./runtime-registry.cts";
 import {
   getLiveThread,
@@ -311,8 +312,11 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
-    if (cachedRuntime.session.isStreaming) {
-      await cachedRuntime.session.abort();
+    const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime);
+    if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
+      if (!abortedExtensionCommand) {
+        await cachedRuntime.session.abort();
+      }
       scheduleRuntimeDisposalForRuntime(cachedRuntime);
       await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
       return;
@@ -324,7 +328,9 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
       suspendDisposal: true,
     });
 
-    await runtime.session.abort();
+    if (!abortRuntimeExtensionCommand(runtime)) {
+      await runtime.session.abort();
+    }
     scheduleRuntimeDisposalForRuntime(runtime);
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
   });

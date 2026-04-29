@@ -20,6 +20,7 @@ export type ComposerProps = {
   availableModels: ComposerModel[];
   isStreaming: boolean;
   isCompacting: boolean;
+  isExtensionCommandRunning: boolean;
   thinkingLevel: ComposerThinkingLevel;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;

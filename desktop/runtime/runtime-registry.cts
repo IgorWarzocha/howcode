@@ -1,6 +1,9 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { bindHeadlessAgentSessionExtensions } from "./agent-session-extensions.cts";
+import {
+  abortHeadlessExtensionCommand,
+  bindHeadlessAgentSessionExtensions,
+} from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { applyHeadlessPiTheme } from "./headless-pi-theme.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
@@ -324,9 +327,26 @@ async function createRuntime(options: {
     }
   });
 
-  await bindHeadlessAgentSessionExtensions(session);
+  await bindHeadlessAgentSessionExtensions(session, {
+    onExtensionCommandStateChange: () => {
+      void buildComposerState(runtime)
+        .then((composer) => {
+          publishComposerUpdate(composer, {
+            projectId: runtime.cwd,
+            sessionPath: runtime.session.sessionFile,
+          });
+        })
+        .catch(() => {
+          // Ignore transient composer snapshot errors; a later runtime event will republish state.
+        });
+    },
+  });
 
   return runtime;
+}
+
+export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
+  return abortHeadlessExtensionCommand(runtime.session);
 }
 
 function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
