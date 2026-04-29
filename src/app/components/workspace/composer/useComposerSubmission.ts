@@ -177,46 +177,57 @@ export function useComposerSubmission({
       return;
     }
 
-    const submittedScopeKey = composerScopeKey;
-    const submittedDraftThreadId = draftThreadId;
-    const submittedDraft = draftValueRef.current.trim();
     const runId = extensionCommandRunIdRef.current + 1;
     extensionCommandRunIdRef.current = runId;
-    if (submittedDraft.length === 0) {
-      return;
-    }
-
     setErrorMessage(null);
     setOpenMenu(null);
     setExtensionCommandRunning(true);
 
-    if (activeComposerScopeKeyRef.current === submittedScopeKey) {
-      setDraftValue("");
-      if (submittedDraftThreadId) {
-        composerDraftStore.setPrompt(submittedDraftThreadId, "");
-      }
-    }
+    void (async () => {
+      const submittedScopeKey = composerScopeKey;
+      const submittedDraftThreadId = draftThreadId;
 
-    void submitComposerDraft({
-      draft: submittedDraft,
-      attachments: [],
-      isSending: false,
-      projectId,
-      sessionPath,
-      streamingBehaviorPreference,
-      onAction,
-    })
-      .then((result) => {
+      try {
+        await stopDictationAndFlush();
+
+        if (activeComposerScopeKeyRef.current !== submittedScopeKey) {
+          return;
+        }
+
+        const submittedDraft = draftValueRef.current.trim();
+        if (submittedDraft.length === 0) {
+          return;
+        }
+
+        setDraftValue("");
+        if (submittedDraftThreadId) {
+          composerDraftStore.setPrompt(submittedDraftThreadId, "");
+        }
+
+        const result = await submitComposerDraft({
+          draft: submittedDraft,
+          attachments: [],
+          isSending: false,
+          projectId,
+          sessionPath,
+          streamingBehaviorPreference,
+          onAction,
+        });
+
         if (result.status === "error" && activeComposerScopeKeyRef.current === submittedScopeKey) {
           setDraftValue(result.text);
           setErrorMessage(result.errorMessage);
         }
-      })
-      .finally(() => {
+      } catch (error) {
+        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
+          setErrorMessage(getErrorMessage(error, "Could not send prompt."));
+        }
+      } finally {
         if (extensionCommandRunIdRef.current === runId) {
           setExtensionCommandRunning(false);
         }
-      });
+      }
+    })();
   }, [
     activeComposerScopeKeyRef,
     composerScopeKey,
@@ -231,6 +242,7 @@ export function useComposerSubmission({
     setErrorMessage,
     setExtensionCommandRunning,
     setOpenMenu,
+    stopDictationAndFlush,
     streamingBehaviorPreference,
   ]);
 

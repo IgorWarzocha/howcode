@@ -283,10 +283,11 @@ export async function stopComposerRun(request: ComposerStateRequest) {
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
     const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime);
-    if (cachedRuntime.session.isStreaming) {
+    const wasStreaming = cachedRuntime.session.isStreaming;
+    if (wasStreaming) {
       await cachedRuntime.session.abort();
     }
-    if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
+    if (abortedExtensionCommand || wasStreaming) {
       scheduleRuntimeDisposal(persistedSessionPath);
       await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
       return { ok: true as const };

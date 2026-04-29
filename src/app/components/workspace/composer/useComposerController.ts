@@ -213,6 +213,11 @@ export function useComposerController({
   const canSend =
     (draft.trim().length > 0 || attachments.length > 0) && !isSending && !isCompacting;
 
+  useEffect(() => {
+    void composerScopeKey;
+    setLocalExtensionCommandRunning(false);
+  }, [composerScopeKey]);
+
   const {
     cancelDictation,
     dictationActive,
