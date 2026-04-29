@@ -25,6 +25,14 @@ linux:
 win:
   target:
     - dir
+    - nsis
+nsis:
+  artifactName: ${productName} Setup ${version}-${arch}.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
 asarUnpack:
   - node_modules/**/*.node
   - node_modules/node-pty/build/Release/**
