@@ -1,6 +1,7 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
+import { createRuntimeSettingsManager } from "./isolated-settings-manager.cts";
 import {
   abortHeadlessExtensionCommand,
   bindHeadlessAgentSessionExtensions,
@@ -116,15 +117,12 @@ async function createRuntime(options: {
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(options.settingsCwd ?? options.cwd, agentDir);
-  if (options.settingsCwd) {
-    const projectSettings = settingsManager.getProjectSettings();
-    settingsManager.applyOverrides({
-      packages: projectSettings.packages ?? [],
-      extensions: projectSettings.extensions ?? [],
-      skills: projectSettings.skills ?? [],
-    });
-  }
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+  });
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
     cwd: options.cwd,

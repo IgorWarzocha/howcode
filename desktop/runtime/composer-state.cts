@@ -12,6 +12,7 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { createRuntimeSettingsManager } from "./isolated-settings-manager.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
 import type { PiRuntime } from "./types.cts";
@@ -197,15 +198,12 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(request.composerSessionDir ?? cwd, agentDir);
-  if (request.composerSessionDir) {
-    const projectSettings = settingsManager.getProjectSettings();
-    settingsManager.applyOverrides({
-      packages: projectSettings.packages ?? [],
-      extensions: projectSettings.extensions ?? [],
-      skills: projectSettings.skills ?? [],
-    });
-  }
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+  });
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();

@@ -8,6 +8,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
+import { createRuntimeSettingsManager } from "../runtime/isolated-settings-manager.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
   cancelLiveThreadUpdate,
@@ -94,15 +95,12 @@ async function createRuntime(options: {
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(options.settingsCwd ?? options.cwd, agentDir);
-  if (options.settingsCwd) {
-    const projectSettings = settingsManager.getProjectSettings();
-    settingsManager.applyOverrides({
-      packages: projectSettings.packages ?? [],
-      extensions: projectSettings.extensions ?? [],
-      skills: projectSettings.skills ?? [],
-    });
-  }
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+  });
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
     cwd: options.cwd,
