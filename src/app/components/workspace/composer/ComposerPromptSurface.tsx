@@ -43,11 +43,13 @@ export function ComposerPromptSurface({
   showDictationButton,
   onOpenTakeoverTerminal,
   onToggleTerminal,
+  onToggleArtifacts,
   onOpenSettingsView,
   onRestoredQueuedPromptApplied,
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  artifactsVisible,
   onSetDiffBaseline,
   onOpenGitOps,
   onLayoutChange,
@@ -423,10 +425,12 @@ export function ComposerPromptSurface({
           onCompact={() => void compact()}
           onSetOpenMenu={setOpenMenu}
           onToggleTerminal={onToggleTerminal}
+          onToggleArtifacts={onToggleArtifacts}
           projectGitState={projectGitState}
           projectId={projectId}
           showTerminalControls={showTerminalControls}
           terminalVisible={terminalVisible}
+          artifactsVisible={artifactsVisible}
           thinkingLevel={thinkingLevel}
           thinkingLevelLabels={thinkingLevelLabels}
         />

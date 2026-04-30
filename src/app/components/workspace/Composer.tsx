@@ -51,7 +51,9 @@ export type ComposerProps = {
   onOpenSettingsView: () => void;
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
+  onToggleArtifacts?: () => void;
   showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
   terminalVisible: boolean;
   onLayoutChange: () => void;
   mainViewRef: RefObject<HTMLElement | null>;

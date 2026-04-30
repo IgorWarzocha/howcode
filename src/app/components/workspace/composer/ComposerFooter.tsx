@@ -1,4 +1,4 @@
-import { Bot, GitBranch, Terminal } from "lucide-react";
+import { Bot, FileCode2, GitBranch, Terminal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type {
   ComposerContextUsage,
@@ -41,10 +41,12 @@ type ComposerFooterProps = {
   onSelectModel: (model: ComposerModel) => void;
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void;
   onSetOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
+  onToggleArtifacts?: () => void;
   onToggleTerminal: () => void;
   projectGitState: ProjectGitState | null;
   projectId: string;
   showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
   terminalVisible: boolean;
   thinkingLevel: ComposerThinkingLevel;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
@@ -69,10 +71,12 @@ export function ComposerFooter({
   onSelectModel,
   onSelectThinkingLevel,
   onSetOpenMenu,
+  onToggleArtifacts,
   onToggleTerminal,
   projectGitState,
   projectId,
   showTerminalControls = true,
+  artifactsVisible = false,
   terminalVisible,
   thinkingLevel,
   thinkingLevelLabels,
@@ -104,6 +108,17 @@ export function ComposerFooter({
             )}
           />
         </>
+      ) : null}
+      {!showTerminalControls && onToggleArtifacts ? (
+        <ToolbarButton
+          label="Artifacts"
+          icon={<FileCode2 size={14} />}
+          onClick={onToggleArtifacts}
+          className={cn(
+            workspaceFooterTextClass,
+            artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+          )}
+        />
       ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
@@ -151,19 +166,35 @@ export function ComposerFooter({
         {projectGitState?.isGitRepo ? (
           <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            "h-7 w-7",
-            getGitOpsEntryButtonClass(gitVisualMode),
-          )}
-          onClick={onOpenGitOps}
-          aria-label="Git ops"
-          data-tooltip="Git ops"
-        >
-          <GitBranch size={14} />
-        </button>
+        {onToggleArtifacts && !showTerminalControls ? (
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              artifactsVisible && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+            )}
+            onClick={onToggleArtifacts}
+            aria-label="Artifacts"
+            data-tooltip="Artifacts"
+          >
+            <FileCode2 size={14} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              getGitOpsEntryButtonClass(gitVisualMode),
+            )}
+            onClick={onOpenGitOps}
+            aria-label="Git ops"
+            data-tooltip="Git ops"
+          >
+            <GitBranch size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

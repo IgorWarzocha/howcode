@@ -8,7 +8,6 @@ import { cn } from "../../utils/cn";
 import { ChatView } from "./ChatView";
 import { ArtifactPanel } from "./artifacts/ArtifactPanel";
 import { DesktopComposerStatus } from "../code/DesktopComposerStatus";
-import { useDiffCommentController } from "../code/useDiffCommentController";
 import { useQueuedPromptRestore } from "../code/useQueuedPromptRestore";
 import { useWorkspaceFooterHeight } from "../code/useWorkspaceFooterHeight";
 
@@ -42,19 +41,17 @@ export function ChatWorkspaceView({
   onSetDiffBaseline,
   onSetDiffRenderMode,
 }: ChatWorkspaceViewProps) {
-  const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
+  const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
+  const [artifactsVisible, setArtifactsVisible] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
     handleAction,
     handleLoadEarlierMessages,
-    handleOpenGitOpsView,
-    handleOpenWorktreeDiffFile,
     handleShowTakeoverTerminal,
     handleToggleTerminal,
     listComposerAttachmentEntries,
-    projectGitState,
     shellState,
     state,
   } = controller;
@@ -79,20 +76,16 @@ export function ChatWorkspaceView({
     const timeout = window.setTimeout(() => setConversationContentVisible(true), 300);
     return () => window.clearTimeout(timeout);
   }, [hasConversation]);
-  const {
-    diffCommentCount,
-    diffCommentError,
-    diffComments,
-    diffCommentsSending,
-    handleSelectDiffComment,
-    handleSendDiffComments,
-  } = useDiffCommentController({
-    composerProjectId,
-    handleAction,
-    handleOpenWorktreeDiffFile,
-    setComposerPromptResetKey,
-    shellState,
-  });
+
+  useEffect(() => {
+    if (!window.piDesktop?.subscribe) return;
+    const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
+    if (!conversationId) return;
+    return window.piDesktop.subscribe((event) => {
+      if (event.type !== "artifact-update" || event.conversationId !== conversationId) return;
+      setArtifactsVisible(true);
+    });
+  }, [activeThreadData?.sessionPath, terminalSessionPath]);
   const {
     handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
@@ -107,7 +100,12 @@ export function ChatWorkspaceView({
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden">
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div
+        className={cn(
+          "relative min-h-0 overflow-hidden transition-[width,flex-basis] duration-200 ease-out",
+          artifactsVisible ? "w-[min(860px,52vw)] flex-none" : "flex-1",
+        )}
+      >
         <div
           className="absolute inset-x-0 top-0 overflow-hidden px-5"
           style={{ bottom: hasConversation ? `${footerHeight}px` : "0px" }}
@@ -134,15 +132,27 @@ export function ChatWorkspaceView({
           style={{ top: hasConversation ? `calc(100% - ${footerHeight}px)` : "50%" }}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
-              <div className="min-w-0 self-center opacity-0 xl:opacity-100">
+            <div
+              className={cn(
+                "grid items-center gap-3",
+                artifactsVisible
+                  ? "grid-cols-[minmax(0,1fr)]"
+                  : "grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)]",
+              )}
+            >
+              <div
+                className={cn(
+                  "min-w-0 self-center opacity-0 xl:opacity-100",
+                  artifactsVisible && "hidden",
+                )}
+              >
                 <DesktopComposerStatus
                   contextUsage={activeComposerState?.contextUsage ?? null}
                   model={activeComposerState?.currentModel ?? null}
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                 />
               </div>
-              <div className="grid w-[800px] gap-0">
+              <div className="grid w-full max-w-[800px] gap-0 justify-self-center">
                 <QueuedPromptsCard
                   prompts={activeComposerState?.queuedPrompts ?? []}
                   pendingPromptIds={pendingQueuedPromptIdsForSession}
@@ -172,7 +182,7 @@ export function ChatWorkspaceView({
                   availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                   projectId={composerProjectId}
                   chatGroupId={controller.selectedChatGroupId}
-                  projectGitState={projectGitState}
+                  projectGitState={null}
                   diffBaseline={diffBaseline}
                   sessionPath={terminalSessionPath}
                   dictationModelId={shellState?.appSettings.dictationModelId ?? null}
@@ -182,26 +192,26 @@ export function ChatWorkspaceView({
                   favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                   showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                   diffRenderMode={diffRenderMode}
-                  diffComments={diffComments}
-                  diffCommentCount={diffCommentCount}
-                  diffCommentsSending={diffCommentsSending}
-                  diffCommentError={diffCommentError}
+                  diffComments={[]}
+                  diffCommentCount={0}
+                  diffCommentsSending={false}
+                  diffCommentError={null}
                   onSetDiffBaseline={onSetDiffBaseline}
                   onSetDiffRenderMode={onSetDiffRenderMode}
-                  onSendDiffComments={(message) => {
-                    void handleSendDiffComments(message);
-                  }}
-                  onSelectDiffComment={handleSelectDiffComment}
+                  onSendDiffComments={() => {}}
+                  onSelectDiffComment={() => {}}
                   promptResetKey={composerPromptResetKey}
                   onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
                   mainViewRef={mainViewRef}
                   workspaceFooterRef={footerRef}
                   onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-                  onOpenGitOpsView={handleOpenGitOpsView}
+                  onOpenGitOpsView={() => {}}
                   onOpenSettingsView={() => controller.handleShowView("settings")}
                   onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                   onToggleTerminal={handleToggleTerminal}
+                  onToggleArtifacts={() => setArtifactsVisible((visible) => !visible)}
                   showTerminalControls={false}
+                  artifactsVisible={artifactsVisible}
                   terminalVisible={state.terminalVisible}
                   onListAttachmentEntries={listComposerAttachmentEntries}
                   onAction={handleAction}
@@ -212,7 +222,11 @@ export function ChatWorkspaceView({
           </div>
         </footer>
       </div>
-      <ArtifactPanel conversationId={activeThreadData?.sessionPath ?? terminalSessionPath} />
+      <ArtifactPanel
+        conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}
+        visible={artifactsVisible}
+        onClose={() => setArtifactsVisible(false)}
+      />
     </div>
   );
 }
