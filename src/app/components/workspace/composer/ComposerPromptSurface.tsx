@@ -260,7 +260,7 @@ export function ComposerPromptSurface({
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
 
   return (
-    <div className="relative left-1/2 grid w-[calc(100%+5rem)] -translate-x-1/2 grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible max-[900px]:w-full max-[900px]:translate-x-0 max-[900px]:left-0">
+    <div className="relative left-1/2 grid w-[calc(100%+5rem)] -translate-x-1/2 grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
       <div className="relative mb-[3.55rem] h-8 w-8 shrink-0 text-[color:var(--muted)]">
         <div className="absolute bottom-0 left-0 flex w-7 flex-col-reverse items-center gap-1">
           <button
