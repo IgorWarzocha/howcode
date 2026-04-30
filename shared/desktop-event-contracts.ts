@@ -1,4 +1,5 @@
 import type { ComposerState } from "./desktop-composer-contracts";
+import type { Artifact } from "./desktop-artifact-contracts";
 import type { DictationModelId } from "./desktop-dictation-contracts";
 import type { ThreadData } from "./desktop-thread-contracts";
 
@@ -25,6 +26,11 @@ export type DesktopEvent =
   | {
       type: "internal-thread-update";
       sessionPath: string;
+    }
+  | {
+      type: "artifact-update";
+      conversationId: string;
+      artifact: Artifact;
     }
   | {
       type: "thread-update";

@@ -1,4 +1,5 @@
 import type { CommitMessageContext } from "../project-git.cts";
+import type { Artifact, ArtifactKind } from "../../shared/desktop-contracts.ts";
 import type {
   ComposerSlashCommand,
   ComposerState,
@@ -105,6 +106,27 @@ export type RuntimeHostResponseMap = {
   dequeueComposerPrompt: string | null;
 };
 
+export type RuntimeHostMainRequestMap = {
+  createArtifact: {
+    conversationId: string;
+    title: string;
+    kind: ArtifactKind;
+    content: string;
+  };
+  updateArtifact: { artifactId: string; content: string };
+  getArtifact: { artifactId: string };
+  listArtifacts: { conversationId: string };
+};
+
+export type RuntimeHostMainResponseMap = {
+  createArtifact: Artifact;
+  updateArtifact: Artifact;
+  getArtifact: Artifact | null;
+  listArtifacts: Artifact[];
+};
+
+export type RuntimeHostMainRequestName = keyof RuntimeHostMainRequestMap;
+
 export type RuntimeHostRequestName = keyof RuntimeHostRequestMap;
 
 export type RuntimeHostRequestMessage<
@@ -136,9 +158,28 @@ export type RuntimeHostCrashMessage = {
   stack?: string;
 };
 
+export type RuntimeHostMainRequestMessage<
+  TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
+> = {
+  type: "main-request";
+  id: string;
+  name: TName;
+  payload: RuntimeHostMainRequestMap[TName];
+};
+
+export type RuntimeHostMainResponseMessage =
+  | {
+      type: "main-response";
+      id: string;
+      ok: true;
+      result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName];
+    }
+  | { type: "main-response"; id: string; ok: false; error: string; stack?: string };
+
 export type RuntimeHostToMainMessage =
   | RuntimeHostResponseMessage
   | RuntimeHostEventMessage
-  | RuntimeHostCrashMessage;
+  | RuntimeHostCrashMessage
+  | RuntimeHostMainRequestMessage;
 
-export type RuntimeMainToHostMessage = RuntimeHostRequestMessage;
+export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage;

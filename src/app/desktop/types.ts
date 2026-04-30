@@ -1,5 +1,8 @@
 export type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactKind,
+  ArtifactVersion,
   AppSettings,
   ArchivedThread,
   ChatGroup,
@@ -56,6 +59,7 @@ export type {
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectImportCandidate,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionMessage,
   SkillCreatorSessionState,

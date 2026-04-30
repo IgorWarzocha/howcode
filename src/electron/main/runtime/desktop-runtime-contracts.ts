@@ -1,6 +1,8 @@
 import type { DesktopAction } from "../../../../shared/desktop-actions";
 import type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
   ChatSidebarState,
   ComposerState,
@@ -27,6 +29,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -96,6 +99,13 @@ export type PiThreadsModule = {
     selectedGroupId?: string | null,
   ) => Promise<ChatSidebarState> | ChatSidebarState;
   createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState;
+  listArtifacts: (conversationId?: string | null) => Promise<Artifact[]> | Artifact[];
+  getArtifact: (artifactId: string) => Promise<Artifact | null> | Artifact | null;
+  updateArtifact: (request: { artifactId: string; content: string }) =>
+    | Promise<Artifact>
+    | Artifact;
+  listArtifactVersions: (artifactId: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
+  compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (
     sessionPath: string,

@@ -20,6 +20,11 @@ type PiThreadsRequestHandlers = Pick<
   | "getProjectThreads"
   | "getChatSidebarState"
   | "createChatGroup"
+  | "listArtifacts"
+  | "getArtifact"
+  | "updateArtifact"
+  | "listArtifactVersions"
+  | "compileReactArtifact"
   | "getInboxThreads"
   | "getArchivedThreads"
   | "getThread"
@@ -49,6 +54,11 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     getChatSidebarState: ({ selectedGroupId }) =>
       piThreads.loadChatSidebarState(selectedGroupId ?? null),
     createChatGroup: ({ name }) => piThreads.createChatGroup(name),
+    listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
+    getArtifact: ({ artifactId }) => piThreads.getArtifact(artifactId),
+    updateArtifact: ({ artifactId, content }) => piThreads.updateArtifact({ artifactId, content }),
+    listArtifactVersions: ({ artifactId }) => piThreads.listArtifactVersions(artifactId),
+    compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>

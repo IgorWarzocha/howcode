@@ -125,6 +125,14 @@ export function createDesktopApi() {
     getChatSidebarState: (selectedGroupId: string | null = null) =>
       invokeRequest("getChatSidebarState", { selectedGroupId }),
     createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
+    listArtifacts: (conversationId: string | null = null) =>
+      invokeRequest("listArtifacts", { conversationId }),
+    getArtifact: (artifactId: string) => invokeRequest("getArtifact", { artifactId }),
+    updateArtifact: (artifactId: string, content: string) =>
+      invokeRequest("updateArtifact", { artifactId, content }),
+    listArtifactVersions: (artifactId: string) =>
+      invokeRequest("listArtifactVersions", { artifactId }),
+    compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>

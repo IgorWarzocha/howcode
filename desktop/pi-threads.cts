@@ -1,5 +1,12 @@
 export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
+  getArtifact,
+  listArtifacts,
+  listArtifactVersions,
+  updateArtifact,
+} from "./artifact-state-db.cts";
+export { compileReactArtifact } from "./artifact-compiler.cts";
+export {
   createChatGroup,
   getChatSidebarState as loadChatSidebarState,
 } from "./chat-state-db.cts";

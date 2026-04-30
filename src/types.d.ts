@@ -1,6 +1,8 @@
 import type { DesktopAction } from "./app/desktop/actions";
 import type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
   ChatSidebarState,
   ComposerAttachment,
@@ -32,6 +34,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   TerminalCloseRequest,
@@ -150,6 +153,11 @@ declare global {
       getProjectThreads?: (projectId: string, request?: { chat?: boolean }) => Promise<Thread[]>;
       getChatSidebarState?: (selectedGroupId?: string | null) => Promise<ChatSidebarState>;
       createChatGroup?: (name: string) => Promise<ChatSidebarState>;
+      listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>;
+      getArtifact?: (artifactId: string) => Promise<Artifact | null>;
+      updateArtifact?: (artifactId: string, content: string) => Promise<Artifact>;
+      listArtifactVersions?: (artifactId: string) => Promise<ArtifactVersion[]>;
+      compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;

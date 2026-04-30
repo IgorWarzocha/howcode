@@ -1,6 +1,8 @@
 import type { DesktopAction } from "./desktop-actions";
 import type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
   ComposerAttachment,
   DesktopClipboardFilePaths,
@@ -32,6 +34,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -166,6 +169,11 @@ export type DesktopRequestMap = {
   getProjectThreads: { params: { projectId: string; chat?: boolean }; response: Thread[] };
   getChatSidebarState: { params: { selectedGroupId?: string | null }; response: ChatSidebarState };
   createChatGroup: { params: { name: string }; response: ChatSidebarState };
+  listArtifacts: { params: { conversationId?: string | null }; response: Artifact[] };
+  getArtifact: { params: { artifactId: string }; response: Artifact | null };
+  updateArtifact: { params: { artifactId: string; content: string }; response: Artifact };
+  listArtifactVersions: { params: { artifactId: string }; response: ArtifactVersion[] };
+  compileReactArtifact: { params: { source: string }; response: ReactArtifactCompileResult };
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
   getThread: {

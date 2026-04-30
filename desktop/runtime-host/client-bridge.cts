@@ -4,6 +4,12 @@ import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import {
+  createArtifact,
+  getArtifact,
+  listArtifacts,
+  updateArtifact,
+} from "../artifact-state-db.cts";
+import {
   getBundledSkillsPath,
   getElectronResourcesPath,
   getNodeExecutable,
@@ -14,6 +20,7 @@ import type {
   RuntimeHostRequestName,
   RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
+  RuntimeHostMainRequestMessage,
 } from "./protocol.cts";
 
 type PendingRequest = {
@@ -186,6 +193,11 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
     return;
   }
 
+  if (message.type === "main-request") {
+    void handleHostMainRequest(host, message);
+    return;
+  }
+
   if (message.type === "response") {
     const pending = host.pendingRequests.get(message.id);
     if (!pending) {
@@ -206,6 +218,45 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
       }
       pending.reject(error);
     }
+  }
+}
+
+async function handleHostMainRequest(host: HostConnection, message: RuntimeHostMainRequestMessage) {
+  try {
+    let result: unknown;
+    switch (message.name) {
+      case "createArtifact": {
+        const payload = message.payload as Parameters<typeof createArtifact>[0];
+        result = createArtifact(payload);
+        break;
+      }
+      case "updateArtifact": {
+        const payload = message.payload as Parameters<typeof updateArtifact>[0];
+        result = updateArtifact(payload);
+        break;
+      }
+      case "getArtifact": {
+        const payload = message.payload as { artifactId: string };
+        result = getArtifact(payload.artifactId);
+        break;
+      }
+      case "listArtifacts": {
+        const payload = message.payload as { conversationId: string };
+        result = listArtifacts(payload.conversationId);
+        break;
+      }
+      default:
+        throw new Error(`Unknown runtime host main request: ${message.name}`);
+    }
+    host.process?.send?.({ type: "main-response", id: message.id, ok: true, result });
+  } catch (error) {
+    host.process?.send?.({
+      type: "main-response",
+      id: message.id,
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 

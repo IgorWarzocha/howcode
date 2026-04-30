@@ -85,6 +85,28 @@ export async function createChatGroupQuery(name: string): Promise<ChatSidebarSta
   return (await window.piDesktop?.createChatGroup?.(name)) ?? null;
 }
 
+export async function listArtifactsQuery(conversationId?: string | null) {
+  return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? [];
+}
+
+export async function getArtifactQuery(artifactId: string) {
+  return (await window.piDesktop?.getArtifact?.(artifactId)) ?? null;
+}
+
+export async function updateArtifactQuery(artifactId: string, content: string) {
+  return (await window.piDesktop?.updateArtifact?.(artifactId, content)) ?? null;
+}
+
+export async function compileReactArtifactQuery(source: string) {
+  return (
+    (await window.piDesktop?.compileReactArtifact?.(source)) ?? {
+      ok: false as const,
+      error: "Artifact compiler is unavailable.",
+      warnings: [],
+    }
+  );
+}
+
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
   return (await window.piDesktop?.getInboxThreads?.()) ?? [];
 }

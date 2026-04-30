@@ -2,6 +2,12 @@ import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
 import {
+  createArtifact,
+  getArtifact,
+  listArtifacts,
+  updateArtifact,
+} from "../artifact-state-db.cts";
+import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
 } from "./isolated-settings-manager.cts";
@@ -12,6 +18,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
+import { artifactToolNames, createArtifactTools } from "./artifact-tools.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -144,6 +151,17 @@ async function createRuntime(options: {
     settingsManager,
     resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
+    ...(options.settingsCwd
+      ? {
+          tools: artifactToolNames,
+          customTools: createArtifactTools({
+            createArtifact,
+            updateArtifact,
+            getArtifact,
+            listArtifacts,
+          }),
+        }
+      : {}),
   });
   const runtime = {
     cwd: options.cwd,

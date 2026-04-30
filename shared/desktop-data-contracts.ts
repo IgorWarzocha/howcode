@@ -1,3 +1,4 @@
+export * from "./desktop-artifact-contracts";
 export * from "./desktop-clipboard-contracts";
 export * from "./desktop-composer-contracts";
 export * from "./desktop-dictation-contracts";
