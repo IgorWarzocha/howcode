@@ -71,19 +71,8 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
 }
 
 async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerStateRequest) {
-  const appSettings = loadAppSettings();
-  const selection =
-    request.composerMode === "chat"
-      ? appSettings.chatModel
-      : request.composerMode === "code"
-        ? appSettings.codeModel
-        : null;
-  const thinkingLevel =
-    request.composerMode === "chat"
-      ? appSettings.chatThinkingLevel
-      : request.composerMode === "code"
-        ? appSettings.codeThinkingLevel
-        : null;
+  const selection = request.composerModelSelection ?? null;
+  const thinkingLevel = request.composerThinkingLevel ?? null;
 
   if (selection) {
     const model = runtime.session.modelRegistry.find(selection.provider, selection.id);
@@ -280,7 +269,9 @@ export async function sendComposerPrompt(
     const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
     const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
     const streamingBehavior =
-      request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
+      request.streamingBehavior ??
+      request.composerStreamingBehavior ??
+      loadAppSettings().composerStreamingBehavior;
 
     try {
       if (runtime.session.isCompacting) {

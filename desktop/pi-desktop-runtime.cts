@@ -23,8 +23,34 @@ import {
 } from "./runtime/live-thread-store.cts";
 import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
+import { loadAppSettings } from "./app-settings/readers.cts";
 
 export { getLiveThread };
+
+function withComposerModeSettings<TRequest extends ComposerStateRequest>(
+  request: TRequest,
+): TRequest {
+  const appSettings = loadAppSettings();
+  const composerModelSelection =
+    request.composerMode === "chat"
+      ? appSettings.chatModel
+      : request.composerMode === "code"
+        ? appSettings.codeModel
+        : null;
+  const composerThinkingLevel =
+    request.composerMode === "chat"
+      ? appSettings.chatThinkingLevel
+      : request.composerMode === "code"
+        ? appSettings.codeThinkingLevel
+        : null;
+
+  return {
+    ...request,
+    composerModelSelection,
+    composerThinkingLevel,
+    composerStreamingBehavior: appSettings.composerStreamingBehavior,
+  };
+}
 
 function getLatestUserPrompt(thread: ThreadData) {
   let latestUserMessage: ProseMessage | undefined;
@@ -143,11 +169,11 @@ export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) 
 }
 
 export function startNewThread(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost("startNewThread", { request });
+  return invokeRuntimeHost("startNewThread", { request: withComposerModeSettings(request) });
 }
 
 export function selectProjectRuntime(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost("selectProjectRuntime", { request });
+  return invokeRuntimeHost("selectProjectRuntime", { request: withComposerModeSettings(request) });
 }
 
 export function openThreadRuntime(request: ComposerStateRequest) {
@@ -155,11 +181,13 @@ export function openThreadRuntime(request: ComposerStateRequest) {
 }
 
 export function getComposerSlashCommands(request: ComposerStateRequest = {}) {
-  return invokeRuntimeHost("getComposerSlashCommands", { request });
+  return invokeRuntimeHost("getComposerSlashCommands", {
+    request: withComposerModeSettings(request),
+  });
 }
 
 export function getComposerState(request = {}) {
-  return invokeRuntimeHost("getComposerState", { request });
+  return invokeRuntimeHost("getComposerState", { request: withComposerModeSettings(request) });
 }
 
 export function setComposerModel(request: ComposerStateRequest, provider: string, modelId: string) {
@@ -180,7 +208,7 @@ export function sendComposerPrompt(
     streamingBehavior?: ComposerStreamingBehavior | null;
   },
 ) {
-  return invokeRuntimeHost("sendComposerPrompt", request);
+  return invokeRuntimeHost("sendComposerPrompt", withComposerModeSettings(request));
 }
 
 export function stopComposerRun(request = {}) {

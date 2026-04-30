@@ -8,7 +8,6 @@ import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.t
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { loadAppSettings } from "../app-settings/readers.cts";
 import { discoverHeadlessAgentSessionResources } from "../runtime/agent-session-extensions.cts";
 import { buildComposerAttachmentPrompt } from "../runtime/attachments.cts";
 import {
@@ -61,19 +60,8 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
 }
 
 async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerStateRequest) {
-  const appSettings = loadAppSettings();
-  const selection =
-    request.composerMode === "chat"
-      ? appSettings.chatModel
-      : request.composerMode === "code"
-        ? appSettings.codeModel
-        : null;
-  const thinkingLevel =
-    request.composerMode === "chat"
-      ? appSettings.chatThinkingLevel
-      : request.composerMode === "code"
-        ? appSettings.codeThinkingLevel
-        : null;
+  const selection = request.composerModelSelection ?? null;
+  const thinkingLevel = request.composerThinkingLevel ?? null;
 
   if (selection) {
     const model = runtime.session.modelRegistry.find(selection.provider, selection.id);
@@ -262,7 +250,7 @@ export async function sendComposerPrompt(
       const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
       const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
       const streamingBehavior =
-        request.streamingBehavior ?? loadAppSettings().composerStreamingBehavior;
+        request.streamingBehavior ?? request.composerStreamingBehavior ?? "followUp";
       if (runtime.session.isCompacting)
         throw new Error("Wait for the current compaction to finish before sending another prompt.");
       if (runtime.session.isStreaming) {

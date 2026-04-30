@@ -11,7 +11,6 @@ import type {
 } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
-import { loadAppSettings } from "../app-settings/readers.cts";
 import { getPiModule } from "../pi-module.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
@@ -143,21 +142,11 @@ function resolveCurrentModel(
 }
 
 function getModeModelSelection(request: ComposerStateRequest) {
-  const appSettings = loadAppSettings();
-  return request.composerMode === "chat"
-    ? appSettings.chatModel
-    : request.composerMode === "code"
-      ? appSettings.codeModel
-      : null;
+  return request.composerModelSelection ?? null;
 }
 
 function getModeThinkingLevel(request: ComposerStateRequest) {
-  const appSettings = loadAppSettings();
-  return request.composerMode === "chat"
-    ? appSettings.chatThinkingLevel
-    : request.composerMode === "code"
-      ? appSettings.codeThinkingLevel
-      : null;
+  return request.composerThinkingLevel ?? null;
 }
 
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
