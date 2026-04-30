@@ -78,6 +78,7 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
 
 async function createRuntime(options: {
   cwd: string;
+  sessionDir?: string | null;
   sessionManager?: PiRuntime["session"]["sessionManager"];
 }): Promise<PiRuntime> {
   const {
@@ -92,7 +93,7 @@ async function createRuntime(options: {
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(options.cwd, agentDir);
-  const sessionDir = settingsManager.getSessionDir() ?? undefined;
+  const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
@@ -323,8 +324,8 @@ export async function getOrCreateRuntimeForSessionPath(
   return runtimePromise;
 }
 
-export async function createRuntimeForNewSession(cwd: string) {
-  const runtime = await createRuntime({ cwd });
+export async function createRuntimeForNewSession(cwd: string, sessionDir?: string | null) {
+  const runtime = await createRuntime({ cwd, sessionDir });
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
   if (runtimeKey) registerRuntime(runtimeKey, Promise.resolve(runtime));
   return runtime;

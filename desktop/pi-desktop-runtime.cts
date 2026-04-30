@@ -24,6 +24,7 @@ import {
 import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
 import { loadAppSettings } from "./app-settings/readers.cts";
+import { getChatSessionDir } from "./chat-session-dir.cts";
 
 export { getLiveThread };
 
@@ -49,6 +50,7 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
     composerModelSelection,
     composerThinkingLevel,
     composerStreamingBehavior: appSettings.composerStreamingBehavior,
+    composerSessionDir: request.composerMode === "chat" ? getChatSessionDir() : null,
   };
 }
 

@@ -62,6 +62,7 @@ export type ComposerStateRequest = {
   composerModelSelection?: { provider: string; id: string } | null;
   composerThinkingLevel?: ComposerThinkingLevel | null;
   composerStreamingBehavior?: ComposerStreamingBehavior | null;
+  composerSessionDir?: string | null;
 };
 
 export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";

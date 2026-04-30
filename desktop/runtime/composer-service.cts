@@ -316,6 +316,7 @@ export async function sendComposerPrompt(
   if (!persistedSessionPath) {
     const runtime = await createRuntimeForNewSession(
       request.projectId ?? getDesktopWorkingDirectory(),
+      request.composerSessionDir,
     );
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);

@@ -125,6 +125,7 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
   }
 
   const snapshot = await createComposerSnapshotSession({
+    ...request,
     projectId: request.projectId ?? getDesktopWorkingDirectory(),
     sessionPath: persistedSessionPath,
   });
@@ -287,6 +288,7 @@ export async function sendComposerPrompt(
   if (!persistedSessionPath) {
     const runtime = await createRuntimeForNewSession(
       request.projectId ?? getDesktopWorkingDirectory(),
+      request.composerSessionDir,
     );
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);
