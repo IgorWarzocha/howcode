@@ -20,6 +20,10 @@ import {
   getSettingsThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
+  setChatModelSelection,
+  setChatThinkingLevel,
+  setCodeModelSelection,
+  setCodeThinkingLevel,
   setComposerStreamingBehavior,
   setDictationMaxDurationSeconds,
   setDictationModelId,
@@ -173,6 +177,48 @@ export async function handleSettingsDesktopAction(
     const value = getSettingsProjectDeletionMode(payload);
     if (value) {
       setProjectDeletionMode(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "chatModel") {
+    if (getSettingsReset(payload)) {
+      setChatModelSelection(null);
+      return handledAction();
+    }
+
+    const selection = getSettingsModelSelection(payload);
+    if (selection) {
+      setChatModelSelection(selection);
+    }
+    return handledAction();
+  }
+
+  if (key === "codeModel") {
+    if (getSettingsReset(payload)) {
+      setCodeModelSelection(null);
+      return handledAction();
+    }
+
+    const selection = getSettingsModelSelection(payload);
+    if (selection) {
+      setCodeModelSelection(selection);
+    }
+    return handledAction();
+  }
+
+  if (key === "chatThinkingLevel") {
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setChatThinkingLevel(level);
+    }
+    return handledAction();
+  }
+
+  if (key === "codeThinkingLevel") {
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setCodeThinkingLevel(level);
     }
     return handledAction();
   }

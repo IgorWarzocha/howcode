@@ -245,7 +245,11 @@ export function getSettingsProjectDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === "gitCommitMessageModel" ||
+  return payload.key === "chatModel" ||
+    payload.key === "chatThinkingLevel" ||
+    payload.key === "codeModel" ||
+    payload.key === "codeThinkingLevel" ||
+    payload.key === "gitCommitMessageModel" ||
     payload.key === "gitCommitMessageThinkingLevel" ||
     payload.key === "skillCreatorModel" ||
     payload.key === "skillCreatorThinkingLevel" ||

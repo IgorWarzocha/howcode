@@ -5,6 +5,10 @@ import {
 } from "../../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "../thread-state-db/db.cts";
 import {
+  chatModelKey,
+  chatThinkingLevelKey,
+  codeModelKey,
+  codeThinkingLevelKey,
   composerStreamingBehaviorKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -42,6 +46,42 @@ import {
 
 export function loadAppSettings(): AppSettings {
   const db = getThreadStateDatabase();
+  const chatModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(chatModelKey) as PreferenceRow | undefined;
+  const chatThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(chatThinkingLevelKey) as PreferenceRow | undefined;
+  const codeModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(codeModelKey) as PreferenceRow | undefined;
+  const codeThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(codeThinkingLevelKey) as PreferenceRow | undefined;
   const modelRow = db
     .prepare(
       `
@@ -206,6 +246,10 @@ export function loadAppSettings(): AppSettings {
     .get(showDictationButtonKey) as PreferenceRow | undefined;
 
   return {
+    chatModel: parseModelSelection(chatModelRow?.valueJson),
+    chatThinkingLevel: parseThinkingLevelPreference(chatThinkingLevelRow?.valueJson) ?? "off",
+    codeModel: parseModelSelection(codeModelRow?.valueJson),
+    codeThinkingLevel: parseThinkingLevelPreference(codeThinkingLevelRow?.valueJson) ?? "off",
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(gitCommitThinkingLevelRow?.valueJson) ?? "off",

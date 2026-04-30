@@ -138,6 +138,10 @@ export function CodeWorkspaceView({
                 activeView={state.activeView}
                 appSettings={
                   shellState?.appSettings ?? {
+                    chatModel: null,
+                    chatThinkingLevel: "off",
+                    codeModel: null,
+                    codeThinkingLevel: "off",
                     gitCommitMessageModel: null,
                     gitCommitMessageThinkingLevel: "off",
                     skillCreatorModel: null,
@@ -220,6 +224,10 @@ export function CodeWorkspaceView({
                       showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       appSettings={
                         shellState?.appSettings ?? {
+                          chatModel: null,
+                          chatThinkingLevel: "off",
+                          codeModel: null,
+                          codeThinkingLevel: "off",
                           gitCommitMessageModel: null,
                           gitCommitMessageThinkingLevel: "off",
                           skillCreatorModel: null,

@@ -19,6 +19,10 @@ export type ProjectDeletionMode = "pi-only" | "full-clean";
 export type GitOpsMode = "commit" | "commit-push";
 
 export type AppSettings = {
+  chatModel: ModelSelection | null;
+  chatThinkingLevel: ComposerThinkingLevel;
+  codeModel: ModelSelection | null;
+  codeThinkingLevel: ComposerThinkingLevel;
   gitCommitMessageModel: ModelSelection | null;
   gitCommitMessageThinkingLevel: ComposerThinkingLevel;
   skillCreatorModel: ModelSelection | null;

@@ -9,6 +9,8 @@ import type { SettingDescriptor } from "./settingsTypes";
 import { InlineSelect } from "./settingsUi";
 import type { SettingsController } from "./settingsDescriptorTypes";
 
+type ModelSettingsSelection = AppSettings["chatModel"];
+
 export function buildModelSettingsDescriptors({
   appSettings,
   availableModels,
@@ -37,13 +39,13 @@ export function buildModelSettingsDescriptors({
     "high",
     "xhigh",
   ];
-  const getSelectedWorkflowModel = (selection: AppSettings["gitCommitMessageModel"]) =>
+  const getSelectedWorkflowModel = (selection: ModelSettingsSelection) =>
     selection
       ? (availableModels.find(
           (model) => model.provider === selection.provider && model.id === selection.id,
         ) ?? null)
       : currentModel;
-  const getWorkflowThinkingLevels = (selection: AppSettings["gitCommitMessageModel"]) => {
+  const getWorkflowThinkingLevels = (selection: ModelSettingsSelection) => {
     const selectedModel = getSelectedWorkflowModel(selection);
     if (!selection) {
       return availableThinkingLevels;
@@ -53,7 +55,7 @@ export function buildModelSettingsDescriptors({
   };
   const selectFirstProviderModel = (
     provider: string | null,
-    selection: AppSettings["gitCommitMessageModel"],
+    selection: ModelSettingsSelection,
     selectModel: (id: string) => void,
   ) => {
     if (!provider) {
@@ -72,7 +74,7 @@ export function buildModelSettingsDescriptors({
   };
   const buildProviderOptions = (
     id: string,
-    selection: AppSettings["gitCommitMessageModel"],
+    selection: ModelSettingsSelection,
     selectModel: (id: string) => void,
   ) => (
     <InlineSelect
@@ -95,7 +97,7 @@ export function buildModelSettingsDescriptors({
   );
   const buildModelOptions = (
     id: string,
-    selection: AppSettings["gitCommitMessageModel"],
+    selection: ModelSettingsSelection,
     selectModel: (id: string) => void,
   ) => {
     const providerModels = selection
@@ -151,7 +153,7 @@ export function buildModelSettingsDescriptors({
   );
   const renderModelWorkflowControls = (
     idPrefix: string,
-    selection: AppSettings["gitCommitMessageModel"],
+    selection: ModelSettingsSelection,
     thinkingLevel: ComposerThinkingLevel,
     selectModel: (id: string) => void,
     selectThinkingLevel: (value: ComposerThinkingLevel) => void,
@@ -169,6 +171,44 @@ export function buildModelSettingsDescriptors({
   );
 
   return [
+    {
+      id: "models.chat",
+      category: "models",
+      title: "Chat",
+      description: "Provider, model, and reasoning level for the Chat view.",
+      keywords: "chat model provider reasoning thinking",
+      render: () =>
+        renderModelWorkflowControls(
+          "chat-models",
+          appSettings.chatModel,
+          appSettings.chatThinkingLevel,
+          controller.selectChatModel,
+          (value) =>
+            void onAction("settings.update", {
+              key: "chatThinkingLevel",
+              value,
+            }),
+        ),
+    },
+    {
+      id: "models.code",
+      category: "models",
+      title: "Code",
+      description: "Provider, model, and reasoning level for the Code view.",
+      keywords: "code model provider reasoning thinking composer",
+      render: () =>
+        renderModelWorkflowControls(
+          "code-models",
+          appSettings.codeModel,
+          appSettings.codeThinkingLevel,
+          controller.selectCodeModel,
+          (value) =>
+            void onAction("settings.update", {
+              key: "codeThinkingLevel",
+              value,
+            }),
+        ),
+    },
     {
       id: "models.git-commit",
       category: "models",

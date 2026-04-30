@@ -358,6 +358,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appLaunchedAtMs={controller.appLaunchedAtMs}
             appSettings={
               controller.shellState?.appSettings ?? {
+                chatModel: null,
+                chatThinkingLevel: "off",
+                codeModel: null,
+                codeThinkingLevel: "off",
                 gitCommitMessageModel: null,
                 gitCommitMessageThinkingLevel: "off",
                 skillCreatorModel: null,
