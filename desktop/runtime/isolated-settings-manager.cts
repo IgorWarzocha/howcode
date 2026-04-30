@@ -1,4 +1,5 @@
-import type { SettingsManager } from "@mariozechner/pi-coding-agent";
+import type { ResourceLoader, SettingsManager } from "@mariozechner/pi-coding-agent";
+import path from "node:path";
 
 type SettingsManagerFactory = {
   create: (cwd: string, agentDir?: string) => SettingsManager;
@@ -32,4 +33,35 @@ export function createRuntimeSettingsManager(options: {
     prompts: projectSettings.prompts ?? [],
     themes: projectSettings.themes ?? [],
   });
+}
+
+export async function createIsolatedRuntimeResourceLoader(options: {
+  DefaultResourceLoader: new (loaderOptions: {
+    cwd: string;
+    agentDir: string;
+    settingsManager: SettingsManager;
+    noSkills?: boolean;
+    additionalSkillPaths?: string[];
+  }) => ResourceLoader;
+  cwd: string;
+  agentDir: string;
+  settingsCwd?: string | null;
+  settingsManager: SettingsManager;
+}) {
+  if (!options.settingsCwd) {
+    return undefined;
+  }
+
+  const resourceLoader = new options.DefaultResourceLoader({
+    cwd: options.cwd,
+    agentDir: options.agentDir,
+    settingsManager: options.settingsManager,
+    noSkills: true,
+    additionalSkillPaths: [
+      path.join(options.settingsCwd, ".pi", "skills"),
+      path.join(options.settingsCwd, ".agents", "skills"),
+    ],
+  });
+  await resourceLoader.reload();
+  return resourceLoader;
 }

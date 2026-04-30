@@ -1,7 +1,10 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
-import { createRuntimeSettingsManager } from "./isolated-settings-manager.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "./isolated-settings-manager.cts";
 import {
   abortHeadlessExtensionCommand,
   bindHeadlessAgentSessionExtensions,
@@ -111,6 +114,7 @@ async function createRuntime(options: {
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
@@ -124,12 +128,20 @@ async function createRuntime(options: {
     settingsCwd: options.settingsCwd,
   });
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
   const runtime = {

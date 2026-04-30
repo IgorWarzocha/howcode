@@ -12,7 +12,10 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
-import { createRuntimeSettingsManager } from "./isolated-settings-manager.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "./isolated-settings-manager.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
 import type { PiRuntime } from "./types.cts";
@@ -189,6 +192,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
@@ -207,12 +211,20 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager,
     tools: [],
   });

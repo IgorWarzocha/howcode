@@ -8,7 +8,10 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
-import { createRuntimeSettingsManager } from "../runtime/isolated-settings-manager.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "../runtime/isolated-settings-manager.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
   cancelLiveThreadUpdate,
@@ -89,6 +92,7 @@ async function createRuntime(options: {
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
@@ -102,12 +106,20 @@ async function createRuntime(options: {
     settingsCwd: options.settingsCwd,
   });
   const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
   });
   const runtime = { cwd: options.cwd, session } satisfies PiRuntime;
