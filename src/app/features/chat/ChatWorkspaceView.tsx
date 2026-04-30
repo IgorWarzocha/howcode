@@ -83,7 +83,7 @@ export function ChatWorkspaceView({
     const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
     if (!conversationId) return;
     return window.piDesktop.subscribe((event) => {
-      if (event.type !== "artifact-update" || event.conversationId !== conversationId) return;
+      if (event.type !== "artifact-update") return;
       setArtifactsVisible(true);
     });
   }, [activeThreadData?.sessionPath, terminalSessionPath]);

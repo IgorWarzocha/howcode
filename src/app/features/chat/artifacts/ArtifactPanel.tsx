@@ -1,5 +1,5 @@
 import { FileCode2, List, Maximize2, Minimize2, PanelRightClose, Play, Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Artifact } from "../../../desktop/types";
 import {
   compileReactArtifactQuery,
@@ -97,11 +97,16 @@ export function ArtifactPanel({
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
+  const artifactIdsRef = useRef(new Set<string>());
 
   const selectedArtifact = useMemo(
     () => artifacts.find((artifact) => artifact.id === selectedArtifactId) ?? artifacts[0] ?? null,
     [artifacts, selectedArtifactId],
   );
+
+  useEffect(() => {
+    artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.id));
+  }, [artifacts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +133,10 @@ export function ArtifactPanel({
     if (!window.piDesktop?.subscribe) return;
     return window.piDesktop.subscribe((event) => {
       if (event.type !== "artifact-update") return;
-      if (conversationId && event.conversationId !== conversationId) return;
+      const artifactAlreadyVisible = artifactIdsRef.current.has(event.artifact.id);
+      if (conversationId && event.conversationId !== conversationId && !artifactAlreadyVisible) {
+        return;
+      }
       setArtifacts((current) => {
         const index = current.findIndex((artifact) => artifact.id === event.artifact.id);
         if (index === -1) return [event.artifact, ...current];
