@@ -23,6 +23,8 @@ type ChatWorkspaceViewProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
+const ARTIFACT_DRAWER_OFFSET = "min(760px, calc(100% - 900px))";
+
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages
     .filter((message) => message.role !== "user")
@@ -58,6 +60,7 @@ export function ChatWorkspaceView({
   } = controller;
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
+  const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_OFFSET } : undefined;
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
 
@@ -104,13 +107,13 @@ export function ChatWorkspaceView({
   });
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
+    <div className="relative min-h-0 flex-1 overflow-hidden">
       <div
         className={cn(
-          "relative min-h-0 overflow-hidden transition-[width,flex-basis] duration-200 ease-out",
-          artifactsVisible && !artifactsFullscreen ? "w-[min(920px,56vw)] flex-none" : "flex-1",
+          "absolute inset-0 min-h-0 overflow-hidden transition-[right] duration-200 ease-out",
           artifactsFullscreen && "hidden",
         )}
+        style={!artifactsFullscreen ? artifactDrawerInsetStyle : undefined}
       >
         <div
           className="absolute inset-x-0 top-0 overflow-hidden px-5"
@@ -132,25 +135,18 @@ export function ChatWorkspaceView({
         <footer
           ref={footerRef}
           className={cn(
-            "pointer-events-none absolute inset-x-0 z-10 px-5 transition-[top,transform,padding] duration-300 ease-out",
-            artifactsVisible && !artifactsFullscreen && "pr-10",
-            hasConversation ? "translate-y-0 pb-4" : "-translate-y-1/2 pb-4",
+            "pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
+            hasConversation
+              ? "bottom-0 translate-y-0"
+              : "top-1/2 -translate-y-1/2 transition-[top,transform] duration-300 ease-out",
           )}
-          style={{ top: hasConversation ? `calc(100% - ${footerHeight}px)` : "50%" }}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div
-              className={cn(
-                "grid items-center gap-3",
-                artifactsVisible
-                  ? "grid-cols-[minmax(0,1fr)]"
-                  : "grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)]",
-              )}
-            >
+            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
               <div
                 className={cn(
                   "min-w-0 self-center opacity-0 xl:opacity-100",
-                  artifactsVisible && "hidden",
+                  artifactsVisible && !artifactsFullscreen && "invisible",
                 )}
               >
                 <DesktopComposerStatus
@@ -159,12 +155,7 @@ export function ChatWorkspaceView({
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                 />
               </div>
-              <div
-                className={cn(
-                  "grid w-full gap-0 justify-self-center",
-                  artifactsVisible ? "max-w-[calc(100%-5rem)]" : "max-w-[800px]",
-                )}
-              >
+              <div className="grid w-[800px] gap-0">
                 <QueuedPromptsCard
                   prompts={activeComposerState?.queuedPrompts ?? []}
                   pendingPromptIds={pendingQueuedPromptIdsForSession}
@@ -234,16 +225,24 @@ export function ChatWorkspaceView({
           </div>
         </footer>
       </div>
-      <ArtifactPanel
-        conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}
-        visible={artifactsVisible}
-        fullscreen={artifactsFullscreen}
-        onToggleFullscreen={() => setArtifactsFullscreen((fullscreen) => !fullscreen)}
-        onClose={() => {
-          setArtifactsVisible(false);
-          setArtifactsFullscreen(false);
-        }}
-      />
+      <div
+        className={cn(
+          "absolute top-0 right-0 bottom-0 min-h-0 overflow-hidden transition-[width] duration-200 ease-out",
+          artifactsVisible ? "w-[min(760px,calc(100%-900px))]" : "w-0",
+          artifactsFullscreen && "left-0 w-auto",
+        )}
+      >
+        <ArtifactPanel
+          conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}
+          visible={artifactsVisible}
+          fullscreen={artifactsFullscreen}
+          onToggleFullscreen={() => setArtifactsFullscreen((fullscreen) => !fullscreen)}
+          onClose={() => {
+            setArtifactsVisible(false);
+            setArtifactsFullscreen(false);
+          }}
+        />
+      </div>
     </div>
   );
 }

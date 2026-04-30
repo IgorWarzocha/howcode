@@ -427,7 +427,7 @@ export function ArtifactPanel({
         ) : null}
 
         {view === "preview" && selectedArtifact?.kind === "markdown" ? (
-          <div className="h-full overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)]">
+          <div className="h-full overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
