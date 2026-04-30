@@ -414,6 +414,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             onDismissInboxThread={controller.handleDismissInboxThread}
             onCreateChatGroup={controller.handleCreateChatGroup}
             onSelectChatGroup={controller.handleSelectChatGroup}
+            onNewChat={(groupId) => {
+              controller.handleSelectChatGroup(groupId);
+              void handleAction("thread.new", { chatGroupId: groupId });
+            }}
+            onRefreshChatSidebar={controller.refreshChatSidebarState}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
             onLoadProjectThreads={controller.handleLoadProjectThreads}

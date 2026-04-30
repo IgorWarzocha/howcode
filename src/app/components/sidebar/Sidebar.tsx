@@ -40,6 +40,8 @@ type SidebarProps = {
   onDismissInboxThread: (thread: InboxThread) => void;
   onCreateChatGroup: (name: string) => Promise<unknown>;
   onSelectChatGroup: (groupId: string | null) => void;
+  onNewChat: (groupId: string | null) => void;
+  onRefreshChatSidebar: () => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
@@ -79,6 +81,8 @@ export function Sidebar({
   onDismissInboxThread,
   onCreateChatGroup,
   onSelectChatGroup,
+  onNewChat,
+  onRefreshChatSidebar,
   onProjectSelect,
   onProjectReorder,
   onLoadProjectThreads,
@@ -182,6 +186,8 @@ export function Sidebar({
           onAction={onAction}
           onCreateGroup={onCreateChatGroup}
           onSelectGroup={onSelectChatGroup}
+          onNewChat={onNewChat}
+          onRefresh={onRefreshChatSidebar}
           onThreadOpen={onThreadOpen}
         />
       ) : (

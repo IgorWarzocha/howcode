@@ -21,6 +21,7 @@ export type DesktopActionPayloadFields = {
   attachments?: ComposerAttachment[];
   composerMode?: "chat" | "code" | null;
   chatGroupId?: string | null;
+  chatGroupIds?: string[];
   folders?: string[];
   imported?: boolean | null;
   gitOpsMode?: GitOpsMode | null;
@@ -99,6 +100,15 @@ export type DesktopActionPayloadMap = {
   "project.refresh-repo-origin": { projectId: string };
   "project.archive-threads": { projectId: string; projectName?: string };
   "project.remove-project": { projectId: string; projectName?: string };
+  "chat.group.create": { chatGroupId?: string | null; value?: string | null };
+  "chat.group.rename": { chatGroupId: string; value: string };
+  "chat.group.reorder": { chatGroupIds: string[] };
+  "chat.group.collapse": { chatGroupId: string; value: boolean };
+  "chat.thread.move": {
+    threadId: string;
+    sessionPath?: string | null;
+    chatGroupId?: string | null;
+  };
   "thread.new": { projectId?: string | null; sessionPath?: string | null };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };

@@ -8,6 +8,7 @@ import { DesktopComposerStatus } from "../code/DesktopComposerStatus";
 import { useDiffCommentController } from "../code/useDiffCommentController";
 import { useQueuedPromptRestore } from "../code/useQueuedPromptRestore";
 import { useWorkspaceFooterHeight } from "../code/useWorkspaceFooterHeight";
+import { cn } from "../../utils/cn";
 
 type ChatWorkspaceViewProps = {
   controller: AppShellController;
@@ -49,6 +50,7 @@ export function ChatWorkspaceView({
     state,
   } = controller;
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
+  const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
   const {
     diffCommentCount,
     diffCommentError,
@@ -79,7 +81,7 @@ export function ChatWorkspaceView({
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <div
         className="absolute inset-x-0 top-0 overflow-hidden px-5"
-        style={{ bottom: `${footerHeight}px` }}
+        style={{ bottom: hasConversation ? `${footerHeight}px` : "0px" }}
       >
         <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden pt-1.5">
           <ChatView
@@ -96,7 +98,11 @@ export function ChatWorkspaceView({
 
       <footer
         ref={footerRef}
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 z-10 px-5 transition-[top,transform,padding] duration-300 ease-out",
+          hasConversation ? "translate-y-0 pb-4" : "-translate-y-1/2 pb-0",
+        )}
+        style={{ top: hasConversation ? `calc(100% - ${footerHeight}px)` : "50%" }}
       >
         <div className="pointer-events-auto grid gap-2.5">
           <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">

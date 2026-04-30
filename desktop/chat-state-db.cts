@@ -72,6 +72,46 @@ export function createChatGroup(name: string): ChatSidebarState {
   return getChatSidebarState(id);
 }
 
+export function renameChatGroup(groupId: string, name: string) {
+  ensureChatStateSchema();
+  const trimmedName = name.trim();
+  if (!groupId || !trimmedName) return;
+  getThreadStateDatabase()
+    .prepare("UPDATE chat_groups SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .run(trimmedName, groupId);
+}
+
+export function setChatGroupCollapsed(groupId: string, collapsed: boolean) {
+  ensureChatStateSchema();
+  getThreadStateDatabase()
+    .prepare("UPDATE chat_groups SET collapsed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .run(collapsed ? 1 : 0, groupId);
+}
+
+export function reorderChatGroups(groupIds: string[]) {
+  ensureChatStateSchema();
+  const update = getThreadStateDatabase().prepare(
+    "UPDATE chat_groups SET order_index = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+  );
+  groupIds.forEach((groupId, index) => update.run(index, groupId));
+}
+
+export function moveChatThread(sessionPath: string, groupId: string | null) {
+  if (!isChatSessionPath(sessionPath)) return;
+  ensureChatStateSchema();
+  getThreadStateDatabase()
+    .prepare(
+      `
+        INSERT INTO chat_threads (session_path, group_id)
+        VALUES (?, ?)
+        ON CONFLICT(session_path) DO UPDATE SET
+          group_id = excluded.group_id,
+          updated_at = CURRENT_TIMESTAMP
+      `,
+    )
+    .run(sessionPath, groupId);
+}
+
 export function upsertChatThread(options: {
   sessionPath: string;
   groupId?: string | null;
