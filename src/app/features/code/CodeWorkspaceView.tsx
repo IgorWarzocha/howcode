@@ -9,6 +9,7 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/t
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
+import { DesktopComposerStatus } from "./DesktopComposerStatus";
 import { useDiffCommentController } from "./useDiffCommentController";
 import { useQueuedPromptRestore } from "./useQueuedPromptRestore";
 import { useWorkspaceFooterHeight } from "./useWorkspaceFooterHeight";
@@ -195,127 +196,139 @@ export function CodeWorkspaceView({
           style={terminalDrawerInsetStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className={workspaceContentClass}>
-              {state.activeView === "gitops" ? (
-                <div>
-                  <GitOpsComposerPanel
-                    dictationModelId={shellState?.appSettings.dictationModelId ?? null}
-                    dictationMaxDurationSeconds={
-                      shellState?.appSettings.dictationMaxDurationSeconds ?? 180
-                    }
-                    projectGitState={projectGitState}
-                    projectId={composerProjectId}
-                    sessionPath={terminalSessionPath}
-                    showDictationButton={shellState?.appSettings.showDictationButton ?? true}
-                    appSettings={
-                      shellState?.appSettings ?? {
-                        gitCommitMessageModel: null,
-                        gitCommitMessageThinkingLevel: "off",
-                        skillCreatorModel: null,
-                        skillCreatorThinkingLevel: "off",
-                        composerStreamingBehavior: "followUp",
-                        dictationModelId: null,
-                        dictationMaxDurationSeconds: 180,
-                        showDictationButton: true,
-                        favoriteFolders: [],
-                        projectImportState: null,
-                        preferredProjectLocation: null,
-                        initializeGitOnProjectCreate: false,
-                        gitOpsDefaultMode: "commit",
-                        gitDiffBaselineDefault: { kind: "head" },
-                        gitDiffRenderModeDefault: "stacked",
-                        projectDeletionMode: "pi-only",
-                        useAgentsSkillsPaths: false,
-                        piTuiTakeover: false,
-                      }
-                    }
-                    diffBaseline={diffBaseline}
-                    diffRenderMode={diffRenderMode}
-                    diffComments={diffComments}
-                    diffCommentCount={diffCommentCount}
-                    diffCommentsSending={diffCommentsSending}
-                    diffCommentError={diffCommentError}
-                    diffLoadError={diffLoadError}
-                    onSetDiffBaseline={onSetDiffBaseline}
-                    onSetDiffRenderMode={onSetDiffRenderMode}
-                    onSendDiffComments={(message) => {
-                      void handleSendDiffComments(message);
-                    }}
-                    onSelectDiffComment={handleSelectDiffComment}
-                    onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
-                    onAction={handleAction}
-                    onBack={handleCloseGitOpsView}
-                    onOpenSettingsView={() => controller.handleShowView("settings")}
+            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
+              <div className="min-w-0 self-center opacity-0 xl:opacity-100">
+                {state.activeView === "thread" && !state.takeoverVisible ? (
+                  <DesktopComposerStatus
+                    contextUsage={activeComposerState?.contextUsage ?? null}
+                    model={activeComposerState?.currentModel ?? null}
+                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   />
-                </div>
-              ) : (
-                <div className="grid gap-0">
-                  <QueuedPromptsCard
-                    prompts={activeComposerState?.queuedPrompts ?? []}
-                    pendingPromptIds={pendingQueuedPromptIdsForSession}
-                    onEditPrompt={(prompt) => {
-                      void handleEditQueuedPrompt(prompt);
-                    }}
-                    onRemovePrompt={(prompt) => {
-                      void handleRemoveQueuedPrompt(prompt);
-                    }}
-                  />
+                ) : null}
+              </div>
+              <div className="w-[800px]">
+                {state.activeView === "gitops" ? (
                   <div>
-                    <Composer
-                      activeView={state.activeView}
-                      model={activeComposerState?.currentModel ?? null}
-                      contextUsage={activeComposerState?.contextUsage ?? null}
-                      availableModels={activeComposerState?.availableModels ?? []}
-                      isStreaming={activeThreadData?.isStreaming ?? false}
-                      isCompacting={activeComposerState?.isCompacting ?? false}
-                      isExtensionCommandRunning={
-                        activeComposerState?.isExtensionCommandRunning ?? false
-                      }
-                      thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                      restoredQueuedPrompt={scopedRestoredQueuedPrompt}
-                      streamingBehaviorPreference={
-                        shellState?.appSettings.composerStreamingBehavior ?? "followUp"
-                      }
-                      availableThinkingLevels={
-                        activeComposerState?.availableThinkingLevels ?? ["off"]
-                      }
-                      projectId={composerProjectId}
-                      projectGitState={projectGitState}
-                      diffBaseline={diffBaseline}
-                      sessionPath={terminalSessionPath}
+                    <GitOpsComposerPanel
                       dictationModelId={shellState?.appSettings.dictationModelId ?? null}
                       dictationMaxDurationSeconds={
                         shellState?.appSettings.dictationMaxDurationSeconds ?? 180
                       }
-                      favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                      projectGitState={projectGitState}
+                      projectId={composerProjectId}
+                      sessionPath={terminalSessionPath}
                       showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                      appSettings={
+                        shellState?.appSettings ?? {
+                          gitCommitMessageModel: null,
+                          gitCommitMessageThinkingLevel: "off",
+                          skillCreatorModel: null,
+                          skillCreatorThinkingLevel: "off",
+                          composerStreamingBehavior: "followUp",
+                          dictationModelId: null,
+                          dictationMaxDurationSeconds: 180,
+                          showDictationButton: true,
+                          favoriteFolders: [],
+                          projectImportState: null,
+                          preferredProjectLocation: null,
+                          initializeGitOnProjectCreate: false,
+                          gitOpsDefaultMode: "commit",
+                          gitDiffBaselineDefault: { kind: "head" },
+                          gitDiffRenderModeDefault: "stacked",
+                          projectDeletionMode: "pi-only",
+                          useAgentsSkillsPaths: false,
+                          piTuiTakeover: false,
+                        }
+                      }
+                      diffBaseline={diffBaseline}
                       diffRenderMode={diffRenderMode}
                       diffComments={diffComments}
                       diffCommentCount={diffCommentCount}
                       diffCommentsSending={diffCommentsSending}
                       diffCommentError={diffCommentError}
+                      diffLoadError={diffLoadError}
                       onSetDiffBaseline={onSetDiffBaseline}
                       onSetDiffRenderMode={onSetDiffRenderMode}
                       onSendDiffComments={(message) => {
                         void handleSendDiffComments(message);
                       }}
                       onSelectDiffComment={handleSelectDiffComment}
-                      promptResetKey={composerPromptResetKey}
                       onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
-                      mainViewRef={mainViewRef}
-                      workspaceFooterRef={footerRef}
-                      onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-                      onOpenGitOpsView={handleOpenGitOpsView}
-                      onOpenSettingsView={() => controller.handleShowView("settings")}
-                      onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
-                      onToggleTerminal={handleToggleTerminal}
-                      terminalVisible={state.terminalVisible}
-                      onListAttachmentEntries={listComposerAttachmentEntries}
                       onAction={handleAction}
+                      onBack={handleCloseGitOpsView}
+                      onOpenSettingsView={() => controller.handleShowView("settings")}
                     />
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="grid gap-0">
+                    <QueuedPromptsCard
+                      prompts={activeComposerState?.queuedPrompts ?? []}
+                      pendingPromptIds={pendingQueuedPromptIdsForSession}
+                      onEditPrompt={(prompt) => {
+                        void handleEditQueuedPrompt(prompt);
+                      }}
+                      onRemovePrompt={(prompt) => {
+                        void handleRemoveQueuedPrompt(prompt);
+                      }}
+                    />
+                    <div>
+                      <Composer
+                        activeView={state.activeView}
+                        model={activeComposerState?.currentModel ?? null}
+                        contextUsage={activeComposerState?.contextUsage ?? null}
+                        availableModels={activeComposerState?.availableModels ?? []}
+                        isStreaming={activeThreadData?.isStreaming ?? false}
+                        isCompacting={activeComposerState?.isCompacting ?? false}
+                        isExtensionCommandRunning={
+                          activeComposerState?.isExtensionCommandRunning ?? false
+                        }
+                        thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                        restoredQueuedPrompt={scopedRestoredQueuedPrompt}
+                        streamingBehaviorPreference={
+                          shellState?.appSettings.composerStreamingBehavior ?? "followUp"
+                        }
+                        availableThinkingLevels={
+                          activeComposerState?.availableThinkingLevels ?? ["off"]
+                        }
+                        projectId={composerProjectId}
+                        projectGitState={projectGitState}
+                        diffBaseline={diffBaseline}
+                        sessionPath={terminalSessionPath}
+                        dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                        dictationMaxDurationSeconds={
+                          shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                        }
+                        favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                        showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                        diffRenderMode={diffRenderMode}
+                        diffComments={diffComments}
+                        diffCommentCount={diffCommentCount}
+                        diffCommentsSending={diffCommentsSending}
+                        diffCommentError={diffCommentError}
+                        onSetDiffBaseline={onSetDiffBaseline}
+                        onSetDiffRenderMode={onSetDiffRenderMode}
+                        onSendDiffComments={(message) => {
+                          void handleSendDiffComments(message);
+                        }}
+                        onSelectDiffComment={handleSelectDiffComment}
+                        promptResetKey={composerPromptResetKey}
+                        onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                        mainViewRef={mainViewRef}
+                        workspaceFooterRef={footerRef}
+                        onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                        onOpenGitOpsView={handleOpenGitOpsView}
+                        onOpenSettingsView={() => controller.handleShowView("settings")}
+                        onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
+                        onToggleTerminal={handleToggleTerminal}
+                        terminalVisible={state.terminalVisible}
+                        onListAttachmentEntries={listComposerAttachmentEntries}
+                        onAction={handleAction}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div aria-hidden="true" />
             </div>
           </div>
         </footer>
