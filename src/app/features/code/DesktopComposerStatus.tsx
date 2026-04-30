@@ -1,0 +1,72 @@
+import { Bot, Brain, Gauge, Server } from "lucide-react";
+import type {
+  ComposerContextUsage,
+  ComposerModel,
+  ComposerThinkingLevel,
+} from "../../desktop/types";
+import { cn } from "../../utils/cn";
+
+type DesktopComposerStatusProps = {
+  className?: string;
+  contextUsage: ComposerContextUsage | null;
+  model: ComposerModel | null;
+  thinkingLevel: ComposerThinkingLevel;
+};
+
+const statusLineClass =
+  "flex min-w-0 items-center gap-1.5 truncate text-[11px] leading-4 text-[color:var(--muted)]";
+
+const iconClass = "shrink-0 text-[rgba(169,178,215,0.58)]";
+
+const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
+  off: "Off",
+  minimal: "Minimal",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "X-High",
+};
+
+function formatContextPercent(contextUsage: ComposerContextUsage | null) {
+  if (contextUsage?.percent === null || contextUsage?.percent === undefined) {
+    return "—";
+  }
+
+  return `${contextUsage.percent.toFixed(0)}%`;
+}
+
+export function DesktopComposerStatus({
+  className,
+  contextUsage,
+  model,
+  thinkingLevel,
+}: DesktopComposerStatusProps) {
+  const rows = [
+    { icon: Server, label: model?.provider ?? "No provider" },
+    { icon: Bot, label: model?.name ?? "No model", highlight: true },
+    { icon: Brain, label: thinkingLevelLabels[thinkingLevel] },
+    { icon: Gauge, label: formatContextPercent(contextUsage) },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-auto grid w-36 select-none gap-0.5 rounded-xl px-1.5 py-1 text-left opacity-70 transition-opacity hover:opacity-100",
+        className,
+      )}
+      aria-label="Composer status"
+    >
+      {rows.map((row) => {
+        const Icon = row.icon;
+        return (
+          <div key={row.label} className={statusLineClass}>
+            <Icon size={11} className={iconClass} />
+            <span className={cn("truncate", row.highlight && "text-[color:var(--text)]")}>
+              {row.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

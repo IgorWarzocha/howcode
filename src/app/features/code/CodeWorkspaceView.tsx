@@ -9,7 +9,7 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/t
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
-import { DesktopComposerStatusMock } from "./DesktopComposerStatusMock";
+import { DesktopComposerStatus } from "./DesktopComposerStatus";
 import { useDiffCommentController } from "./useDiffCommentController";
 import { useQueuedPromptRestore } from "./useQueuedPromptRestore";
 import { useWorkspaceFooterHeight } from "./useWorkspaceFooterHeight";
@@ -199,7 +199,11 @@ export function CodeWorkspaceView({
             <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
               <div className="min-w-0 self-center opacity-0 xl:opacity-100">
                 {state.activeView === "thread" && !state.takeoverVisible ? (
-                  <DesktopComposerStatusMock />
+                  <DesktopComposerStatus
+                    contextUsage={activeComposerState?.contextUsage ?? null}
+                    model={activeComposerState?.currentModel ?? null}
+                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                  />
                 ) : null}
               </div>
               <div className="w-[800px]">
