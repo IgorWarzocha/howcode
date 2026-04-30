@@ -238,7 +238,7 @@ export function getArtifact(artifactId: string): Artifact | null {
   ensureArtifactSchema();
   const row = getThreadStateDatabase()
     .prepare(
-      `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
+      `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
               created_at AS createdAt, updated_at AS updatedAt
        FROM artifacts WHERE id = ?`,
     )
@@ -251,14 +251,14 @@ export function listArtifacts(conversationId?: string | null): Artifact[] {
   const rows = conversationId
     ? (getThreadStateDatabase()
         .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
+          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts WHERE conversation_id = ? ORDER BY updated_at DESC`,
         )
         .all(conversationId) as ArtifactRow[])
     : (getThreadStateDatabase()
         .prepare(
-          `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
+          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts ORDER BY updated_at DESC`,
         )
