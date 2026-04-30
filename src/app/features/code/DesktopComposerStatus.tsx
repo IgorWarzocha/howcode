@@ -42,10 +42,10 @@ export function DesktopComposerStatus({
   thinkingLevel,
 }: DesktopComposerStatusProps) {
   const rows = [
-    { icon: Server, label: model?.provider ?? "No provider" },
-    { icon: Bot, label: model?.name ?? "No model", highlight: true },
-    { icon: Brain, label: thinkingLevelLabels[thinkingLevel] },
-    { icon: Gauge, label: formatContextPercent(contextUsage) },
+    { id: "provider", icon: Server, label: model?.provider ?? "No provider" },
+    { id: "model", icon: Bot, label: model?.name ?? "No model", highlight: true },
+    { id: "thinking", icon: Brain, label: thinkingLevelLabels[thinkingLevel] },
+    { id: "context", icon: Gauge, label: formatContextPercent(contextUsage) },
   ];
 
   return (
@@ -59,7 +59,7 @@ export function DesktopComposerStatus({
       {rows.map((row) => {
         const Icon = row.icon;
         return (
-          <div key={row.label} className={statusLineClass}>
+          <div key={row.id} className={statusLineClass}>
             <Icon size={11} className={iconClass} />
             <span className={cn("truncate", row.highlight && "text-[color:var(--text)]")}>
               {row.label}
