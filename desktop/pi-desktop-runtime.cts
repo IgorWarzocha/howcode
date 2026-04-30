@@ -179,7 +179,7 @@ export function selectProjectRuntime(request: ComposerStateRequest = {}) {
 }
 
 export function openThreadRuntime(request: ComposerStateRequest) {
-  return invokeRuntimeHost("openThreadRuntime", { request });
+  return invokeRuntimeHost("openThreadRuntime", { request: withComposerModeSettings(request) });
 }
 
 export function getComposerSlashCommands(request: ComposerStateRequest = {}) {

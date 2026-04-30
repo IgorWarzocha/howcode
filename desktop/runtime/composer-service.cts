@@ -80,6 +80,12 @@ async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerSt
     if (model) {
       await runtime.session.setModel(model);
       selectedModel = model;
+    } else {
+      const [fallbackModel] = await runtime.session.modelRegistry.getAvailable();
+      if (fallbackModel) {
+        await runtime.session.setModel(fallbackModel);
+        selectedModel = fallbackModel;
+      }
     }
   }
 
@@ -170,12 +176,14 @@ export async function getComposerState(request: ComposerStateRequest = {}): Prom
 
   // Reads should reflect the current in-memory runtime state. Reloading or publishing here can
   // race with just-applied composer mutations and re-broadcast stale snapshots back into the UI.
-  if (runtimePromise) {
-    const runtime = await runtimePromise;
-    if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
-      await applyComposerModeSettings(runtime, request);
-    }
-    return await buildComposerState(runtime);
+  if (runtimePromise && persistedSessionPath) {
+    return await withRuntimeMutationLock(persistedSessionPath, async () => {
+      const runtime = await runtimePromise;
+      if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
+        await applyComposerModeSettings(runtime, request);
+      }
+      return await buildComposerState(runtime);
+    });
   }
 
   return await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
@@ -336,7 +344,6 @@ export async function sendComposerPrompt(
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
     if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
-      await applyComposerModeSettings(cachedRuntime, request);
       return await runSend(cachedRuntime);
     }
   }
@@ -485,9 +492,25 @@ export async function selectProjectRuntime(
 }
 
 export async function openThreadRuntime(request: ComposerStateRequest): Promise<ComposerState> {
-  const { composer } = await emitComposerUpdate({
-    ...request,
-    sessionPath: getPersistedSessionPath(request.sessionPath),
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  if (!persistedSessionPath) {
+    const { composer } = await emitComposerUpdate({ ...request, sessionPath: null });
+    return composer;
+  }
+
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
+      await applyComposerModeSettings(runtime, request);
+    }
+    scheduleRuntimeDisposalForRuntime(runtime);
+    const composer = await buildComposerState(runtime);
+    publishComposerUpdate(composer, {
+      projectId: request.projectId ?? runtime.cwd,
+      sessionPath: persistedSessionPath,
+    });
+    return composer;
   });
-  return composer;
 }

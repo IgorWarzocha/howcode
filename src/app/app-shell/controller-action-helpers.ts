@@ -20,6 +20,7 @@ export function buildContextualActionPayload({
     action === "composer.send" ||
     action === "composer.stop" ||
     action === "composer.thinking" ||
+    action === "thread.open" ||
     action === "workspace.commit" ||
     action === "workspace.commit-options" ||
     action === "workspace.diff-preferences"

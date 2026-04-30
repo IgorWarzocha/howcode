@@ -80,6 +80,7 @@ export function useComposerController({
   const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const composerMode = activeView === "chat" ? "chat" : "code";
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
   const pickerPanelRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
@@ -98,6 +99,7 @@ export function useComposerController({
     setDraftValue,
     skipNextDraftPersistenceRef,
   } = useComposerDraftState({
+    composerMode,
     projectId,
     sessionPath,
     openMenu,
