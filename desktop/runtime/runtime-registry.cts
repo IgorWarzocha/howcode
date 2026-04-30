@@ -18,7 +18,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
-import { artifactToolNames, createArtifactTools } from "./artifact-tools.cts";
+import { createArtifactTools } from "./artifact-tools.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -153,7 +153,7 @@ async function createRuntime(options: {
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
     ...(options.settingsCwd
       ? {
-          tools: artifactToolNames,
+          noTools: "builtin" as const,
           customTools: createArtifactTools({
             createArtifact,
             updateArtifact,

@@ -8,7 +8,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
-import { artifactToolNames, createArtifactTools } from "../runtime/artifact-tools.cts";
+import { createArtifactTools } from "../runtime/artifact-tools.cts";
 import { invokeMainRequest } from "./main-request-client.cts";
 import {
   createIsolatedRuntimeResourceLoader,
@@ -126,7 +126,7 @@ async function createRuntime(options: {
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
     ...(options.settingsCwd
       ? {
-          tools: artifactToolNames,
+          noTools: "builtin" as const,
           customTools: createArtifactTools({
             createArtifact: (input) => invokeMainRequest("createArtifact", input),
             updateArtifact: (input) => invokeMainRequest("updateArtifact", input),
