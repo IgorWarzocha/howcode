@@ -5,6 +5,7 @@ import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directo
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import {
   createArtifact,
+  editArtifact,
   getArtifact,
   listArtifacts,
   updateArtifact,
@@ -233,6 +234,11 @@ async function handleHostMainRequest(host: HostConnection, message: RuntimeHostM
       case "updateArtifact": {
         const payload = message.payload as Parameters<typeof updateArtifact>[0];
         result = updateArtifact(payload);
+        break;
+      }
+      case "editArtifact": {
+        const payload = message.payload as Parameters<typeof editArtifact>[0];
+        result = editArtifact(payload);
         break;
       }
       case "getArtifact": {

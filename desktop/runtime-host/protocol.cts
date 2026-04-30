@@ -114,6 +114,7 @@ export type RuntimeHostMainRequestMap = {
     content: string;
   };
   updateArtifact: { artifactId: string; content: string };
+  editArtifact: { artifactId: string; oldText: string; newText: string };
   getArtifact: { artifactId: string };
   listArtifacts: { conversationId: string };
 };
@@ -121,6 +122,7 @@ export type RuntimeHostMainRequestMap = {
 export type RuntimeHostMainResponseMap = {
   createArtifact: Artifact;
   updateArtifact: Artifact;
+  editArtifact: Artifact;
   getArtifact: Artifact | null;
   listArtifacts: Artifact[];
 };

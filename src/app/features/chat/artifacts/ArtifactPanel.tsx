@@ -1,9 +1,10 @@
 import { FileCode2, List, Maximize2, Minimize2, PanelRightClose, Play, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Artifact } from "../../../desktop/types";
+import type { Artifact, ArtifactVersion } from "../../../desktop/types";
 import {
   compileReactArtifactQuery,
   listArtifactsQuery,
+  listArtifactVersionsQuery,
   updateArtifactQuery,
 } from "../../../query/desktop-query";
 import { compactIconButtonClass } from "../../../ui/classes";
@@ -93,6 +94,8 @@ export function ArtifactPanel({
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [view, setView] = useState<ArtifactView>("preview");
   const [draft, setDraft] = useState("");
+  const [versions, setVersions] = useState<ArtifactVersion[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<number | "latest">("latest");
   const [saving, setSaving] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -103,6 +106,12 @@ export function ArtifactPanel({
     () => artifacts.find((artifact) => artifact.id === selectedArtifactId) ?? artifacts[0] ?? null,
     [artifacts, selectedArtifactId],
   );
+  const selectedHistoricalVersion =
+    selectedVersion === "latest"
+      ? null
+      : (versions.find((version) => version.version === selectedVersion) ?? null);
+  const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
+  const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
 
   useEffect(() => {
     artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.id));
@@ -145,14 +154,33 @@ export function ArtifactPanel({
         return next;
       });
       setSelectedArtifactId(event.artifact.id);
+      setSelectedVersion("latest");
       setView("preview");
       setPreviewRevision((revision) => revision + 1);
     });
   }, [conversationId]);
 
   useEffect(() => {
-    setDraft(selectedArtifact?.content ?? "");
-  }, [selectedArtifact?.id, selectedArtifact?.content]);
+    setSelectedVersion("latest");
+  }, [selectedArtifact?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedArtifact) {
+      setVersions([]);
+      return;
+    }
+    void listArtifactVersionsQuery(selectedArtifact.id).then((nextVersions) => {
+      if (!cancelled) setVersions(nextVersions);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedArtifact?.id, selectedArtifact?.version]);
+
+  useEffect(() => {
+    setDraft(displayedContent);
+  }, [displayedContent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,10 +190,10 @@ export function ArtifactPanel({
       return;
     }
     if (selectedArtifact.kind === "html") {
-      setPreviewHtml(buildHtmlPreview(selectedArtifact.content));
+      setPreviewHtml(buildHtmlPreview(displayedContent));
       return;
     }
-    void compileReactArtifactQuery(selectedArtifact.content).then((result) => {
+    void compileReactArtifactQuery(displayedContent).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         setPreviewHtml(buildReactPreview(result.js));
@@ -178,7 +206,7 @@ export function ArtifactPanel({
     return () => {
       cancelled = true;
     };
-  }, [selectedArtifact]);
+  }, [selectedArtifact, displayedContent]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -192,7 +220,7 @@ export function ArtifactPanel({
   }, []);
 
   const saveDraft = async () => {
-    if (!selectedArtifact || draft === selectedArtifact.content) return;
+    if (!selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content) return;
     setSaving(true);
     try {
       const updated = await updateArtifactQuery(selectedArtifact.id, draft);
@@ -200,6 +228,28 @@ export function ArtifactPanel({
         setArtifacts((current) =>
           current.map((artifact) => (artifact.id === updated.id ? updated : artifact)),
         );
+        setSelectedVersion("latest");
+        setView("preview");
+        setPreviewRevision((revision) => revision + 1);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreSelectedVersion = async () => {
+    if (!selectedArtifact || !selectedHistoricalVersion) return;
+    setSaving(true);
+    try {
+      const updated = await updateArtifactQuery(
+        selectedArtifact.id,
+        selectedHistoricalVersion.content,
+      );
+      if (updated) {
+        setArtifacts((current) =>
+          current.map((artifact) => (artifact.id === updated.id ? updated : artifact)),
+        );
+        setSelectedVersion("latest");
         setView("preview");
         setPreviewRevision((revision) => revision + 1);
       }
@@ -226,6 +276,26 @@ export function ArtifactPanel({
           ) : null}
         </div>
         <div className="flex items-center gap-1">
+          {selectedArtifact ? (
+            <select
+              className="h-7 rounded-md border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.03)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]"
+              value={selectedVersion}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSelectedVersion(value === "latest" ? "latest" : Number(value));
+              }}
+              aria-label="Artifact version"
+            >
+              <option value="latest">Latest v{selectedArtifact.version}</option>
+              {versions
+                .filter((version) => version.version !== selectedArtifact.version)
+                .map((version) => (
+                <option key={version.version} value={version.version}>
+                  v{version.version}
+                </option>
+              ))}
+            </select>
+          ) : null}
           {(["list", "code", "preview"] as const).map((nextView) => (
             <button
               key={nextView}
@@ -247,11 +317,23 @@ export function ArtifactPanel({
               type="button"
               className={cn(compactIconButtonClass, "h-7 w-7")}
               onClick={() => void saveDraft()}
-              disabled={!selectedArtifact || draft === selectedArtifact.content || saving}
+              disabled={
+                !selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content || saving
+              }
               aria-label="Save artifact"
               data-tooltip="Save artifact"
             >
               <Save size={14} />
+            </button>
+          ) : null}
+          {showingHistoricalVersion ? (
+            <button
+              type="button"
+              className="h-7 rounded-md border border-[rgba(169,178,215,0.08)] px-2 text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:opacity-40"
+              onClick={() => void restoreSelectedVersion()}
+              disabled={saving}
+            >
+              Restore
             </button>
           ) : null}
           <button
@@ -318,6 +400,7 @@ export function ArtifactPanel({
             className="h-full w-full resize-none overflow-auto bg-[#111521] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)] outline-none"
             value={draft}
             spellCheck={false}
+            readOnly={showingHistoricalVersion}
             onChange={(event) => setDraft(event.target.value)}
           />
         ) : null}

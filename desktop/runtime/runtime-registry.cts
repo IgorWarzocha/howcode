@@ -3,6 +3,7 @@ import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
 import {
   createArtifact,
+  editArtifact,
   getArtifact,
   listArtifacts,
   updateArtifact,
@@ -156,6 +157,7 @@ async function createRuntime(options: {
           noTools: "builtin" as const,
           customTools: createArtifactTools({
             createArtifact,
+            editArtifact,
             updateArtifact,
             getArtifact,
             listArtifacts,

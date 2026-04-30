@@ -156,6 +156,7 @@ declare global {
       listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>;
       getArtifact?: (artifactId: string) => Promise<Artifact | null>;
       updateArtifact?: (artifactId: string, content: string) => Promise<Artifact>;
+      editArtifact?: (artifactId: string, oldText: string, newText: string) => Promise<Artifact>;
       listArtifactVersions?: (artifactId: string) => Promise<ArtifactVersion[]>;
       compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>;
       getInboxThreads?: () => Promise<InboxThread[]>;

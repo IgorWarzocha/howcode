@@ -1,5 +1,6 @@
 export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
+  editArtifact,
   getArtifact,
   listArtifacts,
   listArtifactVersions,

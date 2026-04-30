@@ -97,6 +97,14 @@ export async function updateArtifactQuery(artifactId: string, content: string) {
   return (await window.piDesktop?.updateArtifact?.(artifactId, content)) ?? null;
 }
 
+export async function editArtifactQuery(artifactId: string, oldText: string, newText: string) {
+  return (await window.piDesktop?.editArtifact?.(artifactId, oldText, newText)) ?? null;
+}
+
+export async function listArtifactVersionsQuery(artifactId: string) {
+  return (await window.piDesktop?.listArtifactVersions?.(artifactId)) ?? [];
+}
+
 export async function compileReactArtifactQuery(source: string) {
   return (
     (await window.piDesktop?.compileReactArtifact?.(source)) ?? {

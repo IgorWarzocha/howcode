@@ -9,6 +9,9 @@ export type ArtifactToolAdapter = {
     content: string;
   }): Promise<Artifact> | Artifact;
   updateArtifact(input: { artifactId: string; content: string }): Promise<Artifact> | Artifact;
+  editArtifact(input: { artifactId: string; oldText: string; newText: string }):
+    | Promise<Artifact>
+    | Artifact;
   getArtifact(artifactId: string): Promise<Artifact | null> | Artifact | null;
   listArtifacts(conversationId: string): Promise<Artifact[]> | Artifact[];
 };
@@ -58,13 +61,38 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       },
     },
     {
+      name: "edit_artifact",
+      label: "Edit artifact",
+      description:
+        "Replace one exact, unique text snippet in an existing artifact and create a new version.",
+      promptSnippet: "edit_artifact: replace an exact snippet in an artifact",
+      promptGuidelines: [
+        "Prefer edit_artifact for targeted changes when you know the exact current snippet.",
+        "Use oldText that is exact and unique. If oldText is not unique, include more surrounding context.",
+        "Only call read_artifact first when the current content is not already visible in context.",
+      ],
+      parameters: {
+        type: "object",
+        properties: { artifactId: stringSchema, oldText: stringSchema, newText: stringSchema },
+        required: ["artifactId", "oldText", "newText"],
+        additionalProperties: false,
+      },
+      async execute(_toolCallId, params) {
+        const input = params as { artifactId: string; oldText: string; newText: string };
+        const artifact = await adapter.editArtifact(input);
+        return textResult(`Edited artifact ${artifact.id} to version ${artifact.version}.`, {
+          artifact,
+        });
+      },
+    },
+    {
       name: "update_artifact",
       label: "Update artifact",
       description: "Replace the full content of an existing artifact and create a new version.",
       promptSnippet: "update_artifact: replace an artifact's full content and create a version",
       promptGuidelines: [
-        "When modifying an existing artifact, call read_artifact first unless the current content is already visible in context.",
-        "Use update_artifact with the full replacement content, not a patch.",
+        "Prefer edit_artifact for small targeted changes.",
+        "Use update_artifact only when replacing most or all of the artifact content.",
       ],
       parameters: {
         type: "object",
@@ -128,6 +156,7 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
 
 export const artifactToolNames = [
   "create_artifact",
+  "edit_artifact",
   "update_artifact",
   "read_artifact",
   "list_artifacts",

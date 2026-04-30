@@ -132,6 +132,25 @@ export function updateArtifact(input: { artifactId: string; content: string }) {
   return artifact;
 }
 
+export function editArtifact(input: { artifactId: string; oldText: string; newText: string }) {
+  const current = getArtifact(input.artifactId);
+  if (!current) throw new Error(`Artifact not found: ${input.artifactId}`);
+  if (input.oldText.length === 0) throw new Error("oldText must not be empty.");
+  const firstIndex = current.content.indexOf(input.oldText);
+  if (firstIndex === -1) {
+    throw new Error("oldText was not found in the artifact content.");
+  }
+  if (current.content.indexOf(input.oldText, firstIndex + input.oldText.length) !== -1) {
+    throw new Error("oldText is not unique in the artifact content; use a larger exact snippet.");
+  }
+  return updateArtifact({
+    artifactId: input.artifactId,
+    content: `${current.content.slice(0, firstIndex)}${input.newText}${current.content.slice(
+      firstIndex + input.oldText.length,
+    )}`,
+  });
+}
+
 export function getArtifact(artifactId: string): Artifact | null {
   ensureArtifactSchema();
   const row = getThreadStateDatabase()

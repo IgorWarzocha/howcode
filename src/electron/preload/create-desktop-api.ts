@@ -130,6 +130,8 @@ export function createDesktopApi() {
     getArtifact: (artifactId: string) => invokeRequest("getArtifact", { artifactId }),
     updateArtifact: (artifactId: string, content: string) =>
       invokeRequest("updateArtifact", { artifactId, content }),
+    editArtifact: (artifactId: string, oldText: string, newText: string) =>
+      invokeRequest("editArtifact", { artifactId, oldText, newText }),
     listArtifactVersions: (artifactId: string) =>
       invokeRequest("listArtifactVersions", { artifactId }),
     compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
