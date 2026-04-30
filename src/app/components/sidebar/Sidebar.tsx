@@ -118,15 +118,9 @@ export function Sidebar({
           />
           <NavButton
             icon={<MessageSquare size={16} />}
-            label={
-              <span className="sidebar-mode-label">
-                <span>Chat</span>
-                <ComingSoonLabel />
-              </span>
-            }
+            label="Chat"
             active={activeView === "chat"}
-            disabled
-            title="Coming soon"
+            onClick={() => onShowView("chat")}
           />
           <NavButton
             icon={<PawPrint size={16} />}

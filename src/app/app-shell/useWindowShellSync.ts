@@ -18,7 +18,9 @@ export function useWatchedSessionSync(workspaceState: WorkspaceState) {
     }
 
     const watchedSessionPath =
-      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+      workspaceState.activeView === "chat" ||
+      workspaceState.activeView === "thread" ||
+      workspaceState.activeView === "gitops"
         ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : null;
 

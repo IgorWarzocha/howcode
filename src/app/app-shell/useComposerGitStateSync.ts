@@ -41,7 +41,9 @@ export function useComposerGitStateSync({
     const composerStateProjectId =
       workspaceState.activeView === "inbox" ? inboxProjectId : composerProjectId;
     const composerStateSessionPath =
-      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+      workspaceState.activeView === "chat" ||
+      workspaceState.activeView === "thread" ||
+      workspaceState.activeView === "gitops"
         ? workspaceState.selectedSessionPath
         : workspaceState.activeView === "inbox"
           ? inboxSessionPath

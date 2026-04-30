@@ -131,11 +131,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     : collapsedProjectIds;
 
   const terminalSessionPath =
-    state.activeView === "thread" || state.activeView === "gitops"
+    state.activeView === "chat" || state.activeView === "thread" || state.activeView === "gitops"
       ? state.selectedSessionPath
       : null;
   const activeThreadId =
-    state.activeView === "thread" || state.activeView === "gitops" ? state.selectedThreadId : null;
+    state.activeView === "chat" || state.activeView === "thread" || state.activeView === "gitops"
+      ? state.selectedThreadId
+      : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);

@@ -226,7 +226,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         : action.projects[0]?.id || "";
       const selectedThreadProject = findProjectContainingThread(action.projects, state);
       const shouldPreserveSelectedThread =
-        state.activeView === "thread" && Boolean(selectedThreadProject);
+        (state.activeView === "chat" || state.activeView === "thread") &&
+        Boolean(selectedThreadProject);
       const shouldPreserveProjectSelection = hasSelectedProject || shouldPreserveSelectedThread;
 
       const collapsedProjectIds = Object.fromEntries(
@@ -287,9 +288,12 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: action.view,
         settingsOpen: false,
         settingsPanelOpen: false,
-        selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
-        selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
-        selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
+        selectedThreadId:
+          action.view === "chat" || action.view === "thread" ? state.selectedThreadId : null,
+        selectedSessionPath:
+          action.view === "chat" || action.view === "thread" ? state.selectedSessionPath : null,
+        selectedDiffFilePath:
+          action.view === "chat" || action.view === "thread" ? state.selectedDiffFilePath : null,
         takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
         utilityViewReturnState,
       };
@@ -346,7 +350,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
 
       return {
         ...state,
-        activeView: "thread",
+        activeView: state.activeView === "chat" ? "chat" : "thread",
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
@@ -496,7 +500,9 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
     return "Archived threads";
   }
 
-  return activeView === "thread" && selectedThread ? selectedThread.title : "New thread";
+  return (activeView === "chat" || activeView === "thread") && selectedThread
+    ? selectedThread.title
+    : "New thread";
 }
 
 export function getProjectName(project: Project | undefined): string {

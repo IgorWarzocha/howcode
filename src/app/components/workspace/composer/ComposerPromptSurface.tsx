@@ -253,7 +253,7 @@ export function ComposerPromptSurface({
   const extensionRunning = extensionCommandRunning;
   const placeholderText =
     errorMessage ??
-    (activeView === "thread"
+    (activeView === "chat" || activeView === "thread"
       ? "Hover to type · Enter sends · Shift+Enter for a new line"
       : "Hover to type · / commands · @ files · Enter sends");
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";

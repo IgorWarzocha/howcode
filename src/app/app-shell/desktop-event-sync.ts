@@ -14,7 +14,9 @@ export type DesktopEventSelectionState = Pick<
 >;
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
-  return workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+  return workspaceState.activeView === "chat" ||
+    workspaceState.activeView === "thread" ||
+    workspaceState.activeView === "gitops"
     ? getPersistedSessionPath(workspaceState.selectedSessionPath)
     : workspaceState.activeView === "inbox"
       ? (workspaceState.selectedInboxSessionPath ?? null)
@@ -30,6 +32,7 @@ export function shouldAutoOpenStartedThread(
   return (
     reason === "start" &&
     (workspaceState.activeView === "code" ||
+      (workspaceState.activeView === "chat" && visibleSessionPath === null) ||
       (workspaceState.activeView === "thread" && visibleSessionPath === null))
   );
 }

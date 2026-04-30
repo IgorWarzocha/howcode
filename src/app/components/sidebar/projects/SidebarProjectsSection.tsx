@@ -61,6 +61,7 @@ export function SidebarProjectsSection({
   onToggleProjectCollapse,
 }: SidebarProjectsSectionProps) {
   const showProjects =
+    activeView === "chat" ||
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "gitops" ||
