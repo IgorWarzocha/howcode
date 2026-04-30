@@ -130,7 +130,6 @@ async function createRuntime(options: {
           customTools: createArtifactTools({
             createArtifact: (input) => invokeMainRequest("createArtifact", input),
             editArtifact: (input) => invokeMainRequest("editArtifact", input),
-            updateArtifact: (input) => invokeMainRequest("updateArtifact", input),
             getArtifact: (artifactId) => invokeMainRequest("getArtifact", { artifactId }),
             listArtifacts: (conversationId) =>
               invokeMainRequest("listArtifacts", { conversationId }),

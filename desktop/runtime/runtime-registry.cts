@@ -1,13 +1,7 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
-import {
-  createArtifact,
-  editArtifact,
-  getArtifact,
-  listArtifacts,
-  updateArtifact,
-} from "../artifact-state-db.cts";
+import { createArtifact, editArtifact, getArtifact, listArtifacts } from "../artifact-state-db.cts";
 import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
@@ -158,7 +152,6 @@ async function createRuntime(options: {
           customTools: createArtifactTools({
             createArtifact,
             editArtifact,
-            updateArtifact,
             getArtifact,
             listArtifacts,
           }),

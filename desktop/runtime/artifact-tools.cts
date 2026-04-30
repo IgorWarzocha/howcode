@@ -8,7 +8,6 @@ export type ArtifactToolAdapter = {
     kind: ArtifactKind;
     content: string;
   }): Promise<Artifact> | Artifact;
-  updateArtifact(input: { artifactId: string; content: string }): Promise<Artifact> | Artifact;
   editArtifact(input: { artifactId: string; oldText: string; newText: string }):
     | Promise<Artifact>
     | Artifact;
@@ -86,32 +85,6 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       },
     },
     {
-      name: "update_artifact",
-      label: "Update artifact",
-      description: "Replace the full content of an existing artifact and create a new version.",
-      promptSnippet: "update_artifact: replace an artifact's full content and create a version",
-      promptGuidelines: [
-        "Prefer edit_artifact for small targeted changes.",
-        "Use update_artifact only when replacing most or all of the artifact content.",
-      ],
-      parameters: {
-        type: "object",
-        properties: { artifactId: stringSchema, content: stringSchema },
-        required: ["artifactId", "content"],
-        additionalProperties: false,
-      },
-      async execute(_toolCallId, params) {
-        const input = params as { artifactId: string; content: string };
-        const artifact = await adapter.updateArtifact({
-          artifactId: input.artifactId,
-          content: input.content,
-        });
-        return textResult(`Updated artifact ${artifact.id} to version ${artifact.version}.`, {
-          artifact,
-        });
-      },
-    },
-    {
       name: "read_artifact",
       label: "Read artifact",
       description: "Read an artifact's current full content.",
@@ -157,7 +130,6 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
 export const artifactToolNames = [
   "create_artifact",
   "edit_artifact",
-  "update_artifact",
   "read_artifact",
   "list_artifacts",
 ];
