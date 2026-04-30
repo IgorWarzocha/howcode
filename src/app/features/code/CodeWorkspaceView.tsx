@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
@@ -9,6 +9,7 @@ import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/t
 import type { Message } from "../../types";
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 import { DesktopComposerStatus } from "./DesktopComposerStatus";
 import { useDiffCommentController } from "./useDiffCommentController";
@@ -71,6 +72,7 @@ export function CodeWorkspaceView({
     state,
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
+  const showThreadFooter = state.activeView === "thread";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
   const { error: diffLoadError } = useDesktopDiff(
@@ -82,7 +84,28 @@ export function CodeWorkspaceView({
     footerRef,
     visible: showWorkspaceFooter,
   });
-  const footerInset = showWorkspaceFooter ? footerHeight : 0;
+  const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
+  const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
+  const previousHasThreadConversationRef = useRef(hasThreadConversation);
+  const centerThreadFooter = showThreadFooter && !hasThreadConversation;
+  const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0;
+
+  useEffect(() => {
+    if (!hasThreadConversation) {
+      previousHasThreadConversationRef.current = false;
+      setThreadContentVisible(false);
+      return;
+    }
+
+    if (previousHasThreadConversationRef.current) {
+      setThreadContentVisible(true);
+      return;
+    }
+
+    previousHasThreadConversationRef.current = true;
+    const timeout = window.setTimeout(() => setThreadContentVisible(true), 300);
+    return () => window.clearTimeout(timeout);
+  }, [hasThreadConversation]);
   const {
     diffCommentCount,
     diffCommentError,
@@ -114,6 +137,16 @@ export function CodeWorkspaceView({
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined;
+  const threadFooterStyle = showThreadFooter
+    ? {
+        ...terminalDrawerInsetStyle,
+        top: centerThreadFooter ? "50%" : `calc(100% - ${footerHeight}px)`,
+      }
+    : terminalDrawerInsetStyle;
+  const visibleThreadData =
+    state.activeView === "thread" && activeThreadData && !threadContentVisible
+      ? { ...activeThreadData, messages: [] }
+      : activeThreadData;
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -183,7 +216,7 @@ export function CodeWorkspaceView({
                 projects={controller.projects}
                 selectedProjectId={controller.state.selectedProjectId}
                 workspaceContentClass={workspaceContentClass}
-                threadData={activeThreadData}
+                threadData={visibleThreadData}
                 composerLayoutVersion={composerLayoutVersion}
                 onAction={handleAction}
                 onDismissInboxThread={controller.handleDismissInboxThread}
@@ -204,8 +237,13 @@ export function CodeWorkspaceView({
       {showWorkspaceFooter ? (
         <footer
           ref={footerRef}
-          className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
-          style={terminalDrawerInsetStyle}
+          className={cn(
+            "motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
+            showThreadFooter ? "transition-[top,transform] duration-300 ease-out" : "bottom-0",
+            centerThreadFooter && "-translate-y-1/2",
+            showThreadFooter && !centerThreadFooter && "translate-y-0",
+          )}
+          style={threadFooterStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
             <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
