@@ -72,7 +72,7 @@ export function Tooltip({
   return (
     <span
       ref={anchorRef}
-      className={cn("relative inline-flex min-w-0", className)}
+      className={cn("tooltip-anchor", className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
@@ -86,18 +86,10 @@ export function Tooltip({
               id={tooltipId}
               role="tooltip"
               data-open={open ? "true" : "false"}
+              data-placement={placement}
+              data-ready={positionReady ? "true" : "false"}
               style={{ left: `${position.left}px`, top: `${position.top}px` }}
-              className={cn(
-                "pointer-events-none fixed z-[120] w-max max-w-[360px] rounded-[10px] border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] px-2.5 py-1.5 text-[11.5px] leading-4 text-[color:var(--text)] shadow-[0_12px_30px_rgba(0,0,0,0.24)] whitespace-normal break-all transition-[opacity,transform] duration-150 ease-out",
-                placement === "right" ? "-translate-y-1/2" : "-translate-x-1/2 -translate-y-full",
-                open && positionReady && placement === "right" && "opacity-100 translate-x-[2px]",
-                open && positionReady && placement === "top" && "opacity-100 translate-y-[-2px]",
-                (!open || !positionReady) &&
-                  placement === "right" &&
-                  "opacity-0 translate-x-[-4px]",
-                (!open || !positionReady) && placement === "top" && "opacity-0 translate-y-[4px]",
-                contentClassName,
-              )}
+              className={cn("tooltip-content", contentClassName)}
             >
               {content}
             </span>,

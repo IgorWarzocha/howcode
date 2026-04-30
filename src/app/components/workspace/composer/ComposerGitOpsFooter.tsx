@@ -14,6 +14,10 @@ import {
 } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
+import {
+  workspaceFooterRowClass,
+  workspaceFooterTrailingGroupClass,
+} from "../footer/WorkspaceFooterPrimitives";
 import { PlainToggle } from "./PlainToggle";
 
 type ComposerGitOpsFooterProps = {
@@ -114,7 +118,7 @@ export function ComposerGitOpsFooter({
   }, [optionsOpen]);
 
   return (
-    <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+    <div className={workspaceFooterRowClass}>
       {isGitRepo ? (
         <div className="inline-flex items-center gap-1.5">
           <div ref={optionsRef} className="relative inline-flex">
@@ -222,7 +226,7 @@ export function ComposerGitOpsFooter({
         </div>
       ) : null}
 
-      <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+      <div className={workspaceFooterTrailingGroupClass}>
         {isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}

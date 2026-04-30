@@ -249,7 +249,7 @@ export function ComposerDiffBaselineSelector({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          "group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[12px] leading-none text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+          "composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
           open && "text-[color:var(--text)]",
         )}
         onClick={() => setOpen((current) => !current)}
@@ -282,7 +282,7 @@ export function ComposerDiffBaselineSelector({
         </span>
         <span
           className={cn(
-            "pointer-events-none absolute inset-0 flex h-full items-center justify-end truncate px-2 text-[12px] leading-none text-[color:var(--text)] transition-opacity duration-150 ease-out",
+            "composer-footer-text pointer-events-none absolute inset-0 flex h-full items-center justify-end truncate px-2 text-[color:var(--text)] transition-opacity duration-150 ease-out",
             open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >
