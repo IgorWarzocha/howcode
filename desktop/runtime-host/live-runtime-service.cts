@@ -94,6 +94,14 @@ async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerSt
     runtime.session.setThinkingLevel(
       clampThinkingLevel(thinkingLevel, getAvailableThinkingLevelsForModel(selectedModel ?? null)),
     );
+  } else if (Object.hasOwn(request, "composerThinkingLevel")) {
+    const defaultComposer = await buildComposerStateSnapshot({ projectId: runtime.cwd });
+    runtime.session.setThinkingLevel(
+      clampThinkingLevel(
+        defaultComposer.currentThinkingLevel,
+        getAvailableThinkingLevelsForModel(selectedModel ?? null),
+      ),
+    );
   }
 }
 

@@ -9,9 +9,15 @@ import { getPiPackageServices, resolveConfiguredExtensionPath } from "./services
 import type { PiConfiguredPackageRecord, PiSettingsPackageSource } from "./types.ts";
 
 function sortConfiguredPackages(packages: PiConfiguredPackage[]) {
+  const scopeRank: Record<PiConfiguredPackage["scope"], number> = {
+    user: 0,
+    project: 1,
+    chat: 2,
+  };
+
   return [...packages].sort((left, right) => {
     if (left.scope !== right.scope) {
-      return left.scope === "user" ? -1 : 1;
+      return scopeRank[left.scope] - scopeRank[right.scope];
     }
 
     return left.displayName.localeCompare(right.displayName, undefined, {

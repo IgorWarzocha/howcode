@@ -111,8 +111,10 @@ export function useExtensionsController({
     );
   }, [catalogItems, installedIdentityKeys]);
 
-  const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
-    queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath, true), packages);
+  const updateConfiguredPackagesCache = (packages?: PiConfiguredPackage[]) => {
+    if (packages) {
+      queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath, true), packages);
+    }
 
     void queryClient.invalidateQueries({
       queryKey: ["desktop", "piPackages", "configured"],
@@ -165,8 +167,10 @@ export function useExtensionsController({
         chat: installScope === "chat",
       });
 
-      if (result?.configuredPackages) {
+      if (installScope === "chat" && result?.configuredPackages) {
         updateConfiguredPackagesCache(result.configuredPackages);
+      } else {
+        updateConfiguredPackagesCache();
       }
 
       return true;
@@ -192,8 +196,10 @@ export function useExtensionsController({
         chat: configuredPackage.scope === "chat",
       });
 
-      if (result?.configuredPackages) {
+      if (configuredPackage.scope === "chat" && result?.configuredPackages) {
         updateConfiguredPackagesCache(result.configuredPackages);
+      } else {
+        updateConfiguredPackagesCache();
       }
     } catch (error) {
       setActionError(getActionError(error));

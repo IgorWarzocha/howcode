@@ -138,13 +138,16 @@ export function buildModelSettingsDescriptors({
     value: ComposerThinkingLevel | null,
     levels: ComposerThinkingLevel[],
     onChange: (value: ComposerThinkingLevel | null) => void,
+    allowDefault = false,
   ) => (
     <InlineSelect
       id={id}
-      value={value && levels.includes(value) ? value : "composer-default"}
+      value={
+        value && levels.includes(value) ? value : allowDefault ? "composer-default" : levels[0]
+      }
       open={openSelectId === id}
       options={[
-        { value: "composer-default", label: "Composer default" },
+        ...(allowDefault ? [{ value: "composer-default", label: "Composer default" }] : []),
         ...levels.map((level) => ({
           value: level,
           label: thinkingLevelLabels[level],
@@ -162,6 +165,7 @@ export function buildModelSettingsDescriptors({
     thinkingLevel: ComposerThinkingLevel | null,
     selectModel: (id: string) => void,
     selectThinkingLevel: (value: ComposerThinkingLevel | null) => void,
+    allowDefaultThinking = false,
   ) => (
     <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3">
       {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
@@ -171,6 +175,7 @@ export function buildModelSettingsDescriptors({
         thinkingLevel,
         getWorkflowThinkingLevels(selection),
         selectThinkingLevel,
+        allowDefaultThinking,
       )}
     </div>
   );
@@ -195,6 +200,7 @@ export function buildModelSettingsDescriptors({
                 ? { key: "chatThinkingLevel", reset: true }
                 : { key: "chatThinkingLevel", value },
             ),
+          true,
         ),
     },
     {
@@ -216,6 +222,7 @@ export function buildModelSettingsDescriptors({
                 ? { key: "codeThinkingLevel", reset: true }
                 : { key: "codeThinkingLevel", value },
             ),
+          true,
         ),
     },
     {

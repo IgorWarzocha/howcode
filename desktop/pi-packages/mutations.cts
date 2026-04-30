@@ -18,6 +18,7 @@ export async function installPiPackage(request: {
   }
 
   const { packageManager, projectPath } = await getPiPackageServices(request);
+  const configuredProjectPath = request.chat ? request.projectPath : projectPath;
   const local = request.local || request.chat;
   await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {});
   await markRuntimeSettingsStaleForProject(local ? projectPath : null);
@@ -26,7 +27,7 @@ export async function installPiPackage(request: {
     source: request.source,
     normalizedSource,
     configuredPackages: await listConfiguredPiPackages({
-      projectPath,
+      projectPath: configuredProjectPath,
       chat: request.chat,
     }),
   };
@@ -45,6 +46,7 @@ export async function removePiPackage(request: {
   }
 
   const { packageManager, projectPath } = await getPiPackageServices(request);
+  const configuredProjectPath = request.chat ? request.projectPath : projectPath;
   const local = request.local || request.chat;
   await packageManager.removeAndPersist(source, local ? { local: true } : {});
   await markRuntimeSettingsStaleForProject(local ? projectPath : null);
@@ -53,7 +55,7 @@ export async function removePiPackage(request: {
     source,
     normalizedSource: source,
     configuredPackages: await listConfiguredPiPackages({
-      projectPath,
+      projectPath: configuredProjectPath,
       chat: request.chat,
     }),
   };

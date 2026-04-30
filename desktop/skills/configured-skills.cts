@@ -56,9 +56,15 @@ async function listSkillsInDirectory(
 }
 
 function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
+  const scopeRank: Record<PiConfiguredSkill["scope"], number> = {
+    user: 0,
+    project: 1,
+    chat: 2,
+  };
+
   return [...skills].sort((left, right) => {
     if (left.scope !== right.scope) {
-      return left.scope === "user" ? -1 : 1;
+      return scopeRank[left.scope] - scopeRank[right.scope];
     }
 
     return left.displayName.localeCompare(right.displayName, undefined, {

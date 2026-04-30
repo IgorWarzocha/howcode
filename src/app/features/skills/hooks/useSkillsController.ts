@@ -126,8 +126,10 @@ export function useSkillsController({
         chat: installScope === "chat",
       });
 
-      if (result?.configuredSkills) {
+      if (installScope === "chat" && result?.configuredSkills) {
         invalidateConfiguredSkillsCaches(result.configuredSkills);
+      } else {
+        invalidateConfiguredSkillsCaches();
       }
 
       return true;
@@ -152,8 +154,10 @@ export function useSkillsController({
         chat: configuredSkill.scope === "chat",
       });
 
-      if (result?.configuredSkills) {
+      if (configuredSkill.scope === "chat" && result?.configuredSkills) {
         invalidateConfiguredSkillsCaches(result.configuredSkills);
+      } else {
+        invalidateConfiguredSkillsCaches();
       }
     } catch (error) {
       setActionError(getActionError(error));

@@ -1,4 +1,5 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
+import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
 import {
   abortHeadlessExtensionCommand,
@@ -40,6 +41,10 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
   buildComposerState,
   publishComposerUpdate,
 });
+
+function normalizeSettingsCwd(settingsCwd?: string | null) {
+  return settingsCwd ? path.resolve(settingsCwd) : null;
+}
 
 function isHowcodeRuntimeBusy(runtime: PiRuntime) {
   return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime);
@@ -298,17 +303,24 @@ export async function getOrCreateRuntimeForSessionPath(
     throw new Error("A persisted session path is required to open a live runtime.");
   }
 
+  const settingsCwd = normalizeSettingsCwd(options.settingsCwd);
   const existingRuntime = getRuntimeRecord(persistedSessionPath);
   if (existingRuntime) {
-    if (options.suspendDisposal) {
-      suspendRuntimeDisposal(persistedSessionPath);
-    }
+    if (existingRuntime.settingsCwd !== settingsCwd) {
+      const runtime = await existingRuntime.runtimePromise;
+      runtime.session.dispose();
+      deleteRuntimeRecordIfCurrent(persistedSessionPath, existingRuntime);
+    } else {
+      if (options.suspendDisposal) {
+        suspendRuntimeDisposal(persistedSessionPath);
+      }
 
-    const runtime = await existingRuntime.runtimePromise;
-    if (!isHowcodeRuntimeBusy(runtime)) {
-      await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+      const runtime = await existingRuntime.runtimePromise;
+      if (!isHowcodeRuntimeBusy(runtime)) {
+        await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+      }
+      return runtime;
     }
-    return runtime;
   }
 
   const { SessionManager } = await getPiModule();
@@ -316,7 +328,7 @@ export async function getOrCreateRuntimeForSessionPath(
   let record: RuntimeRecord | null = null;
   const runtimePromise = createRuntime({
     cwd: sessionManager.getCwd(),
-    settingsCwd: options.settingsCwd ?? null,
+    settingsCwd,
     sessionManager,
   }).catch((error) => {
     if (record) {
@@ -326,7 +338,7 @@ export async function getOrCreateRuntimeForSessionPath(
     throw error;
   });
 
-  record = registerRuntime(persistedSessionPath, runtimePromise);
+  record = registerRuntime(persistedSessionPath, runtimePromise, settingsCwd);
   return runtimePromise;
 }
 
@@ -346,7 +358,7 @@ export async function createRuntimeForNewSession(cwd: string, sessionDir?: strin
       return await existingRuntime.runtimePromise;
     }
 
-    registerRuntime(runtimeKey, Promise.resolve(runtime));
+    registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null);
   }
 
   return runtime;

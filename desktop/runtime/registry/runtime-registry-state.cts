@@ -6,6 +6,7 @@ const LIVE_THREAD_UPDATE_THROTTLE_MS = 50;
 export type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>;
   disposeTimeout: ReturnType<typeof setTimeout> | null;
+  settingsCwd: string | null;
 };
 
 const runtimeRecords = new Map<string, RuntimeRecord>();
@@ -23,10 +24,15 @@ export function getRuntimeRecordSnapshots() {
   }));
 }
 
-export function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
+export function registerRuntime(
+  runtimeKey: string,
+  runtimePromise: Promise<PiRuntime>,
+  settingsCwd: string | null = null,
+) {
   const record: RuntimeRecord = {
     runtimePromise,
     disposeTimeout: null,
+    settingsCwd,
   };
 
   runtimeRecords.set(runtimeKey, record);
