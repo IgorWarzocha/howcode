@@ -48,6 +48,15 @@ const artifactScrollbarCss = `
   * { scrollbar-color: rgba(140, 148, 181, 0.22) transparent; }
 </style>`;
 
+const artifactDarkPreviewCss = `
+    html { background: #262936; }
+    body { background: #262936; color: #d5daed; }
+    a { color: #b9bff3; }
+    code, pre { color: #d5daed; background: rgba(255,255,255,0.04); }
+    blockquote { color: #969db7; border-left: 3px solid rgba(185,191,243,0.32); margin-left: 0; padding-left: 1rem; }
+    hr { border: 0; border-top: 1px solid rgba(169,178,215,0.14); }
+`;
+
 function buildHtmlPreview(content: string) {
   const capture = `${artifactScrollbarCss}
 <script>
@@ -77,7 +86,8 @@ function buildReactPreview(compiledJs: string) {
   ${artifactScrollbarCss}
   <style>
     html, body, #root { min-height: 100%; margin: 0; }
-    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; color: #111827; }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    ${artifactDarkPreviewCss}
   </style>
 </head>
 <body>
@@ -108,7 +118,8 @@ function buildMarkdownPreview(content: string) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   ${artifactScrollbarCss}
   <style>
-    body { margin: 0; padding: 28px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; color: #111827; line-height: 1.65; }
+    body { margin: 0; padding: 28px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; }
+    ${artifactDarkPreviewCss}
     pre { white-space: pre-wrap; font: inherit; margin: 0; }
   </style>
 </head>
@@ -443,7 +454,7 @@ export function ArtifactPanel({
         ) : null}
 
         {view === "preview" ? (
-          <div className="relative h-full bg-white">
+          <div className="relative h-full bg-[color:var(--sidebar)]">
             {previewError ? (
               <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[#f2a7a7]/30 bg-[#2b1720]/95 p-2 text-[11px] whitespace-pre-wrap text-[#ffd1d1]">
                 {previewError}
