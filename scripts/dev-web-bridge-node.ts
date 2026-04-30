@@ -103,8 +103,7 @@ const handlers: DesktopRequestHandlerMap = {
   listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
   getArtifact: ({ artifactId }) => piThreads.getArtifact(artifactId),
   updateArtifact: ({ artifactId, content }) => piThreads.updateArtifact({ artifactId, content }),
-  editArtifact: ({ artifactId, oldText, newText }) =>
-    piThreads.editArtifact({ artifactId, oldText, newText }),
+  editArtifact: ({ artifactId, edits }) => piThreads.editArtifact({ artifactId, edits }),
   listArtifactVersions: ({ artifactId }) => piThreads.listArtifactVersions(artifactId),
   compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
   getInboxThreads: () => piThreads.loadInboxThreadList(),

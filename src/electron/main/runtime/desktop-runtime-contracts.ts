@@ -104,9 +104,10 @@ export type PiThreadsModule = {
   updateArtifact: (request: { artifactId: string; content: string }) =>
     | Promise<Artifact>
     | Artifact;
-  editArtifact: (request: { artifactId: string; oldText: string; newText: string }) =>
-    | Promise<Artifact>
-    | Artifact;
+  editArtifact: (request: {
+    artifactId: string;
+    edits: Array<{ oldText: string; newText: string }>;
+  }) => Promise<Artifact> | Artifact;
   listArtifactVersions: (artifactId: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>;
   loadShellState: (cwd: string) => Promise<ShellState>;

@@ -114,7 +114,7 @@ export type RuntimeHostMainRequestMap = {
     content: string;
   };
   updateArtifact: { artifactId: string; content: string };
-  editArtifact: { artifactId: string; oldText: string; newText: string };
+  editArtifact: { artifactId: string; edits: Array<{ oldText: string; newText: string }> };
   getArtifact: { artifactId: string };
   listArtifacts: { conversationId: string };
 };

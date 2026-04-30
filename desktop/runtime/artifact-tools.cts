@@ -1,6 +1,8 @@
 import type { ExtensionContext, ToolDefinition } from "@mariozechner/pi-coding-agent";
 import type { Artifact, ArtifactKind } from "../../shared/desktop-contracts.ts";
 
+export type ArtifactEdit = { oldText: string; newText: string };
+
 export type ArtifactToolAdapter = {
   createArtifact(input: {
     conversationId: string;
@@ -8,15 +10,19 @@ export type ArtifactToolAdapter = {
     kind: ArtifactKind;
     content: string;
   }): Promise<Artifact> | Artifact;
-  editArtifact(input: { artifactId: string; oldText: string; newText: string }):
-    | Promise<Artifact>
-    | Artifact;
+  editArtifact(input: { artifactId: string; edits: ArtifactEdit[] }): Promise<Artifact> | Artifact;
   getArtifact(artifactId: string): Promise<Artifact | null> | Artifact | null;
   listArtifacts(conversationId: string): Promise<Artifact[]> | Artifact[];
 };
 
 const stringSchema = { type: "string" } as const;
 const artifactKindSchema = { enum: ["html", "react"] } as const;
+const editSchema = {
+  type: "object",
+  properties: { oldText: stringSchema, newText: stringSchema },
+  required: ["oldText", "newText"],
+  additionalProperties: false,
+} as const;
 
 function getConversationId(ctx: ExtensionContext) {
   return ctx.sessionManager?.getSessionFile?.() ?? ctx.sessionManager?.getSessionId?.() ?? "chat";
@@ -31,14 +37,9 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
     {
       name: "create_artifact",
       label: "Create artifact",
-      description: "Create a new interactive artifact displayed in the artifact panel.",
-      promptSnippet: "create_artifact: create an html or react artifact in the artifact panel",
-      promptGuidelines: [
-        "When creating an interactive artifact, call create_artifact instead of writing files.",
-        'Use create_artifact kind "html" for standalone HTML/CSS/JS artifacts.',
-        'Use create_artifact kind "react" for React artifacts. React artifacts must export a default component.',
-        "Do not use external network dependencies in artifacts. Prefer self-contained code and available React/lucide-react imports.",
-      ],
+      description:
+        "Create an artifact for this chat. kind=html is standalone HTML/CSS/JS; kind=react is a default-exported React component. CDN usage is allowed inside HTML artifacts.",
+      promptSnippet: "Create an html or react artifact for this chat",
       parameters: {
         type: "object",
         properties: { title: stringSchema, kind: artifactKindSchema, content: stringSchema },
@@ -63,22 +64,24 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       name: "edit_artifact",
       label: "Edit artifact",
       description:
-        "Replace one exact, unique text snippet in an existing artifact and create a new version.",
-      promptSnippet: "edit_artifact: replace an exact snippet in an artifact",
-      promptGuidelines: [
-        "Prefer edit_artifact for targeted changes when you know the exact current snippet.",
-        "Use oldText that is exact and unique. If oldText is not unique, include more surrounding context.",
-        "Only call read_artifact first when the current content is not already visible in context.",
-      ],
+        "Edit one artifact in this chat with exact text replacements. Each edits[].oldText must match a unique, non-overlapping region of the current artifact. Merge nearby changes into one edit; use multiple edits for disjoint changes.",
+      promptSnippet: "Edit an artifact using exact text replacements",
       parameters: {
         type: "object",
-        properties: { artifactId: stringSchema, oldText: stringSchema, newText: stringSchema },
-        required: ["artifactId", "oldText", "newText"],
+        properties: {
+          id: stringSchema,
+          edits: {
+            type: "array",
+            items: editSchema,
+            minItems: 1,
+          },
+        },
+        required: ["id", "edits"],
         additionalProperties: false,
       },
       async execute(_toolCallId, params) {
-        const input = params as { artifactId: string; oldText: string; newText: string };
-        const artifact = await adapter.editArtifact(input);
+        const input = params as { id: string; edits: ArtifactEdit[] };
+        const artifact = await adapter.editArtifact({ artifactId: input.id, edits: input.edits });
         return textResult(`Edited artifact ${artifact.id} to version ${artifact.version}.`, {
           artifact,
         });
@@ -87,37 +90,34 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
     {
       name: "read_artifact",
       label: "Read artifact",
-      description: "Read an artifact's current full content.",
-      promptSnippet: "read_artifact: read an artifact's current content",
+      description: "Read the current full content of one artifact in this chat.",
+      promptSnippet: "Read an artifact's current content",
       parameters: {
         type: "object",
-        properties: { artifactId: stringSchema },
-        required: ["artifactId"],
+        properties: { id: stringSchema },
+        required: ["id"],
         additionalProperties: false,
       },
       async execute(_toolCallId, params) {
-        const input = params as { artifactId: string };
-        const artifact = await adapter.getArtifact(input.artifactId);
-        if (!artifact) throw new Error(`Artifact not found: ${input.artifactId}`);
+        const input = params as { id: string };
+        const artifact = await adapter.getArtifact(input.id);
+        if (!artifact) throw new Error(`Artifact not found: ${input.id}`);
         return textResult(JSON.stringify(artifact), { artifact });
       },
     },
     {
       name: "list_artifacts",
       label: "List artifacts",
-      description: "List artifacts for the current or requested conversation.",
-      promptSnippet: "list_artifacts: list available artifacts",
+      description: "List artifacts in this chat.",
+      promptSnippet: "List artifacts in this chat",
       parameters: {
         type: "object",
-        properties: { conversationId: { type: "string" } },
+        properties: {},
         required: [],
         additionalProperties: false,
       },
-      async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-        const input = params as { conversationId?: string };
-        const artifacts = await adapter.listArtifacts(
-          input.conversationId ?? getConversationId(ctx),
-        );
+      async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+        const artifacts = await adapter.listArtifacts(getConversationId(ctx));
         return textResult(
           JSON.stringify(artifacts.map(({ content: _content, ...artifact }) => artifact)),
           { artifacts },

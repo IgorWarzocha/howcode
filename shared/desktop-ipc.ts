@@ -173,7 +173,7 @@ export type DesktopRequestMap = {
   getArtifact: { params: { artifactId: string }; response: Artifact | null };
   updateArtifact: { params: { artifactId: string; content: string }; response: Artifact };
   editArtifact: {
-    params: { artifactId: string; oldText: string; newText: string };
+    params: { artifactId: string; edits: Array<{ oldText: string; newText: string }> };
     response: Artifact;
   };
   listArtifactVersions: { params: { artifactId: string }; response: ArtifactVersion[] };
