@@ -60,6 +60,7 @@ export function ComposerTextField({
     left: number;
     top: number;
   } | null>(null);
+  const lineHeightRef = useRef(20);
 
   const focusTextareaAtEnd = () => {
     const textarea = textareaRef.current;
@@ -80,6 +81,7 @@ export function ComposerTextField({
 
     const computedStyle = window.getComputedStyle(textarea);
     const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+    lineHeightRef.current = lineHeight;
     const reservedHeight = Math.ceil(lineHeight * reservedLineCount);
     setReservedHeight((current) => (current === reservedHeight ? current : reservedHeight));
 
@@ -126,7 +128,6 @@ export function ComposerTextField({
       const computedStyle = window.getComputedStyle(textarea);
       const mirror = document.createElement("div");
       const marker = document.createElement("span");
-      const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
 
       mirror.style.position = "absolute";
       mirror.style.visibility = "hidden";
@@ -158,7 +159,7 @@ export function ComposerTextField({
         Math.max(0, markerRect.left - mirrorRect.left + 6),
         Math.max(0, textarea.clientWidth - 24),
       );
-      const nextTop = Math.max(0, markerRect.top - mirrorRect.top + lineHeight / 2 - 12);
+      const nextTop = Math.max(0, markerRect.top - mirrorRect.top - 1.5);
 
       setTrailingAdornmentPosition((current) =>
         current?.left === nextLeft && current.top === nextTop
@@ -207,7 +208,10 @@ export function ComposerTextField({
           {statusMessage}
         </div>
       ) : null}
-      <div className="relative min-w-0">
+      <div
+        className="relative min-w-0"
+        style={trailingAdornment ? { paddingRight: "1.75rem" } : undefined}
+      >
         <textarea
           ref={textareaRef}
           rows={1}
@@ -233,10 +237,11 @@ export function ComposerTextField({
         />
         {trailingAdornment && trailingAdornmentPosition ? (
           <span
-            className="absolute z-10 inline-flex"
+            className="absolute z-10 inline-flex items-center"
             style={{
               left: `${trailingAdornmentPosition.left}px`,
               top: `${trailingAdornmentPosition.top}px`,
+              height: `${lineHeightRef.current}px`,
             }}
           >
             {trailingAdornment}

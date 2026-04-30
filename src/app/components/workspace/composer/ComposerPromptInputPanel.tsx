@@ -104,7 +104,7 @@ export function ComposerPromptInputPanel({
           onToggleFile={togglePendingPickerAttachment}
         />
       ) : null}
-      <div className="grid content-end px-4 py-3">
+      <div className="grid content-end px-4 pt-4 pb-1">
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
