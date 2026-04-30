@@ -10,16 +10,18 @@ import type { ExtensionsViewProps } from "./types";
 
 function ExtensionsScopeToggle({
   globalInstalledCount,
+  chatInstalledCount,
   installScope,
   projectInstalledCount,
   projectScopeAvailable,
   onScopeChange,
 }: {
   globalInstalledCount: number;
-  installScope: "global" | "project";
+  chatInstalledCount: number;
+  installScope: "global" | "project" | "chat";
   projectInstalledCount: number;
   projectScopeAvailable: boolean;
-  onScopeChange: (scope: "global" | "project") => void;
+  onScopeChange: (scope: "global" | "project" | "chat") => void;
 }) {
   return (
     <SegmentedToggle
@@ -33,6 +35,7 @@ function ExtensionsScopeToggle({
           label: `Project (${projectInstalledCount})`,
           disabled: !projectScopeAvailable,
         },
+        { value: "chat", label: `Chat (${chatInstalledCount})` },
       ]}
       onChange={onScopeChange}
     />
@@ -60,6 +63,7 @@ export function ExtensionsView(props: ExtensionsViewProps) {
         actions={
           <ExtensionsScopeToggle
             globalInstalledCount={controller.globalInstalledCount}
+            chatInstalledCount={controller.chatInstalledCount}
             installScope={controller.installScope}
             projectInstalledCount={controller.projectInstalledCount}
             projectScopeAvailable={controller.projectScopeAvailable}

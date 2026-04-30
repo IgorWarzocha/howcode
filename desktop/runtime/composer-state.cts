@@ -197,7 +197,15 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(cwd, agentDir);
+  const settingsManager = SettingsManager.create(request.composerSessionDir ?? cwd, agentDir);
+  if (request.composerSessionDir) {
+    const projectSettings = settingsManager.getProjectSettings();
+    settingsManager.applyOverrides({
+      packages: projectSettings.packages ?? [],
+      extensions: projectSettings.extensions ?? [],
+      skills: projectSettings.skills ?? [],
+    });
+  }
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();

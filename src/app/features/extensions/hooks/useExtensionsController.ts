@@ -31,8 +31,8 @@ export function useExtensionsController({
   const projectScopeAvailable = normalizedProjectPath !== null;
 
   const configuredPackagesQuery = useQuery({
-    queryKey: desktopQueryKeys.configuredPiPackages(projectPath),
-    queryFn: () => getConfiguredPiPackagesQuery({ projectPath }),
+    queryKey: desktopQueryKeys.configuredPiPackages(projectPath, true),
+    queryFn: () => getConfiguredPiPackagesQuery({ projectPath, chat: true }),
     staleTime: 30_000,
     enabled: desktopPackagesAvailable,
   });
@@ -65,12 +65,17 @@ export function useExtensionsController({
   const projectInstalledCount = installedEntries.filter(
     (configuredPackage) => configuredPackage.scope === "project",
   ).length;
+  const chatInstalledCount = installedEntries.filter(
+    (configuredPackage) => configuredPackage.scope === "chat",
+  ).length;
   const scopedInstalledEntries = useMemo(
     () =>
       installedEntries.filter((configuredPackage) =>
-        installScope === "project"
-          ? configuredPackage.scope === "project"
-          : configuredPackage.scope === "user",
+        installScope === "chat"
+          ? configuredPackage.scope === "chat"
+          : installScope === "project"
+            ? configuredPackage.scope === "project"
+            : configuredPackage.scope === "user",
       ),
     [installScope, installedEntries],
   );
@@ -90,7 +95,7 @@ export function useExtensionsController({
   }, [installScope, projectScopeAvailable]);
 
   useEffect(() => {
-    onSetProjectScopeActive(installScope === "project");
+    onSetProjectScopeActive(installScope === "project" || installScope === "chat");
 
     return () => {
       onSetProjectScopeActive(false);
@@ -107,7 +112,7 @@ export function useExtensionsController({
   }, [catalogItems, installedIdentityKeys]);
 
   const updateConfiguredPackagesCache = (packages: PiConfiguredPackage[]) => {
-    queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath), packages);
+    queryClient.setQueryData(desktopQueryKeys.configuredPiPackages(projectPath, true), packages);
 
     void queryClient.invalidateQueries({
       queryKey: ["desktop", "piPackages", "configured"],
@@ -155,8 +160,9 @@ export function useExtensionsController({
       const result = await installPiPackageQuery({
         source: normalizedSource,
         kind,
-        local: installScope === "project",
+        local: installScope === "project" || installScope === "chat",
         projectPath: normalizedProjectPath,
+        chat: installScope === "chat",
       });
 
       if (result?.configuredPackages) {
@@ -181,8 +187,9 @@ export function useExtensionsController({
     try {
       const result = await removePiPackageQuery({
         source: configuredPackage.source,
-        local: configuredPackage.scope === "project",
+        local: configuredPackage.scope === "project" || configuredPackage.scope === "chat",
         projectPath: normalizedProjectPath,
+        chat: configuredPackage.scope === "chat",
       });
 
       if (result?.configuredPackages) {
@@ -245,6 +252,7 @@ export function useExtensionsController({
     catalogError: packagesQuery.isError ? getActionError(packagesQuery.error) : null,
     catalogItems,
     catalogLoading: packagesQuery.isLoading,
+    chatInstalledCount,
     desktopPackagesAvailable,
     globalInstalledCount,
     hasManualSource,

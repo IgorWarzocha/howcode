@@ -6,7 +6,9 @@ import { type SkillDownloadApiFile, downloadSkillApi } from "./api.cts";
 import { listConfiguredPiSkills } from "./configured-skills.cts";
 import {
   getActiveGlobalSkillsRoot,
+  getActiveChatSkillsRoot,
   getActiveProjectSkillsRoot,
+  getChatSkillsDirs,
   getGlobalSkillsDirs,
   getProjectSkillsDirs,
   isPathWithinRoot,
@@ -56,6 +58,7 @@ export async function installPiSkill(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult> {
   const parsedSource = parseSkillSource(request.source);
   if (!parsedSource) {
@@ -71,9 +74,11 @@ export async function installPiSkill(request: {
     throw new Error("Could not download that skill.");
   }
 
-  const targetRootPath = request.local
-    ? getActiveProjectSkillsRoot(request.projectPath)
-    : getActiveGlobalSkillsRoot();
+  const targetRootPath = request.chat
+    ? getActiveChatSkillsRoot()
+    : request.local
+      ? getActiveProjectSkillsRoot(request.projectPath)
+      : getActiveGlobalSkillsRoot();
   if (!targetRootPath) {
     throw new Error("Select a project before installing a project-scoped skill.");
   }
@@ -109,13 +114,15 @@ export async function installPiSkill(request: {
     throw error;
   }
 
-  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
+  const staleProjectPath = request.chat ? null : request.local ? request.projectPath : null;
+  await markRuntimeSettingsStaleForProject(staleProjectPath);
 
   return {
     source: request.source,
     normalizedSource: parsedSource.normalizedSource,
     configuredSkills: await listConfiguredPiSkills({
       projectPath: request.projectPath ?? null,
+      chat: request.chat,
     }),
   };
 }
@@ -123,10 +130,12 @@ export async function installPiSkill(request: {
 export async function removePiSkill(request: {
   installedPath: string;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult> {
   const installedPath = path.resolve(request.installedPath);
   const globalRootPaths = getGlobalSkillsDirs();
   const projectRootPaths = getProjectSkillsDirs(request.projectPath);
+  const chatRootPaths = getChatSkillsDirs();
 
   const isGlobalSkill = globalRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
@@ -134,19 +143,23 @@ export async function removePiSkill(request: {
   const isProjectSkill = projectRootPaths.some((rootPath) =>
     isPathWithinRootDescendant(installedPath, rootPath),
   );
+  const isChatSkill = chatRootPaths.some((rootPath) =>
+    isPathWithinRootDescendant(installedPath, rootPath),
+  );
 
-  if (!isGlobalSkill && !isProjectSkill) {
+  if (!isGlobalSkill && !isProjectSkill && !isChatSkill) {
     throw new Error("That skill cannot be removed from here.");
   }
 
   await rm(installedPath, { recursive: true, force: true });
-  await markRuntimeSettingsStaleForProject(isGlobalSkill ? null : request.projectPath);
+  await markRuntimeSettingsStaleForProject(isProjectSkill ? request.projectPath : null);
 
   return {
     source: installedPath,
     normalizedSource: installedPath,
     configuredSkills: await listConfiguredPiSkills({
       projectPath: request.projectPath ?? null,
+      chat: request.chat,
     }),
   };
 }

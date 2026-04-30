@@ -22,23 +22,38 @@ export type RuntimeHostRequestMap = {
   startNewThread: { request: ComposerStateRequest };
   selectProjectRuntime: { request: ComposerStateRequest };
   openThreadRuntime: { request: ComposerStateRequest };
-  invalidateRuntimeSettings: { sessionPath?: string | null; projectPath?: string | null };
-  getPiSessionStorage: { projectPath?: string | null };
-  loadPiSettings: { projectPath?: string | null };
-  updatePiSetting: { key: keyof PiSettings; value: unknown; projectPath?: string | null };
-  listConfiguredPiPackages: { projectPath?: string | null };
+  invalidateRuntimeSettings: {
+    sessionPath?: string | null;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
+  getPiSessionStorage: { projectPath?: string | null; chat?: boolean };
+  loadPiSettings: { projectPath?: string | null; chat?: boolean };
+  updatePiSetting: {
+    key: keyof PiSettings;
+    value: unknown;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
+  listConfiguredPiPackages: { projectPath?: string | null; chat?: boolean };
   installPiPackage: {
     source: string;
     kind?: "npm" | "git";
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   };
-  removePiPackage: { source: string; local?: boolean; projectPath?: string | null };
-  listConfiguredPiSkills: { projectPath?: string | null };
-  installPiSkill: { source: string; local?: boolean; projectPath?: string | null };
-  removePiSkill: { installedPath: string; projectPath?: string | null };
+  removePiPackage: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
+  listConfiguredPiSkills: { projectPath?: string | null; chat?: boolean };
+  installPiSkill: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
+  removePiSkill: { installedPath: string; projectPath?: string | null; chat?: boolean };
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number };
-  startSkillCreatorSession: { prompt: string; local?: boolean; projectPath?: string | null };
+  startSkillCreatorSession: {
+    prompt: string;
+    local?: boolean;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
   continueSkillCreatorSession: { sessionId: string; prompt: string };
   closeSkillCreatorSession: { sessionId: string };
   generateGitCommitMessage: { request: ComposerStateRequest; context: CommitMessageContext };

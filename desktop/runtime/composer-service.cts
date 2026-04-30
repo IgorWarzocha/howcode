@@ -220,6 +220,7 @@ export async function setComposerModel(
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     const model = runtime.session.modelRegistry.find(provider, modelId);
 
@@ -247,6 +248,7 @@ export async function setComposerThinkingLevel(
   await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     runtime.session.setThinkingLevel(level);
     scheduleRuntimeDisposalForRuntime(runtime);
@@ -363,6 +365,7 @@ export async function sendComposerPrompt(
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);
@@ -392,6 +395,7 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
 
     const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
@@ -420,6 +424,7 @@ export async function dequeueComposerPrompt(
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
 
     try {
@@ -513,6 +518,7 @@ export async function openThreadRuntime(request: ComposerStateRequest): Promise<
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
       await applyComposerModeSettings(runtime, request);

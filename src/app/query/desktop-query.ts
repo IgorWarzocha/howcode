@@ -31,11 +31,11 @@ import type {
 export const desktopQueryKeys = {
   shellState: () => ["desktop", "shellState"] as const,
   piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
-  configuredPiPackages: (projectPath?: string | null) =>
-    ["desktop", "piPackages", "configured", projectPath ?? null] as const,
+  configuredPiPackages: (projectPath?: string | null, chat = false) =>
+    ["desktop", "piPackages", "configured", projectPath ?? null, chat] as const,
   piSkillCatalog: (query: string) => ["desktop", "piSkills", "catalog", query] as const,
-  configuredPiSkills: (projectPath?: string | null) =>
-    ["desktop", "piSkills", "configured", projectPath ?? null] as const,
+  configuredPiSkills: (projectPath?: string | null, chat = false) =>
+    ["desktop", "piSkills", "configured", projectPath ?? null, chat] as const,
   projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
   inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
@@ -158,6 +158,7 @@ export async function searchPiSkillsQuery(
 export async function getConfiguredPiPackagesQuery(
   request: {
     projectPath?: string | null;
+    chat?: boolean;
   } = {},
 ): Promise<PiConfiguredPackage[]> {
   return (await window.piDesktop?.getConfiguredPiPackages?.(request)) ?? [];
@@ -168,6 +169,7 @@ export async function installPiPackageQuery(request: {
   kind?: "npm" | "git";
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.installPiPackage?.(request)) ?? null;
 }
@@ -176,6 +178,7 @@ export async function removePiPackageQuery(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.removePiPackage?.(request)) ?? null;
 }
@@ -183,6 +186,7 @@ export async function removePiPackageQuery(request: {
 export async function getConfiguredPiSkillsQuery(
   request: {
     projectPath?: string | null;
+    chat?: boolean;
   } = {},
 ): Promise<PiConfiguredSkill[]> {
   return (await window.piDesktop?.getConfiguredPiSkills?.(request)) ?? [];
@@ -192,6 +196,7 @@ export async function installPiSkillQuery(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.installPiSkill?.(request)) ?? null;
 }
@@ -199,6 +204,7 @@ export async function installPiSkillQuery(request: {
 export async function removePiSkillQuery(request: {
   installedPath: string;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.removePiSkill?.(request)) ?? null;
 }
@@ -207,6 +213,7 @@ export async function startSkillCreatorSessionQuery(request: {
   prompt: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<SkillCreatorSessionState | null> {
   return (await window.piDesktop?.startSkillCreatorSession?.(request)) ?? null;
 }

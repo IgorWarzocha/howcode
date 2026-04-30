@@ -140,6 +140,7 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
   if (persistedSessionPath) {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     await reloadRuntimeSettingsIfSafe(persistedSessionPath);
     scheduleRuntimeDisposal(persistedSessionPath);
@@ -168,6 +169,7 @@ export async function getComposerState(request: ComposerStateRequest = {}) {
     return await withRuntimeMutationLock(persistedSessionPath, async () => {
       const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
         suspendDisposal: true,
+        settingsCwd: request.composerSessionDir ?? null,
       });
       if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
         await applyComposerModeSettings(runtime, request);
@@ -210,6 +212,7 @@ export async function setComposerModel(
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     const model = runtime.session.modelRegistry.find(provider, modelId);
     if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
@@ -239,6 +242,7 @@ export async function setComposerThinkingLevel(
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     runtime.session.setThinkingLevel(level);
     scheduleRuntimeDisposal(persistedSessionPath);
@@ -331,6 +335,7 @@ export async function sendComposerPrompt(
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);
@@ -358,6 +363,7 @@ export async function stopComposerRun(request: ComposerStateRequest) {
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
     const wasStreaming = runtime.session.isStreaming;
@@ -384,6 +390,7 @@ export async function dequeueComposerPrompt(
     await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     try {
       const currentQueueSnapshot = {
@@ -460,6 +467,7 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
   return await withRuntimeMutationLock(persistedSessionPath, async () => {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
     });
     if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
       await applyComposerModeSettings(runtime, request);

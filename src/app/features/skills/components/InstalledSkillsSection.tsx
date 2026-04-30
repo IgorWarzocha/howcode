@@ -10,7 +10,7 @@ import { compactRoundIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 
 type InstalledSkillsSectionProps = {
-  installScope: "global" | "project";
+  installScope: "global" | "project" | "chat";
   skills: PiConfiguredSkill[];
   isPendingRemove: (installedPath: string) => boolean;
   onRemove: (configuredSkill: PiConfiguredSkill) => Promise<void>;

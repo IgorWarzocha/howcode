@@ -71,19 +71,22 @@ declare global {
         cursor?: number | null;
         pageSize?: number | null;
       }) => Promise<PiPackageCatalogPage>;
-      getConfiguredPiPackages?: (request?: { projectPath?: string | null }) => Promise<
-        PiConfiguredPackage[]
-      >;
+      getConfiguredPiPackages?: (request?: {
+        projectPath?: string | null;
+        chat?: boolean;
+      }) => Promise<PiConfiguredPackage[]>;
       installPiPackage?: (request: {
         source: string;
         kind?: "npm" | "git";
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiPackageMutationResult>;
       removePiPackage?: (request: {
         source: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiPackageMutationResult>;
       searchPiSkills?: (request?: {
         query?: string | null;
@@ -91,20 +94,24 @@ declare global {
       }) => Promise<PiSkillCatalogPage>;
       getConfiguredPiSkills?: (request?: {
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiConfiguredSkill[]>;
       installPiSkill?: (request: {
         source: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiSkillMutationResult>;
       removePiSkill?: (request: {
         installedPath: string;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiSkillMutationResult>;
       startSkillCreatorSession?: (request: {
         prompt: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<SkillCreatorSessionState>;
       continueSkillCreatorSession?: (request: {
         sessionId: string;

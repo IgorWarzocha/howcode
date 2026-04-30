@@ -77,15 +77,21 @@ export type DesktopRequestMap = {
     response: PiPackageCatalogPage;
   };
   getConfiguredPiPackages: {
-    params: { projectPath?: string | null };
+    params: { projectPath?: string | null; chat?: boolean };
     response: PiConfiguredPackage[];
   };
   installPiPackage: {
-    params: { source: string; kind?: "npm" | "git"; local?: boolean; projectPath?: string | null };
+    params: {
+      source: string;
+      kind?: "npm" | "git";
+      local?: boolean;
+      projectPath?: string | null;
+      chat?: boolean;
+    };
     response: PiPackageMutationResult;
   };
   removePiPackage: {
-    params: { source: string; local?: boolean; projectPath?: string | null };
+    params: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: PiPackageMutationResult;
   };
   searchPiSkills: {
@@ -93,19 +99,19 @@ export type DesktopRequestMap = {
     response: PiSkillCatalogPage;
   };
   getConfiguredPiSkills: {
-    params: { projectPath?: string | null };
+    params: { projectPath?: string | null; chat?: boolean };
     response: PiConfiguredSkill[];
   };
   installPiSkill: {
-    params: { source: string; local?: boolean; projectPath?: string | null };
+    params: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: PiSkillMutationResult;
   };
   removePiSkill: {
-    params: { installedPath: string; projectPath?: string | null };
+    params: { installedPath: string; projectPath?: string | null; chat?: boolean };
     response: PiSkillMutationResult;
   };
   startSkillCreatorSession: {
-    params: { prompt: string; local?: boolean; projectPath?: string | null };
+    params: { prompt: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: SkillCreatorSessionState;
   };
   continueSkillCreatorSession: {

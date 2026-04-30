@@ -9,6 +9,7 @@ export async function installPiPackage(request: {
   kind?: "npm" | "git";
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult> {
   const normalizedSource = normalizePiPackageSource(request.source, request.kind ?? "npm");
 
@@ -16,15 +17,17 @@ export async function installPiPackage(request: {
     throw new Error("Enter a package source.");
   }
 
-  const { packageManager } = await getPiPackageServices(request.projectPath);
-  await packageManager.installAndPersist(normalizedSource, request.local ? { local: true } : {});
-  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
+  const { packageManager, projectPath } = await getPiPackageServices(request);
+  const local = request.local || request.chat;
+  await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {});
+  await markRuntimeSettingsStaleForProject(local ? projectPath : null);
 
   return {
     source: request.source,
     normalizedSource,
     configuredPackages: await listConfiguredPiPackages({
-      projectPath: request.projectPath ?? null,
+      projectPath,
+      chat: request.chat,
     }),
   };
 }
@@ -33,6 +36,7 @@ export async function removePiPackage(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult> {
   const source = request.source.trim();
 
@@ -40,15 +44,17 @@ export async function removePiPackage(request: {
     throw new Error("Choose a package to remove.");
   }
 
-  const { packageManager } = await getPiPackageServices(request.projectPath);
-  await packageManager.removeAndPersist(source, request.local ? { local: true } : {});
-  await markRuntimeSettingsStaleForProject(request.local ? request.projectPath : null);
+  const { packageManager, projectPath } = await getPiPackageServices(request);
+  const local = request.local || request.chat;
+  await packageManager.removeAndPersist(source, local ? { local: true } : {});
+  await markRuntimeSettingsStaleForProject(local ? projectPath : null);
 
   return {
     source,
     normalizedSource: source,
     configuredPackages: await listConfiguredPiPackages({
-      projectPath: request.projectPath ?? null,
+      projectPath,
+      chat: request.chat,
     }),
   };
 }

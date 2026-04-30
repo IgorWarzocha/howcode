@@ -31,7 +31,7 @@ export type PiConfiguredPackage = {
   identityKey: string;
   displayName: string;
   type: PiConfiguredPackageType;
-  scope: "user" | "project";
+  scope: "user" | "project" | "chat";
   filtered: boolean;
   installedPath: string | null;
   settingsPath: string | null;
@@ -66,7 +66,7 @@ export type PiConfiguredSkill = {
   identityKey: string;
   displayName: string;
   description: string | null;
-  scope: "user" | "project";
+  scope: "user" | "project" | "chat";
   provenance: "skills.sh" | "local";
   installedPath: string;
   skillFilePath: string;

@@ -2,7 +2,12 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { PiConfiguredSkill } from "../../shared/desktop-contracts.ts";
 import { parseSkillFrontmatter } from "./frontmatter.cts";
-import { getGlobalSkillsDirs, getProjectSkillsDirs, pathExists } from "./paths.cts";
+import {
+  getChatSkillsDirs,
+  getGlobalSkillsDirs,
+  getProjectSkillsDirs,
+  pathExists,
+} from "./paths.cts";
 
 async function listSkillsInDirectory(
   skillsDirPath: string,
@@ -63,7 +68,7 @@ function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
 }
 
 export async function listConfiguredPiSkills(
-  request: { projectPath?: string | null } = {},
+  request: { projectPath?: string | null; chat?: boolean } = {},
 ): Promise<PiConfiguredSkill[]> {
   const globalSkills = (
     await Promise.all(
@@ -77,6 +82,13 @@ export async function listConfiguredPiSkills(
       ),
     )
   ).flat();
+  const chatSkills = request.chat
+    ? (
+        await Promise.all(
+          getChatSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, "chat")),
+        )
+      ).flat()
+    : [];
 
-  return sortConfiguredSkills([...globalSkills, ...projectSkills]);
+  return sortConfiguredSkills([...globalSkills, ...projectSkills, ...chatSkills]);
 }

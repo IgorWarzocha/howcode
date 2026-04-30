@@ -63,7 +63,7 @@ export type PiThreadsModule = {
     cursor?: number | null;
     pageSize?: number | null;
   }) => Promise<PiPackageCatalogPage>;
-  listConfiguredPiPackages: (request?: { projectPath?: string | null }) => Promise<
+  listConfiguredPiPackages: (request?: { projectPath?: string | null; chat?: boolean }) => Promise<
     PiConfiguredPackage[]
   >;
   installPiPackage: (request: {
@@ -71,11 +71,13 @@ export type PiThreadsModule = {
     kind?: "npm" | "git";
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiPackageMutationResult>;
   removePiPackage: (request: {
     source: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiPackageMutationResult>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectDiff: (
@@ -114,17 +116,19 @@ export type PiSkillsModule = {
     query?: string | null;
     limit?: number | null;
   }) => Promise<PiSkillCatalogPage>;
-  listConfiguredPiSkills: (request?: { projectPath?: string | null }) => Promise<
+  listConfiguredPiSkills: (request?: { projectPath?: string | null; chat?: boolean }) => Promise<
     PiConfiguredSkill[]
   >;
   installPiSkill: (request: {
     source: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiSkillMutationResult>;
   removePiSkill: (request: {
     installedPath: string;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiSkillMutationResult>;
 };
 
@@ -133,6 +137,7 @@ export type SkillCreatorModule = {
     prompt: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<SkillCreatorSessionState>;
   continueSkillCreatorSession: (request: {
     sessionId: string;

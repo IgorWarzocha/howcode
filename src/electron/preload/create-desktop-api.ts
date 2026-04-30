@@ -59,11 +59,13 @@ export function createDesktopApi() {
       kind?: "npm" | "git";
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("installPiPackage", request),
     removePiPackage: (request: {
       source: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("removePiPackage", request),
     searchPiSkills: (request = {}) => invokeRequest("searchPiSkills", request),
     getConfiguredPiSkills: (request = {}) => invokeRequest("getConfiguredPiSkills", request),
@@ -71,13 +73,18 @@ export function createDesktopApi() {
       source: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("installPiSkill", request),
-    removePiSkill: (request: { installedPath: string; projectPath?: string | null }) =>
-      invokeRequest("removePiSkill", request),
+    removePiSkill: (request: {
+      installedPath: string;
+      projectPath?: string | null;
+      chat?: boolean;
+    }) => invokeRequest("removePiSkill", request),
     startSkillCreatorSession: (request: {
       prompt: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("startSkillCreatorSession", request),
     continueSkillCreatorSession: (request: { sessionId: string; prompt: string }) =>
       invokeRequest("continueSkillCreatorSession", request),

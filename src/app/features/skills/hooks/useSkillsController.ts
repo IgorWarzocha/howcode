@@ -32,19 +32,24 @@ export function useSkillsController({
   const projectScopeAvailable = normalizedProjectPath !== null;
 
   const configuredSkillsQuery = useQuery({
-    queryKey: desktopQueryKeys.configuredPiSkills(projectPath),
-    queryFn: () => getConfiguredPiSkillsQuery({ projectPath }),
+    queryKey: desktopQueryKeys.configuredPiSkills(projectPath, true),
+    queryFn: () => getConfiguredPiSkillsQuery({ projectPath, chat: true }),
     staleTime: 30_000,
     enabled: desktopSkillsAvailable,
   });
 
   const configuredSkills = configuredSkillsQuery.data ?? [];
-  const activeScope = installScope === "project" ? "project" : "user";
+  const activeScope =
+    installScope === "chat" ? "chat" : installScope === "project" ? "project" : "user";
   const globalSkillCount = configuredSkills.filter((skill) => skill.scope === "user").length;
   const projectSkillCount = configuredSkills.filter((skill) => skill.scope === "project").length;
+  const chatSkillCount = configuredSkills.filter((skill) => skill.scope === "chat").length;
   const skillCreatorDetected = configuredSkills.some(
     (skill) =>
-      isSkillCreatorCandidate(skill) && (skill.scope === "user" || installScope === "project"),
+      isSkillCreatorCandidate(skill) &&
+      (skill.scope === "user" ||
+        (installScope === "project" && skill.scope === "project") ||
+        (installScope === "chat" && skill.scope === "chat")),
   );
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
@@ -62,7 +67,9 @@ export function useSkillsController({
   }, [installScope, projectScopeAvailable]);
 
   useEffect(() => {
-    onSetProjectScopeActive(projectScopeAvailable && installScope === "project");
+    onSetProjectScopeActive(
+      (projectScopeAvailable && installScope === "project") || installScope === "chat",
+    );
 
     return () => {
       onSetProjectScopeActive(false);
@@ -71,7 +78,7 @@ export function useSkillsController({
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
-      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath), skills);
+      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath, true), skills);
     }
 
     void queryClient.invalidateQueries({
@@ -114,8 +121,9 @@ export function useSkillsController({
     try {
       const result = await installPiSkillQuery({
         source: normalizedSource,
-        local: installScope === "project",
+        local: installScope === "project" || installScope === "chat",
         projectPath: normalizedProjectPath,
+        chat: installScope === "chat",
       });
 
       if (result?.configuredSkills) {
@@ -141,6 +149,7 @@ export function useSkillsController({
       const result = await removePiSkillQuery({
         installedPath: configuredSkill.installedPath,
         projectPath,
+        chat: configuredSkill.scope === "chat",
       });
 
       if (result?.configuredSkills) {
@@ -158,6 +167,7 @@ export function useSkillsController({
     configuredSkillsQuery,
     desktopSkillsAvailable,
     globalSkillCount,
+    chatSkillCount,
     handleInstall,
     handleRemove,
     hasPendingInstall: pendingActions.some((action) => action.kind === "install"),

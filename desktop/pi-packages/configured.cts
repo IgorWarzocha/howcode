@@ -23,20 +23,27 @@ function sortConfiguredPackages(packages: PiConfiguredPackage[]) {
 export async function listConfiguredPiPackages(
   request: {
     projectPath?: string | null;
+    chat?: boolean;
   } = {},
 ): Promise<PiConfiguredPackage[]> {
-  const { packageManager, settingsManager, agentDir } = await getPiPackageServices(
-    request.projectPath,
-  );
+  const { packageManager, settingsManager, agentDir, projectPath } = await getPiPackageServices({
+    projectPath: request.projectPath,
+  });
+  const chatServices = request.chat ? await getPiPackageServices({ chat: true }) : null;
   const configuredPackages: PiConfiguredPackageRecord[] = [];
-  const projectPath = request.projectPath?.trim() ? path.resolve(request.projectPath) : null;
   const globalSettingsPath = path.join(agentDir, "settings.json");
   const projectSettingsPath = projectPath ? path.join(projectPath, ".pi", "settings.json") : null;
+  const chatSettingsPath = chatServices?.projectPath
+    ? path.join(chatServices.projectPath, ".pi", "settings.json")
+    : null;
 
-  const appendPackages = (scope: "user" | "project", packageSources: PiSettingsPackageSource[]) => {
+  const appendPackages = (
+    scope: "user" | "project" | "chat",
+    packageSources: PiSettingsPackageSource[],
+    settingsPath: string | null,
+  ) => {
     for (const packageSource of packageSources) {
       const source = typeof packageSource === "string" ? packageSource : packageSource.source;
-      const settingsPath = scope === "user" ? globalSettingsPath : projectSettingsPath;
 
       if (!settingsPath) {
         continue;
@@ -47,15 +54,20 @@ export async function listConfiguredPiPackages(
         source,
         scope,
         filtered: typeof packageSource === "object",
-        installedPath: packageManager.getInstalledPath(source, scope),
+        installedPath:
+          scope === "chat"
+            ? chatServices?.packageManager.getInstalledPath(source, "project")
+            : packageManager.getInstalledPath(source, scope === "user" ? "user" : "project"),
         settingsPath,
       });
     }
   };
 
-  const appendExtensions = (scope: "user" | "project", extensionPaths: string[]) => {
-    const settingsPath = scope === "user" ? globalSettingsPath : projectSettingsPath;
-
+  const appendExtensions = (
+    scope: "user" | "project" | "chat",
+    extensionPaths: string[],
+    settingsPath: string | null,
+  ) => {
     if (!settingsPath) {
       return;
     }
@@ -74,11 +86,14 @@ export async function listConfiguredPiPackages(
 
   const globalSettings = settingsManager.getGlobalSettings();
   const projectSettings = settingsManager.getProjectSettings();
+  const chatSettings = chatServices?.settingsManager.getProjectSettings();
 
-  appendPackages("user", globalSettings.packages ?? []);
-  appendPackages("project", projectSettings.packages ?? []);
-  appendExtensions("user", globalSettings.extensions ?? []);
-  appendExtensions("project", projectSettings.extensions ?? []);
+  appendPackages("user", globalSettings.packages ?? [], globalSettingsPath);
+  appendExtensions("user", globalSettings.extensions ?? [], globalSettingsPath);
+  appendPackages("project", projectSettings.packages ?? [], projectSettingsPath);
+  appendExtensions("project", projectSettings.extensions ?? [], projectSettingsPath);
+  appendPackages("chat", chatSettings?.packages ?? [], chatSettingsPath);
+  appendExtensions("chat", chatSettings?.extensions ?? [], chatSettingsPath);
 
   return sortConfiguredPackages(
     configuredPackages.map((configuredPackage) => ({
