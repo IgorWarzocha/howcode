@@ -1,4 +1,4 @@
-import { FileCode2, List, PanelRightClose, Play, Save } from "lucide-react";
+import { FileCode2, List, Maximize2, Minimize2, PanelRightClose, Play, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Artifact } from "../../../desktop/types";
 import {
@@ -12,6 +12,8 @@ import { cn } from "../../../utils/cn";
 type ArtifactPanelProps = {
   conversationId: string | null;
   visible: boolean;
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
   onClose: () => void;
 };
 
@@ -80,7 +82,13 @@ function buildReactPreview(compiledJs: string) {
 </html>`;
 }
 
-export function ArtifactPanel({ conversationId, visible, onClose }: ArtifactPanelProps) {
+export function ArtifactPanel({
+  conversationId,
+  visible,
+  fullscreen,
+  onToggleFullscreen,
+  onClose,
+}: ArtifactPanelProps) {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [view, setView] = useState<ArtifactView>("preview");
@@ -238,6 +246,19 @@ export function ArtifactPanel({ conversationId, visible, onClose }: ArtifactPane
               <Save size={14} />
             </button>
           ) : null}
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              fullscreen && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+            )}
+            aria-label={fullscreen ? "Exit artifact fullscreen" : "Artifact fullscreen"}
+            onClick={onToggleFullscreen}
+            data-tooltip={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
           <button
             type="button"
             className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"

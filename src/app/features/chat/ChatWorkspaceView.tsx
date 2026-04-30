@@ -44,6 +44,7 @@ export function ChatWorkspaceView({
   const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
   const [artifactsVisible, setArtifactsVisible] = useState(false);
+  const [artifactsFullscreen, setArtifactsFullscreen] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
@@ -86,6 +87,10 @@ export function ChatWorkspaceView({
       setArtifactsVisible(true);
     });
   }, [activeThreadData?.sessionPath, terminalSessionPath]);
+
+  useEffect(() => {
+    if (!artifactsVisible) setArtifactsFullscreen(false);
+  }, [artifactsVisible]);
   const {
     handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
@@ -103,7 +108,8 @@ export function ChatWorkspaceView({
       <div
         className={cn(
           "relative min-h-0 overflow-hidden transition-[width,flex-basis] duration-200 ease-out",
-          artifactsVisible ? "w-[min(860px,52vw)] flex-none" : "flex-1",
+          artifactsVisible && !artifactsFullscreen ? "w-[min(920px,56vw)] flex-none" : "flex-1",
+          artifactsFullscreen && "hidden",
         )}
       >
         <div
@@ -127,6 +133,7 @@ export function ChatWorkspaceView({
           ref={footerRef}
           className={cn(
             "pointer-events-none absolute inset-x-0 z-10 px-5 transition-[top,transform,padding] duration-300 ease-out",
+            artifactsVisible && !artifactsFullscreen && "pr-10",
             hasConversation ? "translate-y-0 pb-4" : "-translate-y-1/2 pb-4",
           )}
           style={{ top: hasConversation ? `calc(100% - ${footerHeight}px)` : "50%" }}
@@ -152,7 +159,12 @@ export function ChatWorkspaceView({
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                 />
               </div>
-              <div className="grid w-full max-w-[800px] gap-0 justify-self-center">
+              <div
+                className={cn(
+                  "grid w-full gap-0 justify-self-center",
+                  artifactsVisible ? "max-w-[calc(100%-5rem)]" : "max-w-[800px]",
+                )}
+              >
                 <QueuedPromptsCard
                   prompts={activeComposerState?.queuedPrompts ?? []}
                   pendingPromptIds={pendingQueuedPromptIdsForSession}
@@ -225,7 +237,12 @@ export function ChatWorkspaceView({
       <ArtifactPanel
         conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}
         visible={artifactsVisible}
-        onClose={() => setArtifactsVisible(false)}
+        fullscreen={artifactsFullscreen}
+        onToggleFullscreen={() => setArtifactsFullscreen((fullscreen) => !fullscreen)}
+        onClose={() => {
+          setArtifactsVisible(false);
+          setArtifactsFullscreen(false);
+        }}
       />
     </div>
   );
