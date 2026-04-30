@@ -30,6 +30,10 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
     sessionPath: getPersistedSessionPath(
       typeof payload.sessionPath === "string" ? payload.sessionPath : null,
     ),
+    composerMode:
+      payload.composerMode === "chat" || payload.composerMode === "code"
+        ? payload.composerMode
+        : null,
   };
 }
 

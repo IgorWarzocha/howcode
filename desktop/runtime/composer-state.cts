@@ -11,6 +11,7 @@ import type {
 } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
+import { loadAppSettings } from "../app-settings/readers.cts";
 import { getPiModule } from "../pi-module.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
@@ -141,23 +142,46 @@ function resolveCurrentModel(
   return availableModels[0] ?? null;
 }
 
+function getModeModelSelection(request: ComposerStateRequest) {
+  const appSettings = loadAppSettings();
+  return request.composerMode === "chat"
+    ? appSettings.chatModel
+    : request.composerMode === "code"
+      ? appSettings.codeModel
+      : null;
+}
+
+function getModeThinkingLevel(request: ComposerStateRequest) {
+  const appSettings = loadAppSettings();
+  return request.composerMode === "chat"
+    ? appSettings.chatThinkingLevel
+    : request.composerMode === "code"
+      ? appSettings.codeThinkingLevel
+      : null;
+}
+
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
   const { cwd, session } = await createComposerSnapshotSession(request);
 
   try {
     const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[];
+    const modeModelSelection = getModeModelSelection(request);
     const currentModel = resolveCurrentModel(
       availableModels,
-      session.model ? { provider: session.model.provider, id: session.model.id } : null,
+      modeModelSelection ??
+        (session.model ? { provider: session.model.provider, id: session.model.id } : null),
     );
-    const availableThinkingLevels = mapThinkingLevels(session.getAvailableThinkingLevels());
+    const availableThinkingLevels = modeModelSelection
+      ? getAvailableThinkingLevelsForModel(currentModel)
+      : mapThinkingLevels(session.getAvailableThinkingLevels());
+    const currentThinkingLevel = getModeThinkingLevel(request) ?? session.thinkingLevel;
 
     return {
       cwd,
       availableModels,
       currentModel,
       currentThinkingLevel: clampThinkingLevel(
-        session.thinkingLevel as ComposerThinkingLevel,
+        currentThinkingLevel as ComposerThinkingLevel,
         availableThinkingLevels,
       ),
       availableThinkingLevels,

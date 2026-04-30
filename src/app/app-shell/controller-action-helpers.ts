@@ -29,6 +29,7 @@ export function buildContextualActionPayload({
           activeView === "chat" || activeView === "thread" || activeView === "gitops"
             ? selectedSessionPath
             : null,
+        composerMode: activeView === "chat" ? "chat" : "code",
         ...payload,
       }
     : payload;

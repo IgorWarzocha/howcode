@@ -65,6 +65,7 @@ export function useAppShellEffects({
   loadComposerState: (request?: {
     projectId?: string | null;
     sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
@@ -93,6 +94,7 @@ export function useAppShellEffects({
     selectedInboxThread,
     composerProjectId,
     shellComposerState,
+    shellAppSettings,
     loadComposerState,
     loadProjectGitState,
     setComposerState,

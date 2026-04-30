@@ -58,6 +58,7 @@ export type ComposerFilePickerState = {
 export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;
+  composerMode?: "chat" | "code" | null;
 };
 
 export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";

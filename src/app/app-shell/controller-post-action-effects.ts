@@ -44,7 +44,10 @@ type RunPostDesktopActionEffectsInput = {
   composerProjectId: string;
   dispatch: Dispatch<WorkspaceAction>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
-  loadComposerState: (request?: { projectId?: string | null }) => Promise<ComposerState | null>;
+  loadComposerState: (request?: {
+    projectId?: string | null;
+    composerMode?: "chat" | "code" | null;
+  }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectThreads: (projectId: string) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
@@ -283,6 +286,7 @@ export async function runPostDesktopActionEffects({
     if (!localFallback) {
       const nextComposerState = await loadComposerState({
         projectId: resultProjectId ?? projectId,
+        composerMode: workspaceState.activeView === "chat" ? "chat" : "code",
       });
       if (nextComposerState) {
         setComposerState(nextComposerState);

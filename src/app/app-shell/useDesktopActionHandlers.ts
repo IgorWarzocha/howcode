@@ -34,6 +34,7 @@ type UseDesktopActionHandlersArgs = {
   loadComposerState: (request?: {
     projectId?: string | null;
     sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectThreads: (projectId: string) => Promise<unknown>;

@@ -70,6 +70,33 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
   return Boolean(runtime.session.extensionRunner.getCommand(commandName));
 }
 
+async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerStateRequest) {
+  const appSettings = loadAppSettings();
+  const selection =
+    request.composerMode === "chat"
+      ? appSettings.chatModel
+      : request.composerMode === "code"
+        ? appSettings.codeModel
+        : null;
+  const thinkingLevel =
+    request.composerMode === "chat"
+      ? appSettings.chatThinkingLevel
+      : request.composerMode === "code"
+        ? appSettings.codeThinkingLevel
+        : null;
+
+  if (selection) {
+    const model = runtime.session.modelRegistry.find(selection.provider, selection.id);
+    if (model) {
+      await runtime.session.setModel(model);
+    }
+  }
+
+  if (thinkingLevel) {
+    runtime.session.setThinkingLevel(thinkingLevel);
+  }
+}
+
 async function promptAndReturnAfterPreflight({
   runtime,
   message,
@@ -296,9 +323,11 @@ export async function sendComposerPrompt(
   };
 
   if (!persistedSessionPath) {
-    return await runSend(
-      await createRuntimeForNewSession(request.projectId ?? getDesktopWorkingDirectory()),
+    const runtime = await createRuntimeForNewSession(
+      request.projectId ?? getDesktopWorkingDirectory(),
     );
+    await applyComposerModeSettings(runtime, request);
+    return await runSend(runtime);
   }
 
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath);

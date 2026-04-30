@@ -19,6 +19,7 @@ type EmptyActionPayload = Record<string, never>;
 
 export type DesktopActionPayloadFields = {
   attachments?: ComposerAttachment[];
+  composerMode?: "chat" | "code" | null;
   folders?: string[];
   imported?: boolean | null;
   gitOpsMode?: GitOpsMode | null;
