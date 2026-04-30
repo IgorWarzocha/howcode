@@ -107,6 +107,7 @@ async function createRuntime(options: {
   cwd: string;
   sessionDir?: string | null;
   settingsCwd?: string | null;
+  chatGroupId?: string | null;
   sessionManager?: PiRuntime["session"]["sessionManager"];
 }): Promise<PiRuntime> {
   const {
@@ -147,6 +148,7 @@ async function createRuntime(options: {
   const runtime = {
     cwd: options.cwd,
     session,
+    chatGroupId: options.chatGroupId ?? null,
   } satisfies PiRuntime;
 
   rememberSessionPath(session.sessionFile, options.cwd);
@@ -306,7 +308,11 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
 
 export async function getOrCreateRuntimeForSessionPath(
   sessionPath: string,
-  options: { suspendDisposal?: boolean; settingsCwd?: string | null } = {},
+  options: {
+    suspendDisposal?: boolean;
+    settingsCwd?: string | null;
+    chatGroupId?: string | null;
+  } = {},
 ) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   if (!persistedSessionPath) {
@@ -339,6 +345,7 @@ export async function getOrCreateRuntimeForSessionPath(
   const runtimePromise = createRuntime({
     cwd: sessionManager.getCwd(),
     settingsCwd,
+    chatGroupId: options.chatGroupId ?? null,
     sessionManager,
   }).catch((error) => {
     if (record) {
@@ -352,11 +359,16 @@ export async function getOrCreateRuntimeForSessionPath(
   return runtimePromise;
 }
 
-export async function createRuntimeForNewSession(cwd: string, sessionDir?: string | null) {
+export async function createRuntimeForNewSession(
+  cwd: string,
+  sessionDir?: string | null,
+  options: { chatGroupId?: string | null } = {},
+) {
   const runtime = await createRuntime({
     cwd,
     sessionDir,
     settingsCwd: sessionDir ?? null,
+    chatGroupId: options.chatGroupId ?? null,
   });
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
 

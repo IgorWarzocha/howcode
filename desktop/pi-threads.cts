@@ -1,5 +1,9 @@
 export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
+  createChatGroup,
+  getChatSidebarState as loadChatSidebarState,
+} from "./chat-state-db.cts";
+export {
   installPiPackage,
   listConfiguredPiPackages,
   removePiPackage,

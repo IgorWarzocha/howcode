@@ -2,6 +2,7 @@ import type { DesktopAction } from "./app/desktop/actions";
 import type {
   AnyDesktopActionPayload,
   ArchivedThread,
+  ChatSidebarState,
   ComposerAttachment,
   DesktopClipboardFilePaths,
   DesktopClipboardImage,
@@ -147,6 +148,8 @@ declare global {
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>;
       getProjectThreads?: (projectId: string, request?: { chat?: boolean }) => Promise<Thread[]>;
+      getChatSidebarState?: (selectedGroupId?: string | null) => Promise<ChatSidebarState>;
+      createChatGroup?: (name: string) => Promise<ChatSidebarState>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;

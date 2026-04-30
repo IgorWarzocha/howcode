@@ -1,6 +1,7 @@
 import { BriefcaseBusiness, Code2, Inbox, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { AppSettings, DesktopActionInvoker, InboxThread } from "../../desktop/types";
+import type { ChatSidebarState } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
@@ -8,12 +9,14 @@ import type { Project, View } from "../../types";
 type SidebarNavigableView = Exclude<View, "gitops">;
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
+import { SidebarChatSection } from "./chat/SidebarChatSection";
 import { SidebarInboxSection } from "./inbox/SidebarInboxSection";
 import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 
 type SidebarProps = {
   projects: Project[];
   inboxThreads: InboxThread[];
+  chatSidebarState: ChatSidebarState | null;
   appLaunchedAtMs: number;
   appSettings: AppSettings;
   protectedProjectId?: string | null;
@@ -21,6 +24,7 @@ type SidebarProps = {
   selectedInboxSessionPath: string | null;
   selectedProjectId: string;
   selectedThreadId: string | null;
+  selectedChatGroupId: string | null;
   settingsOpen: boolean;
   projectScopeLockActive: boolean;
   terminalRunningProjectIds: ReadonlySet<string>;
@@ -34,6 +38,8 @@ type SidebarProps = {
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   onDismissInboxThread: (thread: InboxThread) => void;
+  onCreateChatGroup: (name: string) => Promise<unknown>;
+  onSelectChatGroup: (groupId: string | null) => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
@@ -49,6 +55,7 @@ function ComingSoonLabel() {
 export function Sidebar({
   projects,
   inboxThreads,
+  chatSidebarState,
   appLaunchedAtMs,
   appSettings,
   protectedProjectId = null,
@@ -56,6 +63,7 @@ export function Sidebar({
   selectedInboxSessionPath,
   selectedProjectId,
   selectedThreadId,
+  selectedChatGroupId,
   settingsOpen,
   projectScopeLockActive,
   terminalRunningProjectIds,
@@ -69,6 +77,8 @@ export function Sidebar({
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   onDismissInboxThread,
+  onCreateChatGroup,
+  onSelectChatGroup,
   onProjectSelect,
   onProjectReorder,
   onLoadProjectThreads,
@@ -163,6 +173,16 @@ export function Sidebar({
           selectedSessionPath={selectedInboxSessionPath}
           onDismissThread={onDismissInboxThread}
           onSelectThread={onSelectInboxThread}
+        />
+      ) : activeView === "chat" ? (
+        <SidebarChatSection
+          chatState={chatSidebarState}
+          selectedGroupId={selectedChatGroupId}
+          selectedThreadId={selectedThreadId}
+          onAction={onAction}
+          onCreateGroup={onCreateChatGroup}
+          onSelectGroup={onSelectChatGroup}
+          onThreadOpen={onThreadOpen}
         />
       ) : (
         <SidebarProjectsSection

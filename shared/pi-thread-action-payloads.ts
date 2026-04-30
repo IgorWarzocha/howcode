@@ -34,6 +34,7 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
       payload.composerMode === "chat" || payload.composerMode === "code"
         ? payload.composerMode
         : null,
+    chatGroupId: typeof payload.chatGroupId === "string" ? payload.chatGroupId : null,
   };
 }
 

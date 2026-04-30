@@ -122,6 +122,9 @@ export function createDesktopApi() {
     }) => invokeRequest("transcribeDictation", request),
     getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
       invokeRequest("getProjectThreads", { projectId, chat: request.chat }),
+    getChatSidebarState: (selectedGroupId: string | null = null) =>
+      invokeRequest("getChatSidebarState", { selectedGroupId }),
+    createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>

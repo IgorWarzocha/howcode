@@ -2,6 +2,7 @@ import { getPersistedSessionPath } from "../../../shared/session-paths";
 import { fallbackAppSlashCommands } from "../../../shared/composer-slash-commands";
 import type {
   ArchivedThread,
+  ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerSlashCommand,
@@ -38,6 +39,8 @@ export const desktopQueryKeys = {
     ["desktop", "piSkills", "configured", projectPath ?? null, chat] as const,
   projectThreads: (projectId: string, chat = false) =>
     ["desktop", "projectThreads", projectId, chat] as const,
+  chatSidebarState: (selectedGroupId?: string | null) =>
+    ["desktop", "chatSidebarState", selectedGroupId ?? null] as const,
   inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -70,6 +73,16 @@ export async function getShellStateQuery(): Promise<ShellState | null> {
 
 export async function getProjectThreadsQuery(projectId: string, chat = false): Promise<Thread[]> {
   return (await window.piDesktop?.getProjectThreads?.(projectId, { chat })) ?? [];
+}
+
+export async function getChatSidebarStateQuery(
+  selectedGroupId?: string | null,
+): Promise<ChatSidebarState | null> {
+  return (await window.piDesktop?.getChatSidebarState?.(selectedGroupId ?? null)) ?? null;
+}
+
+export async function createChatGroupQuery(name: string): Promise<ChatSidebarState | null> {
+  return (await window.piDesktop?.createChatGroup?.(name)) ?? null;
 }
 
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {

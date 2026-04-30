@@ -20,6 +20,7 @@ type EmptyActionPayload = Record<string, never>;
 export type DesktopActionPayloadFields = {
   attachments?: ComposerAttachment[];
   composerMode?: "chat" | "code" | null;
+  chatGroupId?: string | null;
   folders?: string[];
   imported?: boolean | null;
   gitOpsMode?: GitOpsMode | null;
@@ -141,6 +142,7 @@ export type DesktopActionPayloadMap = {
   "composer.send": {
     projectId?: string | null;
     sessionPath?: string | null;
+    chatGroupId?: string | null;
     text: string;
     attachments?: ComposerAttachment[];
     streamingBehavior?: ComposerStreamingBehavior;

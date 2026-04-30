@@ -133,6 +133,7 @@ export function ChatWorkspaceView({
                 }
                 availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                 projectId={composerProjectId}
+                chatGroupId={controller.selectedChatGroupId}
                 projectGitState={projectGitState}
                 diffBaseline={diffBaseline}
                 sessionPath={terminalSessionPath}

@@ -18,6 +18,7 @@ type SubmitComposerDraftOptions = {
   attachments: ComposerAttachment[];
   isSending: boolean;
   projectId: string;
+  chatGroupId?: string | null;
   sessionPath: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   onAction: DesktopActionInvoker;
@@ -28,6 +29,7 @@ export async function submitComposerDraft({
   attachments,
   isSending,
   projectId,
+  chatGroupId = null,
   sessionPath,
   streamingBehaviorPreference,
   onAction,
@@ -43,6 +45,7 @@ export async function submitComposerDraft({
       text,
       attachments: sendAttachments,
       projectId,
+      chatGroupId,
       sessionPath,
       streamingBehavior: streamingBehaviorPreference,
     });

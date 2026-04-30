@@ -40,6 +40,7 @@ type UseComposerControllerProps = {
   workspaceFooterRef: RefObject<HTMLElement | null>;
   model: ComposerModel | null;
   projectId: string;
+  chatGroupId?: string | null;
   sessionPath: string | null;
   dictationModelId: string | null;
   dictationMaxDurationSeconds: number;
@@ -64,6 +65,7 @@ export function useComposerController({
   workspaceFooterRef,
   model,
   projectId,
+  chatGroupId = null,
   sessionPath,
   dictationModelId,
   dictationMaxDurationSeconds,
@@ -218,6 +220,7 @@ export function useComposerController({
     isCompacting,
     onAction,
     projectId,
+    chatGroupId,
     sessionPath,
     setAttachments: setAttachmentValue,
     setDraftValue,

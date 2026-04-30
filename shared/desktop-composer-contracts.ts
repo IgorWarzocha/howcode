@@ -64,6 +64,7 @@ export type ComposerStateRequest = {
   composerThinkingLevel?: ComposerThinkingLevel | null;
   composerStreamingBehavior?: ComposerStreamingBehavior | null;
   composerSessionDir?: string | null;
+  chatGroupId?: string | null;
 };
 
 export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";

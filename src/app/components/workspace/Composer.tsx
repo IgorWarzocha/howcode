@@ -27,6 +27,7 @@ export type ComposerProps = {
   streamingBehaviorPreference: ComposerStreamingBehavior;
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
+  chatGroupId?: string | null;
   projectGitState: ProjectGitState | null;
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;

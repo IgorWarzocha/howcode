@@ -8,6 +8,7 @@ import {
   setThreadCompactingState,
   setThreadStreamingState,
 } from "../../shared/thread-data.ts";
+import { isChatSessionPath, upsertChatThread } from "../chat-state-db.cts";
 import {
   beginInboxThreadTurn,
   getThreadAssistantSnapshot,
@@ -253,6 +254,9 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
       title: thread.title,
       lastModifiedMs: timestamp,
     });
+    if (isChatSessionPath(sessionPath)) {
+      upsertChatThread({ sessionPath, groupId: runtime.chatGroupId ?? null });
+    }
 
     setThreadRunningState(
       sessionPath,
@@ -289,6 +293,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     projectId,
     threadId,
     sessionPath,
+    chatGroupId: runtime.chatGroupId ?? null,
     thread,
     composer: await buildComposerState(runtime, { includeContextUsage: reason !== "update" }),
   });

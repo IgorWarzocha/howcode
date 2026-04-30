@@ -18,6 +18,8 @@ type PiThreadsRequestHandlers = Pick<
   | "removeDictationModel"
   | "transcribeDictation"
   | "getProjectThreads"
+  | "getChatSidebarState"
+  | "createChatGroup"
   | "getInboxThreads"
   | "getArchivedThreads"
   | "getThread"
@@ -44,6 +46,9 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     removeDictationModel: (request) => piThreads.removeDictationModel(request),
     transcribeDictation: (request) => piThreads.transcribeDictation(request),
     getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
+    getChatSidebarState: ({ selectedGroupId }) =>
+      piThreads.loadChatSidebarState(selectedGroupId ?? null),
+    createChatGroup: ({ name }) => piThreads.createChatGroup(name),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>

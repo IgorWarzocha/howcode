@@ -30,18 +30,9 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffPreferences,
 } from "../../shared/desktop-contracts.ts";
-import path from "node:path";
 import { getLiveThread } from "../runtime/live-thread-store.cts";
-import { getChatSessionDir } from "../chat-session-dir.cts";
+import { isChatSessionPath } from "../chat-state-db.cts";
 import { ensureProject } from "./writes.cts";
-
-function isChatSessionPath(sessionPath: string) {
-  const chatSessionDir = getChatSessionDir();
-  const relativePath = path.relative(chatSessionDir, sessionPath);
-  return (
-    relativePath.length > 0 && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)
-  );
-}
 
 function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {}) {
   return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath);

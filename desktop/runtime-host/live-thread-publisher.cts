@@ -56,6 +56,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     projectId: runtime.cwd,
     threadId: runtime.session.sessionId,
     sessionPath,
+    chatGroupId: runtime.chatGroupId ?? null,
     thread: normalizeThreadDataForReason(liveThread, reason),
     composer: await buildComposerState(runtime, { includeContextUsage: reason !== "update" }),
   });

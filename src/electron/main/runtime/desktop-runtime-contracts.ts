@@ -2,6 +2,7 @@ import type { DesktopAction } from "../../../../shared/desktop-actions";
 import type {
   AnyDesktopActionPayload,
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   ComposerStateRequest,
   ComposerSlashCommand,
@@ -91,6 +92,10 @@ export type PiThreadsModule = {
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>;
   listProjectCommits: (projectId: string, limit?: number | null) => Promise<ProjectCommitEntry[]>;
   loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<Thread[]>;
+  loadChatSidebarState: (
+    selectedGroupId?: string | null,
+  ) => Promise<ChatSidebarState> | ChatSidebarState;
+  createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (
     sessionPath: string,

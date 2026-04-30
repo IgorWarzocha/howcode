@@ -45,6 +45,7 @@ export function useAppShellEffects({
   loadComposerState,
   loadProjectGitState,
   scheduleShellStateRefresh,
+  refreshChatSidebarState,
   queryClient,
   dispatch,
   setArchivedThreads,
@@ -69,6 +70,7 @@ export function useAppShellEffects({
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
+  refreshChatSidebarState: () => Promise<unknown>;
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
@@ -110,6 +112,7 @@ export function useAppShellEffects({
     loadProjectThreads,
     loadProjectGitState,
     scheduleShellStateRefresh,
+    refreshChatSidebarState,
     queryClient,
     dispatch,
     setComposerState,

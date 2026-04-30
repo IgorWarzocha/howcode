@@ -31,6 +31,7 @@ type UseComposerSubmissionProps = {
   extensionCommandRunning: boolean;
   onAction: DesktopActionInvoker;
   projectId: string;
+  chatGroupId?: string | null;
   sessionPath: string | null;
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setDraftValue: Dispatch<SetStateAction<string>>;
@@ -57,6 +58,7 @@ export function useComposerSubmission({
   extensionCommandRunning,
   onAction,
   projectId,
+  chatGroupId = null,
   sessionPath,
   setAttachments,
   setDraftValue,
@@ -112,6 +114,7 @@ export function useComposerSubmission({
           attachments: [],
           isSending: false,
           projectId,
+          chatGroupId,
           sessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -137,6 +140,7 @@ export function useComposerSubmission({
     });
   }, [
     activeComposerScopeKeyRef,
+    chatGroupId,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
@@ -192,6 +196,7 @@ export function useComposerSubmission({
           attachments: submittedAttachments,
           isSending: false,
           projectId: submittedProjectId,
+          chatGroupId,
           sessionPath: submittedSessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -262,6 +267,7 @@ export function useComposerSubmission({
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
     attachmentsRef,
+    chatGroupId,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
@@ -332,6 +338,7 @@ export function useComposerSubmission({
           attachments: [],
           isSending: false,
           projectId,
+          chatGroupId,
           sessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -348,6 +355,7 @@ export function useComposerSubmission({
     isCompacting,
     isSending,
     isStreaming,
+    chatGroupId,
     onAction,
     projectId,
     sendLockRef,

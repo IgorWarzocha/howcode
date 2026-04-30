@@ -32,6 +32,7 @@ export type DesktopEvent =
       projectId: string;
       threadId: string;
       sessionPath: string;
+      chatGroupId?: string | null;
       thread: ThreadData;
       composer: ComposerState | null;
     }

@@ -96,7 +96,10 @@ const handlers: DesktopRequestHandlerMap = {
   installDictationModel: (request) => piThreads.installDictationModel(request),
   removeDictationModel: (request) => piThreads.removeDictationModel(request),
   transcribeDictation: (request) => piThreads.transcribeDictation(request),
-  getProjectThreads: ({ projectId }) => piThreads.loadProjectThreads(projectId),
+  getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
+  getChatSidebarState: ({ selectedGroupId }) =>
+    piThreads.loadChatSidebarState(selectedGroupId ?? null),
+  createChatGroup: ({ name }) => piThreads.createChatGroup(name),
   getInboxThreads: () => piThreads.loadInboxThreadList(),
   getArchivedThreads: () => piThreads.loadArchivedThreadList(),
   getThread: ({ sessionPath, historyCompactions = 0 }) =>

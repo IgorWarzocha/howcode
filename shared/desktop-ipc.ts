@@ -19,6 +19,7 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   InboxThread,
+  ChatSidebarState,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -163,6 +164,8 @@ export type DesktopRequestMap = {
     response: DictationTranscriptionResult;
   };
   getProjectThreads: { params: { projectId: string; chat?: boolean }; response: Thread[] };
+  getChatSidebarState: { params: { selectedGroupId?: string | null }; response: ChatSidebarState };
+  createChatGroup: { params: { name: string }; response: ChatSidebarState };
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
   getThread: {

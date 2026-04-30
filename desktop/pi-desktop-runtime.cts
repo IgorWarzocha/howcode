@@ -25,6 +25,7 @@ import { subscribeRuntimeHostEvents, invokeRuntimeHost } from "./runtime-host/cl
 import { subscribeDesktopEvents as subscribeLocalDesktopEvents } from "./runtime/desktop-events.cts";
 import { loadAppSettings } from "./app-settings/readers.cts";
 import { getChatSessionDir } from "./chat-session-dir.cts";
+import { isChatSessionPath, upsertChatThread } from "./chat-state-db.cts";
 
 export { getLiveThread };
 
@@ -89,6 +90,9 @@ async function persistHostThreadUpdate(event: Extract<DesktopEvent, { type: "thr
   });
 
   event.threadId = threadId;
+  if (isChatSessionPath(event.sessionPath)) {
+    upsertChatThread({ sessionPath: event.sessionPath, groupId: event.chatGroupId ?? null });
+  }
   setThreadRunningState(
     event.sessionPath,
     event.reason === "update" ||

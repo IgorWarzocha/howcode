@@ -382,6 +382,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 piTuiTakeover: false,
               }
             }
+            chatSidebarState={controller.chatSidebarState}
             activeView={state.activeView}
             protectedProjectId={
               controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
@@ -389,6 +390,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
+            selectedChatGroupId={controller.selectedChatGroupId}
             settingsOpen={state.settingsOpen}
             projectScopeLockActive={projectScopeLockActive}
             terminalRunningProjectIds={controller.terminalRunningProjectIds}
@@ -410,6 +412,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               handleShowView("archived");
             }}
             onDismissInboxThread={controller.handleDismissInboxThread}
+            onCreateChatGroup={controller.handleCreateChatGroup}
+            onSelectChatGroup={controller.handleSelectChatGroup}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
             onLoadProjectThreads={controller.handleLoadProjectThreads}

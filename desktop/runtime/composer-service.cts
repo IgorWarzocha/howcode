@@ -229,6 +229,7 @@ export async function setComposerModel(
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
     const model = runtime.session.modelRegistry.find(provider, modelId);
 
@@ -257,6 +258,7 @@ export async function setComposerThinkingLevel(
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
     runtime.session.setThinkingLevel(level);
     scheduleRuntimeDisposalForRuntime(runtime);
@@ -357,6 +359,7 @@ export async function sendComposerPrompt(
     const runtime = await createRuntimeForNewSession(
       request.projectId ?? getDesktopWorkingDirectory(),
       request.composerSessionDir,
+      { chatGroupId: request.chatGroupId ?? null },
     );
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);
@@ -374,6 +377,7 @@ export async function sendComposerPrompt(
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
     await applyComposerModeSettings(runtime, request);
     return await runSend(runtime);
@@ -404,6 +408,7 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
 
     const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime);
@@ -433,6 +438,7 @@ export async function dequeueComposerPrompt(
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
 
     try {
@@ -527,6 +533,7 @@ export async function openThreadRuntime(request: ComposerStateRequest): Promise<
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
       settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
     });
     if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
       await applyComposerModeSettings(runtime, request);
