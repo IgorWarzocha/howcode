@@ -32,6 +32,7 @@ function ensureArtifactSchema() {
 
     CREATE INDEX IF NOT EXISTS artifacts_conversation_idx ON artifacts(conversation_id, updated_at DESC);
   `);
+  migrateUuidArtifactIds();
   artifactSchemaReady = true;
 }
 
@@ -84,6 +85,34 @@ function createArtifactId(title: string) {
     if (!row) return candidate;
   }
   return `${base}-${randomUUID().slice(0, 8)}`;
+}
+
+function isUuidArtifactId(id: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+function migrateUuidArtifactIds() {
+  const db = getThreadStateDatabase();
+  const rows = db.prepare("SELECT id, title FROM artifacts").all() as Array<{
+    id: string;
+    title: string;
+  }>;
+  for (const row of rows) {
+    if (!isUuidArtifactId(row.id)) continue;
+    const nextId = createArtifactId(row.title);
+    try {
+      db.exec("BEGIN");
+      db.prepare("UPDATE artifacts SET id = ? WHERE id = ?").run(nextId, row.id);
+      db.prepare("UPDATE artifact_versions SET artifact_id = ? WHERE artifact_id = ?").run(
+        nextId,
+        row.id,
+      );
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
 }
 
 function countOccurrences(content: string, text: string) {
