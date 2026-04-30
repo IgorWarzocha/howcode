@@ -12,6 +12,7 @@ type ComposerDictationControlsProps = {
   dictationMissingModel: boolean;
   dictationSupported: boolean;
   dictationTranscribing: boolean;
+  placement?: "inline" | "trailing";
   onAction: DesktopActionInvoker;
   onOpenSettingsView: () => void;
   showDictationButton: boolean;
@@ -23,6 +24,7 @@ export function ComposerDictationControls({
   dictationMissingModel,
   dictationSupported,
   dictationTranscribing,
+  placement = "inline",
   onAction,
   onOpenSettingsView,
   showDictationButton,
@@ -46,7 +48,7 @@ export function ComposerDictationControls({
   }, [dictationMissingModel, showDictationButton]);
 
   return showDictationButton ? (
-    <div className="relative">
+    <div className={cn("relative", placement === "trailing" && "h-6 w-6 shrink-0")}>
       {dictationPromptPresent ? (
         <div
           ref={dictationPromptRef}
@@ -109,13 +111,15 @@ export function ComposerDictationControls({
           setDictationPromptOpen(result === "setup-required");
         }}
         className={cn(
-          iconButtonClass,
+          placement === "trailing"
+            ? "inline-flex h-6 w-6 items-center justify-center rounded-full border border-transparent bg-transparent text-[color:var(--muted-2)] opacity-45 transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[color:var(--muted)] hover:opacity-70"
+            : iconButtonClass,
           dictationActive &&
-            "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1]",
+            "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1] opacity-100",
           dictationTranscribing &&
-            "border-[rgba(183,186,245,0.3)] bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+            "border-[rgba(183,186,245,0.3)] bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] opacity-100",
           dictationPromptOpen &&
-            "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
+            "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] text-[color:var(--text)] opacity-100",
         )}
         aria-label={
           dictationActive

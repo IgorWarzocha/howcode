@@ -1,7 +1,6 @@
-import { Loader2, Send, Square } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { ClipboardEvent, RefObject } from "react";
 import { getPathForFileQuery } from "../../../query/desktop-query";
-import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFilePicker } from "./ComposerFilePicker";
@@ -19,7 +18,6 @@ import type { ComposerAttachment, DesktopActionInvoker } from "../../../desktop/
 
 type ComposerPromptInputPanelProps = {
   attachments: ComposerAttachment[];
-  canSend: boolean;
   clearError: () => void;
   dictationActive: boolean;
   dictationMissingModel: boolean;
@@ -29,17 +27,14 @@ type ComposerPromptInputPanelProps = {
   errorMessage: string | null;
   extensionRunning: boolean;
   favoriteFolders: string[];
-  isSending: boolean;
   pickerLoading: boolean;
   pickerOpen: boolean;
   pickerPanelRef: RefObject<HTMLDivElement | null>;
   pickerState: Parameters<typeof ComposerFilePicker>[0]["picker"];
   placeholderText: string;
   projectId: string;
-  sessionPath: string | null;
   slashCommandPanelRef: RefObject<HTMLDivElement | null>;
   slashCommands: ComposerSlashCommands;
-  composerIsStreaming: boolean;
   showDictationButton: boolean;
   attachPickerAttachments: Parameters<typeof ComposerFilePicker>[0]["onAttachAttachments"];
   cancelDictation: () => Promise<void>;
@@ -54,14 +49,12 @@ type ComposerPromptInputPanelProps = {
   openPickerRoot: Parameters<typeof ComposerFilePicker>[0]["onOpenRoot"];
   removeAttachment: (path: string) => void;
   setDraft: (value: string) => void;
-  stop: () => Promise<void>;
   toggleDictation: Parameters<typeof ComposerDictationControls>[0]["toggleDictation"];
   togglePendingPickerAttachment: Parameters<typeof ComposerFilePicker>[0]["onToggleFile"];
 };
 
 export function ComposerPromptInputPanel({
   attachments,
-  canSend,
   clearError,
   dictationActive,
   dictationMissingModel,
@@ -71,17 +64,14 @@ export function ComposerPromptInputPanel({
   errorMessage,
   extensionRunning,
   favoriteFolders,
-  isSending,
   pickerLoading,
   pickerOpen,
   pickerPanelRef,
   pickerState,
   placeholderText,
   projectId,
-  sessionPath,
   slashCommandPanelRef,
   slashCommands,
-  composerIsStreaming,
   showDictationButton,
   attachPickerAttachments,
   cancelDictation,
@@ -93,7 +83,6 @@ export function ComposerPromptInputPanel({
   openPickerRoot,
   removeAttachment,
   setDraft,
-  stop,
   toggleDictation,
   togglePendingPickerAttachment,
 }: ComposerPromptInputPanelProps) {
@@ -230,54 +219,31 @@ export function ComposerPromptInputPanel({
                 placeholderTone={errorMessage ? "error" : "muted"}
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}
+                trailingAdornment={
+                  <ComposerDictationControls
+                    dictationActive={dictationActive}
+                    dictationMissingModel={dictationMissingModel}
+                    dictationSupported={dictationSupported}
+                    dictationTranscribing={dictationTranscribing}
+                    placement="trailing"
+                    onAction={onAction}
+                    onOpenSettingsView={onOpenSettingsView}
+                    showDictationButton={showDictationButton}
+                    toggleDictation={toggleDictation}
+                  />
+                }
                 onHeightChange={onLayoutChange}
               />
             </div>
           </div>
 
           <div className="inline-flex h-8 items-center justify-end gap-2">
-            <ComposerDictationControls
-              dictationActive={dictationActive}
-              dictationMissingModel={dictationMissingModel}
-              dictationSupported={dictationSupported}
-              dictationTranscribing={dictationTranscribing}
-              onAction={onAction}
-              onOpenSettingsView={onOpenSettingsView}
-              showDictationButton={showDictationButton}
-              toggleDictation={toggleDictation}
-            />
-            <button
-              type="button"
-              className={cn(
-                compactIconButtonClass,
-                "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
-              )}
-              onClick={() => void stop()}
-              disabled={(!composerIsStreaming && !extensionRunning) || isSending || !sessionPath}
-              aria-label="Stop Pi"
-              data-tooltip="Stop Pi"
-            >
-              <Square size={11} fill="currentColor" />
-            </button>
             {extensionRunning ? (
               <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
                 <Loader2 size={12} className="animate-spin" />
                 <span>Pi extension running</span>
               </div>
             ) : null}
-            <button
-              type="button"
-              className={cn(
-                compactIconButtonClass,
-                "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
-              )}
-              onClick={slashCommands.submit}
-              disabled={!canSend}
-              aria-label="Send"
-              data-tooltip="Send"
-            >
-              <Send size={14} />
-            </button>
           </div>
         </div>
       </div>

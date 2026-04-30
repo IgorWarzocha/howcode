@@ -1,4 +1,4 @@
-import { Paperclip, X } from "lucide-react";
+import { Paperclip, Square, X } from "lucide-react";
 import { type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -53,7 +53,6 @@ export function ComposerPromptSurface({
   const {
     attachments,
     cancelDictation,
-    canSend,
     clearAttachments,
     clearError,
     draft,
@@ -253,12 +252,13 @@ export function ComposerPromptSurface({
   const placeholderText =
     errorMessage ??
     (activeView === "thread"
-      ? "Ask for follow-up changes"
-      : "Ask Pi anything, @ to add files, / for commands, $ for skills");
+      ? "Hover to type · Enter sends · Shift+Enter for a new line"
+      : "Hover to type · / commands · @ files · Enter sends");
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
+  const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
 
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2 overflow-visible">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 overflow-visible">
       <div className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center gap-1.5 text-[color:var(--muted)]">
         <button
           ref={pickerButtonRef}
@@ -309,7 +309,6 @@ export function ComposerPromptSurface({
               still mirrors the git-ops composer shell while attachments live beside it. */}
           <ComposerPromptInputPanel
             attachments={attachments}
-            canSend={canSend}
             clearError={clearError}
             dictationActive={dictationActive}
             dictationMissingModel={dictationMissingModel}
@@ -319,17 +318,14 @@ export function ComposerPromptSurface({
             errorMessage={errorMessage}
             extensionRunning={extensionRunning}
             favoriteFolders={favoriteFolders}
-            isSending={isSending}
             pickerLoading={pickerLoading}
             pickerOpen={pickerOpen}
             pickerPanelRef={pickerPanelRef}
             pickerState={pickerState}
             placeholderText={placeholderText}
             projectId={projectId}
-            sessionPath={sessionPath}
             slashCommandPanelRef={slashCommandPanelRef}
             slashCommands={slashCommands}
-            composerIsStreaming={composerIsStreaming}
             showDictationButton={showDictationButton}
             attachPickerAttachments={attachPickerAttachments}
             cancelDictation={cancelDictation}
@@ -341,7 +337,6 @@ export function ComposerPromptSurface({
             openPickerRoot={openPickerRoot}
             removeAttachment={removeAttachment}
             setDraft={setDraft}
-            stop={stop}
             toggleDictation={toggleDictation}
             togglePendingPickerAttachment={togglePendingPickerAttachment}
           />
@@ -398,6 +393,25 @@ export function ComposerPromptSurface({
           thinkingLevel={thinkingLevel}
           thinkingLevelLabels={thinkingLevelLabels}
         />
+      </div>
+
+      <div className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center justify-end text-[color:var(--muted)]">
+        <button
+          type="button"
+          className={cn(
+            compactIconButtonClass,
+            "h-7 w-7 shrink-0 rounded-full text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.2)] hover:text-[#ffd1d1]",
+            canStopComposer
+              ? "bg-[rgba(229,111,111,0.14)] opacity-80"
+              : "bg-transparent opacity-25 hover:opacity-45",
+          )}
+          onClick={() => void stop()}
+          disabled={!canStopComposer}
+          aria-label="Stop Pi"
+          data-tooltip="Stop Pi"
+        >
+          <Square size={11} fill="currentColor" />
+        </button>
       </div>
     </div>
   );

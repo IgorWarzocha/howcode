@@ -1,4 +1,12 @@
-import { type ClipboardEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type ClipboardEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../../utils/cn";
 
 type ComposerTextFieldProps = {
@@ -12,6 +20,7 @@ type ComposerTextFieldProps = {
   ariaControls?: string;
   ariaExpanded?: boolean;
   reservedLineCount?: number;
+  trailingAdornment?: ReactNode;
   onHeightChange?: (height: number) => void;
   onChange: (value: string) => void;
   onInput?: () => void;
@@ -33,6 +42,7 @@ export function ComposerTextField({
   ariaControls,
   ariaExpanded,
   reservedLineCount = 4,
+  trailingAdornment = null,
   onHeightChange,
   onChange,
   onInput,
@@ -46,6 +56,10 @@ export function ComposerTextField({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastReportedHeightRef = useRef<number | null>(null);
   const [reservedHeight, setReservedHeight] = useState<number | null>(null);
+  const [trailingAdornmentPosition, setTrailingAdornmentPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   const focusTextareaAtEnd = () => {
     const textarea = textareaRef.current;
@@ -97,6 +111,67 @@ export function ComposerTextField({
     onHeightChange?.(height);
   });
 
+  useLayoutEffect(() => {
+    if (!trailingAdornment) {
+      setTrailingAdornmentPosition(null);
+      return;
+    }
+
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    const measureTrailingAdornmentPosition = () => {
+      const computedStyle = window.getComputedStyle(textarea);
+      const mirror = document.createElement("div");
+      const marker = document.createElement("span");
+      const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+
+      mirror.style.position = "absolute";
+      mirror.style.visibility = "hidden";
+      mirror.style.pointerEvents = "none";
+      mirror.style.whiteSpace = "pre-wrap";
+      mirror.style.overflowWrap = "break-word";
+      mirror.style.wordBreak = "break-word";
+      mirror.style.boxSizing = computedStyle.boxSizing;
+      mirror.style.width = `${textarea.clientWidth}px`;
+      mirror.style.font = computedStyle.font;
+      mirror.style.fontFamily = computedStyle.fontFamily;
+      mirror.style.fontSize = computedStyle.fontSize;
+      mirror.style.fontWeight = computedStyle.fontWeight;
+      mirror.style.letterSpacing = computedStyle.letterSpacing;
+      mirror.style.lineHeight = computedStyle.lineHeight;
+      mirror.style.padding = computedStyle.padding;
+      mirror.style.border = computedStyle.border;
+
+      mirror.textContent = textarea.value || textarea.placeholder || "";
+      marker.textContent = "\u200b";
+      mirror.appendChild(marker);
+      document.body.appendChild(mirror);
+
+      const mirrorRect = mirror.getBoundingClientRect();
+      const markerRect = marker.getBoundingClientRect();
+      document.body.removeChild(mirror);
+
+      const nextLeft = Math.min(
+        Math.max(0, markerRect.left - mirrorRect.left + 6),
+        Math.max(0, textarea.clientWidth - 24),
+      );
+      const nextTop = Math.max(0, markerRect.top - mirrorRect.top + lineHeight / 2 - 12);
+
+      setTrailingAdornmentPosition((current) =>
+        current?.left === nextLeft && current.top === nextTop
+          ? current
+          : { left: nextLeft, top: nextTop },
+      );
+    };
+
+    measureTrailingAdornmentPosition();
+    window.addEventListener("resize", measureTrailingAdornmentPosition);
+    return () => window.removeEventListener("resize", measureTrailingAdornmentPosition);
+  });
+
   return (
     <div
       ref={wrapperRef}
@@ -132,29 +207,42 @@ export function ComposerTextField({
           {statusMessage}
         </div>
       ) : null}
-      <textarea
-        ref={textareaRef}
-        rows={1}
-        className={cn(
-          "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
-          placeholderTone === "error"
-            ? "placeholder:text-[#f2a7a7]"
-            : "placeholder:text-[color:var(--muted-2)]",
-        )}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onInput={onInput}
-        onKeyDown={onKeyDown}
-        onPaste={onPaste}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        aria-label={ariaLabel}
-        aria-activedescendant={ariaActiveDescendant}
-        aria-autocomplete={ariaControls ? "list" : undefined}
-        aria-controls={ariaControls}
-        aria-expanded={ariaExpanded}
-        placeholder={placeholder}
-      />
+      <div className="relative min-w-0">
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          className={cn(
+            "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
+            placeholderTone === "error"
+              ? "placeholder:text-[#f2a7a7]"
+              : "placeholder:text-[color:var(--muted-2)]",
+          )}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onInput={onInput}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          aria-label={ariaLabel}
+          aria-activedescendant={ariaActiveDescendant}
+          aria-autocomplete={ariaControls ? "list" : undefined}
+          aria-controls={ariaControls}
+          aria-expanded={ariaExpanded}
+          placeholder={placeholder}
+        />
+        {trailingAdornment && trailingAdornmentPosition ? (
+          <span
+            className="absolute z-10 inline-flex"
+            style={{
+              left: `${trailingAdornmentPosition.left}px`,
+              top: `${trailingAdornmentPosition.top}px`,
+            }}
+          >
+            {trailingAdornment}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
