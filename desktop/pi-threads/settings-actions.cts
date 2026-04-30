@@ -208,6 +208,11 @@ export async function handleSettingsDesktopAction(
   }
 
   if (key === "chatThinkingLevel") {
+    if (getSettingsReset(payload)) {
+      setChatThinkingLevel(null);
+      return handledAction();
+    }
+
     const level = getSettingsThinkingLevel(payload);
     if (level) {
       setChatThinkingLevel(level);
@@ -216,6 +221,11 @@ export async function handleSettingsDesktopAction(
   }
 
   if (key === "codeThinkingLevel") {
+    if (getSettingsReset(payload)) {
+      setCodeThinkingLevel(null);
+      return handledAction();
+    }
+
     const level = getSettingsThinkingLevel(payload);
     if (level) {
       setCodeThinkingLevel(level);

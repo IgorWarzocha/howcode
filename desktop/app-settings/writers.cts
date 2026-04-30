@@ -79,7 +79,12 @@ export function setChatModelSelection(selection: ModelSelection | null) {
   writeAppPreference(chatModelKey, JSON.stringify(selection));
 }
 
-export function setChatThinkingLevel(level: ComposerThinkingLevel) {
+export function setChatThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(chatThinkingLevelKey);
+    return;
+  }
+
   writeAppPreference(chatThinkingLevelKey, JSON.stringify(level));
 }
 
@@ -92,7 +97,12 @@ export function setCodeModelSelection(selection: ModelSelection | null) {
   writeAppPreference(codeModelKey, JSON.stringify(selection));
 }
 
-export function setCodeThinkingLevel(level: ComposerThinkingLevel) {
+export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(codeThinkingLevelKey);
+    return;
+  }
+
   writeAppPreference(codeThinkingLevelKey, JSON.stringify(level));
 }
 

@@ -59,9 +59,11 @@ export type DesktopSettingsUpdatePayload =
   | { key: "chatModel"; provider: string; modelId: string; reset?: false }
   | { key: "chatModel"; reset: true }
   | { key: "chatThinkingLevel"; value: ComposerThinkingLevel }
+  | { key: "chatThinkingLevel"; reset: true }
   | { key: "codeModel"; provider: string; modelId: string; reset?: false }
   | { key: "codeModel"; reset: true }
   | { key: "codeThinkingLevel"; value: ComposerThinkingLevel }
+  | { key: "codeThinkingLevel"; reset: true }
   | { key: "gitCommitMessageModel"; provider: string; modelId: string; reset?: false }
   | { key: "gitCommitMessageModel"; reset: true }
   | { key: "gitCommitMessageThinkingLevel"; value: ComposerThinkingLevel }

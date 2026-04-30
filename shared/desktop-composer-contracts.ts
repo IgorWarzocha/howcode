@@ -60,6 +60,7 @@ export type ComposerStateRequest = {
   sessionPath?: string | null;
   composerMode?: "chat" | "code" | null;
   composerModelSelection?: { provider: string; id: string } | null;
+  composerUseDefaultModel?: boolean;
   composerThinkingLevel?: ComposerThinkingLevel | null;
   composerStreamingBehavior?: ComposerStreamingBehavior | null;
   composerSessionDir?: string | null;

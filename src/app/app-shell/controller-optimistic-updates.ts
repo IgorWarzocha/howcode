@@ -100,13 +100,21 @@ export function getOptimisticallyUpdatedShellState(
       : currentState.appSettings.gitCommitMessageThinkingLevel;
 
   const nextChatThinkingLevel =
-    payload.key === "chatThinkingLevel" && isThinkingLevel(payload.value)
-      ? payload.value
+    payload.key === "chatThinkingLevel"
+      ? payload.reset === true
+        ? null
+        : isThinkingLevel(payload.value)
+          ? payload.value
+          : currentState.appSettings.chatThinkingLevel
       : currentState.appSettings.chatThinkingLevel;
 
   const nextCodeThinkingLevel =
-    payload.key === "codeThinkingLevel" && isThinkingLevel(payload.value)
-      ? payload.value
+    payload.key === "codeThinkingLevel"
+      ? payload.reset === true
+        ? null
+        : isThinkingLevel(payload.value)
+          ? payload.value
+          : currentState.appSettings.codeThinkingLevel
       : currentState.appSettings.codeThinkingLevel;
 
   const nextSkillCreatorThinkingLevel =

@@ -48,6 +48,7 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
   return {
     ...request,
     composerModelSelection,
+    composerUseDefaultModel: Boolean(request.composerMode) && composerModelSelection === null,
     composerThinkingLevel,
     composerStreamingBehavior: appSettings.composerStreamingBehavior,
     composerSessionDir: request.composerMode === "chat" ? getChatSessionDir() : null,

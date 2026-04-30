@@ -135,28 +135,33 @@ export function buildModelSettingsDescriptors({
   };
   const renderThinkingSelector = (
     id: string,
-    value: ComposerThinkingLevel,
+    value: ComposerThinkingLevel | null,
     levels: ComposerThinkingLevel[],
-    onChange: (value: ComposerThinkingLevel) => void,
+    onChange: (value: ComposerThinkingLevel | null) => void,
   ) => (
     <InlineSelect
       id={id}
-      value={levels.includes(value) ? value : (levels[0] ?? "off")}
+      value={value && levels.includes(value) ? value : "composer-default"}
       open={openSelectId === id}
-      options={levels.map((level) => ({
-        value: level,
-        label: thinkingLevelLabels[level],
-      }))}
+      options={[
+        { value: "composer-default", label: "Composer default" },
+        ...levels.map((level) => ({
+          value: level,
+          label: thinkingLevelLabels[level],
+        })),
+      ]}
       onOpenChange={(open) => setOpenSelectId(open ? id : null)}
-      onChange={(nextValue) => onChange(nextValue as ComposerThinkingLevel)}
+      onChange={(nextValue) =>
+        onChange(nextValue === "composer-default" ? null : (nextValue as ComposerThinkingLevel))
+      }
     />
   );
   const renderModelWorkflowControls = (
     idPrefix: string,
     selection: ModelSettingsSelection,
-    thinkingLevel: ComposerThinkingLevel,
+    thinkingLevel: ComposerThinkingLevel | null,
     selectModel: (id: string) => void,
-    selectThinkingLevel: (value: ComposerThinkingLevel) => void,
+    selectThinkingLevel: (value: ComposerThinkingLevel | null) => void,
   ) => (
     <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3">
       {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
@@ -184,10 +189,12 @@ export function buildModelSettingsDescriptors({
           appSettings.chatThinkingLevel,
           controller.selectChatModel,
           (value) =>
-            void onAction("settings.update", {
-              key: "chatThinkingLevel",
-              value,
-            }),
+            void onAction(
+              "settings.update",
+              value === null
+                ? { key: "chatThinkingLevel", reset: true }
+                : { key: "chatThinkingLevel", value },
+            ),
         ),
     },
     {
@@ -203,10 +210,12 @@ export function buildModelSettingsDescriptors({
           appSettings.codeThinkingLevel,
           controller.selectCodeModel,
           (value) =>
-            void onAction("settings.update", {
-              key: "codeThinkingLevel",
-              value,
-            }),
+            void onAction(
+              "settings.update",
+              value === null
+                ? { key: "codeThinkingLevel", reset: true }
+                : { key: "codeThinkingLevel", value },
+            ),
         ),
     },
     {

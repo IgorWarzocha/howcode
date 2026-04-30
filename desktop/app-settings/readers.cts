@@ -247,9 +247,9 @@ export function loadAppSettings(): AppSettings {
 
   return {
     chatModel: parseModelSelection(chatModelRow?.valueJson),
-    chatThinkingLevel: parseThinkingLevelPreference(chatThinkingLevelRow?.valueJson) ?? "off",
+    chatThinkingLevel: parseThinkingLevelPreference(chatThinkingLevelRow?.valueJson),
     codeModel: parseModelSelection(codeModelRow?.valueJson),
-    codeThinkingLevel: parseThinkingLevelPreference(codeThinkingLevelRow?.valueJson) ?? "off",
+    codeThinkingLevel: parseThinkingLevelPreference(codeThinkingLevelRow?.valueJson),
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(gitCommitThinkingLevelRow?.valueJson) ?? "off",

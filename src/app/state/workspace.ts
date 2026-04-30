@@ -290,12 +290,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: action.view,
         settingsOpen: false,
         settingsPanelOpen: false,
-        selectedThreadId:
-          action.view === "chat" || action.view === "thread" ? state.selectedThreadId : null,
-        selectedSessionPath:
-          action.view === "chat" || action.view === "thread" ? state.selectedSessionPath : null,
-        selectedDiffFilePath:
-          action.view === "chat" || action.view === "thread" ? state.selectedDiffFilePath : null,
+        selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
+        selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
+        selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
         takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
         utilityViewReturnState,
       };

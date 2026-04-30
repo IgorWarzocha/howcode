@@ -76,6 +76,18 @@ async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerSt
         selectedModel = fallbackModel;
       }
     }
+  } else if (request.composerUseDefaultModel) {
+    const defaultComposer = await buildComposerStateSnapshot({ projectId: runtime.cwd });
+    if (defaultComposer.currentModel) {
+      const model = runtime.session.modelRegistry.find(
+        defaultComposer.currentModel.provider,
+        defaultComposer.currentModel.id,
+      );
+      if (model) {
+        await runtime.session.setModel(model);
+        selectedModel = model;
+      }
+    }
   }
 
   if (thinkingLevel) {

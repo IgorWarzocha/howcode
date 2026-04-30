@@ -198,12 +198,9 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
   const settingsManager = SettingsManager.create(cwd, agentDir);
-  const sessionDir = request.composerSessionDir ?? settingsManager.getSessionDir() ?? undefined;
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
-    : request.composerSessionDir
-      ? SessionManager.create(cwd, sessionDir)
-      : SessionManager.inMemory();
+    : SessionManager.inMemory();
   const { session } = await createAgentSession({
     cwd,
     agentDir,

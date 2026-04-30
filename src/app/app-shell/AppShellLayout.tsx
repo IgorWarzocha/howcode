@@ -359,9 +359,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appSettings={
               controller.shellState?.appSettings ?? {
                 chatModel: null,
-                chatThinkingLevel: "off",
+                chatThinkingLevel: null,
                 codeModel: null,
-                codeThinkingLevel: "off",
+                codeThinkingLevel: null,
                 gitCommitMessageModel: null,
                 gitCommitMessageThinkingLevel: "off",
                 skillCreatorModel: null,
