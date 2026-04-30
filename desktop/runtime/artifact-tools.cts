@@ -16,7 +16,7 @@ export type ArtifactToolAdapter = {
 };
 
 const stringSchema = { type: "string" } as const;
-const artifactKindSchema = { enum: ["html", "react"] } as const;
+const artifactKindSchema = { enum: ["html", "react", "markdown"] } as const;
 const editSchema = {
   type: "object",
   properties: { oldText: stringSchema, newText: stringSchema },
@@ -38,8 +38,8 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       name: "create_artifact",
       label: "Create artifact",
       description:
-        "Create an artifact for this chat. kind=html is standalone HTML/CSS/JS; kind=react is a default-exported React component. CDN usage is allowed inside HTML artifacts.",
-      promptSnippet: "Create an html or react artifact for this chat",
+        "Create an artifact for this chat. kind=html is standalone HTML/CSS/JS; kind=react is a default-exported React component; kind=markdown is Markdown text. CDN usage is allowed inside HTML artifacts.",
+      promptSnippet: "Create an html, react, or markdown artifact for this chat",
       parameters: {
         type: "object",
         properties: { slug: stringSchema, kind: artifactKindSchema, content: stringSchema },

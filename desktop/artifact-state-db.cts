@@ -55,7 +55,7 @@ function mapArtifactRow(row: ArtifactRow): Artifact {
   return {
     slug: row.slug,
     conversationId: row.conversationId,
-    kind: row.kind === "react" ? "react" : "html",
+    kind: row.kind === "react" || row.kind === "markdown" ? row.kind : "html",
     content: row.content,
     version: row.version,
     createdAt: row.createdAt,

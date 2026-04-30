@@ -1,4 +1,4 @@
-export type ArtifactKind = "html" | "react";
+export type ArtifactKind = "html" | "react" | "markdown";
 
 export type Artifact = {
   slug: string;

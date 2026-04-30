@@ -32,6 +32,15 @@ function escapeScriptContent(script: string) {
   return script.replace(/<\/script/gi, "<\\/script");
 }
 
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const artifactScrollbarCss = `
 <style>
   *::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -88,6 +97,22 @@ function buildReactPreview(compiledJs: string) {
   </script>
   <script type="module">${escapeScriptContent(compiledJs)}</script>
 </body>
+</html>`;
+}
+
+function buildMarkdownPreview(content: string) {
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  ${artifactScrollbarCss}
+  <style>
+    body { margin: 0; padding: 28px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; color: #111827; line-height: 1.65; }
+    pre { white-space: pre-wrap; font: inherit; margin: 0; }
+  </style>
+</head>
+<body><pre>${escapeHtml(content)}</pre></body>
 </html>`;
 }
 
@@ -195,6 +220,10 @@ export function ArtifactPanel({
     setPreviewError(null);
     if (!selectedArtifact) {
       setPreviewHtml("");
+      return;
+    }
+    if (selectedArtifact.kind === "markdown") {
+      setPreviewHtml(buildMarkdownPreview(displayedContent));
       return;
     }
     if (selectedArtifact.kind === "html") {
