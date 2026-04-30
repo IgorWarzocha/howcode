@@ -37,7 +37,7 @@ export function shouldAutoOpenStartedThread({
   const visibleSessionPath = getVisibleDesktopSessionPath(workspaceState);
   const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
 
-  if (localDraftProjectId) {
+  if (localDraftProjectId && localDraftProjectId !== projectId) {
     return false;
   }
 

@@ -49,7 +49,7 @@ describe("desktop event selection helpers", () => {
     ).toBe(false);
   });
 
-  it("does not auto-open over a local draft even when the background thread is in the same project", () => {
+  it("allows same-project local draft promotion so newly submitted chats can attach to their persisted session", () => {
     const draft = createLocalThreadDraft("/repo/project-a", "draft");
 
     expect(
@@ -62,7 +62,7 @@ describe("desktop event selection helpers", () => {
           selectedSessionPath: draft.sessionPath,
         }),
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("does not auto-open a started background thread over an empty thread view in another project", () => {
