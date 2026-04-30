@@ -65,18 +65,12 @@ export function Composer(props: ComposerProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      ref={composerPanelRef}
-      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
-      aria-label="Composer panel"
-    >
-      <ComposerPromptSurface
-        {...props}
-        composerPanelRef={composerPanelRef}
-        mainViewRef={props.mainViewRef}
-        workspaceFooterRef={props.workspaceFooterRef}
-        onOpenGitOps={props.onOpenGitOpsView}
-      />
-    </div>
+    <ComposerPromptSurface
+      {...props}
+      composerPanelRef={composerPanelRef}
+      mainViewRef={props.mainViewRef}
+      workspaceFooterRef={props.workspaceFooterRef}
+      onOpenGitOps={props.onOpenGitOpsView}
+    />
   );
 }
