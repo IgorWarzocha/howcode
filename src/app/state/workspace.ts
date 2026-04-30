@@ -395,8 +395,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         ...getTerminalStateForNextView(state, state.gitOpsReturnView),
         activeView: state.gitOpsReturnView,
-        selectedThreadId: state.gitOpsReturnView === "thread" ? state.selectedThreadId : null,
-        selectedSessionPath: state.gitOpsReturnView === "thread" ? state.selectedSessionPath : null,
+        selectedThreadId:
+          state.gitOpsReturnView === "chat" || state.gitOpsReturnView === "thread"
+            ? state.selectedThreadId
+            : null,
+        selectedSessionPath:
+          state.gitOpsReturnView === "chat" || state.gitOpsReturnView === "thread"
+            ? state.selectedSessionPath
+            : null,
         selectedDiffFilePath: null,
         utilityViewReturnState: null,
       };

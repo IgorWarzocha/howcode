@@ -170,9 +170,15 @@ export async function getComposerState(request: ComposerStateRequest = {}): Prom
 
   // Reads should reflect the current in-memory runtime state. Reloading or publishing here can
   // race with just-applied composer mutations and re-broadcast stale snapshots back into the UI.
-  return runtimePromise
-    ? await buildComposerState(await runtimePromise)
-    : await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
+  if (runtimePromise) {
+    const runtime = await runtimePromise;
+    if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
+      await applyComposerModeSettings(runtime, request);
+    }
+    return await buildComposerState(runtime);
+  }
+
+  return await buildComposerStateSnapshot({ ...request, sessionPath: persistedSessionPath });
 }
 
 export async function setComposerModel(

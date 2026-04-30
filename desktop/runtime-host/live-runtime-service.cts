@@ -150,6 +150,9 @@ export async function getComposerState(request: ComposerStateRequest = {}) {
     const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
       suspendDisposal: true,
     });
+    if (!runtime.session.isStreaming && !isRuntimeExtensionCommandRunning(runtime)) {
+      await applyComposerModeSettings(runtime, request);
+    }
     scheduleRuntimeDisposal(persistedSessionPath);
     return await buildComposerState(runtime);
   }

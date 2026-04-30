@@ -56,6 +56,7 @@ type UseComposerSlashCommandsOptions = {
   draft: string;
   projectId: string;
   sessionPath: string | null;
+  composerMode?: "chat" | "code";
   setDraft: (draft: string) => void;
   send: () => void;
   sendExtensionCommand?: () => void;
@@ -68,6 +69,7 @@ export function useComposerSlashCommands({
   draft,
   projectId,
   sessionPath,
+  composerMode = "code",
   setDraft,
   send,
   sendExtensionCommand,
@@ -80,7 +82,7 @@ export function useComposerSlashCommands({
   const candidateFilter = getSlashCommandFilter(draft);
   const filter = draft === dismissedDraft ? null : candidateFilter;
   const open = filter !== null;
-  const commandScopeKey = `${projectId}\0${sessionPath ?? ""}`;
+  const commandScopeKey = `${projectId}\0${sessionPath ?? ""}\0${composerMode}`;
   const draftRef = useRef(draft);
   const commandScopeKeyRef = useRef(commandScopeKey);
   draftRef.current = draft;
@@ -167,7 +169,7 @@ export function useComposerSlashCommands({
       if (!draftCommand && sendExtensionCommand && (loading || commands.length === 0)) {
         const submittedDraft = draft;
         const submittedScopeKey = commandScopeKey;
-        void getComposerSlashCommandsQuery({ projectId, sessionPath })
+        void getComposerSlashCommandsQuery({ projectId, sessionPath, composerMode })
           .then((nextCommands) => {
             if (
               draftRef.current !== submittedDraft ||
@@ -265,7 +267,7 @@ export function useComposerSlashCommands({
     setCommands([]);
     setSelectedIndex(0);
     setLoading(true);
-    void getComposerSlashCommandsQuery({ projectId, sessionPath })
+    void getComposerSlashCommandsQuery({ projectId, sessionPath, composerMode })
       .then((nextCommands) => {
         if (!cancelled) {
           setCommands(nextCommands);
@@ -285,7 +287,7 @@ export function useComposerSlashCommands({
     return () => {
       cancelled = true;
     };
-  }, [open, projectId, sessionPath]);
+  }, [composerMode, open, projectId, sessionPath]);
 
   useEffect(() => {
     void commandScopeKey;

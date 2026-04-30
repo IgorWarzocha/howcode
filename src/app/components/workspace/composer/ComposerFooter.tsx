@@ -44,6 +44,7 @@ type ComposerFooterProps = {
   onToggleTerminal: () => void;
   projectGitState: ProjectGitState | null;
   projectId: string;
+  showTerminalControls?: boolean;
   terminalVisible: boolean;
   thinkingLevel: ComposerThinkingLevel;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
@@ -71,6 +72,7 @@ export function ComposerFooter({
   onToggleTerminal,
   projectGitState,
   projectId,
+  showTerminalControls = true,
   terminalVisible,
   thinkingLevel,
   thinkingLevelLabels,
@@ -83,22 +85,26 @@ export function ComposerFooter({
 
   return (
     <div className={workspaceFooterRowClass}>
-      <ToolbarButton
-        label="TUI"
-        tooltip="Pi-TUI takeover"
-        icon={<PiLogoMark className="h-[14px] w-[14px]" />}
-        className={workspaceFooterTextClass}
-        onClick={onOpenTakeoverTerminal}
-      />
-      <ToolbarButton
-        label="Terminal"
-        icon={<Terminal size={14} />}
-        onClick={onToggleTerminal}
-        className={cn(
-          workspaceFooterTextClass,
-          terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-        )}
-      />
+      {showTerminalControls ? (
+        <>
+          <ToolbarButton
+            label="TUI"
+            tooltip="Pi-TUI takeover"
+            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+            className={workspaceFooterTextClass}
+            onClick={onOpenTakeoverTerminal}
+          />
+          <ToolbarButton
+            label="Terminal"
+            icon={<Terminal size={14} />}
+            onClick={onToggleTerminal}
+            className={cn(
+              workspaceFooterTextClass,
+              terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+            )}
+          />
+        </>
+      ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
           ref={modelButtonRef}

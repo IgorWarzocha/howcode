@@ -162,6 +162,7 @@ export function ChatWorkspaceView({
                 onOpenSettingsView={() => controller.handleShowView("settings")}
                 onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                 onToggleTerminal={handleToggleTerminal}
+                showTerminalControls={false}
                 terminalVisible={state.terminalVisible}
                 onListAttachmentEntries={listComposerAttachmentEntries}
                 onAction={handleAction}

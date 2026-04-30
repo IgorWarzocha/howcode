@@ -49,6 +49,7 @@ export function ComposerPromptSurface({
   onSetDiffBaseline,
   onOpenGitOps,
   onLayoutChange,
+  showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
   const {
     attachments,
@@ -109,12 +110,14 @@ export function ComposerPromptSurface({
     onListAttachmentEntries,
   });
   const dictationTranscribing = dictationInterimText.length > 0;
+  const composerMode = activeView === "chat" ? "chat" : "code";
   const slashCommandPanelRef = useRef<HTMLDivElement>(null);
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null);
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
     sessionPath,
+    composerMode,
     setDraft,
     send,
     sendExtensionCommand,
@@ -372,6 +375,19 @@ export function ComposerPromptSurface({
           onOpenTakeoverTerminal={onOpenTakeoverTerminal}
           onSelectBaseline={onSetDiffBaseline}
           onSelectModel={(availableModel) => {
+            if (activeView === "chat" || activeView === "thread") {
+              void runComposerAction(
+                "settings.update",
+                {
+                  key: composerMode === "chat" ? "chatModel" : "codeModel",
+                  provider: availableModel.provider,
+                  modelId: availableModel.id,
+                },
+                { closeMenu: false },
+              );
+              return;
+            }
+
             void runComposerAction(
               "composer.model",
               {
@@ -384,6 +400,14 @@ export function ComposerPromptSurface({
             );
           }}
           onSelectThinkingLevel={(level) => {
+            if (activeView === "chat" || activeView === "thread") {
+              void runComposerAction("settings.update", {
+                key: composerMode === "chat" ? "chatThinkingLevel" : "codeThinkingLevel",
+                value: level,
+              });
+              return;
+            }
+
             void runComposerAction("composer.thinking", {
               level,
               projectId,
@@ -395,6 +419,7 @@ export function ComposerPromptSurface({
           onToggleTerminal={onToggleTerminal}
           projectGitState={projectGitState}
           projectId={projectId}
+          showTerminalControls={showTerminalControls}
           terminalVisible={terminalVisible}
           thinkingLevel={thinkingLevel}
           thinkingLevelLabels={thinkingLevelLabels}
