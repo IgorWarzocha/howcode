@@ -238,7 +238,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       );
 
       const nextActiveView = shouldPreserveSelectedThread
-        ? "thread"
+        ? state.activeView === "chat"
+          ? "chat"
+          : "thread"
         : hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
           ? state.activeView
           : "code";

@@ -73,16 +73,20 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
 async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerStateRequest) {
   const selection = request.composerModelSelection ?? null;
   const thinkingLevel = request.composerThinkingLevel ?? null;
+  let selectedModel = runtime.session.model;
 
   if (selection) {
     const model = runtime.session.modelRegistry.find(selection.provider, selection.id);
     if (model) {
       await runtime.session.setModel(model);
+      selectedModel = model;
     }
   }
 
   if (thinkingLevel) {
-    runtime.session.setThinkingLevel(thinkingLevel);
+    runtime.session.setThinkingLevel(
+      clampThinkingLevel(thinkingLevel, getAvailableThinkingLevelsForModel(selectedModel ?? null)),
+    );
   }
 }
 
@@ -326,17 +330,18 @@ export async function sendComposerPrompt(
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise;
     if (cachedRuntime.session.isStreaming || isRuntimeExtensionCommandRunning(cachedRuntime)) {
+      await applyComposerModeSettings(cachedRuntime, request);
       return await runSend(cachedRuntime);
     }
   }
 
-  return await withRuntimeMutationLock(
-    persistedSessionPath,
-    async () =>
-      await runSend(
-        await getOrCreateRuntimeForSessionPath(persistedSessionPath, { suspendDisposal: true }),
-      ),
-  );
+  return await withRuntimeMutationLock(persistedSessionPath, async () => {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+    });
+    await applyComposerModeSettings(runtime, request);
+    return await runSend(runtime);
+  });
 }
 
 export async function stopComposerRun(request: ComposerStateRequest): Promise<void> {
@@ -453,7 +458,7 @@ export async function dequeueComposerPrompt(
 
 export async function startNewThread(request: ComposerStateRequest = {}) {
   const projectId = request.projectId ?? getDesktopWorkingDirectory();
-  const composer = await buildComposerStateSnapshot({ projectId, sessionPath: null });
+  const composer = await buildComposerStateSnapshot({ ...request, projectId, sessionPath: null });
   const draft = createLocalThreadDraft(projectId);
 
   publishComposerUpdate(composer, { projectId, sessionPath: null });
