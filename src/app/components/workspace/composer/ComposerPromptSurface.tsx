@@ -259,42 +259,46 @@ export function ComposerPromptSurface({
 
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 overflow-visible">
-      <div className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center gap-1.5 text-[color:var(--muted)]">
-        <button
-          ref={pickerButtonRef}
-          type="button"
-          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full"
-          onClick={() => {
-            if (slashCommands.open) {
-              slashCommands.dismiss({ clearDraft: true });
-            }
-            pickAttachments();
-          }}
-          aria-label={attachmentButtonLabel}
-          data-tooltip={attachmentButtonLabel}
-        >
-          <span className={cn(compactIconButtonClass, "h-7 w-7 shrink-0 rounded-full")}>
-            <Paperclip size={15} />
-          </span>
+      <div className="relative mb-[3.55rem] h-8 w-8 shrink-0 text-[color:var(--muted)]">
+        <div className="absolute bottom-0 left-0 flex w-7 flex-col-reverse items-center gap-1">
+          <button
+            ref={pickerButtonRef}
+            type="button"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            onClick={() => {
+              if (slashCommands.open) {
+                slashCommands.dismiss({ clearDraft: true });
+              }
+              pickAttachments();
+            }}
+            aria-label={attachmentButtonLabel}
+            data-tooltip={attachmentButtonLabel}
+          >
+            <span className={cn(compactIconButtonClass, "h-7 w-7 shrink-0 rounded-full")}>
+              <Paperclip size={15} />
+            </span>
+          </button>
 
           {attachments.length > 0 ? (
-            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
-              {attachments.length}
-            </span>
+            <>
+              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+                {attachments.length}
+              </span>
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
+                  "h-5 w-5 rounded-full opacity-70 hover:opacity-100",
+                )}
+                onClick={clearAttachments}
+                aria-label="Clear attachments"
+                data-tooltip="Clear attachments"
+              >
+                <X size={11} />
+              </button>
+            </>
           ) : null}
-        </button>
-
-        {attachments.length > 0 ? (
-          <button
-            type="button"
-            className={cn(compactIconButtonClass, "h-6 w-6 shrink-0 rounded-full")}
-            onClick={clearAttachments}
-            aria-label="Clear attachments"
-            data-tooltip="Clear attachments"
-          >
-            <X size={12} />
-          </button>
-        ) : null}
+        </div>
       </div>
 
       <div

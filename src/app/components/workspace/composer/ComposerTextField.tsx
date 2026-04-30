@@ -60,6 +60,7 @@ export function ComposerTextField({
     left: number;
     top: number;
   } | null>(null);
+  const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null);
   const lineHeightRef = useRef(20);
 
   const focusTextareaAtEnd = () => {
@@ -116,6 +117,7 @@ export function ComposerTextField({
   useLayoutEffect(() => {
     if (!trailingAdornment) {
       setTrailingAdornmentPosition(null);
+      setTrailingContainerHeight(null);
       return;
     }
 
@@ -128,6 +130,7 @@ export function ComposerTextField({
       const computedStyle = window.getComputedStyle(textarea);
       const mirror = document.createElement("div");
       const marker = document.createElement("span");
+      const lineHeight = Number.parseFloat(computedStyle.lineHeight) || lineHeightRef.current;
 
       mirror.style.position = "absolute";
       mirror.style.visibility = "hidden";
@@ -155,16 +158,22 @@ export function ComposerTextField({
       const markerRect = marker.getBoundingClientRect();
       document.body.removeChild(mirror);
 
-      const nextLeft = Math.min(
-        Math.max(0, markerRect.left - mirrorRect.left + 6),
-        Math.max(0, textarea.clientWidth - 24),
-      );
-      const nextTop = Math.max(0, markerRect.top - mirrorRect.top - 1.5);
+      const markerLeft = Math.max(0, markerRect.left - mirrorRect.left);
+      const markerTop = Math.max(0, markerRect.top - mirrorRect.top);
+      const adornmentWidth = 24;
+      const adornmentGap = 6;
+      const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth;
+      const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap;
+      const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5);
+      const nextContainerHeight = Math.max(textarea.scrollHeight, nextTop + lineHeight);
 
       setTrailingAdornmentPosition((current) =>
         current?.left === nextLeft && current.top === nextTop
           ? current
           : { left: nextLeft, top: nextTop },
+      );
+      setTrailingContainerHeight((current) =>
+        current === nextContainerHeight ? current : nextContainerHeight,
       );
     };
 
@@ -210,7 +219,7 @@ export function ComposerTextField({
       ) : null}
       <div
         className="relative min-w-0"
-        style={trailingAdornment ? { paddingRight: "1.75rem" } : undefined}
+        style={trailingContainerHeight ? { minHeight: `${trailingContainerHeight}px` } : undefined}
       >
         <textarea
           ref={textareaRef}
