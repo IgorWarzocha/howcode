@@ -259,7 +259,7 @@ export function ComposerPromptSurface({
 
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2 overflow-visible">
-      <div className="mb-2.5 inline-flex h-8 shrink-0 items-center gap-1.5 text-[color:var(--muted)]">
+      <div className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center gap-1.5 text-[color:var(--muted)]">
         <button
           ref={pickerButtonRef}
           type="button"
