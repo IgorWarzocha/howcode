@@ -1,4 +1,7 @@
+import { Paperclip, Square, X } from "lucide-react";
 import { type RefObject, useEffect, useRef } from "react";
+import { compactIconButtonClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerPromptInputPanel } from "./ComposerPromptInputPanel";
@@ -50,7 +53,6 @@ export function ComposerPromptSurface({
   const {
     attachments,
     cancelDictation,
-    canSend,
     clearAttachments,
     clearError,
     draft,
@@ -108,6 +110,7 @@ export function ComposerPromptSurface({
   });
   const dictationTranscribing = dictationInterimText.length > 0;
   const slashCommandPanelRef = useRef<HTMLDivElement>(null);
+  const stopButtonBoundaryRef = useRef<HTMLDivElement>(null);
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -131,7 +134,8 @@ export function ComposerPromptSurface({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target)
+        composerPanelRef.current?.contains(target) ||
+        stopButtonBoundaryRef.current?.contains(target)
       ) {
         return;
       }
@@ -250,112 +254,174 @@ export function ComposerPromptSurface({
   const placeholderText =
     errorMessage ??
     (activeView === "thread"
-      ? "Ask for follow-up changes"
-      : "Ask Pi anything, @ to add files, / for commands, $ for skills");
+      ? "Hover to type · Enter sends · Shift+Enter for a new line"
+      : "Hover to type · / commands · @ files · Enter sends");
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
+  const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
 
   return (
-    <div className="grid gap-0">
-      {/* Let the prompt column size itself to one line by default, then grow upward naturally as
-          the textarea expands. */}
-      <div className="relative">
-        {/* The prompt surface keeps add-attachment, attachment count, prompt text, and trailing
-            controls in one shared block so it still mirrors the git-ops composer shell. */}
-        <ComposerPromptInputPanel
-          attachments={attachments}
-          attachmentButtonLabel={attachmentButtonLabel}
-          canSend={canSend}
-          clearAttachments={clearAttachments}
-          clearError={clearError}
-          dictationActive={dictationActive}
-          dictationMissingModel={dictationMissingModel}
-          dictationSupported={dictationSupported}
-          dictationTranscribing={dictationTranscribing}
-          draft={draft}
-          errorMessage={errorMessage}
-          extensionRunning={extensionRunning}
-          favoriteFolders={favoriteFolders}
-          isSending={isSending}
-          pickerButtonRef={pickerButtonRef}
-          pickerLoading={pickerLoading}
-          pickerOpen={pickerOpen}
-          pickerPanelRef={pickerPanelRef}
-          pickerState={pickerState}
-          placeholderText={placeholderText}
+    <div className="relative left-1/2 grid w-[calc(100%+5rem)] -translate-x-1/2 grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
+      <div className="relative mb-[3.55rem] h-8 w-8 shrink-0 text-[color:var(--muted)]">
+        <div className="absolute bottom-0 left-0 flex w-7 flex-col-reverse items-center gap-1">
+          <button
+            ref={pickerButtonRef}
+            type="button"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            onClick={() => {
+              if (slashCommands.open) {
+                slashCommands.dismiss({ clearDraft: true });
+              }
+              pickAttachments();
+            }}
+            aria-label={attachmentButtonLabel}
+            data-tooltip={attachmentButtonLabel}
+          >
+            <span className={cn(compactIconButtonClass, "h-7 w-7 shrink-0 rounded-full")}>
+              <Paperclip size={15} />
+            </span>
+          </button>
+
+          {attachments.length > 0 ? (
+            <>
+              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+                {attachments.length}
+              </span>
+              <button
+                type="button"
+                className={cn(
+                  compactIconButtonClass,
+                  "h-5 w-5 rounded-full opacity-70 hover:opacity-100",
+                )}
+                onClick={clearAttachments}
+                aria-label="Clear attachments"
+                data-tooltip="Clear attachments"
+              >
+                <X size={11} />
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        ref={composerPanelRef}
+        className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+        aria-label="Composer panel"
+      >
+        {/* Let the prompt column size itself to one line by default, then grow upward naturally as
+            the textarea expands. */}
+        <div className="relative">
+          {/* The prompt surface keeps prompt text and trailing controls in one shared block so it
+              still mirrors the git-ops composer shell while attachments live beside it. */}
+          <ComposerPromptInputPanel
+            attachments={attachments}
+            clearError={clearError}
+            dictationActive={dictationActive}
+            dictationMissingModel={dictationMissingModel}
+            dictationSupported={dictationSupported}
+            dictationTranscribing={dictationTranscribing}
+            draft={draft}
+            errorMessage={errorMessage}
+            extensionRunning={extensionRunning}
+            favoriteFolders={favoriteFolders}
+            pickerLoading={pickerLoading}
+            pickerOpen={pickerOpen}
+            pickerPanelRef={pickerPanelRef}
+            pickerState={pickerState}
+            placeholderText={placeholderText}
+            projectId={projectId}
+            slashCommandPanelRef={slashCommandPanelRef}
+            slashCommands={slashCommands}
+            showDictationButton={showDictationButton}
+            attachPickerAttachments={attachPickerAttachments}
+            cancelDictation={cancelDictation}
+            handlePaste={handlePaste}
+            onAction={onAction}
+            onLayoutChange={onLayoutChange}
+            onOpenSettingsView={onOpenSettingsView}
+            openPickerDirectory={openPickerDirectory}
+            openPickerRoot={openPickerRoot}
+            removeAttachment={removeAttachment}
+            setDraft={setDraft}
+            toggleDictation={toggleDictation}
+            togglePendingPickerAttachment={togglePendingPickerAttachment}
+          />
+        </div>
+
+        {errorMessage ? (
+          <output className="sr-only" aria-live="polite">
+            {errorMessage}
+          </output>
+        ) : null}
+
+        <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+
+        <ComposerFooter
+          availableModels={availableModels}
+          availableThinkingLevels={availableThinkingLevels}
+          composerPanelRef={composerPanelRef}
+          diffBaseline={diffBaseline}
+          model={model}
+          contextUsage={contextUsage}
+          compactDisabled={isStreaming || isCompacting || !sessionPath}
+          isCompacting={isCompacting}
+          modelButtonRef={modelButtonRef}
+          modelMenuOpen={modelMenuOpen}
+          modelMenuRef={modelMenuRef}
+          onOpenGitOps={onOpenGitOps}
+          onOpenTakeoverTerminal={onOpenTakeoverTerminal}
+          onSelectBaseline={onSetDiffBaseline}
+          onSelectModel={(availableModel) => {
+            void runComposerAction(
+              "composer.model",
+              {
+                provider: availableModel.provider,
+                modelId: availableModel.id,
+                projectId,
+                sessionPath,
+              },
+              { closeMenu: false },
+            );
+          }}
+          onSelectThinkingLevel={(level) => {
+            void runComposerAction("composer.thinking", {
+              level,
+              projectId,
+              sessionPath,
+            });
+          }}
+          onCompact={() => void compact()}
+          onSetOpenMenu={setOpenMenu}
+          onToggleTerminal={onToggleTerminal}
+          projectGitState={projectGitState}
           projectId={projectId}
-          sessionPath={sessionPath}
-          slashCommandPanelRef={slashCommandPanelRef}
-          slashCommands={slashCommands}
-          composerIsStreaming={composerIsStreaming}
-          showDictationButton={showDictationButton}
-          attachPickerAttachments={attachPickerAttachments}
-          cancelDictation={cancelDictation}
-          handlePaste={handlePaste}
-          onAction={onAction}
-          onLayoutChange={onLayoutChange}
-          onOpenSettingsView={onOpenSettingsView}
-          openPickerDirectory={openPickerDirectory}
-          openPickerRoot={openPickerRoot}
-          pickAttachments={pickAttachments}
-          removeAttachment={removeAttachment}
-          setDraft={setDraft}
-          stop={stop}
-          toggleDictation={toggleDictation}
-          togglePendingPickerAttachment={togglePendingPickerAttachment}
+          terminalVisible={terminalVisible}
+          thinkingLevel={thinkingLevel}
+          thinkingLevelLabels={thinkingLevelLabels}
         />
       </div>
 
-      {errorMessage ? (
-        <output className="sr-only" aria-live="polite">
-          {errorMessage}
-        </output>
-      ) : null}
-
-      <div className="h-px bg-[rgba(169,178,215,0.07)]" />
-
-      <ComposerFooter
-        availableModels={availableModels}
-        availableThinkingLevels={availableThinkingLevels}
-        composerPanelRef={composerPanelRef}
-        diffBaseline={diffBaseline}
-        model={model}
-        contextUsage={contextUsage}
-        compactDisabled={isStreaming || isCompacting || !sessionPath}
-        isCompacting={isCompacting}
-        modelButtonRef={modelButtonRef}
-        modelMenuOpen={modelMenuOpen}
-        modelMenuRef={modelMenuRef}
-        onOpenGitOps={onOpenGitOps}
-        onOpenTakeoverTerminal={onOpenTakeoverTerminal}
-        onSelectBaseline={onSetDiffBaseline}
-        onSelectModel={(availableModel) => {
-          void runComposerAction(
-            "composer.model",
-            {
-              provider: availableModel.provider,
-              modelId: availableModel.id,
-              projectId,
-              sessionPath,
-            },
-            { closeMenu: false },
-          );
-        }}
-        onSelectThinkingLevel={(level) => {
-          void runComposerAction("composer.thinking", {
-            level,
-            projectId,
-            sessionPath,
-          });
-        }}
-        onCompact={() => void compact()}
-        onSetOpenMenu={setOpenMenu}
-        onToggleTerminal={onToggleTerminal}
-        projectGitState={projectGitState}
-        projectId={projectId}
-        terminalVisible={terminalVisible}
-        thinkingLevel={thinkingLevel}
-        thinkingLevelLabels={thinkingLevelLabels}
-      />
+      <div
+        ref={stopButtonBoundaryRef}
+        className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center justify-end text-[color:var(--muted)]"
+      >
+        <button
+          type="button"
+          className={cn(
+            compactIconButtonClass,
+            "h-7 w-7 shrink-0 rounded-full text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.2)] hover:text-[#ffd1d1]",
+            canStopComposer
+              ? "bg-[rgba(229,111,111,0.14)] opacity-80"
+              : "bg-transparent opacity-25 hover:opacity-45",
+          )}
+          onClick={() => void stop()}
+          disabled={!canStopComposer}
+          aria-label="Stop Pi"
+          data-tooltip="Stop Pi"
+        >
+          <Square size={11} fill="currentColor" />
+        </button>
+      </div>
     </div>
   );
 }

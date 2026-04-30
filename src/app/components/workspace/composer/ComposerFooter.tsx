@@ -7,12 +7,18 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
-import { compactCardClass, compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import { ComposerContextMeter } from "./ComposerContextMeter";
 import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
+import {
+  WorkspaceBranchChip,
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from "../footer/WorkspaceFooterPrimitives";
 import { ComposerModelPopover } from "./ComposerModelPopover";
 import { getGitOpsEntryButtonClass } from "./git-ops";
 
@@ -76,18 +82,22 @@ export function ComposerFooter({
       : "clean";
 
   return (
-    <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+    <div className={workspaceFooterRowClass}>
       <ToolbarButton
         label="TUI"
         tooltip="Pi-TUI takeover"
         icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+        className={workspaceFooterTextClass}
         onClick={onOpenTakeoverTerminal}
       />
       <ToolbarButton
         label="Terminal"
         icon={<Terminal size={14} />}
         onClick={onToggleTerminal}
-        className={cn(terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]")}
+        className={cn(
+          workspaceFooterTextClass,
+          terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+        )}
       />
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
@@ -95,7 +105,7 @@ export function ComposerFooter({
           label="Agent"
           tooltip="Model settings"
           icon={<Bot size={14} />}
-          className="pr-8"
+          className={cn(workspaceFooterTextClass, "pr-8")}
           onClick={() => onSetOpenMenu((current) => (current === "model" ? null : "model"))}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}
@@ -122,7 +132,7 @@ export function ComposerFooter({
           />
         ) : null}
       </div>
-      <div className="ml-auto flex min-h-7 items-center gap-1.5 max-md:flex-wrap">
+      <div className={workspaceFooterTrailingGroupClass}>
         {projectGitState?.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
@@ -133,15 +143,7 @@ export function ComposerFooter({
           />
         ) : null}
         {projectGitState?.isGitRepo ? (
-          <div
-            className={cn(
-              compactCardClass,
-              "inline-flex h-7 max-w-[12rem] items-center px-2.5 py-0 text-[12px] leading-none text-[color:var(--muted)]",
-            )}
-            title={projectGitState.branch ?? "Detached"}
-          >
-            <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
-          </div>
+          <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
         <button
           type="button"

@@ -1,7 +1,6 @@
-import { Loader2, Paperclip, Send, Square, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { ClipboardEvent, RefObject } from "react";
 import { getPathForFileQuery } from "../../../query/desktop-query";
-import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { ComposerDictationControls } from "./ComposerDictationControls";
 import { ComposerFilePicker } from "./ComposerFilePicker";
@@ -19,9 +18,6 @@ import type { ComposerAttachment, DesktopActionInvoker } from "../../../desktop/
 
 type ComposerPromptInputPanelProps = {
   attachments: ComposerAttachment[];
-  attachmentButtonLabel: string;
-  canSend: boolean;
-  clearAttachments: () => void;
   clearError: () => void;
   dictationActive: boolean;
   dictationMissingModel: boolean;
@@ -31,18 +27,14 @@ type ComposerPromptInputPanelProps = {
   errorMessage: string | null;
   extensionRunning: boolean;
   favoriteFolders: string[];
-  isSending: boolean;
-  pickerButtonRef: RefObject<HTMLButtonElement | null>;
   pickerLoading: boolean;
   pickerOpen: boolean;
   pickerPanelRef: RefObject<HTMLDivElement | null>;
   pickerState: Parameters<typeof ComposerFilePicker>[0]["picker"];
   placeholderText: string;
   projectId: string;
-  sessionPath: string | null;
   slashCommandPanelRef: RefObject<HTMLDivElement | null>;
   slashCommands: ComposerSlashCommands;
-  composerIsStreaming: boolean;
   showDictationButton: boolean;
   attachPickerAttachments: Parameters<typeof ComposerFilePicker>[0]["onAttachAttachments"];
   cancelDictation: () => Promise<void>;
@@ -55,19 +47,14 @@ type ComposerPromptInputPanelProps = {
   onOpenSettingsView: () => void;
   openPickerDirectory: Parameters<typeof ComposerFilePicker>[0]["onOpenDirectory"];
   openPickerRoot: Parameters<typeof ComposerFilePicker>[0]["onOpenRoot"];
-  pickAttachments: () => void;
   removeAttachment: (path: string) => void;
   setDraft: (value: string) => void;
-  stop: () => Promise<void>;
   toggleDictation: Parameters<typeof ComposerDictationControls>[0]["toggleDictation"];
   togglePendingPickerAttachment: Parameters<typeof ComposerFilePicker>[0]["onToggleFile"];
 };
 
 export function ComposerPromptInputPanel({
   attachments,
-  attachmentButtonLabel,
-  canSend,
-  clearAttachments,
   clearError,
   dictationActive,
   dictationMissingModel,
@@ -77,18 +64,14 @@ export function ComposerPromptInputPanel({
   errorMessage,
   extensionRunning,
   favoriteFolders,
-  isSending,
-  pickerButtonRef,
   pickerLoading,
   pickerOpen,
   pickerPanelRef,
   pickerState,
   placeholderText,
   projectId,
-  sessionPath,
   slashCommandPanelRef,
   slashCommands,
-  composerIsStreaming,
   showDictationButton,
   attachPickerAttachments,
   cancelDictation,
@@ -98,10 +81,8 @@ export function ComposerPromptInputPanel({
   onOpenSettingsView,
   openPickerDirectory,
   openPickerRoot,
-  pickAttachments,
   removeAttachment,
   setDraft,
-  stop,
   toggleDictation,
   togglePendingPickerAttachment,
 }: ComposerPromptInputPanelProps) {
@@ -123,49 +104,9 @@ export function ComposerPromptInputPanel({
           onToggleFile={togglePendingPickerAttachment}
         />
       ) : null}
-      <div className="grid content-end px-4 py-3">
+      <div className="grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
-            <div className="inline-flex h-6 shrink-0 items-center gap-1.5">
-              <button
-                ref={pickerButtonRef}
-                type="button"
-                className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md"
-                onClick={() => {
-                  if (slashCommands.open) {
-                    slashCommands.dismiss({ clearDraft: true });
-                  }
-                  pickAttachments();
-                }}
-                aria-label={attachmentButtonLabel}
-                data-tooltip={attachmentButtonLabel}
-              >
-                <span className={cn(compactIconButtonClass, "shrink-0")}>
-                  <Paperclip size={16} />
-                </span>
-
-                {attachments.length > 0 ? (
-                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
-                    {attachments.length}
-                  </span>
-                ) : null}
-              </button>
-
-              {attachments.length > 0 ? (
-                <>
-                  <button
-                    type="button"
-                    className={cn(compactIconButtonClass, "h-5 w-5 shrink-0")}
-                    onClick={clearAttachments}
-                    aria-label="Clear attachments"
-                    data-tooltip="Clear attachments"
-                  >
-                    <X size={12} />
-                  </button>
-                </>
-              ) : null}
-            </div>
-
             <div className="min-w-0 flex-1">
               {slashCommands.open ? (
                 <div
@@ -278,54 +219,31 @@ export function ComposerPromptInputPanel({
                 placeholderTone={errorMessage ? "error" : "muted"}
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}
+                trailingAdornment={
+                  <ComposerDictationControls
+                    dictationActive={dictationActive}
+                    dictationMissingModel={dictationMissingModel}
+                    dictationSupported={dictationSupported}
+                    dictationTranscribing={dictationTranscribing}
+                    placement="trailing"
+                    onAction={onAction}
+                    onOpenSettingsView={onOpenSettingsView}
+                    showDictationButton={showDictationButton}
+                    toggleDictation={toggleDictation}
+                  />
+                }
                 onHeightChange={onLayoutChange}
               />
             </div>
           </div>
 
           <div className="inline-flex h-8 items-center justify-end gap-2">
-            <ComposerDictationControls
-              dictationActive={dictationActive}
-              dictationMissingModel={dictationMissingModel}
-              dictationSupported={dictationSupported}
-              dictationTranscribing={dictationTranscribing}
-              onAction={onAction}
-              onOpenSettingsView={onOpenSettingsView}
-              showDictationButton={showDictationButton}
-              toggleDictation={toggleDictation}
-            />
-            <button
-              type="button"
-              className={cn(
-                compactIconButtonClass,
-                "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
-              )}
-              onClick={() => void stop()}
-              disabled={(!composerIsStreaming && !extensionRunning) || isSending || !sessionPath}
-              aria-label="Stop Pi"
-              data-tooltip="Stop Pi"
-            >
-              <Square size={11} fill="currentColor" />
-            </button>
             {extensionRunning ? (
               <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
                 <Loader2 size={12} className="animate-spin" />
                 <span>Pi extension running</span>
               </div>
             ) : null}
-            <button
-              type="button"
-              className={cn(
-                compactIconButtonClass,
-                "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
-              )}
-              onClick={slashCommands.submit}
-              disabled={!canSend}
-              aria-label="Send"
-              data-tooltip="Send"
-            >
-              <Send size={14} />
-            </button>
           </div>
         </div>
       </div>

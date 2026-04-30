@@ -21,7 +21,7 @@ type ThreadTimelineProps = {
 };
 
 const timelineQuickActionButtonClass =
-  "pointer-events-auto shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
+  "pointer-events-auto h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
 
 export function ThreadTimeline({
   messages,
@@ -283,7 +283,11 @@ export function ThreadTimeline({
 
   return (
     <div className={`${chatViewportClass} relative`}>
-      <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
+      <div
+        ref={containerRef}
+        className={cn(chatScrollableAreaClass, "ml-[2.95rem] mr-[2.05rem]")}
+        onScroll={handleScroll}
+      >
         <div
           ref={contentRef}
           className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
@@ -302,7 +306,7 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute right-4 bottom-4 z-10 flex flex-col items-center gap-1.5">
+      <div className="pointer-events-none absolute right-0 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
         <button
           type="button"
           className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}
