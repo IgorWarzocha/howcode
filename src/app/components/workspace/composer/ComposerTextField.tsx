@@ -149,7 +149,7 @@ export function ComposerTextField({
       mirror.style.padding = computedStyle.padding;
       mirror.style.border = computedStyle.border;
 
-      mirror.textContent = textarea.value || textarea.placeholder || "";
+      mirror.textContent = value || placeholder || "";
       marker.textContent = "\u200b";
       mirror.appendChild(marker);
       document.body.appendChild(mirror);
@@ -180,7 +180,7 @@ export function ComposerTextField({
     measureTrailingAdornmentPosition();
     window.addEventListener("resize", measureTrailingAdornmentPosition);
     return () => window.removeEventListener("resize", measureTrailingAdornmentPosition);
-  });
+  }, [placeholder, trailingAdornment, value]);
 
   return (
     <div

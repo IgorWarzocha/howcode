@@ -110,6 +110,7 @@ export function ComposerPromptSurface({
   });
   const dictationTranscribing = dictationInterimText.length > 0;
   const slashCommandPanelRef = useRef<HTMLDivElement>(null);
+  const stopButtonBoundaryRef = useRef<HTMLDivElement>(null);
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -133,7 +134,8 @@ export function ComposerPromptSurface({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target)
+        composerPanelRef.current?.contains(target) ||
+        stopButtonBoundaryRef.current?.contains(target)
       ) {
         return;
       }
@@ -399,7 +401,10 @@ export function ComposerPromptSurface({
         />
       </div>
 
-      <div className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center justify-end text-[color:var(--muted)]">
+      <div
+        ref={stopButtonBoundaryRef}
+        className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center justify-end text-[color:var(--muted)]"
+      >
         <button
           type="button"
           className={cn(
