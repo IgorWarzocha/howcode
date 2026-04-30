@@ -20,6 +20,7 @@ export type ComposerProps = {
   contextUsage: ComposerContextUsage | null;
   availableModels: ComposerModel[];
   isStreaming: boolean;
+  replyActivityKey: string;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
   thinkingLevel: ComposerThinkingLevel;

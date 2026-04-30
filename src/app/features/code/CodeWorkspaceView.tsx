@@ -6,6 +6,7 @@ import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
+import type { Message } from "../../types";
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
@@ -30,6 +31,13 @@ type CodeWorkspaceViewProps = {
 };
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
+
+function getReplyActivityKey(messages: readonly Message[]) {
+  return messages
+    .filter((message) => message.role !== "user")
+    .map((message) => message.id)
+    .join("|");
+}
 
 export function CodeWorkspaceView({
   controller,
@@ -286,6 +294,7 @@ export function CodeWorkspaceView({
                         contextUsage={activeComposerState?.contextUsage ?? null}
                         availableModels={activeComposerState?.availableModels ?? []}
                         isStreaming={activeThreadData?.isStreaming ?? false}
+                        replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
                         isCompacting={activeComposerState?.isCompacting ?? false}
                         isExtensionCommandRunning={
                           activeComposerState?.isExtensionCommandRunning ?? false

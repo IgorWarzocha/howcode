@@ -38,6 +38,9 @@ type UseComposerSubmissionProps = {
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>;
   setIsSending: Dispatch<SetStateAction<boolean>>;
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>;
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>;
+  replyActivityKey: string;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
   stopDictationAndFlush: () => Promise<void>;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -65,6 +68,9 @@ export function useComposerSubmission({
   setErrorMessage,
   setExtensionCommandRunning,
   setIsSending,
+  setPendingSubmittedDraft,
+  pendingSubmittedReplyActivityKeyRef,
+  replyActivityKey,
   setOpenMenu,
   stopDictationAndFlush,
   streamingBehaviorPreference,
@@ -190,6 +196,8 @@ export function useComposerSubmission({
 
         setErrorMessage(null);
         setOpenMenu(null);
+        pendingSubmittedReplyActivityKeyRef.current = replyActivityKey;
+        setPendingSubmittedDraft(submittedRawDraft);
 
         const result = await submitComposerDraft({
           draft: submittedDraft,
@@ -224,10 +232,6 @@ export function useComposerSubmission({
             composerDraftStore.setPrompt(submittedDraftThreadId, "");
           }
 
-          if (cleanup.clearDraft) {
-            setDraftValue("");
-          }
-
           if (cleanup.nextAttachments !== null) {
             setAttachments(cleanup.nextAttachments);
           }
@@ -237,6 +241,8 @@ export function useComposerSubmission({
           result.status === "error" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
           if (
             isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
             areSameAttachments(attachmentsRef.current, submittedAttachments)
@@ -251,6 +257,8 @@ export function useComposerSubmission({
           result.status === "stopped" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
           if (
             isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
             areSameAttachments(attachmentsRef.current, submittedAttachments)
@@ -274,13 +282,16 @@ export function useComposerSubmission({
     isCompacting,
     isSending,
     onAction,
+    pendingSubmittedReplyActivityKeyRef,
     projectId,
+    replyActivityKey,
     sendLockRef,
     sessionPath,
     setAttachments,
     setDraftValue,
     setErrorMessage,
     setIsSending,
+    setPendingSubmittedDraft,
     setOpenMenu,
     skipNextDraftPersistenceRef,
     stopDictationAndFlush,

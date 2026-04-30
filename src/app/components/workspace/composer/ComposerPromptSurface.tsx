@@ -25,6 +25,7 @@ export function ComposerPromptSurface({
   contextUsage,
   availableModels,
   isStreaming,
+  replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
   thinkingLevel,
@@ -64,6 +65,7 @@ export function ComposerPromptSurface({
     dictationSupported,
     errorMessage,
     extensionCommandRunning,
+    inputLocked,
     isSending,
     isStreaming: composerIsStreaming,
     pickerButtonRef,
@@ -103,6 +105,7 @@ export function ComposerPromptSurface({
     dictationModelId,
     dictationMaxDurationSeconds,
     isStreaming,
+    replyActivityKey,
     isCompacting,
     isExtensionCommandRunning,
     restoredQueuedPrompt,
@@ -328,6 +331,7 @@ export function ComposerPromptSurface({
             draft={draft}
             errorMessage={errorMessage}
             extensionRunning={extensionRunning}
+            inputLocked={inputLocked}
             favoriteFolders={favoriteFolders}
             pickerLoading={pickerLoading}
             pickerOpen={pickerOpen}
