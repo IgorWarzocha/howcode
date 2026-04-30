@@ -1,5 +1,7 @@
 import { FileCode2, List, Maximize2, Minimize2, PanelRightClose, Play, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Artifact, ArtifactVersion } from "../../../desktop/types";
 import {
   compileReactArtifactQuery,
@@ -30,15 +32,6 @@ function formatArtifactSlug(slug: string) {
 
 function escapeScriptContent(script: string) {
   return script.replace(/<\/script/gi, "<\\/script");
-}
-
-function escapeHtml(text: string) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 const artifactScrollbarCss = `
@@ -107,23 +100,6 @@ function buildReactPreview(compiledJs: string) {
   </script>
   <script type="module">${escapeScriptContent(compiledJs)}</script>
 </body>
-</html>`;
-}
-
-function buildMarkdownPreview(content: string) {
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  ${artifactScrollbarCss}
-  <style>
-    body { margin: 0; padding: 28px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; }
-    ${artifactDarkPreviewCss}
-    pre { white-space: pre-wrap; font: inherit; margin: 0; }
-  </style>
-</head>
-<body><pre>${escapeHtml(content)}</pre></body>
 </html>`;
 }
 
@@ -233,10 +209,7 @@ export function ArtifactPanel({
       setPreviewHtml("");
       return;
     }
-    if (selectedArtifact.kind === "markdown") {
-      setPreviewHtml(buildMarkdownPreview(displayedContent));
-      return;
-    }
+    if (selectedArtifact.kind === "markdown") return;
     if (selectedArtifact.kind === "html") {
       setPreviewHtml(buildHtmlPreview(displayedContent));
       return;
@@ -453,7 +426,55 @@ export function ArtifactPanel({
           />
         ) : null}
 
-        {view === "preview" ? (
+        {view === "preview" && selectedArtifact?.kind === "markdown" ? (
+          <div className="h-full overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)]">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h1 className="mb-3 text-[20px] font-semibold text-[color:var(--text)]">
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="mt-5 mb-2 text-[17px] font-semibold text-[color:var(--text)]">
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="mt-4 mb-2 text-[15px] font-semibold text-[color:var(--text)]">
+                    {children}
+                  </h3>
+                ),
+                p: ({ children }) => <p className="my-2 text-[color:var(--text)]/92">{children}</p>,
+                ul: ({ children }) => <ul className="my-2 list-disc pl-5">{children}</ul>,
+                ol: ({ children }) => <ol className="my-2 list-decimal pl-5">{children}</ol>,
+                li: ({ children }) => <li className="my-1 text-[color:var(--text)]/92">{children}</li>,
+                a: ({ children, href }) => (
+                  <a className="text-[color:var(--accent)] underline underline-offset-2" href={href}>
+                    {children}
+                  </a>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="my-3 border-l-2 border-[rgba(185,191,243,0.32)] pl-4 text-[color:var(--muted)]">
+                    {children}
+                  </blockquote>
+                ),
+                code: ({ children }) => <code className="font-mono text-[color:var(--accent)]">{children}</code>,
+                pre: ({ children }) => (
+                  <pre className="my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)]">
+                    {children}
+                  </pre>
+                ),
+                hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]" />,
+              }}
+            >
+              {displayedContent}
+            </ReactMarkdown>
+          </div>
+        ) : null}
+
+        {view === "preview" && selectedArtifact?.kind !== "markdown" ? (
           <div className="relative h-full bg-[color:var(--sidebar)]">
             {previewError ? (
               <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[#f2a7a7]/30 bg-[#2b1720]/95 p-2 text-[11px] whitespace-pre-wrap text-[#ffd1d1]">
