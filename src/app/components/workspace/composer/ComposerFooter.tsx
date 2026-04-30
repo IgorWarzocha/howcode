@@ -109,17 +109,6 @@ export function ComposerFooter({
           />
         </>
       ) : null}
-      {!showTerminalControls && onToggleArtifacts ? (
-        <ToolbarButton
-          label="Artifacts"
-          icon={<FileCode2 size={14} />}
-          onClick={onToggleArtifacts}
-          className={cn(
-            workspaceFooterTextClass,
-            artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-          )}
-        />
-      ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
           ref={modelButtonRef}
@@ -167,19 +156,16 @@ export function ComposerFooter({
           <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
         {onToggleArtifacts && !showTerminalControls ? (
-          <button
-            type="button"
+          <ToolbarButton
+            label="Artifacts"
+            icon={<FileCode2 size={14} />}
+            trailing
             className={cn(
-              compactIconButtonClass,
-              "h-7 w-7",
-              artifactsVisible && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+              workspaceFooterTextClass,
+              artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
             )}
             onClick={onToggleArtifacts}
-            aria-label="Artifacts"
-            data-tooltip="Artifacts"
-          >
-            <FileCode2 size={14} />
-          </button>
+          />
         ) : (
           <button
             type="button"
