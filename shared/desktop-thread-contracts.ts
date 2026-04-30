@@ -36,6 +36,7 @@ export type Project = {
   pinned?: boolean;
   collapsed?: boolean;
   threadsLoaded?: boolean;
+  threadsScope?: "chat" | "code";
   threadCount?: number;
   repoOriginUrl?: string | null;
   repoOriginChecked?: boolean;

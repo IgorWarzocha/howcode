@@ -30,8 +30,22 @@ import type {
   ProjectDiffBaseline,
   ProjectDiffPreferences,
 } from "../../shared/desktop-contracts.ts";
+import path from "node:path";
 import { getLiveThread } from "../runtime/live-thread-store.cts";
+import { getChatSessionDir } from "../chat-session-dir.cts";
 import { ensureProject } from "./writes.cts";
+
+function isChatSessionPath(sessionPath: string) {
+  const chatSessionDir = getChatSessionDir();
+  const relativePath = path.relative(chatSessionDir, sessionPath);
+  return (
+    relativePath.length > 0 && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)
+  );
+}
+
+function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {}) {
+  return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath);
+}
 
 export function listProjects(cwd: string): Project[] {
   const db = getThreadStateDatabase();
@@ -171,7 +185,7 @@ export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPrefer
   };
 }
 
-export function listProjectThreads(projectId: string): Thread[] {
+export function listProjectThreads(projectId: string, options: { chat?: boolean } = {}): Thread[] {
   const db = getThreadStateDatabase();
   const rows = db
     .prepare(
@@ -193,12 +207,16 @@ export function listProjectThreads(projectId: string): Thread[] {
     )
     .all(projectId) as ThreadRow[];
 
-  return rows.map((row) =>
-    mapThreadRow({
-      ...row,
-      running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)) ? 1 : 0,
-    }),
-  );
+  return rows
+    .filter((row) => matchesThreadScope(row.sessionPath, options))
+    .map((row) =>
+      mapThreadRow({
+        ...row,
+        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+          ? 1
+          : 0,
+      }),
+    );
 }
 
 export function listInboxThreads(): InboxThread[] {

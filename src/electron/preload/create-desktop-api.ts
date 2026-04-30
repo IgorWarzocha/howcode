@@ -120,7 +120,8 @@ export function createDesktopApi() {
       sampleRate: number;
       language?: string | null;
     }) => invokeRequest("transcribeDictation", request),
-    getProjectThreads: (projectId: string) => invokeRequest("getProjectThreads", { projectId }),
+    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
+      invokeRequest("getProjectThreads", { projectId, chat: request.chat }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>

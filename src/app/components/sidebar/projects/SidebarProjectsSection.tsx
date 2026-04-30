@@ -32,7 +32,7 @@ type SidebarProjectsSectionProps = {
   terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
-  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
+  onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
@@ -117,13 +117,17 @@ export function SidebarProjectsSection({
       const shouldLoadSearchedProject = searchQuery.trim().length > 0;
       const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0;
 
-      if (project.threadsLoaded || (!shouldLoadSearchedProject && !hasIndexedThreads)) {
+      const threadsScope = activeView === "chat" ? "chat" : "code";
+      if (
+        (project.threadsLoaded && project.threadsScope === threadsScope) ||
+        (!shouldLoadSearchedProject && !hasIndexedThreads)
+      ) {
         continue;
       }
 
-      void onLoadProjectThreads(project.id);
+      void onLoadProjectThreads(project.id, { chat: activeView === "chat" });
     }
-  }, [filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects]);
+  }, [activeView, filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {

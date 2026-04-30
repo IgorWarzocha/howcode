@@ -43,7 +43,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     installDictationModel: (request) => piThreads.installDictationModel(request),
     removeDictationModel: (request) => piThreads.removeDictationModel(request),
     transcribeDictation: (request) => piThreads.transcribeDictation(request),
-    getProjectThreads: ({ projectId }) => piThreads.loadProjectThreads(projectId),
+    getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>

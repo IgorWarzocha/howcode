@@ -19,7 +19,7 @@ type QueryClientLike = {
 type UseDesktopEventSyncInput = {
   composerProjectId: string;
   workspaceState: WorkspaceState;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
   queryClient: QueryClientLike;
@@ -148,7 +148,9 @@ export function useDesktopEventSync({
         event.reason === "external" ||
         event.reason === "compaction"
       ) {
-        void loadProjectThreads(event.projectId);
+        void loadProjectThreads(event.projectId, {
+          chat: latestWorkspaceState.activeView === "chat",
+        });
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
         if (event.reason !== "compaction") {
           scheduleShellStateRefresh();

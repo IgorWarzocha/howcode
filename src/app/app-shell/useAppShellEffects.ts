@@ -60,7 +60,7 @@ export function useAppShellEffects({
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
   shellAppSettings: AppSettings | null | undefined;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   loadComposerState: (request?: {
     projectId?: string | null;

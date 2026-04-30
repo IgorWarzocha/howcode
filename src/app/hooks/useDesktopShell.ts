@@ -43,7 +43,11 @@ function mergeShellStateProjects(
       // Shell refreshes rebuild project rows from backend metadata only, which currently drops
       // loaded thread lists. Preserve already-loaded sidebar thread data across refreshes so
       // desktop events do not cause the tree to briefly reset/jump before per-project reloads land.
-      if (!currentProject?.threadsLoaded || project.threadsLoaded) {
+      if (
+        !currentProject?.threadsLoaded ||
+        project.threadsLoaded ||
+        currentProject.threadsScope !== undefined
+      ) {
         return project;
       }
 
@@ -97,10 +101,11 @@ export function useDesktopShell() {
   }, [shellRefreshDebouncer]);
 
   const loadProjectThreads = useCallback(
-    async (projectId: string) => {
+    async (projectId: string, options: { chat?: boolean } = {}) => {
+      const threadsScope = options.chat ? "chat" : "code";
       const threads = await queryClient.fetchQuery({
-        queryKey: desktopQueryKeys.projectThreads(projectId),
-        queryFn: () => getProjectThreadsQuery(projectId),
+        queryKey: desktopQueryKeys.projectThreads(projectId, options.chat === true),
+        queryFn: () => getProjectThreadsQuery(projectId, options.chat === true),
         staleTime: 0,
       });
 
@@ -113,7 +118,13 @@ export function useDesktopShell() {
           ...currentState,
           projects: currentState.projects.map((project) =>
             project.id === projectId
-              ? { ...project, threads, threadCount: threads.length, threadsLoaded: true }
+              ? {
+                  ...project,
+                  threads,
+                  threadCount: threads.length,
+                  threadsLoaded: true,
+                  threadsScope,
+                }
               : project,
           ),
         };

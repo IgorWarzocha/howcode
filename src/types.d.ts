@@ -146,7 +146,7 @@ declare global {
       transcribeDictation?: (
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>;
-      getProjectThreads?: (projectId: string) => Promise<Thread[]>;
+      getProjectThreads?: (projectId: string, request?: { chat?: boolean }) => Promise<Thread[]>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;

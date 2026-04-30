@@ -162,7 +162,7 @@ export type DesktopRequestMap = {
     params: DictationTranscriptionRequest;
     response: DictationTranscriptionResult;
   };
-  getProjectThreads: { params: { projectId: string }; response: Thread[] };
+  getProjectThreads: { params: { projectId: string; chat?: boolean }; response: Thread[] };
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
   getThread: {

@@ -36,7 +36,8 @@ export const desktopQueryKeys = {
   piSkillCatalog: (query: string) => ["desktop", "piSkills", "catalog", query] as const,
   configuredPiSkills: (projectPath?: string | null, chat = false) =>
     ["desktop", "piSkills", "configured", projectPath ?? null, chat] as const,
-  projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
+  projectThreads: (projectId: string, chat = false) =>
+    ["desktop", "projectThreads", projectId, chat] as const,
   inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -67,8 +68,8 @@ export async function getShellStateQuery(): Promise<ShellState | null> {
   return (await window.piDesktop?.getShellState?.()) ?? null;
 }
 
-export async function getProjectThreadsQuery(projectId: string): Promise<Thread[]> {
-  return (await window.piDesktop?.getProjectThreads?.(projectId)) ?? [];
+export async function getProjectThreadsQuery(projectId: string, chat = false): Promise<Thread[]> {
+  return (await window.piDesktop?.getProjectThreads?.(projectId, { chat })) ?? [];
 }
 
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
