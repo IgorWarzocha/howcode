@@ -20,6 +20,14 @@ type ArtifactPanelProps = {
 
 type ArtifactView = "list" | "code" | "preview";
 
+function formatArtifactSlug(slug: string) {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
 function escapeScriptContent(script: string) {
   return script.replace(/<\/script/gi, "<\\/script");
 }
@@ -103,7 +111,7 @@ export function ArtifactPanel({
   const artifactIdsRef = useRef(new Set<string>());
 
   const selectedArtifact = useMemo(
-    () => artifacts.find((artifact) => artifact.id === selectedArtifactId) ?? artifacts[0] ?? null,
+    () => artifacts.find((artifact) => artifact.slug === selectedArtifactId) ?? artifacts[0] ?? null,
     [artifacts, selectedArtifactId],
   );
   const selectedHistoricalVersion =
@@ -114,7 +122,7 @@ export function ArtifactPanel({
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
 
   useEffect(() => {
-    artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.id));
+    artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.slug));
   }, [artifacts]);
 
   useEffect(() => {
@@ -128,9 +136,9 @@ export function ArtifactPanel({
       if (cancelled) return;
       setArtifacts(nextArtifacts);
       setSelectedArtifactId((current) =>
-        current && nextArtifacts.some((artifact) => artifact.id === current)
+        current && nextArtifacts.some((artifact) => artifact.slug === current)
           ? current
-          : (nextArtifacts[0]?.id ?? null),
+          : (nextArtifacts[0]?.slug ?? null),
       );
     });
     return () => {
@@ -142,18 +150,18 @@ export function ArtifactPanel({
     if (!window.piDesktop?.subscribe) return;
     return window.piDesktop.subscribe((event) => {
       if (event.type !== "artifact-update") return;
-      const artifactAlreadyVisible = artifactIdsRef.current.has(event.artifact.id);
+      const artifactAlreadyVisible = artifactIdsRef.current.has(event.artifact.slug);
       if (conversationId && event.conversationId !== conversationId && !artifactAlreadyVisible) {
         return;
       }
       setArtifacts((current) => {
-        const index = current.findIndex((artifact) => artifact.id === event.artifact.id);
+        const index = current.findIndex((artifact) => artifact.slug === event.artifact.slug);
         if (index === -1) return [event.artifact, ...current];
         const next = [...current];
         next[index] = event.artifact;
         return next;
       });
-      setSelectedArtifactId(event.artifact.id);
+      setSelectedArtifactId(event.artifact.slug);
       setSelectedVersion("latest");
       setView("preview");
       setPreviewRevision((revision) => revision + 1);
@@ -162,7 +170,7 @@ export function ArtifactPanel({
 
   useEffect(() => {
     setSelectedVersion("latest");
-  }, [selectedArtifact?.id]);
+  }, [selectedArtifact?.slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,13 +178,13 @@ export function ArtifactPanel({
       setVersions([]);
       return;
     }
-    void listArtifactVersionsQuery(selectedArtifact.id).then((nextVersions) => {
+    void listArtifactVersionsQuery(selectedArtifact.slug).then((nextVersions) => {
       if (!cancelled) setVersions(nextVersions);
     });
     return () => {
       cancelled = true;
     };
-  }, [selectedArtifact?.id, selectedArtifact?.version]);
+  }, [selectedArtifact?.slug, selectedArtifact?.version]);
 
   useEffect(() => {
     setDraft(displayedContent);
@@ -223,10 +231,10 @@ export function ArtifactPanel({
     if (!selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content) return;
     setSaving(true);
     try {
-      const updated = await updateArtifactQuery(selectedArtifact.id, draft);
+      const updated = await updateArtifactQuery(selectedArtifact.slug, draft);
       if (updated) {
         setArtifacts((current) =>
-          current.map((artifact) => (artifact.id === updated.id ? updated : artifact)),
+          current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
         );
         setSelectedVersion("latest");
         setView("preview");
@@ -242,12 +250,12 @@ export function ArtifactPanel({
     setSaving(true);
     try {
       const updated = await updateArtifactQuery(
-        selectedArtifact.id,
+        selectedArtifact.slug,
         selectedHistoricalVersion.content,
       );
       if (updated) {
         setArtifacts((current) =>
-          current.map((artifact) => (artifact.id === updated.id ? updated : artifact)),
+          current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
         );
         setSelectedVersion("latest");
         setView("preview");
@@ -271,7 +279,7 @@ export function ArtifactPanel({
           <span className="truncate font-medium">Artifacts</span>
           {selectedArtifact ? (
             <span className="truncate text-[11px] text-[color:var(--muted)]">
-              {selectedArtifact.title} · {selectedArtifact.kind} v{selectedArtifact.version}
+              {formatArtifactSlug(selectedArtifact.slug)} · {selectedArtifact.kind} v{selectedArtifact.version}
             </span>
           ) : null}
         </div>
@@ -373,19 +381,19 @@ export function ArtifactPanel({
             <div className="grid gap-1">
               {artifacts.map((artifact) => (
                 <button
-                  key={artifact.id}
+                  key={artifact.slug}
                   type="button"
                   className={cn(
                     "rounded-lg px-3 py-2.5 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
-                    artifact.id === selectedArtifact?.id &&
+                    artifact.slug === selectedArtifact?.slug &&
                       "bg-[rgba(183,186,245,0.1)] text-[color:var(--text)]",
                   )}
                   onClick={() => {
-                    setSelectedArtifactId(artifact.id);
+                    setSelectedArtifactId(artifact.slug);
                     setView("preview");
                   }}
                 >
-                  <div className="truncate font-medium">{artifact.title}</div>
+                  <div className="truncate font-medium">{formatArtifactSlug(artifact.slug)}</div>
                   <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--muted-2)]">
                     {artifact.kind} · v{artifact.version}
                   </div>
@@ -414,11 +422,11 @@ export function ArtifactPanel({
             ) : null}
             {previewHtml ? (
               <iframe
-                key={`${selectedArtifact?.id}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}:${previewRevision}`}
+                key={`${selectedArtifact?.slug}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}:${previewRevision}`}
                 sandbox="allow-scripts allow-forms allow-modals"
                 srcDoc={previewHtml}
                 className="h-full w-full border-0"
-                title={selectedArtifact?.title ?? "Artifact preview"}
+                title={selectedArtifact ? formatArtifactSlug(selectedArtifact.slug) : "Artifact preview"}
               />
             ) : null}
           </div>

@@ -109,12 +109,12 @@ export type RuntimeHostResponseMap = {
 export type RuntimeHostMainRequestMap = {
   createArtifact: {
     conversationId: string;
-    title: string;
+    slug: string;
     kind: ArtifactKind;
     content: string;
   };
-  updateArtifact: { artifactId: string; content: string };
-  editArtifact: { artifactId: string; edits: Array<{ oldText: string; newText: string }> };
+  updateArtifact: { slug: string; content: string };
+  editArtifact: { slug: string; edits: Array<{ oldText: string; newText: string }> };
   getArtifact: { artifactId: string };
   listArtifacts: { conversationId: string };
 };

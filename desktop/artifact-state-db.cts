@@ -13,7 +13,6 @@ function ensureArtifactSchema() {
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       conversation_id TEXT NOT NULL,
-      title TEXT NOT NULL,
       kind TEXT NOT NULL,
       content TEXT NOT NULL,
       version INTEGER NOT NULL,
@@ -36,9 +35,8 @@ function ensureArtifactSchema() {
 }
 
 type ArtifactRow = {
-  id: string;
+  slug: string;
   conversationId: string;
-  title: string;
   kind: string;
   content: string;
   version: number;
@@ -47,7 +45,7 @@ type ArtifactRow = {
 };
 
 type ArtifactVersionRow = {
-  artifactId: string;
+  slug: string;
   version: number;
   content: string;
   createdAt: string;
@@ -55,9 +53,8 @@ type ArtifactVersionRow = {
 
 function mapArtifactRow(row: ArtifactRow): Artifact {
   return {
-    id: row.id,
+    slug: row.slug,
     conversationId: row.conversationId,
-    title: row.title,
     kind: row.kind === "react" ? "react" : "html",
     content: row.content,
     version: row.version,
@@ -66,8 +63,8 @@ function mapArtifactRow(row: ArtifactRow): Artifact {
   };
 }
 
-function slugifyArtifactTitle(title: string) {
-  const slug = title
+function slugifyArtifactSlug(input: string) {
+  const slug = input
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -75,9 +72,9 @@ function slugifyArtifactTitle(title: string) {
   return slug || "artifact";
 }
 
-function createArtifactId(title: string) {
+function createArtifactId(slug: string) {
   const db = getThreadStateDatabase();
-  const base = slugifyArtifactTitle(title);
+  const base = slugifyArtifactSlug(slug);
   for (let suffix = 0; suffix < 1000; suffix += 1) {
     const candidate = suffix === 0 ? base : `${base}-${suffix + 1}`;
     const row = db.prepare("SELECT 1 FROM artifacts WHERE id = ?").get(candidate);
@@ -171,21 +168,21 @@ function emitArtifactChange(artifact: Artifact) {
 
 export function createArtifact(input: {
   conversationId: string;
-  title: string;
+  slug: string;
   kind: ArtifactKind;
   content: string;
 }) {
   ensureArtifactSchema();
-  const title = input.title.trim() || "Untitled artifact";
+  const slug = slugifyArtifactSlug(input.slug);
   const content = input.content ?? "";
-  const id = createArtifactId(title);
+  const id = createArtifactId(slug);
   const db = getThreadStateDatabase();
   try {
     db.exec("BEGIN");
     db.prepare(
-      `INSERT INTO artifacts (id, conversation_id, title, kind, content, version)
-       VALUES (?, ?, ?, ?, ?, 1)`,
-    ).run(id, input.conversationId, title, input.kind, content);
+      `INSERT INTO artifacts (id, conversation_id, kind, content, version)
+       VALUES (?, ?, ?, ?, 1)`,
+    ).run(id, input.conversationId, input.kind, content);
     db.prepare(
       "INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, 1, ?)",
     ).run(id, content);
@@ -200,40 +197,40 @@ export function createArtifact(input: {
   return artifact;
 }
 
-export function updateArtifact(input: { artifactId: string; content: string }) {
+export function updateArtifact(input: { slug: string; content: string }) {
   ensureArtifactSchema();
-  const current = getArtifact(input.artifactId);
-  if (!current) throw new Error(`Artifact not found: ${input.artifactId}`);
+  const current = getArtifact(input.slug);
+  if (!current) throw new Error(`Artifact not found: ${input.slug}`);
   const nextVersion = current.version + 1;
   const db = getThreadStateDatabase();
   try {
     db.exec("BEGIN");
     db.prepare(
       "UPDATE artifacts SET content = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    ).run(input.content, nextVersion, input.artifactId);
+    ).run(input.content, nextVersion, input.slug);
     db.prepare(
       "INSERT INTO artifact_versions (artifact_id, version, content) VALUES (?, ?, ?)",
-    ).run(input.artifactId, nextVersion, input.content);
+    ).run(input.slug, nextVersion, input.content);
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;
   }
-  const artifact = getArtifact(input.artifactId);
+  const artifact = getArtifact(input.slug);
   if (!artifact) throw new Error("Artifact update failed.");
   emitArtifactChange(artifact);
   return artifact;
 }
 
 export function editArtifact(input: {
-  artifactId: string;
+  slug: string;
   edits: Array<{ oldText: string; newText: string }>;
 }) {
-  const current = getArtifact(input.artifactId);
-  if (!current) throw new Error(`Artifact not found: ${input.artifactId}`);
+  const current = getArtifact(input.slug);
+  if (!current) throw new Error(`Artifact not found: ${input.slug}`);
   return updateArtifact({
-    artifactId: input.artifactId,
-    content: applyArtifactEdits(current.content, input.edits, input.artifactId),
+    slug: input.slug,
+    content: applyArtifactEdits(current.content, input.edits, input.slug),
   });
 }
 
@@ -241,7 +238,7 @@ export function getArtifact(artifactId: string): Artifact | null {
   ensureArtifactSchema();
   const row = getThreadStateDatabase()
     .prepare(
-      `SELECT id, conversation_id AS conversationId, title, kind, content, version,
+      `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
               created_at AS createdAt, updated_at AS updatedAt
        FROM artifacts WHERE id = ?`,
     )
@@ -254,14 +251,14 @@ export function listArtifacts(conversationId?: string | null): Artifact[] {
   const rows = conversationId
     ? (getThreadStateDatabase()
         .prepare(
-          `SELECT id, conversation_id AS conversationId, title, kind, content, version,
+          `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts WHERE conversation_id = ? ORDER BY updated_at DESC`,
         )
         .all(conversationId) as ArtifactRow[])
     : (getThreadStateDatabase()
         .prepare(
-          `SELECT id, conversation_id AS conversationId, title, kind, content, version,
+          `SELECT id AS slug, conversation_id AS conversationId, title, kind, content, version,
                   created_at AS createdAt, updated_at AS updatedAt
            FROM artifacts ORDER BY updated_at DESC`,
         )
@@ -273,7 +270,7 @@ export function listArtifactVersions(artifactId: string): ArtifactVersion[] {
   ensureArtifactSchema();
   return getThreadStateDatabase()
     .prepare(
-      `SELECT artifact_id AS artifactId, version, content, created_at AS createdAt
+      `SELECT artifact_id AS slug, version, content, created_at AS createdAt
        FROM artifact_versions WHERE artifact_id = ? ORDER BY version DESC`,
     )
     .all(artifactId) as ArtifactVersionRow[];

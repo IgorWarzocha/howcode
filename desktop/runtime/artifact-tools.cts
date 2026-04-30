@@ -6,11 +6,11 @@ export type ArtifactEdit = { oldText: string; newText: string };
 export type ArtifactToolAdapter = {
   createArtifact(input: {
     conversationId: string;
-    title: string;
+    slug: string;
     kind: ArtifactKind;
     content: string;
   }): Promise<Artifact> | Artifact;
-  editArtifact(input: { artifactId: string; edits: ArtifactEdit[] }): Promise<Artifact> | Artifact;
+  editArtifact(input: { slug: string; edits: ArtifactEdit[] }): Promise<Artifact> | Artifact;
   getArtifact(artifactId: string): Promise<Artifact | null> | Artifact | null;
   listArtifacts(conversationId: string): Promise<Artifact[]> | Artifact[];
 };
@@ -42,22 +42,21 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       promptSnippet: "Create an html or react artifact for this chat",
       parameters: {
         type: "object",
-        properties: { title: stringSchema, kind: artifactKindSchema, content: stringSchema },
-        required: ["title", "kind", "content"],
+        properties: { slug: stringSchema, kind: artifactKindSchema, content: stringSchema },
+        required: ["slug", "kind", "content"],
         additionalProperties: false,
       },
       async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-        const input = params as { title: string; kind: ArtifactKind; content: string };
+        const input = params as { slug: string; kind: ArtifactKind; content: string };
         const artifact = await adapter.createArtifact({
           conversationId: getConversationId(ctx),
-          title: input.title,
+          slug: input.slug,
           kind: input.kind,
           content: input.content,
         });
-        return textResult(
-          `Created artifact ${artifact.id} (${artifact.title}) version ${artifact.version}.`,
-          { artifact },
-        );
+        return textResult(`Created artifact ${artifact.slug} version ${artifact.version}.`, {
+          artifact,
+        });
       },
     },
     {
@@ -81,8 +80,8 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
       },
       async execute(_toolCallId, params) {
         const input = params as { id: string; edits: ArtifactEdit[] };
-        const artifact = await adapter.editArtifact({ artifactId: input.id, edits: input.edits });
-        return textResult(`Edited artifact ${artifact.id} to version ${artifact.version}.`, {
+        const artifact = await adapter.editArtifact({ slug: input.id, edits: input.edits });
+        return textResult(`Edited artifact ${artifact.slug} to version ${artifact.version}.`, {
           artifact,
         });
       },

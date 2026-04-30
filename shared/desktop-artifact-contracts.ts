@@ -1,9 +1,8 @@
 export type ArtifactKind = "html" | "react";
 
 export type Artifact = {
-  id: string;
+  slug: string;
   conversationId: string;
-  title: string;
   kind: ArtifactKind;
   content: string;
   version: number;
@@ -12,7 +11,7 @@ export type Artifact = {
 };
 
 export type ArtifactVersion = {
-  artifactId: string;
+  slug: string;
   version: number;
   content: string;
   createdAt: string;

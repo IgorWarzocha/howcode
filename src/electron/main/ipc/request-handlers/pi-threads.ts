@@ -57,8 +57,9 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     createChatGroup: ({ name }) => piThreads.createChatGroup(name),
     listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
     getArtifact: ({ artifactId }) => piThreads.getArtifact(artifactId),
-    updateArtifact: ({ artifactId, content }) => piThreads.updateArtifact({ artifactId, content }),
-    editArtifact: ({ artifactId, edits }) => piThreads.editArtifact({ artifactId, edits }),
+    updateArtifact: ({ artifactId, content }) =>
+      piThreads.updateArtifact({ slug: artifactId, content }),
+    editArtifact: ({ artifactId, edits }) => piThreads.editArtifact({ slug: artifactId, edits }),
     listArtifactVersions: ({ artifactId }) => piThreads.listArtifactVersions(artifactId),
     compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
