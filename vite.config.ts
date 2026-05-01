@@ -4,6 +4,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   base: "./",
+  assetsInclude: ["**/*.wasm"],
+  optimizeDeps: {
+    exclude: ["@wterm/ghostty"],
+  },
   plugins: [react(), tailwindcss()],
   worker: {
     format: "es",

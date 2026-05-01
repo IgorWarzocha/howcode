@@ -1,4 +1,5 @@
-import { Terminal, type TerminalHandle, type WTerm } from "@wterm/react";
+import { GhosttyCore } from "@wterm/ghostty";
+import { Terminal, type TerminalCore, type TerminalHandle, type WTerm } from "@wterm/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
@@ -62,8 +63,10 @@ export function TerminalViewport({
   backgroundCssVar = "--terminal-bg",
   className,
 }: TerminalViewportProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const terminalHandleRef = useRef<TerminalHandle | null>(null);
   const terminalInstanceRef = useRef<WTerm | null>(null);
+  const terminalResizeFrameRef = useRef<number | null>(null);
   const pendingScrollFrameRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const attachFailedRef = useRef(false);
@@ -75,6 +78,7 @@ export function TerminalViewport({
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null);
+  const [terminalCore, setTerminalCore] = useState<TerminalCore | null>(null);
   const effectiveLaunchMode = launchMode;
   if (effectiveLaunchMode === "pi-session" && piSessionPathRef.current === null) {
     piSessionPathRef.current = { value: sessionPath };
@@ -126,6 +130,9 @@ export function TerminalViewport({
 
   useEffect(
     () => () => {
+      if (terminalResizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(terminalResizeFrameRef.current);
+      }
       if (pendingScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingScrollFrameRef.current);
       }
@@ -180,6 +187,30 @@ export function TerminalViewport({
     setTerminalInitError(message);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setTerminalCore(null);
+    setTerminalInitError(null);
+
+    void GhosttyCore.load().then(
+      (core) => {
+        if (!cancelled) {
+          setTerminalCore(core);
+        }
+      },
+      (error: unknown) => {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "Unable to initialize terminal.";
+          setTerminalInitError(message);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleTerminalResize = useCallback((cols: number, rows: number) => {
     const nextCols = normalizeTerminalDimension(cols, lastKnownSizeRef.current.cols);
     const nextRows = normalizeTerminalDimension(rows, lastKnownSizeRef.current.rows);
@@ -230,6 +261,72 @@ export function TerminalViewport({
     },
     [writeToTerminal],
   );
+
+  const resizeTerminalToContainer = useCallback(() => {
+    const terminal = terminalInstanceRef.current;
+    const terminalElement = terminal?.element;
+    if (!terminal || !terminalElement) {
+      return;
+    }
+
+    const shouldStickToBottom = isTerminalElementNearBottom(terminalElement);
+    const measuredSize = measureTerminalSize(terminal);
+    if (!measuredSize) {
+      return;
+    }
+
+    const cols = normalizeTerminalDimension(measuredSize.cols, lastKnownSizeRef.current.cols);
+    const rows = normalizeTerminalDimension(measuredSize.rows, lastKnownSizeRef.current.rows);
+    if (!isUsableTerminalSize(cols, rows)) {
+      return;
+    }
+
+    if (terminal.cols !== cols || terminal.rows !== rows) {
+      terminal.resize(cols, rows);
+    }
+    handleTerminalResize(cols, rows);
+
+    if (shouldStickToBottom) {
+      scheduleTerminalScrollToBottom();
+    }
+  }, [handleTerminalResize, scheduleTerminalScrollToBottom]);
+
+  const scheduleTerminalResizeToContainer = useCallback(() => {
+    if (terminalResizeFrameRef.current !== null) {
+      window.cancelAnimationFrame(terminalResizeFrameRef.current);
+    }
+
+    terminalResizeFrameRef.current = window.requestAnimationFrame(() => {
+      terminalResizeFrameRef.current = null;
+      resizeTerminalToContainer();
+    });
+  }, [resizeTerminalToContainer]);
+
+  useEffect(() => {
+    if (terminalReadyRevision === 0) {
+      return;
+    }
+
+    const viewportElement = viewportRef.current;
+    if (!viewportElement || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      scheduleTerminalResizeToContainer();
+    });
+
+    observer.observe(viewportElement);
+    scheduleTerminalResizeToContainer();
+
+    return () => {
+      observer.disconnect();
+      if (terminalResizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(terminalResizeFrameRef.current);
+        terminalResizeFrameRef.current = null;
+      }
+    };
+  }, [scheduleTerminalResizeToContainer, terminalReadyRevision]);
 
   useEffect(() => {
     if (terminalReadyRevision === 0) {
@@ -482,23 +579,31 @@ export function TerminalViewport({
 
   return (
     <div
+      ref={viewportRef}
       style={viewportStyle}
       className={cn(
         "terminal-viewport relative h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
     >
-      <Terminal
-        ref={terminalHandleRef}
-        autoResize
-        cursorBlink
-        onReady={handleTerminalReady}
-        onError={handleTerminalError}
-        onResize={handleTerminalResize}
-        onData={handleTerminalData}
-        className="h-full w-full"
-        style={{ height: "100%", width: "100%", ...terminalStyle }}
-      />
+      {terminalCore ? (
+        <Terminal
+          ref={terminalHandleRef}
+          core={terminalCore}
+          cursorBlink
+          onReady={handleTerminalReady}
+          onError={handleTerminalError}
+          onResize={handleTerminalResize}
+          onData={handleTerminalData}
+          className="h-full w-full"
+          style={{ height: "100%", width: "100%", ...terminalStyle }}
+        />
+      ) : null}
+      {!terminalCore && !terminalInitError ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)] px-4 py-3 text-[12px] leading-5 text-[color:var(--muted)]">
+          <span>[terminal] Loading Ghostty renderer…</span>
+        </div>
+      ) : null}
       {terminalInitError ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
           <span>[terminal] {terminalInitError}</span>
