@@ -375,6 +375,19 @@ button[data-tooltip][aria-disabled="true"]::after {
   text-wrap: pretty;
 }
 
+.artifact-markdown-editor .artifact-markdown-editor-content p {
+  margin-block: 0.8rem;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content ul,
+.artifact-markdown-editor .artifact-markdown-editor-content ol {
+  margin-block: 0.85rem;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content li {
+  margin-block: 0.35rem;
+}
+
 .artifact-markdown-editor [contenteditable] {
   caret-color: var(--accent);
 }
