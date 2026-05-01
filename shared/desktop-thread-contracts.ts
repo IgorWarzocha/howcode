@@ -25,6 +25,7 @@ export type InboxThread = {
   preview: string | null;
   running: boolean;
   unread: boolean;
+  isChat?: boolean;
 };
 
 export type Project = {

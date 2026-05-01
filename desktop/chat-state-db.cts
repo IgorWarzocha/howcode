@@ -112,6 +112,13 @@ export function moveChatThread(sessionPath: string, groupId: string | null) {
     .run(sessionPath, groupId);
 }
 
+export function deleteChatThread(sessionPath: string) {
+  ensureChatStateSchema();
+  getThreadStateDatabase()
+    .prepare("DELETE FROM chat_threads WHERE session_path = ?")
+    .run(sessionPath);
+}
+
 export function upsertChatThread(options: {
   sessionPath: string;
   groupId?: string | null;

@@ -44,7 +44,13 @@ export type WorkspaceAction =
   | { type: "clear-thread-selection" }
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
-  | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
+  | {
+      type: "open-thread";
+      projectId: string;
+      threadId: string;
+      sessionPath: string;
+      view?: "chat" | "thread";
+    }
   | {
       type: "open-gitops";
       filePath?: string | null;
@@ -364,7 +370,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
 
       return {
         ...state,
-        activeView: state.activeView === "chat" ? "chat" : "thread",
+        activeView: action.view ?? (state.activeView === "chat" ? "chat" : "thread"),
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,

@@ -179,6 +179,7 @@ export function useDesktopEventSync({
           projectId: event.projectId,
           threadId: event.threadId,
           sessionPath: event.sessionPath,
+          view: event.isChat === true ? "chat" : "thread",
         });
       }
 

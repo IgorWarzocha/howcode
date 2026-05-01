@@ -9,6 +9,7 @@ import {
 } from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
 import { deleteArtifactsForConversation } from "../artifact-state-db.cts";
+import { deleteChatThread } from "../chat-state-db.cts";
 import {
   archiveThread,
   archiveThreads,
@@ -42,6 +43,7 @@ async function deletePersistedThread(threadId: string) {
 
   if (sessionPath) {
     deleteArtifactsForConversation(sessionPath);
+    deleteChatThread(sessionPath);
   }
   deleteThreadRecord(threadId);
 }

@@ -42,6 +42,7 @@ export type InboxThreadRow = {
   running: number;
   unread: number;
   lastActivityMs: number;
+  isChat: number;
 };
 
 export type ThreadInboxMessageRecord = {

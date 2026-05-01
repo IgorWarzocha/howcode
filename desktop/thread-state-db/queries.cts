@@ -232,10 +232,12 @@ export function listInboxThreads(): InboxThread[] {
           inbox_items.last_assistant_preview AS lastAssistantPreview,
           threads.running AS running,
           inbox_items.unread AS unread,
-          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs
+          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs,
+          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM inbox_items
         INNER JOIN threads ON threads.session_path = inbox_items.session_path
         INNER JOIN projects ON projects.cwd = threads.cwd
+        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE
           projects.hidden = 0
           AND threads.archived = 0
@@ -274,6 +276,7 @@ export function listArchivedThreads(): ArchivedThread[] {
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         INNER JOIN projects ON projects.cwd = threads.cwd
+        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE threads.archived = 1
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,

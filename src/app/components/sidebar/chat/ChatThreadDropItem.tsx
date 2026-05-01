@@ -11,7 +11,12 @@ type ChatThreadDropItemProps = {
   onAction: DesktopActionInvoker;
   onRefresh: () => Promise<unknown>;
   onThreadDrop: (event: DragEvent, groupId: string | null) => void;
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: "chat" | "thread",
+  ) => void;
 };
 
 export function ChatThreadDropItem({
@@ -43,7 +48,8 @@ export function ChatThreadDropItem({
         title={thread.title}
         onArchive={() => void onAction("thread.archive", { threadId: thread.id }).then(onRefresh)}
         onOpen={() =>
-          thread.sessionPath && onThreadOpen(thread.projectId, thread.id, thread.sessionPath)
+          thread.sessionPath &&
+          onThreadOpen(thread.projectId, thread.id, thread.sessionPath, "chat")
         }
         onPin={() => void onAction("thread.pin", { threadId: thread.id }).then(onRefresh)}
       />
