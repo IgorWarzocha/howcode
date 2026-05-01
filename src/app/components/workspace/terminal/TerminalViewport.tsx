@@ -590,6 +590,7 @@ export function TerminalViewport({
         <Terminal
           ref={terminalHandleRef}
           core={terminalCore}
+          autoResize
           cursorBlink
           onReady={handleTerminalReady}
           onError={handleTerminalError}
