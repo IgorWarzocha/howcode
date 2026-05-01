@@ -279,6 +279,12 @@ export function useComposerSubmission({
             setAttachments(submittedAttachments);
           }
         }
+      } catch (error) {
+        if (activeDraftThreadIdRef.current === submittedDraftThreadId) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
+        }
+        setErrorMessage(getErrorMessage(error, "Could not send prompt."));
       } finally {
         setIsSending(false);
       }

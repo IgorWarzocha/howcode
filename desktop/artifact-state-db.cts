@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { Artifact, ArtifactKind, ArtifactVersion } from "../shared/desktop-contracts.ts";
 import { emitDesktopEvent } from "./runtime/desktop-events.cts";
 import { emitDesktopEvent as emitRuntimeHostDesktopEvent } from "./runtime-host/host-events.cts";
@@ -6,6 +5,10 @@ import { getThreadStateDatabase } from "./thread-state-db/db.cts";
 import { runInTransaction } from "./thread-state-db/write-transaction.cts";
 
 let artifactSchemaReady = false;
+
+export function resetArtifactSchemaForTests() {
+  artifactSchemaReady = false;
+}
 
 function ensureArtifactSchema() {
   if (artifactSchemaReady) return;
@@ -81,7 +84,7 @@ function createArtifactId(slug: string) {
     const row = db.prepare("SELECT 1 FROM artifacts WHERE id = ?").get(candidate);
     if (!row) return candidate;
   }
-  return `${base}-${randomUUID().slice(0, 8)}`;
+  throw new Error(`Could not allocate artifact slug for ${base}.`);
 }
 
 function countOccurrences(content: string, text: string) {

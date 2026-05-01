@@ -50,6 +50,7 @@ export const desktopQueryKeys = {
       request.projectId ?? null,
       getPersistedSessionPath(request.sessionPath),
       request.composerMode ?? null,
+      request.chatGroupId ?? null,
     ] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
   projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
