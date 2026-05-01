@@ -1,4 +1,13 @@
-import { FileCode2, List, Maximize2, Minimize2, PanelRightClose, Play, Save } from "lucide-react";
+import {
+  Download,
+  FileCode2,
+  List,
+  Maximize2,
+  Minimize2,
+  PanelRightClose,
+  Play,
+  Save,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -32,6 +41,12 @@ function formatArtifactSlug(slug: string) {
 
 function escapeScriptContent(script: string) {
   return script.replace(/<\/script/gi, "<\\/script");
+}
+
+function getArtifactExtension(kind: Artifact["kind"]) {
+  if (kind === "react") return "tsx";
+  if (kind === "markdown") return "md";
+  return "html";
 }
 
 const artifactScrollbarCss = `
@@ -132,6 +147,9 @@ export function ArtifactPanel({
       : (versions.find((version) => version.version === selectedVersion) ?? null);
   const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
+  const markdownPreviewEditable =
+    view === "preview" && selectedArtifact?.kind === "markdown" && !showingHistoricalVersion;
+  const saveVisible = view === "code" || markdownPreviewEditable;
 
   useEffect(() => {
     artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.slug));
@@ -279,6 +297,18 @@ export function ArtifactPanel({
     }
   };
 
+  const downloadArtifact = () => {
+    if (!selectedArtifact) return;
+    const content = showingHistoricalVersion ? displayedContent : draft;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${selectedArtifact.slug}.${getArtifactExtension(selectedArtifact.kind)}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!visible || !conversationId) return null;
 
   return (
@@ -289,11 +319,8 @@ export function ArtifactPanel({
       <div className="flex h-11 items-center justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-3">
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
           <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
-          <span className="truncate font-medium">Artifacts</span>
           {selectedArtifact ? (
-            <span className="truncate text-[11px] text-[color:var(--muted)]">
-              {formatArtifactSlug(selectedArtifact.slug)} · {selectedArtifact.kind} v{selectedArtifact.version}
-            </span>
+            <span className="truncate font-medium">{formatArtifactSlug(selectedArtifact.slug)}</span>
           ) : null}
         </div>
         <div className="flex items-center gap-1">
@@ -333,7 +360,7 @@ export function ArtifactPanel({
               {nextView === "list" ? <List size={14} /> : nextView === "code" ? <FileCode2 size={14} /> : <Play size={14} />}
             </button>
           ))}
-          {view === "code" ? (
+          {saveVisible ? (
             <button
               type="button"
               className={cn(compactIconButtonClass, "h-7 w-7")}
@@ -347,6 +374,16 @@ export function ArtifactPanel({
               <Save size={14} />
             </button>
           ) : null}
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, "h-7 w-7")}
+            onClick={downloadArtifact}
+            disabled={!selectedArtifact}
+            aria-label="Download artifact"
+            data-tooltip="Download"
+          >
+            <Download size={14} />
+          </button>
           {showingHistoricalVersion ? (
             <button
               type="button"
@@ -427,50 +464,63 @@ export function ArtifactPanel({
         ) : null}
 
         {view === "preview" && selectedArtifact?.kind === "markdown" ? (
-          <div className="h-full overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children }) => (
-                  <h1 className="mb-3 text-[20px] font-semibold text-[color:var(--text)]">
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="mt-5 mb-2 text-[17px] font-semibold text-[color:var(--text)]">
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="mt-4 mb-2 text-[15px] font-semibold text-[color:var(--text)]">
-                    {children}
-                  </h3>
-                ),
-                p: ({ children }) => <p className="my-2 text-[color:var(--text)]/92">{children}</p>,
-                ul: ({ children }) => <ul className="my-2 list-disc pl-5">{children}</ul>,
-                ol: ({ children }) => <ol className="my-2 list-decimal pl-5">{children}</ol>,
-                li: ({ children }) => <li className="my-1 text-[color:var(--text)]/92">{children}</li>,
-                a: ({ children, href }) => (
-                  <a className="text-[color:var(--accent)] underline underline-offset-2" href={href}>
-                    {children}
-                  </a>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote className="my-3 border-l-2 border-[rgba(185,191,243,0.32)] pl-4 text-[color:var(--muted)]">
-                    {children}
-                  </blockquote>
-                ),
-                code: ({ children }) => <code className="font-mono text-[color:var(--accent)]">{children}</code>,
-                pre: ({ children }) => (
-                  <pre className="my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)]">
-                    {children}
-                  </pre>
-                ),
-                hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]" />,
-              }}
-            >
-              {displayedContent}
-            </ReactMarkdown>
+          <div className={cn(
+            "grid h-full min-h-0 bg-[color:var(--sidebar)]",
+            showingHistoricalVersion ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)_minmax(8rem,32%)]",
+          )}>
+            <div className="min-h-0 overflow-auto px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="mb-3 text-[20px] font-semibold text-[color:var(--text)]">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="mt-5 mb-2 text-[17px] font-semibold text-[color:var(--text)]">
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="mt-4 mb-2 text-[15px] font-semibold text-[color:var(--text)]">
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children }) => <p className="my-2 text-[color:var(--text)]/92">{children}</p>,
+                  ul: ({ children }) => <ul className="my-2 list-disc pl-5">{children}</ul>,
+                  ol: ({ children }) => <ol className="my-2 list-decimal pl-5">{children}</ol>,
+                  li: ({ children }) => <li className="my-1 text-[color:var(--text)]/92">{children}</li>,
+                  a: ({ children, href }) => (
+                    <a className="text-[color:var(--accent)] underline underline-offset-2" href={href}>
+                      {children}
+                    </a>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="my-3 border-l-2 border-[rgba(185,191,243,0.32)] pl-4 text-[color:var(--muted)]">
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({ children }) => <code className="font-mono text-[color:var(--accent)]">{children}</code>,
+                  pre: ({ children }) => (
+                    <pre className="my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)]">
+                      {children}
+                    </pre>
+                  ),
+                  hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]" />,
+                }}
+              >
+                {showingHistoricalVersion ? displayedContent : draft}
+              </ReactMarkdown>
+            </div>
+            {!showingHistoricalVersion ? (
+              <textarea
+                className="min-h-0 resize-none border-t border-[color:var(--border)] bg-[#111521] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)] outline-none"
+                value={draft}
+                spellCheck={false}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            ) : null}
           </div>
         ) : null}
 
