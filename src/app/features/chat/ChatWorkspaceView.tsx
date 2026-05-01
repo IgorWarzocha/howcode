@@ -49,7 +49,9 @@ export function ChatWorkspaceView({
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
-  const [artifactsVisible, setArtifactsVisible] = useState(false);
+  const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
+    Record<string, boolean>
+  >({});
   const [artifactsFullscreen, setArtifactsFullscreen] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
@@ -63,12 +65,17 @@ export function ChatWorkspaceView({
     state,
   } = controller;
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
+  const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
   const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null;
   const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath);
+  const artifactsVisible = conversationId
+    ? (artifactsVisibleByConversation[conversationId] ?? false)
+    : false;
   const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_WIDTH } : undefined;
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
+  const previousConversationIdRef = useRef<string | null | undefined>(conversationId);
 
   useEffect(() => {
     if (!hasConversation) {
@@ -89,14 +96,21 @@ export function ChatWorkspaceView({
 
   useEffect(() => {
     if (!window.piDesktop?.subscribe) return;
-    const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
     if (!conversationId) return;
     return window.piDesktop.subscribe((event) => {
       if (event.type !== "artifact-update") return;
       if (event.conversationId !== conversationId) return;
-      setArtifactsVisible(true);
+      setArtifactsVisibleByConversation((current) => ({
+        ...current,
+        [conversationId]: true,
+      }));
     });
-  }, [activeThreadData?.sessionPath, terminalSessionPath]);
+  }, [conversationId]);
+
+  if (previousConversationIdRef.current !== conversationId) {
+    previousConversationIdRef.current = conversationId;
+    if (artifactsFullscreen) setArtifactsFullscreen(false);
+  }
 
   useEffect(() => {
     if (!artifactsVisible) setArtifactsFullscreen(false);
@@ -224,7 +238,13 @@ export function ChatWorkspaceView({
                   onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                   onToggleTerminal={handleToggleTerminal}
                   onToggleArtifacts={
-                    hasConversation ? () => setArtifactsVisible((visible) => !visible) : undefined
+                    hasConversation && conversationId
+                      ? () =>
+                          setArtifactsVisibleByConversation((current) => ({
+                            ...current,
+                            [conversationId]: !(current[conversationId] ?? false),
+                          }))
+                      : undefined
                   }
                   artifactsAvailable={hasConversation}
                   showTerminalControls={false}
@@ -250,12 +270,17 @@ export function ChatWorkspaceView({
         }
       >
         <ArtifactPanel
-          conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}
+          conversationId={conversationId}
           visible={artifactsVisible}
           fullscreen={artifactsFullscreen}
           onToggleFullscreen={() => setArtifactsFullscreen((fullscreen) => !fullscreen)}
           onClose={() => {
-            setArtifactsVisible(false);
+            if (conversationId) {
+              setArtifactsVisibleByConversation((current) => ({
+                ...current,
+                [conversationId]: false,
+              }));
+            }
             setArtifactsFullscreen(false);
           }}
         />
