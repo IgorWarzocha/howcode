@@ -275,12 +275,20 @@ button[data-tooltip][aria-disabled="true"]::after {
 
 .artifact-markdown-editor .cm-editor,
 .artifact-markdown-editor .cm-mergeView,
-.artifact-markdown-editor .cm-sourceView {
-  background: #111521;
+.artifact-markdown-editor .cm-sourceView,
+.artifact-markdown-editor .cm-scroller,
+.artifact-markdown-editor .cm-content,
+.artifact-markdown-editor .cm-line,
+.artifact-markdown-editor [class*="cm-merge"],
+.artifact-markdown-editor [class*="cm-deleted"],
+.artifact-markdown-editor [class*="cm-inserted"],
+.artifact-markdown-editor [class*="cm-changed"] {
+  background-color: #111521;
   color: var(--text);
 }
 
 .artifact-markdown-editor .cm-content {
+  min-height: 100%;
   color: var(--text);
   caret-color: var(--accent);
 }
@@ -291,13 +299,13 @@ button[data-tooltip][aria-disabled="true"]::after {
 
 .artifact-markdown-editor .cm-gutters {
   border-right: 1px solid var(--border);
-  background: #171a25;
+  background-color: #171a25;
   color: var(--muted-2);
 }
 
 .artifact-markdown-editor .cm-activeLine,
 .artifact-markdown-editor .cm-activeLineGutter {
-  background: rgba(185, 191, 243, 0.06);
+  background-color: rgba(185, 191, 243, 0.06);
 }
 
 .artifact-markdown-editor .cm-selectionBackground,
@@ -309,23 +317,29 @@ button[data-tooltip][aria-disabled="true"]::after {
 .artifact-markdown-editor .cm-panel,
 .artifact-markdown-editor .cm-mergeViewEditors,
 .artifact-markdown-editor .cm-mergeViewEditor,
-.artifact-markdown-editor .cm-mergeViewGutter {
+.artifact-markdown-editor .cm-mergeViewGutter,
+.artifact-markdown-editor .cm-mergeView .cm-editor,
+.artifact-markdown-editor .cm-sourceView .cm-editor {
   border-color: var(--border);
-  background: #111521;
+  background-color: #111521;
   color: var(--text);
 }
 
-.artifact-markdown-editor .cm-changedLine {
-  background: rgba(255, 208, 116, 0.1);
+.artifact-markdown-editor .cm-changedLine,
+.artifact-markdown-editor [class*="changedLine"] {
+  background-color: rgba(255, 208, 116, 0.1);
 }
 
 .artifact-markdown-editor .cm-deletedChunk,
-.artifact-markdown-editor .cm-deletedLine {
-  background: rgba(255, 116, 116, 0.12);
+.artifact-markdown-editor .cm-deletedLine,
+.artifact-markdown-editor [class*="deletedChunk"],
+.artifact-markdown-editor [class*="deletedLine"] {
+  background-color: rgba(255, 116, 116, 0.12);
 }
 
-.artifact-markdown-editor .cm-insertedLine {
-  background: rgba(134, 217, 160, 0.12);
+.artifact-markdown-editor .cm-insertedLine,
+.artifact-markdown-editor [class*="insertedLine"] {
+  background-color: rgba(134, 217, 160, 0.12);
 }
 
 .artifact-markdown-editor .artifact-markdown-editor-content {
