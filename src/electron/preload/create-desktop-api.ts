@@ -160,6 +160,8 @@ export function createDesktopApi() {
     getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
     openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
     openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
+    saveTextToDownloads: (fileName: string, content: string) =>
+      invokeRequest("saveTextToDownloads", { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
       subscribeToEvent("desktopEvent", listener),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>

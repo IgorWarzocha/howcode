@@ -1,5 +1,7 @@
-import { stat } from "node:fs/promises";
+import { mkdir, stat, writeFile } from "node:fs/promises";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 
 import { getAttachmentKind } from "../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory";
@@ -157,6 +159,22 @@ const handlers: DesktopRequestHandlerMap = {
     return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) };
   },
   openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
+  saveTextToDownloads: async ({ fileName, content }) => {
+    const safeFileName = fileName
+      .replace(/[\\/:*?"<>|]/g, "-")
+      .replace(/^\.+/, "")
+      .trim();
+    if (!safeFileName) return { ok: false, error: "Invalid file name." };
+    const downloadsPath = path.join(os.homedir(), "Downloads");
+    const filePath = path.join(downloadsPath, safeFileName);
+    try {
+      await mkdir(downloadsPath, { recursive: true });
+      await writeFile(filePath, content, "utf8");
+      return { ok: true, path: filePath };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
 };
 
 async function readJsonBody(request: http.IncomingMessage) {

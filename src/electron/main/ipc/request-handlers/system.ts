@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { clipboard, dialog, shell } from "electron";
+import { app, clipboard, dialog, shell } from "electron";
 import { getAttachmentKind } from "../../../../../shared/composer-attachments";
 import { getSafeExternalUrl } from "../../../../../shared/external-url";
 import {
@@ -24,6 +24,7 @@ type SystemRequestHandlers = Pick<
   | "listComposerAttachmentEntries"
   | "openExternal"
   | "openPath"
+  | "saveTextToDownloads"
 >;
 
 const clipboardImageTempDir = path.join(tmpdir(), "howcode-clipboard-images");
@@ -171,6 +172,20 @@ export function createSystemHandlers(): SystemRequestHandlers {
         return { ok: (await shell.openPath(path)) === "" };
       } catch {
         return { ok: false };
+      }
+    },
+    saveTextToDownloads: async ({ fileName, content }) => {
+      const safeFileName = fileName
+        .replace(/[\\/:*?"<>|]/g, "-")
+        .replace(/^\.+/, "")
+        .trim();
+      if (!safeFileName) return { ok: false, error: "Invalid file name." };
+      const targetPath = path.join(app.getPath("downloads"), safeFileName);
+      try {
+        await writeFile(targetPath, content, "utf8");
+        return { ok: true, path: targetPath };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
       }
     },
   };

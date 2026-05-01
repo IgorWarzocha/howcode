@@ -176,6 +176,10 @@ declare global {
       subscribeTerminal?: (listener: (event: TerminalEvent) => void) => () => void;
       openExternal?: (url: string) => Promise<boolean>;
       openPath?: (path: string) => Promise<boolean>;
+      saveTextToDownloads?: (
+        fileName: string,
+        content: string,
+      ) => Promise<{ ok: boolean; path?: string; error?: string }>;
       subscribe?: (listener: (event: DesktopEvent) => void) => () => void;
       invokeAction: (
         action: DesktopAction,

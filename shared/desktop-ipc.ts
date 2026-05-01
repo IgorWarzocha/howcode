@@ -201,6 +201,10 @@ export type DesktopRequestMap = {
   terminalStatus: { params: TerminalStatusRequest; response: TerminalStatusSnapshot };
   openExternal: { params: { url: string }; response: { ok: boolean } };
   openPath: { params: { path: string }; response: { ok: boolean } };
+  saveTextToDownloads: {
+    params: { fileName: string; content: string };
+    response: { ok: boolean; path?: string; error?: string };
+  };
 };
 
 export type DesktopEventMap = {
