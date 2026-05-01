@@ -5,6 +5,7 @@ import { registerDesktopIpc } from "./ipc/register-desktop-ipc";
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from "./runtime/devtools";
 import { configureDesktopEnvironment } from "./runtime/environment";
 import { loadDesktopRuntimeModules } from "./runtime/load-desktop-runtime";
+import { registerDesktopRuntimeShutdown } from "./runtime/shutdown";
 
 let currentMainWindow: BrowserWindow | null = null;
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging();
@@ -30,6 +31,7 @@ async function bootstrap() {
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort);
 
   const runtime = await loadDesktopRuntimeModules();
+  registerDesktopRuntimeShutdown(runtime);
   registerDesktopIpc(() => currentMainWindow, runtime);
   await openMainWindow();
 
