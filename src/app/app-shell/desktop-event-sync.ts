@@ -1,4 +1,4 @@
-import { getPersistedSessionPath } from "../../../shared/session-paths";
+import { getLocalDraftProjectId, getPersistedSessionPath } from "../../../shared/session-paths";
 import type { DesktopEvent } from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceState } from "../state/workspace";
@@ -10,7 +10,7 @@ type QueryClientLike = {
 
 export type DesktopEventSelectionState = Pick<
   WorkspaceState,
-  "activeView" | "selectedSessionPath" | "selectedInboxSessionPath"
+  "activeView" | "selectedProjectId" | "selectedSessionPath" | "selectedInboxSessionPath"
 >;
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
@@ -23,20 +23,32 @@ export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelecti
       : null;
 }
 
-export function shouldAutoOpenStartedThread(
-  event: Extract<DesktopEvent, { type: "thread-update" }>,
-  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"],
-  workspaceState: DesktopEventSelectionState,
-) {
+export function shouldAutoOpenStartedThread({
+  reason,
+  projectId,
+  isChat,
+  workspaceState,
+}: {
+  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
+  projectId: string;
+  isChat?: boolean;
+  workspaceState: DesktopEventSelectionState;
+}) {
+  if (reason !== "start" || projectId !== workspaceState.selectedProjectId) {
+    return false;
+  }
+
   const visibleSessionPath = getVisibleDesktopSessionPath(workspaceState);
+  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
+
+  if (localDraftProjectId) {
+    return false;
+  }
 
   return (
-    reason === "start" &&
-    ((workspaceState.activeView === "code" && event.isChat !== true) ||
-      (workspaceState.activeView === "chat" &&
-        visibleSessionPath === null &&
-        event.isChat === true) ||
-      (workspaceState.activeView === "thread" && visibleSessionPath === null))
+    (workspaceState.activeView === "code" && isChat !== true) ||
+    (workspaceState.activeView === "chat" && visibleSessionPath === null && isChat === true) ||
+    (workspaceState.activeView === "thread" && visibleSessionPath === null)
   );
 }
 

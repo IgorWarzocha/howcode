@@ -49,6 +49,7 @@ export function useDesktopEventSync({
     composerProjectId,
     workspaceState: {
       activeView: workspaceState.activeView,
+      selectedProjectId: workspaceState.selectedProjectId,
       selectedSessionPath: workspaceState.selectedSessionPath,
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
     } satisfies DesktopEventSelectionState,
@@ -59,6 +60,7 @@ export function useDesktopEventSync({
       composerProjectId,
       workspaceState: {
         activeView: workspaceState.activeView,
+        selectedProjectId: workspaceState.selectedProjectId,
         selectedSessionPath: workspaceState.selectedSessionPath,
         selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
       },
@@ -66,6 +68,7 @@ export function useDesktopEventSync({
   }, [
     composerProjectId,
     workspaceState.activeView,
+    workspaceState.selectedProjectId,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
@@ -174,7 +177,14 @@ export function useDesktopEventSync({
         );
       }
 
-      if (shouldAutoOpenStartedThread(event, event.reason, latestWorkspaceState)) {
+      if (
+        shouldAutoOpenStartedThread({
+          reason: event.reason,
+          projectId: event.projectId,
+          isChat: event.isChat,
+          workspaceState: latestWorkspaceState,
+        })
+      ) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
