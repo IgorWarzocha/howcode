@@ -27,7 +27,7 @@ type ChatWorkspaceViewProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
-const ARTIFACT_DRAWER_WIDTH = "clamp(320px, 42vw, 760px)";
+const ARTIFACT_DRAWER_WIDTH = "min(760px, max(0px, calc(100% - 900px)))";
 
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages
@@ -223,7 +223,10 @@ export function ChatWorkspaceView({
                   onOpenSettingsView={() => controller.handleShowView("settings")}
                   onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                   onToggleTerminal={handleToggleTerminal}
-                  onToggleArtifacts={() => setArtifactsVisible((visible) => !visible)}
+                  onToggleArtifacts={
+                    hasConversation ? () => setArtifactsVisible((visible) => !visible) : undefined
+                  }
+                  artifactsAvailable={hasConversation}
                   showTerminalControls={false}
                   artifactsVisible={artifactsVisible}
                   terminalVisible={state.terminalVisible}

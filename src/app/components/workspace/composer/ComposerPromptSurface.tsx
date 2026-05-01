@@ -50,6 +50,7 @@ export function ComposerPromptSurface({
   onAction,
   terminalVisible,
   artifactsVisible,
+  artifactsAvailable,
   onSetDiffBaseline,
   onOpenGitOps,
   onLayoutChange,
@@ -431,6 +432,7 @@ export function ComposerPromptSurface({
           showTerminalControls={showTerminalControls}
           terminalVisible={terminalVisible}
           artifactsVisible={artifactsVisible}
+          artifactsAvailable={artifactsAvailable}
           thinkingLevel={thinkingLevel}
           thinkingLevelLabels={thinkingLevelLabels}
         />

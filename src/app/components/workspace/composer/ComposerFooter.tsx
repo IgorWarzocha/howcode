@@ -47,6 +47,7 @@ type ComposerFooterProps = {
   projectId: string;
   showTerminalControls?: boolean;
   artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   thinkingLevel: ComposerThinkingLevel;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
@@ -77,6 +78,7 @@ export function ComposerFooter({
   projectId,
   showTerminalControls = true,
   artifactsVisible = false,
+  artifactsAvailable = Boolean(onToggleArtifacts),
   terminalVisible,
   thinkingLevel,
   thinkingLevelLabels,
@@ -155,7 +157,7 @@ export function ComposerFooter({
         {projectGitState?.isGitRepo ? (
           <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
-        {onToggleArtifacts && !showTerminalControls ? (
+        {!showTerminalControls ? (
           <ToolbarButton
             label="Artifacts"
             icon={<FileCode2 size={14} />}
@@ -165,6 +167,8 @@ export function ComposerFooter({
               artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
             )}
             onClick={onToggleArtifacts}
+            disabled={!artifactsAvailable || !onToggleArtifacts}
+            aria-disabled={!artifactsAvailable || !onToggleArtifacts}
           />
         ) : (
           <button

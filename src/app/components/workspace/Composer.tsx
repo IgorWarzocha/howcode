@@ -54,6 +54,7 @@ export type ComposerProps = {
   onToggleArtifacts?: () => void;
   showTerminalControls?: boolean;
   artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   onLayoutChange: () => void;
   mainViewRef: RefObject<HTMLElement | null>;
