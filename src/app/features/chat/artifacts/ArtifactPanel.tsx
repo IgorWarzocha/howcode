@@ -222,7 +222,12 @@ export function ArtifactPanel({
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
   const markdownPreviewEditable =
     view === "preview" && selectedArtifact?.kind === "markdown" && !showingHistoricalVersion;
-  const saveVisible = view === "code" || markdownPreviewEditable;
+  const saveDisabled =
+    !selectedArtifact ||
+    saving ||
+    view === "list" ||
+    (!showingHistoricalVersion && draft === selectedArtifact.content) ||
+    (view !== "code" && !markdownPreviewEditable && !showingHistoricalVersion);
 
   useEffect(() => {
     let cancelled = false;
@@ -336,32 +341,12 @@ export function ArtifactPanel({
   }, []);
 
   const saveDraft = async () => {
-    if (!selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content) return;
+    if (!selectedArtifact) return;
+    const content = showingHistoricalVersion ? displayedContent : draft;
+    if (!showingHistoricalVersion && content === selectedArtifact.content) return;
     setSaving(true);
     try {
-      const updated = await updateArtifactQuery(selectedArtifact.slug, draft, conversationId);
-      if (updated) {
-        setArtifacts((current) =>
-          current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
-        );
-        setSelectedVersion("latest");
-        setView("preview");
-        setPreviewRevision((revision) => revision + 1);
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const restoreSelectedVersion = async () => {
-    if (!selectedArtifact || !selectedHistoricalVersion) return;
-    setSaving(true);
-    try {
-      const updated = await updateArtifactQuery(
-        selectedArtifact.slug,
-        selectedHistoricalVersion.content,
-        conversationId,
-      );
+      const updated = await updateArtifactQuery(selectedArtifact.slug, content, conversationId);
       if (updated) {
         setArtifacts((current) =>
           current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
@@ -421,47 +406,47 @@ export function ArtifactPanel({
                 ))}
             </select>
           ) : null}
-          {(["list", "code", "preview"] as const).map((nextView) => (
-            <button
-              key={nextView}
-              type="button"
-              className={cn(
-                compactIconButtonClass,
-                "h-7 w-7",
-                view === nextView && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
-              )}
-              onClick={() => setView(nextView)}
-              aria-label={`Show artifact ${nextView}`}
-              data-tooltip={
-                nextView === "list" ? "Artifact list" : nextView === "code" ? "Code" : "Preview"
-              }
-            >
-              {nextView === "list" ? (
-                <List size={14} />
-              ) : nextView === "code" ? (
-                <FileCode2 size={14} />
-              ) : (
-                <Play size={14} />
-              )}
-            </button>
-          ))}
-          {saveVisible ? (
-            <button
-              type="button"
-              className={cn(compactIconButtonClass, "h-7 w-7")}
-              onClick={() => void saveDraft()}
-              disabled={
-                !selectedArtifact ||
-                showingHistoricalVersion ||
-                draft === selectedArtifact.content ||
-                saving
-              }
-              aria-label="Save artifact"
-              data-tooltip="Save artifact"
-            >
-              <Save size={14} />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              view === "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+            )}
+            onClick={() => setView("list")}
+            aria-label="Show artifact list"
+            data-tooltip="Artifact list"
+          >
+            <List size={14} />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              view !== "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+            )}
+            onClick={() => setView(view === "code" ? "preview" : "code")}
+            disabled={!selectedArtifact}
+            aria-label={view === "code" ? "Show artifact preview" : "Show artifact code"}
+            data-tooltip={view === "code" ? "Preview" : "Code"}
+          >
+            {view === "code" ? <Play size={14} /> : <FileCode2 size={14} />}
+          </button>
+          <button
+            type="button"
+            className={cn(compactIconButtonClass, "h-7 w-7")}
+            onClick={() => void saveDraft()}
+            disabled={saveDisabled}
+            aria-label="Save artifact"
+            data-tooltip={
+              showingHistoricalVersion
+                ? `Save snapshot as latest v${(selectedArtifact?.version ?? 0) + 1}`
+                : "Save artifact"
+            }
+          >
+            <Save size={14} />
+          </button>
           <button
             type="button"
             className={cn(compactIconButtonClass, "h-7 w-7")}
@@ -472,16 +457,6 @@ export function ArtifactPanel({
           >
             <Download size={14} />
           </button>
-          {showingHistoricalVersion ? (
-            <button
-              type="button"
-              className="h-7 rounded-md border border-[rgba(169,178,215,0.08)] px-2 text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)] disabled:opacity-40"
-              onClick={() => void restoreSelectedVersion()}
-              disabled={saving}
-            >
-              Restore
-            </button>
-          ) : null}
           <button
             type="button"
             className={cn(
