@@ -113,9 +113,13 @@ export type RuntimeHostMainRequestMap = {
     kind: ArtifactKind;
     content: string;
   };
-  updateArtifact: { slug: string; content: string };
-  editArtifact: { slug: string; edits: Array<{ oldText: string; newText: string }> };
-  getArtifact: { artifactId: string };
+  updateArtifact: { slug: string; content: string; conversationId?: string | null };
+  editArtifact: {
+    slug: string;
+    conversationId?: string | null;
+    edits: Array<{ oldText: string; newText: string }>;
+  };
+  getArtifact: { artifactId: string; conversationId?: string | null };
   listArtifacts: { conversationId: string };
 };
 

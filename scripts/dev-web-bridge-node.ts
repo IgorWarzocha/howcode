@@ -131,10 +131,12 @@ const handlers: DesktopRequestHandlerMap = {
     piThreads.loadChatSidebarState(selectedGroupId ?? null),
   createChatGroup: ({ name }) => piThreads.createChatGroup(name),
   listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
-  getArtifact: ({ artifactId }) => piThreads.getArtifact(artifactId),
-  updateArtifact: ({ artifactId, content }) =>
-    piThreads.updateArtifact({ slug: artifactId, content }),
-  editArtifact: ({ artifactId, edits }) => piThreads.editArtifact({ slug: artifactId, edits }),
+  getArtifact: ({ artifactId, conversationId }) =>
+    piThreads.getArtifact(artifactId, conversationId ?? null),
+  updateArtifact: ({ artifactId, content, conversationId }) =>
+    piThreads.updateArtifact({ slug: artifactId, content, conversationId: conversationId ?? null }),
+  editArtifact: ({ artifactId, edits, conversationId }) =>
+    piThreads.editArtifact({ slug: artifactId, edits, conversationId: conversationId ?? null }),
   listArtifactVersions: ({ artifactId }) => piThreads.listArtifactVersions(artifactId),
   compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
   getInboxThreads: () => piThreads.loadInboxThreadList(),

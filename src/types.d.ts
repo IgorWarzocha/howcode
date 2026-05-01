@@ -154,11 +154,19 @@ declare global {
       getChatSidebarState?: (selectedGroupId?: string | null) => Promise<ChatSidebarState>;
       createChatGroup?: (name: string) => Promise<ChatSidebarState>;
       listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>;
-      getArtifact?: (artifactId: string) => Promise<Artifact | null>;
-      updateArtifact?: (artifactId: string, content: string) => Promise<Artifact>;
+      getArtifact?: (
+        artifactId: string,
+        conversationId?: string | null,
+      ) => Promise<Artifact | null>;
+      updateArtifact?: (
+        artifactId: string,
+        content: string,
+        conversationId?: string | null,
+      ) => Promise<Artifact>;
       editArtifact?: (
         artifactId: string,
         edits: Array<{ oldText: string; newText: string }>,
+        conversationId?: string | null,
       ) => Promise<Artifact>;
       listArtifactVersions?: (artifactId: string) => Promise<ArtifactVersion[]>;
       compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>;

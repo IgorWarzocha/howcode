@@ -89,19 +89,28 @@ export async function listArtifactsQuery(conversationId?: string | null) {
   return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? [];
 }
 
-export async function getArtifactQuery(artifactId: string) {
-  return (await window.piDesktop?.getArtifact?.(artifactId)) ?? null;
+export async function getArtifactQuery(artifactId: string, conversationId?: string | null) {
+  return (await window.piDesktop?.getArtifact?.(artifactId, conversationId ?? null)) ?? null;
 }
 
-export async function updateArtifactQuery(artifactId: string, content: string) {
-  return (await window.piDesktop?.updateArtifact?.(artifactId, content)) ?? null;
+export async function updateArtifactQuery(
+  artifactId: string,
+  content: string,
+  conversationId?: string | null,
+) {
+  return (
+    (await window.piDesktop?.updateArtifact?.(artifactId, content, conversationId ?? null)) ?? null
+  );
 }
 
 export async function editArtifactQuery(
   artifactId: string,
   edits: Array<{ oldText: string; newText: string }>,
+  conversationId?: string | null,
 ) {
-  return (await window.piDesktop?.editArtifact?.(artifactId, edits)) ?? null;
+  return (
+    (await window.piDesktop?.editArtifact?.(artifactId, edits, conversationId ?? null)) ?? null
+  );
 }
 
 export async function listArtifactVersionsQuery(artifactId: string) {

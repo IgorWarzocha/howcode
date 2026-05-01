@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
@@ -66,11 +66,14 @@ export function useAppShellController() {
     [inboxThreads, state.selectedInboxSessionPath],
   );
   const { terminalRunningProjectIds, terminalRunningSessionPaths } = useRunningTerminalSessions();
-  const refreshChatSidebarState = async (groupId = selectedChatGroupId) => {
-    const nextState = await getChatSidebarStateQuery(groupId);
-    setChatSidebarState(nextState);
-    return nextState;
-  };
+  const refreshChatSidebarState = useCallback(
+    async (groupId = selectedChatGroupId) => {
+      const nextState = await getChatSidebarStateQuery(groupId);
+      setChatSidebarState(nextState);
+      return nextState;
+    },
+    [selectedChatGroupId],
+  );
   const handleCreateChatGroup = async (name: string) => {
     const nextState = await createChatGroupQuery(name);
     setChatSidebarState(nextState);

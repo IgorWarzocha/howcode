@@ -185,7 +185,7 @@ export function ChatWorkspaceView({
                   }
                   availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                   projectId={composerProjectId}
-                  chatGroupId={controller.selectedChatGroupId}
+                  chatGroupId={terminalSessionPath ? null : controller.selectedChatGroupId}
                   projectGitState={null}
                   diffBaseline={diffBaseline}
                   sessionPath={terminalSessionPath}
@@ -229,9 +229,12 @@ export function ChatWorkspaceView({
       <div
         className={cn(
           "absolute top-0 right-0 bottom-0 min-h-0 overflow-hidden transition-[width] duration-200 ease-out",
-          artifactsVisible ? "w-[min(760px,max(0px,calc(100%-900px)))]" : "w-0",
+          !artifactsVisible && "w-0",
           artifactsFullscreen && "left-0 w-auto",
         )}
+        style={
+          artifactsVisible && !artifactsFullscreen ? { width: ARTIFACT_DRAWER_WIDTH } : undefined
+        }
       >
         <ArtifactPanel
           conversationId={activeThreadData?.sessionPath ?? terminalSessionPath}

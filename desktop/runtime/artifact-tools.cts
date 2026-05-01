@@ -10,8 +10,15 @@ export type ArtifactToolAdapter = {
     kind: ArtifactKind;
     content: string;
   }): Promise<Artifact> | Artifact;
-  editArtifact(input: { slug: string; edits: ArtifactEdit[] }): Promise<Artifact> | Artifact;
-  getArtifact(artifactId: string): Promise<Artifact | null> | Artifact | null;
+  editArtifact(input: {
+    conversationId: string;
+    slug: string;
+    edits: ArtifactEdit[];
+  }): Promise<Artifact> | Artifact;
+  getArtifact(input: { conversationId: string; slug: string }):
+    | Promise<Artifact | null>
+    | Artifact
+    | null;
   listArtifacts(conversationId: string): Promise<Artifact[]> | Artifact[];
 };
 
@@ -78,9 +85,13 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
         required: ["id", "edits"],
         additionalProperties: false,
       },
-      async execute(_toolCallId, params) {
+      async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
         const input = params as { id: string; edits: ArtifactEdit[] };
-        const artifact = await adapter.editArtifact({ slug: input.id, edits: input.edits });
+        const artifact = await adapter.editArtifact({
+          conversationId: getConversationId(ctx),
+          slug: input.id,
+          edits: input.edits,
+        });
         return textResult(`Edited artifact ${artifact.slug} to version ${artifact.version}.`, {
           artifact,
         });
@@ -97,9 +108,12 @@ export function createArtifactTools(adapter: ArtifactToolAdapter): ToolDefinitio
         required: ["id"],
         additionalProperties: false,
       },
-      async execute(_toolCallId, params) {
+      async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
         const input = params as { id: string };
-        const artifact = await adapter.getArtifact(input.id);
+        const artifact = await adapter.getArtifact({
+          conversationId: getConversationId(ctx),
+          slug: input.id,
+        });
         if (!artifact) throw new Error(`Artifact not found: ${input.id}`);
         return textResult(JSON.stringify(artifact), { artifact });
       },

@@ -161,11 +161,15 @@ export function installDevWebDesktopBridge() {
     createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
     listArtifacts: (conversationId: string | null = null) =>
       invokeRequest("listArtifacts", { conversationId }),
-    getArtifact: (artifactId: string) => invokeRequest("getArtifact", { artifactId }),
-    updateArtifact: (artifactId: string, content: string) =>
-      invokeRequest("updateArtifact", { artifactId, content }),
-    editArtifact: (artifactId: string, edits: Array<{ oldText: string; newText: string }>) =>
-      invokeRequest("editArtifact", { artifactId, edits }),
+    getArtifact: (artifactId: string, conversationId: string | null = null) =>
+      invokeRequest("getArtifact", { artifactId, conversationId }),
+    updateArtifact: (artifactId: string, content: string, conversationId: string | null = null) =>
+      invokeRequest("updateArtifact", { artifactId, content, conversationId }),
+    editArtifact: (
+      artifactId: string,
+      edits: Array<{ oldText: string; newText: string }>,
+      conversationId: string | null = null,
+    ) => invokeRequest("editArtifact", { artifactId, edits, conversationId }),
     listArtifactVersions: (artifactId: string) =>
       invokeRequest("listArtifactVersions", { artifactId }),
     compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),

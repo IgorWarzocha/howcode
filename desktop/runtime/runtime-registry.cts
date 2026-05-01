@@ -152,7 +152,7 @@ async function createRuntime(options: {
           customTools: createArtifactTools({
             createArtifact,
             editArtifact,
-            getArtifact,
+            getArtifact: ({ conversationId, slug }) => getArtifact(slug, conversationId),
             listArtifacts,
           }),
         }

@@ -197,9 +197,13 @@ export function createArtifact(input: {
   return artifact;
 }
 
-export function updateArtifact(input: { slug: string; content: string }) {
+export function updateArtifact(input: {
+  slug: string;
+  content: string;
+  conversationId?: string | null;
+}) {
   ensureArtifactSchema();
-  const current = getArtifact(input.slug);
+  const current = getArtifact(input.slug, input.conversationId);
   if (!current) throw new Error(`Artifact not found: ${input.slug}`);
   const nextVersion = current.version + 1;
   const db = getThreadStateDatabase();
@@ -216,7 +220,7 @@ export function updateArtifact(input: { slug: string; content: string }) {
     db.exec("ROLLBACK");
     throw error;
   }
-  const artifact = getArtifact(input.slug);
+  const artifact = getArtifact(input.slug, input.conversationId);
   if (!artifact) throw new Error("Artifact update failed.");
   emitArtifactChange(artifact);
   return artifact;
@@ -224,25 +228,35 @@ export function updateArtifact(input: { slug: string; content: string }) {
 
 export function editArtifact(input: {
   slug: string;
+  conversationId?: string | null;
   edits: Array<{ oldText: string; newText: string }>;
 }) {
-  const current = getArtifact(input.slug);
+  const current = getArtifact(input.slug, input.conversationId);
   if (!current) throw new Error(`Artifact not found: ${input.slug}`);
   return updateArtifact({
     slug: input.slug,
+    conversationId: input.conversationId,
     content: applyArtifactEdits(current.content, input.edits, input.slug),
   });
 }
 
-export function getArtifact(artifactId: string): Artifact | null {
+export function getArtifact(artifactId: string, conversationId?: string | null): Artifact | null {
   ensureArtifactSchema();
-  const row = getThreadStateDatabase()
-    .prepare(
-      `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
-              created_at AS createdAt, updated_at AS updatedAt
-       FROM artifacts WHERE id = ?`,
-    )
-    .get(artifactId) as ArtifactRow | undefined;
+  const row = conversationId
+    ? (getThreadStateDatabase()
+        .prepare(
+          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                  created_at AS createdAt, updated_at AS updatedAt
+           FROM artifacts WHERE id = ? AND conversation_id = ?`,
+        )
+        .get(artifactId, conversationId) as ArtifactRow | undefined)
+    : (getThreadStateDatabase()
+        .prepare(
+          `SELECT id AS slug, conversation_id AS conversationId, kind, content, version,
+                  created_at AS createdAt, updated_at AS updatedAt
+           FROM artifacts WHERE id = ?`,
+        )
+        .get(artifactId) as ArtifactRow | undefined);
   return row ? mapArtifactRow(row) : null;
 }
 

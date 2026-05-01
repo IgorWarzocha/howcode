@@ -135,7 +135,6 @@ export function ArtifactPanel({
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
-  const artifactIdsRef = useRef(new Set<string>());
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
 
   const selectedArtifact = useMemo(
@@ -156,14 +155,12 @@ export function ArtifactPanel({
   const saveVisible = view === "code" || markdownPreviewEditable;
 
   useEffect(() => {
-    artifactIdsRef.current = new Set(artifacts.map((artifact) => artifact.slug));
-  }, [artifacts]);
-
-  useEffect(() => {
     let cancelled = false;
+    setArtifacts([]);
+    setSelectedArtifactId(null);
+    setSelectedVersion("latest");
+    setVersions([]);
     if (!conversationId) {
-      setArtifacts([]);
-      setSelectedArtifactId(null);
       return;
     }
     void listArtifactsQuery(conversationId).then((nextArtifacts) => {
@@ -184,10 +181,7 @@ export function ArtifactPanel({
     if (!window.piDesktop?.subscribe) return;
     return window.piDesktop.subscribe((event) => {
       if (event.type !== "artifact-update") return;
-      const artifactAlreadyVisible = artifactIdsRef.current.has(event.artifact.slug);
-      if (conversationId && event.conversationId !== conversationId && !artifactAlreadyVisible) {
-        return;
-      }
+      if (!conversationId || event.conversationId !== conversationId) return;
       setArtifacts((current) => {
         const index = current.findIndex((artifact) => artifact.slug === event.artifact.slug);
         if (index === -1) return [event.artifact, ...current];
@@ -269,7 +263,7 @@ export function ArtifactPanel({
     if (!selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content) return;
     setSaving(true);
     try {
-      const updated = await updateArtifactQuery(selectedArtifact.slug, draft);
+      const updated = await updateArtifactQuery(selectedArtifact.slug, draft, conversationId);
       if (updated) {
         setArtifacts((current) =>
           current.map((artifact) => (artifact.slug === updated.slug ? updated : artifact)),
@@ -290,6 +284,7 @@ export function ArtifactPanel({
       const updated = await updateArtifactQuery(
         selectedArtifact.slug,
         selectedHistoricalVersion.content,
+        conversationId,
       );
       if (updated) {
         setArtifacts((current) =>

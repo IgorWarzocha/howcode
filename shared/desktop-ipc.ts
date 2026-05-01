@@ -170,10 +170,20 @@ export type DesktopRequestMap = {
   getChatSidebarState: { params: { selectedGroupId?: string | null }; response: ChatSidebarState };
   createChatGroup: { params: { name: string }; response: ChatSidebarState };
   listArtifacts: { params: { conversationId?: string | null }; response: Artifact[] };
-  getArtifact: { params: { artifactId: string }; response: Artifact | null };
-  updateArtifact: { params: { artifactId: string; content: string }; response: Artifact };
+  getArtifact: {
+    params: { artifactId: string; conversationId?: string | null };
+    response: Artifact | null;
+  };
+  updateArtifact: {
+    params: { artifactId: string; content: string; conversationId?: string | null };
+    response: Artifact;
+  };
   editArtifact: {
-    params: { artifactId: string; edits: Array<{ oldText: string; newText: string }> };
+    params: {
+      artifactId: string;
+      conversationId?: string | null;
+      edits: Array<{ oldText: string; newText: string }>;
+    };
     response: Artifact;
   };
   listArtifactVersions: { params: { artifactId: string }; response: ArtifactVersion[] };

@@ -100,10 +100,18 @@ export type PiThreadsModule = {
   ) => Promise<ChatSidebarState> | ChatSidebarState;
   createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState;
   listArtifacts: (conversationId?: string | null) => Promise<Artifact[]> | Artifact[];
-  getArtifact: (artifactId: string) => Promise<Artifact | null> | Artifact | null;
-  updateArtifact: (request: { slug: string; content: string }) => Promise<Artifact> | Artifact;
+  getArtifact: (
+    artifactId: string,
+    conversationId?: string | null,
+  ) => Promise<Artifact | null> | Artifact | null;
+  updateArtifact: (request: {
+    slug: string;
+    content: string;
+    conversationId?: string | null;
+  }) => Promise<Artifact> | Artifact;
   editArtifact: (request: {
     slug: string;
+    conversationId?: string | null;
     edits: Array<{ oldText: string; newText: string }>;
   }) => Promise<Artifact> | Artifact;
   listArtifactVersions: (artifactId: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
