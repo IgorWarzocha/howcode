@@ -51,6 +51,27 @@ type TerminalViewportProps = {
   className?: string;
 };
 
+async function loadUsableGhosttyCore() {
+  const probe = await GhosttyCore.load({ scrollbackLimit: 100 });
+  probe.init(20, 5);
+  for (let line = 1; line <= 8; line += 1) {
+    probe.writeString(`ghostty-scrollback-probe-${line}\r\n`);
+  }
+
+  const scrollbackCount = probe.getScrollbackCount();
+  const hasReadableScrollback =
+    scrollbackCount === 0 ||
+    Array.from({ length: scrollbackCount }, (_, offset) => probe.getScrollbackLineLen(offset)).some(
+      (lineLength) => lineLength > 0,
+    );
+
+  if (!hasReadableScrollback) {
+    return null;
+  }
+
+  return GhosttyCore.load();
+}
+
 export function TerminalViewport({
   projectId,
   sessionPath,
@@ -78,7 +99,7 @@ export function TerminalViewport({
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null);
-  const [terminalCore, setTerminalCore] = useState<TerminalCore | null>(null);
+  const [terminalCore, setTerminalCore] = useState<TerminalCore | null | undefined>(undefined);
   const effectiveLaunchMode = launchMode;
   if (effectiveLaunchMode === "pi-session" && piSessionPathRef.current === null) {
     piSessionPathRef.current = { value: sessionPath };
@@ -189,10 +210,10 @@ export function TerminalViewport({
 
   useEffect(() => {
     let cancelled = false;
-    setTerminalCore(null);
+    setTerminalCore(undefined);
     setTerminalInitError(null);
 
-    void GhosttyCore.load().then(
+    void loadUsableGhosttyCore().then(
       (core) => {
         if (!cancelled) {
           setTerminalCore(core);
@@ -586,10 +607,10 @@ export function TerminalViewport({
         className,
       )}
     >
-      {terminalCore ? (
+      {terminalCore !== undefined ? (
         <Terminal
           ref={terminalHandleRef}
-          core={terminalCore}
+          core={terminalCore ?? undefined}
           autoResize
           cursorBlink
           onReady={handleTerminalReady}
@@ -600,7 +621,7 @@ export function TerminalViewport({
           style={{ height: "100%", width: "100%", ...terminalStyle }}
         />
       ) : null}
-      {!terminalCore && !terminalInitError ? (
+      {terminalCore === undefined && !terminalInitError ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)] px-4 py-3 text-[12px] leading-5 text-[color:var(--muted)]">
           <span>[terminal] Loading Ghostty renderer…</span>
         </div>
