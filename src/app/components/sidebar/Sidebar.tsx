@@ -121,18 +121,6 @@ export function Sidebar({
       {showModeSelection ? (
         <nav className="sidebar-mode-nav" aria-label="Primary navigation">
           <NavButton
-            icon={<Inbox size={16} />}
-            label="Inbox"
-            active={activeView === "inbox"}
-            onClick={() => onShowView("inbox")}
-          />
-          <NavButton
-            icon={<MessageSquare size={16} />}
-            label="Chat"
-            active={activeView === "chat"}
-            onClick={() => onShowView("chat")}
-          />
-          <NavButton
             icon={<PawPrint size={16} />}
             label={
               <span className="sidebar-mode-label">
@@ -155,6 +143,18 @@ export function Sidebar({
             active={activeView === "work"}
             disabled
             title="Coming soon"
+          />
+          <NavButton
+            icon={<Inbox size={16} />}
+            label="Inbox"
+            active={activeView === "inbox"}
+            onClick={() => onShowView("inbox")}
+          />
+          <NavButton
+            icon={<MessageSquare size={16} />}
+            label="Chat"
+            active={activeView === "chat"}
+            onClick={() => onShowView("chat")}
           />
           <NavButton
             icon={<Code2 size={16} />}
