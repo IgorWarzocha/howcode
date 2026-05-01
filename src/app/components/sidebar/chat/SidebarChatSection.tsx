@@ -20,8 +20,8 @@ import type {
 import { SurfacePanel } from "../../common/SurfacePanel";
 import { IconButton } from "../../common/IconButton";
 import { ChatGroupRow } from "./ChatGroupRow";
+import { chatThreadDragType, ChatThreadDropItem } from "./ChatThreadDropItem";
 import { SortableGroupItem } from "./SortableGroupItem";
-import { ThreadRow } from "../project-tree/ThreadRow";
 import { useProjectMenuDismiss } from "../project-tree/useProjectMenuDismiss";
 
 type SidebarChatSectionProps = {
@@ -147,37 +147,22 @@ export function SidebarChatSection({
   const handleThreadDrop = (event: DragEvent, groupId: string | null) => {
     event.preventDefault();
     event.stopPropagation();
-    const draggedThreadId = event.dataTransfer.getData("application/howcode-chat-thread");
+    const draggedThreadId = event.dataTransfer.getData(chatThreadDragType);
     const draggedThread = getDraggedThread(draggedThreadId);
     if (draggedThread) moveThread(draggedThread, groupId);
   };
 
   const renderThread = (thread: ChatThread, groupId: string | null) => (
-    <div
+    <ChatThreadDropItem
       key={thread.id}
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData("application/howcode-chat-thread", thread.id);
-        event.dataTransfer.effectAllowed = "move";
-      }}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => handleThreadDrop(event, groupId)}
-    >
-      <ThreadRow
-        age={thread.age}
-        pinned={Boolean(thread.pinned)}
-        running={Boolean(thread.running)}
-        terminalRunning={false}
-        unread={Boolean(thread.unread)}
-        isSelected={selectedThreadId === thread.id}
-        title={thread.title}
-        onArchive={() => void onAction("thread.archive", { threadId: thread.id }).then(onRefresh)}
-        onOpen={() =>
-          thread.sessionPath && onThreadOpen(thread.projectId, thread.id, thread.sessionPath)
-        }
-        onPin={() => void onAction("thread.pin", { threadId: thread.id }).then(onRefresh)}
-      />
-    </div>
+      thread={thread}
+      groupId={groupId}
+      selectedThreadId={selectedThreadId}
+      onAction={onAction}
+      onRefresh={onRefresh}
+      onThreadDrop={handleThreadDrop}
+      onThreadOpen={onThreadOpen}
+    />
   );
 
   return (
