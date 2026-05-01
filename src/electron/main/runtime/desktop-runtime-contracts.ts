@@ -43,6 +43,7 @@ import type {
 } from "../../../../shared/terminal-contracts";
 
 export type PiThreadsModule = {
+  disposeDesktopRuntime?: () => Promise<void> | void;
   handleDesktopAction: (
     action: DesktopAction,
     payload: AnyDesktopActionPayload,
@@ -126,6 +127,7 @@ export type PiThreadsModule = {
 };
 
 export type TerminalManagerModule = {
+  closeAllTerminals?: () => Promise<void>;
   closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
   getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>;
   listTerminals: () => Promise<TerminalSessionSnapshot[]>;

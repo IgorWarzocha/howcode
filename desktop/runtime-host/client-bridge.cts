@@ -74,10 +74,26 @@ const hosts = brokerState.hosts;
 const THREAD_HOST_IDLE_MS = 5 * 60 * 1000;
 
 let registeredHostShutdownHandlers = false;
+let runtimeHostsShuttingDown = false;
+
+function terminateHostProcess(child: ChildProcess | null | undefined) {
+  if (!child || child.killed || child.exitCode !== null) return;
+
+  if (process.platform === "win32" && child.pid) {
+    const taskkill = spawn("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    taskkill.unref();
+    return;
+  }
+
+  child.kill("SIGTERM");
+}
 
 function killAllRuntimeHosts() {
   for (const host of hosts) {
-    host.process?.kill();
+    terminateHostProcess(host.process);
   }
 }
 
@@ -129,6 +145,25 @@ function rejectPendingRequests(host: HostConnection, error: Error) {
   host.pendingRequests.clear();
 }
 
+export function shutdownRuntimeHosts() {
+  runtimeHostsShuttingDown = true;
+
+  for (const host of hosts) {
+    if (host.idleTimer) {
+      clearTimeout(host.idleTimer);
+      host.idleTimer = null;
+    }
+    rejectPendingRequests(host, new Error("Pi runtime host is shutting down."));
+    terminateHostProcess(host.process);
+    host.process = null;
+    host.startPromise = null;
+  }
+
+  hostByAlias.clear();
+  hosts.clear();
+  hosts.add(serviceHost);
+}
+
 function rememberHostAlias(host: HostConnection, alias: string | null | undefined) {
   const normalized = alias?.trim();
   if (!normalized) return;
@@ -153,7 +188,7 @@ function scheduleThreadHostIdleStop(host: HostConnection) {
   if (host.idleTimer) clearTimeout(host.idleTimer);
   host.idleTimer = setTimeout(() => {
     if (host.pendingRequests.size > 0) return;
-    host.process?.kill();
+    terminateHostProcess(host.process);
     forgetHost(host);
   }, THREAD_HOST_IDLE_MS);
 }
@@ -267,6 +302,10 @@ async function handleHostMainRequest(host: HostConnection, message: RuntimeHostM
 }
 
 async function ensureRuntimeHost(host: HostConnection) {
+  if (runtimeHostsShuttingDown) {
+    throw new Error("Pi runtime host is shutting down.");
+  }
+
   registerHostShutdownHandlers();
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host);
@@ -280,6 +319,10 @@ async function ensureRuntimeHost(host: HostConnection) {
   clearHostIdleTimer(host);
   host.startPromise = (async () => {
     const nodeExecutable = await getNodeExecutable();
+    if (runtimeHostsShuttingDown) {
+      throw new Error("Pi runtime host is shutting down.");
+    }
+
     return await new Promise<ChildProcess>((resolve, reject) => {
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
@@ -307,6 +350,12 @@ async function ensureRuntimeHost(host: HostConnection) {
       };
 
       child.once("spawn", () => {
+        if (runtimeHostsShuttingDown) {
+          terminateHostProcess(child);
+          settleFailure(new Error("Pi runtime host is shutting down."));
+          return;
+        }
+
         settled = true;
         host.process = child;
         host.startPromise = null;

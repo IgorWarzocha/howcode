@@ -28,7 +28,8 @@ import {
   loadProjectDiffStats,
   loadProjectGitState,
 } from "../project-git.cts";
-import { setWatchedSessionPath } from "./session-watch.cts";
+import { disposeSessionWatcher, setWatchedSessionPath } from "./session-watch.cts";
+import { shutdownRuntimeHosts } from "../runtime-host/client-bridge.cts";
 export { loadInboxThreadList } from "./thread-loader.cts";
 export { refreshShellIndex } from "./shell-index.cts";
 export { loadShellState } from "./shell-state.cts";
@@ -84,3 +85,8 @@ export { listProjectCommits };
 export { setWatchedSessionPath };
 
 export const subscribeDesktopEvents = subscribeRuntimeEvents;
+
+export async function disposeDesktopRuntime() {
+  disposeSessionWatcher();
+  shutdownRuntimeHosts();
+}

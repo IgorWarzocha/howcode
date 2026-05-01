@@ -24,6 +24,7 @@ export {
   loadThread,
 } from "./pi-threads/thread-loader.cts";
 export {
+  disposeDesktopRuntime,
   getDictationState,
   installDictationModel,
   removeDictationModel,
