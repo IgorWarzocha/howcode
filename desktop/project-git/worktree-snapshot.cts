@@ -14,21 +14,33 @@ export type WorktreeSnapshot = {
 
 export type WorktreeStats = Omit<WorktreeSnapshot, "patch">;
 
-function parseShortStat(output: string) {
-  const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
-  const deletionsMatch = output.match(/(\d+)\s+deletions?\(-\)/);
+function parseNumStat(output: string) {
+  let fileCount = 0;
+  let insertions = 0;
+  let deletions = 0;
 
-  return {
-    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1], 10) : 0,
-    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1], 10) : 0,
-  };
-}
+  for (const line of output.split("\n")) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.length === 0) {
+      continue;
+    }
 
-function countNonEmptyLines(output: string) {
-  return output
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean).length;
+    fileCount += 1;
+
+    const [rawInsertions, rawDeletions] = trimmedLine.split("\t");
+    const parsedInsertions = Number.parseInt(rawInsertions ?? "", 10);
+    const parsedDeletions = Number.parseInt(rawDeletions ?? "", 10);
+
+    if (!Number.isNaN(parsedInsertions)) {
+      insertions += parsedInsertions;
+    }
+
+    if (!Number.isNaN(parsedDeletions)) {
+      deletions += parsedDeletions;
+    }
+  }
+
+  return { fileCount, insertions, deletions };
 }
 
 async function withStagedWorktree<T>(
@@ -121,49 +133,27 @@ export async function loadWorktreeStats(
       "--",
     ];
 
-    const [shortStatOutput, diffStatOutput, nameStatusOutput, numStatOutput] = await Promise.all([
-      runGitWithOptions(projectId, diffArguments(["--shortstat"]), {
+    const numStatOutput = await runGitWithOptions(
+      projectId,
+      diffArguments(["--numstat", "--find-renames"]),
+      {
         env: context?.env,
         timeout: 20_000,
         maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => "",
-      ),
-      runGitWithOptions(projectId, diffArguments(["--stat=200,200", "--find-renames"]), {
-        env: context?.env,
-        timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => "",
-      ),
-      runGitWithOptions(projectId, diffArguments(["--name-status", "--find-renames"]), {
-        env: context?.env,
-        timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => "",
-      ),
-      runGitWithOptions(projectId, diffArguments(["--numstat", "--find-renames"]), {
-        env: context?.env,
-        timeout: 20_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => "",
-      ),
-    ]);
+      },
+    ).then(
+      ({ stdout }) => stdout.trim(),
+      () => "",
+    );
 
-    const shortStat = parseShortStat(shortStatOutput);
+    const numStat = parseNumStat(numStatOutput);
 
     return {
-      fileCount: Math.max(countNonEmptyLines(nameStatusOutput), countNonEmptyLines(numStatOutput)),
-      insertions: shortStat.insertions,
-      deletions: shortStat.deletions,
-      diffStat: diffStatOutput,
-      nameStatus: nameStatusOutput,
+      fileCount: numStat.fileCount,
+      insertions: numStat.insertions,
+      deletions: numStat.deletions,
+      diffStat: "",
+      nameStatus: "",
       numStat: numStatOutput,
     };
   };
