@@ -7,7 +7,7 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
-import { compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, iconActionButtonDisabledClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
@@ -164,6 +164,7 @@ export function ComposerFooter({
             trailing
             className={cn(
               workspaceFooterTextClass,
+              iconActionButtonDisabledClass,
               artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
             )}
             onClick={onToggleArtifacts}
