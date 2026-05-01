@@ -10,7 +10,12 @@ import type {
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
+import { isLocalSessionPath } from "../../../shared/session-paths";
 import { desktopQueryKeys } from "../query/desktop-query";
+import {
+  applyProjectThreadToShellState,
+  removeProjectThreadFromShellState,
+} from "./project-thread-cache";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
 import {
@@ -243,6 +248,16 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
+  if (action === "composer.send" && hasActionError(actionResult)) {
+    const projectId = getPayloadProjectId(contextualPayload);
+    const sessionPath =
+      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
+
+    if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
+      removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
+    }
+  }
+
   // Settings writes are local and already applied optimistically in the renderer.
   // Refreshing shell state here can race against that optimistic update and briefly
   // snap controls back to stale values before the next state load lands.
@@ -268,9 +283,32 @@ export async function runPostDesktopActionEffects({
 
     if ((resultProjectId ?? projectId) && threadId && sessionPath) {
       const nextProjectId = resultProjectId ?? projectId;
+      const optimisticThread = {
+        id: threadId,
+        title: "New thread",
+        age: "Now",
+        lastModifiedMs: Date.now(),
+        sessionPath,
+      };
+      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
+        revealProject: true,
+      });
       dispatch({ type: "open-thread", projectId: nextProjectId, threadId, sessionPath });
       await loadProjectThreads(nextProjectId);
+      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
+        revealProject: true,
+      });
     } else if (localFallback) {
+      const optimisticThread = {
+        id: localFallback.threadId,
+        title: "New thread",
+        age: "Now",
+        lastModifiedMs: Date.now(),
+        sessionPath: localFallback.sessionPath,
+      };
+      applyProjectThreadToShellState(queryClient, localFallback.projectId, optimisticThread, {
+        revealProject: true,
+      });
       dispatch({
         type: "open-thread",
         projectId: localFallback.projectId,

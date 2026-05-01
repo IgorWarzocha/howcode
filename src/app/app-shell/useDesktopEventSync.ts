@@ -10,6 +10,10 @@ import {
   refreshVisibleInboxThread,
   shouldAutoOpenStartedThread,
 } from "./desktop-event-sync";
+import {
+  applyProjectThreadToShellState,
+  getDraftReplacementSessionPath,
+} from "./project-thread-cache";
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
@@ -128,11 +132,17 @@ export function useDesktopEventSync({
       }
 
       const isVisibleThreadUpdate = event.sessionPath === visibleSessionPath;
+      const shouldAutoOpenThread = shouldAutoOpenStartedThread({
+        reason: event.reason,
+        projectId: event.projectId,
+        isChat: event.isChat,
+        workspaceState: latestWorkspaceState,
+      });
       const isCompactionThreadUpdate =
         event.reason === "compaction-start" || event.reason === "compaction";
 
       setLiveThreadData((current) =>
-        isVisibleThreadUpdate || current?.sessionPath === event.sessionPath
+        isVisibleThreadUpdate || shouldAutoOpenThread || current?.sessionPath === event.sessionPath
           ? {
               ...threadWithPreferences,
               diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
@@ -154,6 +164,25 @@ export function useDesktopEventSync({
         event.reason === "external" ||
         event.reason === "compaction"
       ) {
+        applyProjectThreadToShellState(
+          queryClient,
+          event.projectId,
+          {
+            id: event.threadId,
+            title: event.thread.title,
+            age: "Now",
+            lastModifiedMs: Date.now(),
+            sessionPath: event.sessionPath,
+            running: event.thread.isStreaming || event.thread.isCompacting,
+          },
+          {
+            replaceSessionPath: getDraftReplacementSessionPath(
+              latestWorkspaceState.selectedSessionPath,
+              latestWorkspaceState.selectedProjectId,
+              event.projectId,
+            ),
+          },
+        );
         void loadProjectThreads(event.projectId, {
           chat: latestWorkspaceState.activeView === "chat",
         });
@@ -177,14 +206,7 @@ export function useDesktopEventSync({
         );
       }
 
-      if (
-        shouldAutoOpenStartedThread({
-          reason: event.reason,
-          projectId: event.projectId,
-          isChat: event.isChat,
-          workspaceState: latestWorkspaceState,
-        })
-      ) {
+      if (shouldAutoOpenThread) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
