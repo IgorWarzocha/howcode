@@ -251,6 +251,10 @@ button[data-tooltip][aria-disabled="true"]::after {
   padding: 0;
 }
 
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarTitleMode"] {
+  display: none;
+}
+
 .artifact-markdown-editor
   .artifact-mdx-toolbar
   [class*="diffSourceToggle"]
