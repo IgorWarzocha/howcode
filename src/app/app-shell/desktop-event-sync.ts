@@ -24,6 +24,7 @@ export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelecti
 }
 
 export function shouldAutoOpenStartedThread(
+  event: Extract<DesktopEvent, { type: "thread-update" }>,
   reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"],
   workspaceState: DesktopEventSelectionState,
 ) {
@@ -32,7 +33,9 @@ export function shouldAutoOpenStartedThread(
   return (
     reason === "start" &&
     (workspaceState.activeView === "code" ||
-      (workspaceState.activeView === "chat" && visibleSessionPath === null) ||
+      (workspaceState.activeView === "chat" &&
+        visibleSessionPath === null &&
+        event.chatGroupId !== undefined) ||
       (workspaceState.activeView === "thread" && visibleSessionPath === null))
   );
 }

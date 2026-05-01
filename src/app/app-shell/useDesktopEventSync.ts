@@ -173,7 +173,7 @@ export function useDesktopEventSync({
         );
       }
 
-      if (shouldAutoOpenStartedThread(event.reason, latestWorkspaceState)) {
+      if (shouldAutoOpenStartedThread(event, event.reason, latestWorkspaceState)) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,

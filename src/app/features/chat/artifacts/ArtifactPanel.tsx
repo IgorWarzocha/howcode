@@ -592,6 +592,13 @@ export function ArtifactPanel({
                   <a
                     className="text-[color:var(--accent)] underline underline-offset-2"
                     href={href}
+                    target={href?.startsWith("http") ? "_blank" : undefined}
+                    rel={href?.startsWith("http") ? "noreferrer" : undefined}
+                    onClick={(event) => {
+                      if (!href?.startsWith("http://") && !href?.startsWith("https://")) return;
+                      event.preventDefault();
+                      void window.piDesktop?.openExternal?.(href);
+                    }}
                   >
                     {children}
                   </a>

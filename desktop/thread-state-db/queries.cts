@@ -57,7 +57,10 @@ export function listProjects(cwd: string): Project[] {
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
-        LEFT JOIN threads ON threads.cwd = projects.cwd AND threads.archived = 0
+        LEFT JOIN threads
+          ON threads.cwd = projects.cwd
+          AND threads.archived = 0
+          AND threads.session_path NOT LIKE '%/.howcode/chat-sessions/%'
         WHERE projects.hidden = 0
         GROUP BY
           projects.cwd,

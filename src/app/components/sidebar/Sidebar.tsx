@@ -50,10 +50,6 @@ type SidebarProps = {
   onToggleProjectCollapse: (projectId: string) => void;
 };
 
-function ComingSoonLabel() {
-  return <span className="sidebar-coming-soon-label">Coming soon</span>;
-}
-
 export function Sidebar({
   projects,
   inboxThreads,
@@ -141,7 +137,7 @@ export function Sidebar({
             label={
               <span className="sidebar-mode-label">
                 <span>Claw</span>
-                <ComingSoonLabel />
+                <span className="sidebar-coming-soon-label">Coming soon</span>
               </span>
             }
             active={activeView === "claw"}
@@ -153,7 +149,7 @@ export function Sidebar({
             label={
               <span className="sidebar-mode-label">
                 <span>Work</span>
-                <ComingSoonLabel />
+                <span className="sidebar-coming-soon-label">Coming soon</span>
               </span>
             }
             active={activeView === "work"}
