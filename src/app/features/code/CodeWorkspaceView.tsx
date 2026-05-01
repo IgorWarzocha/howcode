@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
@@ -29,6 +30,8 @@ type CodeWorkspaceViewProps = {
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
 };
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
@@ -53,6 +56,8 @@ export function CodeWorkspaceView({
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  sidebarCollapsed,
+  onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
@@ -246,14 +251,18 @@ export function CodeWorkspaceView({
           style={threadFooterStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
-              <div className="min-w-0 self-center opacity-0 xl:opacity-100">
+            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
+              <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
                 {state.activeView === "thread" && !state.takeoverVisible ? (
-                  <DesktopComposerStatus
-                    contextUsage={activeComposerState?.contextUsage ?? null}
-                    model={activeComposerState?.currentModel ?? null}
-                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                  />
+                  <button
+                    type="button"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[rgba(169,178,215,0.1)] hover:text-[color:var(--text)] hover:opacity-100"
+                    onClick={onToggleSidebar}
+                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                  >
+                    {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                  </button>
                 ) : null}
               </div>
               <div className="w-[800px]">
@@ -383,7 +392,17 @@ export function CodeWorkspaceView({
                   </div>
                 )}
               </div>
-              <div aria-hidden="true" />
+              <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
+                {state.activeView === "thread" &&
+                !state.takeoverVisible &&
+                !showDesktopTerminalDrawer ? (
+                  <DesktopComposerStatus
+                    contextUsage={activeComposerState?.contextUsage ?? null}
+                    model={activeComposerState?.currentModel ?? null}
+                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         </footer>

@@ -81,6 +81,7 @@ type AppShellLayoutProps = {
 
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const controllerRef = useRef(controller);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -351,81 +352,86 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   return (
     <>
       <div className={appShellRootClass}>
-        <div className="relative w-[300px] max-w-[calc(100vw-1rem)] min-w-0 shrink-0">
-          <Sidebar
-            projects={projects}
-            inboxThreads={controller.inboxThreads}
-            appLaunchedAtMs={controller.appLaunchedAtMs}
-            appSettings={
-              controller.shellState?.appSettings ?? {
-                chatModel: null,
-                chatThinkingLevel: null,
-                codeModel: null,
-                codeThinkingLevel: null,
-                gitCommitMessageModel: null,
-                gitCommitMessageThinkingLevel: "off",
-                skillCreatorModel: null,
-                skillCreatorThinkingLevel: "off",
-                composerStreamingBehavior: "followUp",
-                dictationModelId: null,
-                dictationMaxDurationSeconds: 180,
-                showDictationButton: true,
-                favoriteFolders: [],
-                projectImportState: null,
-                preferredProjectLocation: null,
-                initializeGitOnProjectCreate: false,
-                gitOpsDefaultMode: "commit",
-                gitDiffBaselineDefault: { kind: "head" },
-                gitDiffRenderModeDefault: "stacked",
-                projectDeletionMode: "pi-only",
-                useAgentsSkillsPaths: false,
-                piTuiTakeover: false,
+        <div
+          className="relative min-w-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
+          style={{ width: sidebarCollapsed ? 0 : 300, opacity: sidebarCollapsed ? 0 : 1 }}
+        >
+          {sidebarCollapsed ? null : (
+            <Sidebar
+              projects={projects}
+              inboxThreads={controller.inboxThreads}
+              appLaunchedAtMs={controller.appLaunchedAtMs}
+              appSettings={
+                controller.shellState?.appSettings ?? {
+                  chatModel: null,
+                  chatThinkingLevel: null,
+                  codeModel: null,
+                  codeThinkingLevel: null,
+                  gitCommitMessageModel: null,
+                  gitCommitMessageThinkingLevel: "off",
+                  skillCreatorModel: null,
+                  skillCreatorThinkingLevel: "off",
+                  composerStreamingBehavior: "followUp",
+                  dictationModelId: null,
+                  dictationMaxDurationSeconds: 180,
+                  showDictationButton: true,
+                  favoriteFolders: [],
+                  projectImportState: null,
+                  preferredProjectLocation: null,
+                  initializeGitOnProjectCreate: false,
+                  gitOpsDefaultMode: "commit",
+                  gitDiffBaselineDefault: { kind: "head" },
+                  gitDiffRenderModeDefault: "stacked",
+                  projectDeletionMode: "pi-only",
+                  useAgentsSkillsPaths: false,
+                  piTuiTakeover: false,
+                }
               }
-            }
-            chatSidebarState={controller.chatSidebarState}
-            activeView={state.activeView}
-            protectedProjectId={
-              controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
-            }
-            selectedInboxSessionPath={state.selectedInboxSessionPath}
-            selectedProjectId={state.selectedProjectId}
-            selectedThreadId={state.selectedThreadId}
-            selectedChatGroupId={controller.selectedChatGroupId}
-            settingsOpen={state.settingsOpen}
-            projectScopeLockActive={projectScopeLockActive}
-            terminalRunningProjectIds={controller.terminalRunningProjectIds}
-            terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
-            collapsedProjectIds={effectiveCollapsedProjectIds}
-            onAction={handleAction}
-            onShowView={handleShowView}
-            onToggleSettings={handleToggleSettings}
-            onOpenExtensionsView={() => {
-              handleShowView("extensions");
-            }}
-            onOpenSkillsView={() => {
-              handleShowView("skills");
-            }}
-            onOpenSettingsPanel={() => {
-              handleShowView("settings");
-            }}
-            onOpenArchivedThreads={() => {
-              handleShowView("archived");
-            }}
-            onDismissInboxThread={controller.handleDismissInboxThread}
-            onCreateChatGroup={controller.handleCreateChatGroup}
-            onSelectChatGroup={controller.handleSelectChatGroup}
-            onNewChat={(groupId) => {
-              controller.handleSelectChatGroup(groupId);
-              void handleAction("thread.new", { chatGroupId: groupId });
-            }}
-            onRefreshChatSidebar={controller.refreshChatSidebarState}
-            onProjectSelect={handleProjectSelect}
-            onProjectReorder={handleProjectReorder}
-            onLoadProjectThreads={controller.handleLoadProjectThreads}
-            onSelectInboxThread={controller.handleSelectInboxThread}
-            onThreadOpen={handleThreadOpen}
-            onToggleProjectCollapse={handleToggleProjectCollapse}
-          />
+              chatSidebarState={controller.chatSidebarState}
+              activeView={state.activeView}
+              protectedProjectId={
+                controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
+              }
+              selectedInboxSessionPath={state.selectedInboxSessionPath}
+              selectedProjectId={state.selectedProjectId}
+              selectedThreadId={state.selectedThreadId}
+              selectedChatGroupId={controller.selectedChatGroupId}
+              settingsOpen={state.settingsOpen}
+              projectScopeLockActive={projectScopeLockActive}
+              terminalRunningProjectIds={controller.terminalRunningProjectIds}
+              terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
+              collapsedProjectIds={effectiveCollapsedProjectIds}
+              onAction={handleAction}
+              onShowView={handleShowView}
+              onToggleSettings={handleToggleSettings}
+              onOpenExtensionsView={() => {
+                handleShowView("extensions");
+              }}
+              onOpenSkillsView={() => {
+                handleShowView("skills");
+              }}
+              onOpenSettingsPanel={() => {
+                handleShowView("settings");
+              }}
+              onOpenArchivedThreads={() => {
+                handleShowView("archived");
+              }}
+              onDismissInboxThread={controller.handleDismissInboxThread}
+              onCreateChatGroup={controller.handleCreateChatGroup}
+              onSelectChatGroup={controller.handleSelectChatGroup}
+              onNewChat={(groupId) => {
+                controller.handleSelectChatGroup(groupId);
+                void handleAction("thread.new", { chatGroupId: groupId });
+              }}
+              onRefreshChatSidebar={controller.refreshChatSidebarState}
+              onProjectSelect={handleProjectSelect}
+              onProjectReorder={handleProjectReorder}
+              onLoadProjectThreads={controller.handleLoadProjectThreads}
+              onSelectInboxThread={controller.handleSelectInboxThread}
+              onThreadOpen={handleThreadOpen}
+              onToggleProjectCollapse={handleToggleProjectCollapse}
+            />
+          )}
         </div>
 
         <section
@@ -450,6 +456,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 workspaceContentClass={workspaceContentClass}
                 onSetDiffBaseline={handleSetDiffBaseline}
                 onSetDiffRenderMode={handleSetDiffRenderMode}
+                sidebarCollapsed={sidebarCollapsed}
+                onToggleSidebar={() => setSidebarCollapsed((collapsed) => !collapsed)}
               />
             </div>
 

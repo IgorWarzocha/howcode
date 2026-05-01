@@ -14,7 +14,7 @@ type DesktopComposerStatusProps = {
 };
 
 const statusLineClass =
-  "flex min-w-0 items-center gap-1.5 truncate text-[11px] leading-4 text-[color:var(--muted)]";
+  "flex min-w-0 flex-row-reverse items-center gap-1.5 truncate text-right text-[11px] leading-4 text-[color:var(--muted)]";
 
 const iconClass = "shrink-0 text-[rgba(169,178,215,0.58)]";
 
@@ -42,16 +42,16 @@ export function DesktopComposerStatus({
   thinkingLevel,
 }: DesktopComposerStatusProps) {
   const rows = [
-    { id: "provider", icon: Server, label: model?.provider ?? "No provider" },
-    { id: "model", icon: Bot, label: model?.name ?? "No model", highlight: true },
-    { id: "thinking", icon: Brain, label: thinkingLevelLabels[thinkingLevel] },
     { id: "context", icon: Gauge, label: formatContextPercent(contextUsage) },
+    { id: "thinking", icon: Brain, label: thinkingLevelLabels[thinkingLevel] },
+    { id: "model", icon: Bot, label: model?.name ?? "No model", highlight: true },
+    { id: "provider", icon: Server, label: model?.provider ?? "No provider" },
   ];
 
   return (
     <div
       className={cn(
-        "pointer-events-auto grid w-36 select-none gap-0.5 rounded-xl px-1.5 py-1 text-left opacity-70 transition-opacity hover:opacity-100",
+        "pointer-events-auto ml-auto grid w-36 select-none gap-0.5 rounded-xl px-1.5 py-1 text-right opacity-70 transition-opacity hover:opacity-100",
         className,
       )}
       aria-label="Composer status"
@@ -61,7 +61,9 @@ export function DesktopComposerStatus({
         return (
           <div key={row.id} className={statusLineClass}>
             <Icon size={11} className={iconClass} />
-            <span className={cn("truncate", row.highlight && "text-[color:var(--text)]")}>
+            <span
+              className={cn("min-w-0 flex-1 truncate", row.highlight && "text-[color:var(--text)]")}
+            >
               {row.label}
             </span>
           </div>

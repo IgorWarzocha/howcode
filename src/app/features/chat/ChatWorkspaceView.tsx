@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   getLocalDraftChatGroupId,
   getPersistedSessionPath,
@@ -25,6 +26,8 @@ type ChatWorkspaceViewProps = {
   terminalSessionPath: string | null;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
 };
 
 const ARTIFACT_DRAWER_WIDTH = "min(760px, max(0px, calc(100% - 900px)))";
@@ -46,6 +49,8 @@ export function ChatWorkspaceView({
   terminalSessionPath,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  sidebarCollapsed,
+  onToggleSidebar,
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
@@ -163,18 +168,22 @@ export function ChatWorkspaceView({
           )}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
               <div
                 className={cn(
-                  "min-w-0 self-center opacity-0 xl:opacity-100",
+                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
                   artifactsVisible && !artifactsFullscreen && "invisible",
                 )}
               >
-                <DesktopComposerStatus
-                  contextUsage={activeComposerState?.contextUsage ?? null}
-                  model={activeComposerState?.currentModel ?? null}
-                  thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                />
+                <button
+                  type="button"
+                  className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[rgba(169,178,215,0.1)] hover:text-[color:var(--text)] hover:opacity-100"
+                  onClick={onToggleSidebar}
+                  aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                  data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                >
+                  {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                </button>
               </div>
               <div className="grid w-[800px] gap-0">
                 <QueuedPromptsCard
@@ -254,7 +263,18 @@ export function ChatWorkspaceView({
                   onAction={handleAction}
                 />
               </div>
-              <div aria-hidden="true" />
+              <div
+                className={cn(
+                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
+                  artifactsVisible && !artifactsFullscreen && "invisible",
+                )}
+              >
+                <DesktopComposerStatus
+                  contextUsage={activeComposerState?.contextUsage ?? null}
+                  model={activeComposerState?.currentModel ?? null}
+                  thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                />
+              </div>
             </div>
           </div>
         </footer>

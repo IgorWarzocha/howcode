@@ -18,6 +18,8 @@ type AppShellWorkspaceProps = {
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
 };
 
 export function AppShellWorkspace({
@@ -33,6 +35,8 @@ export function AppShellWorkspace({
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  sidebarCollapsed,
+  onToggleSidebar,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
 
@@ -48,6 +52,8 @@ export function AppShellWorkspace({
         terminalSessionPath={terminalSessionPath}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={onToggleSidebar}
       />
     );
   }
@@ -76,6 +82,8 @@ export function AppShellWorkspace({
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={onToggleSidebar}
     />
   );
 }
