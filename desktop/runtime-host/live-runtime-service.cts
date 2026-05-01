@@ -77,7 +77,10 @@ async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerSt
       }
     }
   } else if (request.composerUseDefaultModel) {
-    const defaultComposer = await buildComposerStateSnapshot({ projectId: runtime.cwd });
+    const defaultComposer = await buildComposerStateSnapshot({
+      projectId: runtime.cwd,
+      composerSessionDir: request.composerSessionDir,
+    });
     if (defaultComposer.currentModel) {
       const model = runtime.session.modelRegistry.find(
         defaultComposer.currentModel.provider,
@@ -95,7 +98,10 @@ async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerSt
       clampThinkingLevel(thinkingLevel, getAvailableThinkingLevelsForModel(selectedModel ?? null)),
     );
   } else if (Object.hasOwn(request, "composerThinkingLevel")) {
-    const defaultComposer = await buildComposerStateSnapshot({ projectId: runtime.cwd });
+    const defaultComposer = await buildComposerStateSnapshot({
+      projectId: runtime.cwd,
+      composerSessionDir: request.composerSessionDir,
+    });
     runtime.session.setThinkingLevel(
       clampThinkingLevel(
         defaultComposer.currentThinkingLevel,

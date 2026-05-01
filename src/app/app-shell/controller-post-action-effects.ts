@@ -145,7 +145,7 @@ export async function runPostDesktopActionEffects({
 
     const selectedThreadId = workspaceState.selectedThreadId;
     if (selectedThreadId && new Set(deletedThreadIds).has(selectedThreadId)) {
-      dispatch({ type: "show-view", view: "code" });
+      dispatch({ type: "show-view", view: workspaceState.activeView === "chat" ? "chat" : "code" });
     }
 
     await invalidateInboxThreads();

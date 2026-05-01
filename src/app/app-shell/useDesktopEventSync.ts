@@ -92,7 +92,8 @@ export function useDesktopEventSync({
           ? event.sessionPath === visibleSessionPath
           : event.projectId === latestComposerProjectId &&
             ((latestWorkspaceState.activeView !== "thread" &&
-              latestWorkspaceState.activeView !== "gitops") ||
+              latestWorkspaceState.activeView !== "gitops" &&
+              latestWorkspaceState.activeView !== "chat") ||
               visibleSessionPath === null);
 
         if (shouldApplyComposerUpdate) {

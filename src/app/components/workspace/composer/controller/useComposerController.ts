@@ -85,6 +85,7 @@ export function useComposerController({
   const [isSending, setIsSending] = useState(false);
   const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null);
   const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null);
+  const pendingSubmittedDraftScopeKeyRef = useRef<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const composerMode = activeView === "chat" ? "chat" : "code";
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
@@ -187,13 +188,11 @@ export function useComposerController({
   }, [isSending, isStreaming, pendingSubmittedDraft]);
 
   useEffect(() => {
-    void composerScopeKey;
-    if (!pendingSubmittedDraft || draftValueRef.current === pendingSubmittedDraft) {
-      return;
-    }
-
-    setDraftValue(pendingSubmittedDraft);
-  }, [composerScopeKey, draftValueRef, pendingSubmittedDraft, setDraftValue]);
+    if (pendingSubmittedDraftScopeKeyRef.current === composerScopeKey) return;
+    pendingSubmittedDraftScopeKeyRef.current = composerScopeKey;
+    pendingSubmittedReplyActivityKeyRef.current = null;
+    setPendingSubmittedDraft(null);
+  }, [composerScopeKey]);
 
   useEffect(() => {
     void composerScopeKey;

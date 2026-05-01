@@ -1,3 +1,5 @@
+import path from "node:path";
+import { getChatSessionDir } from "../chat-session-dir.cts";
 import type {
   ArchivedThread,
   InboxThread,
@@ -38,6 +40,14 @@ function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {
   return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath);
 }
 
+function escapeSqlLikePattern(value: string) {
+  return value.replace(/[\%_]/g, (character) => `\\${character}`);
+}
+
+function getChatSessionLikePattern() {
+  return `${escapeSqlLikePattern(getChatSessionDir() + path.sep)}%`;
+}
+
 export function listProjects(cwd: string): Project[] {
   ensureChatStateSchema();
   const db = getThreadStateDatabase();
@@ -61,6 +71,7 @@ export function listProjects(cwd: string): Project[] {
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
+          AND threads.session_path NOT LIKE ? ESCAPE '\'
           AND NOT EXISTS (
             SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
           )
@@ -83,7 +94,7 @@ export function listProjects(cwd: string): Project[] {
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(cwd) as ProjectRow[];
+    .all(getChatSessionLikePattern(), cwd) as ProjectRow[];
 
   return rows.map(mapProjectRow);
 }
