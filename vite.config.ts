@@ -1,6 +1,23 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+function stripGhosttyPackageSourcemaps(): Plugin {
+  return {
+    name: "strip-ghostty-package-sourcemaps",
+    enforce: "pre",
+    transform(code, id) {
+      if (!id.includes("/node_modules/@wterm/ghostty/dist/") || !id.endsWith(".js")) {
+        return null;
+      }
+
+      return {
+        code: code.replace(/\n?\/\/# sourceMappingURL=.*\.js\.map\s*$/u, ""),
+        map: null,
+      };
+    },
+  };
+}
 
 export default defineConfig({
   base: "./",
@@ -8,7 +25,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@wterm/ghostty"],
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [stripGhosttyPackageSourcemaps(), react(), tailwindcss()],
   worker: {
     format: "es",
   },
