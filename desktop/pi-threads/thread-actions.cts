@@ -8,10 +8,7 @@ import {
   getThreadIds,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
-import {
-  deleteArtifactsForConversation,
-  deleteArtifactsForConversations,
-} from "../artifact-state-db.cts";
+import { deleteArtifactsForConversation } from "../artifact-state-db.cts";
 import {
   archiveThread,
   archiveThreads,
@@ -94,8 +91,6 @@ export async function handleThreadDesktopAction(
     case "thread.archive": {
       const threadId = getThreadId(payload);
       if (threadId) {
-        const sessionPath = getThreadSessionPath(threadId);
-        if (sessionPath) deleteArtifactsForConversation(sessionPath);
         archiveThread(threadId);
       }
       return handledAction();
@@ -104,11 +99,6 @@ export async function handleThreadDesktopAction(
     case "thread.archive-many": {
       const threadIds = getThreadIds(payload);
       if (threadIds.length > 0) {
-        deleteArtifactsForConversations(
-          threadIds
-            .map((threadId) => getThreadSessionPath(threadId))
-            .filter((sessionPath): sessionPath is string => Boolean(sessionPath)),
-        );
         archiveThreads(threadIds);
       }
       return handledAction();

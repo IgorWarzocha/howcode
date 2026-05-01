@@ -124,7 +124,6 @@ export function upsertChatThread(options: {
         INSERT INTO chat_threads (session_path, group_id)
         VALUES (?, ?)
         ON CONFLICT(session_path) DO UPDATE SET
-          group_id = COALESCE(chat_threads.group_id, excluded.group_id),
           updated_at = CURRENT_TIMESTAMP
       `,
     )
@@ -170,8 +169,8 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
           threads.pinned AS pinned,
           threads.last_modified_ms AS lastModifiedMs,
           chat_threads.group_id AS groupId
-        FROM chat_threads
-        INNER JOIN threads ON threads.session_path = chat_threads.session_path
+        FROM threads
+        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
         WHERE threads.archived = 0
         ORDER BY threads.pinned DESC, COALESCE(chat_threads.order_index, threads.last_modified_ms) DESC, threads.title COLLATE NOCASE ASC
@@ -179,9 +178,11 @@ export function getChatSidebarState(selectedGroupId: string | null = null): Chat
     )
     .all() as ChatThreadGroupRow[];
 
+  const chatRows = rows.filter((row) => isChatSessionPath(row.sessionPath));
+
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const ungroupedThreads: ChatThread[] = [];
-  for (const row of rows) {
+  for (const row of chatRows) {
     const thread = mapChatThreadRow(row);
     const group = thread.groupId ? groupsById.get(thread.groupId) : null;
     if (group) group.threads.push(thread);
