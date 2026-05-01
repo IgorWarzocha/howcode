@@ -131,11 +131,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     : collapsedProjectIds;
 
   const terminalSessionPath =
-    state.activeView === "thread" || state.activeView === "gitops"
+    state.activeView === "chat" || state.activeView === "thread" || state.activeView === "gitops"
       ? state.selectedSessionPath
       : null;
   const activeThreadId =
-    state.activeView === "thread" || state.activeView === "gitops" ? state.selectedThreadId : null;
+    state.activeView === "chat" || state.activeView === "thread" || state.activeView === "gitops"
+      ? state.selectedThreadId
+      : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
@@ -356,6 +358,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             appLaunchedAtMs={controller.appLaunchedAtMs}
             appSettings={
               controller.shellState?.appSettings ?? {
+                chatModel: null,
+                chatThinkingLevel: null,
+                codeModel: null,
+                codeThinkingLevel: null,
                 gitCommitMessageModel: null,
                 gitCommitMessageThinkingLevel: "off",
                 skillCreatorModel: null,
@@ -376,6 +382,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 piTuiTakeover: false,
               }
             }
+            chatSidebarState={controller.chatSidebarState}
             activeView={state.activeView}
             protectedProjectId={
               controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
@@ -383,6 +390,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             selectedInboxSessionPath={state.selectedInboxSessionPath}
             selectedProjectId={state.selectedProjectId}
             selectedThreadId={state.selectedThreadId}
+            selectedChatGroupId={controller.selectedChatGroupId}
             settingsOpen={state.settingsOpen}
             projectScopeLockActive={projectScopeLockActive}
             terminalRunningProjectIds={controller.terminalRunningProjectIds}
@@ -404,6 +412,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               handleShowView("archived");
             }}
             onDismissInboxThread={controller.handleDismissInboxThread}
+            onCreateChatGroup={controller.handleCreateChatGroup}
+            onSelectChatGroup={controller.handleSelectChatGroup}
+            onNewChat={(groupId) => {
+              controller.handleSelectChatGroup(groupId);
+              void handleAction("thread.new", { chatGroupId: groupId });
+            }}
+            onRefreshChatSidebar={controller.refreshChatSidebarState}
             onProjectSelect={handleProjectSelect}
             onProjectReorder={handleProjectReorder}
             onLoadProjectThreads={controller.handleLoadProjectThreads}

@@ -29,7 +29,7 @@ function createShellState(): ShellState {
         collapsed: true,
       },
     ],
-  } as ShellState;
+  } as unknown as ShellState;
 }
 
 function createQueryClient(state: ShellState | null) {
@@ -60,7 +60,7 @@ describe("project thread shell cache helpers", () => {
 
     const project = getState()?.projects[0];
     expect(project?.threadsLoaded).toBe(true);
-    expect(project?.collapsed).toBe(false);
+    expect(project?.collapsed).toBe(true);
     expect(project?.threads).toMatchObject([
       { id: "local-thread-1", sessionPath: "local:///repo/project-a/1" },
     ]);
@@ -128,6 +128,29 @@ describe("project thread shell cache helpers", () => {
 
     expect(getState()?.projects[0]?.threads).toEqual([]);
     expect(getState()?.projects[0]?.threadCount).toBe(0);
+  });
+
+  it("preserves indexed thread counts when removing failed drafts from unloaded projects", () => {
+    const shellState = createShellState();
+    shellState.projects[0] = {
+      ...shellState.projects[0],
+      threadsLoaded: true,
+      threads: [
+        {
+          id: "local-thread-1",
+          title: "New thread",
+          age: "Now",
+          sessionPath: "local:///repo/project-a/1",
+        },
+      ],
+      threadCount: 5,
+    };
+    const { queryClient, getState } = createQueryClient(shellState);
+
+    removeProjectThreadFromShellState(queryClient, "/repo/project-a", "local:///repo/project-a/1");
+
+    expect(getState()?.projects[0]?.threads).toEqual([]);
+    expect(getState()?.projects[0]?.threadCount).toBe(5);
   });
 
   it("only marks selected local drafts from the same project for replacement", () => {

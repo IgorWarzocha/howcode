@@ -90,10 +90,20 @@ export function useAppShellCommands({
     void handleAction(nextCollapsed ? "project.collapse" : "project.expand", { projectId });
   };
 
-  const handleThreadOpen = (projectId: string, threadId: string, sessionPath: string) => {
+  const handleThreadOpen = (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: "chat" | "thread",
+  ) => {
     setThreadHistoryCompactions(0);
-    dispatch({ type: "open-thread", projectId, threadId, sessionPath });
-    void handleAction("thread.open", { projectId, threadId, sessionPath });
+    dispatch({ type: "open-thread", projectId, threadId, sessionPath, view });
+    void handleAction("thread.open", {
+      projectId,
+      threadId,
+      sessionPath,
+      composerMode: view === "chat" ? "chat" : "code",
+    });
   };
 
   const handleSelectInboxThread = (thread: InboxThread) => {

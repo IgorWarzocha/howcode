@@ -83,6 +83,7 @@ export function SkillsView({
                 label: `Project (${controller.projectSkillCount})`,
                 disabled: !controller.projectScopeAvailable,
               },
+              { value: "chat", label: `Chat (${controller.chatSkillCount})` },
             ]}
             onChange={controller.setInstallScope}
           />

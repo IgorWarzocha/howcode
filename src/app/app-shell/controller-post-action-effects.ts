@@ -49,7 +49,10 @@ type RunPostDesktopActionEffectsInput = {
   composerProjectId: string;
   dispatch: Dispatch<WorkspaceAction>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
-  loadComposerState: (request?: { projectId?: string | null }) => Promise<ComposerState | null>;
+  loadComposerState: (request?: {
+    projectId?: string | null;
+    composerMode?: "chat" | "code" | null;
+  }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectThreads: (projectId: string) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
@@ -104,7 +107,8 @@ export async function runPostDesktopActionEffects({
 
     const selectedThreadId = workspaceState.selectedThreadId;
     if (selectedThreadId && new Set(archivedThreadIds).has(selectedThreadId)) {
-      dispatch({ type: "show-view", view: "code" });
+      dispatch({ type: "clear-thread-selection" });
+      dispatch({ type: "show-view", view: workspaceState.activeView === "chat" ? "chat" : "code" });
     }
 
     await invalidateInboxThreads();
@@ -146,7 +150,8 @@ export async function runPostDesktopActionEffects({
 
     const selectedThreadId = workspaceState.selectedThreadId;
     if (selectedThreadId && new Set(deletedThreadIds).has(selectedThreadId)) {
-      dispatch({ type: "show-view", view: "code" });
+      dispatch({ type: "clear-thread-selection" });
+      dispatch({ type: "show-view", view: workspaceState.activeView === "chat" ? "chat" : "code" });
     }
 
     await invalidateInboxThreads();
@@ -243,13 +248,12 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-
   if (action === "composer.send" && hasActionError(actionResult)) {
     const projectId = getPayloadProjectId(contextualPayload);
     const sessionPath =
       typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
 
-    if (projectId && isLocalSessionPath(sessionPath)) {
+    if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
       removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
     }
   }
@@ -286,10 +290,14 @@ export async function runPostDesktopActionEffects({
         lastModifiedMs: Date.now(),
         sessionPath,
       };
-      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread);
+      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
+        revealProject: true,
+      });
       dispatch({ type: "open-thread", projectId: nextProjectId, threadId, sessionPath });
       await loadProjectThreads(nextProjectId);
-      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread);
+      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
+        revealProject: true,
+      });
     } else if (localFallback) {
       const optimisticThread = {
         id: localFallback.threadId,
@@ -298,7 +306,9 @@ export async function runPostDesktopActionEffects({
         lastModifiedMs: Date.now(),
         sessionPath: localFallback.sessionPath,
       };
-      applyProjectThreadToShellState(queryClient, localFallback.projectId, optimisticThread);
+      applyProjectThreadToShellState(queryClient, localFallback.projectId, optimisticThread, {
+        revealProject: true,
+      });
       dispatch({
         type: "open-thread",
         projectId: localFallback.projectId,
@@ -316,6 +326,7 @@ export async function runPostDesktopActionEffects({
     if (!localFallback) {
       const nextComposerState = await loadComposerState({
         projectId: resultProjectId ?? projectId,
+        composerMode: workspaceState.activeView === "chat" ? "chat" : "code",
       });
       if (nextComposerState) {
         setComposerState(nextComposerState);

@@ -1,8 +1,10 @@
 import type {
+  RuntimeMainToHostMessage,
   RuntimeHostRequestMessage,
   RuntimeHostRequestName,
   RuntimeHostResponseMap,
 } from "./protocol.cts";
+import { handleMainResponse } from "./main-request-client.cts";
 import {
   dequeueComposerPrompt,
   disposeAllRuntimeHosts,
@@ -187,7 +189,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
   }
 }
 
-process.on("message", (message: RuntimeHostRequestMessage) => {
+process.on("message", (message: RuntimeMainToHostMessage) => {
+  if (message && message.type === "main-response") {
+    handleMainResponse(message);
+    return;
+  }
   if (!message || message.type !== "request") {
     return;
   }

@@ -14,7 +14,9 @@ export type DesktopEventSelectionState = Pick<
 >;
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
-  return workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+  return workspaceState.activeView === "chat" ||
+    workspaceState.activeView === "thread" ||
+    workspaceState.activeView === "gitops"
     ? getPersistedSessionPath(workspaceState.selectedSessionPath)
     : workspaceState.activeView === "inbox"
       ? (workspaceState.selectedInboxSessionPath ?? null)
@@ -24,10 +26,12 @@ export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelecti
 export function shouldAutoOpenStartedThread({
   reason,
   projectId,
+  isChat,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
   projectId: string;
+  isChat?: boolean;
   workspaceState: DesktopEventSelectionState;
 }) {
   if (reason !== "start" || projectId !== workspaceState.selectedProjectId) {
@@ -37,12 +41,13 @@ export function shouldAutoOpenStartedThread({
   const visibleSessionPath = getVisibleDesktopSessionPath(workspaceState);
   const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
 
-  if (localDraftProjectId && localDraftProjectId !== projectId) {
+  if (localDraftProjectId) {
     return false;
   }
 
   return (
-    workspaceState.activeView === "code" ||
+    (workspaceState.activeView === "code" && isChat !== true) ||
+    (workspaceState.activeView === "chat" && visibleSessionPath === null && isChat === true) ||
     (workspaceState.activeView === "thread" && visibleSessionPath === null)
   );
 }

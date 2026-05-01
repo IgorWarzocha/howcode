@@ -8,6 +8,12 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
+import { createArtifactTools } from "../runtime/artifact-tools.cts";
+import { invokeMainRequest } from "./main-request-client.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "../runtime/isolated-settings-manager.cts";
 import type { PiRuntime } from "../runtime/types.cts";
 import {
   cancelLiveThreadUpdate,
@@ -28,6 +34,7 @@ function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>;
   disposeTimeout: ReturnType<typeof setTimeout> | null;
+  settingsCwd: string | null;
 };
 
 const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
@@ -78,6 +85,9 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
 
 async function createRuntime(options: {
   cwd: string;
+  sessionDir?: string | null;
+  settingsCwd?: string | null;
+  chatGroupId?: string | null;
   sessionManager?: PiRuntime["session"]["sessionManager"];
 }): Promise<PiRuntime> {
   const {
@@ -85,23 +95,54 @@ async function createRuntime(options: {
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(options.cwd, agentDir);
-  const sessionDir = settingsManager.getSessionDir() ?? undefined;
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+  });
+  const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
+    ...(options.settingsCwd
+      ? {
+          noTools: "builtin" as const,
+          customTools: createArtifactTools({
+            createArtifact: (input) => invokeMainRequest("createArtifact", input),
+            editArtifact: (input) => invokeMainRequest("editArtifact", input),
+            getArtifact: ({ conversationId, slug }) =>
+              invokeMainRequest("getArtifact", { artifactSlug: slug, conversationId }),
+            listArtifacts: (conversationId) =>
+              invokeMainRequest("listArtifacts", { conversationId }),
+          }),
+        }
+      : {}),
   });
-  const runtime = { cwd: options.cwd, session } satisfies PiRuntime;
+  const runtime = {
+    cwd: options.cwd,
+    session,
+    chatGroupId: options.chatGroupId ?? null,
+  } satisfies PiRuntime;
 
   session.subscribe((event) => {
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
@@ -282,9 +323,21 @@ export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
   });
 }
 
-function registerRuntime(runtimeKey: string, runtimePromise: Promise<PiRuntime>) {
+function normalizeSettingsCwd(settingsCwd?: string | null) {
+  return settingsCwd ? path.resolve(settingsCwd) : null;
+}
+
+function registerRuntime(
+  runtimeKey: string,
+  runtimePromise: Promise<PiRuntime>,
+  settingsCwd?: string | null,
+) {
   staleRuntimeGenerations.delete(runtimeKey);
-  const record: RuntimeRecord = { runtimePromise, disposeTimeout: null };
+  const record: RuntimeRecord = {
+    runtimePromise,
+    disposeTimeout: null,
+    settingsCwd: normalizeSettingsCwd(settingsCwd),
+  };
   runtimeRecords.set(runtimeKey, record);
   return record;
 }
@@ -298,35 +351,58 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
 
 export async function getOrCreateRuntimeForSessionPath(
   sessionPath: string,
-  options: { suspendDisposal?: boolean } = {},
+  options: {
+    suspendDisposal?: boolean;
+    settingsCwd?: string | null;
+    chatGroupId?: string | null;
+  } = {},
 ) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   if (!persistedSessionPath)
     throw new Error("A persisted session path is required to open a live runtime.");
+  const settingsCwd = normalizeSettingsCwd(options.settingsCwd);
   const existingRuntime = runtimeRecords.get(persistedSessionPath);
   if (existingRuntime) {
-    if (options.suspendDisposal) suspendRuntimeDisposal(persistedSessionPath);
-    return await existingRuntime.runtimePromise;
+    if (existingRuntime.settingsCwd !== settingsCwd) {
+      const runtime = await existingRuntime.runtimePromise;
+      runtime.session.dispose();
+      runtimeRecords.delete(persistedSessionPath);
+    } else {
+      if (options.suspendDisposal) suspendRuntimeDisposal(persistedSessionPath);
+      return await existingRuntime.runtimePromise;
+    }
   }
   const { SessionManager } = await getPiModule();
   const sessionManager = SessionManager.open(persistedSessionPath);
   let record: RuntimeRecord | null = null;
-  const runtimePromise = createRuntime({ cwd: sessionManager.getCwd(), sessionManager }).catch(
-    (error) => {
-      if (record && runtimeRecords.get(persistedSessionPath) === record)
-        runtimeRecords.delete(persistedSessionPath);
-      staleRuntimeGenerations.delete(persistedSessionPath);
-      throw error;
-    },
-  );
-  record = registerRuntime(persistedSessionPath, runtimePromise);
+  const runtimePromise = createRuntime({
+    cwd: sessionManager.getCwd(),
+    settingsCwd,
+    chatGroupId: options.chatGroupId ?? null,
+    sessionManager,
+  }).catch((error) => {
+    if (record && runtimeRecords.get(persistedSessionPath) === record)
+      runtimeRecords.delete(persistedSessionPath);
+    staleRuntimeGenerations.delete(persistedSessionPath);
+    throw error;
+  });
+  record = registerRuntime(persistedSessionPath, runtimePromise, settingsCwd);
   return runtimePromise;
 }
 
-export async function createRuntimeForNewSession(cwd: string) {
-  const runtime = await createRuntime({ cwd });
+export async function createRuntimeForNewSession(
+  cwd: string,
+  sessionDir?: string | null,
+  options: { chatGroupId?: string | null } = {},
+) {
+  const runtime = await createRuntime({
+    cwd,
+    sessionDir,
+    settingsCwd: sessionDir ?? null,
+    chatGroupId: options.chatGroupId ?? null,
+  });
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-  if (runtimeKey) registerRuntime(runtimeKey, Promise.resolve(runtime));
+  if (runtimeKey) registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null);
   return runtime;
 }
 

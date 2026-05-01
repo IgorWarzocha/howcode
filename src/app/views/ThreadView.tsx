@@ -1,8 +1,4 @@
 import { ThreadTimeline } from "../components/workspace/thread/ThreadTimeline";
-import {
-  chatEmptyStateClass,
-  chatHiddenViewportClass,
-} from "../components/workspace/thread/thread-layout";
 import type { Message } from "../types";
 
 type ThreadViewProps = {
@@ -23,13 +19,7 @@ export function ThreadView({
   onLoadEarlierMessages,
 }: ThreadViewProps) {
   if (messages.length === 0) {
-    return (
-      <div className={chatHiddenViewportClass}>
-        <div className={chatEmptyStateClass}>
-          <div className="grid place-items-center">No messages yet.</div>
-        </div>
-      </div>
-    );
+    return <div className="h-full" />;
   }
 
   return (

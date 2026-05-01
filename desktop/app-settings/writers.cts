@@ -14,6 +14,10 @@ import {
 } from "../../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "../thread-state-db/db.cts";
 import {
+  chatModelKey,
+  chatThinkingLevelKey,
+  codeModelKey,
+  codeThinkingLevelKey,
   composerStreamingBehaviorKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -64,6 +68,42 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   }
 
   writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
+}
+
+export function setChatModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(chatModelKey);
+    return;
+  }
+
+  writeAppPreference(chatModelKey, JSON.stringify(selection));
+}
+
+export function setChatThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(chatThinkingLevelKey);
+    return;
+  }
+
+  writeAppPreference(chatThinkingLevelKey, JSON.stringify(level));
+}
+
+export function setCodeModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(codeModelKey);
+    return;
+  }
+
+  writeAppPreference(codeModelKey, JSON.stringify(selection));
+}
+
+export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(codeThinkingLevelKey);
+    return;
+  }
+
+  writeAppPreference(codeThinkingLevelKey, JSON.stringify(level));
 }
 
 export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {

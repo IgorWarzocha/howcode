@@ -89,6 +89,7 @@ export function InboxView({
         text: nextDraft,
         attachments: isCompactCommand ? [] : attachmentsToSend,
         streamingBehavior: appSettings.composerStreamingBehavior,
+        composerMode: thread.isChat ? "chat" : "code",
       });
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not send follow-up."));

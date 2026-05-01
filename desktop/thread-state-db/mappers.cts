@@ -97,6 +97,7 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     preview: row.lastAssistantPreview,
     running: Boolean(row.running),
     unread: Boolean(row.unread),
+    isChat: Boolean(row.isChat),
   };
 }
 

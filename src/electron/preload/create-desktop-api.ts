@@ -59,11 +59,13 @@ export function createDesktopApi() {
       kind?: "npm" | "git";
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("installPiPackage", request),
     removePiPackage: (request: {
       source: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("removePiPackage", request),
     searchPiSkills: (request = {}) => invokeRequest("searchPiSkills", request),
     getConfiguredPiSkills: (request = {}) => invokeRequest("getConfiguredPiSkills", request),
@@ -71,13 +73,18 @@ export function createDesktopApi() {
       source: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("installPiSkill", request),
-    removePiSkill: (request: { installedPath: string; projectPath?: string | null }) =>
-      invokeRequest("removePiSkill", request),
+    removePiSkill: (request: {
+      installedPath: string;
+      projectPath?: string | null;
+      chat?: boolean;
+    }) => invokeRequest("removePiSkill", request),
     startSkillCreatorSession: (request: {
       prompt: string;
       local?: boolean;
       projectPath?: string | null;
+      chat?: boolean;
     }) => invokeRequest("startSkillCreatorSession", request),
     continueSkillCreatorSession: (request: { sessionId: string; prompt: string }) =>
       invokeRequest("continueSkillCreatorSession", request),
@@ -113,7 +120,25 @@ export function createDesktopApi() {
       sampleRate: number;
       language?: string | null;
     }) => invokeRequest("transcribeDictation", request),
-    getProjectThreads: (projectId: string) => invokeRequest("getProjectThreads", { projectId }),
+    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
+      invokeRequest("getProjectThreads", { projectId, chat: request.chat }),
+    getChatSidebarState: (selectedGroupId: string | null = null) =>
+      invokeRequest("getChatSidebarState", { selectedGroupId }),
+    createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
+    listArtifacts: (conversationId: string | null = null) =>
+      invokeRequest("listArtifacts", { conversationId }),
+    getArtifact: (artifactSlug: string, conversationId: string | null = null) =>
+      invokeRequest("getArtifact", { artifactSlug, conversationId }),
+    updateArtifact: (artifactSlug: string, content: string, conversationId: string | null = null) =>
+      invokeRequest("updateArtifact", { artifactSlug, content, conversationId }),
+    editArtifact: (
+      artifactSlug: string,
+      edits: Array<{ oldText: string; newText: string }>,
+      conversationId: string | null = null,
+    ) => invokeRequest("editArtifact", { artifactSlug, edits, conversationId }),
+    listArtifactVersions: (artifactSlug: string) =>
+      invokeRequest("listArtifactVersions", { artifactSlug }),
+    compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
@@ -139,6 +164,8 @@ export function createDesktopApi() {
     getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
     openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
     openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
+    saveTextToDownloads: (fileName: string, content: string) =>
+      invokeRequest("saveTextToDownloads", { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
       subscribeToEvent("desktopEvent", listener),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>

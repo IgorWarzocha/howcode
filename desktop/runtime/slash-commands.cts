@@ -87,6 +87,7 @@ export async function getComposerSlashCommands(
   }
 
   const snapshot = await createComposerSnapshotSession({
+    ...request,
     projectId: request.projectId ?? getDesktopWorkingDirectory(),
     sessionPath: persistedSessionPath,
   });

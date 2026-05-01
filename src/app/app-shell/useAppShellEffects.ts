@@ -45,6 +45,7 @@ export function useAppShellEffects({
   loadComposerState,
   loadProjectGitState,
   scheduleShellStateRefresh,
+  refreshChatSidebarState,
   queryClient,
   dispatch,
   setArchivedThreads,
@@ -60,14 +61,16 @@ export function useAppShellEffects({
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
   shellAppSettings: AppSettings | null | undefined;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   loadComposerState: (request?: {
     projectId?: string | null;
     sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
+  refreshChatSidebarState: () => Promise<unknown>;
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
@@ -93,6 +96,7 @@ export function useAppShellEffects({
     selectedInboxThread,
     composerProjectId,
     shellComposerState,
+    shellAppSettings,
     loadComposerState,
     loadProjectGitState,
     setComposerState,
@@ -108,6 +112,7 @@ export function useAppShellEffects({
     loadProjectThreads,
     loadProjectGitState,
     scheduleShellStateRefresh,
+    refreshChatSidebarState,
     queryClient,
     dispatch,
     setComposerState,

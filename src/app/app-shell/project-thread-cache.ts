@@ -8,6 +8,7 @@ type QueryClientLike = {
 
 type ApplyProjectThreadOptions = {
   replaceSessionPath?: string | null;
+  revealProject?: boolean;
 };
 
 function sameThread(left: Thread, right: Thread, replaceSessionPath: string | null) {
@@ -38,6 +39,7 @@ export function applyProjectThreadToShellState(
   options: ApplyProjectThreadOptions = {},
 ) {
   const replaceSessionPath = options.replaceSessionPath ?? null;
+  const revealProject = options.revealProject ?? false;
 
   queryClient.setQueryData(desktopQueryKeys.shellState(), (current) => {
     const currentState = current as ShellState | null | undefined;
@@ -67,7 +69,7 @@ export function applyProjectThreadToShellState(
           threadCount: Math.max(project.threadCount ?? 0, threads.length),
           threadsLoaded: true,
           latestModifiedMs: Math.max(project.latestModifiedMs ?? 0, thread.lastModifiedMs ?? 0),
-          collapsed: false,
+          collapsed: revealProject ? false : project.collapsed,
         };
       }),
     };
@@ -103,10 +105,17 @@ export function removeProjectThreadFromShellState(
         }
 
         const threads = project.threads.filter((thread) => thread.sessionPath !== sessionPath);
+        const removedThreadCount = project.threads.length - threads.length;
+        const indexedThreadCount = project.threadCount ?? project.threads.length;
+        const nextThreadCount =
+          indexedThreadCount > project.threads.length
+            ? indexedThreadCount
+            : Math.max(threads.length, indexedThreadCount - removedThreadCount);
+
         return {
           ...project,
           threads,
-          threadCount: Math.min(project.threadCount ?? threads.length, threads.length),
+          threadCount: nextThreadCount,
         };
       }),
     };

@@ -93,7 +93,7 @@ export function useSettingsController({
   };
 
   const selectModel = (
-    key: "gitCommitMessageModel" | "skillCreatorModel",
+    key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
     id: string,
     closeMenu: () => void,
   ) => {
@@ -205,6 +205,8 @@ export function useSettingsController({
         value,
       }),
     selectDictationModel: dictation.selectDictationModel,
+    selectChatModel: (id: string) => selectModel("chatModel", id, () => {}),
+    selectCodeModel: (id: string) => selectModel("codeModel", id, () => {}),
     selectGitCommitModel: (id: string) =>
       selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>

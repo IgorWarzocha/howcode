@@ -2,6 +2,7 @@ import { stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { loadAppSettings } from "../app-settings/readers.cts";
+import { getChatSessionDir } from "../chat-session-dir.cts";
 
 export async function pathExists(targetPath: string) {
   try {
@@ -28,6 +29,10 @@ export function getProjectNativeSkillsDir(projectPath?: string | null) {
   return path.join(path.resolve(projectPath), ".pi", "skills");
 }
 
+export function getChatNativeSkillsDir() {
+  return getProjectNativeSkillsDir(getChatSessionDir());
+}
+
 export function getProjectInteropSkillsDir(projectPath?: string | null) {
   if (!projectPath?.trim()) {
     return null;
@@ -36,12 +41,22 @@ export function getProjectInteropSkillsDir(projectPath?: string | null) {
   return path.join(path.resolve(projectPath), ".agents", "skills");
 }
 
+export function getChatInteropSkillsDir() {
+  return getProjectInteropSkillsDir(getChatSessionDir());
+}
+
 export function getGlobalSkillsDirs() {
   return [getGlobalNativeSkillsDir(), getGlobalInteropSkillsDir()];
 }
 
 export function getProjectSkillsDirs(projectPath?: string | null) {
   return [getProjectNativeSkillsDir(projectPath), getProjectInteropSkillsDir(projectPath)].filter(
+    (skillsDirPath): skillsDirPath is string => Boolean(skillsDirPath),
+  );
+}
+
+export function getChatSkillsDirs() {
+  return [getChatNativeSkillsDir(), getChatInteropSkillsDir()].filter(
     (skillsDirPath): skillsDirPath is string => Boolean(skillsDirPath),
   );
 }
@@ -56,6 +71,12 @@ export function getActiveProjectSkillsRoot(projectPath?: string | null) {
   return loadAppSettings().useAgentsSkillsPaths
     ? getProjectInteropSkillsDir(projectPath)
     : getProjectNativeSkillsDir(projectPath);
+}
+
+export function getActiveChatSkillsRoot() {
+  return loadAppSettings().useAgentsSkillsPaths
+    ? getChatInteropSkillsDir()
+    : getChatNativeSkillsDir();
 }
 
 export function isValidSkillSlug(slug: string) {

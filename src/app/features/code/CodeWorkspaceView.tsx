@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
@@ -6,8 +6,10 @@ import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
+import type { Message } from "../../types";
 import { useDesktopDiff } from "../../hooks/useDesktopDiff";
 import { mainPanelClass } from "../../ui/classes";
+import { cn } from "../../utils/cn";
 import { CodeWorkspaceMainView } from "./CodeWorkspaceMainView";
 import { DesktopComposerStatus } from "./DesktopComposerStatus";
 import { useDiffCommentController } from "./useDiffCommentController";
@@ -30,6 +32,13 @@ type CodeWorkspaceViewProps = {
 };
 
 const TERMINAL_DRAWER_OFFSET = "min(28rem, calc(100% - 2.5rem))";
+
+function getReplyActivityKey(messages: readonly Message[]) {
+  return messages
+    .filter((message) => message.role !== "user")
+    .map((message) => message.id)
+    .join("|");
+}
 
 export function CodeWorkspaceView({
   controller,
@@ -63,6 +72,7 @@ export function CodeWorkspaceView({
     state,
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
+  const showThreadFooter = state.activeView === "thread";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
   const { error: diffLoadError } = useDesktopDiff(
@@ -74,7 +84,28 @@ export function CodeWorkspaceView({
     footerRef,
     visible: showWorkspaceFooter,
   });
-  const footerInset = showWorkspaceFooter ? footerHeight : 0;
+  const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
+  const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
+  const previousHasThreadConversationRef = useRef(hasThreadConversation);
+  const centerThreadFooter = showThreadFooter && !hasThreadConversation;
+  const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0;
+
+  useEffect(() => {
+    if (!hasThreadConversation) {
+      previousHasThreadConversationRef.current = false;
+      setThreadContentVisible(false);
+      return;
+    }
+
+    if (previousHasThreadConversationRef.current) {
+      setThreadContentVisible(true);
+      return;
+    }
+
+    previousHasThreadConversationRef.current = true;
+    const timeout = window.setTimeout(() => setThreadContentVisible(true), 300);
+    return () => window.clearTimeout(timeout);
+  }, [hasThreadConversation]);
   const {
     diffCommentCount,
     diffCommentError,
@@ -106,6 +137,16 @@ export function CodeWorkspaceView({
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined;
+  const threadFooterStyle = showThreadFooter
+    ? {
+        ...terminalDrawerInsetStyle,
+        top: centerThreadFooter ? "50%" : `calc(100% - ${footerHeight}px)`,
+      }
+    : terminalDrawerInsetStyle;
+  const visibleThreadData =
+    state.activeView === "thread" && activeThreadData && !threadContentVisible
+      ? { ...activeThreadData, messages: [] }
+      : activeThreadData;
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -138,6 +179,10 @@ export function CodeWorkspaceView({
                 activeView={state.activeView}
                 appSettings={
                   shellState?.appSettings ?? {
+                    chatModel: null,
+                    chatThinkingLevel: null,
+                    codeModel: null,
+                    codeThinkingLevel: null,
                     gitCommitMessageModel: null,
                     gitCommitMessageThinkingLevel: "off",
                     skillCreatorModel: null,
@@ -171,7 +216,7 @@ export function CodeWorkspaceView({
                 projects={controller.projects}
                 selectedProjectId={controller.state.selectedProjectId}
                 workspaceContentClass={workspaceContentClass}
-                threadData={activeThreadData}
+                threadData={visibleThreadData}
                 composerLayoutVersion={composerLayoutVersion}
                 onAction={handleAction}
                 onDismissInboxThread={controller.handleDismissInboxThread}
@@ -192,8 +237,13 @@ export function CodeWorkspaceView({
       {showWorkspaceFooter ? (
         <footer
           ref={footerRef}
-          className="motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4"
-          style={terminalDrawerInsetStyle}
+          className={cn(
+            "motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
+            showThreadFooter ? "transition-[top,transform] duration-300 ease-out" : "bottom-0",
+            centerThreadFooter && "-translate-y-1/2",
+            showThreadFooter && !centerThreadFooter && "translate-y-0",
+          )}
+          style={threadFooterStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
             <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-center gap-3">
@@ -220,6 +270,10 @@ export function CodeWorkspaceView({
                       showDictationButton={shellState?.appSettings.showDictationButton ?? true}
                       appSettings={
                         shellState?.appSettings ?? {
+                          chatModel: null,
+                          chatThinkingLevel: null,
+                          codeModel: null,
+                          codeThinkingLevel: null,
                           gitCommitMessageModel: null,
                           gitCommitMessageThinkingLevel: "off",
                           skillCreatorModel: null,
@@ -278,6 +332,7 @@ export function CodeWorkspaceView({
                         contextUsage={activeComposerState?.contextUsage ?? null}
                         availableModels={activeComposerState?.availableModels ?? []}
                         isStreaming={activeThreadData?.isStreaming ?? false}
+                        replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
                         isCompacting={activeComposerState?.isCompacting ?? false}
                         isExtensionCommandRunning={
                           activeComposerState?.isExtensionCommandRunning ?? false

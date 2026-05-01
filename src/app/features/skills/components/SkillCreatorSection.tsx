@@ -13,7 +13,7 @@ import { cn } from "../../../utils/cn";
 import { getActionError } from "../utils";
 
 type SkillCreatorSectionProps = {
-  installScope: "global" | "project";
+  installScope: "global" | "project" | "chat";
   projectPath: string | null;
   skillCreatorDetected: boolean;
   onRefreshSkillCreatorDetection: () => Promise<unknown>;
@@ -114,8 +114,9 @@ export function SkillCreatorSection({
           })
         : await startSkillCreatorSessionQuery({
             prompt,
-            local: installScope === "project",
+            local: installScope === "project" || installScope === "chat",
             projectPath,
+            chat: installScope === "chat",
           });
 
       if (!sessionState) {

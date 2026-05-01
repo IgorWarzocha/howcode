@@ -16,29 +16,48 @@ export function getPersistedSessionPath(sessionPath: string | null | undefined) 
     : null;
 }
 
-export function getLocalDraftProjectId(sessionPath: string | null | undefined) {
+function getLocalDraftParts(sessionPath: string | null | undefined) {
   if (typeof sessionPath !== "string" || !isLocalSessionPath(sessionPath)) {
     return null;
   }
 
-  const encodedProjectId = sessionPath.slice(LOCAL_SESSION_PREFIX.length).split("/", 1)[0] ?? "";
+  const [, encodedProjectId = "", encodedChatGroupId = ""] =
+    sessionPath.match(/^local:\/\/([^/]+)\/[^?]+(?:\?chatGroupId=([^&]+))?$/) ?? [];
   if (encodedProjectId.length === 0) {
     return null;
   }
 
   try {
-    return decodeURIComponent(encodedProjectId);
+    return {
+      projectId: decodeURIComponent(encodedProjectId),
+      chatGroupId: encodedChatGroupId ? decodeURIComponent(encodedChatGroupId) : null,
+    };
   } catch {
     return null;
   }
 }
 
-export function createLocalThreadDraft(projectId: string, token = buildLocalSessionToken()) {
+export function getLocalDraftProjectId(sessionPath: string | null | undefined) {
+  return getLocalDraftParts(sessionPath)?.projectId ?? null;
+}
+
+export function getLocalDraftChatGroupId(sessionPath: string | null | undefined) {
+  return getLocalDraftParts(sessionPath)?.chatGroupId ?? null;
+}
+
+export function createLocalThreadDraft(
+  projectId: string,
+  token = buildLocalSessionToken(),
+  options: { chatGroupId?: string | null } = {},
+) {
   const encodedProjectId = encodeURIComponent(projectId);
+  const chatGroupSuffix = options.chatGroupId
+    ? `?chatGroupId=${encodeURIComponent(options.chatGroupId)}`
+    : "";
 
   return {
     projectId,
     threadId: `local-thread-${token}`,
-    sessionPath: `${LOCAL_SESSION_PREFIX}${encodedProjectId}/${token}`,
+    sessionPath: `${LOCAL_SESSION_PREFIX}${encodedProjectId}/${token}${chatGroupSuffix}`,
   };
 }

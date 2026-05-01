@@ -290,7 +290,7 @@ export function ThreadTimeline({
       >
         <div
           ref={contentRef}
-          className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          className={`mx-auto flex min-h-full w-full min-w-0 flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
         >
           <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />

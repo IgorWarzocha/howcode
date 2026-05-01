@@ -20,13 +20,20 @@ export function buildContextualActionPayload({
     action === "composer.send" ||
     action === "composer.stop" ||
     action === "composer.thinking" ||
+    action === "thread.new" ||
+    action === "thread.open" ||
     action === "workspace.commit" ||
     action === "workspace.commit-options" ||
     action === "workspace.diff-preferences"
     ? {
         projectId: composerProjectId,
         sessionPath:
-          activeView === "thread" || activeView === "gitops" ? selectedSessionPath : null,
+          action === "thread.new"
+            ? null
+            : activeView === "chat" || activeView === "thread" || activeView === "gitops"
+              ? selectedSessionPath
+              : null,
+        composerMode: activeView === "chat" ? "chat" : "code",
         ...payload,
       }
     : payload;
