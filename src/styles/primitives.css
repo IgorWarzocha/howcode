@@ -158,3 +158,89 @@ button[data-tooltip][aria-disabled="true"]::after {
   font-size: 12px;
   line-height: 1;
 }
+
+.artifact-markdown-editor .mdxeditor {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar);
+  color: var(--text);
+  --basePageBg: var(--sidebar);
+  --baseBase: #1f2230;
+  --baseBgSubtle: #242735;
+  --baseBg: #2a2d3b;
+  --baseBgHover: #303446;
+  --baseBgActive: #343848;
+  --baseLine: var(--border);
+  --baseBorder: var(--border-strong);
+  --baseBorderHover: rgba(169, 178, 215, 0.22);
+  --baseSolid: #727894;
+  --baseSolidHover: #969db7;
+  --baseText: var(--muted);
+  --baseTextContrast: var(--text);
+  --accentBase: #25283a;
+  --accentBgSubtle: rgba(185, 191, 243, 0.08);
+  --accentBg: rgba(185, 191, 243, 0.12);
+  --accentBgHover: rgba(185, 191, 243, 0.16);
+  --accentBgActive: rgba(185, 191, 243, 0.22);
+  --accentLine: rgba(185, 191, 243, 0.18);
+  --accentBorder: rgba(185, 191, 243, 0.24);
+  --accentBorderHover: rgba(185, 191, 243, 0.32);
+  --accentSolid: var(--accent);
+  --accentSolidHover: #c8cdf7;
+  --accentText: var(--accent);
+  --accentTextContrast: #141724;
+}
+
+.artifact-markdown-editor .mdxeditor > div {
+  min-height: 0;
+}
+
+.artifact-markdown-editor .mdxeditor-toolbar {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border);
+  background: #222532;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content {
+  min-height: 100%;
+  padding: 1.5rem 1.75rem;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.artifact-markdown-editor [contenteditable] {
+  caret-color: var(--accent);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content h1,
+.artifact-markdown-editor .artifact-markdown-editor-content h2,
+.artifact-markdown-editor .artifact-markdown-editor-content h3 {
+  color: var(--text);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content blockquote {
+  border-left: 2px solid rgba(185, 191, 243, 0.32);
+  color: var(--muted);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content code,
+.artifact-markdown-editor .artifact-markdown-editor-content pre {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content table {
+  border-color: var(--border-strong);
+}

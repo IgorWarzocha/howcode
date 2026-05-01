@@ -1,4 +1,30 @@
 import {
+  BlockTypeSelect,
+  BoldItalicUnderlineToggles,
+  CodeToggle,
+  CreateLink,
+  DiffSourceToggleWrapper,
+  InsertCodeBlock,
+  InsertTable,
+  ListsToggle,
+  MDXEditor,
+  Separator,
+  UndoRedo,
+  codeBlockPlugin,
+  codeMirrorPlugin,
+  diffSourcePlugin,
+  headingsPlugin,
+  linkPlugin,
+  listsPlugin,
+  markdownShortcutPlugin,
+  quotePlugin,
+  tablePlugin,
+  thematicBreakPlugin,
+  toolbarPlugin,
+  type MDXEditorMethods,
+} from "@mdxeditor/editor";
+import "@mdxeditor/editor/style.css";
+import {
   Download,
   FileCode2,
   List,
@@ -64,6 +90,49 @@ const artifactDarkPreviewCss = `
     blockquote { color: #969db7; border-left: 3px solid rgba(185,191,243,0.32); margin-left: 0; padding-left: 1rem; }
     hr { border: 0; border-top: 1px solid rgba(169,178,215,0.14); }
 `;
+
+const markdownEditorPlugins = [
+  headingsPlugin(),
+  listsPlugin(),
+  quotePlugin(),
+  linkPlugin(),
+  tablePlugin(),
+  thematicBreakPlugin(),
+  codeBlockPlugin({ defaultCodeBlockLanguage: "text" }),
+  codeMirrorPlugin({
+    codeBlockLanguages: {
+      css: "CSS",
+      html: "HTML",
+      js: "JavaScript",
+      jsx: "JavaScript JSX",
+      json: "JSON",
+      markdown: "Markdown",
+      md: "Markdown",
+      text: "Text",
+      ts: "TypeScript",
+      tsx: "TypeScript JSX",
+    },
+  }),
+  diffSourcePlugin({ viewMode: "rich-text" }),
+  markdownShortcutPlugin(),
+  toolbarPlugin({
+    toolbarContents: () => (
+      <DiffSourceToggleWrapper>
+        <UndoRedo />
+        <Separator />
+        <BlockTypeSelect />
+        <Separator />
+        <BoldItalicUnderlineToggles />
+        <CodeToggle />
+        <Separator />
+        <ListsToggle />
+        <CreateLink />
+        <InsertTable />
+        <InsertCodeBlock />
+      </DiffSourceToggleWrapper>
+    ),
+  }),
+];
 
 function buildHtmlPreview(content: string) {
   const capture = `${artifactScrollbarCss}
@@ -136,6 +205,7 @@ export function ArtifactPanel({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
+  const markdownEditorRef = useRef<MDXEditorMethods>(null);
 
   const selectedArtifact = useMemo(
     () =>
@@ -220,6 +290,12 @@ export function ArtifactPanel({
   useEffect(() => {
     setDraft(displayedContent);
   }, [displayedContent]);
+
+  useEffect(() => {
+    if (view !== "preview" || selectedArtifact?.kind !== "markdown") return;
+    if (markdownEditorRef.current?.getMarkdown() === displayedContent) return;
+    markdownEditorRef.current?.setMarkdown(displayedContent);
+  }, [displayedContent, selectedArtifact?.kind, view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -478,12 +554,21 @@ export function ArtifactPanel({
         {view === "preview" &&
         selectedArtifact?.kind === "markdown" &&
         !showingHistoricalVersion ? (
-          <textarea
-            className="h-full w-full resize-none overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] outline-none [text-wrap:pretty] placeholder:text-[color:var(--muted)] focus:ring-1 focus:ring-[color:var(--border-strong)]"
-            value={draft}
-            spellCheck={true}
-            onChange={(event) => setDraft(event.target.value)}
-          />
+          <div className="artifact-markdown-editor h-full min-h-0 overflow-hidden bg-[color:var(--sidebar)]">
+            <MDXEditor
+              key={selectedArtifact.slug}
+              ref={markdownEditorRef}
+              markdown={draft}
+              plugins={markdownEditorPlugins}
+              spellCheck={true}
+              className="h-full min-h-0"
+              contentEditableClassName="artifact-markdown-editor-content"
+              onChange={(markdown, initialMarkdownNormalize) => {
+                if (!initialMarkdownNormalize) setDraft(markdown);
+              }}
+              onError={({ error }) => setPreviewError(error)}
+            />
+          </div>
         ) : null}
 
         {view === "preview" && selectedArtifact?.kind === "markdown" && showingHistoricalVersion ? (
