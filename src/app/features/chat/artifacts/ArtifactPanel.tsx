@@ -433,20 +433,22 @@ export function ArtifactPanel({
           >
             <List size={14} />
           </button>
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              "h-7 w-7",
-              view !== "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
-            )}
-            onClick={() => setView(view === "code" ? "preview" : "code")}
-            disabled={!selectedArtifact}
-            aria-label={view === "code" ? "Show artifact preview" : "Show artifact code"}
-            data-tooltip={view === "code" ? "Preview" : "Code"}
-          >
-            {view === "code" ? <Play size={14} /> : <FileCode2 size={14} />}
-          </button>
+          {selectedArtifact?.kind !== "markdown" ? (
+            <button
+              type="button"
+              className={cn(
+                compactIconButtonClass,
+                "h-7 w-7",
+                view !== "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+              )}
+              onClick={() => setView(view === "code" ? "preview" : "code")}
+              disabled={!selectedArtifact}
+              aria-label={view === "code" ? "Show artifact preview" : "Show artifact code"}
+              data-tooltip={view === "code" ? "Preview" : "Code"}
+            >
+              {view === "code" ? <Play size={14} /> : <FileCode2 size={14} />}
+            </button>
+          ) : null}
           <button
             type="button"
             className={cn(compactIconButtonClass, "h-7 w-7")}
