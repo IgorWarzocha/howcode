@@ -283,7 +283,7 @@ button[data-tooltip][aria-disabled="true"]::after {
 .artifact-markdown-editor [class*="cm-deleted"],
 .artifact-markdown-editor [class*="cm-inserted"],
 .artifact-markdown-editor [class*="cm-changed"] {
-  background-color: #111521;
+  background-color: var(--sidebar);
   color: var(--text);
 }
 
@@ -299,7 +299,7 @@ button[data-tooltip][aria-disabled="true"]::after {
 
 .artifact-markdown-editor .cm-gutters {
   border-right: 1px solid var(--border);
-  background-color: #171a25;
+  background-color: var(--workspace);
   color: var(--muted-2);
 }
 
@@ -321,7 +321,7 @@ button[data-tooltip][aria-disabled="true"]::after {
 .artifact-markdown-editor .cm-mergeView .cm-editor,
 .artifact-markdown-editor .cm-sourceView .cm-editor {
   border-color: var(--border);
-  background-color: #111521;
+  background-color: var(--sidebar);
   color: var(--text);
 }
 
