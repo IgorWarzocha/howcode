@@ -265,7 +265,40 @@ button[data-tooltip][aria-disabled="true"]::after {
   [class*="toolbarToggleItem"]
   > span {
   padding: 0.125rem 0.25rem;
+  font-size: 0;
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"]
+  > span::before {
   font-size: 10px;
+  line-height: 1;
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"]:nth-child(1)
+  > span::before {
+  content: "R";
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"]:nth-child(2)
+  > span::before {
+  content: "S";
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"]:nth-child(3)
+  > span::before {
+  content: "D";
 }
 
 .artifact-markdown-editor .cm-editor,

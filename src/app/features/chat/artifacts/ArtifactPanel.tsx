@@ -91,7 +91,7 @@ const artifactDarkPreviewCss = `
     hr { border: 0; border-top: 1px solid rgba(169,178,215,0.14); }
 `;
 
-function createMarkdownEditorPlugins(fullscreen: boolean) {
+function createMarkdownEditorPlugins(fullscreen: boolean, diffMarkdown: string) {
   return [
     headingsPlugin(),
     listsPlugin(),
@@ -114,7 +114,7 @@ function createMarkdownEditorPlugins(fullscreen: boolean) {
         tsx: "TypeScript JSX",
       },
     }),
-    diffSourcePlugin({ viewMode: "rich-text" }),
+    diffSourcePlugin({ viewMode: "rich-text", diffMarkdown }),
     markdownShortcutPlugin(),
     toolbarPlugin({
       toolbarClassName: cn(
@@ -122,7 +122,7 @@ function createMarkdownEditorPlugins(fullscreen: boolean) {
         fullscreen ? "artifact-mdx-toolbar-fullscreen" : "artifact-mdx-toolbar-drawer",
       ),
       toolbarContents: () => (
-        <DiffSourceToggleWrapper>
+        <DiffSourceToggleWrapper options={["rich-text", "source", "diff"]}>
           <span className="artifact-mdx-toolbar-row artifact-mdx-toolbar-row-primary">
             <UndoRedo />
             <Separator />
@@ -216,10 +216,6 @@ export function ArtifactPanel({
   const [previewRevision, setPreviewRevision] = useState(0);
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
   const markdownEditorRef = useRef<MDXEditorMethods>(null);
-  const markdownEditorPlugins = useMemo(
-    () => createMarkdownEditorPlugins(fullscreen),
-    [fullscreen],
-  );
 
   const selectedArtifact = useMemo(
     () =>
@@ -233,6 +229,10 @@ export function ArtifactPanel({
   const selectedArtifactSlug = selectedArtifact?.slug ?? null;
   const selectedArtifactVersion = selectedArtifact?.version ?? null;
   const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
+  const markdownEditorPlugins = useMemo(
+    () => createMarkdownEditorPlugins(fullscreen, selectedArtifact?.content ?? ""),
+    [fullscreen, selectedArtifact?.content],
+  );
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
   const markdownPreviewEditable =
     view === "preview" && selectedArtifact?.kind === "markdown" && !showingHistoricalVersion;
@@ -547,7 +547,7 @@ export function ArtifactPanel({
         !showingHistoricalVersion ? (
           <div className="artifact-markdown-editor h-full min-h-0 overflow-hidden bg-[color:var(--sidebar)]">
             <MDXEditor
-              key={selectedArtifact.slug}
+              key={`${selectedArtifact.slug}:${selectedArtifact.version}`}
               ref={markdownEditorRef}
               markdown={draft}
               plugins={markdownEditorPlugins}
