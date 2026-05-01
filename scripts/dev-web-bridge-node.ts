@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, stat } from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -36,6 +36,34 @@ function sendSseEvent<TChannel extends keyof DesktopEventMap>(
     client.write(`event: ${channel}\n`);
     client.write(`data: ${payload}\n\n`);
   }
+}
+
+async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
+  const parsed = path.parse(fileName);
+  for (let index = 0; index < 100; index += 1) {
+    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`;
+    const candidatePath = path.join(directoryPath, candidateName);
+    try {
+      const file = await open(candidatePath, "wx", 0o600);
+      try {
+        await file.writeFile(content, "utf8");
+      } finally {
+        await file.close();
+      }
+      return candidatePath;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "EEXIST"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Could not find an unused file name in Downloads.");
 }
 
 piThreads.subscribeDesktopEvents((event) => {
@@ -166,10 +194,9 @@ const handlers: DesktopRequestHandlerMap = {
       .trim();
     if (!safeFileName) return { ok: false, error: "Invalid file name." };
     const downloadsPath = path.join(os.homedir(), "Downloads");
-    const filePath = path.join(downloadsPath, safeFileName);
     try {
       await mkdir(downloadsPath, { recursive: true });
-      await writeFile(filePath, content, "utf8");
+      const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content);
       return { ok: true, path: filePath };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error) };

@@ -229,5 +229,5 @@ export function dequeueComposerPrompt(
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   },
 ) {
-  return invokeRuntimeHost("dequeueComposerPrompt", request);
+  return invokeRuntimeHost("dequeueComposerPrompt", withComposerModeSettings(request));
 }

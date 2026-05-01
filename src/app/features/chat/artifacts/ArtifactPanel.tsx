@@ -136,15 +136,19 @@ export function ArtifactPanel({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
   const artifactIdsRef = useRef(new Set<string>());
+  const previousSelectedArtifactSlugRef = useRef<string | null>(null);
 
   const selectedArtifact = useMemo(
-    () => artifacts.find((artifact) => artifact.slug === selectedArtifactId) ?? artifacts[0] ?? null,
+    () =>
+      artifacts.find((artifact) => artifact.slug === selectedArtifactId) ?? artifacts[0] ?? null,
     [artifacts, selectedArtifactId],
   );
   const selectedHistoricalVersion =
     selectedVersion === "latest"
       ? null
       : (versions.find((version) => version.version === selectedVersion) ?? null);
+  const selectedArtifactSlug = selectedArtifact?.slug ?? null;
+  const selectedArtifactVersion = selectedArtifact?.version ?? null;
   const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
   const markdownPreviewEditable =
@@ -199,22 +203,25 @@ export function ArtifactPanel({
   }, [conversationId]);
 
   useEffect(() => {
+    if (previousSelectedArtifactSlugRef.current === selectedArtifactSlug) return;
+    previousSelectedArtifactSlugRef.current = selectedArtifactSlug;
     setSelectedVersion("latest");
-  }, [selectedArtifact?.slug]);
+  }, [selectedArtifactSlug]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!selectedArtifact) {
+    if (!selectedArtifactSlug) {
       setVersions([]);
       return;
     }
-    void listArtifactVersionsQuery(selectedArtifact.slug).then((nextVersions) => {
+    void selectedArtifactVersion;
+    void listArtifactVersionsQuery(selectedArtifactSlug).then((nextVersions) => {
       if (!cancelled) setVersions(nextVersions);
     });
     return () => {
       cancelled = true;
     };
-  }, [selectedArtifact?.slug, selectedArtifact?.version]);
+  }, [selectedArtifactSlug, selectedArtifactVersion]);
 
   useEffect(() => {
     setDraft(displayedContent);
@@ -317,7 +324,9 @@ export function ArtifactPanel({
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
           <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
           {selectedArtifact ? (
-            <span className="truncate font-medium">{formatArtifactSlug(selectedArtifact.slug)}</span>
+            <span className="truncate font-medium">
+              {formatArtifactSlug(selectedArtifact.slug)}
+            </span>
           ) : null}
         </div>
         <div className="flex items-center gap-1">
@@ -335,10 +344,10 @@ export function ArtifactPanel({
               {versions
                 .filter((version) => version.version !== selectedArtifact.version)
                 .map((version) => (
-                <option key={version.version} value={version.version}>
-                  v{version.version}
-                </option>
-              ))}
+                  <option key={version.version} value={version.version}>
+                    v{version.version}
+                  </option>
+                ))}
             </select>
           ) : null}
           {(["list", "code", "preview"] as const).map((nextView) => (
@@ -352,9 +361,17 @@ export function ArtifactPanel({
               )}
               onClick={() => setView(nextView)}
               aria-label={`Show artifact ${nextView}`}
-              data-tooltip={nextView === "list" ? "Artifact list" : nextView === "code" ? "Code" : "Preview"}
+              data-tooltip={
+                nextView === "list" ? "Artifact list" : nextView === "code" ? "Code" : "Preview"
+              }
             >
-              {nextView === "list" ? <List size={14} /> : nextView === "code" ? <FileCode2 size={14} /> : <Play size={14} />}
+              {nextView === "list" ? (
+                <List size={14} />
+              ) : nextView === "code" ? (
+                <FileCode2 size={14} />
+              ) : (
+                <Play size={14} />
+              )}
             </button>
           ))}
           {saveVisible ? (
@@ -363,7 +380,10 @@ export function ArtifactPanel({
               className={cn(compactIconButtonClass, "h-7 w-7")}
               onClick={() => void saveDraft()}
               disabled={
-                !selectedArtifact || showingHistoricalVersion || draft === selectedArtifact.content || saving
+                !selectedArtifact ||
+                showingHistoricalVersion ||
+                draft === selectedArtifact.content ||
+                saving
               }
               aria-label="Save artifact"
               data-tooltip="Save artifact"
@@ -460,19 +480,19 @@ export function ArtifactPanel({
           />
         ) : null}
 
-        {view === "preview" && selectedArtifact?.kind === "markdown" ? (
-          <div
-            key={`${selectedArtifact.slug}:${selectedVersion}`}
-            className={cn(
-              "h-full min-h-0 overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] outline-none [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]",
-              !showingHistoricalVersion && "cursor-text focus:ring-1 focus:ring-[color:var(--border-strong)]",
-            )}
-            contentEditable={!showingHistoricalVersion ? "plaintext-only" : false}
-            suppressContentEditableWarning
-            onInput={(event) => {
-              if (!showingHistoricalVersion) setDraft(event.currentTarget.innerText);
-            }}
-          >
+        {view === "preview" &&
+        selectedArtifact?.kind === "markdown" &&
+        !showingHistoricalVersion ? (
+          <textarea
+            className="h-full w-full resize-none overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] outline-none [text-wrap:pretty] placeholder:text-[color:var(--muted)] focus:ring-1 focus:ring-[color:var(--border-strong)]"
+            value={draft}
+            spellCheck={true}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+        ) : null}
+
+        {view === "preview" && selectedArtifact?.kind === "markdown" && showingHistoricalVersion ? (
+          <div className="h-full min-h-0 overflow-auto bg-[color:var(--sidebar)] px-7 py-6 text-[14px] leading-[1.7] text-[color:var(--text)] [text-wrap:pretty] [&_h1]:[text-wrap:balance] [&_h2]:[text-wrap:balance] [&_h3]:[text-wrap:balance] [&_pre]:[text-wrap:initial]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -494,9 +514,14 @@ export function ArtifactPanel({
                 p: ({ children }) => <p className="my-2 text-[color:var(--text)]/92">{children}</p>,
                 ul: ({ children }) => <ul className="my-2 list-disc pl-5">{children}</ul>,
                 ol: ({ children }) => <ol className="my-2 list-decimal pl-5">{children}</ol>,
-                li: ({ children }) => <li className="my-1 text-[color:var(--text)]/92">{children}</li>,
+                li: ({ children }) => (
+                  <li className="my-1 text-[color:var(--text)]/92">{children}</li>
+                ),
                 a: ({ children, href }) => (
-                  <a className="text-[color:var(--accent)] underline underline-offset-2" href={href}>
+                  <a
+                    className="text-[color:var(--accent)] underline underline-offset-2"
+                    href={href}
+                  >
                     {children}
                   </a>
                 ),
@@ -505,7 +530,9 @@ export function ArtifactPanel({
                     {children}
                   </blockquote>
                 ),
-                code: ({ children }) => <code className="font-mono text-[color:var(--accent)]">{children}</code>,
+                code: ({ children }) => (
+                  <code className="font-mono text-[color:var(--accent)]">{children}</code>
+                ),
                 pre: ({ children }) => (
                   <pre className="my-3 overflow-auto rounded-lg border border-[color:var(--border)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)]">
                     {children}
@@ -514,7 +541,7 @@ export function ArtifactPanel({
                 hr: () => <hr className="my-5 border-0 border-t border-[color:var(--border)]" />,
               }}
             >
-              {showingHistoricalVersion ? displayedContent : draft}
+              {displayedContent}
             </ReactMarkdown>
           </div>
         ) : null}
@@ -532,7 +559,9 @@ export function ArtifactPanel({
                 sandbox="allow-scripts allow-forms allow-modals"
                 srcDoc={previewHtml}
                 className="h-full w-full border-0"
-                title={selectedArtifact ? formatArtifactSlug(selectedArtifact.slug) : "Artifact preview"}
+                title={
+                  selectedArtifact ? formatArtifactSlug(selectedArtifact.slug) : "Artifact preview"
+                }
               />
             ) : null}
           </div>

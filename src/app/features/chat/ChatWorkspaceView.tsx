@@ -23,7 +23,7 @@ type ChatWorkspaceViewProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
-const ARTIFACT_DRAWER_OFFSET = "min(760px, calc(100% - 900px))";
+const ARTIFACT_DRAWER_WIDTH = "min(760px, max(0px, calc(100% - 900px)))";
 
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages
@@ -60,7 +60,7 @@ export function ChatWorkspaceView({
   } = controller;
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
-  const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_OFFSET } : undefined;
+  const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_WIDTH } : undefined;
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
 
@@ -87,6 +87,7 @@ export function ChatWorkspaceView({
     if (!conversationId) return;
     return window.piDesktop.subscribe((event) => {
       if (event.type !== "artifact-update") return;
+      if (event.conversationId !== conversationId) return;
       setArtifactsVisible(true);
     });
   }, [activeThreadData?.sessionPath, terminalSessionPath]);
@@ -228,7 +229,7 @@ export function ChatWorkspaceView({
       <div
         className={cn(
           "absolute top-0 right-0 bottom-0 min-h-0 overflow-hidden transition-[width] duration-200 ease-out",
-          artifactsVisible ? "w-[min(760px,calc(100%-900px))]" : "w-0",
+          artifactsVisible ? "w-[min(760px,max(0px,calc(100%-900px)))]" : "w-0",
           artifactsFullscreen && "left-0 w-auto",
         )}
       >

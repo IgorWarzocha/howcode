@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { app, clipboard, dialog, shell } from "electron";
@@ -72,6 +72,34 @@ async function clearClipboardImageTempFiles() {
     clearedCount: results.filter((result) => result.status === "fulfilled").length,
     clearFailedCount: results.filter((result) => result.status === "rejected").length,
   };
+}
+
+async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
+  const parsed = path.parse(fileName);
+  for (let index = 0; index < 100; index += 1) {
+    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`;
+    const candidatePath = path.join(directoryPath, candidateName);
+    try {
+      const file = await open(candidatePath, "wx", 0o600);
+      try {
+        await file.writeFile(content, "utf8");
+      } finally {
+        await file.close();
+      }
+      return candidatePath;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "EEXIST"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Could not find an unused file name in Downloads.");
 }
 
 export function createSystemHandlers(): SystemRequestHandlers {
@@ -180,9 +208,9 @@ export function createSystemHandlers(): SystemRequestHandlers {
         .replace(/^\.+/, "")
         .trim();
       if (!safeFileName) return { ok: false, error: "Invalid file name." };
-      const targetPath = path.join(app.getPath("downloads"), safeFileName);
+      const downloadsPath = app.getPath("downloads");
       try {
-        await writeFile(targetPath, content, "utf8");
+        const targetPath = await writeUniqueTextFile(downloadsPath, safeFileName, content);
         return { ok: true, path: targetPath };
       } catch (error) {
         return { ok: false, error: error instanceof Error ? error.message : String(error) };

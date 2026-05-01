@@ -154,7 +154,21 @@ export function installDevWebDesktopBridge() {
     removeDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") =>
       invokeRequest("removeDictationModel", { modelId }),
     transcribeDictation: (request) => invokeRequest("transcribeDictation", request),
-    getProjectThreads: (projectId: string) => invokeRequest("getProjectThreads", { projectId }),
+    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
+      invokeRequest("getProjectThreads", { projectId, chat: request.chat }),
+    getChatSidebarState: (selectedGroupId: string | null = null) =>
+      invokeRequest("getChatSidebarState", { selectedGroupId }),
+    createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
+    listArtifacts: (conversationId: string | null = null) =>
+      invokeRequest("listArtifacts", { conversationId }),
+    getArtifact: (artifactId: string) => invokeRequest("getArtifact", { artifactId }),
+    updateArtifact: (artifactId: string, content: string) =>
+      invokeRequest("updateArtifact", { artifactId, content }),
+    editArtifact: (artifactId: string, edits: Array<{ oldText: string; newText: string }>) =>
+      invokeRequest("editArtifact", { artifactId, edits }),
+    listArtifactVersions: (artifactId: string) =>
+      invokeRequest("listArtifactVersions", { artifactId }),
+    compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
@@ -180,6 +194,8 @@ export function installDevWebDesktopBridge() {
     getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
     openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
     openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
+    saveTextToDownloads: (fileName: string, content: string) =>
+      invokeRequest("saveTextToDownloads", { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
       subscribeToEvent("desktopEvent", listener),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>

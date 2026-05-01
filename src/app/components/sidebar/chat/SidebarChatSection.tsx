@@ -311,18 +311,20 @@ export function SidebarChatSection({
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (normalizedSearchQuery) return;
     setDraggingGroupId(typeof event.active.id === "string" ? event.active.id : null);
     setOpenGroupMenuId(null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingGroupId(null);
+    if (normalizedSearchQuery) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = groups.findIndex((group) => group.id === active.id);
-    const newIndex = groups.findIndex((group) => group.id === over.id);
+    const oldIndex = sourceGroups.findIndex((group) => group.id === active.id);
+    const newIndex = sourceGroups.findIndex((group) => group.id === over.id);
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
-    const nextGroups = arrayMove(groups, oldIndex, newIndex);
+    const nextGroups = arrayMove(sourceGroups, oldIndex, newIndex);
     void onAction("chat.group.reorder", { chatGroupIds: nextGroups.map((group) => group.id) }).then(
       onRefresh,
     );

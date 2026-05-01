@@ -43,11 +43,7 @@ function mergeShellStateProjects(
       // Shell refreshes rebuild project rows from backend metadata only, which currently drops
       // loaded thread lists. Preserve already-loaded sidebar thread data across refreshes so
       // desktop events do not cause the tree to briefly reset/jump before per-project reloads land.
-      if (
-        !currentProject?.threadsLoaded ||
-        project.threadsLoaded ||
-        currentProject.threadsScope !== undefined
-      ) {
+      if (!currentProject?.threadsLoaded || project.threadsLoaded) {
         return project;
       }
 
@@ -56,6 +52,7 @@ function mergeShellStateProjects(
         threads: currentProject.threads,
         threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
         threadsLoaded: true,
+        threadsScope: currentProject.threadsScope,
       };
     }),
   };

@@ -6,6 +6,20 @@ type SettingsManagerFactory = {
   inMemory: (settings?: Record<string, unknown>) => SettingsManager;
 };
 
+function mergeSettingsArrays(globalValue: unknown, projectValue: unknown) {
+  const values = [
+    ...(Array.isArray(globalValue) ? globalValue : []),
+    ...(Array.isArray(projectValue) ? projectValue : []),
+  ];
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const key = JSON.stringify(value);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function createRuntimeSettingsManager(options: {
   SettingsManager: SettingsManagerFactory;
   cwd: string;
@@ -27,11 +41,11 @@ export function createRuntimeSettingsManager(options: {
   return options.SettingsManager.inMemory({
     ...globalSettings,
     ...projectSettings,
-    packages: projectSettings.packages ?? [],
-    extensions: projectSettings.extensions ?? [],
-    skills: projectSettings.skills ?? [],
-    prompts: projectSettings.prompts ?? [],
-    themes: projectSettings.themes ?? [],
+    packages: mergeSettingsArrays(globalSettings.packages, projectSettings.packages),
+    extensions: mergeSettingsArrays(globalSettings.extensions, projectSettings.extensions),
+    skills: mergeSettingsArrays(globalSettings.skills, projectSettings.skills),
+    prompts: mergeSettingsArrays(globalSettings.prompts, projectSettings.prompts),
+    themes: mergeSettingsArrays(globalSettings.themes, projectSettings.themes),
   });
 }
 

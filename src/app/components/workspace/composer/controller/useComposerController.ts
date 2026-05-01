@@ -176,6 +176,17 @@ export function useComposerController({
   }, [draftValueRef, pendingSubmittedDraft, replyActivityKey, setDraftValue]);
 
   useEffect(() => {
+    if (!pendingSubmittedDraft || isSending || isStreaming) return;
+    const submittedReplyActivityKey = pendingSubmittedReplyActivityKeyRef.current;
+    const timeout = window.setTimeout(() => {
+      if (pendingSubmittedReplyActivityKeyRef.current !== submittedReplyActivityKey) return;
+      pendingSubmittedReplyActivityKeyRef.current = null;
+      setPendingSubmittedDraft(null);
+    }, 60_000);
+    return () => window.clearTimeout(timeout);
+  }, [isSending, isStreaming, pendingSubmittedDraft]);
+
+  useEffect(() => {
     void composerScopeKey;
     if (!pendingSubmittedDraft || draftValueRef.current === pendingSubmittedDraft) {
       return;

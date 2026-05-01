@@ -16,7 +16,7 @@
     }
   },
   "files": {
-    "ignore": ["artifacts", "build", "dist", "node_modules", "vendor"]
+    "ignore": ["/artifacts", "/build", "/dist", "/node_modules", "/vendor"]
   },
   "javascript": {
     "formatter": {

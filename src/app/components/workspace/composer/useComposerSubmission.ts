@@ -187,6 +187,7 @@ export function useComposerSubmission({
         const submittedRawDraft = draftValueRef.current;
         const textToSend = submittedRawDraft.trim();
         const submittedAttachments = attachmentsRef.current;
+        const submittedWhileStreaming = isStreaming;
         if (textToSend.length === 0 && submittedAttachments.length === 0) {
           return;
         }
@@ -235,6 +236,17 @@ export function useComposerSubmission({
           if (cleanup.nextAttachments !== null) {
             setAttachments(cleanup.nextAttachments);
           }
+
+          if (
+            submittedWhileStreaming &&
+            activeDraftThreadIdRef.current === submittedDraftThreadId
+          ) {
+            setPendingSubmittedDraft(null);
+            pendingSubmittedReplyActivityKeyRef.current = null;
+            if (isSameSubmittedDraft(draftValueRef.current, submittedRawDraft)) {
+              setDraftValue("");
+            }
+          }
         }
 
         if (
@@ -281,6 +293,7 @@ export function useComposerSubmission({
     draftValueRef,
     isCompacting,
     isSending,
+    isStreaming,
     onAction,
     pendingSubmittedReplyActivityKeyRef,
     projectId,

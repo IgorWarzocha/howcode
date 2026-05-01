@@ -1,5 +1,7 @@
 import type { ReactArtifactCompileResult } from "../shared/desktop-contracts.ts";
 
+const allowedArtifactImports = new Set(["react", "react/jsx-runtime", "react/jsx-dev-runtime"]);
+
 export async function compileReactArtifact(source: string): Promise<ReactArtifactCompileResult> {
   try {
     const esbuild = await import("esbuild");
@@ -34,10 +36,22 @@ export async function compileReactArtifact(source: string): Promise<ReactArtifac
               path: args.path,
               namespace: "artifact-source",
             }));
+            build.onResolve({ filter: /.*/, namespace: "artifact-source" }, (args) => {
+              if (allowedArtifactImports.has(args.path)) {
+                return { path: require.resolve(args.path) };
+              }
+
+              return {
+                errors: [
+                  {
+                    text: `React artifacts cannot import ${JSON.stringify(args.path)}. Keep artifacts self-contained; React is provided by the preview runtime.`,
+                  },
+                ],
+              };
+            });
             build.onLoad({ filter: /.*/, namespace: "artifact-source" }, () => ({
               contents: source,
               loader: "tsx",
-              resolveDir: process.cwd(),
             }));
           },
         },
