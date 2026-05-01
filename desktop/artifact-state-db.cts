@@ -3,6 +3,7 @@ import type { Artifact, ArtifactKind, ArtifactVersion } from "../shared/desktop-
 import { emitDesktopEvent } from "./runtime/desktop-events.cts";
 import { emitDesktopEvent as emitRuntimeHostDesktopEvent } from "./runtime-host/host-events.cts";
 import { getThreadStateDatabase } from "./thread-state-db/db.cts";
+import { runInTransaction } from "./thread-state-db/write-transaction.cts";
 
 let artifactSchemaReady = false;
 
@@ -195,6 +196,23 @@ export function createArtifact(input: {
   if (!artifact) throw new Error("Artifact creation failed.");
   emitArtifactChange(artifact);
   return artifact;
+}
+
+export function deleteArtifactsForConversation(conversationId: string) {
+  ensureArtifactSchema();
+  getThreadStateDatabase()
+    .prepare("DELETE FROM artifacts WHERE conversation_id = ?")
+    .run(conversationId);
+}
+
+export function deleteArtifactsForConversations(conversationIds: string[]) {
+  ensureArtifactSchema();
+  if (conversationIds.length === 0) return;
+  const db = getThreadStateDatabase();
+  const deleteArtifacts = db.prepare("DELETE FROM artifacts WHERE conversation_id = ?");
+  runInTransaction(db, () => {
+    for (const conversationId of conversationIds) deleteArtifacts.run(conversationId);
+  });
 }
 
 export function updateArtifact(input: {
