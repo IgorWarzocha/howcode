@@ -97,19 +97,7 @@ export function reorderChatGroups(groupIds: string[]) {
 }
 
 export function moveChatThread(sessionPath: string, groupId: string | null) {
-  if (!isChatSessionPath(sessionPath)) return;
-  ensureChatStateSchema();
-  getThreadStateDatabase()
-    .prepare(
-      `
-        INSERT INTO chat_threads (session_path, group_id)
-        VALUES (?, ?)
-        ON CONFLICT(session_path) DO UPDATE SET
-          group_id = excluded.group_id,
-          updated_at = CURRENT_TIMESTAMP
-      `,
-    )
-    .run(sessionPath, groupId);
+  upsertChatThread({ sessionPath, groupId, updateGroup: true });
 }
 
 export function deleteChatThread(sessionPath: string) {
@@ -122,6 +110,7 @@ export function deleteChatThread(sessionPath: string) {
 export function upsertChatThread(options: {
   sessionPath: string;
   groupId?: string | null;
+  updateGroup?: boolean;
 }) {
   if (!isChatSessionPath(options.sessionPath)) return;
   ensureChatStateSchema();
@@ -131,10 +120,11 @@ export function upsertChatThread(options: {
         INSERT INTO chat_threads (session_path, group_id)
         VALUES (?, ?)
         ON CONFLICT(session_path) DO UPDATE SET
+          group_id = CASE WHEN ? THEN excluded.group_id ELSE chat_threads.group_id END,
           updated_at = CURRENT_TIMESTAMP
       `,
     )
-    .run(options.sessionPath, options.groupId ?? null);
+    .run(options.sessionPath, options.groupId ?? null, options.updateGroup ? 1 : 0);
 }
 
 function mapChatThreadRow(row: ChatThreadGroupRow): ChatThread {

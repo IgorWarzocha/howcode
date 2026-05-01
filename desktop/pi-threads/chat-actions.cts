@@ -7,6 +7,7 @@ import {
   reorderChatGroups,
   setChatGroupCollapsed,
 } from "../chat-state-db.cts";
+import { getThreadSessionPath } from "../thread-state-db.cts";
 import type { ActionHandlerResult } from "./action-router-result.cts";
 import { handledAction, unhandledAction } from "./action-router-result.cts";
 
@@ -45,7 +46,13 @@ export async function handleChatDesktopAction(
       return handledAction();
     }
     case "chat.thread.move": {
-      const sessionPath = typeof payload.sessionPath === "string" ? payload.sessionPath : null;
+      const threadId = typeof payload.threadId === "string" ? payload.threadId : null;
+      const sessionPath =
+        typeof payload.sessionPath === "string"
+          ? payload.sessionPath
+          : threadId
+            ? getThreadSessionPath(threadId)
+            : null;
       if (sessionPath) moveChatThread(sessionPath, getChatGroupId(payload));
       return handledAction();
     }

@@ -21,6 +21,7 @@ export function getRuntimeRecordSnapshots() {
   return [...runtimeRecords.entries()].map(([runtimeKey, record]) => ({
     runtimeKey,
     runtimePromise: record.runtimePromise,
+    settingsCwd: record.settingsCwd,
   }));
 }
 

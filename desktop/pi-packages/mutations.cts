@@ -2,7 +2,10 @@ import type { PiPackageMutationResult } from "../../shared/desktop-contracts.ts"
 import { listConfiguredPiPackages } from "./configured.cts";
 import { normalizePiPackageSource } from "./helpers.ts";
 import { getPiPackageServices } from "./services.cts";
-import { markRuntimeSettingsStaleForProject } from "../runtime/runtime-registry.cts";
+import {
+  markRuntimeSettingsStaleForProject,
+  markRuntimeSettingsStaleForSettingsCwd,
+} from "../runtime/runtime-registry.cts";
 
 export async function installPiPackage(request: {
   source: string;
@@ -21,7 +24,11 @@ export async function installPiPackage(request: {
   const configuredProjectPath = request.chat ? request.projectPath : projectPath;
   const local = request.local || request.chat;
   await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {});
-  await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+  if (request.chat) {
+    await markRuntimeSettingsStaleForSettingsCwd(projectPath);
+  } else {
+    await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+  }
 
   return {
     source: request.source,
@@ -49,7 +56,11 @@ export async function removePiPackage(request: {
   const configuredProjectPath = request.chat ? request.projectPath : projectPath;
   const local = request.local || request.chat;
   await packageManager.removeAndPersist(source, local ? { local: true } : {});
-  await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+  if (request.chat) {
+    await markRuntimeSettingsStaleForSettingsCwd(projectPath);
+  } else {
+    await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+  }
 
   return {
     source,

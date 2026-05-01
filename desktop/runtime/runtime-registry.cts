@@ -105,6 +105,10 @@ export async function markRuntimeSettingsStaleForProject(projectPath?: string | 
   settingsRefreshController.markStaleForProject(projectPath);
 }
 
+export async function markRuntimeSettingsStaleForSettingsCwd(settingsCwd?: string | null) {
+  settingsRefreshController.markStaleForSettingsCwd(settingsCwd);
+}
+
 async function createRuntime(options: {
   cwd: string;
   sessionDir?: string | null;

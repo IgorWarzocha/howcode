@@ -6,6 +6,7 @@ import type { PiRuntime } from "./types.cts";
 export type RuntimeRecordSnapshot = {
   runtimeKey: string;
   runtimePromise: Promise<PiRuntime>;
+  settingsCwd: string | null;
 };
 
 type RuntimeSettingsRefreshControllerOptions = {
@@ -156,10 +157,24 @@ export function createRuntimeSettingsRefreshController({
     }
   }
 
+  function markStaleForSettingsCwd(settingsCwd?: string | null) {
+    if (!settingsCwd?.trim()) return;
+    const normalizedSettingsCwd = path.resolve(settingsCwd);
+
+    for (const { runtimeKey, settingsCwd: runtimeSettingsCwd } of getRuntimeRecords()) {
+      if (!runtimeSettingsCwd || path.resolve(runtimeSettingsCwd) !== normalizedSettingsCwd) {
+        continue;
+      }
+
+      staleGenerations.set(runtimeKey, (staleGenerations.get(runtimeKey) ?? 0) + 1);
+      void reloadIfSafe(runtimeKey).catch(() => undefined);
+    }
+  }
+
   function isStale(sessionPath: string | null | undefined) {
     const runtimeKey = getPersistedSessionPath(sessionPath ?? null);
     return Boolean(runtimeKey && staleGenerations.has(runtimeKey));
   }
 
-  return { isStale, markStale, markStaleForProject, reloadIfSafe };
+  return { isStale, markStale, markStaleForProject, markStaleForSettingsCwd, reloadIfSafe };
 }
