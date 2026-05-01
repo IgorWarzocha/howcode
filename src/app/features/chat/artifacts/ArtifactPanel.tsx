@@ -91,48 +91,58 @@ const artifactDarkPreviewCss = `
     hr { border: 0; border-top: 1px solid rgba(169,178,215,0.14); }
 `;
 
-const markdownEditorPlugins = [
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  linkPlugin(),
-  tablePlugin(),
-  thematicBreakPlugin(),
-  codeBlockPlugin({ defaultCodeBlockLanguage: "text" }),
-  codeMirrorPlugin({
-    codeBlockLanguages: {
-      css: "CSS",
-      html: "HTML",
-      js: "JavaScript",
-      jsx: "JavaScript JSX",
-      json: "JSON",
-      markdown: "Markdown",
-      md: "Markdown",
-      text: "Text",
-      ts: "TypeScript",
-      tsx: "TypeScript JSX",
-    },
-  }),
-  diffSourcePlugin({ viewMode: "rich-text" }),
-  markdownShortcutPlugin(),
-  toolbarPlugin({
-    toolbarContents: () => (
-      <DiffSourceToggleWrapper>
-        <UndoRedo />
-        <Separator />
-        <BlockTypeSelect />
-        <Separator />
-        <BoldItalicUnderlineToggles />
-        <CodeToggle />
-        <Separator />
-        <ListsToggle />
-        <CreateLink />
-        <InsertTable />
-        <InsertCodeBlock />
-      </DiffSourceToggleWrapper>
-    ),
-  }),
-];
+function createMarkdownEditorPlugins(fullscreen: boolean) {
+  return [
+    headingsPlugin(),
+    listsPlugin(),
+    quotePlugin(),
+    linkPlugin(),
+    tablePlugin(),
+    thematicBreakPlugin(),
+    codeBlockPlugin({ defaultCodeBlockLanguage: "text" }),
+    codeMirrorPlugin({
+      codeBlockLanguages: {
+        css: "CSS",
+        html: "HTML",
+        js: "JavaScript",
+        jsx: "JavaScript JSX",
+        json: "JSON",
+        markdown: "Markdown",
+        md: "Markdown",
+        text: "Text",
+        ts: "TypeScript",
+        tsx: "TypeScript JSX",
+      },
+    }),
+    diffSourcePlugin({ viewMode: "rich-text" }),
+    markdownShortcutPlugin(),
+    toolbarPlugin({
+      toolbarClassName: cn(
+        "artifact-mdx-toolbar",
+        fullscreen ? "artifact-mdx-toolbar-fullscreen" : "artifact-mdx-toolbar-drawer",
+      ),
+      toolbarContents: () => (
+        <DiffSourceToggleWrapper>
+          <span className="artifact-mdx-toolbar-row artifact-mdx-toolbar-row-primary">
+            <UndoRedo />
+            <Separator />
+            <BlockTypeSelect />
+          </span>
+          <span className="artifact-mdx-toolbar-row artifact-mdx-toolbar-row-secondary">
+            <Separator />
+            <BoldItalicUnderlineToggles />
+            <CodeToggle />
+            <Separator />
+            <ListsToggle />
+            <CreateLink />
+            <InsertTable />
+            <InsertCodeBlock />
+          </span>
+        </DiffSourceToggleWrapper>
+      ),
+    }),
+  ];
+}
 
 function buildHtmlPreview(content: string) {
   const capture = `${artifactScrollbarCss}
@@ -206,6 +216,10 @@ export function ArtifactPanel({
   const [previewRevision, setPreviewRevision] = useState(0);
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
   const markdownEditorRef = useRef<MDXEditorMethods>(null);
+  const markdownEditorPlugins = useMemo(
+    () => createMarkdownEditorPlugins(fullscreen),
+    [fullscreen],
+  );
 
   const selectedArtifact = useMemo(
     () =>

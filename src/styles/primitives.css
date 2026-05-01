@@ -203,6 +203,39 @@ button[data-tooltip][aria-disabled="true"]::after {
   background: #222532;
 }
 
+.artifact-markdown-editor .artifact-mdx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer {
+  min-height: 56px;
+  flex-wrap: wrap;
+  align-content: center;
+  padding-block: 0.25rem;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-fullscreen {
+  min-height: 32px;
+  flex-wrap: nowrap;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-row {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row {
+  width: 100%;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary {
+  padding-left: 0.125rem;
+}
+
 .artifact-markdown-editor .artifact-markdown-editor-content {
   min-height: 100%;
   padding: 1.5rem 1.75rem;
