@@ -8,7 +8,7 @@ type UseProjectShellSyncInput = {
   projects: Project[];
   collapsedProjectIds: Record<string, boolean>;
   activeView: WorkspaceState["activeView"];
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadArchivedThreads: () => Promise<ArchivedThread[]>;
   dispatch: Dispatch<WorkspaceAction>;
   setArchivedThreads: (threads: ArchivedThread[]) => void;
@@ -32,14 +32,17 @@ export function useProjectShellSync({
   }, [dispatch, projects]);
 
   useEffect(() => {
+    const threadsScope = activeView === "chat" ? "chat" : "code";
     const expandedProjects = projects.filter(
-      (project) => !collapsedProjectIds[project.id] && !project.threadsLoaded,
+      (project) =>
+        !collapsedProjectIds[project.id] &&
+        (!project.threadsLoaded || project.threadsScope !== threadsScope),
     );
 
     for (const project of expandedProjects) {
-      void loadProjectThreads(project.id);
+      void loadProjectThreads(project.id, { chat: activeView === "chat" });
     }
-  }, [collapsedProjectIds, loadProjectThreads, projects]);
+  }, [activeView, collapsedProjectIds, loadProjectThreads, projects]);
 
   useEffect(() => {
     if (activeView !== "archived") {

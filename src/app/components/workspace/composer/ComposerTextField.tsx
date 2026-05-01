@@ -21,6 +21,7 @@ type ComposerTextFieldProps = {
   ariaExpanded?: boolean;
   reservedLineCount?: number;
   trailingAdornment?: ReactNode;
+  readOnly?: boolean;
   onHeightChange?: (height: number) => void;
   onChange: (value: string) => void;
   onInput?: () => void;
@@ -43,6 +44,7 @@ export function ComposerTextField({
   ariaExpanded,
   reservedLineCount = 4,
   trailingAdornment = null,
+  readOnly = false,
   onHeightChange,
   onChange,
   onInput,
@@ -225,13 +227,16 @@ export function ComposerTextField({
           ref={textareaRef}
           rows={1}
           className={cn(
-            "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none",
+            "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150",
+            readOnly && "cursor-wait opacity-45",
             placeholderTone === "error"
               ? "placeholder:text-[#f2a7a7]"
               : "placeholder:text-[color:var(--muted-2)]",
           )}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            if (!readOnly) onChange(event.target.value);
+          }}
           onInput={onInput}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
@@ -243,6 +248,7 @@ export function ComposerTextField({
           aria-controls={ariaControls}
           aria-expanded={ariaExpanded}
           placeholder={placeholder}
+          readOnly={readOnly}
         />
         {trailingAdornment && trailingAdornmentPosition ? (
           <span

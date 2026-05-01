@@ -26,6 +26,7 @@ type ComposerPromptInputPanelProps = {
   draft: string;
   errorMessage: string | null;
   extensionRunning: boolean;
+  inputLocked: boolean;
   favoriteFolders: string[];
   pickerLoading: boolean;
   pickerOpen: boolean;
@@ -63,6 +64,7 @@ export function ComposerPromptInputPanel({
   draft,
   errorMessage,
   extensionRunning,
+  inputLocked,
   favoriteFolders,
   pickerLoading,
   pickerOpen,
@@ -178,6 +180,11 @@ export function ComposerPromptInputPanel({
                   }
                 }}
                 onKeyDown={(event) => {
+                  if (inputLocked) {
+                    event.preventDefault();
+                    return;
+                  }
+
                   if (slashCommands.handleKeyDown(event)) {
                     return;
                   }
@@ -194,6 +201,11 @@ export function ComposerPromptInputPanel({
                   }
                 }}
                 onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
+                  if (inputLocked) {
+                    event.preventDefault();
+                    return;
+                  }
+
                   const clipboardData = event.clipboardData;
                   const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
                     resolveFilePath: (file) => getPathForFileQuery(file as File) ?? null,
@@ -216,6 +228,7 @@ export function ComposerPromptInputPanel({
                 ariaControls={slashCommands.open ? slashCommands.listboxId : undefined}
                 ariaExpanded={slashCommands.open}
                 placeholder={placeholderText}
+                readOnly={inputLocked}
                 placeholderTone={errorMessage ? "error" : "muted"}
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}

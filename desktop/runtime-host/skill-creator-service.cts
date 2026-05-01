@@ -6,6 +6,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Message, SkillCreatorSessionState } from "../../shared/desktop-contracts.ts";
 import { mapAgentMessagesToUiMessages } from "../../shared/pi-message-mapper.ts";
 import { loadAppSettings } from "../app-settings/readers.cts";
+import { getChatSessionDir } from "../chat-session-dir.cts";
 import { getPiModule } from "../pi-module.cts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
 import {
@@ -14,6 +15,7 @@ import {
   getAvailableThinkingLevelsForModel,
 } from "../runtime/composer-state.cts";
 import {
+  getActiveChatSkillsRoot,
   getActiveGlobalSkillsRoot,
   getActiveProjectSkillsRoot,
   pathExists,
@@ -252,12 +254,19 @@ export async function startSkillCreatorSession(request: {
   prompt: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }) {
   const local = request.local === true;
-  const launchCwd = local ? path.resolve(request.projectPath ?? "") : os.homedir();
-  const targetRootPath = local
-    ? getActiveProjectSkillsRoot(request.projectPath)
-    : getActiveGlobalSkillsRoot();
+  const launchCwd = request.chat
+    ? getChatSessionDir()
+    : local
+      ? path.resolve(request.projectPath ?? "")
+      : os.homedir();
+  const targetRootPath = request.chat
+    ? getActiveChatSkillsRoot()
+    : local
+      ? getActiveProjectSkillsRoot(request.projectPath)
+      : getActiveGlobalSkillsRoot();
 
   if (!targetRootPath) {
     throw new Error("Select a project before creating a project-specific skill.");

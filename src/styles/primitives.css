@@ -158,3 +158,265 @@ button[data-tooltip][aria-disabled="true"]::after {
   font-size: 12px;
   line-height: 1;
 }
+
+.artifact-markdown-editor .mdxeditor {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar);
+  color: var(--text);
+  --basePageBg: var(--sidebar);
+  --baseBase: #1f2230;
+  --baseBgSubtle: #242735;
+  --baseBg: #2a2d3b;
+  --baseBgHover: #303446;
+  --baseBgActive: #343848;
+  --baseLine: var(--border);
+  --baseBorder: var(--border-strong);
+  --baseBorderHover: rgba(169, 178, 215, 0.22);
+  --baseSolid: #727894;
+  --baseSolidHover: #969db7;
+  --baseText: var(--muted);
+  --baseTextContrast: var(--text);
+  --accentBase: #25283a;
+  --accentBgSubtle: rgba(185, 191, 243, 0.08);
+  --accentBg: rgba(185, 191, 243, 0.12);
+  --accentBgHover: rgba(185, 191, 243, 0.16);
+  --accentBgActive: rgba(185, 191, 243, 0.22);
+  --accentLine: rgba(185, 191, 243, 0.18);
+  --accentBorder: rgba(185, 191, 243, 0.24);
+  --accentBorderHover: rgba(185, 191, 243, 0.32);
+  --accentSolid: var(--accent);
+  --accentSolidHover: #c8cdf7;
+  --accentText: var(--accent);
+  --accentTextContrast: #141724;
+}
+
+.artifact-markdown-editor .mdxeditor > div {
+  min-height: 0;
+}
+
+.artifact-markdown-editor .mdxeditor > div:last-child {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.artifact-markdown-editor .mdxeditor-toolbar {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border);
+  background: #222532;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  height: 28px;
+  min-height: 28px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer {
+  height: 28px;
+  min-height: 28px;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-fullscreen {
+  height: 28px;
+  min-height: 28px;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-row {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary {
+  padding-left: 0.125rem;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar svg {
+  width: 13px;
+  height: 13px;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar button,
+.artifact-markdown-editor .artifact-mdx-toolbar [role="button"],
+.artifact-markdown-editor .artifact-mdx-toolbar [role="combobox"] {
+  min-height: 24px;
+  font-size: 11px;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarToggleItem"],
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarButton"] {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarTitleMode"] {
+  display: none;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="diffSourceToggleWrapper"] {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar [class*="diffSourceToggle"] {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"] {
+  width: auto;
+  min-width: 24px;
+}
+
+.artifact-markdown-editor
+  .artifact-mdx-toolbar
+  [class*="diffSourceToggle"]
+  [class*="toolbarToggleItem"]
+  > span {
+  padding: 0.125rem 0.25rem;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.artifact-markdown-editor .cm-editor,
+.artifact-markdown-editor .cm-mergeView,
+.artifact-markdown-editor .cm-sourceView,
+.artifact-markdown-editor .cm-scroller,
+.artifact-markdown-editor .cm-content,
+.artifact-markdown-editor .cm-line,
+.artifact-markdown-editor [class*="cm-merge"],
+.artifact-markdown-editor [class*="cm-deleted"],
+.artifact-markdown-editor [class*="cm-inserted"],
+.artifact-markdown-editor [class*="cm-changed"] {
+  background-color: var(--sidebar);
+  color: var(--text);
+}
+
+.artifact-markdown-editor .cm-content {
+  min-height: 100%;
+  color: var(--text);
+  caret-color: var(--accent);
+}
+
+.artifact-markdown-editor .cm-scroller {
+  overflow: auto;
+}
+
+.artifact-markdown-editor .cm-line {
+  color: var(--text);
+}
+
+.artifact-markdown-editor .cm-gutters {
+  border-right: 1px solid var(--border);
+  background-color: var(--workspace);
+  color: var(--muted-2);
+}
+
+.artifact-markdown-editor .cm-activeLine,
+.artifact-markdown-editor .cm-activeLineGutter {
+  background-color: rgba(185, 191, 243, 0.06);
+}
+
+.artifact-markdown-editor .cm-selectionBackground,
+.artifact-markdown-editor .cm-focused .cm-selectionBackground {
+  background: rgba(185, 191, 243, 0.22) !important;
+}
+
+.artifact-markdown-editor .cm-panels,
+.artifact-markdown-editor .cm-panel,
+.artifact-markdown-editor .cm-mergeViewEditors,
+.artifact-markdown-editor .cm-mergeViewEditor,
+.artifact-markdown-editor .cm-mergeViewGutter,
+.artifact-markdown-editor .cm-mergeView .cm-editor,
+.artifact-markdown-editor .cm-sourceView .cm-editor {
+  border-color: var(--border);
+  background-color: var(--sidebar);
+  color: var(--text);
+}
+
+.artifact-markdown-editor .cm-changedLine,
+.artifact-markdown-editor [class*="changedLine"] {
+  background-color: rgba(255, 208, 116, 0.1);
+}
+
+.artifact-markdown-editor .cm-deletedChunk,
+.artifact-markdown-editor .cm-deletedLine,
+.artifact-markdown-editor [class*="deletedChunk"],
+.artifact-markdown-editor [class*="deletedLine"] {
+  background-color: rgba(255, 116, 116, 0.12);
+}
+
+.artifact-markdown-editor .cm-insertedLine,
+.artifact-markdown-editor [class*="insertedLine"] {
+  background-color: rgba(134, 217, 160, 0.12);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content {
+  min-height: 100%;
+  padding: 1.5rem 1.75rem;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content p {
+  margin-block: 0.8rem;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content ul,
+.artifact-markdown-editor .artifact-markdown-editor-content ol {
+  margin-block: 0.85rem;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content li {
+  margin-block: 0.35rem;
+}
+
+.artifact-markdown-editor [contenteditable] {
+  caret-color: var(--accent);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content h1,
+.artifact-markdown-editor .artifact-markdown-editor-content h2,
+.artifact-markdown-editor .artifact-markdown-editor-content h3 {
+  color: var(--text);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content blockquote {
+  border-left: 2px solid rgba(185, 191, 243, 0.32);
+  color: var(--muted);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content code,
+.artifact-markdown-editor .artifact-markdown-editor-content pre {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.artifact-markdown-editor .artifact-markdown-editor-content table {
+  border-color: var(--border-strong);
+}

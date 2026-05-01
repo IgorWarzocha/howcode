@@ -1,7 +1,10 @@
 import type { DesktopAction } from "./app/desktop/actions";
 import type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
+  ChatSidebarState,
   ComposerAttachment,
   DesktopClipboardFilePaths,
   DesktopClipboardImage,
@@ -31,6 +34,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   TerminalCloseRequest,
@@ -71,19 +75,22 @@ declare global {
         cursor?: number | null;
         pageSize?: number | null;
       }) => Promise<PiPackageCatalogPage>;
-      getConfiguredPiPackages?: (request?: { projectPath?: string | null }) => Promise<
-        PiConfiguredPackage[]
-      >;
+      getConfiguredPiPackages?: (request?: {
+        projectPath?: string | null;
+        chat?: boolean;
+      }) => Promise<PiConfiguredPackage[]>;
       installPiPackage?: (request: {
         source: string;
         kind?: "npm" | "git";
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiPackageMutationResult>;
       removePiPackage?: (request: {
         source: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiPackageMutationResult>;
       searchPiSkills?: (request?: {
         query?: string | null;
@@ -91,20 +98,24 @@ declare global {
       }) => Promise<PiSkillCatalogPage>;
       getConfiguredPiSkills?: (request?: {
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiConfiguredSkill[]>;
       installPiSkill?: (request: {
         source: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiSkillMutationResult>;
       removePiSkill?: (request: {
         installedPath: string;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<PiSkillMutationResult>;
       startSkillCreatorSession?: (request: {
         prompt: string;
         local?: boolean;
         projectPath?: string | null;
+        chat?: boolean;
       }) => Promise<SkillCreatorSessionState>;
       continueSkillCreatorSession?: (request: {
         sessionId: string;
@@ -139,7 +150,26 @@ declare global {
       transcribeDictation?: (
         request: DictationTranscriptionRequest,
       ) => Promise<DictationTranscriptionResult>;
-      getProjectThreads?: (projectId: string) => Promise<Thread[]>;
+      getProjectThreads?: (projectId: string, request?: { chat?: boolean }) => Promise<Thread[]>;
+      getChatSidebarState?: (selectedGroupId?: string | null) => Promise<ChatSidebarState>;
+      createChatGroup?: (name: string) => Promise<ChatSidebarState>;
+      listArtifacts?: (conversationId?: string | null) => Promise<Artifact[]>;
+      getArtifact?: (
+        artifactSlug: string,
+        conversationId?: string | null,
+      ) => Promise<Artifact | null>;
+      updateArtifact?: (
+        artifactSlug: string,
+        content: string,
+        conversationId?: string | null,
+      ) => Promise<Artifact>;
+      editArtifact?: (
+        artifactSlug: string,
+        edits: Array<{ oldText: string; newText: string }>,
+        conversationId?: string | null,
+      ) => Promise<Artifact>;
+      listArtifactVersions?: (artifactSlug: string) => Promise<ArtifactVersion[]>;
+      compileReactArtifact?: (source: string) => Promise<ReactArtifactCompileResult>;
       getInboxThreads?: () => Promise<InboxThread[]>;
       getArchivedThreads?: () => Promise<ArchivedThread[]>;
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>;
@@ -154,6 +184,10 @@ declare global {
       subscribeTerminal?: (listener: (event: TerminalEvent) => void) => () => void;
       openExternal?: (url: string) => Promise<boolean>;
       openPath?: (path: string) => Promise<boolean>;
+      saveTextToDownloads?: (
+        fileName: string,
+        content: string,
+      ) => Promise<{ ok: boolean; path?: string; error?: string }>;
       subscribe?: (listener: (event: DesktopEvent) => void) => () => void;
       invokeAction: (
         action: DesktopAction,

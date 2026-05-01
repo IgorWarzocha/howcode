@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { getPersistedSessionPath } from "../../../shared/session-paths";
 import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from "../desktop/types";
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
@@ -16,6 +16,7 @@ import { useInboxAutoReadSync } from "./useInboxAutoReadSync";
 import { useProjectRepoOriginRefresh } from "./useProjectRepoOriginRefresh";
 import { useRunningTerminalSessions } from "./useRunningTerminalSessions";
 import { useScopedProjectViewSync } from "./useScopedProjectViewSync";
+import { createChatGroupQuery, getChatSidebarStateQuery } from "../query/desktop-query";
 
 export function useAppShellController() {
   const queryClient = useQueryClient();
@@ -29,6 +30,9 @@ export function useAppShellController() {
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0);
+  const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null);
+  const [chatSidebarState, setChatSidebarState] =
+    useState<Awaited<ReturnType<typeof getChatSidebarStateQuery>>>(null);
   const { toast, showToast } = useToast();
   const {
     shellState,
@@ -62,6 +66,26 @@ export function useAppShellController() {
     [inboxThreads, state.selectedInboxSessionPath],
   );
   const { terminalRunningProjectIds, terminalRunningSessionPaths } = useRunningTerminalSessions();
+  const refreshChatSidebarState = useCallback(
+    async (groupId = selectedChatGroupId) => {
+      const nextState = await getChatSidebarStateQuery(groupId);
+      setChatSidebarState(nextState);
+      return nextState;
+    },
+    [selectedChatGroupId],
+  );
+  const handleCreateChatGroup = async (name: string) => {
+    const nextState = await createChatGroupQuery(name);
+    setChatSidebarState(nextState);
+    if (nextState?.selectedGroupId) setSelectedChatGroupId(nextState.selectedGroupId);
+    return nextState;
+  };
+
+  useEffect(() => {
+    if (state.activeView === "chat") {
+      void getChatSidebarStateQuery(selectedChatGroupId).then(setChatSidebarState);
+    }
+  }, [state.activeView, selectedChatGroupId]);
 
   const {
     activeComposerState,
@@ -96,6 +120,7 @@ export function useAppShellController() {
     loadComposerState,
     loadProjectGitState,
     scheduleShellStateRefresh,
+    refreshChatSidebarState,
     queryClient,
     dispatch,
     setArchivedThreads,
@@ -190,6 +215,11 @@ export function useAppShellController() {
     terminalRunningProjectIds,
     terminalRunningSessionPaths,
     toast,
+    chatSidebarState,
+    selectedChatGroupId,
+    handleCreateChatGroup,
+    handleSelectChatGroup: setSelectedChatGroupId,
+    refreshChatSidebarState,
   };
 }
 

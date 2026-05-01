@@ -19,9 +19,10 @@ type QueryClientLike = {
 type UseDesktopEventSyncInput = {
   composerProjectId: string;
   workspaceState: WorkspaceState;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
+  refreshChatSidebarState: () => Promise<unknown>;
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
@@ -36,6 +37,7 @@ export function useDesktopEventSync({
   loadProjectThreads,
   loadProjectGitState,
   scheduleShellStateRefresh,
+  refreshChatSidebarState,
   queryClient,
   dispatch,
   setComposerState,
@@ -93,7 +95,8 @@ export function useDesktopEventSync({
           ? event.sessionPath === visibleSessionPath
           : event.projectId === latestComposerProjectId &&
             ((latestWorkspaceState.activeView !== "thread" &&
-              latestWorkspaceState.activeView !== "gitops") ||
+              latestWorkspaceState.activeView !== "gitops" &&
+              latestWorkspaceState.activeView !== "chat") ||
               visibleSessionPath === null);
 
         if (shouldApplyComposerUpdate) {
@@ -151,7 +154,12 @@ export function useDesktopEventSync({
         event.reason === "external" ||
         event.reason === "compaction"
       ) {
-        void loadProjectThreads(event.projectId);
+        void loadProjectThreads(event.projectId, {
+          chat: latestWorkspaceState.activeView === "chat",
+        });
+        if (latestWorkspaceState.activeView === "chat") {
+          void refreshChatSidebarState();
+        }
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
         if (event.reason !== "compaction") {
           scheduleShellStateRefresh();
@@ -173,6 +181,7 @@ export function useDesktopEventSync({
         shouldAutoOpenStartedThread({
           reason: event.reason,
           projectId: event.projectId,
+          isChat: event.isChat,
           workspaceState: latestWorkspaceState,
         })
       ) {
@@ -181,6 +190,7 @@ export function useDesktopEventSync({
           projectId: event.projectId,
           threadId: event.threadId,
           sessionPath: event.sessionPath,
+          view: event.isChat === true ? "chat" : "thread",
         });
       }
 
@@ -205,6 +215,7 @@ export function useDesktopEventSync({
     loadProjectGitState,
     loadProjectThreads,
     queryClient,
+    refreshChatSidebarState,
     scheduleShellStateRefresh,
     setComposerState,
     setLiveThreadData,

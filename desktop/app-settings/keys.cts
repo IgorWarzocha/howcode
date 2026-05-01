@@ -1,3 +1,7 @@
+export const chatModelKey = "chatModel";
+export const chatThinkingLevelKey = "chatThinkingLevel";
+export const codeModelKey = "codeModel";
+export const codeThinkingLevelKey = "codeThinkingLevel";
 export const gitCommitMessageModelKey = "gitCommitMessageModel";
 export const gitCommitMessageThinkingLevelKey = "gitCommitMessageThinkingLevel";
 export const skillCreatorModelKey = "skillCreatorModel";

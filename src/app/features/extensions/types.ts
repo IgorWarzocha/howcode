@@ -4,7 +4,7 @@ export type ExtensionsViewProps = {
   onClose: () => void;
 };
 
-export type InstallScope = "global" | "project";
+export type InstallScope = "global" | "project" | "chat";
 
 export type ManualSourceKind = "npm" | "git";
 

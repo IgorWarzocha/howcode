@@ -1,12 +1,18 @@
 import { spawn } from "node:child_process";
-import { accessSync, constants, statSync } from "node:fs";
+import { accessSync, constants, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 let cachedNodeExecutable: string | null = null;
 
 export function getRuntimeHostPath() {
-  return fileURLToPath(new URL("./worker.mjs", import.meta.url));
+  const siblingWorkerPath = fileURLToPath(new URL("./worker.mjs", import.meta.url));
+  if (existsSync(siblingWorkerPath)) return siblingWorkerPath;
+
+  const bundledBridgeWorkerPath = fileURLToPath(new URL("./desktop/worker.mjs", import.meta.url));
+  if (existsSync(bundledBridgeWorkerPath)) return bundledBridgeWorkerPath;
+
+  return path.join(process.cwd(), "build", "desktop", "worker.mjs");
 }
 
 function isExecutableFile(filePath: string) {

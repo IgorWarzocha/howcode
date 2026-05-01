@@ -98,9 +98,11 @@ function serializeDrafts(
 }
 
 export function getComposerDraftThreadId({
+  composerMode = "code",
   projectId,
   sessionPath,
 }: {
+  composerMode?: "chat" | "code";
   projectId: string;
   sessionPath: string | null;
 }) {
@@ -108,7 +110,7 @@ export function getComposerDraftThreadId({
     return `session:${sessionPath}`;
   }
 
-  return projectId.length > 0 ? `project:${projectId}:new-thread` : null;
+  return projectId.length > 0 ? `project:${projectId}:${composerMode}:new-thread` : null;
 }
 
 export function createComposerDraftStore({

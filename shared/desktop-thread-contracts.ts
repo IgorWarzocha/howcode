@@ -25,6 +25,7 @@ export type InboxThread = {
   preview: string | null;
   running: boolean;
   unread: boolean;
+  isChat?: boolean;
 };
 
 export type Project = {
@@ -36,6 +37,7 @@ export type Project = {
   pinned?: boolean;
   collapsed?: boolean;
   threadsLoaded?: boolean;
+  threadsScope?: "chat" | "code";
   threadCount?: number;
   repoOriginUrl?: string | null;
   repoOriginChecked?: boolean;

@@ -31,9 +31,12 @@ function attachThreadDiffPreferences(thread: ThreadData): ThreadData {
 
 const INBOX_PROMPT_BACKFILL_CONCURRENCY = 6;
 
-export async function loadProjectThreads(projectId: string): Promise<Thread[]> {
+export async function loadProjectThreads(
+  projectId: string,
+  options: { chat?: boolean } = {},
+): Promise<Thread[]> {
   ensureProject(projectId);
-  return listProjectThreads(projectId);
+  return listProjectThreads(projectId, options);
 }
 
 export async function loadArchivedThreadList(): Promise<ArchivedThread[]> {

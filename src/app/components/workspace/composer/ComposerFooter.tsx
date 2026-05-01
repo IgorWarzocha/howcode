@@ -1,4 +1,4 @@
-import { Bot, GitBranch, Terminal } from "lucide-react";
+import { Bot, FileCode2, GitBranch, Terminal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type {
   ComposerContextUsage,
@@ -7,7 +7,7 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
-import { compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, iconActionButtonDisabledClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
@@ -41,9 +41,13 @@ type ComposerFooterProps = {
   onSelectModel: (model: ComposerModel) => void;
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void;
   onSetOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
+  onToggleArtifacts?: () => void;
   onToggleTerminal: () => void;
   projectGitState: ProjectGitState | null;
   projectId: string;
+  showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   thinkingLevel: ComposerThinkingLevel;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
@@ -68,9 +72,13 @@ export function ComposerFooter({
   onSelectModel,
   onSelectThinkingLevel,
   onSetOpenMenu,
+  onToggleArtifacts,
   onToggleTerminal,
   projectGitState,
   projectId,
+  showTerminalControls = true,
+  artifactsVisible = false,
+  artifactsAvailable = Boolean(onToggleArtifacts),
   terminalVisible,
   thinkingLevel,
   thinkingLevelLabels,
@@ -83,22 +91,26 @@ export function ComposerFooter({
 
   return (
     <div className={workspaceFooterRowClass}>
-      <ToolbarButton
-        label="TUI"
-        tooltip="Pi-TUI takeover"
-        icon={<PiLogoMark className="h-[14px] w-[14px]" />}
-        className={workspaceFooterTextClass}
-        onClick={onOpenTakeoverTerminal}
-      />
-      <ToolbarButton
-        label="Terminal"
-        icon={<Terminal size={14} />}
-        onClick={onToggleTerminal}
-        className={cn(
-          workspaceFooterTextClass,
-          terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
-        )}
-      />
+      {showTerminalControls ? (
+        <>
+          <ToolbarButton
+            label="TUI"
+            tooltip="Pi-TUI takeover"
+            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+            className={workspaceFooterTextClass}
+            onClick={onOpenTakeoverTerminal}
+          />
+          <ToolbarButton
+            label="Terminal"
+            icon={<Terminal size={14} />}
+            onClick={onToggleTerminal}
+            className={cn(
+              workspaceFooterTextClass,
+              terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+            )}
+          />
+        </>
+      ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
           ref={modelButtonRef}
@@ -145,19 +157,35 @@ export function ComposerFooter({
         {projectGitState?.isGitRepo ? (
           <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            "h-7 w-7",
-            getGitOpsEntryButtonClass(gitVisualMode),
-          )}
-          onClick={onOpenGitOps}
-          aria-label="Git ops"
-          data-tooltip="Git ops"
-        >
-          <GitBranch size={14} />
-        </button>
+        {!showTerminalControls ? (
+          <ToolbarButton
+            label="Artifacts"
+            icon={<FileCode2 size={14} />}
+            trailing
+            className={cn(
+              workspaceFooterTextClass,
+              iconActionButtonDisabledClass,
+              artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+            )}
+            onClick={onToggleArtifacts}
+            disabled={!artifactsAvailable || !onToggleArtifacts}
+            aria-disabled={!artifactsAvailable || !onToggleArtifacts}
+          />
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              getGitOpsEntryButtonClass(gitVisualMode),
+            )}
+            onClick={onOpenGitOps}
+            aria-label="Git ops"
+            data-tooltip="Git ops"
+          >
+            <GitBranch size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

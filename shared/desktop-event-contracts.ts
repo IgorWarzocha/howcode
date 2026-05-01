@@ -1,4 +1,5 @@
 import type { ComposerState } from "./desktop-composer-contracts";
+import type { Artifact } from "./desktop-artifact-contracts";
 import type { DictationModelId } from "./desktop-dictation-contracts";
 import type { ThreadData } from "./desktop-thread-contracts";
 
@@ -27,11 +28,18 @@ export type DesktopEvent =
       sessionPath: string;
     }
   | {
+      type: "artifact-update";
+      conversationId: string;
+      artifact: Artifact;
+    }
+  | {
       type: "thread-update";
       reason: "start" | "update" | "end" | "external" | "compaction-start" | "compaction";
       projectId: string;
       threadId: string;
       sessionPath: string;
+      chatGroupId?: string | null;
+      isChat?: boolean;
       thread: ThreadData;
       composer: ComposerState | null;
     }

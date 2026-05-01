@@ -357,6 +357,7 @@ export function InboxComposer({
         text: "/compact",
         attachments: [],
         streamingBehavior: appSettings.composerStreamingBehavior,
+        composerMode: thread.isChat ? "chat" : "code",
       });
 
       const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not compact context.");

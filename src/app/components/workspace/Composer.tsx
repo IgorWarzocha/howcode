@@ -20,6 +20,7 @@ export type ComposerProps = {
   contextUsage: ComposerContextUsage | null;
   availableModels: ComposerModel[];
   isStreaming: boolean;
+  replyActivityKey: string;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
   thinkingLevel: ComposerThinkingLevel;
@@ -27,6 +28,7 @@ export type ComposerProps = {
   streamingBehaviorPreference: ComposerStreamingBehavior;
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
+  chatGroupId?: string | null;
   projectGitState: ProjectGitState | null;
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
@@ -49,6 +51,10 @@ export type ComposerProps = {
   onOpenSettingsView: () => void;
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
+  onToggleArtifacts?: () => void;
+  showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   onLayoutChange: () => void;
   mainViewRef: RefObject<HTMLElement | null>;

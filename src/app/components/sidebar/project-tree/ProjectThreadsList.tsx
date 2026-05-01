@@ -140,7 +140,8 @@ export function ProjectThreadsList({
   const oldThreadsExpanded = revealOldThreads || selectedOldThreadVisible || expandedByUser;
   const renderThread = (thread: Project["threads"][number]) => {
     const isSelected =
-      selectedThreadId === thread.id && (activeView === "thread" || activeView === "gitops");
+      selectedThreadId === thread.id &&
+      (activeView === "chat" || activeView === "thread" || activeView === "gitops");
 
     return (
       <ThreadRow

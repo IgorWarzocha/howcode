@@ -30,6 +30,11 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
     sessionPath: getPersistedSessionPath(
       typeof payload.sessionPath === "string" ? payload.sessionPath : null,
     ),
+    composerMode:
+      payload.composerMode === "chat" || payload.composerMode === "code"
+        ? payload.composerMode
+        : null,
+    chatGroupId: typeof payload.chatGroupId === "string" ? payload.chatGroupId : null,
   };
 }
 
@@ -245,7 +250,11 @@ export function getSettingsProjectDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === "gitCommitMessageModel" ||
+  return payload.key === "chatModel" ||
+    payload.key === "chatThinkingLevel" ||
+    payload.key === "codeModel" ||
+    payload.key === "codeThinkingLevel" ||
+    payload.key === "gitCommitMessageModel" ||
     payload.key === "gitCommitMessageThinkingLevel" ||
     payload.key === "skillCreatorModel" ||
     payload.key === "skillCreatorThinkingLevel" ||

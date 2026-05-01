@@ -1,4 +1,5 @@
 import path from "node:path";
+import { ensureChatStateSchema } from "../chat-state-db.cts";
 import { getThreadStateDatabase } from "./db.cts";
 import { runInTransaction } from "./write-transaction.cts";
 
@@ -51,12 +52,17 @@ export function collapseAllProjects() {
 }
 
 export function archiveProjectThreads(projectId: string) {
+  ensureChatStateSchema();
   const db = getThreadStateDatabase();
   db.prepare(
     `
       UPDATE threads
       SET archived = 1, updated_at = CURRENT_TIMESTAMP
-      WHERE cwd = ? AND archived = 0
+      WHERE cwd = ?
+        AND archived = 0
+        AND NOT EXISTS (
+          SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+        )
     `,
   ).run(projectId);
 }

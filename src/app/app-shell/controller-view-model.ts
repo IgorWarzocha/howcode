@@ -63,7 +63,7 @@ export function deriveControllerViewModel({
     selectedThread,
     activeThreadData,
     currentTitle:
-      workspaceState.activeView === "thread"
+      workspaceState.activeView === "chat" || workspaceState.activeView === "thread"
         ? (activeThreadData?.title ?? selectedThread?.title ?? "New thread")
         : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getProjectName(selectedProject),

@@ -1,7 +1,7 @@
 export type PiConfiguredPackageRecord = {
   resourceKind: "package" | "extension";
   source: string;
-  scope: "user" | "project";
+  scope: "user" | "project" | "chat";
   filtered: boolean;
   installedPath?: string;
   settingsPath: string;

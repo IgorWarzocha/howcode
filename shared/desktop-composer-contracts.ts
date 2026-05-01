@@ -58,6 +58,13 @@ export type ComposerFilePickerState = {
 export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;
+  composerMode?: "chat" | "code" | null;
+  composerModelSelection?: { provider: string; id: string } | null;
+  composerUseDefaultModel?: boolean;
+  composerThinkingLevel?: ComposerThinkingLevel | null;
+  composerStreamingBehavior?: ComposerStreamingBehavior | null;
+  composerSessionDir?: string | null;
+  chatGroupId?: string | null;
 };
 
 export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";

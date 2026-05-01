@@ -36,7 +36,7 @@ export function buildModelMenuItems(
 }
 
 export function buildModelSelectionPayload(
-  key: "gitCommitMessageModel" | "skillCreatorModel",
+  key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
   id: string,
 ): DesktopSettingsUpdatePayload {
   if (id === "composer-default") {
@@ -45,6 +45,22 @@ export function buildModelSelectionPayload(
 
   const [provider, ...modelIdParts] = id.split("/");
   const modelId = modelIdParts.join("/");
+
+  if (key === "chatModel") {
+    return {
+      key,
+      provider,
+      modelId,
+    };
+  }
+
+  if (key === "codeModel") {
+    return {
+      key,
+      provider,
+      modelId,
+    };
+  }
 
   if (key === "gitCommitMessageModel") {
     return {

@@ -1,6 +1,7 @@
 import { BriefcaseBusiness, Code2, Inbox, MessageSquare, PawPrint, Settings } from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { AppSettings, DesktopActionInvoker, InboxThread } from "../../desktop/types";
+import type { ChatSidebarState } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
@@ -8,12 +9,14 @@ import type { Project, View } from "../../types";
 type SidebarNavigableView = Exclude<View, "gitops">;
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
+import { SidebarChatSection } from "./chat/SidebarChatSection";
 import { SidebarInboxSection } from "./inbox/SidebarInboxSection";
 import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 
 type SidebarProps = {
   projects: Project[];
   inboxThreads: InboxThread[];
+  chatSidebarState: ChatSidebarState | null;
   appLaunchedAtMs: number;
   appSettings: AppSettings;
   protectedProjectId?: string | null;
@@ -21,6 +24,7 @@ type SidebarProps = {
   selectedInboxSessionPath: string | null;
   selectedProjectId: string;
   selectedThreadId: string | null;
+  selectedChatGroupId: string | null;
   settingsOpen: boolean;
   projectScopeLockActive: boolean;
   terminalRunningProjectIds: ReadonlySet<string>;
@@ -34,21 +38,22 @@ type SidebarProps = {
   onOpenSettingsPanel: () => void;
   onOpenArchivedThreads: () => void;
   onDismissInboxThread: (thread: InboxThread) => void;
+  onCreateChatGroup: (name: string) => Promise<unknown>;
+  onSelectChatGroup: (groupId: string | null) => void;
+  onNewChat: (groupId: string | null) => void;
+  onRefreshChatSidebar: () => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
-  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
+  onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onSelectInboxThread: (thread: InboxThread) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
 };
 
-function ComingSoonLabel() {
-  return <span className="sidebar-coming-soon-label">Coming soon</span>;
-}
-
 export function Sidebar({
   projects,
   inboxThreads,
+  chatSidebarState,
   appLaunchedAtMs,
   appSettings,
   protectedProjectId = null,
@@ -56,6 +61,7 @@ export function Sidebar({
   selectedInboxSessionPath,
   selectedProjectId,
   selectedThreadId,
+  selectedChatGroupId,
   settingsOpen,
   projectScopeLockActive,
   terminalRunningProjectIds,
@@ -69,6 +75,10 @@ export function Sidebar({
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   onDismissInboxThread,
+  onCreateChatGroup,
+  onSelectChatGroup,
+  onNewChat,
+  onRefreshChatSidebar,
   onProjectSelect,
   onProjectReorder,
   onLoadProjectThreads,
@@ -118,22 +128,16 @@ export function Sidebar({
           />
           <NavButton
             icon={<MessageSquare size={16} />}
-            label={
-              <span className="sidebar-mode-label">
-                <span>Chat</span>
-                <ComingSoonLabel />
-              </span>
-            }
+            label="Chat"
             active={activeView === "chat"}
-            disabled
-            title="Coming soon"
+            onClick={() => onShowView("chat")}
           />
           <NavButton
             icon={<PawPrint size={16} />}
             label={
               <span className="sidebar-mode-label">
                 <span>Claw</span>
-                <ComingSoonLabel />
+                <span className="sidebar-coming-soon-label">Coming soon</span>
               </span>
             }
             active={activeView === "claw"}
@@ -145,7 +149,7 @@ export function Sidebar({
             label={
               <span className="sidebar-mode-label">
                 <span>Work</span>
-                <ComingSoonLabel />
+                <span className="sidebar-coming-soon-label">Coming soon</span>
               </span>
             }
             active={activeView === "work"}
@@ -169,6 +173,18 @@ export function Sidebar({
           selectedSessionPath={selectedInboxSessionPath}
           onDismissThread={onDismissInboxThread}
           onSelectThread={onSelectInboxThread}
+        />
+      ) : activeView === "chat" ? (
+        <SidebarChatSection
+          chatState={chatSidebarState}
+          selectedGroupId={selectedChatGroupId}
+          selectedThreadId={selectedThreadId}
+          onAction={onAction}
+          onCreateGroup={onCreateChatGroup}
+          onSelectGroup={onSelectChatGroup}
+          onNewChat={onNewChat}
+          onRefresh={onRefreshChatSidebar}
+          onThreadOpen={onThreadOpen}
         />
       ) : (
         <SidebarProjectsSection

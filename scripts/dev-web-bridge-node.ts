@@ -1,5 +1,7 @@
-import { stat } from "node:fs/promises";
+import { mkdir, open, stat } from "node:fs/promises";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 
 import { getAttachmentKind } from "../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory";
@@ -34,6 +36,34 @@ function sendSseEvent<TChannel extends keyof DesktopEventMap>(
     client.write(`event: ${channel}\n`);
     client.write(`data: ${payload}\n\n`);
   }
+}
+
+async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
+  const parsed = path.parse(fileName);
+  for (let index = 0; index < 100; index += 1) {
+    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`;
+    const candidatePath = path.join(directoryPath, candidateName);
+    try {
+      const file = await open(candidatePath, "wx", 0o600);
+      try {
+        await file.writeFile(content, "utf8");
+      } finally {
+        await file.close();
+      }
+      return candidatePath;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "EEXIST"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Could not find an unused file name in Downloads.");
 }
 
 piThreads.subscribeDesktopEvents((event) => {
@@ -96,7 +126,23 @@ const handlers: DesktopRequestHandlerMap = {
   installDictationModel: (request) => piThreads.installDictationModel(request),
   removeDictationModel: (request) => piThreads.removeDictationModel(request),
   transcribeDictation: (request) => piThreads.transcribeDictation(request),
-  getProjectThreads: ({ projectId }) => piThreads.loadProjectThreads(projectId),
+  getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
+  getChatSidebarState: ({ selectedGroupId }) =>
+    piThreads.loadChatSidebarState(selectedGroupId ?? null),
+  createChatGroup: ({ name }) => piThreads.createChatGroup(name),
+  listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
+  getArtifact: ({ artifactSlug, conversationId }) =>
+    piThreads.getArtifact(artifactSlug, conversationId ?? null),
+  updateArtifact: ({ artifactSlug, content, conversationId }) =>
+    piThreads.updateArtifact({
+      slug: artifactSlug,
+      content,
+      conversationId: conversationId ?? null,
+    }),
+  editArtifact: ({ artifactSlug, edits, conversationId }) =>
+    piThreads.editArtifact({ slug: artifactSlug, edits, conversationId: conversationId ?? null }),
+  listArtifactVersions: ({ artifactSlug }) => piThreads.listArtifactVersions(artifactSlug),
+  compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
   getInboxThreads: () => piThreads.loadInboxThreadList(),
   getArchivedThreads: () => piThreads.loadArchivedThreadList(),
   getThread: ({ sessionPath, historyCompactions = 0 }) =>
@@ -147,6 +193,21 @@ const handlers: DesktopRequestHandlerMap = {
     return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) };
   },
   openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
+  saveTextToDownloads: async ({ fileName, content }) => {
+    const safeFileName = fileName
+      .replace(/[\\/:*?"<>|]/g, "-")
+      .replace(/^\.+/, "")
+      .trim();
+    if (!safeFileName) return { ok: false, error: "Invalid file name." };
+    const downloadsPath = path.join(os.homedir(), "Downloads");
+    try {
+      await mkdir(downloadsPath, { recursive: true });
+      const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content);
+      return { ok: true, path: filePath };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
 };
 
 async function readJsonBody(request: http.IncomingMessage) {

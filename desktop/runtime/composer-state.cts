@@ -12,6 +12,10 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "./isolated-settings-manager.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
 import type { PiRuntime } from "./types.cts";
@@ -141,23 +145,36 @@ function resolveCurrentModel(
   return availableModels[0] ?? null;
 }
 
+function getModeModelSelection(request: ComposerStateRequest) {
+  return request.composerModelSelection ?? null;
+}
+
+function getModeThinkingLevel(request: ComposerStateRequest) {
+  return request.composerThinkingLevel ?? null;
+}
+
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
   const { cwd, session } = await createComposerSnapshotSession(request);
 
   try {
     const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[];
+    const modeModelSelection = getModeModelSelection(request);
     const currentModel = resolveCurrentModel(
       availableModels,
-      session.model ? { provider: session.model.provider, id: session.model.id } : null,
+      modeModelSelection ??
+        (session.model ? { provider: session.model.provider, id: session.model.id } : null),
     );
-    const availableThinkingLevels = mapThinkingLevels(session.getAvailableThinkingLevels());
+    const availableThinkingLevels = modeModelSelection
+      ? getAvailableThinkingLevelsForModel(currentModel)
+      : mapThinkingLevels(session.getAvailableThinkingLevels());
+    const currentThinkingLevel = getModeThinkingLevel(request) ?? session.thinkingLevel;
 
     return {
       cwd,
       availableModels,
       currentModel,
       currentThinkingLevel: clampThinkingLevel(
-        session.thinkingLevel as ComposerThinkingLevel,
+        currentThinkingLevel as ComposerThinkingLevel,
         availableThinkingLevels,
       ),
       availableThinkingLevels,
@@ -175,6 +192,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
@@ -184,16 +202,29 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(cwd, agentDir);
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+  });
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager,
     tools: [],
   });
