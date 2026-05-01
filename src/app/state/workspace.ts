@@ -41,6 +41,7 @@ export type WorkspaceAction =
   | { type: "show-view"; view: NonGitOpsView }
   | { type: "close-utility-view" }
   | { type: "select-inbox-thread"; sessionPath: string | null }
+  | { type: "clear-thread-selection" }
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
   | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
@@ -314,6 +315,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         settingsOpen: false,
         settingsPanelOpen: false,
         utilityViewReturnState: null,
+      };
+    case "clear-thread-selection":
+      return {
+        ...state,
+        selectedThreadId: null,
+        selectedSessionPath: null,
+        selectedDiffFilePath: null,
+        takeoverVisible: false,
       };
     case "select-inbox-thread":
       return {

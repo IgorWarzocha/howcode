@@ -32,7 +32,7 @@ export function shouldAutoOpenStartedThread(
 
   return (
     reason === "start" &&
-    (workspaceState.activeView === "code" ||
+    ((workspaceState.activeView === "code" && event.isChat !== true) ||
       (workspaceState.activeView === "chat" &&
         visibleSessionPath === null &&
         event.isChat === true) ||

@@ -27,7 +27,7 @@ type ChatWorkspaceViewProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
 };
 
-const ARTIFACT_DRAWER_WIDTH = "min(760px, max(0px, calc(100% - 900px)))";
+const ARTIFACT_DRAWER_WIDTH = "clamp(320px, 42vw, 760px)";
 
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages

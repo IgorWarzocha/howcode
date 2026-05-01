@@ -24,6 +24,8 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [previewRevision, setPreviewRevision] = useState(0);
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
   const draftDirtyRef = useRef(false);
+  const previewSourceRef = useRef<MessageEventSource | null>(null);
+  const displayedContentRef = useRef("");
 
   const selectedArtifact = useMemo(
     () =>
@@ -37,6 +39,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   const selectedArtifactSlug = selectedArtifact?.slug ?? null;
   const selectedArtifactVersion = selectedArtifact?.version ?? null;
   const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
+  displayedContentRef.current = displayedContent;
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
   const markdownPreviewEditable =
     view === "preview" && selectedArtifact?.kind === "markdown" && !showingHistoricalVersion;
@@ -44,12 +47,12 @@ export function useArtifactPanelState(conversationId: string | null) {
     selectedArtifact && !showingHistoricalVersion && draft !== selectedArtifact.content,
   );
   draftDirtyRef.current = draftDirty;
+  const previewContent = showingHistoricalVersion ? displayedContent : draft;
   const saveDisabled =
     !selectedArtifact ||
     saving ||
     view === "list" ||
-    (!showingHistoricalVersion && draft === selectedArtifact.content) ||
-    (view !== "code" && !markdownPreviewEditable && !showingHistoricalVersion);
+    (!showingHistoricalVersion && draft === selectedArtifact.content);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,8 +99,17 @@ export function useArtifactPanelState(conversationId: string | null) {
   useEffect(() => {
     if (previousSelectedArtifactSlugRef.current === selectedArtifactSlug) return;
     previousSelectedArtifactSlugRef.current = selectedArtifactSlug;
+    draftDirtyRef.current = false;
+    setDraft(displayedContentRef.current);
     setSelectedVersion("latest");
   }, [selectedArtifactSlug]);
+
+  useEffect(() => {
+    void selectedArtifactSlug;
+    void selectedVersion;
+    draftDirtyRef.current = false;
+    setDraft(displayedContentRef.current);
+  }, [selectedArtifactSlug, selectedVersion]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,10 +140,10 @@ export function useArtifactPanelState(conversationId: string | null) {
     }
     if (selectedArtifact.kind === "markdown") return;
     if (selectedArtifact.kind === "html") {
-      setPreviewHtml(buildHtmlPreview(displayedContent));
+      setPreviewHtml(buildHtmlPreview(previewContent));
       return;
     }
-    void compileReactArtifactQuery(displayedContent).then((result) => {
+    void compileReactArtifactQuery(previewContent).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         setPreviewHtml(buildReactPreview(result.js));
@@ -144,11 +156,12 @@ export function useArtifactPanelState(conversationId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [selectedArtifact, displayedContent]);
+  }, [selectedArtifact, previewContent]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.source !== "howcode-artifact-preview") return;
+      if (previewSourceRef.current && event.source !== previewSourceRef.current) return;
       setPreviewError(
         [event.data.phase, event.data.message, event.data.stack].filter(Boolean).join("\n"),
       );
@@ -204,6 +217,9 @@ export function useArtifactPanelState(conversationId: string | null) {
     downloadArtifact,
     setDraft,
     setPreviewError,
+    setPreviewSource: (source: MessageEventSource | null) => {
+      previewSourceRef.current = source;
+    },
     setSelectedArtifactId,
     setSelectedVersion,
     setView,

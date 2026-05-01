@@ -52,6 +52,7 @@ export function ArtifactPanel({
     downloadArtifact,
     setDraft,
     setPreviewError,
+    setPreviewSource,
     setSelectedArtifactId,
     setSelectedVersion,
     setView,
@@ -257,6 +258,7 @@ export function ArtifactPanel({
             ) : null}
             {previewHtml ? (
               <iframe
+                ref={(node) => setPreviewSource(node?.contentWindow ?? null)}
                 key={`${selectedArtifact?.slug}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}:${previewRevision}`}
                 sandbox="allow-scripts allow-forms allow-modals"
                 srcDoc={previewHtml}
