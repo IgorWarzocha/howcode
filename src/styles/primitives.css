@@ -229,6 +229,14 @@ button[data-tooltip][aria-disabled="true"]::after {
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row {
+  width: auto;
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-primary {
+  max-width: calc(100% - 7.5rem);
+}
+
+.artifact-markdown-editor .artifact-mdx-toolbar-drawer .artifact-mdx-toolbar-row-secondary {
   width: 100%;
 }
 
