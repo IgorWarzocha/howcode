@@ -242,8 +242,8 @@ async function handleHostMainRequest(host: HostConnection, message: RuntimeHostM
         break;
       }
       case "getArtifact": {
-        const payload = message.payload as { artifactId: string; conversationId?: string | null };
-        result = getArtifact(payload.artifactId, payload.conversationId);
+        const payload = message.payload as { artifactSlug: string; conversationId?: string | null };
+        result = getArtifact(payload.artifactSlug, payload.conversationId);
         break;
       }
       case "listArtifacts": {

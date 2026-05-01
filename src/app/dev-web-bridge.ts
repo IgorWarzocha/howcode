@@ -161,17 +161,17 @@ export function installDevWebDesktopBridge() {
     createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
     listArtifacts: (conversationId: string | null = null) =>
       invokeRequest("listArtifacts", { conversationId }),
-    getArtifact: (artifactId: string, conversationId: string | null = null) =>
-      invokeRequest("getArtifact", { artifactId, conversationId }),
-    updateArtifact: (artifactId: string, content: string, conversationId: string | null = null) =>
-      invokeRequest("updateArtifact", { artifactId, content, conversationId }),
+    getArtifact: (artifactSlug: string, conversationId: string | null = null) =>
+      invokeRequest("getArtifact", { artifactSlug, conversationId }),
+    updateArtifact: (artifactSlug: string, content: string, conversationId: string | null = null) =>
+      invokeRequest("updateArtifact", { artifactSlug, content, conversationId }),
     editArtifact: (
-      artifactId: string,
+      artifactSlug: string,
       edits: Array<{ oldText: string; newText: string }>,
       conversationId: string | null = null,
-    ) => invokeRequest("editArtifact", { artifactId, edits, conversationId }),
-    listArtifactVersions: (artifactId: string) =>
-      invokeRequest("listArtifactVersions", { artifactId }),
+    ) => invokeRequest("editArtifact", { artifactSlug, edits, conversationId }),
+    listArtifactVersions: (artifactSlug: string) =>
+      invokeRequest("listArtifactVersions", { artifactSlug }),
     compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
     getInboxThreads: () => invokeRequest("getInboxThreads", {}),
     getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),

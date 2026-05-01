@@ -37,6 +37,7 @@
     "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
     "typecheck:scripts": "tsc -p tsconfig.scripts.json --noEmit",
     "test": "vitest run",
+    "test:composer": "vitest run src/test/composer",
     "test:watch": "vitest",
     "check": "bun run lint && bun run typecheck && bun run test && bun run build"
   },

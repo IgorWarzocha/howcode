@@ -119,7 +119,7 @@ export type RuntimeHostMainRequestMap = {
     conversationId?: string | null;
     edits: Array<{ oldText: string; newText: string }>;
   };
-  getArtifact: { artifactId: string; conversationId?: string | null };
+  getArtifact: { artifactSlug: string; conversationId?: string | null };
   listArtifacts: { conversationId: string };
 };
 

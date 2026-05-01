@@ -56,17 +56,17 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
       piThreads.loadChatSidebarState(selectedGroupId ?? null),
     createChatGroup: ({ name }) => piThreads.createChatGroup(name),
     listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
-    getArtifact: ({ artifactId, conversationId }) =>
-      piThreads.getArtifact(artifactId, conversationId ?? null),
-    updateArtifact: ({ artifactId, content, conversationId }) =>
+    getArtifact: ({ artifactSlug, conversationId }) =>
+      piThreads.getArtifact(artifactSlug, conversationId ?? null),
+    updateArtifact: ({ artifactSlug, content, conversationId }) =>
       piThreads.updateArtifact({
-        slug: artifactId,
+        slug: artifactSlug,
         content,
         conversationId: conversationId ?? null,
       }),
-    editArtifact: ({ artifactId, edits, conversationId }) =>
-      piThreads.editArtifact({ slug: artifactId, edits, conversationId: conversationId ?? null }),
-    listArtifactVersions: ({ artifactId }) => piThreads.listArtifactVersions(artifactId),
+    editArtifact: ({ artifactSlug, edits, conversationId }) =>
+      piThreads.editArtifact({ slug: artifactSlug, edits, conversationId: conversationId ?? null }),
+    listArtifactVersions: ({ artifactSlug }) => piThreads.listArtifactVersions(artifactSlug),
     compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),

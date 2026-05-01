@@ -90,32 +90,33 @@ export async function listArtifactsQuery(conversationId?: string | null) {
   return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? [];
 }
 
-export async function getArtifactQuery(artifactId: string, conversationId?: string | null) {
-  return (await window.piDesktop?.getArtifact?.(artifactId, conversationId ?? null)) ?? null;
+export async function getArtifactQuery(artifactSlug: string, conversationId?: string | null) {
+  return (await window.piDesktop?.getArtifact?.(artifactSlug, conversationId ?? null)) ?? null;
 }
 
 export async function updateArtifactQuery(
-  artifactId: string,
+  artifactSlug: string,
   content: string,
   conversationId?: string | null,
 ) {
   return (
-    (await window.piDesktop?.updateArtifact?.(artifactId, content, conversationId ?? null)) ?? null
+    (await window.piDesktop?.updateArtifact?.(artifactSlug, content, conversationId ?? null)) ??
+    null
   );
 }
 
 export async function editArtifactQuery(
-  artifactId: string,
+  artifactSlug: string,
   edits: Array<{ oldText: string; newText: string }>,
   conversationId?: string | null,
 ) {
   return (
-    (await window.piDesktop?.editArtifact?.(artifactId, edits, conversationId ?? null)) ?? null
+    (await window.piDesktop?.editArtifact?.(artifactSlug, edits, conversationId ?? null)) ?? null
   );
 }
 
-export async function listArtifactVersionsQuery(artifactId: string) {
-  return (await window.piDesktop?.listArtifactVersions?.(artifactId)) ?? [];
+export async function listArtifactVersionsQuery(artifactSlug: string) {
+  return (await window.piDesktop?.listArtifactVersions?.(artifactSlug)) ?? [];
 }
 
 export async function compileReactArtifactQuery(source: string) {

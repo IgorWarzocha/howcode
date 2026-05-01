@@ -171,22 +171,22 @@ export type DesktopRequestMap = {
   createChatGroup: { params: { name: string }; response: ChatSidebarState };
   listArtifacts: { params: { conversationId?: string | null }; response: Artifact[] };
   getArtifact: {
-    params: { artifactId: string; conversationId?: string | null };
+    params: { artifactSlug: string; conversationId?: string | null };
     response: Artifact | null;
   };
   updateArtifact: {
-    params: { artifactId: string; content: string; conversationId?: string | null };
+    params: { artifactSlug: string; content: string; conversationId?: string | null };
     response: Artifact;
   };
   editArtifact: {
     params: {
-      artifactId: string;
+      artifactSlug: string;
       conversationId?: string | null;
       edits: Array<{ oldText: string; newText: string }>;
     };
     response: Artifact;
   };
-  listArtifactVersions: { params: { artifactId: string }; response: ArtifactVersion[] };
+  listArtifactVersions: { params: { artifactSlug: string }; response: ArtifactVersion[] };
   compileReactArtifact: { params: { source: string }; response: ReactArtifactCompileResult };
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };

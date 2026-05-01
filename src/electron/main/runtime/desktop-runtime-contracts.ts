@@ -101,7 +101,7 @@ export type PiThreadsModule = {
   createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState;
   listArtifacts: (conversationId?: string | null) => Promise<Artifact[]> | Artifact[];
   getArtifact: (
-    artifactId: string,
+    artifactSlug: string,
     conversationId?: string | null,
   ) => Promise<Artifact | null> | Artifact | null;
   updateArtifact: (request: {
@@ -114,7 +114,7 @@ export type PiThreadsModule = {
     conversationId?: string | null;
     edits: Array<{ oldText: string; newText: string }>;
   }) => Promise<Artifact> | Artifact;
-  listArtifactVersions: (artifactId: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
+  listArtifactVersions: (artifactSlug: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (

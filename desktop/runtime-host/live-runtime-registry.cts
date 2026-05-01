@@ -131,7 +131,7 @@ async function createRuntime(options: {
             createArtifact: (input) => invokeMainRequest("createArtifact", input),
             editArtifact: (input) => invokeMainRequest("editArtifact", input),
             getArtifact: ({ conversationId, slug }) =>
-              invokeMainRequest("getArtifact", { artifactId: slug, conversationId }),
+              invokeMainRequest("getArtifact", { artifactSlug: slug, conversationId }),
             listArtifacts: (conversationId) =>
               invokeMainRequest("listArtifacts", { conversationId }),
           }),
