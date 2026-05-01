@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
@@ -80,10 +80,11 @@ function terminateHostProcess(child: ChildProcess | null | undefined) {
   if (!child || child.killed || child.exitCode !== null) return;
 
   if (process.platform === "win32" && child.pid) {
-    spawnSync("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], {
+    const taskkill = spawn("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], {
       stdio: "ignore",
       windowsHide: true,
     });
+    taskkill.unref();
     return;
   }
 
