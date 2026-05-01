@@ -197,6 +197,11 @@ button[data-tooltip][aria-disabled="true"]::after {
   min-height: 0;
 }
 
+.artifact-markdown-editor .mdxeditor > div:last-child {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
 .artifact-markdown-editor .mdxeditor-toolbar {
   flex: 0 0 auto;
   border-bottom: 1px solid var(--border);
@@ -306,6 +311,10 @@ button[data-tooltip][aria-disabled="true"]::after {
   min-height: 100%;
   color: var(--text);
   caret-color: var(--accent);
+}
+
+.artifact-markdown-editor .cm-scroller {
+  overflow: auto;
 }
 
 .artifact-markdown-editor .cm-line {
