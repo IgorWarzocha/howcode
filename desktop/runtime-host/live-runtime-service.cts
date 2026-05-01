@@ -463,7 +463,7 @@ export async function dequeueComposerPrompt(
 export async function startNewThread(request: ComposerStateRequest = {}) {
   const projectId = request.projectId ?? getDesktopWorkingDirectory();
   const composer = await buildComposerStateSnapshot({ ...request, projectId, sessionPath: null });
-  const draft = createLocalThreadDraft(projectId);
+  const draft = createLocalThreadDraft(projectId, undefined, { chatGroupId: request.chatGroupId });
   publishComposerUpdate(composer, { projectId, sessionPath: null });
   return { composer, projectId, sessionPath: draft.sessionPath, threadId: draft.threadId };
 }

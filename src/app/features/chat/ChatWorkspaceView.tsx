@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { getPersistedSessionPath } from "../../../../shared/session-paths";
+import {
+  getLocalDraftChatGroupId,
+  getPersistedSessionPath,
+} from "../../../../shared/session-paths";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
@@ -62,6 +65,7 @@ export function ChatWorkspaceView({
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
   const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null;
+  const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath);
   const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_WIDTH } : undefined;
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
@@ -187,7 +191,11 @@ export function ChatWorkspaceView({
                   }
                   availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
                   projectId={composerProjectId}
-                  chatGroupId={hasPersistedChatSession ? null : controller.selectedChatGroupId}
+                  chatGroupId={
+                    hasPersistedChatSession
+                      ? null
+                      : (draftChatGroupId ?? controller.selectedChatGroupId)
+                  }
                   projectGitState={null}
                   diffBaseline={diffBaseline}
                   sessionPath={terminalSessionPath}

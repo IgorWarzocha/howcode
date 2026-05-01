@@ -109,7 +109,11 @@ export type DesktopActionPayloadMap = {
     sessionPath?: string | null;
     chatGroupId?: string | null;
   };
-  "thread.new": { projectId?: string | null; sessionPath?: string | null };
+  "thread.new": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    chatGroupId?: string | null;
+  };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };
   "thread.archive-many": { projectId?: string | null; threadIds: string[] };

@@ -7,6 +7,7 @@ import {
 } from "../../shared/thread-data.ts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import type { PiRuntime, RuntimeThreadReason } from "../runtime/types.cts";
+import { isChatSessionPath } from "../chat-state-db.cts";
 import { emitDesktopEvent } from "./host-events.cts";
 import { getLiveToolProgressMessages } from "./live-tool-progress.cts";
 
@@ -57,6 +58,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     threadId: runtime.session.sessionId,
     sessionPath,
     chatGroupId: runtime.chatGroupId ?? null,
+    isChat: isChatSessionPath(sessionPath),
     thread: normalizeThreadDataForReason(liveThread, reason),
     composer: await buildComposerState(runtime, { includeContextUsage: reason !== "update" }),
   });

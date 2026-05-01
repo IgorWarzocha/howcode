@@ -35,7 +35,7 @@ export function shouldAutoOpenStartedThread(
     (workspaceState.activeView === "code" ||
       (workspaceState.activeView === "chat" &&
         visibleSessionPath === null &&
-        event.chatGroupId !== undefined) ||
+        event.isChat === true) ||
       (workspaceState.activeView === "thread" && visibleSessionPath === null))
   );
 }

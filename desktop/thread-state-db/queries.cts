@@ -31,7 +31,7 @@ import type {
   ProjectDiffPreferences,
 } from "../../shared/desktop-contracts.ts";
 import { getLiveThread } from "../runtime/live-thread-store.cts";
-import { isChatSessionPath } from "../chat-state-db.cts";
+import { ensureChatStateSchema, isChatSessionPath } from "../chat-state-db.cts";
 import { ensureProject } from "./writes.cts";
 
 function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {}) {
@@ -39,6 +39,7 @@ function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {
 }
 
 export function listProjects(cwd: string): Project[] {
+  ensureChatStateSchema();
   const db = getThreadStateDatabase();
   ensureProject(cwd);
 
@@ -60,7 +61,9 @@ export function listProjects(cwd: string): Project[] {
         LEFT JOIN threads
           ON threads.cwd = projects.cwd
           AND threads.archived = 0
-          AND threads.session_path NOT LIKE '%/.howcode/chat-sessions/%'
+          AND NOT EXISTS (
+            SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+          )
         WHERE projects.hidden = 0
         GROUP BY
           projects.cwd,

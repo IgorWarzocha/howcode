@@ -23,6 +23,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
   const previousSelectedArtifactSlugRef = useRef<string | null>(null);
+  const draftDirtyRef = useRef(false);
 
   const selectedArtifact = useMemo(
     () =>
@@ -39,6 +40,10 @@ export function useArtifactPanelState(conversationId: string | null) {
   const showingHistoricalVersion = Boolean(selectedHistoricalVersion);
   const markdownPreviewEditable =
     view === "preview" && selectedArtifact?.kind === "markdown" && !showingHistoricalVersion;
+  const draftDirty = Boolean(
+    selectedArtifact && !showingHistoricalVersion && draft !== selectedArtifact.content,
+  );
+  draftDirtyRef.current = draftDirty;
   const saveDisabled =
     !selectedArtifact ||
     saving ||
@@ -79,9 +84,11 @@ export function useArtifactPanelState(conversationId: string | null) {
         next[index] = event.artifact;
         return next;
       });
-      setSelectedArtifactId(event.artifact.slug);
-      setSelectedVersion("latest");
-      setView("preview");
+      if (!draftDirtyRef.current) {
+        setSelectedArtifactId(event.artifact.slug);
+        setSelectedVersion("latest");
+        setView("preview");
+      }
       setPreviewRevision((revision) => revision + 1);
     });
   }, [conversationId]);
@@ -108,6 +115,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   }, [selectedArtifactSlug, selectedArtifactVersion]);
 
   useEffect(() => {
+    if (draftDirtyRef.current) return;
     setDraft(displayedContent);
   }, [displayedContent]);
 

@@ -17,7 +17,7 @@ type ChatThreadGroupRow = ThreadRow & { groupId: string | null; projectId: strin
 
 let chatSchemaReady = false;
 
-function ensureChatStateSchema() {
+export function ensureChatStateSchema() {
   if (chatSchemaReady) return;
   const db = getThreadStateDatabase();
   db.exec(`

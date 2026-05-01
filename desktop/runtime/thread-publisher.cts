@@ -294,6 +294,7 @@ export async function publishThreadUpdate(runtime: PiRuntime, reason: RuntimeThr
     threadId,
     sessionPath,
     chatGroupId: runtime.chatGroupId ?? null,
+    isChat: isChatSessionPath(sessionPath),
     thread,
     composer: await buildComposerState(runtime, { includeContextUsage: reason !== "update" }),
   });
