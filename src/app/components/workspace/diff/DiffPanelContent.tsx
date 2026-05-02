@@ -268,6 +268,7 @@ export function DiffPanelContent({
                     <DiffChangedFilesTree
                       files={renderableFiles}
                       selectedPaths={focusedFilePaths}
+                      focusedFileCount={hasFocusedFiles ? visibleRenderableFiles.length : 0}
                       onSelectedPathsChange={setFocusedFilePaths}
                     />
                   ) : null}

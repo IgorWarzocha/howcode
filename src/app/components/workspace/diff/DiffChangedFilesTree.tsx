@@ -47,6 +47,7 @@ const TREE_UNSAFE_CSS = `
 type DiffChangedFilesTreeProps = {
   files: FileDiffMetadata[];
   selectedPaths: readonly string[];
+  focusedFileCount: number;
   onSelectedPathsChange: (paths: readonly string[]) => void;
 };
 
@@ -77,6 +78,7 @@ const treeHostStyle = {
 export function DiffChangedFilesTree({
   files,
   selectedPaths,
+  focusedFileCount,
   onSelectedPathsChange,
 }: DiffChangedFilesTreeProps) {
   const paths = useMemo(() => files.map(resolveFileDiffPath).filter(Boolean), [files]);
@@ -114,18 +116,24 @@ export function DiffChangedFilesTree({
   });
 
   const search = useFileTreeSearch(model);
+  const searchValueRef = useRef(search.value);
+  searchValueRef.current = search.value;
 
   useEffect(() => {
     model.resetPaths(paths, { initialExpandedPaths: paths });
     model.setGitStatus(gitStatus);
-    if (search.value.trim().length > 0) {
-      model.setSearch(search.value);
+    if (searchValueRef.current.trim().length > 0) {
+      model.setSearch(searchValueRef.current);
     }
-  }, [gitStatus, model, paths, search.value]);
+  }, [gitStatus, model, paths]);
+
+  useEffect(() => {
+    model.setSearch(search.value);
+  }, [model, search.value]);
 
   const hasSelection = selectedPaths.length > 0;
   const statusLabel = hasSelection
-    ? `${selectedPaths.length}/${paths.length} selected`
+    ? `${focusedFileCount}/${paths.length} selected`
     : `${paths.length} changed`;
   const clearSelection = () => {
     for (const path of model.getSelectedPaths()) {
