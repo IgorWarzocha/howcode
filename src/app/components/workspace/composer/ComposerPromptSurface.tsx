@@ -1,5 +1,5 @@
 import { Paperclip, Square, X } from "lucide-react";
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
@@ -56,6 +56,7 @@ export function ComposerPromptSurface({
   onSetDiffBaseline,
   onOpenGitOps,
   onLayoutChange,
+  onOverlayHeightChange,
   showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
   const {
@@ -123,6 +124,9 @@ export function ComposerPromptSurface({
   const composerMode = activeView === "chat" ? "chat" : "code";
   const slashCommandPanelRef = useRef<HTMLDivElement>(null);
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null);
+  const askQuestionsOverlayRef = useRef<HTMLDivElement>(null);
+  const lastAskQuestionsOverlayHeightRef = useRef(0);
+  const showAskQuestions = nativeAskQuestionsRequest !== null;
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -263,12 +267,38 @@ export function ComposerPromptSurface({
     };
   }, [handleDrop]);
 
+  useLayoutEffect(() => {
+    if (!showAskQuestions) {
+      if (lastAskQuestionsOverlayHeightRef.current !== 0) {
+        lastAskQuestionsOverlayHeightRef.current = 0;
+        onOverlayHeightChange?.(0);
+      }
+      return;
+    }
+
+    const overlay = askQuestionsOverlayRef.current;
+    if (!overlay) return;
+
+    const reportIfChanged = () => {
+      const nextHeight = Math.ceil(overlay.getBoundingClientRect().height);
+      if (lastAskQuestionsOverlayHeightRef.current === nextHeight) return;
+      lastAskQuestionsOverlayHeightRef.current = nextHeight;
+      onOverlayHeightChange?.(nextHeight);
+    };
+
+    reportIfChanged();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(reportIfChanged);
+    observer.observe(overlay);
+    return () => observer.disconnect();
+  }, [onOverlayHeightChange, showAskQuestions]);
+
   const extensionRunning = extensionCommandRunning;
   const askQuestionsArrowNavigationRef = useRef<
     ((direction: "previous" | "next") => boolean) | null
   >(null);
   const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null);
-  const showAskQuestions = nativeAskQuestionsRequest !== null;
   const placeholderText =
     errorMessage ??
     (showAskQuestions
@@ -324,7 +354,10 @@ export function ComposerPromptSurface({
 
       <div className="relative grid gap-0 overflow-visible">
         {showAskQuestions ? (
-          <div className="pointer-events-auto absolute right-0 bottom-full left-0 z-20">
+          <div
+            ref={askQuestionsOverlayRef}
+            className="pointer-events-auto absolute right-0 bottom-full left-0 z-20"
+          >
             <AskQuestionsCard
               composerDraft={draft}
               questions={nativeAskQuestionsRequest.questions}

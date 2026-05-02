@@ -7,6 +7,7 @@ type ChatViewProps = {
   isStreaming: boolean;
   isCompacting: boolean;
   composerLayoutVersion: number;
+  composerOverlayHeight?: number;
   onLoadEarlierMessages: () => void;
 };
 
@@ -16,6 +17,7 @@ export function ChatView({
   isStreaming,
   isCompacting,
   composerLayoutVersion,
+  composerOverlayHeight = 0,
   onLoadEarlierMessages,
 }: ChatViewProps) {
   if (messages.length === 0) {
@@ -29,6 +31,7 @@ export function ChatView({
       isStreaming={isStreaming}
       isCompacting={isCompacting}
       composerLayoutVersion={composerLayoutVersion}
+      composerOverlayHeight={composerOverlayHeight}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {
           return;

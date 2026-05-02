@@ -18,7 +18,7 @@ function getInitialAnswers(questions: NativeAskQuestion[]) {
 }
 
 const askQuestionsCardClass =
-  "relative -left-1 mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
+  "relative mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
 
 export function AskQuestionsCard({
   composerDraft,

@@ -46,6 +46,7 @@ type CodeWorkspaceMainViewProps = {
   workspaceContentClass: string;
   threadData: ThreadData | null;
   composerLayoutVersion: number;
+  composerOverlayHeight: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
   onListAttachmentEntries: (request: {
@@ -80,6 +81,7 @@ export function CodeWorkspaceMainView({
   workspaceContentClass,
   threadData,
   composerLayoutVersion,
+  composerOverlayHeight,
   onAction,
   onDismissInboxThread,
   onListAttachmentEntries,
@@ -100,6 +102,7 @@ export function CodeWorkspaceMainView({
         isStreaming={threadData?.isStreaming ?? false}
         isCompacting={threadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
+        composerOverlayHeight={composerOverlayHeight}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     );

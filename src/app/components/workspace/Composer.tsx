@@ -54,6 +54,7 @@ export type ComposerProps = {
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   onToggleArtifacts?: () => void;
+  onOverlayHeightChange?: (height: number) => void;
   showTerminalControls?: boolean;
   artifactsVisible?: boolean;
   artifactsAvailable?: boolean;
