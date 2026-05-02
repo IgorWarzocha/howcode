@@ -9,6 +9,7 @@ import {
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import { createArtifactTools } from "../runtime/artifact-tools.cts";
+import { ensureAskQuestionsExtensionRuntimePath } from "../native-extensions/ask-questions-extension-path.cts";
 import { createNativeAskQuestionsTools } from "./native-ask-questions-tool.cts";
 import { invokeMainRequest } from "./main-request-client.cts";
 import {
@@ -135,8 +136,9 @@ async function createRuntime(options: {
     sessionManager: options.sessionManager,
   });
   const nativeAskQuestionTools = enabledNativeExtensions.includes("askQuestions")
-    ? createNativeAskQuestionsTools({
+    ? await createNativeAskQuestionsTools({
         defineTool,
+        extensionPath: ensureAskQuestionsExtensionRuntimePath(),
         getRuntime: () => runtime,
         onStateChange: () => {
           if (!runtime) return;

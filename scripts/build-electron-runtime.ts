@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 const isWatchMode = process.argv.includes("--watch");
@@ -76,6 +76,13 @@ async function runBuild() {
   for (const [index, build] of builds.entries()) {
     console.log(`Built ${buildTargets[index].label} (${build.outputs.length} output(s)).`);
   }
+
+  const nativeExtensionsOutDir = path.join(buildRoot, "desktop", "native-extensions");
+  await mkdir(nativeExtensionsOutDir, { recursive: true });
+  await copyFile(
+    path.join(projectRoot, "desktop", "native-extensions", "howcode-native-ask-questions.mjs"),
+    path.join(nativeExtensionsOutDir, "howcode-native-ask-questions.mjs"),
+  );
 
   if (isWatchMode) {
     console.log("Watching Electron runtime bundles...");
