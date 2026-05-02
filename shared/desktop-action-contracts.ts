@@ -83,6 +83,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "gitOpsDefaultMode"; value: GitOpsMode }
   | { key: "gitDiffBaselineDefault"; value: ProjectDiffDefaultBaseline }
   | { key: "gitDiffRenderModeDefault"; value: ProjectDiffRenderMode }
+  | { key: "gitDiffFileTreeDefaultVisible"; value: boolean }
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
   | { key: "piTuiTakeover"; value: boolean };

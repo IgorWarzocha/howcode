@@ -11,6 +11,7 @@ type DiffPanelProps = {
   selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
+  showFileTree?: boolean;
 };
 
 export function DiffPanel({
@@ -22,6 +23,7 @@ export function DiffPanel({
   selectedCommentJumpKey,
   diffRenderMode,
   layoutMode = "split",
+  showFileTree = true,
 }: DiffPanelProps) {
   return (
     <DiffWorkerPoolProvider>
@@ -34,6 +36,7 @@ export function DiffPanel({
         selectedCommentJumpKey={selectedCommentJumpKey}
         diffRenderMode={diffRenderMode}
         layoutMode={layoutMode}
+        showFileTree={showFileTree}
       />
     </DiffWorkerPoolProvider>
   );

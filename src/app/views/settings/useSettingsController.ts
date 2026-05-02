@@ -246,6 +246,11 @@ export function useSettingsController({
         key: "gitDiffRenderModeDefault",
         value,
       }),
+    setGitDiffFileTreeDefaultVisible: (value: AppSettings["gitDiffFileTreeDefaultVisible"]) =>
+      void onAction("settings.update", {
+        key: "gitDiffFileTreeDefaultVisible",
+        value,
+      }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
       void onAction("pi-settings.update", {
         piSettingsKey: key,

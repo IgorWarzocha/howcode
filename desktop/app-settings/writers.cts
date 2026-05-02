@@ -25,6 +25,7 @@ import {
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
+  gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   initializeGitOnProjectCreateKey,
@@ -222,6 +223,15 @@ export function setGitDiffRenderModeDefault(mode: ProjectDiffRenderMode) {
   }
 
   writeAppPreference(gitDiffRenderModeDefaultKey, JSON.stringify(mode));
+}
+
+export function setGitDiffFileTreeDefaultVisible(visible: boolean) {
+  if (visible) {
+    deleteAppPreference(gitDiffFileTreeDefaultVisibleKey);
+    return;
+  }
+
+  writeAppPreference(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false));
 }
 
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {

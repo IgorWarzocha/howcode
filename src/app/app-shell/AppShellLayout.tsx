@@ -382,6 +382,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   gitOpsDefaultMode: "commit",
                   gitDiffBaselineDefault: { kind: "head" },
                   gitDiffRenderModeDefault: "stacked",
+                  gitDiffFileTreeDefaultVisible: true,
                   projectDeletionMode: "pi-only",
                   useAgentsSkillsPaths: false,
                   piTuiTakeover: false,

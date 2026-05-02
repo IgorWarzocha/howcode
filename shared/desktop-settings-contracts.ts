@@ -38,6 +38,7 @@ export type AppSettings = {
   gitOpsDefaultMode: GitOpsMode;
   gitDiffBaselineDefault: ProjectDiffDefaultBaseline;
   gitDiffRenderModeDefault: ProjectDiffRenderMode;
+  gitDiffFileTreeDefaultVisible: boolean;
   projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
   piTuiTakeover: boolean;

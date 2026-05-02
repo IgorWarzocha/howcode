@@ -31,6 +31,7 @@ import {
   setGitCommitMessageModelSelection,
   setGitCommitMessageThinkingLevel,
   setGitDiffBaselineDefault,
+  setGitDiffFileTreeDefaultVisible,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
   setInitializeGitOnProjectCreate,
@@ -161,6 +162,14 @@ export async function handleSettingsDesktopAction(
     const value = getSettingsProjectDiffBaselineDefault(payload);
     if (value) {
       setGitDiffBaselineDefault(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "gitDiffFileTreeDefaultVisible") {
+    const value = getSettingsBooleanValue(payload);
+    if (value !== null) {
+      setGitDiffFileTreeDefaultVisible(value);
     }
     return handledAction();
   }

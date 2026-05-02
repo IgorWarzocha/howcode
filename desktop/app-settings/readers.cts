@@ -16,6 +16,7 @@ import {
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
+  gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   initializeGitOnProjectCreateKey,
@@ -190,6 +191,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(gitDiffBaselineDefaultKey) as PreferenceRow | undefined;
+  const gitDiffFileTreeDefaultVisibleRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitDiffFileTreeDefaultVisibleKey) as PreferenceRow | undefined;
   const gitDiffRenderModeDefaultRow = db
     .prepare(
       `
@@ -276,6 +286,8 @@ export function loadAppSettings(): AppSettings {
     ) ?? { kind: "head" },
     gitDiffRenderModeDefault:
       parseGitDiffRenderModePreference(gitDiffRenderModeDefaultRow?.valueJson) ?? "stacked",
+    gitDiffFileTreeDefaultVisible:
+      parseBooleanPreference(gitDiffFileTreeDefaultVisibleRow?.valueJson) ?? true,
     projectDeletionMode:
       parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
