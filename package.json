@@ -13,8 +13,8 @@
   },
   "scripts": {
     "dev": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:runtime\" \"bun run dev:desktop\"",
-    "dev:clean": "rm -rf artifacts/electron build/electron build/desktop build/dev-server.json",
-    "prepush:clean": "rm -rf artifacts/electron dist build/electron build/desktop",
+    "dev:clean": "rm -rf artifacts/electron build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
+    "prepush:clean": "rm -rf artifacts/electron dist build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
     "prepush:check": "bun run lint && bun run typecheck",
     "dev:web": "bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-electron-runtime.ts --watch",
@@ -75,7 +75,8 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "sherpa-onnx-node": "^1.12.38"
+    "sherpa-onnx-node": "^1.12.38",
+    "tar": "^7.5.13"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

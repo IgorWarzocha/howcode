@@ -6,6 +6,7 @@ import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from "./
 import { configureDesktopEnvironment } from "./runtime/environment";
 import { loadDesktopRuntimeModules } from "./runtime/load-desktop-runtime";
 import { registerDesktopRuntimeShutdown } from "./runtime/shutdown";
+import { AppUpdater } from "./updater/app-updater";
 
 let currentMainWindow: BrowserWindow | null = null;
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging();
@@ -31,9 +32,11 @@ async function bootstrap() {
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort);
 
   const runtime = await loadDesktopRuntimeModules();
+  const appUpdater = new AppUpdater();
   registerDesktopRuntimeShutdown(runtime);
-  registerDesktopIpc(() => currentMainWindow, runtime);
+  registerDesktopIpc(() => currentMainWindow, runtime, appUpdater);
   await openMainWindow();
+  void appUpdater.checkForUpdate();
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {

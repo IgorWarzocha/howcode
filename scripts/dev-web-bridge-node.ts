@@ -6,6 +6,7 @@ import path from "node:path";
 import { getAttachmentKind } from "../shared/composer-attachments";
 import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory";
 import { getSafeExternalUrl } from "../shared/external-url";
+import packageJson from "../package.json";
 import type {
   DesktopEventMap,
   DesktopRequestChannel,
@@ -25,6 +26,12 @@ const bridgeToken = process.env.HOWCODE_DEV_WEB_BRIDGE_TOKEN || "";
 const desktopEventClients = new Set<http.ServerResponse>();
 const terminalEventClients = new Set<http.ServerResponse>();
 const sseClients = new Set<http.ServerResponse>();
+const devAppUpdateState = {
+  status: "up-to-date" as const,
+  currentVersion: packageJson.version,
+  latestVersion: packageJson.version,
+  error: null,
+};
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,
@@ -74,6 +81,10 @@ terminalManager.subscribeTerminalEvents((event) => {
 });
 
 const handlers: DesktopRequestHandlerMap = {
+  getAppUpdateState: () => devAppUpdateState,
+  checkAppUpdate: () => devAppUpdateState,
+  installAppUpdate: () => devAppUpdateState,
+  restartAppUpdate: () => devAppUpdateState,
   clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),

@@ -1,6 +1,7 @@
 import type { DesktopAction } from "./app/desktop/actions";
 import type {
   AnyDesktopActionPayload,
+  AppUpdateState,
   Artifact,
   ArtifactVersion,
   ArchivedThread,
@@ -52,6 +53,10 @@ declare global {
   interface Window {
     __howcodeDevWebBridge?: boolean;
     piDesktop?: {
+      getAppUpdateState?: () => Promise<AppUpdateState>;
+      checkAppUpdate?: () => Promise<AppUpdateState>;
+      installAppUpdate?: () => Promise<AppUpdateState>;
+      restartAppUpdate?: () => Promise<AppUpdateState>;
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>;
       getShellState: () => Promise<ShellState>;
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>;

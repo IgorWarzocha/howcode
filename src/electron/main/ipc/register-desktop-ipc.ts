@@ -9,6 +9,8 @@ import { resolveConfiguredDevServerUrl } from "../../../../shared/dev-server";
 import { isTrustedRendererUrl } from "../app/navigation-security";
 import type { DesktopRuntimeModules } from "../runtime/desktop-runtime-contracts";
 import { getRendererDistDirectory } from "../runtime/app-paths";
+import type { AppUpdater } from "../updater/app-updater";
+import { createAppUpdateHandlers } from "./request-handlers/app-update";
 import { createPiPackagesHandlers } from "./request-handlers/pi-packages";
 import { createPiSkillsHandlers } from "./request-handlers/pi-skills";
 import { createPiThreadsHandlers } from "./request-handlers/pi-threads";
@@ -60,8 +62,10 @@ function registerRequestHandlers(
 export function registerDesktopIpc(
   getMainWindow: () => BrowserWindow | null,
   runtime: DesktopRuntimeModules,
+  appUpdater: AppUpdater,
 ) {
   const handlers: DesktopRequestHandlerMap = {
+    ...createAppUpdateHandlers(appUpdater),
     ...createPiThreadsHandlers(runtime.piThreads),
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),
@@ -83,6 +87,16 @@ export function registerDesktopIpc(
     const mainWindow = getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(getDesktopEventIpcChannel("terminalEvent"), event);
+    }
+  });
+
+  appUpdater.subscribe((state) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(getDesktopEventIpcChannel("desktopEvent"), {
+        type: "app-update",
+        state,
+      });
     }
   });
 }

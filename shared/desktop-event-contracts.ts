@@ -1,9 +1,14 @@
 import type { ComposerState } from "./desktop-composer-contracts";
 import type { Artifact } from "./desktop-artifact-contracts";
+import type { AppUpdateState } from "./desktop-app-update-contracts";
 import type { DictationModelId } from "./desktop-dictation-contracts";
 import type { ThreadData } from "./desktop-thread-contracts";
 
 export type DesktopEvent =
+  | {
+      type: "app-update";
+      state: AppUpdateState;
+    }
   | {
       type: "shell-state-refresh";
     }
