@@ -1,11 +1,10 @@
 import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from "./settingsTypes";
 
 export const settingsCategories: SettingsCategory[] = [
-  { id: "common", label: "Common" },
+  { id: "projects", label: "Projects" },
   { id: "models", label: "Models" },
   { id: "pi-runtime", label: "Pi Runtime" },
   { id: "pi-tui", label: "Pi TUI" },
-  { id: "projects", label: "Projects" },
   { id: "dictation", label: "Dictation" },
 ];
 

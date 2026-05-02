@@ -14,7 +14,7 @@ export function buildCommonSettingsDescriptors({
   return [
     {
       id: "common.streaming-behavior",
-      category: "common",
+      category: "pi-runtime",
       title: "Send while Pi is responding",
       description:
         "Desktop composer policy. Steer interrupts, Queue waits for the current turn, Stop aborts without sending.",
@@ -50,7 +50,7 @@ export function buildCommonSettingsDescriptors({
     },
     {
       id: "common.pi-tui-takeover",
-      category: "common",
+      category: "pi-runtime",
       title: "Open in TUI",
       description:
         "Use Pi takeover by default until a conversation is overridden for this app session.",

@@ -45,6 +45,7 @@ export function buildSettingsDescriptors({
   onAction: DesktopActionInvoker;
 }): SettingDescriptor[] {
   return [
+    ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
       appSettings,
@@ -57,7 +58,6 @@ export function buildSettingsDescriptors({
       onAction,
     }),
     ...buildPiRuntimeSettingsDescriptors({ draftPiSettings, setDraftPiSetting }),
-    ...buildProjectsSettingsDescriptors({ appSettings, controller }),
     ...buildDictationSettingsDescriptors({
       appSettings,
       controller,

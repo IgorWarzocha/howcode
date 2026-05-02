@@ -29,6 +29,7 @@ export function SettingsMenu({
   panelRef,
 }: SettingsMenuProps) {
   const { step, isRunning, advance } = useAppUpdateFlow();
+  const updateDisabled = isRunning || step.id === "up-to-date";
   const UpdateIcon =
     step.id === "idle" ||
     step.id === "up-to-date" ||
@@ -64,10 +65,10 @@ export function SettingsMenu({
     >
       <button
         type="button"
-        className="sidebar-settings-menu-item"
+        className={cn("sidebar-settings-menu-item", updateDisabled && "cursor-not-allowed")}
         onClick={advance}
-        disabled={isRunning}
-        data-disabled={isRunning ? "true" : "false"}
+        disabled={updateDisabled}
+        data-disabled={updateDisabled ? "true" : "false"}
         role="menuitem"
       >
         <span className="sidebar-settings-menu-item__icon">
