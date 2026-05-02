@@ -322,43 +322,42 @@ export function ComposerPromptSurface({
         </div>
       </div>
 
-      <div className="grid gap-0 overflow-visible">
+      <div className="relative grid gap-0 overflow-visible">
         {showAskQuestions ? (
-          <AskQuestionsCard
-            composerDraft={draft}
-            questions={nativeAskQuestionsRequest.questions}
-            onUseComposerDraft={() => {
-              const value = draft;
-              setDraft("");
-              return value;
-            }}
-            onAnswered={(answers) => {
-              setDraft("");
-              if (nativeAskQuestionsRequest) {
+          <div className="pointer-events-auto absolute right-0 bottom-full left-0 z-20">
+            <AskQuestionsCard
+              composerDraft={draft}
+              questions={nativeAskQuestionsRequest.questions}
+              onUseComposerDraft={() => {
+                const value = draft;
+                setDraft("");
+                return value;
+              }}
+              onAnswered={(answers) => {
+                setDraft("");
                 void runComposerAction("composer.answer-native-questions", {
                   projectId,
                   sessionPath,
                   requestId: nativeAskQuestionsRequest.id,
                   answers,
                 });
-              }
-            }}
-            onDismiss={() => {
-              void runComposerAction("composer.answer-native-questions", {
-                projectId,
-                sessionPath,
-                requestId: nativeAskQuestionsRequest.id,
-                answers: nativeAskQuestionsRequest.questions.map(() => []),
-              });
-            }}
-            onLayoutChange={onLayoutChange}
-            registerArrowNavigation={(handler) => {
-              askQuestionsArrowNavigationRef.current = handler;
-            }}
-            registerComposerSubmit={(handler) => {
-              askQuestionsSubmitRef.current = handler;
-            }}
-          />
+              }}
+              onDismiss={() => {
+                void runComposerAction("composer.answer-native-questions", {
+                  projectId,
+                  sessionPath,
+                  requestId: nativeAskQuestionsRequest.id,
+                  answers: nativeAskQuestionsRequest.questions.map(() => []),
+                });
+              }}
+              registerArrowNavigation={(handler) => {
+                askQuestionsArrowNavigationRef.current = handler;
+              }}
+              registerComposerSubmit={(handler) => {
+                askQuestionsSubmitRef.current = handler;
+              }}
+            />
+          </div>
         ) : null}
         <div
           ref={composerPanelRef}
