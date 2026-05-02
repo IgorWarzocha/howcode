@@ -198,6 +198,7 @@ export function DiffPanelFileList({
                 options={{
                   diffStyle: diffRenderMode === "split" ? "split" : "unified",
                   lineDiffType: "none",
+                  overflow: "wrap",
                   theme: resolveDiffThemeName("dark"),
                   themeType: "dark",
                   unsafeCSS: DIFF_PANEL_UNSAFE_CSS,

@@ -26,7 +26,7 @@ const TREE_UNSAFE_CSS = `
     --trees-item-margin-x-override: 0px;
     --trees-item-padding-x-override: 0.625rem;
     --trees-scrollbar-thumb-override: rgba(169, 178, 215, 0.24);
-    --trees-scrollbar-gutter-override: 0px;
+    --trees-scrollbar-gutter-override: 6px;
     background: transparent;
     font-family: var(--font-sans, "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif);
   }
@@ -70,7 +70,7 @@ const treeHostStyle = {
   "--trees-level-gap-override": "0px",
   "--trees-item-margin-x-override": "0px",
   "--trees-item-padding-x-override": "0.625rem",
-  "--trees-scrollbar-gutter-override": "0px",
+  "--trees-scrollbar-gutter-override": "6px",
   backgroundColor: "var(--workspace)",
 } as CSSProperties;
 
@@ -168,7 +168,7 @@ export function DiffChangedFilesTree({
         </label>
         <FileTree
           model={model}
-          className={cn("min-h-0 flex-1")}
+          className={cn("-mr-[6px] min-h-0 w-[calc(100%+6px)] flex-1")}
           style={treeHostStyle}
           aria-label="Changed files"
         />
