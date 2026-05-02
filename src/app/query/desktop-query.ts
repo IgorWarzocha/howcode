@@ -2,6 +2,7 @@ import { getPersistedSessionPath } from "../../../shared/session-paths";
 import { fallbackAppSlashCommands } from "../../../shared/composer-slash-commands";
 import type {
   ArchivedThread,
+  AppUpdateState,
   ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
@@ -30,6 +31,7 @@ import type {
 } from "../desktop/types";
 
 export const desktopQueryKeys = {
+  appUpdateState: () => ["desktop", "appUpdateState"] as const,
   shellState: () => ["desktop", "shellState"] as const,
   piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
   configuredPiPackages: (projectPath?: string | null, chat = false) =>
@@ -67,6 +69,22 @@ export const desktopQueryKeys = {
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ["desktop", "thread", sessionPath, refreshKey, historyCompactions] as const,
 };
+
+export async function getAppUpdateStateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.getAppUpdateState?.()) ?? null;
+}
+
+export async function checkAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.checkAppUpdate?.()) ?? null;
+}
+
+export async function installAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.installAppUpdate?.()) ?? null;
+}
+
+export async function restartAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.restartAppUpdate?.()) ?? null;
+}
 
 export async function getShellStateQuery(): Promise<ShellState | null> {
   return (await window.piDesktop?.getShellState?.()) ?? null;

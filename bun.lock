@@ -34,6 +34,7 @@
         "react-markdown": "^10.1.0",
         "remark-gfm": "^4.0.1",
         "sherpa-onnx-node": "^1.12.38",
+        "tar": "^7.5.13",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",

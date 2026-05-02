@@ -1,6 +1,7 @@
 import type { DesktopAction } from "./desktop-actions";
 import type {
   AnyDesktopActionPayload,
+  AppUpdateState,
   Artifact,
   ArtifactVersion,
   ArchivedThread,
@@ -54,6 +55,10 @@ import type {
 } from "./terminal-contracts";
 
 export type DesktopRequestMap = {
+  getAppUpdateState: { params: Record<string, never>; response: AppUpdateState };
+  checkAppUpdate: { params: Record<string, never>; response: AppUpdateState };
+  installAppUpdate: { params: Record<string, never>; response: AppUpdateState };
+  restartAppUpdate: { params: Record<string, never>; response: AppUpdateState };
   clearClipboardImages: {
     params: Record<string, never>;
     response: { clearedCount: number; clearFailedCount: number };

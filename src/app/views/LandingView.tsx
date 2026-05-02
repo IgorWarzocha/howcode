@@ -1,8 +1,8 @@
-import { Check, Download, RotateCw } from "lucide-react";
+import { Download, RotateCw } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import type { AppSettings, DesktopActionInvoker } from "../desktop/types";
-import { useMockAppUpdateFlow } from "../hooks/useMockAppUpdateFlow";
+import { useAppUpdateFlow } from "../hooks/useAppUpdateFlow";
 import type { Project } from "../types";
 import { compactRoundIconButtonClass, toolbarButtonClass } from "../ui/classes";
 import { cn } from "../utils/cn";
@@ -82,13 +82,17 @@ function PixelHLogo() {
 }
 
 function LandingMockUpdateCard() {
-  const { step, isRunning, advance } = useMockAppUpdateFlow();
+  const { step, isRunning, advance } = useAppUpdateFlow();
   const Icon =
-    step.id === "latest" || step.id === "ready" || step.id === "restarting"
+    step.id === "idle" ||
+    step.id === "up-to-date" ||
+    step.id === "checking" ||
+    step.id === "error" ||
+    step.id === "ready" ||
+    step.id === "restarting" ||
+    step.id === "installing"
       ? RotateCw
-      : step.id === "complete"
-        ? Check
-        : Download;
+      : Download;
 
   const busy = isRunning;
 

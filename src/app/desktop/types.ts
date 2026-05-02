@@ -3,6 +3,7 @@ export type {
   Artifact,
   ArtifactKind,
   ArtifactVersion,
+  AppUpdateState,
   AppSettings,
   ArchivedThread,
   ChatGroup,

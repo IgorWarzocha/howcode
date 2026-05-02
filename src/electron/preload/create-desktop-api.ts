@@ -41,6 +41,10 @@ function subscribeToEvent<K extends DesktopEventChannel>(
 
 export function createDesktopApi() {
   return {
+    getAppUpdateState: () => invokeRequest("getAppUpdateState", {}),
+    checkAppUpdate: () => invokeRequest("checkAppUpdate", {}),
+    installAppUpdate: () => invokeRequest("installAppUpdate", {}),
+    restartAppUpdate: () => invokeRequest("restartAppUpdate", {}),
     clearClipboardImages: () => invokeRequest("clearClipboardImages", {}),
     getShellState: () => invokeRequest("getShellState", {}),
     getProjectGitState: (projectId: string) => invokeRequest("getProjectGitState", { projectId }),

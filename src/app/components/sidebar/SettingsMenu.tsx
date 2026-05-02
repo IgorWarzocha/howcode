@@ -1,10 +1,10 @@
-import { Archive, Check, Download, PackagePlus, RotateCw, Settings, Sparkles } from "lucide-react";
+import { Archive, Download, PackagePlus, RotateCw, Settings, Sparkles } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
-import { useMockAppUpdateFlow } from "../../hooks/useMockAppUpdateFlow";
+import { useAppUpdateFlow } from "../../hooks/useAppUpdateFlow";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -28,13 +28,17 @@ export function SettingsMenu({
   onOpenArchivedThreads,
   panelRef,
 }: SettingsMenuProps) {
-  const { step, isRunning, advance } = useMockAppUpdateFlow();
+  const { step, isRunning, advance } = useAppUpdateFlow();
   const UpdateIcon =
-    step.id === "latest" || step.id === "ready" || step.id === "restarting"
+    step.id === "idle" ||
+    step.id === "up-to-date" ||
+    step.id === "checking" ||
+    step.id === "error" ||
+    step.id === "ready" ||
+    step.id === "restarting" ||
+    step.id === "installing"
       ? RotateCw
-      : step.id === "complete"
-        ? Check
-        : Download;
+      : Download;
   const items: Array<{
     icon: ReactNode;
     title: string;
