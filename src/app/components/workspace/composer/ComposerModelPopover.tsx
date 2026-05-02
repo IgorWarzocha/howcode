@@ -47,8 +47,8 @@ function TriggerButton({
       )}
       onClick={onClick}
     >
-      <span className="text-[12px] text-[color:var(--muted)]">{label}</span>
-      <span className="min-w-0 truncate text-[13px] text-[color:var(--text)]">{value}</span>
+      <span className="text-[11px] text-[color:var(--muted)]">{label}</span>
+      <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{value}</span>
     </button>
   );
 }
@@ -68,7 +68,7 @@ function MenuList({ items }: { items: MenuOption[] }) {
             aria-checked={item.selected}
             className={cn(
               menuOptionClass,
-              "mr-1 text-[color:var(--text)]",
+              "mr-1 text-[12px] text-[color:var(--text)]",
               item.selected && "bg-[rgba(255,255,255,0.06)]",
             )}
             onClick={item.onSelect}
@@ -79,7 +79,7 @@ function MenuList({ items }: { items: MenuOption[] }) {
             <span className="min-w-0">
               <span className="block truncate">{item.label}</span>
               {item.description ? (
-                <span className="block truncate text-[11px] text-[color:var(--muted)]">
+                <span className="block truncate text-[10.5px] text-[color:var(--muted)]">
                   {item.description}
                 </span>
               ) : null}
@@ -213,7 +213,7 @@ export function ComposerModelPopover({
       ref={panelRef}
       id="composer-model-menu"
       className={cn(
-        "absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+        "absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px] shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
         popoverPanelClass,
       )}
     >
@@ -227,7 +227,7 @@ export function ComposerModelPopover({
             ref={modelSearchRef}
             value={modelSearch}
             onChange={(event) => setModelSearch(event.currentTarget.value)}
-            className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
             placeholder={`Search ${modelsForProvider.length} models…`}
             aria-label="Search models"
           />
@@ -239,7 +239,7 @@ export function ComposerModelPopover({
           <div className="mx-2 mb-1 h-px bg-[rgba(169,178,215,0.08)]" />
         </>
       ) : showModelSearch ? (
-        <div className="px-2 py-3 text-[12px] text-[color:var(--muted)]">No matching models</div>
+        <div className="px-2 py-3 text-[11px] text-[color:var(--muted)]">No matching models</div>
       ) : null}
 
       <div className="relative min-w-0">
