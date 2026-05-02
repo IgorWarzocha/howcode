@@ -5,13 +5,19 @@ export function spawnDetached(executablePath: string) {
   const env = { ...process.env };
   Reflect.deleteProperty(env, "NODE_TLS_REJECT_UNAUTHORIZED");
 
-  const child = spawn(executablePath, [], {
-    detached: true,
-    stdio: "ignore",
-    windowsHide: true,
-    cwd: path.dirname(executablePath),
-    env,
-  });
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn(executablePath, [], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+      cwd: path.dirname(executablePath),
+      env,
+    });
 
-  child.unref();
+    child.once("error", reject);
+    child.once("spawn", () => {
+      child.unref();
+      resolve();
+    });
+  });
 }

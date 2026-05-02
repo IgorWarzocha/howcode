@@ -16,6 +16,8 @@ const RELEASE_BASE_URL =
   process.env.HOWCODE_BASE_URL ??
   "https://github.com/IgorWarzocha/howcode/releases/latest/download";
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
+const updateAllowedInDev = process.env.HOWCODE_ENABLE_DEV_APP_UPDATE === "1";
+const windowsInAppUpdateAllowed = process.env.HOWCODE_ENABLE_WINDOWS_IN_APP_UPDATE === "1";
 
 type UpdateTarget = {
   os: "macos" | "linux" | "win";
@@ -83,6 +85,46 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   };
 }
 
+function isUpdateEnabled() {
+  return app.isPackaged || updateAllowedInDev;
+}
+
+function assertUpdateEnabled() {
+  if (!isUpdateEnabled()) {
+    throw new Error("App updates are disabled in development builds.");
+  }
+}
+
+function assertInstallSupported(target: UpdateTarget) {
+  if (target.os === "win" && !windowsInAppUpdateAllowed) {
+    throw new Error(
+      "In-app updates are disabled on Windows installer builds until Start Menu shortcut handoff is implemented.",
+    );
+  }
+}
+
+function normalizeReleaseMetadata(
+  metadata: unknown,
+  updateUrl: string,
+): Pick<ReleaseInfo, "version" | "hash"> {
+  if (!metadata || typeof metadata !== "object") {
+    throw new Error(`Invalid metadata from ${updateUrl}`);
+  }
+
+  const version = "version" in metadata ? metadata.version : null;
+  const hash = "hash" in metadata ? metadata.hash : null;
+
+  if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error(`Invalid release version from ${updateUrl}`);
+  }
+
+  if (typeof hash !== "string" || !/^[a-f0-9]{64}$/i.test(hash)) {
+    throw new Error(`Invalid release hash from ${updateUrl}`);
+  }
+
+  return { version, hash: hash.toLowerCase() };
+}
+
 async function fetchJson(url: string, timeoutMs = 15_000) {
   const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
@@ -91,14 +133,7 @@ async function fetchJson(url: string, timeoutMs = 15_000) {
 
 async function resolveLatestRelease(target: UpdateTarget): Promise<ReleaseInfo> {
   const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`;
-  const metadata = await fetchJson(updateUrl);
-  if (!metadata || typeof metadata !== "object")
-    throw new Error(`Invalid metadata from ${updateUrl}`);
-  const version = "version" in metadata ? metadata.version : null;
-  const hash = "hash" in metadata ? metadata.hash : null;
-  if (typeof version !== "string" || typeof hash !== "string") {
-    throw new Error(`Invalid metadata from ${updateUrl}`);
-  }
+  const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl);
   return {
     version,
     hash,
@@ -107,8 +142,8 @@ async function resolveLatestRelease(target: UpdateTarget): Promise<ReleaseInfo> 
 }
 
 function compareVersions(left: string, right: string) {
-  const leftParts = left.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
-  const rightParts = right.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const leftParts = left.split(".").map((part) => Number.parseInt(part, 10));
+  const rightParts = right.split(".").map((part) => Number.parseInt(part, 10));
   const length = Math.max(leftParts.length, rightParts.length);
   for (let index = 0; index < length; index += 1) {
     const diff = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
@@ -155,6 +190,15 @@ export class AppUpdater {
   }
 
   async checkForUpdate() {
+    if (!isUpdateEnabled()) {
+      this.setState({
+        status: "up-to-date",
+        latestVersion: this.state.currentVersion,
+        error: null,
+      });
+      return this.state;
+    }
+
     this.setState({ status: "checking", error: null });
     try {
       const target = getTarget();
@@ -173,14 +217,18 @@ export class AppUpdater {
   }
 
   async installUpdate() {
+    let tempRoot: string | null = null;
+    let tempInstallDir: string | null = null;
     try {
+      assertUpdateEnabled();
       const release = this.latestRelease ?? (await this.resolveAvailableRelease());
       this.setState({ status: "downloading", latestVersion: release.version, error: null });
       const target = getTarget();
+      assertInstallSupported(target);
       const paths = getInstallPaths(target, release);
       if (!existsSync(paths.executablePath)) {
-        const tempRoot = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`);
-        const tempInstallDir = `${paths.installDir}.partial`;
+        tempRoot = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`);
+        tempInstallDir = `${paths.installDir}.partial`;
         const archivePath = path.join(tempRoot, `${APP_NAME}-${target.os}-${target.arch}.tar.gz`);
         await rm(tempRoot, { recursive: true, force: true });
         await rm(tempInstallDir, { recursive: true, force: true });
@@ -200,7 +248,9 @@ export class AppUpdater {
         await rm(paths.installDir, { recursive: true, force: true });
         await mkdir(path.dirname(paths.installDir), { recursive: true });
         await rename(tempInstallDir, paths.installDir);
+        tempInstallDir = null;
         await rm(tempRoot, { recursive: true, force: true });
+        tempRoot = null;
       }
 
       await writeFile(
@@ -224,6 +274,11 @@ export class AppUpdater {
       this.setState({ status: "ready", latestVersion: release.version, error: null });
     } catch (error) {
       this.setState({ status: "error", error: getErrorMessage(error) });
+    } finally {
+      await Promise.all([
+        tempRoot ? rm(tempRoot, { recursive: true, force: true }) : Promise.resolve(),
+        tempInstallDir ? rm(tempInstallDir, { recursive: true, force: true }) : Promise.resolve(),
+      ]).catch(() => {});
     }
     return this.state;
   }
@@ -231,8 +286,12 @@ export class AppUpdater {
   async restartToUpdate() {
     if (!this.installedUpdate) return this.state;
     this.setState({ status: "restarting", error: null });
-    spawnDetached(this.installedUpdate.executablePath);
-    app.quit();
+    try {
+      await spawnDetached(this.installedUpdate.executablePath);
+      app.quit();
+    } catch (error) {
+      this.setState({ status: "error", error: getErrorMessage(error) });
+    }
     return this.state;
   }
 
