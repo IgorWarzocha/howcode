@@ -268,7 +268,12 @@ export function CodeWorkspaceView({
         >
           <div className="pointer-events-auto grid gap-2.5">
             <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
-              <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
+              <div
+                className={cn(
+                  "mb-1.5 min-w-0 self-end",
+                  state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
+                )}
+              >
                 {(state.activeView === "thread" || state.activeView === "gitops") &&
                 !state.takeoverVisible ? (
                   <button
@@ -410,7 +415,12 @@ export function CodeWorkspaceView({
                   </div>
                 )}
               </div>
-              <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
+              <div
+                className={cn(
+                  "mb-1.5 min-w-0 self-end",
+                  state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
+                )}
+              >
                 {state.activeView === "gitops" && !state.takeoverVisible ? (
                   <button
                     type="button"

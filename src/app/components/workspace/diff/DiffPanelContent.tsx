@@ -68,8 +68,15 @@ export function DiffPanelContent({
         : [],
     [renderablePatch],
   );
-  const selectedFilePathSet = useMemo(() => new Set(focusedFilePaths), [focusedFilePaths]);
-  const hasFocusedFiles = focusedFilePaths.length > 0;
+  const normalizedFocusedFilePaths = useMemo(
+    () => focusedFilePaths.map((filePath) => filePath.replace(/\/+$/, "")),
+    [focusedFilePaths],
+  );
+  const selectedFilePathSet = useMemo(
+    () => new Set(normalizedFocusedFilePaths),
+    [normalizedFocusedFilePaths],
+  );
+  const hasFocusedFiles = showFileTree && normalizedFocusedFilePaths.length > 0;
   const visibleRenderableFiles = useMemo(() => {
     if (!hasFocusedFiles) {
       return renderableFiles;
@@ -77,7 +84,7 @@ export function DiffPanelContent({
 
     const isVisiblePath = (filePath: string) =>
       selectedFilePathSet.has(filePath) ||
-      focusedFilePaths.some((selectedPath) => filePath.startsWith(`${selectedPath}/`));
+      normalizedFocusedFilePaths.some((selectedPath) => filePath.startsWith(`${selectedPath}/`));
     const selectedFileStillVisible = selectedFilePath ? isVisiblePath(selectedFilePath) : true;
 
     return renderableFiles.filter((fileDiff) => {
@@ -86,7 +93,13 @@ export function DiffPanelContent({
         isVisiblePath(filePath) || (!selectedFileStillVisible && filePath === selectedFilePath)
       );
     });
-  }, [focusedFilePaths, hasFocusedFiles, renderableFiles, selectedFilePath, selectedFilePathSet]);
+  }, [
+    hasFocusedFiles,
+    normalizedFocusedFilePaths,
+    renderableFiles,
+    selectedFilePath,
+    selectedFilePathSet,
+  ]);
 
   const {
     annotationCountByFile,
@@ -118,6 +131,7 @@ export function DiffPanelContent({
       return;
     }
 
+    setFocusedFilePaths([]);
     const timeout = window.setTimeout(() => setRenderFileTree(false), 200);
     return () => window.clearTimeout(timeout);
   }, [showFileTree]);

@@ -118,7 +118,10 @@ export function DiffChangedFilesTree({
   useEffect(() => {
     model.resetPaths(paths, { initialExpandedPaths: paths });
     model.setGitStatus(gitStatus);
-  }, [gitStatus, model, paths]);
+    if (search.value.trim().length > 0) {
+      model.setSearch(search.value);
+    }
+  }, [gitStatus, model, paths, search.value]);
 
   const hasSelection = selectedPaths.length > 0;
   const statusLabel = hasSelection
