@@ -233,7 +233,7 @@ export function dequeueComposerPrompt(
 }
 
 export function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] },
+  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
 ) {
   return invokeRuntimeHost("answerNativeAskQuestions", withComposerModeSettings(request));
 }

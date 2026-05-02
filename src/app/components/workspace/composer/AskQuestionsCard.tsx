@@ -42,9 +42,9 @@ export function AskQuestionsCard({
     );
   };
 
-  const closeCard = () => {
+  const closeCard = ({ notifyDismiss = true }: { notifyDismiss?: boolean } = {}) => {
     setDismissed(true);
-    onDismiss?.();
+    if (notifyDismiss) onDismiss?.();
   };
 
   const advance = () => {
@@ -54,7 +54,7 @@ export function AskQuestionsCard({
   const submitComposerDraft = () => {
     if (onReview) {
       onAnswered?.(answers);
-      closeCard();
+      closeCard({ notifyDismiss: false });
       return true;
     }
 
@@ -196,8 +196,11 @@ export function AskQuestionsCard({
       </div>
 
       <div className="grid gap-0.5">
-        {[...question.options, { label: "Other" }].map((option) => {
-          const isOther = option.label === "Other";
+        {[
+          ...question.options.map((option) => ({ ...option, syntheticOther: false as const })),
+          { label: "Other", syntheticOther: true as const },
+        ].map((option, optionIndex) => {
+          const isOther = option.syntheticOther;
           const picked = isOther
             ? composerDraft.trim().length > 0
             : (answers[activeIndex]?.includes(option.label) ?? false);
@@ -234,7 +237,7 @@ export function AskQuestionsCard({
 
           if (isOther) {
             return (
-              <div key={option.label} className="relative">
+              <div key="__howcode_other_answer" className="relative">
                 <button type="button" className={rowClass} tabIndex={-1} aria-disabled="true">
                   {mark}
                   <span className="min-w-0 truncate leading-4">{option.label}</span>
@@ -243,7 +246,7 @@ export function AskQuestionsCard({
                 <button
                   type="button"
                   className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
-                  onClick={closeCard}
+                  onClick={() => closeCard()}
                   aria-label="Dismiss"
                 >
                   <X size={12} />
@@ -254,7 +257,7 @@ export function AskQuestionsCard({
 
           return (
             <button
-              key={option.label}
+              key={`${option.label}:${optionIndex}`}
               type="button"
               className={rowClass}
               onClick={() => toggleOption(option.label)}

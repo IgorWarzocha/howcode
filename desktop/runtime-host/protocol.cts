@@ -71,7 +71,10 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
-  answerNativeAskQuestions: ComposerStateRequest & { requestId: string; answers: string[][] };
+  answerNativeAskQuestions: ComposerStateRequest & {
+    requestId: string;
+    answers: string[][] | null;
+  };
 };
 
 export type RuntimeHostResponseMap = {

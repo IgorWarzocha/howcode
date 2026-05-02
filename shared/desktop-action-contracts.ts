@@ -39,7 +39,7 @@ export type DesktopActionPayloadFields = {
   projectName?: string;
   provider?: string;
   queueId?: string;
-  answers?: string[][];
+  answers?: string[][] | null;
   requestId?: string;
   queueSnapshotKey?: string;
   push?: boolean;
@@ -178,7 +178,7 @@ export type DesktopActionPayloadMap = {
     projectId?: string | null;
     sessionPath?: string | null;
     requestId: string;
-    answers: string[][];
+    answers: string[][] | null;
   };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };

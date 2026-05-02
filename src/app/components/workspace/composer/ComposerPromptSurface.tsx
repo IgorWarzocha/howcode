@@ -380,7 +380,7 @@ export function ComposerPromptSurface({
                   projectId,
                   sessionPath,
                   requestId: nativeAskQuestionsRequest.id,
-                  answers: nativeAskQuestionsRequest.questions.map(() => []),
+                  answers: null,
                 });
               }}
               registerArrowNavigation={(handler) => {
@@ -445,7 +445,7 @@ export function ComposerPromptSurface({
                         projectId,
                         sessionPath,
                         requestId: nativeAskQuestionsRequest.id,
-                        answers: nativeAskQuestionsRequest.questions.map(() => []),
+                        answers: null,
                       });
                       return true;
                     }

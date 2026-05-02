@@ -251,14 +251,14 @@ export function createHowcodeAskQuestionsTool({ defineTool, askInComposer } = {}
       "Keep questions and options short.",
       "Do not ask for approval when you can pick a safe default.",
     ],
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const questions = normalizeQuestions(params);
       if (questions.length === 0) {
         return { content: [textContent("No questions were provided.")] };
       }
 
       const answers = askInComposer
-        ? await askInComposer(questions)
+        ? await askInComposer(questions, signal)
         : await askInTui(ctx, questions);
       if (!answers) {
         return { content: [textContent("Questions dismissed.")], isError: true };

@@ -468,7 +468,7 @@ export async function dequeueComposerPrompt(
 }
 
 export async function answerNativeAskQuestions(
-  request: ComposerStateRequest & { requestId: string; answers: string[][] },
+  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
 ) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   if (!persistedSessionPath) return { ok: false };

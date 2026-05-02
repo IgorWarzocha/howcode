@@ -10,7 +10,10 @@ type RuntimeLike = {
 type AskQuestionsExtensionModule = {
   createHowcodeAskQuestionsTool: (options: {
     defineTool: typeof definePiTool;
-    askInComposer: (questions: NativeAskQuestion[]) => Promise<string[][] | null>;
+    askInComposer: (
+      questions: NativeAskQuestion[],
+      signal?: AbortSignal,
+    ) => Promise<string[][] | null>;
   }) => ReturnType<typeof definePiTool>;
 };
 
@@ -31,18 +34,22 @@ export async function createNativeAskQuestionsTools({
   return [
     extension.createHowcodeAskQuestionsTool({
       defineTool,
-      askInComposer: async (questions) => {
+      askInComposer: async (questions, signal) => {
         const runtime = getRuntime();
         const sessionPath = runtime?.session.sessionFile ?? null;
         if (!sessionPath) return null;
 
         const id = `ask_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-        const answers = await createPendingNativeAskQuestionsRequest(sessionPath, {
-          id,
-          questions,
-        }).finally(onStateChange);
+        const answers = createPendingNativeAskQuestionsRequest(
+          sessionPath,
+          {
+            id,
+            questions,
+          },
+          { signal },
+        );
         onStateChange();
-        return answers;
+        return await answers.finally(onStateChange);
       },
     }),
   ];

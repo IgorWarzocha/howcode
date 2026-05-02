@@ -282,7 +282,10 @@ export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInpu
   return typeof payload.requestId === "string" ? payload.requestId : null;
 }
 
-export function getNativeAskQuestionsAnswers(payload: DesktopActionPayloadInput): string[][] {
+export function getNativeAskQuestionsAnswers(
+  payload: DesktopActionPayloadInput,
+): string[][] | null {
+  if (payload.answers === null) return null;
   if (!Array.isArray(payload.answers)) return [];
   return payload.answers.map((answer) =>
     Array.isArray(answer)
