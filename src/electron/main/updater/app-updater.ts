@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream, existsSync } from "node:fs";
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -17,7 +17,6 @@ const RELEASE_BASE_URL =
   "https://github.com/IgorWarzocha/howcode/releases/latest/download";
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 const updateAllowedInDev = process.env.HOWCODE_ENABLE_DEV_APP_UPDATE === "1";
-const windowsInAppUpdateAllowed = process.env.HOWCODE_ENABLE_WINDOWS_IN_APP_UPDATE === "1";
 
 type UpdateTarget = {
   os: "macos" | "linux" | "win";
@@ -96,7 +95,7 @@ function assertUpdateEnabled() {
 }
 
 function assertInstallSupported(target: UpdateTarget) {
-  if (target.os === "win" && !windowsInAppUpdateAllowed) {
+  if (target.os === "win") {
     throw new Error(
       "In-app updates are disabled on Windows installer builds until Start Menu shortcut handoff is implemented.",
     );
@@ -169,9 +168,55 @@ async function sha256File(filePath: string) {
   return hash.digest("hex");
 }
 
+function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
+  if (!record || typeof record !== "object") return null;
+  const version = "version" in record ? record.version : null;
+  const hash = "hash" in record ? record.hash : null;
+  const installDir = "installDir" in record ? record.installDir : null;
+  const executablePath = "executablePath" in record ? record.executablePath : null;
+  if (
+    typeof version !== "string" ||
+    !/^\d+\.\d+\.\d+$/.test(version) ||
+    typeof hash !== "string" ||
+    !/^[a-f0-9]{64}$/i.test(hash) ||
+    typeof installDir !== "string" ||
+    typeof executablePath !== "string"
+  ) {
+    return null;
+  }
+  return { version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: "" };
+}
+
+async function isExecutableFile(filePath: string) {
+  try {
+    return (await stat(filePath)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+async function pruneOldVersions(cacheRoot: string, keepDir: string) {
+  const versionsRoot = path.join(cacheRoot, "versions");
+  let entries: Array<{ isDirectory(): boolean; name: string }>;
+  try {
+    entries = await readdir(versionsRoot, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(versionsRoot, entry.name))
+      .filter((dirPath) => dirPath !== keepDir)
+      .map((dirPath) => rm(dirPath, { recursive: true, force: true })),
+  );
+}
+
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>();
   private installedUpdate: InstalledUpdate | null = null;
+  private installPromise: Promise<AppUpdateState> | null = null;
+  private restorePromise: Promise<void> | null = null;
   private latestRelease: ReleaseInfo | null = null;
   private state: AppUpdateState = {
     status: "idle",
@@ -189,6 +234,14 @@ export class AppUpdater {
     return this.state;
   }
 
+  async restoreInstalledUpdate() {
+    if (this.restorePromise) return this.restorePromise;
+    this.restorePromise = this.readInstalledUpdate().finally(() => {
+      this.restorePromise = null;
+    });
+    return this.restorePromise;
+  }
+
   async checkForUpdate() {
     if (!isUpdateEnabled()) {
       this.setState({
@@ -198,6 +251,9 @@ export class AppUpdater {
       });
       return this.state;
     }
+
+    await this.restoreInstalledUpdate();
+    if (this.installedUpdate) return this.state;
 
     this.setState({ status: "checking", error: null });
     try {
@@ -217,6 +273,14 @@ export class AppUpdater {
   }
 
   async installUpdate() {
+    if (this.installPromise) return this.installPromise;
+    this.installPromise = this.installUpdateInner().finally(() => {
+      this.installPromise = null;
+    });
+    return this.installPromise;
+  }
+
+  private async installUpdateInner() {
     let tempRoot: string | null = null;
     let tempInstallDir: string | null = null;
     try {
@@ -226,7 +290,14 @@ export class AppUpdater {
       const target = getTarget();
       assertInstallSupported(target);
       const paths = getInstallPaths(target, release);
-      if (!existsSync(paths.executablePath)) {
+      const currentRecord = await this.readCurrentFile(paths.currentFile);
+      const existingCacheTrusted =
+        currentRecord?.version === release.version &&
+        currentRecord.hash === release.hash &&
+        currentRecord.installDir === paths.installDir &&
+        currentRecord.executablePath === paths.executablePath &&
+        (await isExecutableFile(paths.executablePath));
+      if (!existingCacheTrusted) {
         tempRoot = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`);
         tempInstallDir = `${paths.installDir}.partial`;
         const archivePath = path.join(tempRoot, `${APP_NAME}-${target.os}-${target.arch}.tar.gz`);
@@ -271,6 +342,7 @@ export class AppUpdater {
         executablePath: paths.executablePath,
         installDir: paths.installDir,
       };
+      await pruneOldVersions(paths.cacheRoot, paths.installDir);
       this.setState({ status: "ready", latestVersion: release.version, error: null });
     } catch (error) {
       this.setState({ status: "error", error: getErrorMessage(error) });
@@ -284,6 +356,7 @@ export class AppUpdater {
   }
 
   async restartToUpdate() {
+    await this.restoreInstalledUpdate();
     if (!this.installedUpdate) return this.state;
     this.setState({ status: "restarting", error: null });
     try {
@@ -293,6 +366,24 @@ export class AppUpdater {
       this.setState({ status: "error", error: getErrorMessage(error) });
     }
     return this.state;
+  }
+
+  private async readInstalledUpdate() {
+    if (!isUpdateEnabled()) return;
+    const record = await this.readCurrentFile(path.join(getCacheRoot(), "current.json"));
+    if (!record || compareVersions(record.version, this.state.currentVersion) <= 0) return;
+    if (!(await isExecutableFile(record.executablePath))) return;
+    this.installedUpdate = record;
+    this.latestRelease = record;
+    this.setState({ status: "ready", latestVersion: record.version, error: null });
+  }
+
+  private async readCurrentFile(currentFile: string) {
+    try {
+      return parseInstalledUpdateRecord(JSON.parse(await readFile(currentFile, "utf8")));
+    } catch {
+      return null;
+    }
   }
 
   private async resolveAvailableRelease() {
