@@ -118,6 +118,7 @@ export function buildModelSettingsDescriptors({
           ...providerModels.map((model) => ({
             value: `${model.provider}/${model.id}`,
             label: model.name,
+            description: `${model.provider}/${model.id}`,
           })),
         ]}
         onOpenChange={(open) => setOpenSelectId(open ? id : null)}

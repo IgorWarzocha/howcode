@@ -29,7 +29,8 @@ export function buildModelMenuItems(
     },
     ...availableModels.map((model) => ({
       id: `${model.provider}/${model.id}`,
-      label: `${model.provider}/${model.id}`,
+      label: model.name,
+      description: `${model.provider}/${model.id}`,
       selected: selectedModel?.provider === model.provider && selectedModel.id === model.id,
     })),
   ];
