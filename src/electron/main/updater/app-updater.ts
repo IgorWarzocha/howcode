@@ -12,9 +12,8 @@ import type { AppUpdateState } from "../../../../shared/desktop-app-update-contr
 import { spawnDetached } from "./spawn-detached";
 
 const APP_NAME = "howcode";
-const RELEASE_BASE_URL =
-  process.env.HOWCODE_BASE_URL ??
-  "https://github.com/IgorWarzocha/howcode/releases/latest/download";
+const DEFAULT_RELEASE_BASE_URL = "https://github.com/IgorWarzocha/howcode/releases/latest/download";
+const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL ?? DEFAULT_RELEASE_BASE_URL;
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 const updateAllowedInDev = process.env.HOWCODE_ENABLE_DEV_APP_UPDATE === "1";
 
@@ -133,10 +132,14 @@ async function fetchJson(url: string, timeoutMs = 15_000) {
 async function resolveLatestRelease(target: UpdateTarget): Promise<ReleaseInfo> {
   const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`;
   const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl);
+  const assetBaseUrl =
+    RELEASE_BASE_URL === DEFAULT_RELEASE_BASE_URL
+      ? `https://github.com/IgorWarzocha/howcode/releases/download/v${version}`
+      : RELEASE_BASE_URL;
   return {
     version,
     hash,
-    assetUrl: `${RELEASE_BASE_URL}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: `${assetBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   };
 }
 
@@ -253,11 +256,22 @@ export class AppUpdater {
     }
 
     await this.restoreInstalledUpdate();
-    if (this.installedUpdate) return this.state;
+    if (this.installedUpdate) {
+      this.setState({ status: "ready", latestVersion: this.installedUpdate.version, error: null });
+      return this.state;
+    }
 
     this.setState({ status: "checking", error: null });
     try {
       const target = getTarget();
+      if (target.os === "win") {
+        this.setState({
+          status: "up-to-date",
+          latestVersion: this.state.currentVersion,
+          error: null,
+        });
+        return this.state;
+      }
       const release = await resolveLatestRelease(target);
       this.latestRelease = release;
       const hasUpdate = compareVersions(release.version, this.state.currentVersion) > 0;
@@ -372,6 +386,14 @@ export class AppUpdater {
     if (!isUpdateEnabled()) return;
     const record = await this.readCurrentFile(path.join(getCacheRoot(), "current.json"));
     if (!record || compareVersions(record.version, this.state.currentVersion) <= 0) return;
+    const target = getTarget();
+    const expectedPaths = getInstallPaths(target, record);
+    if (
+      record.installDir !== expectedPaths.installDir ||
+      record.executablePath !== expectedPaths.executablePath
+    ) {
+      return;
+    }
     if (!(await isExecutableFile(record.executablePath))) return;
     this.installedUpdate = record;
     this.latestRelease = record;
