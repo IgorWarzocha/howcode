@@ -1,7 +1,10 @@
+import { Check, Download, RotateCw } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 import { MarkdownContent } from "../components/common/MarkdownContent";
 import type { AppSettings, DesktopActionInvoker } from "../desktop/types";
+import { useMockAppUpdateFlow } from "../hooks/useMockAppUpdateFlow";
 import type { Project } from "../types";
+import { compactRoundIconButtonClass, toolbarButtonClass } from "../ui/classes";
 import { cn } from "../utils/cn";
 import { getLandingOverviewContent } from "./landing-overview-content";
 
@@ -78,6 +81,37 @@ function PixelHLogo() {
   );
 }
 
+function LandingMockUpdateCard() {
+  const { step, isRunning, advance } = useMockAppUpdateFlow();
+  const Icon =
+    step.id === "latest" || step.id === "ready" || step.id === "restarting"
+      ? RotateCw
+      : step.id === "complete"
+        ? Check
+        : Download;
+
+  const busy = isRunning;
+
+  return (
+    <div className={cn(toolbarButtonClass, "group rounded-full opacity-55 hover:opacity-100")}>
+      <span>{step.label}</span>
+      <button
+        type="button"
+        aria-label={step.action}
+        title={step.action}
+        className={cn(
+          compactRoundIconButtonClass,
+          "h-6 w-6 opacity-70 active:scale-[0.96] disabled:cursor-default group-hover:opacity-100",
+        )}
+        onClick={advance}
+        disabled={busy}
+      >
+        <Icon size={14} className={cn(busy && "animate-spin")} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 export function LandingView({ className }: LandingViewProps) {
   const content = getLandingOverviewContent();
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -106,9 +140,11 @@ export function LandingView({ className }: LandingViewProps) {
         className,
       )}
     >
-      <div className="grid w-full max-w-[760px] justify-items-center gap-8 text-center">
+      <div className="grid w-full max-w-[760px] justify-items-center gap-4 text-center">
         <PixelHLogo />
         <h1 className="sr-only">{content.title}</h1>
+
+        <LandingMockUpdateCard />
 
         <div className="grid w-full max-w-[680px] gap-0">
           <div
