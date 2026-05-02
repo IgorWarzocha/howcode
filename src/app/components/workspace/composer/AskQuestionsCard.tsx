@@ -1,5 +1,5 @@
 import { Check, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { NativeAskQuestion } from "../../../desktop/types";
 import { cn } from "../../../utils/cn";
 
@@ -9,6 +9,7 @@ type AskQuestionsCardProps = {
   onUseComposerDraft: () => string;
   onAnswered?: (answers: string[][]) => void;
   onDismiss?: () => void;
+  onLayoutChange?: () => void;
   registerArrowNavigation?: (handler: ((direction: "previous" | "next") => boolean) | null) => void;
   registerComposerSubmit?: (handler: (() => boolean) | null) => void;
 };
@@ -18,7 +19,7 @@ function getInitialAnswers(questions: NativeAskQuestion[]) {
 }
 
 const askQuestionsCardClass =
-  "relative -left-1 mx-auto grid h-[202px] w-full max-w-[664px] content-start gap-2 overflow-hidden rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
+  "relative -left-1 mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
 
 export function AskQuestionsCard({
   composerDraft,
@@ -26,9 +27,12 @@ export function AskQuestionsCard({
   onUseComposerDraft,
   onAnswered,
   onDismiss,
+  onLayoutChange,
   registerArrowNavigation,
   registerComposerSubmit,
 }: AskQuestionsCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const lastReportedHeightRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<string[][]>(() => getInitialAnswers(questions));
   const [dismissed, setDismissed] = useState(false);
@@ -92,13 +96,32 @@ export function AskQuestionsCard({
     setAnswers(getInitialAnswers(questions));
   }, [questions]);
 
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card || !onLayoutChange) return;
+
+    const reportIfChanged = () => {
+      const nextHeight = Math.ceil(card.getBoundingClientRect().height);
+      if (lastReportedHeightRef.current === nextHeight) return;
+      lastReportedHeightRef.current = nextHeight;
+      onLayoutChange();
+    };
+
+    reportIfChanged();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(reportIfChanged);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [onLayoutChange]);
+
   if (dismissed || questions.length === 0) {
     return null;
   }
 
   if (onReview) {
     return (
-      <div className={askQuestionsCardClass}>
+      <div ref={cardRef} className={askQuestionsCardClass}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
           <div className="truncate text-[13px] leading-5 text-[color:var(--text)]">
             Review answers
@@ -142,8 +165,6 @@ export function AskQuestionsCard({
             </button>
           ))}
         </div>
-
-        <div className="h-7" />
       </div>
     );
   }
@@ -164,7 +185,7 @@ export function AskQuestionsCard({
   };
 
   return (
-    <div className={askQuestionsCardClass}>
+    <div ref={cardRef} className={askQuestionsCardClass}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
         <div className="min-w-0 truncate text-[13px] leading-5">
           <span className="text-[color:var(--text)]">{question.question}</span>{" "}

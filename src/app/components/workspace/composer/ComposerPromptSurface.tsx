@@ -351,6 +351,7 @@ export function ComposerPromptSurface({
                 answers: nativeAskQuestionsRequest.questions.map(() => []),
               });
             }}
+            onLayoutChange={onLayoutChange}
             registerArrowNavigation={(handler) => {
               askQuestionsArrowNavigationRef.current = handler;
             }}
