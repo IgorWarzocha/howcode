@@ -200,6 +200,7 @@ async function isExecutableFile(filePath: string) {
 
 async function pruneOldVersions(cacheRoot: string, keepDir: string) {
   const versionsRoot = path.join(cacheRoot, "versions");
+  const runningVersionDir = getRunningCachedVersionDir(versionsRoot);
   let entries: Array<{ isDirectory(): boolean; name: string }>;
   try {
     entries = await readdir(versionsRoot, { withFileTypes: true });
@@ -211,13 +212,25 @@ async function pruneOldVersions(cacheRoot: string, keepDir: string) {
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(versionsRoot, entry.name))
       .filter((dirPath) => dirPath !== keepDir)
+      .filter((dirPath) => dirPath !== runningVersionDir)
       .map((dirPath) => rm(dirPath, { recursive: true, force: true })),
   );
+}
+
+function getRunningCachedVersionDir(versionsRoot: string) {
+  let currentPath = process.execPath;
+  while (currentPath !== path.dirname(currentPath)) {
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === versionsRoot) return currentPath;
+    currentPath = parentPath;
+  }
+  return null;
 }
 
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>();
   private installedUpdate: InstalledUpdate | null = null;
+  private checkPromise: Promise<AppUpdateState> | null = null;
   private installPromise: Promise<AppUpdateState> | null = null;
   private restorePromise: Promise<void> | null = null;
   private latestRelease: ReleaseInfo | null = null;
@@ -246,6 +259,14 @@ export class AppUpdater {
   }
 
   async checkForUpdate() {
+    if (this.checkPromise) return this.checkPromise;
+    this.checkPromise = this.checkForUpdateInner().finally(() => {
+      this.checkPromise = null;
+    });
+    return this.checkPromise;
+  }
+
+  private async checkForUpdateInner() {
     if (!isUpdateEnabled()) {
       this.setState({
         status: "up-to-date",
@@ -277,7 +298,7 @@ export class AppUpdater {
       const hasUpdate = compareVersions(release.version, this.state.currentVersion) > 0;
       this.setState({
         status: hasUpdate ? "available" : "up-to-date",
-        latestVersion: release.version,
+        latestVersion: hasUpdate ? release.version : this.state.currentVersion,
         error: null,
       });
     } catch (error) {
@@ -384,6 +405,7 @@ export class AppUpdater {
 
   private async readInstalledUpdate() {
     if (!isUpdateEnabled()) return;
+    this.installedUpdate = null;
     const record = await this.readCurrentFile(path.join(getCacheRoot(), "current.json"));
     if (!record || compareVersions(record.version, this.state.currentVersion) <= 0) return;
     const target = getTarget();

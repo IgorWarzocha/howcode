@@ -39,12 +39,11 @@ export function useAppUpdateFlow() {
 
   useEffect(() => {
     let cancelled = false;
-    void getAppUpdateStateQuery().then((nextState) => {
-      if (!cancelled && nextState) setState(nextState);
-    });
-
     const unsubscribe = window.piDesktop?.subscribe?.((event) => {
       if (event.type === "app-update") setState(event.state);
+    });
+    void getAppUpdateStateQuery().then((nextState) => {
+      if (!cancelled && nextState) setState(nextState);
     });
 
     return () => {
