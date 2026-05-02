@@ -1,7 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { getDesktopUserDataPath } from "../user-data-path.cts";
 
 const extensionFileName = "howcode-native-ask-questions.mjs";
 
@@ -15,10 +13,5 @@ export function getBundledAskQuestionsExtensionPath() {
 }
 
 export function ensureAskQuestionsExtensionRuntimePath() {
-  const sourcePath = getBundledAskQuestionsExtensionPath();
-  const targetDirectory = path.join(getDesktopUserDataPath(), "native-extensions");
-  const targetPath = path.join(targetDirectory, extensionFileName);
-  mkdirSync(targetDirectory, { recursive: true });
-  writeFileSync(targetPath, readFileSync(sourcePath, "utf8"), "utf8");
-  return targetPath;
+  return getBundledAskQuestionsExtensionPath();
 }
