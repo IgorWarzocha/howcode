@@ -1,9 +1,10 @@
 import { Paperclip, Square, X } from "lucide-react";
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
 import { ComposerFooter } from "./ComposerFooter";
+import { AskQuestionsMockCard } from "./AskQuestionsMockCard";
 import { ComposerPromptInputPanel } from "./ComposerPromptInputPanel";
 import { hasFilePayloadInClipboardData } from "./composer-paste-attachments";
 import { useComposerController } from "./controller/useComposerController";
@@ -262,14 +263,21 @@ export function ComposerPromptSurface({
   }, [handleDrop]);
 
   const extensionRunning = extensionCommandRunning;
+  const [askQuestionsMockActive, setAskQuestionsMockActive] = useState(() => import.meta.env.DEV);
+  const askQuestionsMockArrowNavigationRef = useRef<
+    ((direction: "previous" | "next") => boolean) | null
+  >(null);
+  const askQuestionsMockSubmitRef = useRef<(() => boolean) | null>(null);
+  const showAskQuestionsMock = askQuestionsMockActive;
   const placeholderText =
     errorMessage ??
-    (activeView === "chat" || activeView === "thread"
-      ? "Hover to type · Enter sends · Shift+Enter for a new line"
-      : "Hover to type · / commands · @ files · Enter sends");
+    (showAskQuestionsMock
+      ? "Type Other · Enter replies · empty Enter advances · ←/→ questions · Esc dismisses"
+      : activeView === "chat" || activeView === "thread"
+        ? "Hover to type · Enter sends · Shift+Enter for a new line"
+        : "Hover to type · / commands · @ files · Enter sends");
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
-
   return (
     <div className="relative left-1/2 grid w-[calc(100%+5rem)] -translate-x-1/2 grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
       <div className="relative mb-[3.55rem] h-8 w-8 shrink-0 text-[color:var(--muted)]">
@@ -314,128 +322,168 @@ export function ComposerPromptSurface({
         </div>
       </div>
 
-      <div
-        ref={composerPanelRef}
-        className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
-        aria-label="Composer panel"
-      >
-        {/* Let the prompt column size itself to one line by default, then grow upward naturally as
-            the textarea expands. */}
-        <div className="relative">
-          {/* The prompt surface keeps prompt text and trailing controls in one shared block so it
-              still mirrors the git-ops composer shell while attachments live beside it. */}
-          <ComposerPromptInputPanel
-            attachments={attachments}
-            clearError={clearError}
-            dictationActive={dictationActive}
-            dictationMissingModel={dictationMissingModel}
-            dictationSupported={dictationSupported}
-            dictationTranscribing={dictationTranscribing}
-            draft={draft}
-            errorMessage={errorMessage}
-            extensionRunning={extensionRunning}
-            inputLocked={inputLocked}
-            favoriteFolders={favoriteFolders}
-            pickerLoading={pickerLoading}
-            pickerOpen={pickerOpen}
-            pickerPanelRef={pickerPanelRef}
-            pickerState={pickerState}
-            placeholderText={placeholderText}
-            projectId={projectId}
-            slashCommandPanelRef={slashCommandPanelRef}
-            slashCommands={slashCommands}
-            showDictationButton={showDictationButton}
-            attachPickerAttachments={attachPickerAttachments}
-            cancelDictation={cancelDictation}
-            handlePaste={handlePaste}
-            onAction={onAction}
-            onLayoutChange={onLayoutChange}
-            onOpenSettingsView={onOpenSettingsView}
-            openPickerDirectory={openPickerDirectory}
-            openPickerRoot={openPickerRoot}
-            removeAttachment={removeAttachment}
-            setDraft={setDraft}
-            toggleDictation={toggleDictation}
-            togglePendingPickerAttachment={togglePendingPickerAttachment}
+      <div className="grid gap-0 overflow-visible">
+        {showAskQuestionsMock ? (
+          <AskQuestionsMockCard
+            composerDraft={draft}
+            onUseComposerDraft={() => {
+              const value = draft;
+              setDraft("");
+              return value;
+            }}
+            onAnswered={() => {
+              setDraft("");
+            }}
+            onDismiss={() => setAskQuestionsMockActive(false)}
+            registerArrowNavigation={(handler) => {
+              askQuestionsMockArrowNavigationRef.current = handler;
+            }}
+            registerComposerSubmit={(handler) => {
+              askQuestionsMockSubmitRef.current = handler;
+            }}
           />
-        </div>
-
-        {errorMessage ? (
-          <output className="sr-only" aria-live="polite">
-            {errorMessage}
-          </output>
         ) : null}
+        <div
+          ref={composerPanelRef}
+          className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+          aria-label="Composer panel"
+        >
+          {/* Let the prompt column size itself to one line by default, then grow upward naturally as
+              the textarea expands. */}
+          <div className="relative">
+            {/* The prompt surface keeps prompt text and trailing controls in one shared block so it
+                still mirrors the git-ops composer shell while attachments live beside it. */}
+            <ComposerPromptInputPanel
+              attachments={attachments}
+              clearError={clearError}
+              dictationActive={dictationActive}
+              dictationMissingModel={dictationMissingModel}
+              dictationSupported={dictationSupported}
+              dictationTranscribing={dictationTranscribing}
+              draft={draft}
+              errorMessage={errorMessage}
+              extensionRunning={extensionRunning}
+              inputLocked={inputLocked}
+              favoriteFolders={favoriteFolders}
+              pickerLoading={pickerLoading}
+              pickerOpen={pickerOpen}
+              pickerPanelRef={pickerPanelRef}
+              pickerState={pickerState}
+              placeholderText={placeholderText}
+              projectId={projectId}
+              slashCommandPanelRef={slashCommandPanelRef}
+              slashCommands={slashCommands}
+              showDictationButton={showDictationButton}
+              attachPickerAttachments={attachPickerAttachments}
+              cancelDictation={cancelDictation}
+              handlePaste={handlePaste}
+              onAction={onAction}
+              onLayoutChange={onLayoutChange}
+              onOpenSettingsView={onOpenSettingsView}
+              openPickerDirectory={openPickerDirectory}
+              openPickerRoot={openPickerRoot}
+              removeAttachment={removeAttachment}
+              setDraft={setDraft}
+              toggleDictation={toggleDictation}
+              togglePendingPickerAttachment={togglePendingPickerAttachment}
+              onSubmitOverride={
+                showAskQuestionsMock
+                  ? () => askQuestionsMockSubmitRef.current?.() ?? true
+                  : undefined
+              }
+              onEscapeOverride={
+                showAskQuestionsMock
+                  ? () => {
+                      setAskQuestionsMockActive(false);
+                      return true;
+                    }
+                  : undefined
+              }
+              onArrowNavigationOverride={
+                showAskQuestionsMock
+                  ? (direction) => askQuestionsMockArrowNavigationRef.current?.(direction) ?? true
+                  : undefined
+              }
+            />
+          </div>
 
-        <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+          {errorMessage ? (
+            <output className="sr-only" aria-live="polite">
+              {errorMessage}
+            </output>
+          ) : null}
 
-        <ComposerFooter
-          availableModels={availableModels}
-          availableThinkingLevels={availableThinkingLevels}
-          composerPanelRef={composerPanelRef}
-          diffBaseline={diffBaseline}
-          model={model}
-          contextUsage={contextUsage}
-          compactDisabled={isStreaming || isCompacting || !sessionPath}
-          isCompacting={isCompacting}
-          modelButtonRef={modelButtonRef}
-          modelMenuOpen={modelMenuOpen}
-          modelMenuRef={modelMenuRef}
-          onOpenGitOps={onOpenGitOps}
-          onOpenTakeoverTerminal={onOpenTakeoverTerminal}
-          onSelectBaseline={onSetDiffBaseline}
-          onSelectModel={(availableModel) => {
-            if (activeView === "chat" || activeView === "thread") {
+          <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+
+          <ComposerFooter
+            availableModels={availableModels}
+            availableThinkingLevels={availableThinkingLevels}
+            composerPanelRef={composerPanelRef}
+            diffBaseline={diffBaseline}
+            model={model}
+            contextUsage={contextUsage}
+            compactDisabled={isStreaming || isCompacting || !sessionPath}
+            isCompacting={isCompacting}
+            modelButtonRef={modelButtonRef}
+            modelMenuOpen={modelMenuOpen}
+            modelMenuRef={modelMenuRef}
+            onOpenGitOps={onOpenGitOps}
+            onOpenTakeoverTerminal={onOpenTakeoverTerminal}
+            onSelectBaseline={onSetDiffBaseline}
+            onSelectModel={(availableModel) => {
+              if (activeView === "chat" || activeView === "thread") {
+                void runComposerAction(
+                  "settings.update",
+                  {
+                    key: composerMode === "chat" ? "chatModel" : "codeModel",
+                    provider: availableModel.provider,
+                    modelId: availableModel.id,
+                  },
+                  { closeMenu: false },
+                );
+                return;
+              }
+
               void runComposerAction(
-                "settings.update",
+                "composer.model",
                 {
-                  key: composerMode === "chat" ? "chatModel" : "codeModel",
                   provider: availableModel.provider,
                   modelId: availableModel.id,
+                  projectId,
+                  sessionPath,
                 },
                 { closeMenu: false },
               );
-              return;
-            }
+            }}
+            onSelectThinkingLevel={(level) => {
+              if (activeView === "chat" || activeView === "thread") {
+                void runComposerAction("settings.update", {
+                  key: composerMode === "chat" ? "chatThinkingLevel" : "codeThinkingLevel",
+                  value: level,
+                });
+                return;
+              }
 
-            void runComposerAction(
-              "composer.model",
-              {
-                provider: availableModel.provider,
-                modelId: availableModel.id,
+              void runComposerAction("composer.thinking", {
+                level,
                 projectId,
                 sessionPath,
-              },
-              { closeMenu: false },
-            );
-          }}
-          onSelectThinkingLevel={(level) => {
-            if (activeView === "chat" || activeView === "thread") {
-              void runComposerAction("settings.update", {
-                key: composerMode === "chat" ? "chatThinkingLevel" : "codeThinkingLevel",
-                value: level,
               });
-              return;
-            }
-
-            void runComposerAction("composer.thinking", {
-              level,
-              projectId,
-              sessionPath,
-            });
-          }}
-          onCompact={() => void compact()}
-          onSetOpenMenu={setOpenMenu}
-          onToggleTerminal={onToggleTerminal}
-          onToggleArtifacts={onToggleArtifacts}
-          projectGitState={projectGitState}
-          projectId={projectId}
-          showTerminalControls={showTerminalControls}
-          terminalVisible={terminalVisible}
-          artifactsVisible={artifactsVisible}
-          artifactsAvailable={artifactsAvailable}
-          thinkingLevel={thinkingLevel}
-          thinkingLevelLabels={thinkingLevelLabels}
-        />
+            }}
+            onCompact={() => void compact()}
+            onSetOpenMenu={setOpenMenu}
+            onToggleTerminal={onToggleTerminal}
+            onToggleArtifacts={onToggleArtifacts}
+            projectGitState={projectGitState}
+            projectId={projectId}
+            showTerminalControls={showTerminalControls}
+            terminalVisible={terminalVisible}
+            artifactsVisible={artifactsVisible}
+            artifactsAvailable={artifactsAvailable}
+            thinkingLevel={thinkingLevel}
+            thinkingLevelLabels={thinkingLevelLabels}
+          />
+        </div>
       </div>
 
       <div
