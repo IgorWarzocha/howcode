@@ -1,5 +1,5 @@
 import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
-import { supportsXhigh } from "@mariozechner/pi-ai";
+import { getSupportedThinkingLevels } from "@mariozechner/pi-ai";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
   ComposerContextUsage,
@@ -91,9 +91,7 @@ export function getAvailableThinkingLevelsForModel(
     return ["off"];
   }
 
-  return supportsXhigh(model)
-    ? (["off", "minimal", "low", "medium", "high", "xhigh"] as ComposerThinkingLevel[])
-    : (["off", "minimal", "low", "medium", "high"] as ComposerThinkingLevel[]);
+  return getSupportedThinkingLevels(model) as ComposerThinkingLevel[];
 }
 
 export function clampThinkingLevel(
