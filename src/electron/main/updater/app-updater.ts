@@ -8,6 +8,7 @@ import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { app } from "electron";
 import { x as extractTar } from "tar";
+import packageJson from "../../../../package.json";
 import type { AppUpdateState } from "../../../../shared/desktop-app-update-contracts";
 import { spawnDetached } from "./spawn-detached";
 
@@ -85,6 +86,10 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
 
 function isUpdateEnabled() {
   return app.isPackaged || updateAllowedInDev;
+}
+
+function getCurrentAppVersion() {
+  return app.isPackaged ? app.getVersion() : packageJson.version;
 }
 
 function assertUpdateEnabled() {
@@ -236,7 +241,7 @@ export class AppUpdater {
   private latestRelease: ReleaseInfo | null = null;
   private state: AppUpdateState = {
     status: "idle",
-    currentVersion: app.getVersion(),
+    currentVersion: getCurrentAppVersion(),
     latestVersion: null,
     error: null,
   };
