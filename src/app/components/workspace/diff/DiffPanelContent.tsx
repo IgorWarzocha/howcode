@@ -49,6 +49,7 @@ export function DiffPanelContent({
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([]);
+  const [renderFileTree, setRenderFileTree] = useState(showFileTree);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
   const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo);
@@ -110,6 +111,16 @@ export function DiffPanelContent({
     draftComment,
     setDraftComment,
   });
+
+  useEffect(() => {
+    if (showFileTree) {
+      setRenderFileTree(true);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setRenderFileTree(false), 200);
+    return () => window.clearTimeout(timeout);
+  }, [showFileTree]);
 
   useEffect(() => {
     if (!hasCommentContext) {
@@ -239,11 +250,13 @@ export function DiffPanelContent({
                   }}
                   aria-hidden={!showFileTree}
                 >
-                  <DiffChangedFilesTree
-                    files={renderableFiles}
-                    selectedPaths={focusedFilePaths}
-                    onSelectedPathsChange={setFocusedFilePaths}
-                  />
+                  {renderFileTree ? (
+                    <DiffChangedFilesTree
+                      files={renderableFiles}
+                      selectedPaths={focusedFilePaths}
+                      onSelectedPathsChange={setFocusedFilePaths}
+                    />
+                  ) : null}
                 </div>
               </div>
             ) : (
