@@ -16,6 +16,7 @@ import {
   removeQueuedPromptById,
   replayComposerQueue,
 } from "../runtime/composer-queue";
+import { answerNativeAskQuestions as answerNativeAskQuestionsForRuntime } from "../runtime/native-ask-questions-state.cts";
 import {
   buildComposerState,
   buildComposerStateSnapshot,
@@ -464,6 +465,22 @@ export async function dequeueComposerPrompt(
       scheduleRuntimeDisposal(persistedSessionPath);
     }
   });
+}
+
+export async function answerNativeAskQuestions(
+  request: ComposerStateRequest & { requestId: string; answers: string[][] },
+) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
+  if (!persistedSessionPath) return { ok: false };
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+    settingsCwd: request.composerSessionDir ?? null,
+    chatGroupId: request.chatGroupId ?? null,
+  });
+  const ok = answerNativeAskQuestionsForRuntime(runtime, request.requestId, request.answers);
+  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
+  return { ok };
 }
 
 export async function startNewThread(request: ComposerStateRequest = {}) {

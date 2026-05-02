@@ -385,6 +385,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   gitDiffFileTreeDefaultVisible: true,
                   projectDeletionMode: "pi-only",
                   useAgentsSkillsPaths: false,
+                  howcodeNativeAskQuestions: false,
                   piTuiTakeover: false,
                 }
               }

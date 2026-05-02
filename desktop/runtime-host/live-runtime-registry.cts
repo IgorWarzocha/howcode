@@ -9,6 +9,7 @@ import {
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import { createArtifactTools } from "../runtime/artifact-tools.cts";
+import { createNativeAskQuestionsTools } from "./native-ask-questions-tool.cts";
 import { invokeMainRequest } from "./main-request-client.cts";
 import {
   createIsolatedRuntimeResourceLoader,
@@ -83,6 +84,18 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
   }, RUNTIME_IDLE_TIMEOUT_MS);
 }
 
+async function getEnabledNativeExtensionsForRuntime(options: {
+  sessionManager?: PiRuntime["session"]["sessionManager"];
+}) {
+  const sessionPath = options.sessionManager?.getSessionFile?.() ?? null;
+  if (sessionPath) {
+    const enabled = await invokeMainRequest("getSessionNativeExtensions", { sessionPath });
+    return enabled ?? [];
+  }
+
+  return await invokeMainRequest("snapshotDefaultNativeExtensions", {});
+}
+
 async function createRuntime(options: {
   cwd: string;
   sessionDir?: string | null;
@@ -97,6 +110,7 @@ async function createRuntime(options: {
     SettingsManager,
     DefaultResourceLoader,
     createAgentSession,
+    defineTool,
     getAgentDir,
   } = await getPiModule();
   const agentDir = getAgentDir();
@@ -116,6 +130,25 @@ async function createRuntime(options: {
     settingsCwd: options.settingsCwd,
     settingsManager,
   });
+  let runtime: PiRuntime | null = null;
+  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime({
+    sessionManager: options.sessionManager,
+  });
+  const nativeAskQuestionTools = enabledNativeExtensions.includes("askQuestions")
+    ? createNativeAskQuestionsTools({
+        defineTool,
+        getRuntime: () => runtime,
+        onStateChange: () => {
+          if (!runtime) return;
+          void buildComposerState(runtime).then((composer) => {
+            publishComposerUpdate(composer, {
+              projectId: runtime?.cwd ?? null,
+              sessionPath: runtime?.session.sessionFile,
+            });
+          });
+        },
+      })
+    : [];
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
@@ -127,22 +160,37 @@ async function createRuntime(options: {
     ...(options.settingsCwd
       ? {
           noTools: "builtin" as const,
-          customTools: createArtifactTools({
-            createArtifact: (input) => invokeMainRequest("createArtifact", input),
-            editArtifact: (input) => invokeMainRequest("editArtifact", input),
-            getArtifact: ({ conversationId, slug }) =>
-              invokeMainRequest("getArtifact", { artifactSlug: slug, conversationId }),
-            listArtifacts: (conversationId) =>
-              invokeMainRequest("listArtifacts", { conversationId }),
-          }),
+          customTools: [
+            ...createArtifactTools({
+              createArtifact: (input) => invokeMainRequest("createArtifact", input),
+              editArtifact: (input) => invokeMainRequest("editArtifact", input),
+              getArtifact: ({ conversationId, slug }) =>
+                invokeMainRequest("getArtifact", { artifactSlug: slug, conversationId }),
+              listArtifacts: (conversationId) =>
+                invokeMainRequest("listArtifacts", { conversationId }),
+            }),
+            ...nativeAskQuestionTools,
+          ],
         }
-      : {}),
+      : nativeAskQuestionTools.length > 0
+        ? { customTools: nativeAskQuestionTools }
+        : {}),
   });
-  const runtime = {
+  runtime = {
     cwd: options.cwd,
     session,
     chatGroupId: options.chatGroupId ?? null,
   } satisfies PiRuntime;
+
+  if (!options.sessionManager) {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+    if (runtimeKey) {
+      await invokeMainRequest("setSessionNativeExtensions", {
+        sessionPath: runtimeKey,
+        enabled: enabledNativeExtensions,
+      });
+    }
+  }
 
   session.subscribe((event) => {
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
@@ -402,7 +450,9 @@ export async function createRuntimeForNewSession(
     chatGroupId: options.chatGroupId ?? null,
   });
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
-  if (runtimeKey) registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null);
+  if (runtimeKey) {
+    registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null);
+  }
   return runtime;
 }
 

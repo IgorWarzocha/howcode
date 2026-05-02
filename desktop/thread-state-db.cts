@@ -10,6 +10,7 @@ export {
   listInboxThreads,
   listArchivedThreads,
   getThreadDiffPreferences,
+  getSessionNativeExtensions,
   listProjectThreads,
   listProjects,
 } from "./thread-state-db/queries.cts";
@@ -37,6 +38,7 @@ export {
   syncSessionSummaries,
   setThreadRunningState,
   setThreadDiffPreferences,
+  setSessionNativeExtensions,
   toggleProjectPinned,
   toggleThreadPinned,
   upsertInboxThreadPrompt,

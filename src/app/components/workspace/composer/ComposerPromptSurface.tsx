@@ -1,10 +1,10 @@
 import { Paperclip, Square, X } from "lucide-react";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import type { ComposerProps } from "../Composer";
 import { ComposerFooter } from "./ComposerFooter";
-import { AskQuestionsMockCard } from "./AskQuestionsMockCard";
+import { AskQuestionsCard } from "./AskQuestionsCard";
 import { ComposerPromptInputPanel } from "./ComposerPromptInputPanel";
 import { hasFilePayloadInClipboardData } from "./composer-paste-attachments";
 import { useComposerController } from "./controller/useComposerController";
@@ -29,6 +29,7 @@ export function ComposerPromptSurface({
   replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
+  nativeAskQuestionsRequest,
   thinkingLevel,
   restoredQueuedPrompt,
   streamingBehaviorPreference,
@@ -263,15 +264,14 @@ export function ComposerPromptSurface({
   }, [handleDrop]);
 
   const extensionRunning = extensionCommandRunning;
-  const [askQuestionsMockActive, setAskQuestionsMockActive] = useState(() => import.meta.env.DEV);
-  const askQuestionsMockArrowNavigationRef = useRef<
+  const askQuestionsArrowNavigationRef = useRef<
     ((direction: "previous" | "next") => boolean) | null
   >(null);
-  const askQuestionsMockSubmitRef = useRef<(() => boolean) | null>(null);
-  const showAskQuestionsMock = askQuestionsMockActive;
+  const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null);
+  const showAskQuestions = nativeAskQuestionsRequest !== null;
   const placeholderText =
     errorMessage ??
-    (showAskQuestionsMock
+    (showAskQuestions
       ? "Type Other · Enter replies · empty Enter advances · ←/→ questions · Esc dismisses"
       : activeView === "chat" || activeView === "thread"
         ? "Hover to type · Enter sends · Shift+Enter for a new line"
@@ -323,23 +323,39 @@ export function ComposerPromptSurface({
       </div>
 
       <div className="grid gap-0 overflow-visible">
-        {showAskQuestionsMock ? (
-          <AskQuestionsMockCard
+        {showAskQuestions ? (
+          <AskQuestionsCard
             composerDraft={draft}
+            questions={nativeAskQuestionsRequest.questions}
             onUseComposerDraft={() => {
               const value = draft;
               setDraft("");
               return value;
             }}
-            onAnswered={() => {
+            onAnswered={(answers) => {
               setDraft("");
+              if (nativeAskQuestionsRequest) {
+                void runComposerAction("composer.answer-native-questions", {
+                  projectId,
+                  sessionPath,
+                  requestId: nativeAskQuestionsRequest.id,
+                  answers,
+                });
+              }
             }}
-            onDismiss={() => setAskQuestionsMockActive(false)}
+            onDismiss={() => {
+              void runComposerAction("composer.answer-native-questions", {
+                projectId,
+                sessionPath,
+                requestId: nativeAskQuestionsRequest.id,
+                answers: nativeAskQuestionsRequest.questions.map(() => []),
+              });
+            }}
             registerArrowNavigation={(handler) => {
-              askQuestionsMockArrowNavigationRef.current = handler;
+              askQuestionsArrowNavigationRef.current = handler;
             }}
             registerComposerSubmit={(handler) => {
-              askQuestionsMockSubmitRef.current = handler;
+              askQuestionsSubmitRef.current = handler;
             }}
           />
         ) : null}
@@ -387,21 +403,24 @@ export function ComposerPromptSurface({
               toggleDictation={toggleDictation}
               togglePendingPickerAttachment={togglePendingPickerAttachment}
               onSubmitOverride={
-                showAskQuestionsMock
-                  ? () => askQuestionsMockSubmitRef.current?.() ?? true
-                  : undefined
+                showAskQuestions ? () => askQuestionsSubmitRef.current?.() ?? true : undefined
               }
               onEscapeOverride={
-                showAskQuestionsMock
+                showAskQuestions
                   ? () => {
-                      setAskQuestionsMockActive(false);
+                      void runComposerAction("composer.answer-native-questions", {
+                        projectId,
+                        sessionPath,
+                        requestId: nativeAskQuestionsRequest.id,
+                        answers: nativeAskQuestionsRequest.questions.map(() => []),
+                      });
                       return true;
                     }
                   : undefined
               }
               onArrowNavigationOverride={
-                showAskQuestionsMock
-                  ? (direction) => askQuestionsMockArrowNavigationRef.current?.(direction) ?? true
+                showAskQuestions
+                  ? (direction) => askQuestionsArrowNavigationRef.current?.(direction) ?? true
                   : undefined
               }
             />

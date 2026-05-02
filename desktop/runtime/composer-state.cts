@@ -18,6 +18,7 @@ import {
 } from "./isolated-settings-manager.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
+import { getNativeAskQuestionsRequest } from "./native-ask-questions-state.cts";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -260,6 +261,7 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
+    nativeAskQuestionsRequest: null,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
     isExtensionCommandRunning: false,
@@ -284,6 +286,7 @@ export async function buildComposerState(
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
+    nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),

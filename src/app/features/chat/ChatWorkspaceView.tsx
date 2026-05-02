@@ -207,6 +207,7 @@ export function ChatWorkspaceView({
                   isExtensionCommandRunning={
                     activeComposerState?.isExtensionCommandRunning ?? false
                   }
+                  nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                   streamingBehaviorPreference={

@@ -20,4 +20,5 @@ export const gitDiffRenderModeDefaultKey = "gitDiffRenderModeDefault";
 export const gitDiffFileTreeDefaultVisibleKey = "gitDiffFileTreeDefaultVisible";
 export const projectDeletionModeKey = "projectDeletionMode";
 export const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
+export const howcodeNativeAskQuestionsKey = "howcodeNativeAskQuestions";
 export const piTuiTakeoverKey = "piTuiTakeover";

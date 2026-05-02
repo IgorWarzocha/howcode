@@ -41,6 +41,7 @@ export type AppSettings = {
   gitDiffFileTreeDefaultVisible: boolean;
   projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
+  howcodeNativeAskQuestions: boolean;
   piTuiTakeover: boolean;
 };
 

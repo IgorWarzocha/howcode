@@ -14,10 +14,13 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
+  getNativeAskQuestionsAnswers,
+  getNativeAskQuestionsRequestId,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { invalidateRuntimeHostSettings } from "../runtime-host/client-bridge.cts";
 import {
   dequeueComposerPrompt,
+  answerNativeAskQuestions,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
@@ -104,6 +107,17 @@ export async function handleComposerDesktopAction(
     case "composer.reload-settings": {
       await invalidateRuntimeHostSettings({
         sessionPath: getComposerRequest(payload).sessionPath,
+      });
+      return handledAction();
+    }
+
+    case "composer.answer-native-questions": {
+      const requestId = getNativeAskQuestionsRequestId(payload);
+      if (!requestId) return handledAction();
+      await answerNativeAskQuestions({
+        ...getComposerRequest(payload),
+        requestId,
+        answers: getNativeAskQuestionsAnswers(payload),
       });
       return handledAction();
     }

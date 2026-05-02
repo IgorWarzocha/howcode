@@ -10,6 +10,8 @@ import {
   listArtifacts,
   updateArtifact,
 } from "../artifact-state-db.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
+import { getSessionNativeExtensions, setSessionNativeExtensions } from "../thread-state-db.cts";
 import {
   getBundledSkillsPath,
   getElectronResourcesPath,
@@ -261,6 +263,21 @@ async function handleHostMainRequest(host: HostConnection, message: RuntimeHostM
   try {
     let result: unknown;
     switch (message.name) {
+      case "getSessionNativeExtensions": {
+        const payload = message.payload as { sessionPath: string };
+        result = getSessionNativeExtensions(payload.sessionPath);
+        break;
+      }
+      case "setSessionNativeExtensions": {
+        const payload = message.payload as { sessionPath: string; enabled: string[] };
+        setSessionNativeExtensions(payload.sessionPath, payload.enabled);
+        result = { ok: true };
+        break;
+      }
+      case "snapshotDefaultNativeExtensions": {
+        result = loadAppSettings().howcodeNativeAskQuestions ? ["askQuestions"] : [];
+        break;
+      }
       case "createArtifact": {
         const payload = message.payload as Parameters<typeof createArtifact>[0];
         result = createArtifact(payload);

@@ -39,6 +39,8 @@ export type DesktopActionPayloadFields = {
   projectName?: string;
   provider?: string;
   queueId?: string;
+  answers?: string[][];
+  requestId?: string;
   queueSnapshotKey?: string;
   push?: boolean;
   queueIndex?: number;
@@ -86,6 +88,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: "gitDiffFileTreeDefaultVisible"; value: boolean }
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
+  | { key: "howcodeNativeAskQuestions"; value: boolean }
   | { key: "piTuiTakeover"; value: boolean };
 
 export type DesktopActionPayloadMap = {
@@ -171,6 +174,12 @@ export type DesktopActionPayloadMap = {
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
   "composer.reload-settings": { projectId?: string | null; sessionPath?: string | null };
+  "composer.answer-native-questions": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    requestId: string;
+    answers: string[][];
+  };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
   "settings.update": DesktopSettingsUpdatePayload;

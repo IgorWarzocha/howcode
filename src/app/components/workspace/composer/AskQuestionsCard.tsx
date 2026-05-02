@@ -1,67 +1,39 @@
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { NativeAskQuestion } from "../../../desktop/types";
 import { cn } from "../../../utils/cn";
 
-type AskQuestionOption = {
-  label: string;
-  description?: string;
-};
-
-type AskQuestion = {
-  id: string;
-  question: string;
-  multiple?: boolean;
-  options: AskQuestionOption[];
-};
-
-type AskQuestionsMockCardProps = {
+type AskQuestionsCardProps = {
   composerDraft: string;
+  questions: NativeAskQuestion[];
   onUseComposerDraft: () => string;
-  onAnswered?: () => void;
+  onAnswered?: (answers: string[][]) => void;
   onDismiss?: () => void;
   registerArrowNavigation?: (handler: ((direction: "previous" | "next") => boolean) | null) => void;
   registerComposerSubmit?: (handler: (() => boolean) | null) => void;
 };
 
-const mockQuestions: AskQuestion[] = [
-  {
-    id: "scope",
-    question: "Which parts should I prioritize first?",
-    multiple: true,
-    options: [
-      { label: "Database state", description: "Session snapshots and persistence." },
-      { label: "Desktop UI", description: "Composer-adjacent question card." },
-      { label: "Pi TUI", description: "Terminal takeover behavior." },
-    ],
-  },
-  {
-    id: "style",
-    question: "How should I handle unclear choices?",
-    options: [
-      { label: "Pick a safe default", description: "Continue without blocking." },
-      { label: "Ask me", description: "Pause and wait for an answer." },
-      { label: "Leave a TODO", description: "Mark the uncertainty in code." },
-    ],
-  },
-];
-
-function getInitialAnswers() {
-  return mockQuestions.map(() => [] as string[]);
+function getInitialAnswers(questions: NativeAskQuestion[]) {
+  return questions.map(() => [] as string[]);
 }
 
-export function AskQuestionsMockCard({
+const askQuestionsCardClass =
+  "relative -left-1 mx-auto grid h-[202px] w-full max-w-[664px] content-start gap-2 overflow-hidden rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
+
+export function AskQuestionsCard({
   composerDraft,
+  questions,
   onUseComposerDraft,
   onAnswered,
   onDismiss,
   registerArrowNavigation,
   registerComposerSubmit,
-}: AskQuestionsMockCardProps) {
+}: AskQuestionsCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [answers, setAnswers] = useState<string[][]>(() => getInitialAnswers());
+  const [answers, setAnswers] = useState<string[][]>(() => getInitialAnswers(questions));
   const [dismissed, setDismissed] = useState(false);
-  const question = mockQuestions[activeIndex];
-  const reviewIndex = mockQuestions.length;
+  const question = questions[activeIndex];
+  const reviewIndex = questions.length;
   const onReview = activeIndex === reviewIndex;
 
   const setQuestionAnswers = (next: string[]) => {
@@ -70,7 +42,7 @@ export function AskQuestionsMockCard({
     );
   };
 
-  const closeMock = () => {
+  const closeCard = () => {
     setDismissed(true);
     onDismiss?.();
   };
@@ -81,8 +53,8 @@ export function AskQuestionsMockCard({
 
   const submitComposerDraft = () => {
     if (onReview) {
-      onAnswered?.();
-      closeMock();
+      onAnswered?.(answers);
+      closeCard();
       return true;
     }
 
@@ -115,13 +87,18 @@ export function AskQuestionsMockCard({
     return () => registerArrowNavigation?.(null);
   }, [registerArrowNavigation, reviewIndex]);
 
-  if (dismissed) {
+  useEffect(() => {
+    setActiveIndex(0);
+    setAnswers(getInitialAnswers(questions));
+  }, [questions]);
+
+  if (dismissed || questions.length === 0) {
     return null;
   }
 
   if (onReview) {
     return (
-      <div className="relative -left-1 mx-auto grid h-[186px] w-full max-w-[664px] content-start gap-2 overflow-hidden rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 py-2.5">
+      <div className={askQuestionsCardClass}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
           <div className="truncate text-[13px] leading-5 text-[color:var(--text)]">
             Review answers
@@ -151,7 +128,7 @@ export function AskQuestionsMockCard({
         </div>
 
         <div className="grid gap-0.5">
-          {mockQuestions.map((item, index) => (
+          {questions.map((item, index) => (
             <button
               key={item.id}
               type="button"
@@ -187,10 +164,13 @@ export function AskQuestionsMockCard({
   };
 
   return (
-    <div className="relative -left-1 mx-auto grid h-[186px] w-full max-w-[664px] content-start gap-2 overflow-hidden rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 py-2.5">
+    <div className={askQuestionsCardClass}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2">
-        <div className="truncate text-[13px] leading-5 text-[color:var(--text)]">
-          {question.question}
+        <div className="min-w-0 truncate text-[13px] leading-5">
+          <span className="text-[color:var(--text)]">{question.question}</span>{" "}
+          <span className="text-[11px] text-[color:var(--muted)]">
+            {question.multiple ? "Pick any that apply" : "Pick one"}
+          </span>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
@@ -265,7 +245,7 @@ export function AskQuestionsMockCard({
                 <button
                   type="button"
                   className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
-                  onClick={closeMock}
+                  onClick={closeCard}
                   aria-label="Dismiss"
                 >
                   <X size={12} />

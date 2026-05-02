@@ -10,6 +10,23 @@ export type ComposerQueuedPrompt = {
   text: string;
 };
 
+export type NativeAskQuestionOption = {
+  label: string;
+  description?: string;
+};
+
+export type NativeAskQuestion = {
+  id: string;
+  question: string;
+  multiple?: boolean;
+  options: NativeAskQuestionOption[];
+};
+
+export type NativeAskQuestionsRequest = {
+  id: string;
+  questions: NativeAskQuestion[];
+};
+
 export type ComposerModel = {
   provider: string;
   id: string;
@@ -30,6 +47,7 @@ export type ComposerState = {
   currentThinkingLevel: ComposerThinkingLevel;
   availableThinkingLevels: ComposerThinkingLevel[];
   queuedPrompts: ComposerQueuedPrompt[];
+  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null;
   contextUsage: ComposerContextUsage | null;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;

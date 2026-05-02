@@ -187,6 +187,13 @@ export function ensureThreadStateSchema(database: Database) {
       value_json TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS session_native_extensions (
+      session_path TEXT PRIMARY KEY,
+      enabled_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   purgeLegacyCheckpointRefsMigration(database);

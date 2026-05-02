@@ -221,6 +221,7 @@ export function CodeWorkspaceView({
                     gitDiffFileTreeDefaultVisible: true,
                     projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
+                    howcodeNativeAskQuestions: false,
                     piTuiTakeover: false,
                   }
                 }
@@ -323,6 +324,7 @@ export function CodeWorkspaceView({
                           gitDiffFileTreeDefaultVisible: true,
                           projectDeletionMode: "pi-only",
                           useAgentsSkillsPaths: false,
+                          howcodeNativeAskQuestions: false,
                           piTuiTakeover: false,
                         }
                       }
@@ -368,6 +370,9 @@ export function CodeWorkspaceView({
                         isCompacting={activeComposerState?.isCompacting ?? false}
                         isExtensionCommandRunning={
                           activeComposerState?.isExtensionCommandRunning ?? false
+                        }
+                        nativeAskQuestionsRequest={
+                          activeComposerState?.nativeAskQuestionsRequest ?? null
                         }
                         thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                         restoredQueuedPrompt={scopedRestoredQueuedPrompt}

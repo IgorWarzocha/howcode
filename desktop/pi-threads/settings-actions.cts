@@ -34,6 +34,7 @@ import {
   setGitDiffFileTreeDefaultVisible,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
+  setHowcodeNativeAskQuestions,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
@@ -129,6 +130,11 @@ export async function handleSettingsDesktopAction(
 
   if (key === "useAgentsSkillsPaths") {
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false);
+    return handledAction();
+  }
+
+  if (key === "howcodeNativeAskQuestions") {
+    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false);
     return handledAction();
   }
 

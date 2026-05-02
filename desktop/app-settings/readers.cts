@@ -19,6 +19,7 @@ import {
   gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -218,6 +219,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(useAgentsSkillsPathsKey) as PreferenceRow | undefined;
+  const howcodeNativeAskQuestionsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(howcodeNativeAskQuestionsKey) as PreferenceRow | undefined;
   const piTuiTakeoverRow = db
     .prepare(
       `
@@ -291,6 +301,8 @@ export function loadAppSettings(): AppSettings {
     projectDeletionMode:
       parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
+    howcodeNativeAskQuestions:
+      parseBooleanPreference(howcodeNativeAskQuestionsRow?.valueJson) ?? false,
     piTuiTakeover: parseBooleanPreference(piTuiTakeoverRow?.valueJson) ?? false,
   };
 }
