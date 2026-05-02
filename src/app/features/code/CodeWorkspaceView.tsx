@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { FolderGit2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
@@ -60,6 +60,9 @@ export function CodeWorkspaceView({
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
+  const [gitOpsFileTreeVisibilityByThread, setGitOpsFileTreeVisibilityByThread] = useState<
+    Record<string, boolean>
+  >({});
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
@@ -80,6 +83,17 @@ export function CodeWorkspaceView({
   const showThreadFooter = state.activeView === "thread";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
+  const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalSessionPath ?? "project"}`;
+  const gitOpsFileTreeVisible =
+    gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
+    shellState?.appSettings.gitDiffFileTreeDefaultVisible ??
+    true;
+  const toggleGitOpsFileTree = () => {
+    setGitOpsFileTreeVisibilityByThread((current) => ({
+      ...current,
+      [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? gitOpsFileTreeVisible),
+    }));
+  };
   const { error: diffLoadError } = useDesktopDiff(
     composerProjectId,
     diffBaseline,
@@ -178,6 +192,7 @@ export function CodeWorkspaceView({
                 selectedCommentJumpKey={selectedDiffCommentJumpKey}
                 diffRenderMode={diffRenderMode}
                 layoutMode="main"
+                showFileTree={gitOpsFileTreeVisible}
               />
             ) : (
               <CodeWorkspaceMainView
@@ -203,6 +218,7 @@ export function CodeWorkspaceView({
                     gitOpsDefaultMode: "commit",
                     gitDiffBaselineDefault: { kind: "head" },
                     gitDiffRenderModeDefault: "stacked",
+                    gitDiffFileTreeDefaultVisible: true,
                     projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
                     piTuiTakeover: false,
@@ -253,7 +269,8 @@ export function CodeWorkspaceView({
           <div className="pointer-events-auto grid gap-2.5">
             <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
               <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
-                {state.activeView === "thread" && !state.takeoverVisible ? (
+                {(state.activeView === "thread" || state.activeView === "gitops") &&
+                !state.takeoverVisible ? (
                   <button
                     type="button"
                     className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[rgba(169,178,215,0.1)] hover:text-[color:var(--text)] hover:opacity-100"
@@ -298,6 +315,7 @@ export function CodeWorkspaceView({
                           gitOpsDefaultMode: "commit",
                           gitDiffBaselineDefault: { kind: "head" },
                           gitDiffRenderModeDefault: "stacked",
+                          gitDiffFileTreeDefaultVisible: true,
                           projectDeletionMode: "pi-only",
                           useAgentsSkillsPaths: false,
                           piTuiTakeover: false,
@@ -393,9 +411,21 @@ export function CodeWorkspaceView({
                 )}
               </div>
               <div className="mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100">
-                {state.activeView === "thread" &&
-                !state.takeoverVisible &&
-                !showDesktopTerminalDrawer ? (
+                {state.activeView === "gitops" && !state.takeoverVisible ? (
+                  <button
+                    type="button"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[rgba(169,178,215,0.1)] hover:text-[color:var(--text)] hover:opacity-100"
+                    onClick={toggleGitOpsFileTree}
+                    aria-label={gitOpsFileTreeVisible ? "Hide changed files" : "Show changed files"}
+                    data-tooltip={
+                      gitOpsFileTreeVisible ? "Hide changed files" : "Show changed files"
+                    }
+                  >
+                    <FolderGit2 size={15} />
+                  </button>
+                ) : state.activeView === "thread" &&
+                  !state.takeoverVisible &&
+                  !showDesktopTerminalDrawer ? (
                   <DesktopComposerStatus
                     contextUsage={activeComposerState?.contextUsage ?? null}
                     model={activeComposerState?.currentModel ?? null}

@@ -17,6 +17,7 @@ export const initializeGitOnProjectCreateKey = "initializeGitOnProjectCreate";
 export const gitOpsDefaultModeKey = "gitOpsDefaultMode";
 export const gitDiffBaselineDefaultKey = "gitDiffBaselineDefault";
 export const gitDiffRenderModeDefaultKey = "gitDiffRenderModeDefault";
+export const gitDiffFileTreeDefaultVisibleKey = "gitDiffFileTreeDefaultVisible";
 export const projectDeletionModeKey = "projectDeletionMode";
 export const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 export const piTuiTakeoverKey = "piTuiTakeover";

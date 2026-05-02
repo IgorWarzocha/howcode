@@ -43,6 +43,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "gitOpsDefaultMode" &&
     payload.key !== "gitDiffBaselineDefault" &&
     payload.key !== "gitDiffRenderModeDefault" &&
+    payload.key !== "gitDiffFileTreeDefaultVisible" &&
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "piTuiTakeover"
@@ -209,6 +210,11 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.gitDiffRenderModeDefault;
 
+  const nextGitDiffFileTreeDefaultVisible =
+    payload.key === "gitDiffFileTreeDefaultVisible" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.gitDiffFileTreeDefaultVisible;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
@@ -242,6 +248,7 @@ export function getOptimisticallyUpdatedShellState(
       gitOpsDefaultMode: nextGitOpsDefaultMode,
       gitDiffBaselineDefault: nextGitDiffBaselineDefault,
       gitDiffRenderModeDefault: nextGitDiffRenderModeDefault,
+      gitDiffFileTreeDefaultVisible: nextGitDiffFileTreeDefaultVisible,
       projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       piTuiTakeover: nextPiTuiTakeover,

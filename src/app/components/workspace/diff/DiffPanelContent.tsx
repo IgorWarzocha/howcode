@@ -33,6 +33,7 @@ type DiffPanelContentProps = {
   selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
+  showFileTree?: boolean;
 };
 
 export function DiffPanelContent({
@@ -44,6 +45,7 @@ export function DiffPanelContent({
   selectedCommentJumpKey,
   diffRenderMode,
   layoutMode = "split",
+  showFileTree = true,
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([]);
@@ -229,11 +231,20 @@ export function DiffPanelContent({
                     virtualItems={fileListVirtualizer.getVirtualItems()}
                   />
                 </div>
-                <DiffChangedFilesTree
-                  files={renderableFiles}
-                  selectedPaths={focusedFilePaths}
-                  onSelectedPathsChange={setFocusedFilePaths}
-                />
+                <div
+                  className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                  style={{
+                    width: showFileTree ? "min(28rem, calc(100% - 2.5rem))" : 0,
+                    opacity: showFileTree ? 1 : 0,
+                  }}
+                  aria-hidden={!showFileTree}
+                >
+                  <DiffChangedFilesTree
+                    files={renderableFiles}
+                    selectedPaths={focusedFilePaths}
+                    onSelectedPathsChange={setFocusedFilePaths}
+                  />
+                </div>
               </div>
             ) : (
               <div className="h-full overflow-auto p-3">

@@ -132,7 +132,7 @@ export function DiffChangedFilesTree({
   };
 
   return (
-    <div className="flex h-full min-h-0 w-[min(28rem,calc(100%-2.5rem))] shrink-0 flex-col border-l border-[color:var(--border)] bg-[color:var(--workspace)]">
+    <div className="flex h-full min-h-0 w-full flex-col border-l border-[color:var(--border)] bg-[color:var(--workspace)]">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[color:var(--border)] px-2.5">
         <div className="min-w-0 flex-1 truncate pl-2.5 text-[12px] font-medium text-[color:var(--text)]">
           Changed

@@ -269,6 +269,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "gitOpsDefaultMode" ||
     payload.key === "gitDiffBaselineDefault" ||
     payload.key === "gitDiffRenderModeDefault" ||
+    payload.key === "gitDiffFileTreeDefaultVisible" ||
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "piTuiTakeover"
