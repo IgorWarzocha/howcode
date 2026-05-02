@@ -8,6 +8,7 @@ import { cn } from "../../../utils/cn";
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from "../composer/diff-baseline";
 import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
+import { DiffChangedFilesTree } from "./DiffChangedFilesTree";
 import { DiffPanelFileList } from "./DiffPanelFileList";
 import {
   DIFF_FILE_ESTIMATED_FILE_GAP,
@@ -17,6 +18,7 @@ import {
   estimateFileDiffHeight,
   getRenderablePatch,
   orderRenderableFiles,
+  resolveFileDiffPath,
 } from "./diff-panel-content.helpers";
 import { useDiffCommentDrafting } from "./useDiffCommentDrafting";
 import { useDiffPanelCommentState } from "./useDiffPanelCommentState";
@@ -44,6 +46,7 @@ export function DiffPanelContent({
   layoutMode = "split",
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
+  const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
   const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo);
@@ -62,6 +65,26 @@ export function DiffPanelContent({
         : [],
     [renderablePatch],
   );
+  const selectedFilePathSet = useMemo(() => new Set(focusedFilePaths), [focusedFilePaths]);
+  const hasFocusedFiles = focusedFilePaths.length > 0;
+  const visibleRenderableFiles = useMemo(() => {
+    if (!hasFocusedFiles) {
+      return renderableFiles;
+    }
+
+    const isVisiblePath = (filePath: string) =>
+      selectedFilePathSet.has(filePath) ||
+      focusedFilePaths.some((selectedPath) => filePath.startsWith(`${selectedPath}/`));
+    const selectedFileStillVisible = selectedFilePath ? isVisiblePath(selectedFilePath) : true;
+
+    return renderableFiles.filter((fileDiff) => {
+      const filePath = resolveFileDiffPath(fileDiff);
+      return (
+        isVisiblePath(filePath) || (!selectedFileStillVisible && filePath === selectedFilePath)
+      );
+    });
+  }, [focusedFilePaths, hasFocusedFiles, renderableFiles, selectedFilePath, selectedFilePathSet]);
+
   const {
     annotationCountByFile,
     commentAnnotationsByFile,
@@ -94,7 +117,7 @@ export function DiffPanelContent({
 
   const estimatedFileHeights = useMemo(
     () =>
-      renderableFiles.map((fileDiff) => {
+      visibleRenderableFiles.map((fileDiff) => {
         const fileKey = buildFileDiffRenderKey(fileDiff);
         return estimateFileDiffHeight({
           fileDiff,
@@ -103,16 +126,16 @@ export function DiffPanelContent({
           annotationCount: annotationCountByFile.get(fileKey) ?? 0,
         });
       }),
-    [annotationCountByFile, collapsedFiles, diffRenderMode, renderableFiles],
+    [annotationCountByFile, collapsedFiles, diffRenderMode, visibleRenderableFiles],
   );
 
   const getVirtualItemKey = useCallback(
-    (index: number) => buildFileDiffRenderKey(renderableFiles[index] as FileDiffMetadata),
-    [renderableFiles],
+    (index: number) => buildFileDiffRenderKey(visibleRenderableFiles[index] as FileDiffMetadata),
+    [visibleRenderableFiles],
   );
 
   const fileListVirtualizer = useVirtualizer({
-    count: renderableFiles.length,
+    count: visibleRenderableFiles.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: (index) =>
       estimatedFileHeights[index] ??
@@ -145,7 +168,7 @@ export function DiffPanelContent({
     draftCardRef,
     draftTarget,
     fileListVirtualizer,
-    renderableFiles,
+    renderableFiles: visibleRenderableFiles,
     savedComments,
     scrollContainerRef,
     selectedCommentId,
@@ -183,26 +206,33 @@ export function DiffPanelContent({
                 </div>
               </div>
             ) : renderablePatch.kind === "files" ? (
-              <div
-                ref={scrollContainerRef}
-                className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
-              >
-                <DiffPanelFileList
-                  collapsedFiles={collapsedFiles}
-                  commentAnnotationsByFile={commentAnnotationsByFile}
-                  diffRenderMode={diffRenderMode}
-                  draftSelectedLines={draftSelectedLines}
-                  getFileInteractionHandlers={getFileInteractionHandlers}
-                  getSelectedLinesForFile={getSelectedLinesForFile}
-                  handleFilePointerDownCapture={handleFilePointerDownCapture}
-                  measureElement={fileListVirtualizer.measureElement}
-                  onOpenDraftComment={openDraftComment}
-                  onToggleFileCollapsed={toggleFileCollapsed}
-                  projectId={projectId}
-                  renderCommentAnnotation={renderCommentAnnotation}
-                  renderableFiles={renderableFiles}
-                  totalSize={fileListVirtualizer.getTotalSize()}
-                  virtualItems={fileListVirtualizer.getVirtualItems()}
+              <div className="flex h-full min-h-0">
+                <div
+                  ref={scrollContainerRef}
+                  className="min-h-0 min-w-0 flex-1 overflow-auto [overflow-anchor:none]"
+                >
+                  <DiffPanelFileList
+                    collapsedFiles={collapsedFiles}
+                    commentAnnotationsByFile={commentAnnotationsByFile}
+                    diffRenderMode={diffRenderMode}
+                    draftSelectedLines={draftSelectedLines}
+                    getFileInteractionHandlers={getFileInteractionHandlers}
+                    getSelectedLinesForFile={getSelectedLinesForFile}
+                    handleFilePointerDownCapture={handleFilePointerDownCapture}
+                    measureElement={fileListVirtualizer.measureElement}
+                    onOpenDraftComment={openDraftComment}
+                    onToggleFileCollapsed={toggleFileCollapsed}
+                    projectId={projectId}
+                    renderCommentAnnotation={renderCommentAnnotation}
+                    renderableFiles={visibleRenderableFiles}
+                    totalSize={fileListVirtualizer.getTotalSize()}
+                    virtualItems={fileListVirtualizer.getVirtualItems()}
+                  />
+                </div>
+                <DiffChangedFilesTree
+                  files={renderableFiles}
+                  selectedPaths={focusedFilePaths}
+                  onSelectedPathsChange={setFocusedFilePaths}
                 />
               </div>
             ) : (
