@@ -91,7 +91,13 @@ async function getEnabledNativeExtensionsForRuntime(options: {
   const sessionPath = options.sessionManager?.getSessionFile?.() ?? null;
   if (sessionPath) {
     const enabled = await invokeMainRequest("getSessionNativeExtensions", { sessionPath });
-    return enabled ?? [];
+    if (enabled) return enabled;
+    const defaultEnabled = await invokeMainRequest("snapshotDefaultNativeExtensions", {});
+    await invokeMainRequest("setSessionNativeExtensions", {
+      sessionPath,
+      enabled: defaultEnabled,
+    });
+    return defaultEnabled;
   }
 
   return await invokeMainRequest("snapshotDefaultNativeExtensions", {});

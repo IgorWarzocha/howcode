@@ -179,6 +179,7 @@ export function AskQuestionsCard({
       );
       return;
     }
+    setQuestionCustomAnswer("");
     setQuestionAnswers([label]);
   };
 

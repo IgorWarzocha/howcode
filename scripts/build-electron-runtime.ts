@@ -101,7 +101,7 @@ async function runBuild() {
     console.log("Watching Electron runtime bundles...");
     void (async () => {
       for await (const event of watch(path.dirname(nativeAskQuestionsSource))) {
-        if (event.filename === path.basename(nativeAskQuestionsSource)) {
+        if (!event.filename || event.filename === path.basename(nativeAskQuestionsSource)) {
           await copyNativeExtensionAssets();
           console.log("Copied native extension assets.");
         }
