@@ -52,6 +52,7 @@ export function useAppShellEffects({
   setComposerState,
   setLiveThreadData,
   setProjectGitState,
+  setProjectGitLoading,
   setThreadHistoryCompactions,
 }: {
   projects: Project[];
@@ -77,6 +78,7 @@ export function useAppShellEffects({
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  setProjectGitLoading: Dispatch<SetStateAction<boolean>>;
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>;
 }) {
   useProjectShellSync({
@@ -101,6 +103,7 @@ export function useAppShellEffects({
     loadProjectGitState,
     setComposerState,
     setProjectGitState,
+    setProjectGitLoading,
   });
 
   useWatchedSessionSync(workspaceState);

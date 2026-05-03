@@ -17,6 +17,7 @@ type UseComposerGitStateSyncInput = {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  setProjectGitLoading: Dispatch<SetStateAction<boolean>>;
 };
 
 export function useComposerGitStateSync({
@@ -29,6 +30,7 @@ export function useComposerGitStateSync({
   loadProjectGitState,
   setComposerState,
   setProjectGitState,
+  setProjectGitLoading,
 }: UseComposerGitStateSyncInput) {
   useEffect(() => {
     if (!shellComposerState) {
@@ -97,17 +99,25 @@ export function useComposerGitStateSync({
   useEffect(() => {
     if (!composerProjectId) {
       setProjectGitState(null);
+      setProjectGitLoading(false);
       return;
     }
 
     setProjectGitState(null);
+    setProjectGitLoading(true);
 
     let cancelled = false;
 
     const syncProjectGitState = async () => {
-      const nextProjectGitState = await loadProjectGitState(composerProjectId);
-      if (!cancelled) {
-        setProjectGitState(nextProjectGitState);
+      try {
+        const nextProjectGitState = await loadProjectGitState(composerProjectId);
+        if (!cancelled) {
+          setProjectGitState(nextProjectGitState);
+        }
+      } finally {
+        if (!cancelled) {
+          setProjectGitLoading(false);
+        }
       }
     };
 
@@ -116,7 +126,7 @@ export function useComposerGitStateSync({
     return () => {
       cancelled = true;
     };
-  }, [composerProjectId, loadProjectGitState, setProjectGitState]);
+  }, [composerProjectId, loadProjectGitState, setProjectGitLoading, setProjectGitState]);
 
   useEffect(() => {
     if (workspaceState.activeView !== "gitops" || !composerProjectId) {
@@ -124,6 +134,7 @@ export function useComposerGitStateSync({
     }
 
     let cancelled = false;
+    setProjectGitLoading(true);
 
     void loadProjectGitState(composerProjectId)
       .then((nextProjectGitState) => {
@@ -133,10 +144,21 @@ export function useComposerGitStateSync({
       })
       .catch((error) => {
         console.warn("Failed to refresh project git state for the diff panel.", error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setProjectGitLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [composerProjectId, loadProjectGitState, setProjectGitState, workspaceState.activeView]);
+  }, [
+    composerProjectId,
+    loadProjectGitState,
+    setProjectGitLoading,
+    setProjectGitState,
+    workspaceState.activeView,
+  ]);
 }
