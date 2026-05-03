@@ -86,7 +86,12 @@ jobs:
           fi
 
       - name: Build stable desktop release
-        run: bun run build:release
+        shell: bash
+        run: |
+          if [ "${RUNNER_OS}" = "macOS" ]; then
+            ulimit -n 65536 || ulimit -n 10240 || true
+          fi
+          bun run build:release
 
       - name: Build launcher archives
         run: bun run build:launcher-artifacts
