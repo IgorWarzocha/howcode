@@ -45,6 +45,7 @@ type CodeWorkspaceMainViewProps = {
   selectedProjectId: string;
   workspaceContentClass: string;
   threadData: ThreadData | null;
+  threadLoading?: boolean;
   composerLayoutVersion: number;
   composerOverlayHeight: number;
   onAction: DesktopActionInvoker;
@@ -80,6 +81,7 @@ export function CodeWorkspaceMainView({
   selectedProjectId,
   workspaceContentClass,
   threadData,
+  threadLoading = false,
   composerLayoutVersion,
   composerOverlayHeight,
   onAction,
@@ -103,6 +105,7 @@ export function CodeWorkspaceMainView({
         isCompacting={threadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
+        loading={threadLoading}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     );

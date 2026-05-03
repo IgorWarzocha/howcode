@@ -1,4 +1,5 @@
 import { ThreadTimeline } from "../../components/workspace/thread/ThreadTimeline";
+import { ThreadTimelineSkeleton } from "../../components/workspace/thread/ThreadTimelineSkeleton";
 import type { Message } from "../../types";
 
 type ChatViewProps = {
@@ -8,6 +9,7 @@ type ChatViewProps = {
   isCompacting: boolean;
   composerLayoutVersion: number;
   composerOverlayHeight?: number;
+  loading?: boolean;
   onLoadEarlierMessages: () => void;
 };
 
@@ -18,8 +20,13 @@ export function ChatView({
   isCompacting,
   composerLayoutVersion,
   composerOverlayHeight = 0,
+  loading = false,
   onLoadEarlierMessages,
 }: ChatViewProps) {
+  if (loading) {
+    return <ThreadTimelineSkeleton composerOverlayHeight={composerOverlayHeight} />;
+  }
+
   if (messages.length === 0) {
     return <div className="h-full" />;
   }

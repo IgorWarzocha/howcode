@@ -167,6 +167,9 @@ export function CodeWorkspaceView({
     state.activeView === "thread" && activeThreadData && !threadContentVisible
       ? { ...activeThreadData, messages: [] }
       : activeThreadData;
+  const threadTimelineLoading =
+    state.activeView === "thread" &&
+    (controller.activeThreadLoading || (hasThreadConversation && !threadContentVisible));
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -241,6 +244,7 @@ export function CodeWorkspaceView({
                 selectedProjectId={controller.state.selectedProjectId}
                 workspaceContentClass={workspaceContentClass}
                 threadData={visibleThreadData}
+                threadLoading={threadTimelineLoading}
                 composerLayoutVersion={composerLayoutVersion}
                 composerOverlayHeight={composerOverlayHeight}
                 onAction={handleAction}

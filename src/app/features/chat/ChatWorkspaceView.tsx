@@ -155,6 +155,9 @@ export function ChatWorkspaceView({
               isCompacting={activeThreadData?.isCompacting ?? false}
               composerLayoutVersion={composerLayoutVersion}
               composerOverlayHeight={composerOverlayHeight}
+              loading={
+                controller.activeThreadLoading || (hasConversation && !conversationContentVisible)
+              }
               onLoadEarlierMessages={handleLoadEarlierMessages}
             />
           </main>

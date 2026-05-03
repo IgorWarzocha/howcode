@@ -55,10 +55,17 @@ export function useAppShellController() {
     threadHistoryCompactions,
   );
   const selectedPersistedSessionPath = getPersistedSessionPath(state.selectedSessionPath);
+  const threadDataMatchesSelection = threadData?.sessionPath === selectedPersistedSessionPath;
+  const activeThreadLoading = Boolean(
+    selectedPersistedSessionPath &&
+      !(liveThreadData?.sessionPath === selectedPersistedSessionPath || threadDataMatchesSelection),
+  );
   const effectiveThreadData =
     threadHistoryCompactions === 0 && liveThreadData?.sessionPath === selectedPersistedSessionPath
       ? liveThreadData
-      : threadData;
+      : threadDataMatchesSelection
+        ? threadData
+        : null;
   const inboxQuery = useDesktopInbox();
   const inboxThreads = inboxQuery.data ?? [];
   const selectedInboxThread = useMemo(
@@ -192,6 +199,7 @@ export function useAppShellController() {
   return {
     activeComposerState,
     activeThreadData,
+    activeThreadLoading,
     archivedThreads,
     collapsedProjectIds,
     composerProjectId,
