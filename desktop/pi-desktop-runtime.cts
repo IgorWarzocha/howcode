@@ -231,3 +231,9 @@ export function dequeueComposerPrompt(
 ) {
   return invokeRuntimeHost("dequeueComposerPrompt", withComposerModeSettings(request));
 }
+
+export function answerNativeAskQuestions(
+  request: ComposerStateRequest & { requestId: string; answers: string[][] | null },
+) {
+  return invokeRuntimeHost("answerNativeAskQuestions", withComposerModeSettings(request));
+}

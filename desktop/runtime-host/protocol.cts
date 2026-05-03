@@ -71,6 +71,10 @@ export type RuntimeHostRequestMap = {
     queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
+  answerNativeAskQuestions: ComposerStateRequest & {
+    requestId: string;
+    answers: string[][] | null;
+  };
 };
 
 export type RuntimeHostResponseMap = {
@@ -104,9 +108,13 @@ export type RuntimeHostResponseMap = {
   sendComposerPrompt: "sent" | "stopped";
   stopComposerRun: { ok: true };
   dequeueComposerPrompt: string | null;
+  answerNativeAskQuestions: { ok: boolean };
 };
 
 export type RuntimeHostMainRequestMap = {
+  getSessionNativeExtensions: { sessionPath: string };
+  setSessionNativeExtensions: { sessionPath: string; enabled: string[] };
+  snapshotDefaultNativeExtensions: Record<string, never>;
   createArtifact: {
     conversationId: string;
     slug: string;
@@ -124,6 +132,9 @@ export type RuntimeHostMainRequestMap = {
 };
 
 export type RuntimeHostMainResponseMap = {
+  getSessionNativeExtensions: string[] | null;
+  setSessionNativeExtensions: { ok: true };
+  snapshotDefaultNativeExtensions: string[];
   createArtifact: Artifact;
   updateArtifact: Artifact;
   editArtifact: Artifact;

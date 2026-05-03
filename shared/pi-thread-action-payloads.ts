@@ -272,9 +272,29 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "gitDiffFileTreeDefaultVisible" ||
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
+    payload.key === "howcodeNativeAskQuestions" ||
     payload.key === "piTuiTakeover"
     ? (payload.key as keyof AppSettings)
     : null;
+}
+
+export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInput) {
+  return typeof payload.requestId === "string" ? payload.requestId : null;
+}
+
+export function getNativeAskQuestionsAnswers(
+  payload: DesktopActionPayloadInput,
+): string[][] | null {
+  if (payload.answers === null) return null;
+  if (!Array.isArray(payload.answers)) return [];
+  return payload.answers.map((answer) =>
+    Array.isArray(answer)
+      ? answer
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [],
+  );
 }
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {

@@ -34,6 +34,7 @@ export const desktopActions = [
   "composer.stop",
   "composer.dequeue",
   "composer.reload-settings",
+  "composer.answer-native-questions",
   "inbox.mark-read",
   "inbox.dismiss",
   "settings.update",

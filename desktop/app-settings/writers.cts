@@ -28,6 +28,7 @@ import {
   gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -240,6 +241,10 @@ export function setProjectDeletionMode(mode: ProjectDeletionMode) {
 
 export function setUseAgentsSkillsPaths(enabled: boolean) {
   writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled));
+}
+
+export function setHowcodeNativeAskQuestions(enabled: boolean) {
+  writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled));
 }
 
 export function setPiTuiTakeover(enabled: boolean) {

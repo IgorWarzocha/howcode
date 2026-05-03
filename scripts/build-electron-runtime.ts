@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, rm, watch } from "node:fs/promises";
 import path from "node:path";
 
 const isWatchMode = process.argv.includes("--watch");
@@ -53,6 +53,24 @@ async function prepareBuildDirectories() {
   await mkdir(path.join(buildRoot, "desktop"), { recursive: true });
 }
 
+const nativeAskQuestionsSource = path.join(
+  projectRoot,
+  "desktop",
+  "native-extensions",
+  "howcode-native-ask-questions.mjs",
+);
+const nativeAskQuestionsOutput = path.join(
+  buildRoot,
+  "desktop",
+  "native-extensions",
+  "howcode-native-ask-questions.mjs",
+);
+
+async function copyNativeExtensionAssets() {
+  await mkdir(path.dirname(nativeAskQuestionsOutput), { recursive: true });
+  await copyFile(nativeAskQuestionsSource, nativeAskQuestionsOutput);
+}
+
 async function runBuild() {
   await prepareBuildDirectories();
 
@@ -77,8 +95,18 @@ async function runBuild() {
     console.log(`Built ${buildTargets[index].label} (${build.outputs.length} output(s)).`);
   }
 
+  await copyNativeExtensionAssets();
+
   if (isWatchMode) {
     console.log("Watching Electron runtime bundles...");
+    void (async () => {
+      for await (const event of watch(path.dirname(nativeAskQuestionsSource))) {
+        if (!event.filename || event.filename === path.basename(nativeAskQuestionsSource)) {
+          await copyNativeExtensionAssets();
+          console.log("Copied native extension assets.");
+        }
+      }
+    })();
     await new Promise(() => {
       setInterval(() => {}, 1 << 30);
     });

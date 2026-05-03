@@ -6,6 +6,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
+  NativeAskQuestionsRequest,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
@@ -23,6 +24,7 @@ export type ComposerProps = {
   replyActivityKey: string;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
+  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null;
   thinkingLevel: ComposerThinkingLevel;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -52,6 +54,7 @@ export type ComposerProps = {
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
   onToggleArtifacts?: () => void;
+  onOverlayHeightChange?: (height: number) => void;
   showTerminalControls?: boolean;
   artifactsVisible?: boolean;
   artifactsAvailable?: boolean;

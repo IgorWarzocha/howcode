@@ -49,6 +49,20 @@ export function buildCommonSettingsDescriptors({
       ),
     },
     {
+      id: "common.howcode-native-ask-questions",
+      category: "pi-runtime",
+      title: "Ask questions tool",
+      description: "Let Pi pause and ask structured questions in Howcode sessions.",
+      keywords: "native extensions ask questions tool clarify",
+      render: () => (
+        <ToggleBox
+          checked={appSettings.howcodeNativeAskQuestions}
+          label="Ask questions tool"
+          onClick={controller.toggleHowcodeNativeAskQuestions}
+        />
+      ),
+    },
+    {
       id: "common.pi-tui-takeover",
       category: "pi-runtime",
       title: "Open in TUI",

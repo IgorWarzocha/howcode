@@ -46,6 +46,7 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "gitDiffFileTreeDefaultVisible" &&
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
+    payload.key !== "howcodeNativeAskQuestions" &&
     payload.key !== "piTuiTakeover"
   ) {
     return currentState;
@@ -220,6 +221,11 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.useAgentsSkillsPaths;
 
+  const nextHowcodeNativeAskQuestions =
+    payload.key === "howcodeNativeAskQuestions" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.howcodeNativeAskQuestions;
+
   const nextPiTuiTakeover =
     payload.key === "piTuiTakeover" && typeof payload.value === "boolean"
       ? payload.value
@@ -251,6 +257,7 @@ export function getOptimisticallyUpdatedShellState(
       gitDiffFileTreeDefaultVisible: nextGitDiffFileTreeDefaultVisible,
       projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
+      howcodeNativeAskQuestions: nextHowcodeNativeAskQuestions,
       piTuiTakeover: nextPiTuiTakeover,
     },
   } satisfies ShellState;

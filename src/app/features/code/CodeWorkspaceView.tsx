@@ -64,6 +64,7 @@ export function CodeWorkspaceView({
     Record<string, boolean>
   >({});
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
+  const [composerOverlayHeight, setComposerOverlayHeight] = useState(0);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
@@ -221,6 +222,7 @@ export function CodeWorkspaceView({
                     gitDiffFileTreeDefaultVisible: true,
                     projectDeletionMode: "pi-only",
                     useAgentsSkillsPaths: false,
+                    howcodeNativeAskQuestions: false,
                     piTuiTakeover: false,
                   }
                 }
@@ -239,6 +241,7 @@ export function CodeWorkspaceView({
                 workspaceContentClass={workspaceContentClass}
                 threadData={visibleThreadData}
                 composerLayoutVersion={composerLayoutVersion}
+                composerOverlayHeight={composerOverlayHeight}
                 onAction={handleAction}
                 onDismissInboxThread={controller.handleDismissInboxThread}
                 onListAttachmentEntries={listComposerAttachmentEntries}
@@ -323,6 +326,7 @@ export function CodeWorkspaceView({
                           gitDiffFileTreeDefaultVisible: true,
                           projectDeletionMode: "pi-only",
                           useAgentsSkillsPaths: false,
+                          howcodeNativeAskQuestions: false,
                           piTuiTakeover: false,
                         }
                       }
@@ -369,6 +373,9 @@ export function CodeWorkspaceView({
                         isExtensionCommandRunning={
                           activeComposerState?.isExtensionCommandRunning ?? false
                         }
+                        nativeAskQuestionsRequest={
+                          activeComposerState?.nativeAskQuestionsRequest ?? null
+                        }
                         thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                         restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                         streamingBehaviorPreference={
@@ -400,6 +407,7 @@ export function CodeWorkspaceView({
                         onSelectDiffComment={handleSelectDiffComment}
                         promptResetKey={composerPromptResetKey}
                         onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                        onOverlayHeightChange={setComposerOverlayHeight}
                         mainViewRef={mainViewRef}
                         workspaceFooterRef={footerRef}
                         onOpenTakeoverTerminal={handleShowTakeoverTerminal}

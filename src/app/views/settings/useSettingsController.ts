@@ -261,6 +261,11 @@ export function useSettingsController({
         key: "piTuiTakeover",
         value: !appSettings.piTuiTakeover,
       }),
+    toggleHowcodeNativeAskQuestions: () =>
+      void onAction("settings.update", {
+        key: "howcodeNativeAskQuestions",
+        value: !appSettings.howcodeNativeAskQuestions,
+      }),
     updateFavoriteFolders,
     handleImportProjectUi,
     handleClearClipboardImages,

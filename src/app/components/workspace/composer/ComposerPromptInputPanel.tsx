@@ -46,6 +46,9 @@ type ComposerPromptInputPanelProps = {
   onAction: DesktopActionInvoker;
   onLayoutChange?: () => void;
   onOpenSettingsView: () => void;
+  onArrowNavigationOverride?: (direction: "previous" | "next") => boolean;
+  onEscapeOverride?: () => boolean;
+  onSubmitOverride?: () => boolean;
   openPickerDirectory: Parameters<typeof ComposerFilePicker>[0]["onOpenDirectory"];
   openPickerRoot: Parameters<typeof ComposerFilePicker>[0]["onOpenRoot"];
   removeAttachment: (path: string) => void;
@@ -81,6 +84,9 @@ export function ComposerPromptInputPanel({
   onAction,
   onLayoutChange,
   onOpenSettingsView,
+  onArrowNavigationOverride,
+  onEscapeOverride,
+  onSubmitOverride,
   openPickerDirectory,
   openPickerRoot,
   removeAttachment,
@@ -185,19 +191,56 @@ export function ComposerPromptInputPanel({
                     return;
                   }
 
-                  if (slashCommands.handleKeyDown(event)) {
-                    return;
-                  }
-
                   if (event.key === "Escape" && (dictationActive || dictationTranscribing)) {
                     event.preventDefault();
                     void cancelDictation();
                     return;
                   }
 
+                  if (event.key === "Escape") {
+                    if (onEscapeOverride?.()) {
+                      event.preventDefault();
+                      return;
+                    }
+                  }
+
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
+                    if (onSubmitOverride?.()) {
+                      return;
+                    }
                     slashCommands.submit();
+                    return;
+                  }
+
+                  if (event.key === "ArrowLeft") {
+                    if (
+                      event.currentTarget.selectionStart !== event.currentTarget.selectionEnd ||
+                      event.currentTarget.selectionStart > 0
+                    ) {
+                      return;
+                    }
+                    if (onArrowNavigationOverride?.("previous")) {
+                      event.preventDefault();
+                      return;
+                    }
+                  }
+
+                  if (event.key === "ArrowRight") {
+                    if (
+                      event.currentTarget.selectionStart !== event.currentTarget.selectionEnd ||
+                      event.currentTarget.selectionEnd < event.currentTarget.value.length
+                    ) {
+                      return;
+                    }
+                    if (onArrowNavigationOverride?.("next")) {
+                      event.preventDefault();
+                      return;
+                    }
+                  }
+
+                  if (slashCommands.handleKeyDown(event)) {
+                    return;
                   }
                 }}
                 onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {

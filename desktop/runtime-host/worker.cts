@@ -7,6 +7,7 @@ import type {
 import { handleMainResponse } from "./main-request-client.cts";
 import {
   dequeueComposerPrompt,
+  answerNativeAskQuestions,
   disposeAllRuntimeHosts,
   getComposerSlashCommands,
   generateGitCommitMessage,
@@ -181,6 +182,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"dequeueComposerPrompt">["payload"];
       return (await dequeueComposerPrompt(payload)) as RuntimeHostResponseMap[TName];
+    }
+    case "answerNativeAskQuestions": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"answerNativeAskQuestions">["payload"];
+      return (await answerNativeAskQuestions(payload)) as RuntimeHostResponseMap[TName];
     }
     default:
       throw new Error(

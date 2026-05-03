@@ -54,6 +54,7 @@ export function ChatWorkspaceView({
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
+  const [composerOverlayHeight, setComposerOverlayHeight] = useState(0);
   const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
     Record<string, boolean>
   >({});
@@ -153,6 +154,7 @@ export function ChatWorkspaceView({
               isStreaming={activeThreadData?.isStreaming ?? false}
               isCompacting={activeThreadData?.isCompacting ?? false}
               composerLayoutVersion={composerLayoutVersion}
+              composerOverlayHeight={composerOverlayHeight}
               onLoadEarlierMessages={handleLoadEarlierMessages}
             />
           </main>
@@ -207,6 +209,7 @@ export function ChatWorkspaceView({
                   isExtensionCommandRunning={
                     activeComposerState?.isExtensionCommandRunning ?? false
                   }
+                  nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   restoredQueuedPrompt={scopedRestoredQueuedPrompt}
                   streamingBehaviorPreference={
@@ -239,6 +242,7 @@ export function ChatWorkspaceView({
                   onSelectDiffComment={() => {}}
                   promptResetKey={composerPromptResetKey}
                   onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                  onOverlayHeightChange={setComposerOverlayHeight}
                   mainViewRef={mainViewRef}
                   workspaceFooterRef={footerRef}
                   onOpenTakeoverTerminal={handleShowTakeoverTerminal}

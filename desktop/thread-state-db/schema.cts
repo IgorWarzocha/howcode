@@ -187,6 +187,34 @@ export function ensureThreadStateSchema(database: Database) {
       value_json TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS chat_groups (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      order_index INTEGER,
+      collapsed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_threads (
+      session_path TEXT PRIMARY KEY,
+      group_id TEXT,
+      order_index INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS chat_groups_order_idx ON chat_groups(order_index, name COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS chat_threads_group_idx ON chat_threads(group_id, order_index);
+
+    CREATE TABLE IF NOT EXISTS session_native_extensions (
+      session_path TEXT PRIMARY KEY,
+      enabled_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   purgeLegacyCheckpointRefsMigration(database);
