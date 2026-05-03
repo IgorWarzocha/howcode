@@ -8,6 +8,7 @@ import type { Project, View } from "../../../types";
 import { cn } from "../../../utils/cn";
 import { IconButton } from "../../common/IconButton";
 import { ProjectTree } from "../ProjectTree";
+import { SidebarProjectsSkeleton } from "../SidebarSkeletons";
 import { SidebarProjectsCreatePopover } from "./SidebarProjectsCreatePopover";
 import {
   type SidebarProjectsFilterMode,
@@ -26,6 +27,7 @@ type SidebarProjectsSectionProps = {
   protectedProjectId?: string | null;
   projectScopeLockActive: boolean;
   projects: Project[];
+  loading?: boolean;
   selectedProjectId: string;
   selectedThreadId: string | null;
   terminalRunningProjectIds: ReadonlySet<string>;
@@ -47,6 +49,7 @@ export function SidebarProjectsSection({
   protectedProjectId = null,
   projectScopeLockActive,
   projects,
+  loading = false,
   selectedProjectId,
   selectedThreadId,
   terminalRunningProjectIds,
@@ -322,7 +325,9 @@ export function SidebarProjectsSection({
         ) : null}
       </div>
 
-      {visibleProjects.length > 0 || pendingProject ? (
+      {loading && visibleProjects.length === 0 && !pendingProject ? (
+        <SidebarProjectsSkeleton />
+      ) : visibleProjects.length > 0 || pendingProject ? (
         <>
           {pendingProject ? (
             <div className="sidebar-tree-item" aria-live="polite">

@@ -36,6 +36,7 @@ export function useAppShellController() {
   const { toast, showToast } = useToast();
   const {
     shellState,
+    shellLoading,
     loadArchivedThreads,
     loadComposerState,
     listComposerAttachmentEntries,
@@ -199,6 +200,7 @@ export function useAppShellController() {
     handleAction,
     ...commands,
     inboxThreads,
+    inboxLoading: inboxQuery.isLoading,
     handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     handleLoadProjectThreads: loadProjectThreads,
@@ -209,6 +211,7 @@ export function useAppShellController() {
     projects,
     projectGitState,
     shellState,
+    shellLoading,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
@@ -216,6 +219,7 @@ export function useAppShellController() {
     terminalRunningSessionPaths,
     toast,
     chatSidebarState,
+    chatSidebarLoading: state.activeView === "chat" && chatSidebarState === null,
     selectedChatGroupId,
     handleCreateChatGroup,
     handleSelectChatGroup: setSelectedChatGroupId,

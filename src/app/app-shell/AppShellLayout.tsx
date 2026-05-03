@@ -360,6 +360,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             <Sidebar
               projects={projects}
               inboxThreads={controller.inboxThreads}
+              inboxLoading={controller.inboxLoading}
+              chatSidebarLoading={controller.chatSidebarLoading}
+              projectsLoading={controller.shellLoading}
               appLaunchedAtMs={controller.appLaunchedAtMs}
               appSettings={
                 controller.shellState?.appSettings ?? {
