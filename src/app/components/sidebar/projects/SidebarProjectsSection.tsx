@@ -37,6 +37,7 @@ type SidebarProjectsSectionProps = {
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
+  onProjectPrimeSelection: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
@@ -59,6 +60,7 @@ export function SidebarProjectsSection({
   onLoadProjectThreads,
   onOpenSettingsPanel,
   onProjectSelect,
+  onProjectPrimeSelection,
   onProjectReorder,
   onThreadOpen,
   onToggleProjectCollapse,
@@ -361,6 +363,7 @@ export function SidebarProjectsSection({
               collapsedProjectIds={effectiveCollapsedProjectIds}
               onAction={onAction}
               onProjectSelect={onProjectSelect}
+              onProjectPrimeSelection={onProjectPrimeSelection}
               onProjectReorder={onProjectReorder}
               onThreadOpen={onThreadOpen}
               onToggleProjectCollapse={onToggleProjectCollapse}

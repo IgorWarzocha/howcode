@@ -105,9 +105,10 @@ export function CodeWorkspaceView({
     visible: showWorkspaceFooter,
   });
   const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
+  const hasThreadConversationLayout = hasThreadConversation || controller.activeThreadLoading;
   const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
   const previousHasThreadConversationRef = useRef(hasThreadConversation);
-  const centerThreadFooter = showThreadFooter && !hasThreadConversation;
+  const centerThreadFooter = showThreadFooter && !hasThreadConversationLayout;
   const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0;
 
   useEffect(() => {

@@ -47,6 +47,7 @@ type SidebarProps = {
   onNewChat: (groupId: string | null) => void;
   onRefreshChatSidebar: () => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
+  onProjectPrimeSelection: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onSelectInboxThread: (thread: InboxThread) => void;
@@ -87,6 +88,7 @@ export function Sidebar({
   onNewChat,
   onRefreshChatSidebar,
   onProjectSelect,
+  onProjectPrimeSelection,
   onProjectReorder,
   onLoadProjectThreads,
   onSelectInboxThread,
@@ -183,7 +185,7 @@ export function Sidebar({
           onDismissThread={onDismissInboxThread}
           onSelectThread={onSelectInboxThread}
         />
-      ) : activeView === "chat" && chatSidebarLoading ? (
+      ) : activeView === "chat" && chatSidebarLoading && !chatSidebarState ? (
         <SidebarChatSkeleton />
       ) : activeView === "chat" ? (
         <SidebarChatSection
@@ -215,6 +217,7 @@ export function Sidebar({
           onLoadProjectThreads={onLoadProjectThreads}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onProjectSelect={onProjectSelect}
+          onProjectPrimeSelection={onProjectPrimeSelection}
           onProjectReorder={onProjectReorder}
           onThreadOpen={onThreadOpen}
           onToggleProjectCollapse={onToggleProjectCollapse}
