@@ -51,6 +51,7 @@ type TerminalViewportProps = {
   backgroundCssVar?: TerminalBackgroundCssVar;
   hoverToFocus?: boolean;
   hoverToBlur?: boolean;
+  stickToBottomOnOutput?: boolean;
   className?: string;
 };
 
@@ -87,6 +88,7 @@ export function TerminalViewport({
   backgroundCssVar = "--terminal-bg",
   hoverToFocus = true,
   hoverToBlur = false,
+  stickToBottomOnOutput = true,
   className,
 }: TerminalViewportProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -165,7 +167,8 @@ export function TerminalViewport({
   const writeToTerminal = useCallback(
     (data: string | Uint8Array) => {
       const terminalElement = terminalInstanceRef.current?.element;
-      const shouldStickToBottom = !terminalElement || isTerminalElementNearBottom(terminalElement);
+      const shouldStickToBottom =
+        stickToBottomOnOutput && (!terminalElement || isTerminalElementNearBottom(terminalElement));
 
       terminalHandleRef.current?.write(data);
 
@@ -173,7 +176,7 @@ export function TerminalViewport({
         scheduleTerminalScrollToBottom();
       }
     },
-    [scheduleTerminalScrollToBottom],
+    [scheduleTerminalScrollToBottom, stickToBottomOnOutput],
   );
 
   useEffect(
@@ -317,7 +320,8 @@ export function TerminalViewport({
       return;
     }
 
-    const shouldStickToBottom = isTerminalElementNearBottom(terminalElement);
+    const shouldStickToBottom =
+      stickToBottomOnOutput && isTerminalElementNearBottom(terminalElement);
     const measuredSize = measureTerminalSize(terminal);
     if (!measuredSize) {
       return;
@@ -337,7 +341,7 @@ export function TerminalViewport({
     if (shouldStickToBottom) {
       scheduleTerminalScrollToBottom();
     }
-  }, [handleTerminalResize, scheduleTerminalScrollToBottom]);
+  }, [handleTerminalResize, scheduleTerminalScrollToBottom, stickToBottomOnOutput]);
 
   const scheduleTerminalResizeToContainer = useCallback(() => {
     if (terminalResizeFrameRef.current !== null) {

@@ -75,6 +75,7 @@ export const TerminalPanel = memo(function TerminalPanel({
           backgroundCssVar="--workspace"
           hoverToFocus={hoverToFocus}
           hoverToBlur={hoverToBlur}
+          stickToBottomOnOutput={false}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
         <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
