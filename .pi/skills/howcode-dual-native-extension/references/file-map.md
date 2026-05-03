@@ -14,6 +14,7 @@ Use these files as concrete references when adding a new dual-surface Howcode-na
 
 - `scripts/build-electron-runtime.ts`
   - Copies `.mjs` native extension assets into `build/desktop/native-extensions/` for packaged/runtime builds.
+  - In watch mode, re-copies native extension assets after edits, including watch events without a filename.
 
 ## Desktop runtime-host adapter
 - `desktop/runtime-host/native-ask-questions-tool.cts`
@@ -23,6 +24,7 @@ Use these files as concrete references when adding a new dual-surface Howcode-na
 
 - `desktop/runtime-host/live-runtime-registry.cts`
   - Reads enabled native extensions per session.
+  - Falls back from a missing snapshot row to current defaults and persists that legacy/session-first-materialized snapshot.
   - Registers native custom tools during session creation.
   - Publishes composer state when pending native tool state changes.
 
@@ -60,6 +62,7 @@ Use these files as concrete references when adding a new dual-surface Howcode-na
 - `shared/desktop-composer-contracts.ts`
 - `shared/desktop-action-contracts.ts`
 - `shared/desktop-actions.ts`
+- `shared/desktop-action-coverage.ts`
 - `shared/pi-thread-action-payloads.ts`
 - `desktop/runtime/composer-state.cts`
 - `desktop/pi-threads/composer-actions.cts`

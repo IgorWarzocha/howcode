@@ -229,6 +229,8 @@ export function CodeWorkspaceView({
                     useAgentsSkillsPaths: false,
                     howcodeNativeAskQuestions: false,
                     piTuiTakeover: false,
+                    hoverToFocus: true,
+                    hoverToBlur: false,
                   }
                 }
                 piSettings={shellState?.piSettings ?? defaultPiSettings}
@@ -334,6 +336,8 @@ export function CodeWorkspaceView({
                           useAgentsSkillsPaths: false,
                           howcodeNativeAskQuestions: false,
                           piTuiTakeover: false,
+                          hoverToFocus: true,
+                          hoverToBlur: false,
                         }
                       }
                       diffBaseline={diffBaseline}
@@ -400,6 +404,8 @@ export function CodeWorkspaceView({
                         }
                         favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                         showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                        hoverToFocus={shellState?.appSettings.hoverToFocus ?? true}
+                        hoverToBlur={shellState?.appSettings.hoverToBlur ?? false}
                         diffRenderMode={diffRenderMode}
                         diffComments={diffComments}
                         diffCommentCount={diffCommentCount}

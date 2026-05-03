@@ -43,6 +43,8 @@ export type AppSettings = {
   useAgentsSkillsPaths: boolean;
   howcodeNativeAskQuestions: boolean;
   piTuiTakeover: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
 };
 
 export type PiTransportMode = "sse" | "websocket" | "auto";

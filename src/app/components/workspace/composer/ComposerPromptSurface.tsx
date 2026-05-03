@@ -43,6 +43,8 @@ export function ComposerPromptSurface({
   dictationMaxDurationSeconds,
   favoriteFolders,
   showDictationButton,
+  hoverToFocus,
+  hoverToBlur,
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -428,6 +430,9 @@ export function ComposerPromptSurface({
               attachPickerAttachments={attachPickerAttachments}
               cancelDictation={cancelDictation}
               handlePaste={handlePaste}
+              hoverToFocus={hoverToFocus}
+              hoverToBlur={hoverToBlur}
+              hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
               onLayoutChange={onLayoutChange}
               onOpenSettingsView={onOpenSettingsView}

@@ -8,6 +8,7 @@ import { mapAgentMessagesToUiMessages } from "../../shared/pi-message-mapper.ts"
 import { loadAppSettings } from "../app-settings/readers.cts";
 import { getChatSessionDir } from "../chat-session-dir.cts";
 import { getPiModule } from "../pi-module.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 import { bindHeadlessAgentSessionExtensions } from "../runtime/agent-session-extensions.cts";
 import {
   clampThinkingLevel,
@@ -160,7 +161,9 @@ async function createSkillCreatorSession(cwd: string, projectPath?: string | nul
   } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
   const settingsManager = SettingsManager.create(cwd, agentDir);
   const bundledSkillsPath = await resolveBundledSkillsPath();
   const resourceLoader = new DefaultResourceLoader({

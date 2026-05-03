@@ -32,6 +32,7 @@ import {
   abortRuntimeExtensionCommand,
   isRuntimeExtensionCommandRunning,
 } from "./runtime-registry.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 import {
   getLiveThread,
   publishComposerUpdate,
@@ -166,7 +167,9 @@ async function setDraftComposerModel(cwd: string, provider: string, modelId: str
   const { AuthStorage, ModelRegistry, SettingsManager, getAgentDir } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
   const model = modelRegistry.find(provider, modelId);
 
   if (!model) {

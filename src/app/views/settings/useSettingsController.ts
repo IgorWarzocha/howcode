@@ -266,6 +266,16 @@ export function useSettingsController({
         key: "howcodeNativeAskQuestions",
         value: !appSettings.howcodeNativeAskQuestions,
       }),
+    toggleHoverToFocus: () =>
+      void onAction("settings.update", {
+        key: "hoverToFocus",
+        value: !appSettings.hoverToFocus,
+      }),
+    toggleHoverToBlur: () =>
+      void onAction("settings.update", {
+        key: "hoverToBlur",
+        value: !appSettings.hoverToBlur,
+      }),
     updateFavoriteFolders,
     handleImportProjectUi,
     handleClearClipboardImages,

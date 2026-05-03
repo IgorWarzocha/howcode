@@ -38,6 +38,8 @@ export type ComposerProps = {
   dictationMaxDurationSeconds: number;
   favoriteFolders: string[];
   showDictationButton: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
   diffRenderMode: ProjectDiffRenderMode;
   diffComments: SavedDiffComment[];
   diffCommentCount: number;

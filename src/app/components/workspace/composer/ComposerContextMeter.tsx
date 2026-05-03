@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { ComposerContextUsage } from "../../../desktop/types";
 import { useDismissibleLayer } from "../../../hooks/useDismissibleLayer";
 import { ghostButtonClass } from "../../../ui/classes";
@@ -41,6 +41,33 @@ function getMeterTone(percent: number | null | undefined) {
   return "#9bb7ff";
 }
 
+type Point = {
+  x: number;
+  y: number;
+};
+
+function getTriangleArea(a: Point, b: Point, c: Point) {
+  return Math.abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2);
+}
+
+function isPointInTriangle(point: Point, a: Point, b: Point, c: Point) {
+  const area = getTriangleArea(a, b, c);
+  const areaA = getTriangleArea(point, b, c);
+  const areaB = getTriangleArea(a, point, c);
+  const areaC = getTriangleArea(a, b, point);
+
+  return Math.abs(area - (areaA + areaB + areaC)) < 0.5;
+}
+
+function isPointInExpandedRect(point: Point, rect: DOMRect, padding: number) {
+  return (
+    point.x >= rect.left - padding &&
+    point.x <= rect.right + padding &&
+    point.y >= rect.top - padding &&
+    point.y <= rect.bottom + padding
+  );
+}
+
 export function ComposerContextMeter({
   contextUsage,
   isCompacting,
@@ -51,6 +78,7 @@ export function ComposerContextMeter({
   const [pinned, setPinned] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const clearHoverTriangleRef = useRef<(() => void) | null>(null);
   const percent = contextUsage?.percent ?? null;
   const tokens = contextUsage?.tokens ?? null;
   const contextWindow = contextUsage?.contextWindow ?? null;
@@ -71,12 +99,72 @@ export function ComposerContextMeter({
     refs: [buttonRef, popoverRef],
   });
 
+  const clearHoverTriangle = useCallback(() => {
+    clearHoverTriangleRef.current?.();
+    clearHoverTriangleRef.current = null;
+  }, []);
+
+  const openHoverPreview = useCallback(() => {
+    clearHoverTriangle();
+    setHovered(true);
+  }, [clearHoverTriangle]);
+
+  const closeHoverPreview = useCallback(() => {
+    clearHoverTriangle();
+    setHovered(false);
+  }, [clearHoverTriangle]);
+
+  const handleMouseLeave = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (pinned) {
+        return;
+      }
+
+      const button = buttonRef.current;
+      const popover = popoverRef.current;
+      if (!button || !popover) {
+        closeHoverPreview();
+        return;
+      }
+
+      clearHoverTriangle();
+
+      const origin = { x: event.clientX, y: event.clientY };
+      const popoverRect = popover.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      const padding = 10;
+      const triangleLeft = { x: popoverRect.left - padding, y: popoverRect.bottom + padding };
+      const triangleRight = { x: popoverRect.right + padding, y: popoverRect.bottom + padding };
+
+      const handlePointerMove = (pointerEvent: PointerEvent) => {
+        const point = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+
+        if (
+          isPointInExpandedRect(point, popoverRect, padding) ||
+          isPointInExpandedRect(point, buttonRect, padding) ||
+          isPointInTriangle(point, origin, triangleLeft, triangleRight)
+        ) {
+          setHovered(true);
+          return;
+        }
+
+        closeHoverPreview();
+      };
+
+      const timeout = window.setTimeout(closeHoverPreview, 900);
+      window.addEventListener("pointermove", handlePointerMove, { passive: true });
+      clearHoverTriangleRef.current = () => {
+        window.clearTimeout(timeout);
+        window.removeEventListener("pointermove", handlePointerMove);
+      };
+    },
+    [clearHoverTriangle, closeHoverPreview, pinned],
+  );
+
+  useEffect(() => clearHoverTriangle, [clearHoverTriangle]);
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className="relative" onMouseEnter={openHoverPreview} onMouseLeave={handleMouseLeave}>
       <button
         ref={buttonRef}
         type="button"
@@ -98,6 +186,7 @@ export function ComposerContextMeter({
         <div
           ref={popoverRef}
           className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[rgba(169,178,215,0.18)] bg-[#2d3040] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
+          onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >
           <div className="grid gap-1">

@@ -549,6 +549,9 @@ export function InboxComposer({
                   placeholderTone={errorMessage ? "error" : "muted"}
                   statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                   reservedLineCount={1}
+                  hoverToFocus={appSettings.hoverToFocus}
+                  hoverToBlur={appSettings.hoverToBlur}
+                  hoverBoundaryRef={composerPanelRef}
                 />
               </div>
             </div>

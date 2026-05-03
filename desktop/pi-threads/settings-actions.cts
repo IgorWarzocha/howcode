@@ -35,6 +35,8 @@ import {
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
   setHowcodeNativeAskQuestions,
+  setHoverToBlur,
+  setHoverToFocus,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
@@ -140,6 +142,16 @@ export async function handleSettingsDesktopAction(
 
   if (key === "piTuiTakeover") {
     setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false);
+    return handledAction();
+  }
+
+  if (key === "hoverToFocus") {
+    setHoverToFocus(getSettingsBooleanValue(payload) ?? true);
+    return handledAction();
+  }
+
+  if (key === "hoverToBlur") {
+    setHoverToBlur(getSettingsBooleanValue(payload) ?? false);
     return handledAction();
   }
 

@@ -8,6 +8,7 @@ import { parseCompactSlashCommand } from "../../shared/composer-slash-commands.t
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { createLocalThreadDraft, getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 import { discoverHeadlessAgentSessionResources } from "../runtime/agent-session-extensions.cts";
 import { buildComposerAttachmentPrompt } from "../runtime/attachments.cts";
 import {
@@ -210,7 +211,9 @@ export async function setComposerModel(
     const cwd = request.projectId ?? getDesktopWorkingDirectory();
     const agentDir = getAgentDir();
     const authStorage = AuthStorage.create();
-    const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+    const modelRegistry = normalizeModelRegistryContextWindows(
+      ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+    );
     const model = modelRegistry.find(provider, modelId);
     if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`);
     const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null });

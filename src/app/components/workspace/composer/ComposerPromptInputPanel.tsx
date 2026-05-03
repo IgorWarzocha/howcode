@@ -27,9 +27,12 @@ type ComposerPromptInputPanelProps = {
   errorMessage: string | null;
   extensionRunning: boolean;
   inputLocked: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
   favoriteFolders: string[];
   pickerLoading: boolean;
   pickerOpen: boolean;
+  hoverBoundaryRef: RefObject<HTMLElement | null>;
   pickerPanelRef: RefObject<HTMLDivElement | null>;
   pickerState: Parameters<typeof ComposerFilePicker>[0]["picker"];
   placeholderText: string;
@@ -68,7 +71,10 @@ export function ComposerPromptInputPanel({
   errorMessage,
   extensionRunning,
   inputLocked,
+  hoverToFocus,
+  hoverToBlur,
   favoriteFolders,
+  hoverBoundaryRef,
   pickerLoading,
   pickerOpen,
   pickerPanelRef,
@@ -272,6 +278,9 @@ export function ComposerPromptInputPanel({
                 ariaExpanded={slashCommands.open}
                 placeholder={placeholderText}
                 readOnly={inputLocked}
+                hoverToFocus={hoverToFocus}
+                hoverToBlur={hoverToBlur}
+                hoverBoundaryRef={hoverBoundaryRef}
                 placeholderTone={errorMessage ? "error" : "muted"}
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}

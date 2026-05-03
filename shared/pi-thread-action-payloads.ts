@@ -273,7 +273,9 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
     payload.key === "howcodeNativeAskQuestions" ||
-    payload.key === "piTuiTakeover"
+    payload.key === "piTuiTakeover" ||
+    payload.key === "hoverToFocus" ||
+    payload.key === "hoverToBlur"
     ? (payload.key as keyof AppSettings)
     : null;
 }

@@ -29,6 +29,8 @@ import {
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   howcodeNativeAskQuestionsKey,
+  hoverToBlurKey,
+  hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -249,4 +251,22 @@ export function setHowcodeNativeAskQuestions(enabled: boolean) {
 
 export function setPiTuiTakeover(enabled: boolean) {
   writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled));
+}
+
+export function setHoverToFocus(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(hoverToFocusKey);
+    return;
+  }
+
+  writeAppPreference(hoverToFocusKey, JSON.stringify(false));
+}
+
+export function setHoverToBlur(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(hoverToBlurKey);
+    return;
+  }
+
+  writeAppPreference(hoverToBlurKey, JSON.stringify(true));
 }
