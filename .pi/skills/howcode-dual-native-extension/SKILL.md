@@ -30,6 +30,8 @@ The core invariant: **one extension file owns the tool schema, prompt text, vali
 5. **Do not import DB/native modules into runtime-host worker code.** Runtime-host must use `invokeMainRequest` for DB-backed data.
 6. **No prompt character limits.** Prompt the extension toward short sentences/options, but do not enforce brittle character counts.
 7. **Composer interception must be explicit.** While a pending tool UI is active, Enter/Escape/submit must answer/dismiss the tool instead of sending normal user text.
+8. **Pending tool UI must be lifecycle-safe.** Creating a new pending request must resolve/reject any previous request, abort signals must clear pending state, and the renderer must not hide the card until answer/dismiss IPC succeeds.
+9. **Composer context must travel with answers.** Answer/dismiss actions must include the same composer context used to create/lookup the runtime (`composerMode`, `chatGroupId`, session path/project id as applicable) so chat/code runtimes are not recreated with mismatched settings cwd.
 
 ## Reference files
 Read these before implementing a new dual native extension:
@@ -75,13 +77,20 @@ Read these before implementing a new dual native extension:
 - Add settings UI toggle in the settings descriptor flow.
 - Add optimistic update handling.
 - Snapshot global defaults into `session_native_extensions` when a session is created or first materialized.
+- Treat a missing snapshot row (`null`) differently from an explicit empty snapshot (`[]`): missing rows should fall back to current defaults and then persist that snapshot; explicit empty arrays mean disabled for that session.
 - Never let toggling the global setting mutate an existing session’s enabled toolkit.
 
 ### 7. Wire desktop UI
 - Surface pending tool state in `ComposerState`.
 - Render composer-adjacent UI above the composer using existing overlay/measurement patterns.
 - Add a specific action such as `composer.answer-native-questions` to resolve the pending tool promise.
+- Keep `shared/desktop-actions.ts`, `shared/desktop-action-contracts.ts`, and `shared/desktop-action-coverage.ts` in sync for that action.
+- Include composer context fields in action payloads if the runtime lookup depends on mode/session dir/group.
 - Ensure normal composer submission is overridden while pending.
+- Preserve normal textarea editing: ArrowLeft/ArrowRight overrides should not steal caret movement while the user is editing freeform text.
+- Be deliberate about outside-click dismissal. If the pending tool requires the user to click/focus the main composer to type an answer, outside-click dismissal is harmful; prefer explicit Dismiss/Escape instead and document the exception in review notes.
+- Keep local UI state consistent: reset dismissed/answers on new requests, clear stale custom/freeform state when predefined single-choice options are picked, and allow clearing/replacing custom multi-select answers.
+- Dismissed/cancelled state should be explicit in the resolved payload (for example `answers: null`) rather than conflated with an intentionally blank answer.
 
 ### 8. Wire Pi TUI takeover
 - In `desktop/terminal/terminal-command.helpers.ts`, when `launchMode === "pi-session"`:
@@ -94,6 +103,8 @@ Read these before implementing a new dual native extension:
 - Let git hooks run on commit; do not bypass them.
 - For this repo, do not manually run typechecks/tests unless explicitly asked. If committing, hooks will run configured checks.
 - Validate by inspecting the exact launch args and desktop runtime registration path.
+- For runtime actions that call `getOrCreateRuntimeForSessionPath(..., { suspendDisposal: true })`, schedule disposal again in `finally` after the answer/update path completes.
+- If adding copied `.mjs` native extension assets, update watch-mode copying too, including platforms where `fs.watch` emits events without `filename`.
 - If the dev app is running, test both surfaces:
   - desktop: model/tool call creates composer-adjacent pending UI
   - takeover: `pi --session ... --extension ...` loads same tool and uses TUI UI
@@ -103,10 +114,16 @@ Read these before implementing a new dual native extension:
 - [ ] Desktop runtime imports that same `.mjs` file and only injects callbacks.
 - [ ] TUI takeover passes that same `.mjs` file via `--extension`.
 - [ ] Per-session snapshot controls availability for both surfaces.
+- [ ] Missing session snapshot rows fallback to current defaults and then persist; explicit empty snapshots stay disabled.
 - [ ] Existing sessions keep their snapshot after global setting changes.
 - [ ] Worker code does not import DB/native modules.
 - [ ] Composer submit is intercepted while pending.
+- [ ] Answer/dismiss payload includes composer context needed for chat/code runtime lookup.
+- [ ] Pending request lifecycle handles replacement, abort, dismiss, and IPC failure without hanging the agent or hiding the only UI.
+- [ ] Runtime disposal is re-armed after suspended runtime mutations.
+- [ ] Desktop action coverage registry is updated for new actions.
 - [ ] Build script copies native extension assets for packaged builds.
+- [ ] Build watch mode refreshes copied native extension assets.
 - [ ] Commit hooks pass.
 
 ## Error handling
@@ -122,9 +139,25 @@ Action: move DB access behind runtime-host main request IPC via `desktop/runtime
 Cause: runtime reads global setting directly instead of session snapshot.
 Action: fix the runtime to read `session_native_extensions` for persisted sessions and only snapshot defaults for new sessions.
 
+### Error: legacy sessions never receive a newly enabled native extension
+Cause: missing `session_native_extensions` rows are treated the same as explicit empty snapshots.
+Action: make snapshot readers return `null` for missing rows; at runtime, fallback to current defaults, persist that snapshot for the session, and only treat `[]` as explicitly disabled.
+
+### Error: answering a pending desktop tool recreates the runtime or loses state
+Cause: the answer action omitted composer mode/session-dir/group context or failed to re-arm runtime disposal after a suspended lookup.
+Action: include composer context in the action payload and schedule runtime disposal in `finally`.
+
+### Error: pending composer tool UI disappears but the agent keeps waiting
+Cause: the renderer optimistically hid the card before the desktop answer/dismiss action succeeded.
+Action: have the card await an ok/failure result before setting local dismissed state; surface action errors in composer UI.
+
 ### Error: desktop and TUI behavior drift
 Cause: two separate tool implementations exist.
 Action: move schema/prompt/result/TUI logic back into the shared `.mjs` file and keep desktop-specific code as injected callbacks.
+
+### Error: custom/freeform answers stay selected incorrectly
+Cause: UI state tracks predefined and freeform answers independently without clearing stale values.
+Action: clear custom state when a single-choice predefined option is picked; allow empty custom submissions to remove prior custom answers; replace previous custom values instead of accumulating stale entries.
 
 ## Output contract
 When completing a dual native extension task, report:
