@@ -194,6 +194,7 @@ export function CodeWorkspaceView({
                 diffRenderMode={diffRenderMode}
                 layoutMode="main"
                 showFileTree={gitOpsFileTreeVisible}
+                loading={projectGitState === null}
               />
             ) : (
               <CodeWorkspaceMainView

@@ -12,6 +12,7 @@ type DiffPanelProps = {
   diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
   showFileTree?: boolean;
+  loading?: boolean;
 };
 
 export function DiffPanel({
@@ -24,6 +25,7 @@ export function DiffPanel({
   diffRenderMode,
   layoutMode = "split",
   showFileTree = true,
+  loading = false,
 }: DiffPanelProps) {
   return (
     <DiffWorkerPoolProvider>
@@ -37,6 +39,7 @@ export function DiffPanel({
         diffRenderMode={diffRenderMode}
         layoutMode={layoutMode}
         showFileTree={showFileTree}
+        loading={loading}
       />
     </DiffWorkerPoolProvider>
   );
