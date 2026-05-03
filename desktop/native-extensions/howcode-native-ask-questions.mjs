@@ -100,12 +100,19 @@ async function askInTui(ctx, questions) {
       refresh();
     };
     const saveCustom = () => {
+      const previous = custom[tab]?.trim() ?? "";
       const value = editor.getText().trim();
       custom[tab] = editor.getText();
       customOn[tab] = Boolean(value);
-      if (!value) return;
+      if (!value) {
+        if (previous) answers[tab] = answers[tab].filter((item) => item !== previous);
+        return;
+      }
       if (current()?.multiple) {
-        answers[tab] = [...answers[tab].filter((item) => item !== value), value];
+        answers[tab] = [
+          ...answers[tab].filter((item) => item !== value && item !== previous),
+          value,
+        ];
       } else {
         answers[tab] = [value];
       }

@@ -177,6 +177,8 @@ export type DesktopActionPayloadMap = {
   "composer.answer-native-questions": {
     projectId?: string | null;
     sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
+    chatGroupId?: string | null;
     requestId: string;
     answers: string[][] | null;
   };

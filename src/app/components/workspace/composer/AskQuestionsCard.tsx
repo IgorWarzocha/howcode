@@ -7,8 +7,8 @@ type AskQuestionsCardProps = {
   composerDraft: string;
   questions: NativeAskQuestion[];
   onUseComposerDraft: () => string;
-  onAnswered?: (answers: string[][]) => void;
-  onDismiss?: () => void;
+  onAnswered?: (answers: string[][]) => boolean | Promise<boolean>;
+  onDismiss?: () => boolean | Promise<boolean>;
   registerArrowNavigation?: (handler: ((direction: "previous" | "next") => boolean) | null) => void;
   registerComposerSubmit?: (handler: (() => boolean) | null) => void;
 };
@@ -31,6 +31,7 @@ export function AskQuestionsCard({
 }: AskQuestionsCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<string[][]>(() => getInitialAnswers(questions));
+  const [customAnswers, setCustomAnswers] = useState<string[]>(() => questions.map(() => ""));
   const [dismissed, setDismissed] = useState(false);
   const question = questions[activeIndex];
   const reviewIndex = questions.length;
@@ -42,9 +43,15 @@ export function AskQuestionsCard({
     );
   };
 
-  const closeCard = ({ notifyDismiss = true }: { notifyDismiss?: boolean } = {}) => {
-    setDismissed(true);
-    if (notifyDismiss) onDismiss?.();
+  const setQuestionCustomAnswer = (next: string) => {
+    setCustomAnswers((current) =>
+      current.map((answer, index) => (index === activeIndex ? next : answer)),
+    );
+  };
+
+  const closeCard = async ({ notifyDismiss = true }: { notifyDismiss?: boolean } = {}) => {
+    const ok = notifyDismiss ? ((await onDismiss?.()) ?? true) : true;
+    if (ok) setDismissed(true);
   };
 
   const advance = () => {
@@ -53,20 +60,32 @@ export function AskQuestionsCard({
 
   const submitComposerDraft = () => {
     if (onReview) {
-      onAnswered?.(answers);
-      closeCard({ notifyDismiss: false });
+      void (async () => {
+        const ok = (await onAnswered?.(answers)) ?? true;
+        if (ok) await closeCard({ notifyDismiss: false });
+      })();
       return true;
     }
 
     const value = onUseComposerDraft().trim();
+    const previousCustomAnswer = customAnswers[activeIndex]?.trim() ?? "";
     if (!value) {
+      if (previousCustomAnswer && question?.multiple) {
+        setQuestionAnswers(
+          (answers[activeIndex] ?? []).filter((item) => item !== previousCustomAnswer),
+        );
+        setQuestionCustomAnswer("");
+      }
       advance();
       return true;
     }
     const current = answers[activeIndex] ?? [];
     setQuestionAnswers(
-      question?.multiple ? [...current.filter((item) => item !== value), value] : [value],
+      question?.multiple
+        ? [...current.filter((item) => item !== value && item !== previousCustomAnswer), value]
+        : [value],
     );
+    setQuestionCustomAnswer(value);
     advance();
     return true;
   };
@@ -90,6 +109,8 @@ export function AskQuestionsCard({
   useEffect(() => {
     setActiveIndex(0);
     setAnswers(getInitialAnswers(questions));
+    setCustomAnswers(questions.map(() => ""));
+    setDismissed(false);
   }, [questions]);
 
   if (dismissed || questions.length === 0) {
@@ -202,7 +223,7 @@ export function AskQuestionsCard({
         ].map((option, optionIndex) => {
           const isOther = option.syntheticOther;
           const picked = isOther
-            ? composerDraft.trim().length > 0
+            ? composerDraft.trim().length > 0 || Boolean(customAnswers[activeIndex]?.trim())
             : (answers[activeIndex]?.includes(option.label) ?? false);
           const rowClass = cn(
             "grid grid-cols-[16px_minmax(0,1fr)_auto] gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] leading-4 transition-colors",
@@ -246,7 +267,7 @@ export function AskQuestionsCard({
                 <button
                   type="button"
                   className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
-                  onClick={() => closeCard()}
+                  onClick={() => void closeCard()}
                   aria-label="Dismiss"
                 >
                   <X size={12} />

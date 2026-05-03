@@ -214,6 +214,12 @@ export function ComposerPromptInputPanel({
                   }
 
                   if (event.key === "ArrowLeft") {
+                    if (
+                      event.currentTarget.selectionStart !== event.currentTarget.selectionEnd ||
+                      event.currentTarget.selectionStart > 0
+                    ) {
+                      return;
+                    }
                     if (onArrowNavigationOverride?.("previous")) {
                       event.preventDefault();
                       return;
@@ -221,6 +227,12 @@ export function ComposerPromptInputPanel({
                   }
 
                   if (event.key === "ArrowRight") {
+                    if (
+                      event.currentTarget.selectionStart !== event.currentTarget.selectionEnd ||
+                      event.currentTarget.selectionEnd < event.currentTarget.value.length
+                    ) {
+                      return;
+                    }
                     if (onArrowNavigationOverride?.("next")) {
                       event.preventDefault();
                       return;

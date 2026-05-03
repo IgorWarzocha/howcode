@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { DesktopAction } from "../../../../desktop/actions";
+import { getDesktopActionErrorMessage } from "../../../../desktop/action-results";
 import { getErrorMessage } from "../../../../desktop/error-messages";
 import type {
   ComposerFilePickerState,
@@ -244,13 +245,23 @@ export function useComposerController({
     options?: { closeMenu?: boolean },
   ) => {
     try {
-      await onAction(action, payload);
+      const result = await onAction(action, payload);
+      const actionErrorMessage = getDesktopActionErrorMessage(
+        result,
+        "Could not update the composer.",
+      );
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+        return false;
+      }
       setErrorMessage(null);
       if (options?.closeMenu ?? true) {
         setOpenMenu(null);
       }
+      return true;
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not update the composer."));
+      return false;
     }
   };
 

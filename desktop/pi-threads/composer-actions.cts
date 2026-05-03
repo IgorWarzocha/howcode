@@ -114,11 +114,14 @@ export async function handleComposerDesktopAction(
     case "composer.answer-native-questions": {
       const requestId = getNativeAskQuestionsRequestId(payload);
       if (!requestId) return handledAction();
-      await answerNativeAskQuestions({
+      const result = await answerNativeAskQuestions({
         ...getComposerRequest(payload),
         requestId,
         answers: getNativeAskQuestionsAnswers(payload),
       });
+      if (!result?.ok) {
+        return handledAction({ error: "Could not answer pending questions." });
+      }
       return handledAction();
     }
 

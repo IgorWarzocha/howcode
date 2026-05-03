@@ -127,6 +127,17 @@ export function ComposerPromptSurface({
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null);
   const lastAskQuestionsOverlayHeightRef = useRef(0);
   const showAskQuestions = nativeAskQuestionsRequest !== null;
+  const answerNativeQuestions = async (answers: string[][] | null) => {
+    if (!nativeAskQuestionsRequest) return false;
+    return await runComposerAction("composer.answer-native-questions", {
+      projectId,
+      sessionPath,
+      composerMode,
+      chatGroupId,
+      requestId: nativeAskQuestionsRequest.id,
+      answers,
+    });
+  };
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -366,22 +377,13 @@ export function ComposerPromptSurface({
                 setDraft("");
                 return value;
               }}
-              onAnswered={(answers) => {
-                setDraft("");
-                void runComposerAction("composer.answer-native-questions", {
-                  projectId,
-                  sessionPath,
-                  requestId: nativeAskQuestionsRequest.id,
-                  answers,
-                });
+              onAnswered={async (answers) => {
+                const ok = await answerNativeQuestions(answers);
+                if (ok) setDraft("");
+                return ok;
               }}
               onDismiss={() => {
-                void runComposerAction("composer.answer-native-questions", {
-                  projectId,
-                  sessionPath,
-                  requestId: nativeAskQuestionsRequest.id,
-                  answers: null,
-                });
+                return answerNativeQuestions(null);
               }}
               registerArrowNavigation={(handler) => {
                 askQuestionsArrowNavigationRef.current = handler;
@@ -441,12 +443,7 @@ export function ComposerPromptSurface({
               onEscapeOverride={
                 showAskQuestions
                   ? () => {
-                      void runComposerAction("composer.answer-native-questions", {
-                        projectId,
-                        sessionPath,
-                        requestId: nativeAskQuestionsRequest.id,
-                        answers: null,
-                      });
+                      void answerNativeQuestions(null);
                       return true;
                     }
                   : undefined
