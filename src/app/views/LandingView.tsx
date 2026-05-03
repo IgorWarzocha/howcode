@@ -140,17 +140,17 @@ export function LandingView({ className }: LandingViewProps) {
   return (
     <section
       className={cn(
-        "mx-auto flex w-full justify-center px-6 pt-[clamp(6rem,24vh,16rem)]",
+        "mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(6rem,24vh,16rem)] pb-6",
         className,
       )}
     >
-      <div className="grid w-full max-w-[760px] justify-items-center gap-4 text-center">
+      <div className="grid h-full min-h-0 w-full max-w-[760px] grid-rows-[auto_auto_minmax(0,1fr)] justify-items-center gap-4 text-center">
         <PixelHLogo />
         <h1 className="sr-only">{content.title}</h1>
 
         <LandingMockUpdateCard />
 
-        <div className="grid w-full max-w-[680px] gap-0">
+        <div className="grid min-h-0 w-full max-w-[680px] grid-rows-[auto_minmax(0,1fr)] gap-0">
           <div
             className="grid border-b border-[rgba(169,178,215,0.08)]"
             style={{ gridTemplateColumns: `repeat(${content.sections.length}, minmax(0, 1fr))` }}
@@ -186,7 +186,7 @@ export function LandingView({ className }: LandingViewProps) {
 
           <div
             id={activePanelId}
-            className="pt-4 text-left"
+            className="min-h-0 overflow-y-auto pt-4 pr-2 text-left [scrollbar-gutter:stable]"
             role="tabpanel"
             aria-labelledby={`landing-section-${activeSectionIndex}-tab`}
           >

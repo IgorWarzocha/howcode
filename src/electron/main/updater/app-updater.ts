@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { createReadStream, createWriteStream, existsSync, readFileSync } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -10,6 +10,7 @@ import { app } from "electron";
 import { x as extractTar } from "tar";
 import packageJson from "../../../../package.json";
 import type { AppUpdateState } from "../../../../shared/desktop-app-update-contracts";
+import { getAppRootPath } from "../runtime/app-paths";
 import { spawnDetached } from "./spawn-detached";
 
 const APP_NAME = "howcode";
@@ -89,7 +90,19 @@ function isUpdateEnabled() {
 }
 
 function getCurrentAppVersion() {
-  return app.isPackaged ? app.getVersion() : packageJson.version;
+  if (app.isPackaged) return app.getVersion();
+
+  try {
+    const packageJsonPath = path.join(getAppRootPath(), "package.json");
+    const currentPackageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+      version?: unknown;
+    };
+    if (typeof currentPackageJson.version === "string") return currentPackageJson.version;
+  } catch {
+    // Fall back to the bundled package metadata below.
+  }
+
+  return packageJson.version;
 }
 
 function assertUpdateEnabled() {
@@ -252,6 +265,13 @@ export class AppUpdater {
   }
 
   getState() {
+    if (!app.isPackaged) {
+      const currentVersion = getCurrentAppVersion();
+      if (this.state.currentVersion !== currentVersion) {
+        this.state = { ...this.state, currentVersion };
+      }
+    }
+
     return this.state;
   }
 

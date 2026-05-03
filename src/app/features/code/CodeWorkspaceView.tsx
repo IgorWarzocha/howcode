@@ -182,7 +182,7 @@ export function CodeWorkspaceView({
           <main
             ref={mainViewRef}
             className={
-              state.activeView === "thread" || showDiffInMainView
+              state.activeView === "thread" || state.activeView === "code" || showDiffInMainView
                 ? "min-h-0 overflow-hidden pt-1.5"
                 : mainPanelClass
             }

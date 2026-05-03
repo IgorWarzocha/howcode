@@ -16,12 +16,12 @@ const landingOverviewContent: LandingOverviewContent = {
   title: "Howcode overview",
   sections: [
     {
-      title: "Initial roadmap",
-      markdown: roadmapMarkdown,
+      title: "About",
+      markdown: releaseMarkdown,
     },
     {
-      title: "Initial release",
-      markdown: releaseMarkdown,
+      title: "Roadmap",
+      markdown: roadmapMarkdown,
     },
     {
       title: "Changelog",
