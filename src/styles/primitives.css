@@ -55,6 +55,28 @@
   }
 }
 
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(169, 178, 215, 0.075);
+}
+
+.skeleton-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(213, 218, 237, 0.075), transparent);
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+}
+
 .activity-spinner__rotor {
   transform-origin: center;
   animation: activitySpinnerRotate 0.75s step-end infinite;

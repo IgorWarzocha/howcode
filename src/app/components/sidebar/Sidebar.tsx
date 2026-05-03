@@ -9,6 +9,7 @@ import type { Project, View } from "../../types";
 type SidebarNavigableView = Exclude<View, "gitops">;
 import { NavButton } from "../common/NavButton";
 import { SettingsMenu } from "./SettingsMenu";
+import { SidebarChatSkeleton, SidebarInboxSkeleton } from "./SidebarSkeletons";
 import { SidebarChatSection } from "./chat/SidebarChatSection";
 import { SidebarInboxSection } from "./inbox/SidebarInboxSection";
 import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
@@ -16,7 +17,10 @@ import { SidebarProjectsSection } from "./projects/SidebarProjectsSection";
 type SidebarProps = {
   projects: Project[];
   inboxThreads: InboxThread[];
+  inboxLoading?: boolean;
   chatSidebarState: ChatSidebarState | null;
+  chatSidebarLoading?: boolean;
+  projectsLoading?: boolean;
   appLaunchedAtMs: number;
   appSettings: AppSettings;
   protectedProjectId?: string | null;
@@ -43,6 +47,7 @@ type SidebarProps = {
   onNewChat: (groupId: string | null) => void;
   onRefreshChatSidebar: () => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
+  onProjectPrimeSelection: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onSelectInboxThread: (thread: InboxThread) => void;
@@ -53,7 +58,10 @@ type SidebarProps = {
 export function Sidebar({
   projects,
   inboxThreads,
+  inboxLoading = false,
   chatSidebarState,
+  chatSidebarLoading = false,
+  projectsLoading = false,
   appLaunchedAtMs,
   appSettings,
   protectedProjectId = null,
@@ -80,6 +88,7 @@ export function Sidebar({
   onNewChat,
   onRefreshChatSidebar,
   onProjectSelect,
+  onProjectPrimeSelection,
   onProjectReorder,
   onLoadProjectThreads,
   onSelectInboxThread,
@@ -165,7 +174,9 @@ export function Sidebar({
         </nav>
       ) : null}
 
-      {activeView === "inbox" ? (
+      {activeView === "inbox" && inboxLoading && inboxThreads.length === 0 ? (
+        <SidebarInboxSkeleton />
+      ) : activeView === "inbox" ? (
         <SidebarInboxSection
           appLaunchedAtMs={appLaunchedAtMs}
           terminalRunningSessionPaths={terminalRunningSessionPaths}
@@ -174,6 +185,8 @@ export function Sidebar({
           onDismissThread={onDismissInboxThread}
           onSelectThread={onSelectInboxThread}
         />
+      ) : activeView === "chat" && chatSidebarLoading && !chatSidebarState ? (
+        <SidebarChatSkeleton />
       ) : activeView === "chat" ? (
         <SidebarChatSection
           chatState={chatSidebarState}
@@ -194,6 +207,7 @@ export function Sidebar({
           protectedProjectId={protectedProjectId}
           projectScopeLockActive={projectScopeLockActive}
           projects={projects}
+          loading={projectsLoading}
           selectedProjectId={selectedProjectId}
           selectedThreadId={selectedThreadId}
           terminalRunningProjectIds={terminalRunningProjectIds}
@@ -203,6 +217,7 @@ export function Sidebar({
           onLoadProjectThreads={onLoadProjectThreads}
           onOpenSettingsPanel={onOpenSettingsPanel}
           onProjectSelect={onProjectSelect}
+          onProjectPrimeSelection={onProjectPrimeSelection}
           onProjectReorder={onProjectReorder}
           onThreadOpen={onThreadOpen}
           onToggleProjectCollapse={onToggleProjectCollapse}

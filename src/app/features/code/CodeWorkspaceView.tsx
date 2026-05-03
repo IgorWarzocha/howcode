@@ -105,9 +105,10 @@ export function CodeWorkspaceView({
     visible: showWorkspaceFooter,
   });
   const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
+  const hasThreadConversationLayout = hasThreadConversation || controller.activeThreadLoading;
   const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
   const previousHasThreadConversationRef = useRef(hasThreadConversation);
-  const centerThreadFooter = showThreadFooter && !hasThreadConversation;
+  const centerThreadFooter = showThreadFooter && !hasThreadConversationLayout;
   const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0;
 
   useEffect(() => {
@@ -167,6 +168,9 @@ export function CodeWorkspaceView({
     state.activeView === "thread" && activeThreadData && !threadContentVisible
       ? { ...activeThreadData, messages: [] }
       : activeThreadData;
+  const threadTimelineLoading =
+    state.activeView === "thread" &&
+    (controller.activeThreadLoading || (hasThreadConversation && !threadContentVisible));
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -194,6 +198,7 @@ export function CodeWorkspaceView({
                 diffRenderMode={diffRenderMode}
                 layoutMode="main"
                 showFileTree={gitOpsFileTreeVisible}
+                loading={controller.projectGitLoading}
               />
             ) : (
               <CodeWorkspaceMainView
@@ -240,6 +245,7 @@ export function CodeWorkspaceView({
                 selectedProjectId={controller.state.selectedProjectId}
                 workspaceContentClass={workspaceContentClass}
                 threadData={visibleThreadData}
+                threadLoading={threadTimelineLoading}
                 composerLayoutVersion={composerLayoutVersion}
                 composerOverlayHeight={composerOverlayHeight}
                 onAction={handleAction}

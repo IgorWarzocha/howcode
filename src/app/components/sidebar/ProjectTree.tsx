@@ -38,6 +38,7 @@ type ProjectTreeProps = {
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
   onProjectSelect: (projectId: string) => void;
+  onProjectPrimeSelection: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (
     projectId: string,
@@ -95,6 +96,7 @@ export function ProjectTree({
   collapsedProjectIds,
   onAction,
   onProjectSelect,
+  onProjectPrimeSelection,
   onProjectReorder,
   onThreadOpen,
   onToggleProjectCollapse,
@@ -221,7 +223,7 @@ export function ProjectTree({
                         onSubmitEdit={() => handleSubmitEdit(project.id)}
                         onCreateSession={() => {
                           if (activeView !== "chat") {
-                            onProjectSelect(project.id);
+                            onProjectPrimeSelection(project.id);
                           }
                           void onAction("thread.new", { projectId: project.id });
                           setOpenProjectMenuId(null);

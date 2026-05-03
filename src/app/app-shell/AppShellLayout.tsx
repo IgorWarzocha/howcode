@@ -117,6 +117,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     handleAction,
     handleProjectReorder,
     handleProjectSelect,
+    handleSetSelectedProject,
     handleShowView,
     handleThreadOpen,
     handleToggleProjectCollapse,
@@ -360,6 +361,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             <Sidebar
               projects={projects}
               inboxThreads={controller.inboxThreads}
+              inboxLoading={controller.inboxLoading}
+              chatSidebarLoading={controller.chatSidebarLoading}
+              projectsLoading={controller.shellLoading}
               appLaunchedAtMs={controller.appLaunchedAtMs}
               appSettings={
                 controller.shellState?.appSettings ?? {
@@ -427,6 +431,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               }}
               onRefreshChatSidebar={controller.refreshChatSidebarState}
               onProjectSelect={handleProjectSelect}
+              onProjectPrimeSelection={handleSetSelectedProject}
               onProjectReorder={handleProjectReorder}
               onLoadProjectThreads={controller.handleLoadProjectThreads}
               onSelectInboxThread={controller.handleSelectInboxThread}

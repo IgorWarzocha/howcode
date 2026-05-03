@@ -212,6 +212,8 @@ export function useAppShellCommands({
     handleProjectReorder,
     handleProjectSelect: (projectId: string) =>
       dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
+    handleSetSelectedProject: (projectId: string) =>
+      dispatch({ type: "set-selected-project", projectId }),
     handleReturnToDesktopFromTakeover,
     handleSelectInboxThread,
     handleShowTakeoverTerminal,

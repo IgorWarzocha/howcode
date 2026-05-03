@@ -5,7 +5,7 @@ import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from 
 import { useDesktopBridge } from "../hooks/useDesktopBridge";
 import { useDesktopInbox } from "../hooks/useDesktopInbox";
 import { useDesktopShell } from "../hooks/useDesktopShell";
-import { useDesktopThread } from "../hooks/useDesktopThread";
+import { useDesktopThreadQuery } from "../hooks/useDesktopThread";
 import { useToast } from "../hooks/useToast";
 import { createInitialWorkspaceState, workspaceReducer } from "../state/workspace";
 import { deriveControllerViewModel } from "./controller-view-model";
@@ -26,6 +26,7 @@ export function useAppShellController() {
   const [composerState, setComposerState] = useState<ComposerState | null>(null);
   const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null);
   const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null);
+  const [projectGitLoading, setProjectGitLoading] = useState(false);
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false);
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
@@ -33,9 +34,11 @@ export function useAppShellController() {
   const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null);
   const [chatSidebarState, setChatSidebarState] =
     useState<Awaited<ReturnType<typeof getChatSidebarStateQuery>>>(null);
+  const [chatSidebarLoading, setChatSidebarLoading] = useState(false);
   const { toast, showToast } = useToast();
   const {
     shellState,
+    shellLoading,
     loadArchivedThreads,
     loadComposerState,
     listComposerAttachmentEntries,
@@ -48,16 +51,25 @@ export function useAppShellController() {
   } = useDesktopShell();
   const invokeDesktopAction = useDesktopBridge();
   const projects = shellState?.projects ?? [];
-  const threadData = useDesktopThread(
+  const threadQuery = useDesktopThreadQuery(
     state.selectedSessionPath,
     threadRefreshKey,
     threadHistoryCompactions,
   );
+  const threadData = threadQuery.data ?? null;
   const selectedPersistedSessionPath = getPersistedSessionPath(state.selectedSessionPath);
+  const threadDataMatchesSelection = threadData?.sessionPath === selectedPersistedSessionPath;
+  const activeThreadLoading = Boolean(
+    selectedPersistedSessionPath &&
+      (threadQuery.isLoading || threadQuery.isFetching) &&
+      !(liveThreadData?.sessionPath === selectedPersistedSessionPath || threadDataMatchesSelection),
+  );
   const effectiveThreadData =
     threadHistoryCompactions === 0 && liveThreadData?.sessionPath === selectedPersistedSessionPath
       ? liveThreadData
-      : threadData;
+      : threadDataMatchesSelection
+        ? threadData
+        : null;
   const inboxQuery = useDesktopInbox();
   const inboxThreads = inboxQuery.data ?? [];
   const selectedInboxThread = useMemo(
@@ -83,7 +95,24 @@ export function useAppShellController() {
 
   useEffect(() => {
     if (state.activeView === "chat") {
-      void getChatSidebarStateQuery(selectedChatGroupId).then(setChatSidebarState);
+      let cancelled = false;
+      setChatSidebarLoading(true);
+
+      void getChatSidebarStateQuery(selectedChatGroupId)
+        .then((nextState) => {
+          if (!cancelled) {
+            setChatSidebarState(nextState);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setChatSidebarLoading(false);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
     }
   }, [state.activeView, selectedChatGroupId]);
 
@@ -127,6 +156,7 @@ export function useAppShellController() {
     setComposerState,
     setLiveThreadData,
     setProjectGitState,
+    setProjectGitLoading,
     setThreadHistoryCompactions,
   });
 
@@ -191,6 +221,7 @@ export function useAppShellController() {
   return {
     activeComposerState,
     activeThreadData,
+    activeThreadLoading,
     archivedThreads,
     collapsedProjectIds,
     composerProjectId,
@@ -199,6 +230,7 @@ export function useAppShellController() {
     handleAction,
     ...commands,
     inboxThreads,
+    inboxLoading: inboxQuery.isLoading,
     handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
     handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
     handleLoadProjectThreads: loadProjectThreads,
@@ -208,7 +240,9 @@ export function useAppShellController() {
     appLaunchedAtMs,
     projects,
     projectGitState,
+    projectGitLoading,
     shellState,
+    shellLoading,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
@@ -216,6 +250,7 @@ export function useAppShellController() {
     terminalRunningSessionPaths,
     toast,
     chatSidebarState,
+    chatSidebarLoading,
     selectedChatGroupId,
     handleCreateChatGroup,
     handleSelectChatGroup: setSelectedChatGroupId,
