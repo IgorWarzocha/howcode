@@ -8,6 +8,8 @@ files:
   - build/electron/**
   - build/desktop/**
   - package.json
+  - "!node_modules/**/*.map"
+  - "!node_modules/lucide-react/**"
 asar: false
 extraResources:
   - from: desktop/resources
