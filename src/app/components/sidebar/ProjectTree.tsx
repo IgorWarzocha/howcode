@@ -220,9 +220,6 @@ export function ProjectTree({
                         }}
                         onSubmitEdit={() => handleSubmitEdit(project.id)}
                         onCreateSession={() => {
-                          if (activeView !== "chat") {
-                            onProjectSelect(project.id);
-                          }
                           void onAction("thread.new", { projectId: project.id });
                           setOpenProjectMenuId(null);
                         }}
