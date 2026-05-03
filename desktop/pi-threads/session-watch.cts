@@ -121,3 +121,10 @@ export async function setWatchedSessionPath(sessionPath: string | null) {
     console.warn(`Pi session watcher failed for ${sessionPath}`, error);
   });
 }
+
+export function disposeSessionWatcher() {
+  currentWatchToken += 1;
+  currentSessionPath = null;
+  lastObservedModifiedMs = 0;
+  closeCurrentWatcher();
+}

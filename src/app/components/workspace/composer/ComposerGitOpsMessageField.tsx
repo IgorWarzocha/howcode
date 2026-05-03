@@ -1,4 +1,4 @@
-import type { KeyboardEventHandler, ReactNode } from "react";
+import type { KeyboardEventHandler, ReactNode, RefObject } from "react";
 import { ComposerTextField } from "./ComposerTextField";
 
 type ComposerGitOpsMessageFieldProps = {
@@ -17,6 +17,9 @@ type ComposerGitOpsMessageFieldProps = {
   value: string;
   commitFocused: boolean;
   isGitRepo: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
+  hoverBoundaryRef?: RefObject<HTMLElement | null>;
 };
 
 export function ComposerGitOpsMessageField({
@@ -35,6 +38,9 @@ export function ComposerGitOpsMessageField({
   value,
   commitFocused,
   isGitRepo,
+  hoverToFocus,
+  hoverToBlur,
+  hoverBoundaryRef,
 }: ComposerGitOpsMessageFieldProps) {
   const errorMessage = actionErrorMessage ?? diffCommentError;
   const statusMessage = errorMessage ?? actionStatusMessage;
@@ -68,6 +74,9 @@ export function ComposerGitOpsMessageField({
       statusTone={statusTone}
       reservedLineCount={1}
       onHeightChange={onLayoutChange}
+      hoverToFocus={hoverToFocus}
+      hoverToBlur={hoverToBlur}
+      hoverBoundaryRef={hoverBoundaryRef}
     />
   );
 

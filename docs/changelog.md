@@ -1,19 +1,30 @@
-## Changelog
+### 0.1.4
 
-189 files changed, 9,707 lines added, 6,815 lines deleted, 16,522 total LoC changed.
+- Added Chat mode: just chat, with artifacts and minimal tools.
+- Added GitOps changed-files tree for faster diff review navigation.
+- Polished composer controls, model picker menus, sidebar modes, and settings groups.
+- Added a native ask-questions extension, works in both desktop and tui.
+- Added in-app update detection and restart flow.
+- Upgraded the terminal renderer to Ghostty via WTerm 0.3.0.
+- Added loading skeletons across workspace surfaces.
+- Fixed clean desktop shutdown,
+- Updated Pi packages to 0.72.1.
 
-In 2 days.
+Snapshot: May 3, 2026.
 
-- Moved Pi runtime work out of Electron's bundled Node and into external stock-Node hosts.
-- De-flickered the terminal drawer and Pi TUI takeover.
-- Streamed live runtime tool/subagent progress into the transcript and preserved Pi custom/system messages.
-- Made headless extension commands much more usable: `/commands` with args, visible errors, cancellable long runs, and composer stays usable while they run.
-- Added clear GitOps commit/push feedback and persisted GitOps defaults, including per-project overrides.
-- Persisted Git diff defaults and per-session diff overrides across the normal composer, GitOps composer, and Pi TUI takeover mini composer.
-- Let the sidebar add projects from GitHub repo links, with clone progress and temporary top pinning for newly added projects.
-- Made pasted image paths and raw screenshot clipboard attachments reliable, with cleanup for temporary clipboard images.
-- Fixed the Windows launcher/install relaunch path with Start Menu shortcuts, cached command launching, and cleaner artifact names.
-- Fixed settings layout overflow/cutoff, then tightened settings row spacing and action/icon alignment.
-- Updated WTerm to 0.2.1 for the embedded terminal stack.
+### 0.1.3
 
-Snapshot: April 30, 2026.
+- Moved Pi runtime work to external stock-Node hosts.
+- Improved headless extension commands: args, errors, cancellation, and non-blocking runs.
+- Fixed Windows launcher/install relaunch flow.
+- Added GitOps commit/push feedback and persisted GitOps defaults.
+- Added project import from GitHub repo links.
+- Persisted Git diff defaults and per-session diff overrides.
+- Fixed settings layout overflow and spacing.
+- Stabilized terminal drawer and Pi TUI takeover behavior.
+- Updated WTerm to 0.2.1.
+- Streamed live runtime tool/subagent progress into the transcript.
+- Kept composer content visible during send handoff.
+- Fixed pasted image paths and screenshot clipboard attachments.
+
+Snapshot: April 29, 2026.

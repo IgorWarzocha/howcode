@@ -12,7 +12,7 @@ export const defaultPiSettings: PiSettings = {
   enableInstallTelemetry: true,
   showHardwareCursor: false,
   clearOnShrink: false,
-  transport: "sse",
+  transport: "auto",
   steeringMode: "one-at-a-time",
   followUpMode: "one-at-a-time",
   doubleEscapeAction: "tree",

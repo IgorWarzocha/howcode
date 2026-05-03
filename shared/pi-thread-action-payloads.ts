@@ -30,6 +30,11 @@ export function getComposerRequest(payload: DesktopActionPayloadInput): Composer
     sessionPath: getPersistedSessionPath(
       typeof payload.sessionPath === "string" ? payload.sessionPath : null,
     ),
+    composerMode:
+      payload.composerMode === "chat" || payload.composerMode === "code"
+        ? payload.composerMode
+        : null,
+    chatGroupId: typeof payload.chatGroupId === "string" ? payload.chatGroupId : null,
   };
 }
 
@@ -245,7 +250,11 @@ export function getSettingsProjectDiffRenderModeDefault(
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === "gitCommitMessageModel" ||
+  return payload.key === "chatModel" ||
+    payload.key === "chatThinkingLevel" ||
+    payload.key === "codeModel" ||
+    payload.key === "codeThinkingLevel" ||
+    payload.key === "gitCommitMessageModel" ||
     payload.key === "gitCommitMessageThinkingLevel" ||
     payload.key === "skillCreatorModel" ||
     payload.key === "skillCreatorThinkingLevel" ||
@@ -260,11 +269,34 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === "gitOpsDefaultMode" ||
     payload.key === "gitDiffBaselineDefault" ||
     payload.key === "gitDiffRenderModeDefault" ||
+    payload.key === "gitDiffFileTreeDefaultVisible" ||
     payload.key === "projectDeletionMode" ||
     payload.key === "useAgentsSkillsPaths" ||
-    payload.key === "piTuiTakeover"
+    payload.key === "howcodeNativeAskQuestions" ||
+    payload.key === "piTuiTakeover" ||
+    payload.key === "hoverToFocus" ||
+    payload.key === "hoverToBlur"
     ? (payload.key as keyof AppSettings)
     : null;
+}
+
+export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInput) {
+  return typeof payload.requestId === "string" ? payload.requestId : null;
+}
+
+export function getNativeAskQuestionsAnswers(
+  payload: DesktopActionPayloadInput,
+): string[][] | null {
+  if (payload.answers === null) return null;
+  if (!Array.isArray(payload.answers)) return [];
+  return payload.answers.map((answer) =>
+    Array.isArray(answer)
+      ? answer
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [],
+  );
 }
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {

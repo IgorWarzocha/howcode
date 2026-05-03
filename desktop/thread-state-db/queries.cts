@@ -1,3 +1,5 @@
+import path from "node:path";
+import { getChatSessionDir } from "../chat-session-dir.cts";
 import type {
   ArchivedThread,
   InboxThread,
@@ -31,9 +33,19 @@ import type {
   ProjectDiffPreferences,
 } from "../../shared/desktop-contracts.ts";
 import { getLiveThread } from "../runtime/live-thread-store.cts";
+import { ensureChatStateSchema, isChatSessionPath } from "../chat-state-db.cts";
 import { ensureProject } from "./writes.cts";
 
+function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {}) {
+  return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath);
+}
+
+function getChatSessionLikePattern() {
+  return `${getChatSessionDir() + path.sep}%`;
+}
+
 export function listProjects(cwd: string): Project[] {
+  ensureChatStateSchema();
   const db = getThreadStateDatabase();
   ensureProject(cwd);
 
@@ -52,7 +64,13 @@ export function listProjects(cwd: string): Project[] {
           COUNT(threads.id) AS threadCount,
           COALESCE(MAX(threads.last_modified_ms), 0) AS latestModifiedMs
         FROM projects
-        LEFT JOIN threads ON threads.cwd = projects.cwd AND threads.archived = 0
+        LEFT JOIN threads
+          ON threads.cwd = projects.cwd
+          AND threads.archived = 0
+          AND threads.session_path NOT LIKE ?
+          AND NOT EXISTS (
+            SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
+          )
         WHERE projects.hidden = 0
         GROUP BY
           projects.cwd,
@@ -72,7 +90,7 @@ export function listProjects(cwd: string): Project[] {
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(cwd) as ProjectRow[];
+    .all(getChatSessionLikePattern(), cwd) as ProjectRow[];
 
   return rows.map(mapProjectRow);
 }
@@ -171,7 +189,7 @@ export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPrefer
   };
 }
 
-export function listProjectThreads(projectId: string): Thread[] {
+export function listProjectThreads(projectId: string, options: { chat?: boolean } = {}): Thread[] {
   const db = getThreadStateDatabase();
   const rows = db
     .prepare(
@@ -193,12 +211,16 @@ export function listProjectThreads(projectId: string): Thread[] {
     )
     .all(projectId) as ThreadRow[];
 
-  return rows.map((row) =>
-    mapThreadRow({
-      ...row,
-      running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)) ? 1 : 0,
-    }),
-  );
+  return rows
+    .filter((row) => matchesThreadScope(row.sessionPath, options))
+    .map((row) =>
+      mapThreadRow({
+        ...row,
+        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+          ? 1
+          : 0,
+      }),
+    );
 }
 
 export function listInboxThreads(): InboxThread[] {
@@ -217,10 +239,12 @@ export function listInboxThreads(): InboxThread[] {
           inbox_items.last_assistant_preview AS lastAssistantPreview,
           threads.running AS running,
           inbox_items.unread AS unread,
-          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs
+          COALESCE(inbox_items.last_assistant_at_ms, threads.last_modified_ms) AS lastActivityMs,
+          CASE WHEN chat_threads.session_path IS NULL THEN 0 ELSE 1 END AS isChat
         FROM inbox_items
         INNER JOIN threads ON threads.session_path = inbox_items.session_path
         INNER JOIN projects ON projects.cwd = threads.cwd
+        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE
           projects.hidden = 0
           AND threads.archived = 0
@@ -259,6 +283,7 @@ export function listArchivedThreads(): ArchivedThread[] {
           threads.last_modified_ms AS lastModifiedMs
         FROM threads
         INNER JOIN projects ON projects.cwd = threads.cwd
+        LEFT JOIN chat_threads ON chat_threads.session_path = threads.session_path
         WHERE threads.archived = 1
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
@@ -347,4 +372,31 @@ export function getThreadAssistantSnapshot(sessionPath: string) {
   }
 
   return row;
+}
+
+export function getSessionNativeExtensions(
+  sessionPath: string | null | undefined,
+): string[] | null {
+  if (!sessionPath) return null;
+  const db = getThreadStateDatabase();
+  const row = db
+    .prepare(
+      `
+        SELECT enabled_json AS enabledJson
+        FROM session_native_extensions
+        WHERE session_path = ?
+      `,
+    )
+    .get(sessionPath) as { enabledJson?: string } | undefined;
+
+  if (!row?.enabledJson) return null;
+
+  try {
+    const parsed = JSON.parse(row.enabledJson) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : null;
+  } catch {
+    return null;
+  }
 }

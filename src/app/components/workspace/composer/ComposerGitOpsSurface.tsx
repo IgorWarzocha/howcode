@@ -215,6 +215,9 @@ export function ComposerGitOpsSurface({
             diffCommentError={diffCommentError ?? diffLoadError}
             hasDiffComments={false}
             isGitRepo={isGitRepo}
+            hoverToFocus={appSettings.hoverToFocus}
+            hoverToBlur={appSettings.hoverToBlur}
+            hoverBoundaryRef={composerPanelRef}
             onBlur={() => setCommitFocused(false)}
             onChange={handleCommitMessageChange}
             onFocus={() => setCommitFocused(true)}
@@ -244,6 +247,9 @@ export function ComposerGitOpsSurface({
           diffCommentError={diffCommentError ?? diffLoadError}
           hasDiffComments
           isGitRepo={isGitRepo}
+          hoverToFocus={appSettings.hoverToFocus}
+          hoverToBlur={appSettings.hoverToBlur}
+          hoverBoundaryRef={composerPanelRef}
           onBlur={() => setCommitFocused(false)}
           onChange={handleCommitMessageChange}
           onFocus={() => setCommitFocused(true)}

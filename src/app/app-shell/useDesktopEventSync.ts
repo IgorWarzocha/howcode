@@ -10,6 +10,10 @@ import {
   refreshVisibleInboxThread,
   shouldAutoOpenStartedThread,
 } from "./desktop-event-sync";
+import {
+  applyProjectThreadToShellState,
+  getDraftReplacementSessionPath,
+} from "./project-thread-cache";
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
@@ -19,9 +23,10 @@ type QueryClientLike = {
 type UseDesktopEventSyncInput = {
   composerProjectId: string;
   workspaceState: WorkspaceState;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
+  refreshChatSidebarState: () => Promise<unknown>;
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
@@ -36,6 +41,7 @@ export function useDesktopEventSync({
   loadProjectThreads,
   loadProjectGitState,
   scheduleShellStateRefresh,
+  refreshChatSidebarState,
   queryClient,
   dispatch,
   setComposerState,
@@ -47,6 +53,7 @@ export function useDesktopEventSync({
     composerProjectId,
     workspaceState: {
       activeView: workspaceState.activeView,
+      selectedProjectId: workspaceState.selectedProjectId,
       selectedSessionPath: workspaceState.selectedSessionPath,
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
     } satisfies DesktopEventSelectionState,
@@ -57,6 +64,7 @@ export function useDesktopEventSync({
       composerProjectId,
       workspaceState: {
         activeView: workspaceState.activeView,
+        selectedProjectId: workspaceState.selectedProjectId,
         selectedSessionPath: workspaceState.selectedSessionPath,
         selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
       },
@@ -64,6 +72,7 @@ export function useDesktopEventSync({
   }, [
     composerProjectId,
     workspaceState.activeView,
+    workspaceState.selectedProjectId,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
@@ -90,7 +99,8 @@ export function useDesktopEventSync({
           ? event.sessionPath === visibleSessionPath
           : event.projectId === latestComposerProjectId &&
             ((latestWorkspaceState.activeView !== "thread" &&
-              latestWorkspaceState.activeView !== "gitops") ||
+              latestWorkspaceState.activeView !== "gitops" &&
+              latestWorkspaceState.activeView !== "chat") ||
               visibleSessionPath === null);
 
         if (shouldApplyComposerUpdate) {
@@ -122,11 +132,17 @@ export function useDesktopEventSync({
       }
 
       const isVisibleThreadUpdate = event.sessionPath === visibleSessionPath;
+      const shouldAutoOpenThread = shouldAutoOpenStartedThread({
+        reason: event.reason,
+        projectId: event.projectId,
+        isChat: event.isChat,
+        workspaceState: latestWorkspaceState,
+      });
       const isCompactionThreadUpdate =
         event.reason === "compaction-start" || event.reason === "compaction";
 
       setLiveThreadData((current) =>
-        isVisibleThreadUpdate || current?.sessionPath === event.sessionPath
+        isVisibleThreadUpdate || shouldAutoOpenThread || current?.sessionPath === event.sessionPath
           ? {
               ...threadWithPreferences,
               diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
@@ -148,7 +164,31 @@ export function useDesktopEventSync({
         event.reason === "external" ||
         event.reason === "compaction"
       ) {
-        void loadProjectThreads(event.projectId);
+        applyProjectThreadToShellState(
+          queryClient,
+          event.projectId,
+          {
+            id: event.threadId,
+            title: event.thread.title,
+            age: "Now",
+            lastModifiedMs: Date.now(),
+            sessionPath: event.sessionPath,
+            running: event.thread.isStreaming || event.thread.isCompacting,
+          },
+          {
+            replaceSessionPath: getDraftReplacementSessionPath(
+              latestWorkspaceState.selectedSessionPath,
+              latestWorkspaceState.selectedProjectId,
+              event.projectId,
+            ),
+          },
+        );
+        void loadProjectThreads(event.projectId, {
+          chat: latestWorkspaceState.activeView === "chat",
+        });
+        if (latestWorkspaceState.activeView === "chat") {
+          void refreshChatSidebarState();
+        }
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
         if (event.reason !== "compaction") {
           scheduleShellStateRefresh();
@@ -166,12 +206,13 @@ export function useDesktopEventSync({
         );
       }
 
-      if (shouldAutoOpenStartedThread(event.reason, latestWorkspaceState)) {
+      if (shouldAutoOpenThread) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
           threadId: event.threadId,
           sessionPath: event.sessionPath,
+          view: event.isChat === true ? "chat" : "thread",
         });
       }
 
@@ -196,6 +237,7 @@ export function useDesktopEventSync({
     loadProjectGitState,
     loadProjectThreads,
     queryClient,
+    refreshChatSidebarState,
     scheduleShellStateRefresh,
     setComposerState,
     setLiveThreadData,

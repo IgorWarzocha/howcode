@@ -10,6 +10,7 @@ import {
   getProjectName,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { loadAppSettings } from "../app-settings/readers.cts";
+import { deleteArtifactsForConversations } from "../artifact-state-db.cts";
 import { selectProjectRuntime } from "../pi-desktop-runtime.cts";
 import { createProject, createProjectFromGitHubUrl } from "../project-create.cts";
 import { getOriginUrl } from "../project-git/project-state.cts";
@@ -254,14 +255,24 @@ export async function handleProjectDesktopAction(
         }
 
         const appSettings = loadAppSettings();
+        const projectSessionPaths = listProjectSessionPaths(projectId);
 
         if (appSettings.projectDeletionMode === "full-clean") {
           await rm(projectId, { recursive: true, force: true });
+          const cleanupResult = await deleteProjectPiFiles(projectId);
+          deleteArtifactsForConversations(projectSessionPaths);
           deleteProject(projectId);
+          if (cleanupResult.failedSessionPaths.length > 0) {
+            return handledAction({
+              didMutate: true,
+              error: `Deleted project, but ${cleanupResult.failedSessionPaths.length} Pi session file(s) could not be removed.`,
+            });
+          }
         } else {
           const cleanupResult = await deleteProjectPiFiles(projectId);
 
           if (cleanupResult.failedSessionPaths.length > 0) {
+            deleteArtifactsForConversations(cleanupResult.deletedSessionPaths);
             deleteThreadRecordsBySessionPaths(cleanupResult.deletedSessionPaths);
 
             return handledAction({
@@ -272,6 +283,7 @@ export async function handleProjectDesktopAction(
             });
           }
 
+          deleteArtifactsForConversations(cleanupResult.deletedSessionPaths);
           deleteProject(projectId);
         }
       }

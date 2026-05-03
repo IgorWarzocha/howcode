@@ -45,7 +45,9 @@ type CodeWorkspaceMainViewProps = {
   selectedProjectId: string;
   workspaceContentClass: string;
   threadData: ThreadData | null;
+  threadLoading?: boolean;
   composerLayoutVersion: number;
+  composerOverlayHeight: number;
   onAction: DesktopActionInvoker;
   onDismissInboxThread: (thread: InboxThread) => void;
   onListAttachmentEntries: (request: {
@@ -79,7 +81,9 @@ export function CodeWorkspaceMainView({
   selectedProjectId,
   workspaceContentClass,
   threadData,
+  threadLoading = false,
   composerLayoutVersion,
+  composerOverlayHeight,
   onAction,
   onDismissInboxThread,
   onListAttachmentEntries,
@@ -100,6 +104,8 @@ export function CodeWorkspaceMainView({
         isStreaming={threadData?.isStreaming ?? false}
         isCompacting={threadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
+        composerOverlayHeight={composerOverlayHeight}
+        loading={threadLoading}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     );
@@ -192,7 +198,7 @@ export function CodeWorkspaceMainView({
   }
 
   return (
-    <div className="grid h-full content-start justify-items-center overflow-y-auto px-4 pb-6">
+    <div className="grid h-full min-h-0 justify-items-center overflow-hidden px-4 pb-6">
       <LandingView
         appSettings={appSettings}
         className={workspaceContentClass}

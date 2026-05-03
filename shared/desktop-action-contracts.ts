@@ -19,6 +19,9 @@ type EmptyActionPayload = Record<string, never>;
 
 export type DesktopActionPayloadFields = {
   attachments?: ComposerAttachment[];
+  composerMode?: "chat" | "code" | null;
+  chatGroupId?: string | null;
+  chatGroupIds?: string[];
   folders?: string[];
   imported?: boolean | null;
   gitOpsMode?: GitOpsMode | null;
@@ -36,6 +39,8 @@ export type DesktopActionPayloadFields = {
   projectName?: string;
   provider?: string;
   queueId?: string;
+  answers?: string[][] | null;
+  requestId?: string;
   queueSnapshotKey?: string;
   push?: boolean;
   queueIndex?: number;
@@ -55,6 +60,14 @@ export type DesktopActionPayloadInput = {
 };
 
 export type DesktopSettingsUpdatePayload =
+  | { key: "chatModel"; provider: string; modelId: string; reset?: false }
+  | { key: "chatModel"; reset: true }
+  | { key: "chatThinkingLevel"; value: ComposerThinkingLevel }
+  | { key: "chatThinkingLevel"; reset: true }
+  | { key: "codeModel"; provider: string; modelId: string; reset?: false }
+  | { key: "codeModel"; reset: true }
+  | { key: "codeThinkingLevel"; value: ComposerThinkingLevel }
+  | { key: "codeThinkingLevel"; reset: true }
   | { key: "gitCommitMessageModel"; provider: string; modelId: string; reset?: false }
   | { key: "gitCommitMessageModel"; reset: true }
   | { key: "gitCommitMessageThinkingLevel"; value: ComposerThinkingLevel }
@@ -72,9 +85,13 @@ export type DesktopSettingsUpdatePayload =
   | { key: "gitOpsDefaultMode"; value: GitOpsMode }
   | { key: "gitDiffBaselineDefault"; value: ProjectDiffDefaultBaseline }
   | { key: "gitDiffRenderModeDefault"; value: ProjectDiffRenderMode }
+  | { key: "gitDiffFileTreeDefaultVisible"; value: boolean }
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
-  | { key: "piTuiTakeover"; value: boolean };
+  | { key: "howcodeNativeAskQuestions"; value: boolean }
+  | { key: "piTuiTakeover"; value: boolean }
+  | { key: "hoverToFocus"; value: boolean }
+  | { key: "hoverToBlur"; value: boolean };
 
 export type DesktopActionPayloadMap = {
   "threads.collapse-all": EmptyActionPayload;
@@ -89,7 +106,20 @@ export type DesktopActionPayloadMap = {
   "project.refresh-repo-origin": { projectId: string };
   "project.archive-threads": { projectId: string; projectName?: string };
   "project.remove-project": { projectId: string; projectName?: string };
-  "thread.new": { projectId?: string | null; sessionPath?: string | null };
+  "chat.group.create": { chatGroupId?: string | null; value?: string | null };
+  "chat.group.rename": { chatGroupId: string; value: string };
+  "chat.group.reorder": { chatGroupIds: string[] };
+  "chat.group.collapse": { chatGroupId: string; value: boolean };
+  "chat.thread.move": {
+    threadId: string;
+    sessionPath?: string | null;
+    chatGroupId?: string | null;
+  };
+  "thread.new": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    chatGroupId?: string | null;
+  };
   "thread.open": { projectId?: string | null; sessionPath?: string | null; threadId?: string };
   "thread.archive": { threadId: string };
   "thread.archive-many": { projectId?: string | null; threadIds: string[] };
@@ -132,6 +162,7 @@ export type DesktopActionPayloadMap = {
   "composer.send": {
     projectId?: string | null;
     sessionPath?: string | null;
+    chatGroupId?: string | null;
     text: string;
     attachments?: ComposerAttachment[];
     streamingBehavior?: ComposerStreamingBehavior;
@@ -145,6 +176,14 @@ export type DesktopActionPayloadMap = {
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
   };
   "composer.reload-settings": { projectId?: string | null; sessionPath?: string | null };
+  "composer.answer-native-questions": {
+    projectId?: string | null;
+    sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
+    chatGroupId?: string | null;
+    requestId: string;
+    answers: string[][] | null;
+  };
   "inbox.mark-read": { sessionPath: string; projectId?: string | null };
   "inbox.dismiss": { sessionPath: string; projectId?: string | null };
   "settings.update": DesktopSettingsUpdatePayload;

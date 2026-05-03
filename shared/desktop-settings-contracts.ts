@@ -19,6 +19,10 @@ export type ProjectDeletionMode = "pi-only" | "full-clean";
 export type GitOpsMode = "commit" | "commit-push";
 
 export type AppSettings = {
+  chatModel: ModelSelection | null;
+  chatThinkingLevel: ComposerThinkingLevel | null;
+  codeModel: ModelSelection | null;
+  codeThinkingLevel: ComposerThinkingLevel | null;
   gitCommitMessageModel: ModelSelection | null;
   gitCommitMessageThinkingLevel: ComposerThinkingLevel;
   skillCreatorModel: ModelSelection | null;
@@ -34,9 +38,13 @@ export type AppSettings = {
   gitOpsDefaultMode: GitOpsMode;
   gitDiffBaselineDefault: ProjectDiffDefaultBaseline;
   gitDiffRenderModeDefault: ProjectDiffRenderMode;
+  gitDiffFileTreeDefaultVisible: boolean;
   projectDeletionMode: ProjectDeletionMode;
   useAgentsSkillsPaths: boolean;
+  howcodeNativeAskQuestions: boolean;
   piTuiTakeover: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
 };
 
 export type PiTransportMode = "sse" | "websocket" | "auto";

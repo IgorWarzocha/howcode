@@ -357,6 +357,7 @@ export function InboxComposer({
         text: "/compact",
         attachments: [],
         streamingBehavior: appSettings.composerStreamingBehavior,
+        composerMode: thread.isChat ? "chat" : "code",
       });
 
       const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not compact context.");
@@ -548,6 +549,9 @@ export function InboxComposer({
                   placeholderTone={errorMessage ? "error" : "muted"}
                   statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                   reservedLineCount={1}
+                  hoverToFocus={appSettings.hoverToFocus}
+                  hoverToBlur={appSettings.hoverToBlur}
+                  hoverBoundaryRef={composerPanelRef}
                 />
               </div>
             </div>

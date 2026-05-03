@@ -5,11 +5,17 @@ import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
-import { compactCardClass, compactIconButtonClass } from "../../ui/classes";
+import { compactIconButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { HowcodeLogoMark } from "../common/HowcodeLogoMark";
 import { ToolbarButton } from "../common/ToolbarButton";
 import { ComposerDiffBaselineSelector } from "./composer/ComposerDiffBaselineSelector";
+import {
+  WorkspaceBranchChip,
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from "./footer/WorkspaceFooterPrimitives";
 import { getGitOpsEntryButtonClass } from "./composer/git-ops";
 import { TerminalViewport } from "./terminal/TerminalViewport";
 
@@ -26,6 +32,8 @@ type TerminalPanelProps = {
   projectGitState?: ProjectGitState | null;
   diffBaseline?: ProjectDiffBaseline;
   onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
 };
 
 export const TerminalPanel = memo(function TerminalPanel({
@@ -38,6 +46,8 @@ export const TerminalPanel = memo(function TerminalPanel({
   projectGitState = null,
   diffBaseline,
   onSetDiffBaseline,
+  hoverToFocus = true,
+  hoverToBlur = false,
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
   const panelRef = useRef<HTMLDivElement>(null);
@@ -63,24 +73,29 @@ export const TerminalPanel = memo(function TerminalPanel({
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
+          hoverToFocus={hoverToFocus}
+          hoverToBlur={hoverToBlur}
+          stickToBottomOnOutput={false}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
         <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
           <div className="h-px bg-[rgba(169,178,215,0.07)]" />
-          <div className="flex items-center gap-1.5 rounded-b-[20px] px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
+          <div className={cn(workspaceFooterRowClass, "rounded-b-[20px]")}>
             <ToolbarButton
               label="Desktop"
               tooltip="Howcode Desktop"
               icon={<HowcodeLogoMark className="h-[14px] w-[14px]" />}
+              className={workspaceFooterTextClass}
               onClick={onClose}
             />
             <ToolbarButton
               label="Terminal"
               tooltip="Shell terminal"
               icon={<SquareTerminal size={14} />}
+              className={workspaceFooterTextClass}
               onClick={onOpenDrawerTerminal}
             />
-            <div className="ml-auto flex items-center gap-2 max-md:flex-wrap">
+            <div className={workspaceFooterTrailingGroupClass}>
               {projectGitState?.isGitRepo && diffBaseline && onSetDiffBaseline ? (
                 <ComposerDiffBaselineSelector
                   composerPanelRef={panelRef}
@@ -91,15 +106,7 @@ export const TerminalPanel = memo(function TerminalPanel({
                 />
               ) : null}
               {projectGitState?.isGitRepo ? (
-                <div
-                  className={cn(
-                    compactCardClass,
-                    "inline-flex max-w-[12rem] px-2.5 py-1 text-[12px] text-[color:var(--muted)]",
-                  )}
-                  title={projectGitState.branch ?? "Detached"}
-                >
-                  <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
-                </div>
+                <WorkspaceBranchChip branch={projectGitState.branch} />
               ) : null}
               <button
                 type="button"
@@ -146,6 +153,8 @@ export const TerminalPanel = memo(function TerminalPanel({
           onProcessExit={onClose}
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
+          hoverToFocus={hoverToFocus}
+          hoverToBlur={hoverToBlur}
           className="terminal-viewport--flush terminal-viewport--bottom-reserve absolute inset-0 h-auto min-h-0 rounded-none bg-[color:var(--sidebar)]"
         />
       </div>

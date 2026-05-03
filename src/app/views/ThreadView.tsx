@@ -1,8 +1,5 @@
 import { ThreadTimeline } from "../components/workspace/thread/ThreadTimeline";
-import {
-  chatEmptyStateClass,
-  chatHiddenViewportClass,
-} from "../components/workspace/thread/thread-layout";
+import { ThreadTimelineSkeleton } from "../components/workspace/thread/ThreadTimelineSkeleton";
 import type { Message } from "../types";
 
 type ThreadViewProps = {
@@ -11,6 +8,8 @@ type ThreadViewProps = {
   isStreaming: boolean;
   isCompacting: boolean;
   composerLayoutVersion: number;
+  composerOverlayHeight?: number;
+  loading?: boolean;
   onLoadEarlierMessages: () => void;
 };
 
@@ -20,16 +19,16 @@ export function ThreadView({
   isStreaming,
   isCompacting,
   composerLayoutVersion,
+  composerOverlayHeight = 0,
+  loading = false,
   onLoadEarlierMessages,
 }: ThreadViewProps) {
+  if (loading) {
+    return <ThreadTimelineSkeleton composerOverlayHeight={composerOverlayHeight} />;
+  }
+
   if (messages.length === 0) {
-    return (
-      <div className={chatHiddenViewportClass}>
-        <div className={chatEmptyStateClass}>
-          <div className="grid place-items-center">No messages yet.</div>
-        </div>
-      </div>
-    );
+    return <div className="h-full" />;
   }
 
   return (
@@ -39,6 +38,7 @@ export function ThreadView({
       isStreaming={isStreaming}
       isCompacting={isCompacting}
       composerLayoutVersion={composerLayoutVersion}
+      composerOverlayHeight={composerOverlayHeight}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {
           return;

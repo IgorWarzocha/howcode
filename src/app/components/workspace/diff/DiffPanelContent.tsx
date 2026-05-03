@@ -8,7 +8,9 @@ import { cn } from "../../../utils/cn";
 import { getDiffBaselinePrefix, getResolvedDiffBaselineLabel } from "../composer/diff-baseline";
 import { DiffCommentAnnotationCard } from "./DiffCommentAnnotationCard";
 import { DiffPanelEmptyState } from "./DiffPanelEmptyState";
+import { DiffChangedFilesTree } from "./DiffChangedFilesTree";
 import { DiffPanelFileList } from "./DiffPanelFileList";
+import { DiffPanelSkeleton } from "./DiffPanelSkeleton";
 import {
   DIFF_FILE_ESTIMATED_FILE_GAP,
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
@@ -17,6 +19,7 @@ import {
   estimateFileDiffHeight,
   getRenderablePatch,
   orderRenderableFiles,
+  resolveFileDiffPath,
 } from "./diff-panel-content.helpers";
 import { useDiffCommentDrafting } from "./useDiffCommentDrafting";
 import { useDiffPanelCommentState } from "./useDiffPanelCommentState";
@@ -31,6 +34,8 @@ type DiffPanelContentProps = {
   selectedCommentJumpKey: number;
   diffRenderMode: "stacked" | "split";
   layoutMode?: "split" | "overlay" | "main";
+  showFileTree?: boolean;
+  loading?: boolean;
 };
 
 export function DiffPanelContent({
@@ -42,8 +47,13 @@ export function DiffPanelContent({
   selectedCommentJumpKey,
   diffRenderMode,
   layoutMode = "split",
+  showFileTree = true,
+  loading = false,
 }: DiffPanelContentProps) {
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
+  const [diffContentReady, setDiffContentReady] = useState(false);
+  const [focusedFilePaths, setFocusedFilePaths] = useState<readonly string[]>([]);
+  const [renderFileTree, setRenderFileTree] = useState(showFileTree);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
   const { diff, isLoading, error } = useDesktopDiff(projectId, baseline, isGitRepo);
@@ -62,6 +72,50 @@ export function DiffPanelContent({
         : [],
     [renderablePatch],
   );
+
+  useEffect(() => {
+    if (!renderablePatch || renderablePatch.kind !== "files") {
+      setDiffContentReady(false);
+      return;
+    }
+
+    setDiffContentReady(false);
+    const timeout = window.setTimeout(() => setDiffContentReady(true), 120);
+    return () => window.clearTimeout(timeout);
+  }, [renderablePatch]);
+  const normalizedFocusedFilePaths = useMemo(
+    () => focusedFilePaths.map((filePath) => filePath.replace(/\/+$/, "")),
+    [focusedFilePaths],
+  );
+  const selectedFilePathSet = useMemo(
+    () => new Set(normalizedFocusedFilePaths),
+    [normalizedFocusedFilePaths],
+  );
+  const hasFocusedFiles = showFileTree && normalizedFocusedFilePaths.length > 0;
+  const visibleRenderableFiles = useMemo(() => {
+    if (!hasFocusedFiles) {
+      return renderableFiles;
+    }
+
+    const isVisiblePath = (filePath: string) =>
+      selectedFilePathSet.has(filePath) ||
+      normalizedFocusedFilePaths.some((selectedPath) => filePath.startsWith(`${selectedPath}/`));
+    const selectedFileStillVisible = selectedFilePath ? isVisiblePath(selectedFilePath) : true;
+
+    return renderableFiles.filter((fileDiff) => {
+      const filePath = resolveFileDiffPath(fileDiff);
+      return (
+        isVisiblePath(filePath) || (!selectedFileStillVisible && filePath === selectedFilePath)
+      );
+    });
+  }, [
+    hasFocusedFiles,
+    normalizedFocusedFilePaths,
+    renderableFiles,
+    selectedFilePath,
+    selectedFilePathSet,
+  ]);
+
   const {
     annotationCountByFile,
     commentAnnotationsByFile,
@@ -87,6 +141,17 @@ export function DiffPanelContent({
   });
 
   useEffect(() => {
+    if (showFileTree) {
+      setRenderFileTree(true);
+      return;
+    }
+
+    setFocusedFilePaths([]);
+    const timeout = window.setTimeout(() => setRenderFileTree(false), 200);
+    return () => window.clearTimeout(timeout);
+  }, [showFileTree]);
+
+  useEffect(() => {
     if (!hasCommentContext) {
       clearDragSelection();
     }
@@ -94,7 +159,7 @@ export function DiffPanelContent({
 
   const estimatedFileHeights = useMemo(
     () =>
-      renderableFiles.map((fileDiff) => {
+      visibleRenderableFiles.map((fileDiff) => {
         const fileKey = buildFileDiffRenderKey(fileDiff);
         return estimateFileDiffHeight({
           fileDiff,
@@ -103,17 +168,21 @@ export function DiffPanelContent({
           annotationCount: annotationCountByFile.get(fileKey) ?? 0,
         });
       }),
-    [annotationCountByFile, collapsedFiles, diffRenderMode, renderableFiles],
+    [annotationCountByFile, collapsedFiles, diffRenderMode, visibleRenderableFiles],
   );
 
   const getVirtualItemKey = useCallback(
-    (index: number) => buildFileDiffRenderKey(renderableFiles[index] as FileDiffMetadata),
-    [renderableFiles],
+    (index: number) => buildFileDiffRenderKey(visibleRenderableFiles[index] as FileDiffMetadata),
+    [visibleRenderableFiles],
   );
 
   const fileListVirtualizer = useVirtualizer({
-    count: renderableFiles.length,
+    count: visibleRenderableFiles.length,
     getScrollElement: () => scrollContainerRef.current,
+    initialRect: {
+      width: 960,
+      height: 720,
+    },
     estimateSize: (index) =>
       estimatedFileHeights[index] ??
       DIFF_FILE_ESTIMATED_HEADER_HEIGHT + DIFF_FILE_ESTIMATED_FILE_GAP,
@@ -145,7 +214,7 @@ export function DiffPanelContent({
     draftCardRef,
     draftTarget,
     fileListVirtualizer,
-    renderableFiles,
+    renderableFiles: visibleRenderableFiles,
     savedComments,
     scrollContainerRef,
     selectedCommentId,
@@ -162,48 +231,83 @@ export function DiffPanelContent({
       )}
       {...getFeatureStatusDataAttributes("feature:diff.panel")}
     >
-      {!isGitRepo ? (
+      {loading ? (
+        <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+          <DiffPanelSkeleton showFileTree={showFileTree} />
+        </div>
+      ) : !isGitRepo ? (
         <DiffPanelEmptyState message="Diffs are unavailable because this project is not a git repository." />
       ) : (
         <>
           <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            {!renderablePatch ? (
+            {isLoading && !renderablePatch ? (
+              <DiffPanelSkeleton showFileTree={showFileTree} />
+            ) : !renderablePatch ? (
               <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-[color:var(--muted)]">
                 <div className="grid max-w-[42rem] gap-1.5">
                   <p>
-                    {isLoading
-                      ? "Loading diff..."
-                      : error
-                        ? "Diff unavailable."
-                        : hasNoNetChanges
-                          ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
-                          : "No patch available for this worktree."}
+                    {error
+                      ? "Diff unavailable."
+                      : hasNoNetChanges
+                        ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
+                        : "No patch available for this worktree."}
                   </p>
                   {error ? <p className="text-[#f2a7a7]">{error}</p> : null}
                 </div>
               </div>
             ) : renderablePatch.kind === "files" ? (
-              <div
-                ref={scrollContainerRef}
-                className="h-full min-h-0 overflow-auto [overflow-anchor:none]"
-              >
-                <DiffPanelFileList
-                  collapsedFiles={collapsedFiles}
-                  commentAnnotationsByFile={commentAnnotationsByFile}
-                  diffRenderMode={diffRenderMode}
-                  draftSelectedLines={draftSelectedLines}
-                  getFileInteractionHandlers={getFileInteractionHandlers}
-                  getSelectedLinesForFile={getSelectedLinesForFile}
-                  handleFilePointerDownCapture={handleFilePointerDownCapture}
-                  measureElement={fileListVirtualizer.measureElement}
-                  onOpenDraftComment={openDraftComment}
-                  onToggleFileCollapsed={toggleFileCollapsed}
-                  projectId={projectId}
-                  renderCommentAnnotation={renderCommentAnnotation}
-                  renderableFiles={renderableFiles}
-                  totalSize={fileListVirtualizer.getTotalSize()}
-                  virtualItems={fileListVirtualizer.getVirtualItems()}
-                />
+              <div className="relative h-full min-h-0">
+                {!diffContentReady ? (
+                  <div className="absolute inset-0 z-10 bg-[color:var(--workspace)]">
+                    <DiffPanelSkeleton showFileTree={showFileTree} />
+                  </div>
+                ) : null}
+                <div
+                  className={cn(
+                    "flex h-full min-h-0 transition-opacity duration-100",
+                    diffContentReady ? "opacity-100" : "opacity-0",
+                  )}
+                >
+                  <div
+                    ref={scrollContainerRef}
+                    className="min-h-0 min-w-0 flex-1 overflow-auto [overflow-anchor:none]"
+                  >
+                    <DiffPanelFileList
+                      collapsedFiles={collapsedFiles}
+                      commentAnnotationsByFile={commentAnnotationsByFile}
+                      diffRenderMode={diffRenderMode}
+                      draftSelectedLines={draftSelectedLines}
+                      getFileInteractionHandlers={getFileInteractionHandlers}
+                      getSelectedLinesForFile={getSelectedLinesForFile}
+                      handleFilePointerDownCapture={handleFilePointerDownCapture}
+                      measureElement={fileListVirtualizer.measureElement}
+                      onOpenDraftComment={openDraftComment}
+                      onToggleFileCollapsed={toggleFileCollapsed}
+                      projectId={projectId}
+                      renderCommentAnnotation={renderCommentAnnotation}
+                      renderableFiles={visibleRenderableFiles}
+                      totalSize={fileListVirtualizer.getTotalSize()}
+                      virtualItems={fileListVirtualizer.getVirtualItems()}
+                    />
+                  </div>
+                  <div
+                    className="min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                    style={{
+                      width: showFileTree ? "min(28rem, calc(100% - 2.5rem))" : 0,
+                      opacity: showFileTree ? 1 : 0,
+                    }}
+                    aria-hidden={!showFileTree}
+                  >
+                    {renderFileTree ? (
+                      <DiffChangedFilesTree
+                        files={renderableFiles}
+                        selectedPaths={focusedFilePaths}
+                        focusedFileCount={hasFocusedFiles ? visibleRenderableFiles.length : 0}
+                        onSelectedPathsChange={setFocusedFilePaths}
+                      />
+                    ) : null}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="h-full overflow-auto p-3">

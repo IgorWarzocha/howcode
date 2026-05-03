@@ -20,6 +20,10 @@ import {
   getSettingsThinkingLevel,
 } from "../../shared/pi-thread-action-payloads.ts";
 import {
+  setChatModelSelection,
+  setChatThinkingLevel,
+  setCodeModelSelection,
+  setCodeThinkingLevel,
   setComposerStreamingBehavior,
   setDictationMaxDurationSeconds,
   setDictationModelId,
@@ -27,8 +31,12 @@ import {
   setGitCommitMessageModelSelection,
   setGitCommitMessageThinkingLevel,
   setGitDiffBaselineDefault,
+  setGitDiffFileTreeDefaultVisible,
   setGitDiffRenderModeDefault,
   setGitOpsDefaultMode,
+  setHowcodeNativeAskQuestions,
+  setHoverToBlur,
+  setHoverToFocus,
   setInitializeGitOnProjectCreate,
   setPiTuiTakeover,
   setPreferredProjectLocation,
@@ -127,8 +135,23 @@ export async function handleSettingsDesktopAction(
     return handledAction();
   }
 
+  if (key === "howcodeNativeAskQuestions") {
+    setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false);
+    return handledAction();
+  }
+
   if (key === "piTuiTakeover") {
     setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false);
+    return handledAction();
+  }
+
+  if (key === "hoverToFocus") {
+    setHoverToFocus(getSettingsBooleanValue(payload) ?? true);
+    return handledAction();
+  }
+
+  if (key === "hoverToBlur") {
+    setHoverToBlur(getSettingsBooleanValue(payload) ?? false);
     return handledAction();
   }
 
@@ -161,6 +184,14 @@ export async function handleSettingsDesktopAction(
     return handledAction();
   }
 
+  if (key === "gitDiffFileTreeDefaultVisible") {
+    const value = getSettingsBooleanValue(payload);
+    if (value !== null) {
+      setGitDiffFileTreeDefaultVisible(value);
+    }
+    return handledAction();
+  }
+
   if (key === "gitDiffRenderModeDefault") {
     const value = getSettingsProjectDiffRenderModeDefault(payload);
     if (value) {
@@ -173,6 +204,58 @@ export async function handleSettingsDesktopAction(
     const value = getSettingsProjectDeletionMode(payload);
     if (value) {
       setProjectDeletionMode(value);
+    }
+    return handledAction();
+  }
+
+  if (key === "chatModel") {
+    if (getSettingsReset(payload)) {
+      setChatModelSelection(null);
+      return handledAction();
+    }
+
+    const selection = getSettingsModelSelection(payload);
+    if (selection) {
+      setChatModelSelection(selection);
+    }
+    return handledAction();
+  }
+
+  if (key === "codeModel") {
+    if (getSettingsReset(payload)) {
+      setCodeModelSelection(null);
+      return handledAction();
+    }
+
+    const selection = getSettingsModelSelection(payload);
+    if (selection) {
+      setCodeModelSelection(selection);
+    }
+    return handledAction();
+  }
+
+  if (key === "chatThinkingLevel") {
+    if (getSettingsReset(payload)) {
+      setChatThinkingLevel(null);
+      return handledAction();
+    }
+
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setChatThinkingLevel(level);
+    }
+    return handledAction();
+  }
+
+  if (key === "codeThinkingLevel") {
+    if (getSettingsReset(payload)) {
+      setCodeThinkingLevel(null);
+      return handledAction();
+    }
+
+    const level = getSettingsThinkingLevel(payload);
+    if (level) {
+      setCodeThinkingLevel(level);
     }
     return handledAction();
   }

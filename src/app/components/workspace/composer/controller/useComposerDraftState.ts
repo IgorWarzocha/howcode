@@ -4,6 +4,7 @@ import { mergeDraftWithRestoredQueuedPrompt } from "../composer-queue.helpers";
 import { composerDraftStore, getComposerDraftThreadId } from "../composerDraftStore";
 
 export function useComposerDraftState({
+  composerMode,
   projectId,
   sessionPath,
   openMenu,
@@ -12,6 +13,7 @@ export function useComposerDraftState({
   restoredQueuedPrompt,
   onRestoredQueuedPromptApplied,
 }: {
+  composerMode: "chat" | "code";
   projectId: string;
   sessionPath: string | null;
   openMenu: "model" | "picker" | null;
@@ -21,14 +23,14 @@ export function useComposerDraftState({
   onRestoredQueuedPromptApplied: () => void;
 }) {
   const draftThreadId = useMemo(
-    () => getComposerDraftThreadId({ projectId, sessionPath }),
-    [projectId, sessionPath],
+    () => getComposerDraftThreadId({ composerMode, projectId, sessionPath }),
+    [composerMode, projectId, sessionPath],
   );
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const composerScopeKey = useMemo(
-    () => `${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
-    [draftThreadId, projectId, sessionPath],
+    () => `${composerMode}::${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
+    [composerMode, draftThreadId, projectId, sessionPath],
   );
   const activeComposerScopeKeyRef = useRef(composerScopeKey);
   const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);

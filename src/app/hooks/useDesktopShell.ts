@@ -52,6 +52,7 @@ function mergeShellStateProjects(
         threads: currentProject.threads,
         threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
         threadsLoaded: true,
+        threadsScope: currentProject.threadsScope,
       };
     }),
   };
@@ -97,10 +98,11 @@ export function useDesktopShell() {
   }, [shellRefreshDebouncer]);
 
   const loadProjectThreads = useCallback(
-    async (projectId: string) => {
+    async (projectId: string, options: { chat?: boolean } = {}) => {
+      const threadsScope = options.chat ? "chat" : "code";
       const threads = await queryClient.fetchQuery({
-        queryKey: desktopQueryKeys.projectThreads(projectId),
-        queryFn: () => getProjectThreadsQuery(projectId),
+        queryKey: desktopQueryKeys.projectThreads(projectId, options.chat === true),
+        queryFn: () => getProjectThreadsQuery(projectId, options.chat === true),
         staleTime: 0,
       });
 
@@ -113,7 +115,13 @@ export function useDesktopShell() {
           ...currentState,
           projects: currentState.projects.map((project) =>
             project.id === projectId
-              ? { ...project, threads, threadCount: threads.length, threadsLoaded: true }
+              ? {
+                  ...project,
+                  threads,
+                  threadCount: threads.length,
+                  threadsLoaded: true,
+                  threadsScope,
+                }
               : project,
           ),
         };
@@ -212,6 +220,7 @@ export function useDesktopShell() {
 
   return {
     shellState: shellStateQuery.data ?? null,
+    shellLoading: shellStateQuery.isLoading,
     refreshShellState,
     scheduleShellStateRefresh,
     loadProjectThreads,

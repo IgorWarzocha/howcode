@@ -24,6 +24,10 @@ export function getOptimisticallyUpdatedShellState(
   }
 
   if (
+    payload.key !== "chatModel" &&
+    payload.key !== "chatThinkingLevel" &&
+    payload.key !== "codeModel" &&
+    payload.key !== "codeThinkingLevel" &&
     payload.key !== "gitCommitMessageModel" &&
     payload.key !== "gitCommitMessageThinkingLevel" &&
     payload.key !== "skillCreatorModel" &&
@@ -39,9 +43,13 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "gitOpsDefaultMode" &&
     payload.key !== "gitDiffBaselineDefault" &&
     payload.key !== "gitDiffRenderModeDefault" &&
+    payload.key !== "gitDiffFileTreeDefaultVisible" &&
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
-    payload.key !== "piTuiTakeover"
+    payload.key !== "howcodeNativeAskQuestions" &&
+    payload.key !== "piTuiTakeover" &&
+    payload.key !== "hoverToFocus" &&
+    payload.key !== "hoverToBlur"
   ) {
     return currentState;
   }
@@ -54,6 +62,24 @@ export function getOptimisticallyUpdatedShellState(
           ? { provider: payload.provider, id: payload.modelId }
           : currentState.appSettings.gitCommitMessageModel
       : currentState.appSettings.gitCommitMessageModel;
+
+  const nextChatSelection =
+    payload.key === "chatModel"
+      ? payload.reset === true
+        ? null
+        : typeof payload.provider === "string" && typeof payload.modelId === "string"
+          ? { provider: payload.provider, id: payload.modelId }
+          : currentState.appSettings.chatModel
+      : currentState.appSettings.chatModel;
+
+  const nextCodeSelection =
+    payload.key === "codeModel"
+      ? payload.reset === true
+        ? null
+        : typeof payload.provider === "string" && typeof payload.modelId === "string"
+          ? { provider: payload.provider, id: payload.modelId }
+          : currentState.appSettings.codeModel
+      : currentState.appSettings.codeModel;
 
   const nextSkillCreatorSelection =
     payload.key === "skillCreatorModel"
@@ -76,6 +102,24 @@ export function getOptimisticallyUpdatedShellState(
     payload.key === "gitCommitMessageThinkingLevel" && isThinkingLevel(payload.value)
       ? payload.value
       : currentState.appSettings.gitCommitMessageThinkingLevel;
+
+  const nextChatThinkingLevel =
+    payload.key === "chatThinkingLevel"
+      ? payload.reset === true
+        ? null
+        : isThinkingLevel(payload.value)
+          ? payload.value
+          : currentState.appSettings.chatThinkingLevel
+      : currentState.appSettings.chatThinkingLevel;
+
+  const nextCodeThinkingLevel =
+    payload.key === "codeThinkingLevel"
+      ? payload.reset === true
+        ? null
+        : isThinkingLevel(payload.value)
+          ? payload.value
+          : currentState.appSettings.codeThinkingLevel
+      : currentState.appSettings.codeThinkingLevel;
 
   const nextSkillCreatorThinkingLevel =
     payload.key === "skillCreatorThinkingLevel" && isThinkingLevel(payload.value)
@@ -169,20 +213,44 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.gitDiffRenderModeDefault;
 
+  const nextGitDiffFileTreeDefaultVisible =
+    payload.key === "gitDiffFileTreeDefaultVisible" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.gitDiffFileTreeDefaultVisible;
+
   const nextUseAgentsSkillsPaths =
     payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
       ? payload.value
       : currentState.appSettings.useAgentsSkillsPaths;
+
+  const nextHowcodeNativeAskQuestions =
+    payload.key === "howcodeNativeAskQuestions" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.howcodeNativeAskQuestions;
 
   const nextPiTuiTakeover =
     payload.key === "piTuiTakeover" && typeof payload.value === "boolean"
       ? payload.value
       : currentState.appSettings.piTuiTakeover;
 
+  const nextHoverToFocus =
+    payload.key === "hoverToFocus" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.hoverToFocus;
+
+  const nextHoverToBlur =
+    payload.key === "hoverToBlur" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.hoverToBlur;
+
   return {
     ...currentState,
     appSettings: {
       ...currentState.appSettings,
+      chatModel: nextChatSelection,
+      chatThinkingLevel: nextChatThinkingLevel,
+      codeModel: nextCodeSelection,
+      codeThinkingLevel: nextCodeThinkingLevel,
       gitCommitMessageModel: nextSelection,
       gitCommitMessageThinkingLevel: nextGitCommitThinkingLevel,
       skillCreatorModel: nextSkillCreatorSelection,
@@ -198,9 +266,13 @@ export function getOptimisticallyUpdatedShellState(
       gitOpsDefaultMode: nextGitOpsDefaultMode,
       gitDiffBaselineDefault: nextGitDiffBaselineDefault,
       gitDiffRenderModeDefault: nextGitDiffRenderModeDefault,
+      gitDiffFileTreeDefaultVisible: nextGitDiffFileTreeDefaultVisible,
       projectDeletionMode: nextProjectDeletionMode,
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
+      howcodeNativeAskQuestions: nextHowcodeNativeAskQuestions,
       piTuiTakeover: nextPiTuiTakeover,
+      hoverToFocus: nextHoverToFocus,
+      hoverToBlur: nextHoverToBlur,
     },
   } satisfies ShellState;
 }

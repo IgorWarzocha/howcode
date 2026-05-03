@@ -1,4 +1,5 @@
-import { Terminal, type TerminalHandle, type WTerm } from "@wterm/react";
+import { GhosttyCore } from "@wterm/ghostty";
+import { Terminal, type TerminalCore, type TerminalHandle, type WTerm } from "@wterm/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPersistedSessionPath } from "../../../../../shared/session-paths";
 import type { TerminalEvent } from "../../../desktop/types";
@@ -10,6 +11,7 @@ import {
   writeDesktopTerminal,
 } from "../../../hooks/useDesktopTerminal";
 import { cn } from "../../../utils/cn";
+import { useHoverToFocus } from "../../../hooks/useHoverToFocus";
 import {
   cancelScheduledTerminalClose,
   scheduleTerminalClose,
@@ -47,8 +49,32 @@ type TerminalViewportProps = {
   closeWhenSessionFileIdleMs?: number;
   maxKeepAliveMsOnUnmount?: number;
   backgroundCssVar?: TerminalBackgroundCssVar;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
+  stickToBottomOnOutput?: boolean;
   className?: string;
 };
+
+async function loadUsableGhosttyCore() {
+  const probe = await GhosttyCore.load({ scrollbackLimit: 100 });
+  probe.init(20, 5);
+  for (let line = 1; line <= 8; line += 1) {
+    probe.writeString(`ghostty-scrollback-probe-${line}\r\n`);
+  }
+
+  const scrollbackCount = probe.getScrollbackCount();
+  const hasReadableScrollback =
+    scrollbackCount === 0 ||
+    Array.from({ length: scrollbackCount }, (_, offset) => probe.getScrollbackLineLen(offset)).some(
+      (lineLength) => lineLength > 0,
+    );
+
+  if (!hasReadableScrollback) {
+    return null;
+  }
+
+  return GhosttyCore.load();
+}
 
 export function TerminalViewport({
   projectId,
@@ -60,10 +86,15 @@ export function TerminalViewport({
   closeWhenSessionFileIdleMs = 0,
   maxKeepAliveMsOnUnmount = DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
   backgroundCssVar = "--terminal-bg",
+  hoverToFocus = true,
+  hoverToBlur = false,
+  stickToBottomOnOutput = true,
   className,
 }: TerminalViewportProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const terminalHandleRef = useRef<TerminalHandle | null>(null);
   const terminalInstanceRef = useRef<WTerm | null>(null);
+  const terminalResizeFrameRef = useRef<number | null>(null);
   const pendingScrollFrameRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const attachFailedRef = useRef(false);
@@ -75,6 +106,7 @@ export function TerminalViewport({
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null);
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0);
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null);
+  const [terminalCore, setTerminalCore] = useState<TerminalCore | null | undefined>(undefined);
   const effectiveLaunchMode = launchMode;
   if (effectiveLaunchMode === "pi-session" && piSessionPathRef.current === null) {
     piSessionPathRef.current = { value: sessionPath };
@@ -86,6 +118,28 @@ export function TerminalViewport({
     (effectiveLaunchMode === "pi-session" ? getPersistedSessionPath(sessionPath) : null);
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar]);
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
+  const focusTerminal = useCallback(() => {
+    terminalHandleRef.current?.focus();
+  }, []);
+  const blurTerminal = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  }, []);
+  const isTerminalFocused = useCallback(() => {
+    const terminalElement = terminalInstanceRef.current?.element;
+    const activeElement = document.activeElement;
+    return !!terminalElement && !!activeElement && terminalElement.contains(activeElement);
+  }, []);
+  const handleHoverToFocus = useHoverToFocus({
+    enabled: hoverToFocus,
+    boundaryRef: viewportRef,
+    focus: focusTerminal,
+    blur: blurTerminal,
+    blurOnLeave: hoverToBlur,
+    isFocused: isTerminalFocused,
+  });
 
   const scrollTerminalToBottom = useCallback(() => {
     const terminalElement = terminalInstanceRef.current?.element;
@@ -113,7 +167,8 @@ export function TerminalViewport({
   const writeToTerminal = useCallback(
     (data: string | Uint8Array) => {
       const terminalElement = terminalInstanceRef.current?.element;
-      const shouldStickToBottom = !terminalElement || isTerminalElementNearBottom(terminalElement);
+      const shouldStickToBottom =
+        stickToBottomOnOutput && (!terminalElement || isTerminalElementNearBottom(terminalElement));
 
       terminalHandleRef.current?.write(data);
 
@@ -121,11 +176,14 @@ export function TerminalViewport({
         scheduleTerminalScrollToBottom();
       }
     },
-    [scheduleTerminalScrollToBottom],
+    [scheduleTerminalScrollToBottom, stickToBottomOnOutput],
   );
 
   useEffect(
     () => () => {
+      if (terminalResizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(terminalResizeFrameRef.current);
+      }
       if (pendingScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingScrollFrameRef.current);
       }
@@ -180,6 +238,30 @@ export function TerminalViewport({
     setTerminalInitError(message);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setTerminalCore(undefined);
+    setTerminalInitError(null);
+
+    void loadUsableGhosttyCore().then(
+      (core) => {
+        if (!cancelled) {
+          setTerminalCore(core);
+        }
+      },
+      (error: unknown) => {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "Unable to initialize terminal.";
+          setTerminalInitError(message);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleTerminalResize = useCallback((cols: number, rows: number) => {
     const nextCols = normalizeTerminalDimension(cols, lastKnownSizeRef.current.cols);
     const nextRows = normalizeTerminalDimension(rows, lastKnownSizeRef.current.rows);
@@ -230,6 +312,73 @@ export function TerminalViewport({
     },
     [writeToTerminal],
   );
+
+  const resizeTerminalToContainer = useCallback(() => {
+    const terminal = terminalInstanceRef.current;
+    const terminalElement = terminal?.element;
+    if (!terminal || !terminalElement) {
+      return;
+    }
+
+    const shouldStickToBottom =
+      stickToBottomOnOutput && isTerminalElementNearBottom(terminalElement);
+    const measuredSize = measureTerminalSize(terminal);
+    if (!measuredSize) {
+      return;
+    }
+
+    const cols = normalizeTerminalDimension(measuredSize.cols, lastKnownSizeRef.current.cols);
+    const rows = normalizeTerminalDimension(measuredSize.rows, lastKnownSizeRef.current.rows);
+    if (!isUsableTerminalSize(cols, rows)) {
+      return;
+    }
+
+    if (terminal.cols !== cols || terminal.rows !== rows) {
+      terminal.resize(cols, rows);
+    }
+    handleTerminalResize(cols, rows);
+
+    if (shouldStickToBottom) {
+      scheduleTerminalScrollToBottom();
+    }
+  }, [handleTerminalResize, scheduleTerminalScrollToBottom, stickToBottomOnOutput]);
+
+  const scheduleTerminalResizeToContainer = useCallback(() => {
+    if (terminalResizeFrameRef.current !== null) {
+      window.cancelAnimationFrame(terminalResizeFrameRef.current);
+    }
+
+    terminalResizeFrameRef.current = window.requestAnimationFrame(() => {
+      terminalResizeFrameRef.current = null;
+      resizeTerminalToContainer();
+    });
+  }, [resizeTerminalToContainer]);
+
+  useEffect(() => {
+    if (terminalReadyRevision === 0) {
+      return;
+    }
+
+    const viewportElement = viewportRef.current;
+    if (!viewportElement || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      scheduleTerminalResizeToContainer();
+    });
+
+    observer.observe(viewportElement);
+    scheduleTerminalResizeToContainer();
+
+    return () => {
+      observer.disconnect();
+      if (terminalResizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(terminalResizeFrameRef.current);
+        terminalResizeFrameRef.current = null;
+      }
+    };
+  }, [scheduleTerminalResizeToContainer, terminalReadyRevision]);
 
   useEffect(() => {
     if (terminalReadyRevision === 0) {
@@ -482,23 +631,33 @@ export function TerminalViewport({
 
   return (
     <div
+      ref={viewportRef}
       style={viewportStyle}
+      onPointerEnter={handleHoverToFocus}
       className={cn(
         "terminal-viewport relative h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
       )}
     >
-      <Terminal
-        ref={terminalHandleRef}
-        autoResize
-        cursorBlink
-        onReady={handleTerminalReady}
-        onError={handleTerminalError}
-        onResize={handleTerminalResize}
-        onData={handleTerminalData}
-        className="h-full w-full"
-        style={{ height: "100%", width: "100%", ...terminalStyle }}
-      />
+      {terminalCore !== undefined ? (
+        <Terminal
+          ref={terminalHandleRef}
+          core={terminalCore ?? undefined}
+          autoResize
+          cursorBlink
+          onReady={handleTerminalReady}
+          onError={handleTerminalError}
+          onResize={handleTerminalResize}
+          onData={handleTerminalData}
+          className="h-full w-full"
+          style={{ height: "100%", width: "100%", ...terminalStyle }}
+        />
+      ) : null}
+      {terminalCore === undefined && !terminalInitError ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)] px-4 py-3 text-[12px] leading-5 text-[color:var(--muted)]">
+          <span>[terminal] Loading Ghostty renderer…</span>
+        </div>
+      ) : null}
       {terminalInitError ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
           <span>[terminal] {terminalInitError}</span>

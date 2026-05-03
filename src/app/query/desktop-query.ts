@@ -2,6 +2,8 @@ import { getPersistedSessionPath } from "../../../shared/session-paths";
 import { fallbackAppSlashCommands } from "../../../shared/composer-slash-commands";
 import type {
   ArchivedThread,
+  AppUpdateState,
+  ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
   ComposerSlashCommand,
@@ -29,14 +31,18 @@ import type {
 } from "../desktop/types";
 
 export const desktopQueryKeys = {
+  appUpdateState: () => ["desktop", "appUpdateState"] as const,
   shellState: () => ["desktop", "shellState"] as const,
   piPackageCatalog: (query: string) => ["desktop", "piPackages", "catalog", query] as const,
-  configuredPiPackages: (projectPath?: string | null) =>
-    ["desktop", "piPackages", "configured", projectPath ?? null] as const,
+  configuredPiPackages: (projectPath?: string | null, chat = false) =>
+    ["desktop", "piPackages", "configured", projectPath ?? null, chat] as const,
   piSkillCatalog: (query: string) => ["desktop", "piSkills", "catalog", query] as const,
-  configuredPiSkills: (projectPath?: string | null) =>
-    ["desktop", "piSkills", "configured", projectPath ?? null] as const,
-  projectThreads: (projectId: string) => ["desktop", "projectThreads", projectId] as const,
+  configuredPiSkills: (projectPath?: string | null, chat = false) =>
+    ["desktop", "piSkills", "configured", projectPath ?? null, chat] as const,
+  projectThreads: (projectId: string, chat = false) =>
+    ["desktop", "projectThreads", projectId, chat] as const,
+  chatSidebarState: (selectedGroupId?: string | null) =>
+    ["desktop", "chatSidebarState", selectedGroupId ?? null] as const,
   inboxThreads: () => ["desktop", "inboxThreads"] as const,
   archivedThreads: () => ["desktop", "archivedThreads"] as const,
   composerState: (request: ComposerStateRequest) =>
@@ -45,6 +51,8 @@ export const desktopQueryKeys = {
       "composerState",
       request.projectId ?? null,
       getPersistedSessionPath(request.sessionPath),
+      request.composerMode ?? null,
+      request.chatGroupId ?? null,
     ] as const,
   projectGitState: (projectId: string) => ["desktop", "projectGitState", projectId] as const,
   projectDiffPrefix: (projectId: string) => ["desktop", "projectDiff", projectId] as const,
@@ -62,12 +70,81 @@ export const desktopQueryKeys = {
     ["desktop", "thread", sessionPath, refreshKey, historyCompactions] as const,
 };
 
+export async function getAppUpdateStateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.getAppUpdateState?.()) ?? null;
+}
+
+export async function checkAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.checkAppUpdate?.()) ?? null;
+}
+
+export async function installAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.installAppUpdate?.()) ?? null;
+}
+
+export async function restartAppUpdateQuery(): Promise<AppUpdateState | null> {
+  return (await window.piDesktop?.restartAppUpdate?.()) ?? null;
+}
+
 export async function getShellStateQuery(): Promise<ShellState | null> {
   return (await window.piDesktop?.getShellState?.()) ?? null;
 }
 
-export async function getProjectThreadsQuery(projectId: string): Promise<Thread[]> {
-  return (await window.piDesktop?.getProjectThreads?.(projectId)) ?? [];
+export async function getProjectThreadsQuery(projectId: string, chat = false): Promise<Thread[]> {
+  return (await window.piDesktop?.getProjectThreads?.(projectId, { chat })) ?? [];
+}
+
+export async function getChatSidebarStateQuery(
+  selectedGroupId?: string | null,
+): Promise<ChatSidebarState | null> {
+  return (await window.piDesktop?.getChatSidebarState?.(selectedGroupId ?? null)) ?? null;
+}
+
+export async function createChatGroupQuery(name: string): Promise<ChatSidebarState | null> {
+  return (await window.piDesktop?.createChatGroup?.(name)) ?? null;
+}
+
+export async function listArtifactsQuery(conversationId?: string | null) {
+  return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? [];
+}
+
+export async function getArtifactQuery(artifactSlug: string, conversationId?: string | null) {
+  return (await window.piDesktop?.getArtifact?.(artifactSlug, conversationId ?? null)) ?? null;
+}
+
+export async function updateArtifactQuery(
+  artifactSlug: string,
+  content: string,
+  conversationId?: string | null,
+) {
+  return (
+    (await window.piDesktop?.updateArtifact?.(artifactSlug, content, conversationId ?? null)) ??
+    null
+  );
+}
+
+export async function editArtifactQuery(
+  artifactSlug: string,
+  edits: Array<{ oldText: string; newText: string }>,
+  conversationId?: string | null,
+) {
+  return (
+    (await window.piDesktop?.editArtifact?.(artifactSlug, edits, conversationId ?? null)) ?? null
+  );
+}
+
+export async function listArtifactVersionsQuery(artifactSlug: string) {
+  return (await window.piDesktop?.listArtifactVersions?.(artifactSlug)) ?? [];
+}
+
+export async function compileReactArtifactQuery(source: string) {
+  return (
+    (await window.piDesktop?.compileReactArtifact?.(source)) ?? {
+      ok: false as const,
+      error: "Artifact compiler is unavailable.",
+      warnings: [],
+    }
+  );
 }
 
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
@@ -157,6 +234,7 @@ export async function searchPiSkillsQuery(
 export async function getConfiguredPiPackagesQuery(
   request: {
     projectPath?: string | null;
+    chat?: boolean;
   } = {},
 ): Promise<PiConfiguredPackage[]> {
   return (await window.piDesktop?.getConfiguredPiPackages?.(request)) ?? [];
@@ -167,6 +245,7 @@ export async function installPiPackageQuery(request: {
   kind?: "npm" | "git";
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.installPiPackage?.(request)) ?? null;
 }
@@ -175,6 +254,7 @@ export async function removePiPackageQuery(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiPackageMutationResult | null> {
   return (await window.piDesktop?.removePiPackage?.(request)) ?? null;
 }
@@ -182,6 +262,7 @@ export async function removePiPackageQuery(request: {
 export async function getConfiguredPiSkillsQuery(
   request: {
     projectPath?: string | null;
+    chat?: boolean;
   } = {},
 ): Promise<PiConfiguredSkill[]> {
   return (await window.piDesktop?.getConfiguredPiSkills?.(request)) ?? [];
@@ -191,6 +272,7 @@ export async function installPiSkillQuery(request: {
   source: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.installPiSkill?.(request)) ?? null;
 }
@@ -198,6 +280,7 @@ export async function installPiSkillQuery(request: {
 export async function removePiSkillQuery(request: {
   installedPath: string;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<PiSkillMutationResult | null> {
   return (await window.piDesktop?.removePiSkill?.(request)) ?? null;
 }
@@ -206,6 +289,7 @@ export async function startSkillCreatorSessionQuery(request: {
   prompt: string;
   local?: boolean;
   projectPath?: string | null;
+  chat?: boolean;
 }): Promise<SkillCreatorSessionState | null> {
   return (await window.piDesktop?.startSkillCreatorSession?.(request)) ?? null;
 }

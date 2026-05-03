@@ -31,12 +31,16 @@ type UseComposerSubmissionProps = {
   extensionCommandRunning: boolean;
   onAction: DesktopActionInvoker;
   projectId: string;
+  chatGroupId?: string | null;
   sessionPath: string | null;
   setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
   setDraftValue: Dispatch<SetStateAction<string>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>;
   setIsSending: Dispatch<SetStateAction<boolean>>;
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>;
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>;
+  replyActivityKey: string;
   setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
   stopDictationAndFlush: () => Promise<void>;
   streamingBehaviorPreference: ComposerStreamingBehavior;
@@ -57,12 +61,16 @@ export function useComposerSubmission({
   extensionCommandRunning,
   onAction,
   projectId,
+  chatGroupId = null,
   sessionPath,
   setAttachments,
   setDraftValue,
   setErrorMessage,
   setExtensionCommandRunning,
   setIsSending,
+  setPendingSubmittedDraft,
+  pendingSubmittedReplyActivityKeyRef,
+  replyActivityKey,
   setOpenMenu,
   stopDictationAndFlush,
   streamingBehaviorPreference,
@@ -112,6 +120,7 @@ export function useComposerSubmission({
           attachments: [],
           isSending: false,
           projectId,
+          chatGroupId,
           sessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -137,6 +146,7 @@ export function useComposerSubmission({
     });
   }, [
     activeComposerScopeKeyRef,
+    chatGroupId,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
@@ -177,6 +187,7 @@ export function useComposerSubmission({
         const submittedRawDraft = draftValueRef.current;
         const textToSend = submittedRawDraft.trim();
         const submittedAttachments = attachmentsRef.current;
+        const submittedWhileStreaming = isStreaming;
         if (textToSend.length === 0 && submittedAttachments.length === 0) {
           return;
         }
@@ -186,12 +197,15 @@ export function useComposerSubmission({
 
         setErrorMessage(null);
         setOpenMenu(null);
+        pendingSubmittedReplyActivityKeyRef.current = replyActivityKey;
+        setPendingSubmittedDraft(submittedRawDraft);
 
         const result = await submitComposerDraft({
           draft: submittedDraft,
           attachments: submittedAttachments,
           isSending: false,
           projectId: submittedProjectId,
+          chatGroupId,
           sessionPath: submittedSessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -219,12 +233,19 @@ export function useComposerSubmission({
             composerDraftStore.setPrompt(submittedDraftThreadId, "");
           }
 
-          if (cleanup.clearDraft) {
-            setDraftValue("");
-          }
-
           if (cleanup.nextAttachments !== null) {
             setAttachments(cleanup.nextAttachments);
+          }
+
+          if (
+            submittedWhileStreaming &&
+            activeDraftThreadIdRef.current === submittedDraftThreadId
+          ) {
+            setPendingSubmittedDraft(null);
+            pendingSubmittedReplyActivityKeyRef.current = null;
+            if (isSameSubmittedDraft(draftValueRef.current, submittedRawDraft)) {
+              setDraftValue("");
+            }
           }
         }
 
@@ -232,6 +253,8 @@ export function useComposerSubmission({
           result.status === "error" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
           if (
             isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
             areSameAttachments(attachmentsRef.current, submittedAttachments)
@@ -246,6 +269,8 @@ export function useComposerSubmission({
           result.status === "stopped" &&
           activeDraftThreadIdRef.current === submittedDraftThreadId
         ) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
           if (
             isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
             areSameAttachments(attachmentsRef.current, submittedAttachments)
@@ -254,6 +279,12 @@ export function useComposerSubmission({
             setAttachments(submittedAttachments);
           }
         }
+      } catch (error) {
+        if (activeDraftThreadIdRef.current === submittedDraftThreadId) {
+          setPendingSubmittedDraft(null);
+          pendingSubmittedReplyActivityKeyRef.current = null;
+        }
+        setErrorMessage(getErrorMessage(error, "Could not send prompt."));
       } finally {
         setIsSending(false);
       }
@@ -262,19 +293,24 @@ export function useComposerSubmission({
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
     attachmentsRef,
+    chatGroupId,
     composerScopeKey,
     draftThreadId,
     draftValueRef,
     isCompacting,
     isSending,
+    isStreaming,
     onAction,
+    pendingSubmittedReplyActivityKeyRef,
     projectId,
+    replyActivityKey,
     sendLockRef,
     sessionPath,
     setAttachments,
     setDraftValue,
     setErrorMessage,
     setIsSending,
+    setPendingSubmittedDraft,
     setOpenMenu,
     skipNextDraftPersistenceRef,
     stopDictationAndFlush,
@@ -332,6 +368,7 @@ export function useComposerSubmission({
           attachments: [],
           isSending: false,
           projectId,
+          chatGroupId,
           sessionPath,
           streamingBehaviorPreference,
           onAction,
@@ -348,6 +385,7 @@ export function useComposerSubmission({
     isCompacting,
     isSending,
     isStreaming,
+    chatGroupId,
     onAction,
     projectId,
     sendLockRef,

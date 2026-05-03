@@ -14,10 +14,13 @@ import {
   getComposerStreamingBehavior,
   getComposerText,
   getComposerThinkingLevel,
+  getNativeAskQuestionsAnswers,
+  getNativeAskQuestionsRequestId,
 } from "../../shared/pi-thread-action-payloads.ts";
 import { invalidateRuntimeHostSettings } from "../runtime-host/client-bridge.cts";
 import {
   dequeueComposerPrompt,
+  answerNativeAskQuestions,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
@@ -105,6 +108,20 @@ export async function handleComposerDesktopAction(
       await invalidateRuntimeHostSettings({
         sessionPath: getComposerRequest(payload).sessionPath,
       });
+      return handledAction();
+    }
+
+    case "composer.answer-native-questions": {
+      const requestId = getNativeAskQuestionsRequestId(payload);
+      if (!requestId) return handledAction();
+      const result = await answerNativeAskQuestions({
+        ...getComposerRequest(payload),
+        requestId,
+        answers: getNativeAskQuestionsAnswers(payload),
+      });
+      if (!result?.ok) {
+        return handledAction({ error: "Could not answer pending questions." });
+      }
       return handledAction();
     }
 

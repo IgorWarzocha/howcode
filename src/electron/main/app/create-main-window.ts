@@ -33,6 +33,7 @@ export function createMainWindow() {
     height: 980,
     x: 120,
     y: 80,
+    autoHideMenuBar: true,
     icon: getWindowIconPath(),
     webPreferences: {
       preload: path.join(getElectronBuildDirectory(), "preload", "index.cjs"),

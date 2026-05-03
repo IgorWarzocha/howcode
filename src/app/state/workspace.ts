@@ -41,9 +41,16 @@ export type WorkspaceAction =
   | { type: "show-view"; view: NonGitOpsView }
   | { type: "close-utility-view" }
   | { type: "select-inbox-thread"; sessionPath: string | null }
+  | { type: "clear-thread-selection" }
   | { type: "select-project"; projectId: string }
   | { type: "set-selected-project"; projectId: string }
-  | { type: "open-thread"; projectId: string; threadId: string; sessionPath: string }
+  | {
+      type: "open-thread";
+      projectId: string;
+      threadId: string;
+      sessionPath: string;
+      view?: "chat" | "thread";
+    }
   | {
       type: "open-gitops";
       filePath?: string | null;
@@ -226,7 +233,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         : action.projects[0]?.id || "";
       const selectedThreadProject = findProjectContainingThread(action.projects, state);
       const shouldPreserveSelectedThread =
-        state.activeView === "thread" && Boolean(selectedThreadProject);
+        (state.activeView === "chat" || state.activeView === "thread") &&
+        Boolean(selectedThreadProject);
       const shouldPreserveProjectSelection = hasSelectedProject || shouldPreserveSelectedThread;
 
       const collapsedProjectIds = Object.fromEntries(
@@ -237,7 +245,9 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       );
 
       const nextActiveView = shouldPreserveSelectedThread
-        ? "thread"
+        ? state.activeView === "chat"
+          ? "chat"
+          : "thread"
         : hasSelectedProject || !state.selectedProjectId || action.projects.length === 0
           ? state.activeView
           : "code";
@@ -287,8 +297,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         activeView: action.view,
         settingsOpen: false,
         settingsPanelOpen: false,
-        selectedThreadId: action.view === "thread" ? state.selectedThreadId : null,
-        selectedSessionPath: action.view === "thread" ? state.selectedSessionPath : null,
+        selectedThreadId:
+          action.view === "thread" || (action.view === "chat" && state.activeView === "chat")
+            ? state.selectedThreadId
+            : null,
+        selectedSessionPath:
+          action.view === "thread" || (action.view === "chat" && state.activeView === "chat")
+            ? state.selectedSessionPath
+            : null,
         selectedDiffFilePath: action.view === "thread" ? state.selectedDiffFilePath : null,
         takeoverVisible: action.view === "thread" ? state.takeoverVisible : false,
         utilityViewReturnState,
@@ -305,6 +321,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         settingsOpen: false,
         settingsPanelOpen: false,
         utilityViewReturnState: null,
+      };
+    case "clear-thread-selection":
+      return {
+        ...state,
+        selectedThreadId: null,
+        selectedSessionPath: null,
+        selectedDiffFilePath: null,
+        takeoverVisible: false,
       };
     case "select-inbox-thread":
       return {
@@ -346,7 +370,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
 
       return {
         ...state,
-        activeView: "thread",
+        activeView: action.view ?? (state.activeView === "chat" ? "chat" : "thread"),
         selectedProjectId: action.projectId,
         selectedThreadId: action.threadId,
         selectedSessionPath: action.sessionPath,
@@ -389,8 +413,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         ...state,
         ...getTerminalStateForNextView(state, state.gitOpsReturnView),
         activeView: state.gitOpsReturnView,
-        selectedThreadId: state.gitOpsReturnView === "thread" ? state.selectedThreadId : null,
-        selectedSessionPath: state.gitOpsReturnView === "thread" ? state.selectedSessionPath : null,
+        selectedThreadId:
+          state.gitOpsReturnView === "chat" || state.gitOpsReturnView === "thread"
+            ? state.selectedThreadId
+            : null,
+        selectedSessionPath:
+          state.gitOpsReturnView === "chat" || state.gitOpsReturnView === "thread"
+            ? state.selectedSessionPath
+            : null,
         selectedDiffFilePath: null,
         utilityViewReturnState: null,
       };
@@ -496,7 +526,9 @@ export function getCurrentTitle(activeView: View, selectedThread: Thread | undef
     return "Archived threads";
   }
 
-  return activeView === "thread" && selectedThread ? selectedThread.title : "New thread";
+  return (activeView === "chat" || activeView === "thread") && selectedThread
+    ? selectedThread.title
+    : "New thread";
 }
 
 export function getProjectName(project: Project | undefined): string {

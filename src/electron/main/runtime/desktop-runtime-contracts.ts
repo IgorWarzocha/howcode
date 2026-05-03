@@ -1,7 +1,10 @@
 import type { DesktopAction } from "../../../../shared/desktop-actions";
 import type {
   AnyDesktopActionPayload,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   ComposerStateRequest,
   ComposerSlashCommand,
@@ -26,6 +29,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -39,6 +43,7 @@ import type {
 } from "../../../../shared/terminal-contracts";
 
 export type PiThreadsModule = {
+  disposeDesktopRuntime?: () => Promise<void> | void;
   handleDesktopAction: (
     action: DesktopAction,
     payload: AnyDesktopActionPayload,
@@ -63,7 +68,7 @@ export type PiThreadsModule = {
     cursor?: number | null;
     pageSize?: number | null;
   }) => Promise<PiPackageCatalogPage>;
-  listConfiguredPiPackages: (request?: { projectPath?: string | null }) => Promise<
+  listConfiguredPiPackages: (request?: { projectPath?: string | null; chat?: boolean }) => Promise<
     PiConfiguredPackage[]
   >;
   installPiPackage: (request: {
@@ -71,11 +76,13 @@ export type PiThreadsModule = {
     kind?: "npm" | "git";
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiPackageMutationResult>;
   removePiPackage: (request: {
     source: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiPackageMutationResult>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   loadProjectDiff: (
@@ -88,7 +95,28 @@ export type PiThreadsModule = {
   ) => Promise<ProjectDiffStatsResult | null>;
   captureProjectDiffBaseline: (projectId: string) => Promise<ProjectDiffResolvedBaseline | null>;
   listProjectCommits: (projectId: string, limit?: number | null) => Promise<ProjectCommitEntry[]>;
-  loadProjectThreads: (projectId: string) => Promise<Thread[]>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<Thread[]>;
+  loadChatSidebarState: (
+    selectedGroupId?: string | null,
+  ) => Promise<ChatSidebarState> | ChatSidebarState;
+  createChatGroup: (name: string) => Promise<ChatSidebarState> | ChatSidebarState;
+  listArtifacts: (conversationId?: string | null) => Promise<Artifact[]> | Artifact[];
+  getArtifact: (
+    artifactSlug: string,
+    conversationId?: string | null,
+  ) => Promise<Artifact | null> | Artifact | null;
+  updateArtifact: (request: {
+    slug: string;
+    content: string;
+    conversationId?: string | null;
+  }) => Promise<Artifact> | Artifact;
+  editArtifact: (request: {
+    slug: string;
+    conversationId?: string | null;
+    edits: Array<{ oldText: string; newText: string }>;
+  }) => Promise<Artifact> | Artifact;
+  listArtifactVersions: (artifactSlug: string) => Promise<ArtifactVersion[]> | ArtifactVersion[];
+  compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>;
   loadShellState: (cwd: string) => Promise<ShellState>;
   loadThread: (
     sessionPath: string,
@@ -99,6 +127,7 @@ export type PiThreadsModule = {
 };
 
 export type TerminalManagerModule = {
+  closeAllTerminals?: () => Promise<void>;
   closeTerminal: (request: { sessionId: string; deleteHistory?: boolean }) => Promise<void>;
   getTerminalStatus: (sessionId: string) => Promise<TerminalStatusSnapshot>;
   listTerminals: () => Promise<TerminalSessionSnapshot[]>;
@@ -114,17 +143,19 @@ export type PiSkillsModule = {
     query?: string | null;
     limit?: number | null;
   }) => Promise<PiSkillCatalogPage>;
-  listConfiguredPiSkills: (request?: { projectPath?: string | null }) => Promise<
+  listConfiguredPiSkills: (request?: { projectPath?: string | null; chat?: boolean }) => Promise<
     PiConfiguredSkill[]
   >;
   installPiSkill: (request: {
     source: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiSkillMutationResult>;
   removePiSkill: (request: {
     installedPath: string;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<PiSkillMutationResult>;
 };
 
@@ -133,6 +164,7 @@ export type SkillCreatorModule = {
     prompt: string;
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   }) => Promise<SkillCreatorSessionState>;
   continueSkillCreatorSession: (request: {
     sessionId: string;

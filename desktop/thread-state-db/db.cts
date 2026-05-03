@@ -20,3 +20,8 @@ export function getThreadStateDatabase() {
   ensureThreadStateSchema(database);
   return database;
 }
+
+export function closeThreadStateDatabaseForTests() {
+  (database as { close?: () => void } | null)?.close?.();
+  database = null;
+}

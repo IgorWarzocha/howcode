@@ -1,9 +1,10 @@
-import { Archive, PackagePlus, Settings, Sparkles } from "lucide-react";
+import { Archive, Download, PackagePlus, RotateCw, Settings, Sparkles } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import {
   type FeatureStatusId,
   getFeatureStatusDataAttributes,
 } from "../../features/feature-status";
+import { useAppUpdateFlow } from "../../hooks/useAppUpdateFlow";
 import { cn } from "../../utils/cn";
 import { FeatureStatusBadge } from "../common/FeatureStatusBadge";
 import { SurfacePanel } from "../common/SurfacePanel";
@@ -27,6 +28,18 @@ export function SettingsMenu({
   onOpenArchivedThreads,
   panelRef,
 }: SettingsMenuProps) {
+  const { step, isRunning, advance } = useAppUpdateFlow();
+  const updateDisabled = isRunning || step.id === "up-to-date";
+  const UpdateIcon =
+    step.id === "idle" ||
+    step.id === "up-to-date" ||
+    step.id === "checking" ||
+    step.id === "error" ||
+    step.id === "ready" ||
+    step.id === "restarting" ||
+    step.id === "installing"
+      ? RotateCw
+      : Download;
   const items: Array<{
     icon: ReactNode;
     title: string;
@@ -50,6 +63,21 @@ export function SettingsMenu({
       aria-hidden={!open}
       className="sidebar-popover-panel sidebar-settings-menu motion-popover"
     >
+      <button
+        type="button"
+        className={cn("sidebar-settings-menu-item", updateDisabled && "cursor-not-allowed")}
+        onClick={advance}
+        disabled={updateDisabled}
+        data-disabled={updateDisabled ? "true" : "false"}
+        role="menuitem"
+      >
+        <span className="sidebar-settings-menu-item__icon">
+          <UpdateIcon size={15} className={cn(isRunning && "animate-spin")} />
+        </span>
+        <span className="sidebar-settings-menu-item__label">
+          <span className="truncate">{step.label}</span>
+        </span>
+      </button>
       {items.map((item) => (
         <button
           key={item.title}

@@ -2,8 +2,8 @@
 
 This app is heavily optimised towards coding with agents on YOLO. No file viewer, because it's not an IDE. No turn-by-turn diffs, because I do not believe anybody reads them. Just you and your composer.
 
-- Code view - with known suspects: composer, git-operations and terminal.
-- Desktop chat mode optimised around UX/readability.
+- Code mode - with known suspects: composer, git-operations and terminal.
+- Chat mode - just chat: Pi native tools disabled, artifacts with their own tools.
 - Git-ops composer with diff review mode, comments-based review-flow & more.
 - Pi-TUI mode that embeds Pi "as it is" inside of the app.
 - Sidebar with projects/sessions management.

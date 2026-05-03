@@ -154,6 +154,23 @@ export function buildProjectsSettingsDescriptors({
         </div>
       ),
     },
+
+    {
+      id: "projects.git-diff-file-tree-default",
+      category: "projects",
+      title: "Diff file tree",
+      description: "Default visibility for the GitOps changed-file tree.",
+      keywords: "git diff file tree changed files sidebar default",
+      render: () => (
+        <ToggleBox
+          checked={appSettings.gitDiffFileTreeDefaultVisible}
+          label="Show file tree"
+          onClick={() =>
+            controller.setGitDiffFileTreeDefaultVisible(!appSettings.gitDiffFileTreeDefaultVisible)
+          }
+        />
+      ),
+    },
     {
       id: "projects.deletion-mode",
       category: "projects",

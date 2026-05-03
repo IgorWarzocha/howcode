@@ -4,6 +4,15 @@ import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import {
+  createArtifact,
+  editArtifact,
+  getArtifact,
+  listArtifacts,
+  updateArtifact,
+} from "../artifact-state-db.cts";
+import { loadAppSettings } from "../app-settings/readers.cts";
+import { getSessionNativeExtensions, setSessionNativeExtensions } from "../thread-state-db.cts";
+import {
   getBundledSkillsPath,
   getElectronResourcesPath,
   getNodeExecutable,
@@ -14,6 +23,7 @@ import type {
   RuntimeHostRequestName,
   RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
+  RuntimeHostMainRequestMessage,
 } from "./protocol.cts";
 
 type PendingRequest = {
@@ -66,10 +76,26 @@ const hosts = brokerState.hosts;
 const THREAD_HOST_IDLE_MS = 5 * 60 * 1000;
 
 let registeredHostShutdownHandlers = false;
+let runtimeHostsShuttingDown = false;
+
+function terminateHostProcess(child: ChildProcess | null | undefined) {
+  if (!child || child.killed || child.exitCode !== null) return;
+
+  if (process.platform === "win32" && child.pid) {
+    const taskkill = spawn("taskkill.exe", ["/pid", String(child.pid), "/t", "/f"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    taskkill.unref();
+    return;
+  }
+
+  child.kill("SIGTERM");
+}
 
 function killAllRuntimeHosts() {
   for (const host of hosts) {
-    host.process?.kill();
+    terminateHostProcess(host.process);
   }
 }
 
@@ -121,6 +147,25 @@ function rejectPendingRequests(host: HostConnection, error: Error) {
   host.pendingRequests.clear();
 }
 
+export function shutdownRuntimeHosts() {
+  runtimeHostsShuttingDown = true;
+
+  for (const host of hosts) {
+    if (host.idleTimer) {
+      clearTimeout(host.idleTimer);
+      host.idleTimer = null;
+    }
+    rejectPendingRequests(host, new Error("Pi runtime host is shutting down."));
+    terminateHostProcess(host.process);
+    host.process = null;
+    host.startPromise = null;
+  }
+
+  hostByAlias.clear();
+  hosts.clear();
+  hosts.add(serviceHost);
+}
+
 function rememberHostAlias(host: HostConnection, alias: string | null | undefined) {
   const normalized = alias?.trim();
   if (!normalized) return;
@@ -145,7 +190,7 @@ function scheduleThreadHostIdleStop(host: HostConnection) {
   if (host.idleTimer) clearTimeout(host.idleTimer);
   host.idleTimer = setTimeout(() => {
     if (host.pendingRequests.size > 0) return;
-    host.process?.kill();
+    terminateHostProcess(host.process);
     forgetHost(host);
   }, THREAD_HOST_IDLE_MS);
 }
@@ -186,6 +231,11 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
     return;
   }
 
+  if (message.type === "main-request") {
+    void handleHostMainRequest(host, message);
+    return;
+  }
+
   if (message.type === "response") {
     const pending = host.pendingRequests.get(message.id);
     if (!pending) {
@@ -209,7 +259,70 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
   }
 }
 
+async function handleHostMainRequest(host: HostConnection, message: RuntimeHostMainRequestMessage) {
+  try {
+    let result: unknown;
+    switch (message.name) {
+      case "getSessionNativeExtensions": {
+        const payload = message.payload as { sessionPath: string };
+        result = getSessionNativeExtensions(payload.sessionPath);
+        break;
+      }
+      case "setSessionNativeExtensions": {
+        const payload = message.payload as { sessionPath: string; enabled: string[] };
+        setSessionNativeExtensions(payload.sessionPath, payload.enabled);
+        result = { ok: true };
+        break;
+      }
+      case "snapshotDefaultNativeExtensions": {
+        result = loadAppSettings().howcodeNativeAskQuestions ? ["askQuestions"] : [];
+        break;
+      }
+      case "createArtifact": {
+        const payload = message.payload as Parameters<typeof createArtifact>[0];
+        result = createArtifact(payload);
+        break;
+      }
+      case "updateArtifact": {
+        const payload = message.payload as Parameters<typeof updateArtifact>[0];
+        result = updateArtifact(payload);
+        break;
+      }
+      case "editArtifact": {
+        const payload = message.payload as Parameters<typeof editArtifact>[0];
+        result = editArtifact(payload);
+        break;
+      }
+      case "getArtifact": {
+        const payload = message.payload as { artifactSlug: string; conversationId?: string | null };
+        result = getArtifact(payload.artifactSlug, payload.conversationId);
+        break;
+      }
+      case "listArtifacts": {
+        const payload = message.payload as { conversationId: string };
+        result = listArtifacts(payload.conversationId);
+        break;
+      }
+      default:
+        throw new Error(`Unknown runtime host main request: ${message.name}`);
+    }
+    host.process?.send?.({ type: "main-response", id: message.id, ok: true, result });
+  } catch (error) {
+    host.process?.send?.({
+      type: "main-response",
+      id: message.id,
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+  }
+}
+
 async function ensureRuntimeHost(host: HostConnection) {
+  if (runtimeHostsShuttingDown) {
+    throw new Error("Pi runtime host is shutting down.");
+  }
+
   registerHostShutdownHandlers();
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host);
@@ -223,6 +336,10 @@ async function ensureRuntimeHost(host: HostConnection) {
   clearHostIdleTimer(host);
   host.startPromise = (async () => {
     const nodeExecutable = await getNodeExecutable();
+    if (runtimeHostsShuttingDown) {
+      throw new Error("Pi runtime host is shutting down.");
+    }
+
     return await new Promise<ChildProcess>((resolve, reject) => {
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
@@ -250,6 +367,12 @@ async function ensureRuntimeHost(host: HostConnection) {
       };
 
       child.once("spawn", () => {
+        if (runtimeHostsShuttingDown) {
+          terminateHostProcess(child);
+          settleFailure(new Error("Pi runtime host is shutting down."));
+          return;
+        }
+
         settled = true;
         host.process = child;
         host.startPromise = null;

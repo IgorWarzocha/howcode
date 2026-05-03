@@ -93,7 +93,7 @@ export function useSettingsController({
   };
 
   const selectModel = (
-    key: "gitCommitMessageModel" | "skillCreatorModel",
+    key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
     id: string,
     closeMenu: () => void,
   ) => {
@@ -205,6 +205,8 @@ export function useSettingsController({
         value,
       }),
     selectDictationModel: dictation.selectDictationModel,
+    selectChatModel: (id: string) => selectModel("chatModel", id, () => {}),
+    selectCodeModel: (id: string) => selectModel("codeModel", id, () => {}),
     selectGitCommitModel: (id: string) =>
       selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>
@@ -244,6 +246,11 @@ export function useSettingsController({
         key: "gitDiffRenderModeDefault",
         value,
       }),
+    setGitDiffFileTreeDefaultVisible: (value: AppSettings["gitDiffFileTreeDefaultVisible"]) =>
+      void onAction("settings.update", {
+        key: "gitDiffFileTreeDefaultVisible",
+        value,
+      }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
       void onAction("pi-settings.update", {
         piSettingsKey: key,
@@ -253,6 +260,21 @@ export function useSettingsController({
       void onAction("settings.update", {
         key: "piTuiTakeover",
         value: !appSettings.piTuiTakeover,
+      }),
+    toggleHowcodeNativeAskQuestions: () =>
+      void onAction("settings.update", {
+        key: "howcodeNativeAskQuestions",
+        value: !appSettings.howcodeNativeAskQuestions,
+      }),
+    toggleHoverToFocus: () =>
+      void onAction("settings.update", {
+        key: "hoverToFocus",
+        value: !appSettings.hoverToFocus,
+      }),
+    toggleHoverToBlur: () =>
+      void onAction("settings.update", {
+        key: "hoverToBlur",
+        value: !appSettings.hoverToBlur,
       }),
     updateFavoriteFolders,
     handleImportProjectUi,

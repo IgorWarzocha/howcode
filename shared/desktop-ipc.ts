@@ -1,6 +1,9 @@
 import type { DesktopAction } from "./desktop-actions";
 import type {
   AnyDesktopActionPayload,
+  AppUpdateState,
+  Artifact,
+  ArtifactVersion,
   ArchivedThread,
   ComposerAttachment,
   DesktopClipboardFilePaths,
@@ -19,6 +22,7 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   InboxThread,
+  ChatSidebarState,
   PiConfiguredPackage,
   PiConfiguredSkill,
   PiPackageCatalogPage,
@@ -31,6 +35,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -50,6 +55,10 @@ import type {
 } from "./terminal-contracts";
 
 export type DesktopRequestMap = {
+  getAppUpdateState: { params: Record<string, never>; response: AppUpdateState };
+  checkAppUpdate: { params: Record<string, never>; response: AppUpdateState };
+  installAppUpdate: { params: Record<string, never>; response: AppUpdateState };
+  restartAppUpdate: { params: Record<string, never>; response: AppUpdateState };
   clearClipboardImages: {
     params: Record<string, never>;
     response: { clearedCount: number; clearFailedCount: number };
@@ -77,15 +86,21 @@ export type DesktopRequestMap = {
     response: PiPackageCatalogPage;
   };
   getConfiguredPiPackages: {
-    params: { projectPath?: string | null };
+    params: { projectPath?: string | null; chat?: boolean };
     response: PiConfiguredPackage[];
   };
   installPiPackage: {
-    params: { source: string; kind?: "npm" | "git"; local?: boolean; projectPath?: string | null };
+    params: {
+      source: string;
+      kind?: "npm" | "git";
+      local?: boolean;
+      projectPath?: string | null;
+      chat?: boolean;
+    };
     response: PiPackageMutationResult;
   };
   removePiPackage: {
-    params: { source: string; local?: boolean; projectPath?: string | null };
+    params: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: PiPackageMutationResult;
   };
   searchPiSkills: {
@@ -93,19 +108,19 @@ export type DesktopRequestMap = {
     response: PiSkillCatalogPage;
   };
   getConfiguredPiSkills: {
-    params: { projectPath?: string | null };
+    params: { projectPath?: string | null; chat?: boolean };
     response: PiConfiguredSkill[];
   };
   installPiSkill: {
-    params: { source: string; local?: boolean; projectPath?: string | null };
+    params: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: PiSkillMutationResult;
   };
   removePiSkill: {
-    params: { installedPath: string; projectPath?: string | null };
+    params: { installedPath: string; projectPath?: string | null; chat?: boolean };
     response: PiSkillMutationResult;
   };
   startSkillCreatorSession: {
-    params: { prompt: string; local?: boolean; projectPath?: string | null };
+    params: { prompt: string; local?: boolean; projectPath?: string | null; chat?: boolean };
     response: SkillCreatorSessionState;
   };
   continueSkillCreatorSession: {
@@ -156,7 +171,28 @@ export type DesktopRequestMap = {
     params: DictationTranscriptionRequest;
     response: DictationTranscriptionResult;
   };
-  getProjectThreads: { params: { projectId: string }; response: Thread[] };
+  getProjectThreads: { params: { projectId: string; chat?: boolean }; response: Thread[] };
+  getChatSidebarState: { params: { selectedGroupId?: string | null }; response: ChatSidebarState };
+  createChatGroup: { params: { name: string }; response: ChatSidebarState };
+  listArtifacts: { params: { conversationId?: string | null }; response: Artifact[] };
+  getArtifact: {
+    params: { artifactSlug: string; conversationId?: string | null };
+    response: Artifact | null;
+  };
+  updateArtifact: {
+    params: { artifactSlug: string; content: string; conversationId?: string | null };
+    response: Artifact;
+  };
+  editArtifact: {
+    params: {
+      artifactSlug: string;
+      conversationId?: string | null;
+      edits: Array<{ oldText: string; newText: string }>;
+    };
+    response: Artifact;
+  };
+  listArtifactVersions: { params: { artifactSlug: string }; response: ArtifactVersion[] };
+  compileReactArtifact: { params: { source: string }; response: ReactArtifactCompileResult };
   getInboxThreads: { params: Record<string, never>; response: InboxThread[] };
   getArchivedThreads: { params: Record<string, never>; response: ArchivedThread[] };
   getThread: {
@@ -180,6 +216,10 @@ export type DesktopRequestMap = {
   terminalStatus: { params: TerminalStatusRequest; response: TerminalStatusSnapshot };
   openExternal: { params: { url: string }; response: { ok: boolean } };
   openPath: { params: { path: string }; response: { ok: boolean } };
+  saveTextToDownloads: {
+    params: { fileName: string; content: string };
+    response: { ok: boolean; path?: string; error?: string };
+  };
 };
 
 export type DesktopEventMap = {

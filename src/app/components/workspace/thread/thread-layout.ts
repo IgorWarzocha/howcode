@@ -1,4 +1,4 @@
-import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../../../ui/layout";
+import { WORKSPACE_CHROME_MAX_WIDTH_CLASS } from "../../../ui/layout";
 
 export const CHAT_STICKY_BOTTOM_THRESHOLD_PX = 24;
 export const CHAT_ROW_GAP_PX = 16;
@@ -9,8 +9,8 @@ export const CHAT_COLLAPSED_ROW_HEIGHT_PX = 56;
 export const CHAT_DIFF_TREE_INDENT_BASE_PX = 8;
 export const CHAT_DIFF_TREE_INDENT_STEP_PX = 16;
 
-export const chatViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-visible`;
-export const chatHiddenViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} overflow-hidden`;
+export const chatViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CHROME_MAX_WIDTH_CLASS} overflow-visible`;
+export const chatHiddenViewportClass = `mx-auto flex h-full w-full ${WORKSPACE_CHROME_MAX_WIDTH_CLASS} overflow-hidden`;
 export const chatScrollableAreaClass =
   "min-h-0 w-full overflow-y-scroll overflow-x-visible [overflow-anchor:none] [scrollbar-gutter:stable]";
 export const chatEmptyStateClass =

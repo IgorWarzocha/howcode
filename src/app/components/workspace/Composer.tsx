@@ -6,6 +6,7 @@ import type {
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
+  NativeAskQuestionsRequest,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
@@ -20,13 +21,16 @@ export type ComposerProps = {
   contextUsage: ComposerContextUsage | null;
   availableModels: ComposerModel[];
   isStreaming: boolean;
+  replyActivityKey: string;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
+  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null;
   thinkingLevel: ComposerThinkingLevel;
   restoredQueuedPrompt: string | null;
   streamingBehaviorPreference: ComposerStreamingBehavior;
   availableThinkingLevels: ComposerThinkingLevel[];
   projectId: string;
+  chatGroupId?: string | null;
   projectGitState: ProjectGitState | null;
   diffBaseline: ProjectDiffBaseline;
   sessionPath: string | null;
@@ -34,6 +38,8 @@ export type ComposerProps = {
   dictationMaxDurationSeconds: number;
   favoriteFolders: string[];
   showDictationButton: boolean;
+  hoverToFocus: boolean;
+  hoverToBlur: boolean;
   diffRenderMode: ProjectDiffRenderMode;
   diffComments: SavedDiffComment[];
   diffCommentCount: number;
@@ -49,6 +55,11 @@ export type ComposerProps = {
   onOpenSettingsView: () => void;
   onRestoredQueuedPromptApplied: () => void;
   onToggleTerminal: () => void;
+  onToggleArtifacts?: () => void;
+  onOverlayHeightChange?: (height: number) => void;
+  showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   onLayoutChange: () => void;
   mainViewRef: RefObject<HTMLElement | null>;
@@ -65,18 +76,12 @@ export function Composer(props: ComposerProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      ref={composerPanelRef}
-      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
-      aria-label="Composer panel"
-    >
-      <ComposerPromptSurface
-        {...props}
-        composerPanelRef={composerPanelRef}
-        mainViewRef={props.mainViewRef}
-        workspaceFooterRef={props.workspaceFooterRef}
-        onOpenGitOps={props.onOpenGitOpsView}
-      />
-    </div>
+    <ComposerPromptSurface
+      {...props}
+      composerPanelRef={composerPanelRef}
+      mainViewRef={props.mainViewRef}
+      workspaceFooterRef={props.workspaceFooterRef}
+      onOpenGitOps={props.onOpenGitOpsView}
+    />
   );
 }

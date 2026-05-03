@@ -1,5 +1,17 @@
 export { handleDesktopAction } from "./pi-threads/action-router.cts";
 export {
+  editArtifact,
+  getArtifact,
+  listArtifacts,
+  listArtifactVersions,
+  updateArtifact,
+} from "./artifact-state-db.cts";
+export { compileReactArtifact } from "./artifact-compiler.cts";
+export {
+  createChatGroup,
+  getChatSidebarState as loadChatSidebarState,
+} from "./chat-state-db.cts";
+export {
   installPiPackage,
   listConfiguredPiPackages,
   removePiPackage,
@@ -12,6 +24,7 @@ export {
   loadThread,
 } from "./pi-threads/thread-loader.cts";
 export {
+  disposeDesktopRuntime,
   getDictationState,
   installDictationModel,
   removeDictationModel,

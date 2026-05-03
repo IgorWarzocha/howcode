@@ -29,14 +29,15 @@ export function buildModelMenuItems(
     },
     ...availableModels.map((model) => ({
       id: `${model.provider}/${model.id}`,
-      label: `${model.provider}/${model.id}`,
+      label: model.name,
+      description: `${model.provider}/${model.id}`,
       selected: selectedModel?.provider === model.provider && selectedModel.id === model.id,
     })),
   ];
 }
 
 export function buildModelSelectionPayload(
-  key: "gitCommitMessageModel" | "skillCreatorModel",
+  key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
   id: string,
 ): DesktopSettingsUpdatePayload {
   if (id === "composer-default") {
@@ -45,6 +46,22 @@ export function buildModelSelectionPayload(
 
   const [provider, ...modelIdParts] = id.split("/");
   const modelId = modelIdParts.join("/");
+
+  if (key === "chatModel") {
+    return {
+      key,
+      provider,
+      modelId,
+    };
+  }
+
+  if (key === "codeModel") {
+    return {
+      key,
+      provider,
+      modelId,
+    };
+  }
 
   if (key === "gitCommitMessageModel") {
     return {

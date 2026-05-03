@@ -1,4 +1,4 @@
-import { Bot, GitBranch, Terminal } from "lucide-react";
+import { Bot, FileCode2, GitBranch, Terminal } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type {
   ComposerContextUsage,
@@ -7,12 +7,18 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from "../../../desktop/types";
-import { compactCardClass, compactIconButtonClass } from "../../../ui/classes";
+import { compactIconButtonClass, iconActionButtonDisabledClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { PiLogoMark } from "../../common/PiLogoMark";
 import { ToolbarButton } from "../../common/ToolbarButton";
 import { ComposerContextMeter } from "./ComposerContextMeter";
 import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
+import {
+  WorkspaceBranchChip,
+  workspaceFooterRowClass,
+  workspaceFooterTextClass,
+  workspaceFooterTrailingGroupClass,
+} from "../footer/WorkspaceFooterPrimitives";
 import { ComposerModelPopover } from "./ComposerModelPopover";
 import { getGitOpsEntryButtonClass } from "./git-ops";
 
@@ -35,9 +41,13 @@ type ComposerFooterProps = {
   onSelectModel: (model: ComposerModel) => void;
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void;
   onSetOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
+  onToggleArtifacts?: () => void;
   onToggleTerminal: () => void;
   projectGitState: ProjectGitState | null;
   projectId: string;
+  showTerminalControls?: boolean;
+  artifactsVisible?: boolean;
+  artifactsAvailable?: boolean;
   terminalVisible: boolean;
   thinkingLevel: ComposerThinkingLevel;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
@@ -62,9 +72,13 @@ export function ComposerFooter({
   onSelectModel,
   onSelectThinkingLevel,
   onSetOpenMenu,
+  onToggleArtifacts,
   onToggleTerminal,
   projectGitState,
   projectId,
+  showTerminalControls = true,
+  artifactsVisible = false,
+  artifactsAvailable = Boolean(onToggleArtifacts),
   terminalVisible,
   thinkingLevel,
   thinkingLevelLabels,
@@ -76,26 +90,34 @@ export function ComposerFooter({
       : "clean";
 
   return (
-    <div className="flex items-center gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
-      <ToolbarButton
-        label="TUI"
-        tooltip="Pi-TUI takeover"
-        icon={<PiLogoMark className="h-[14px] w-[14px]" />}
-        onClick={onOpenTakeoverTerminal}
-      />
-      <ToolbarButton
-        label="Terminal"
-        icon={<Terminal size={14} />}
-        onClick={onToggleTerminal}
-        className={cn(terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]")}
-      />
+    <div className={workspaceFooterRowClass}>
+      {showTerminalControls ? (
+        <>
+          <ToolbarButton
+            label="TUI"
+            tooltip="Pi-TUI takeover"
+            icon={<PiLogoMark className="h-[14px] w-[14px]" />}
+            className={workspaceFooterTextClass}
+            onClick={onOpenTakeoverTerminal}
+          />
+          <ToolbarButton
+            label="Terminal"
+            icon={<Terminal size={14} />}
+            onClick={onToggleTerminal}
+            className={cn(
+              workspaceFooterTextClass,
+              terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+            )}
+          />
+        </>
+      ) : null}
       <div className="relative inline-flex h-7 items-center">
         <ToolbarButton
           ref={modelButtonRef}
           label="Agent"
           tooltip="Model settings"
           icon={<Bot size={14} />}
-          className="pr-8"
+          className={cn(workspaceFooterTextClass, "pr-8")}
           onClick={() => onSetOpenMenu((current) => (current === "model" ? null : "model"))}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}
@@ -122,7 +144,7 @@ export function ComposerFooter({
           />
         ) : null}
       </div>
-      <div className="ml-auto flex min-h-7 items-center gap-1.5 max-md:flex-wrap">
+      <div className={workspaceFooterTrailingGroupClass}>
         {projectGitState?.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
@@ -133,29 +155,37 @@ export function ComposerFooter({
           />
         ) : null}
         {projectGitState?.isGitRepo ? (
-          <div
-            className={cn(
-              compactCardClass,
-              "inline-flex h-7 max-w-[12rem] items-center px-2.5 py-0 text-[12px] leading-none text-[color:var(--muted)]",
-            )}
-            title={projectGitState.branch ?? "Detached"}
-          >
-            <span className="truncate">{projectGitState.branch ?? "Detached"}</span>
-          </div>
+          <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            "h-7 w-7",
-            getGitOpsEntryButtonClass(gitVisualMode),
-          )}
-          onClick={onOpenGitOps}
-          aria-label="Git ops"
-          data-tooltip="Git ops"
-        >
-          <GitBranch size={14} />
-        </button>
+        {!showTerminalControls ? (
+          <ToolbarButton
+            label="Artifacts"
+            icon={<FileCode2 size={14} />}
+            trailing
+            className={cn(
+              workspaceFooterTextClass,
+              iconActionButtonDisabledClass,
+              artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+            )}
+            onClick={onToggleArtifacts}
+            disabled={!artifactsAvailable || !onToggleArtifacts}
+            aria-disabled={!artifactsAvailable || !onToggleArtifacts}
+          />
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7",
+              getGitOpsEntryButtonClass(gitVisualMode),
+            )}
+            onClick={onOpenGitOps}
+            aria-label="Git ops"
+            data-tooltip="Git ops"
+          >
+            <GitBranch size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

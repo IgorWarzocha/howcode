@@ -18,6 +18,14 @@ type PiThreadsRequestHandlers = Pick<
   | "removeDictationModel"
   | "transcribeDictation"
   | "getProjectThreads"
+  | "getChatSidebarState"
+  | "createChatGroup"
+  | "listArtifacts"
+  | "getArtifact"
+  | "updateArtifact"
+  | "editArtifact"
+  | "listArtifactVersions"
+  | "compileReactArtifact"
   | "getInboxThreads"
   | "getArchivedThreads"
   | "getThread"
@@ -43,7 +51,23 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     installDictationModel: (request) => piThreads.installDictationModel(request),
     removeDictationModel: (request) => piThreads.removeDictationModel(request),
     transcribeDictation: (request) => piThreads.transcribeDictation(request),
-    getProjectThreads: ({ projectId }) => piThreads.loadProjectThreads(projectId),
+    getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
+    getChatSidebarState: ({ selectedGroupId }) =>
+      piThreads.loadChatSidebarState(selectedGroupId ?? null),
+    createChatGroup: ({ name }) => piThreads.createChatGroup(name),
+    listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
+    getArtifact: ({ artifactSlug, conversationId }) =>
+      piThreads.getArtifact(artifactSlug, conversationId ?? null),
+    updateArtifact: ({ artifactSlug, content, conversationId }) =>
+      piThreads.updateArtifact({
+        slug: artifactSlug,
+        content,
+        conversationId: conversationId ?? null,
+      }),
+    editArtifact: ({ artifactSlug, edits, conversationId }) =>
+      piThreads.editArtifact({ slug: artifactSlug, edits, conversationId: conversationId ?? null }),
+    listArtifactVersions: ({ artifactSlug }) => piThreads.listArtifactVersions(artifactSlug),
+    compileReactArtifact: ({ source }) => piThreads.compileReactArtifact(source),
     getInboxThreads: () => piThreads.loadInboxThreadList(),
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>

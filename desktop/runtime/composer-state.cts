@@ -1,5 +1,5 @@
 import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
-import { supportsXhigh } from "@mariozechner/pi-ai";
+import { getSupportedThinkingLevels } from "@mariozechner/pi-ai";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type {
   ComposerContextUsage,
@@ -12,8 +12,17 @@ import type {
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
 import { getPiModule } from "../pi-module.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "./isolated-settings-manager.cts";
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
+import { getNativeAskQuestionsRequest } from "./native-ask-questions-state.cts";
+import {
+  normalizeModelContextWindowValue,
+  normalizeModelRegistryContextWindows,
+} from "../../shared/model-context-window-normalization.ts";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -59,10 +68,11 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
     return null;
   }
 
+  const contextWindow = normalizeModelContextWindowValue(usage.contextWindow);
   const contextUsage = {
     tokens: usage.tokens,
-    contextWindow: usage.contextWindow,
-    percent: usage.percent,
+    contextWindow,
+    percent: usage.tokens !== null ? (usage.tokens / contextWindow) * 100 : usage.percent,
   };
   contextUsageCache.set(session, contextUsage);
   return contextUsage;
@@ -87,9 +97,7 @@ export function getAvailableThinkingLevelsForModel(
     return ["off"];
   }
 
-  return supportsXhigh(model)
-    ? (["off", "minimal", "low", "medium", "high", "xhigh"] as ComposerThinkingLevel[])
-    : (["off", "minimal", "low", "medium", "high"] as ComposerThinkingLevel[]);
+  return getSupportedThinkingLevels(model) as ComposerThinkingLevel[];
 }
 
 export function clampThinkingLevel(
@@ -141,23 +149,36 @@ function resolveCurrentModel(
   return availableModels[0] ?? null;
 }
 
+function getModeModelSelection(request: ComposerStateRequest) {
+  return request.composerModelSelection ?? null;
+}
+
+function getModeThinkingLevel(request: ComposerStateRequest) {
+  return request.composerThinkingLevel ?? null;
+}
+
 async function resolveComposerStateSnapshot(request: ComposerStateRequest = {}) {
   const { cwd, session } = await createComposerSnapshotSession(request);
 
   try {
     const availableModels = (await session.modelRegistry.getAvailable()) as ComposerSourceModel[];
+    const modeModelSelection = getModeModelSelection(request);
     const currentModel = resolveCurrentModel(
       availableModels,
-      session.model ? { provider: session.model.provider, id: session.model.id } : null,
+      modeModelSelection ??
+        (session.model ? { provider: session.model.provider, id: session.model.id } : null),
     );
-    const availableThinkingLevels = mapThinkingLevels(session.getAvailableThinkingLevels());
+    const availableThinkingLevels = modeModelSelection
+      ? getAvailableThinkingLevelsForModel(currentModel)
+      : mapThinkingLevels(session.getAvailableThinkingLevels());
+    const currentThinkingLevel = getModeThinkingLevel(request) ?? session.thinkingLevel;
 
     return {
       cwd,
       availableModels,
       currentModel,
       currentThinkingLevel: clampThinkingLevel(
-        session.thinkingLevel as ComposerThinkingLevel,
+        currentThinkingLevel as ComposerThinkingLevel,
         availableThinkingLevels,
       ),
       availableThinkingLevels,
@@ -175,6 +196,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
@@ -183,17 +205,32 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     : (request.projectId ?? getDesktopWorkingDirectory());
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(cwd, agentDir);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+  });
   const sessionManager = persistedSessionPath
     ? SessionManager.open(persistedSessionPath)
     : SessionManager.inMemory();
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd,
+    agentDir,
+    settingsCwd: request.composerSessionDir,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager,
     tools: [],
   });
@@ -231,6 +268,7 @@ export async function buildComposerStateSnapshot(
     currentThinkingLevel: snapshot.currentThinkingLevel,
     availableThinkingLevels: snapshot.availableThinkingLevels,
     queuedPrompts: [],
+    nativeAskQuestionsRequest: null,
     contextUsage: snapshot.contextUsage,
     isCompacting: false,
     isExtensionCommandRunning: false,
@@ -255,6 +293,7 @@ export async function buildComposerState(
     currentThinkingLevel: runtime.session.thinkingLevel as ComposerThinkingLevel,
     availableThinkingLevels: mapThinkingLevels(runtime.session.getAvailableThinkingLevels()),
     queuedPrompts: buildSessionQueuedPrompts(runtime.session),
+    nativeAskQuestionsRequest: getNativeAskQuestionsRequest(runtime),
     contextUsage: getContextUsageForComposerState(runtime.session, options),
     isCompacting: runtime.session.isCompacting,
     isExtensionCommandRunning: isHeadlessExtensionCommandRunning(runtime.session),

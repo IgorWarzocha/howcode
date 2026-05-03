@@ -10,6 +10,23 @@ export type ComposerQueuedPrompt = {
   text: string;
 };
 
+export type NativeAskQuestionOption = {
+  label: string;
+  description?: string;
+};
+
+export type NativeAskQuestion = {
+  id: string;
+  question: string;
+  multiple?: boolean;
+  options: NativeAskQuestionOption[];
+};
+
+export type NativeAskQuestionsRequest = {
+  id: string;
+  questions: NativeAskQuestion[];
+};
+
 export type ComposerModel = {
   provider: string;
   id: string;
@@ -30,6 +47,7 @@ export type ComposerState = {
   currentThinkingLevel: ComposerThinkingLevel;
   availableThinkingLevels: ComposerThinkingLevel[];
   queuedPrompts: ComposerQueuedPrompt[];
+  nativeAskQuestionsRequest: NativeAskQuestionsRequest | null;
   contextUsage: ComposerContextUsage | null;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
@@ -58,6 +76,13 @@ export type ComposerFilePickerState = {
 export type ComposerStateRequest = {
   projectId?: string | null;
   sessionPath?: string | null;
+  composerMode?: "chat" | "code" | null;
+  composerModelSelection?: { provider: string; id: string } | null;
+  composerUseDefaultModel?: boolean;
+  composerThinkingLevel?: ComposerThinkingLevel | null;
+  composerStreamingBehavior?: ComposerStreamingBehavior | null;
+  composerSessionDir?: string | null;
+  chatGroupId?: string | null;
 };
 
 export type ComposerSlashCommandSource = "app" | "builtin" | "extension" | "prompt" | "skill";

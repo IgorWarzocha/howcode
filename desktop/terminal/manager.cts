@@ -256,12 +256,16 @@ export async function closeTerminal(request: TerminalCloseRequest) {
     return;
   }
 
+  const restartPromise = record.restartPromise;
   clearSessionBindings(record);
   record.process?.kill();
   record.process = null;
   record.restartPromise = null;
   flushSession(record);
   deleteTerminalSession(request.sessionId);
+  await restartPromise?.catch(() => {
+    // Ignore startup races while closing; startProcess kills late PTYs once the session is gone.
+  });
 
   if (request.deleteHistory) {
     rmSync(record.transcriptPath, { force: true });
@@ -274,6 +278,11 @@ export async function closeTerminal(request: TerminalCloseRequest) {
     exitSignal: null,
     createdAt: nowIso(),
   });
+}
+
+export async function closeAllTerminals() {
+  const sessionIds = listTerminalSessions().map((record) => record.snapshot.sessionId);
+  await Promise.all(sessionIds.map((sessionId) => closeTerminal({ sessionId })));
 }
 
 export { subscribeTerminalEvents };

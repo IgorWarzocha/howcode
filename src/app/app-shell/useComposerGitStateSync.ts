@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { ComposerState, InboxThread, ProjectGitState } from "../desktop/types";
+import type { AppSettings, ComposerState, InboxThread, ProjectGitState } from "../desktop/types";
 import type { WorkspaceState } from "../state/workspace";
 
 type UseComposerGitStateSyncInput = {
@@ -8,13 +8,16 @@ type UseComposerGitStateSyncInput = {
   selectedInboxThread: InboxThread | null;
   composerProjectId: string;
   shellComposerState: ComposerState | null | undefined;
+  shellAppSettings: AppSettings | null | undefined;
   loadComposerState: (request?: {
     projectId?: string | null;
     sessionPath?: string | null;
+    composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
+  setProjectGitLoading: Dispatch<SetStateAction<boolean>>;
 };
 
 export function useComposerGitStateSync({
@@ -22,10 +25,12 @@ export function useComposerGitStateSync({
   selectedInboxThread,
   composerProjectId,
   shellComposerState,
+  shellAppSettings,
   loadComposerState,
   loadProjectGitState,
   setComposerState,
   setProjectGitState,
+  setProjectGitLoading,
 }: UseComposerGitStateSyncInput) {
   useEffect(() => {
     if (!shellComposerState) {
@@ -36,12 +41,19 @@ export function useComposerGitStateSync({
   }, [setComposerState, shellComposerState]);
 
   useEffect(() => {
+    void shellAppSettings?.chatModel;
+    void shellAppSettings?.chatThinkingLevel;
+    void shellAppSettings?.codeModel;
+    void shellAppSettings?.codeThinkingLevel;
+
     const inboxProjectId = selectedInboxThread?.projectId ?? null;
     const inboxSessionPath = selectedInboxThread?.sessionPath ?? null;
     const composerStateProjectId =
       workspaceState.activeView === "inbox" ? inboxProjectId : composerProjectId;
     const composerStateSessionPath =
-      workspaceState.activeView === "thread" || workspaceState.activeView === "gitops"
+      workspaceState.activeView === "chat" ||
+      workspaceState.activeView === "thread" ||
+      workspaceState.activeView === "gitops"
         ? workspaceState.selectedSessionPath
         : workspaceState.activeView === "inbox"
           ? inboxSessionPath
@@ -57,6 +69,7 @@ export function useComposerGitStateSync({
       const nextComposerState = await loadComposerState({
         projectId: composerStateProjectId,
         sessionPath: composerStateSessionPath,
+        composerMode: workspaceState.activeView === "chat" ? "chat" : "code",
       });
 
       if (!cancelled && nextComposerState) {
@@ -75,6 +88,10 @@ export function useComposerGitStateSync({
     selectedInboxThread?.projectId,
     selectedInboxThread?.sessionPath,
     setComposerState,
+    shellAppSettings?.chatModel,
+    shellAppSettings?.chatThinkingLevel,
+    shellAppSettings?.codeModel,
+    shellAppSettings?.codeThinkingLevel,
     workspaceState.activeView,
     workspaceState.selectedSessionPath,
   ]);
@@ -82,17 +99,25 @@ export function useComposerGitStateSync({
   useEffect(() => {
     if (!composerProjectId) {
       setProjectGitState(null);
+      setProjectGitLoading(false);
       return;
     }
 
     setProjectGitState(null);
+    setProjectGitLoading(true);
 
     let cancelled = false;
 
     const syncProjectGitState = async () => {
-      const nextProjectGitState = await loadProjectGitState(composerProjectId);
-      if (!cancelled) {
-        setProjectGitState(nextProjectGitState);
+      try {
+        const nextProjectGitState = await loadProjectGitState(composerProjectId);
+        if (!cancelled) {
+          setProjectGitState(nextProjectGitState);
+        }
+      } finally {
+        if (!cancelled) {
+          setProjectGitLoading(false);
+        }
       }
     };
 
@@ -101,7 +126,7 @@ export function useComposerGitStateSync({
     return () => {
       cancelled = true;
     };
-  }, [composerProjectId, loadProjectGitState, setProjectGitState]);
+  }, [composerProjectId, loadProjectGitState, setProjectGitLoading, setProjectGitState]);
 
   useEffect(() => {
     if (workspaceState.activeView !== "gitops" || !composerProjectId) {
@@ -109,6 +134,7 @@ export function useComposerGitStateSync({
     }
 
     let cancelled = false;
+    setProjectGitLoading(true);
 
     void loadProjectGitState(composerProjectId)
       .then((nextProjectGitState) => {
@@ -118,10 +144,21 @@ export function useComposerGitStateSync({
       })
       .catch((error) => {
         console.warn("Failed to refresh project git state for the diff panel.", error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setProjectGitLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [composerProjectId, loadProjectGitState, setProjectGitState, workspaceState.activeView]);
+  }, [
+    composerProjectId,
+    loadProjectGitState,
+    setProjectGitLoading,
+    setProjectGitState,
+    workspaceState.activeView,
+  ]);
 }

@@ -1,5 +1,11 @@
 import { getPersistedSessionPath } from "../../shared/session-paths.ts";
+import path from "node:path";
 import { getPiModule } from "../pi-module.cts";
+import { createArtifact, editArtifact, getArtifact, listArtifacts } from "../artifact-state-db.cts";
+import {
+  createIsolatedRuntimeResourceLoader,
+  createRuntimeSettingsManager,
+} from "./isolated-settings-manager.cts";
 import {
   abortHeadlessExtensionCommand,
   bindHeadlessAgentSessionExtensions,
@@ -7,6 +13,7 @@ import {
   refreshHeadlessAgentSessionExtensionBindings,
 } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
+import { createArtifactTools } from "./artifact-tools.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -28,6 +35,7 @@ import {
   withRuntimeMutationLock,
 } from "./registry/runtime-registry-state.cts";
 export { withRuntimeMutationLock } from "./registry/runtime-registry-state.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 import type { RuntimeRecord } from "./registry/runtime-registry-state.cts";
 import type { PiRuntime } from "./types.cts";
 
@@ -40,6 +48,10 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
   buildComposerState,
   publishComposerUpdate,
 });
+
+function normalizeSettingsCwd(settingsCwd?: string | null) {
+  return settingsCwd ? path.resolve(settingsCwd) : null;
+}
 
 function isHowcodeRuntimeBusy(runtime: PiRuntime) {
   return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime);
@@ -94,8 +106,15 @@ export async function markRuntimeSettingsStaleForProject(projectPath?: string | 
   settingsRefreshController.markStaleForProject(projectPath);
 }
 
+export async function markRuntimeSettingsStaleForSettingsCwd(settingsCwd?: string | null) {
+  settingsRefreshController.markStaleForSettingsCwd(settingsCwd);
+}
+
 async function createRuntime(options: {
   cwd: string;
+  sessionDir?: string | null;
+  settingsCwd?: string | null;
+  chatGroupId?: string | null;
   sessionManager?: PiRuntime["session"]["sessionManager"];
 }): Promise<PiRuntime> {
   const {
@@ -103,25 +122,53 @@ async function createRuntime(options: {
     ModelRegistry,
     SessionManager,
     SettingsManager,
+    DefaultResourceLoader,
     createAgentSession,
     getAgentDir,
   } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
-  const settingsManager = SettingsManager.create(options.cwd, agentDir);
-  const sessionDir = settingsManager.getSessionDir() ?? undefined;
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
+  const settingsManager = createRuntimeSettingsManager({
+    SettingsManager,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+  });
+  const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined;
+  const resourceLoader = await createIsolatedRuntimeResourceLoader({
+    DefaultResourceLoader,
+    cwd: options.cwd,
+    agentDir,
+    settingsCwd: options.settingsCwd,
+    settingsManager,
+  });
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
     authStorage,
     modelRegistry,
     settingsManager,
+    resourceLoader,
     sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
+    ...(options.settingsCwd
+      ? {
+          noTools: "builtin" as const,
+          customTools: createArtifactTools({
+            createArtifact,
+            editArtifact,
+            getArtifact: ({ conversationId, slug }) => getArtifact(slug, conversationId),
+            listArtifacts,
+          }),
+        }
+      : {}),
   });
   const runtime = {
     cwd: options.cwd,
     session,
+    chatGroupId: options.chatGroupId ?? null,
   } satisfies PiRuntime;
 
   rememberSessionPath(session.sessionFile, options.cwd);
@@ -281,24 +328,35 @@ export function getCachedRuntimeForSessionPath(sessionPath: string) {
 
 export async function getOrCreateRuntimeForSessionPath(
   sessionPath: string,
-  options: { suspendDisposal?: boolean } = {},
+  options: {
+    suspendDisposal?: boolean;
+    settingsCwd?: string | null;
+    chatGroupId?: string | null;
+  } = {},
 ) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath);
   if (!persistedSessionPath) {
     throw new Error("A persisted session path is required to open a live runtime.");
   }
 
+  const settingsCwd = normalizeSettingsCwd(options.settingsCwd);
   const existingRuntime = getRuntimeRecord(persistedSessionPath);
   if (existingRuntime) {
-    if (options.suspendDisposal) {
-      suspendRuntimeDisposal(persistedSessionPath);
-    }
+    if (existingRuntime.settingsCwd !== settingsCwd) {
+      const runtime = await existingRuntime.runtimePromise;
+      runtime.session.dispose();
+      deleteRuntimeRecordIfCurrent(persistedSessionPath, existingRuntime);
+    } else {
+      if (options.suspendDisposal) {
+        suspendRuntimeDisposal(persistedSessionPath);
+      }
 
-    const runtime = await existingRuntime.runtimePromise;
-    if (!isHowcodeRuntimeBusy(runtime)) {
-      await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+      const runtime = await existingRuntime.runtimePromise;
+      if (!isHowcodeRuntimeBusy(runtime)) {
+        await reloadRuntimeSettingsIfSafe(persistedSessionPath, { useMutationLock: false });
+      }
+      return runtime;
     }
-    return runtime;
   }
 
   const { SessionManager } = await getPiModule();
@@ -306,6 +364,8 @@ export async function getOrCreateRuntimeForSessionPath(
   let record: RuntimeRecord | null = null;
   const runtimePromise = createRuntime({
     cwd: sessionManager.getCwd(),
+    settingsCwd,
+    chatGroupId: options.chatGroupId ?? null,
     sessionManager,
   }).catch((error) => {
     if (record) {
@@ -315,12 +375,21 @@ export async function getOrCreateRuntimeForSessionPath(
     throw error;
   });
 
-  record = registerRuntime(persistedSessionPath, runtimePromise);
+  record = registerRuntime(persistedSessionPath, runtimePromise, settingsCwd);
   return runtimePromise;
 }
 
-export async function createRuntimeForNewSession(cwd: string) {
-  const runtime = await createRuntime({ cwd });
+export async function createRuntimeForNewSession(
+  cwd: string,
+  sessionDir?: string | null,
+  options: { chatGroupId?: string | null } = {},
+) {
+  const runtime = await createRuntime({
+    cwd,
+    sessionDir,
+    settingsCwd: sessionDir ?? null,
+    chatGroupId: options.chatGroupId ?? null,
+  });
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
 
   if (runtimeKey) {
@@ -331,7 +400,7 @@ export async function createRuntimeForNewSession(cwd: string) {
       return await existingRuntime.runtimePromise;
     }
 
-    registerRuntime(runtimeKey, Promise.resolve(runtime));
+    registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null);
   }
 
   return runtime;

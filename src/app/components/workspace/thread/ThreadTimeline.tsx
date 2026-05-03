@@ -17,11 +17,12 @@ type ThreadTimelineProps = {
   isStreaming: boolean;
   isCompacting: boolean;
   composerLayoutVersion: number;
+  composerOverlayHeight?: number;
   onLoadEarlierMessages: () => void;
 };
 
 const timelineQuickActionButtonClass =
-  "pointer-events-auto shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
+  "pointer-events-auto h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
 
 export function ThreadTimeline({
   messages,
@@ -29,6 +30,7 @@ export function ThreadTimeline({
   isStreaming,
   isCompacting,
   composerLayoutVersion,
+  composerOverlayHeight = 0,
   onLoadEarlierMessages,
 }: ThreadTimelineProps) {
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({});
@@ -148,6 +150,7 @@ export function ThreadTimeline({
   useLayoutEffect(() => {
     void bottomAnchorKey;
     void composerLayoutVersion;
+    void composerOverlayHeight;
     void rowStructureSignature;
 
     const container = containerRef.current;
@@ -170,7 +173,14 @@ export function ThreadTimeline({
     if (shouldStickToBottomRef.current) {
       scrollToBottom();
     }
-  }, [bottomAnchorKey, composerLayoutVersion, rowStructureSignature, rows.length, scrollToBottom]);
+  }, [
+    bottomAnchorKey,
+    composerLayoutVersion,
+    composerOverlayHeight,
+    rowStructureSignature,
+    rows.length,
+    scrollToBottom,
+  ]);
 
   const handleScroll = useCallback(() => {
     const container = containerRef.current;
@@ -283,10 +293,19 @@ export function ThreadTimeline({
 
   return (
     <div className={`${chatViewportClass} relative`}>
-      <div ref={containerRef} className={chatScrollableAreaClass} onScroll={handleScroll}>
+      <div
+        ref={containerRef}
+        className={cn(chatScrollableAreaClass, "ml-[2.95rem] mr-[2.05rem]")}
+        onScroll={handleScroll}
+      >
         <div
           ref={contentRef}
-          className={`mx-auto w-full min-w-0 ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          className={`mx-auto flex min-h-full w-full min-w-0 flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          style={
+            composerOverlayHeight > 0
+              ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
+              : undefined
+          }
         >
           <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
@@ -302,7 +321,7 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute right-4 bottom-4 z-10 flex flex-col items-center gap-1.5">
+      <div className="pointer-events-none absolute right-0 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
         <button
           type="button"
           className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}

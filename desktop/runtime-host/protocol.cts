@@ -1,4 +1,5 @@
 import type { CommitMessageContext } from "../project-git.cts";
+import type { Artifact, ArtifactKind } from "../../shared/desktop-contracts.ts";
 import type {
   ComposerSlashCommand,
   ComposerState,
@@ -22,23 +23,38 @@ export type RuntimeHostRequestMap = {
   startNewThread: { request: ComposerStateRequest };
   selectProjectRuntime: { request: ComposerStateRequest };
   openThreadRuntime: { request: ComposerStateRequest };
-  invalidateRuntimeSettings: { sessionPath?: string | null; projectPath?: string | null };
-  getPiSessionStorage: { projectPath?: string | null };
-  loadPiSettings: { projectPath?: string | null };
-  updatePiSetting: { key: keyof PiSettings; value: unknown; projectPath?: string | null };
-  listConfiguredPiPackages: { projectPath?: string | null };
+  invalidateRuntimeSettings: {
+    sessionPath?: string | null;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
+  getPiSessionStorage: { projectPath?: string | null; chat?: boolean };
+  loadPiSettings: { projectPath?: string | null; chat?: boolean };
+  updatePiSetting: {
+    key: keyof PiSettings;
+    value: unknown;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
+  listConfiguredPiPackages: { projectPath?: string | null; chat?: boolean };
   installPiPackage: {
     source: string;
     kind?: "npm" | "git";
     local?: boolean;
     projectPath?: string | null;
+    chat?: boolean;
   };
-  removePiPackage: { source: string; local?: boolean; projectPath?: string | null };
-  listConfiguredPiSkills: { projectPath?: string | null };
-  installPiSkill: { source: string; local?: boolean; projectPath?: string | null };
-  removePiSkill: { installedPath: string; projectPath?: string | null };
+  removePiPackage: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
+  listConfiguredPiSkills: { projectPath?: string | null; chat?: boolean };
+  installPiSkill: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
+  removePiSkill: { installedPath: string; projectPath?: string | null; chat?: boolean };
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number };
-  startSkillCreatorSession: { prompt: string; local?: boolean; projectPath?: string | null };
+  startSkillCreatorSession: {
+    prompt: string;
+    local?: boolean;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
   continueSkillCreatorSession: { sessionId: string; prompt: string };
   closeSkillCreatorSession: { sessionId: string };
   generateGitCommitMessage: { request: ComposerStateRequest; context: CommitMessageContext };
@@ -54,6 +70,10 @@ export type RuntimeHostRequestMap = {
     queueId: string;
     queueSnapshotKey: string;
     queueMode: Exclude<ComposerStreamingBehavior, "stop">;
+  };
+  answerNativeAskQuestions: ComposerStateRequest & {
+    requestId: string;
+    answers: string[][] | null;
   };
 };
 
@@ -88,7 +108,41 @@ export type RuntimeHostResponseMap = {
   sendComposerPrompt: "sent" | "stopped";
   stopComposerRun: { ok: true };
   dequeueComposerPrompt: string | null;
+  answerNativeAskQuestions: { ok: boolean };
 };
+
+export type RuntimeHostMainRequestMap = {
+  getSessionNativeExtensions: { sessionPath: string };
+  setSessionNativeExtensions: { sessionPath: string; enabled: string[] };
+  snapshotDefaultNativeExtensions: Record<string, never>;
+  createArtifact: {
+    conversationId: string;
+    slug: string;
+    kind: ArtifactKind;
+    content: string;
+  };
+  updateArtifact: { slug: string; content: string; conversationId?: string | null };
+  editArtifact: {
+    slug: string;
+    conversationId?: string | null;
+    edits: Array<{ oldText: string; newText: string }>;
+  };
+  getArtifact: { artifactSlug: string; conversationId?: string | null };
+  listArtifacts: { conversationId: string };
+};
+
+export type RuntimeHostMainResponseMap = {
+  getSessionNativeExtensions: string[] | null;
+  setSessionNativeExtensions: { ok: true };
+  snapshotDefaultNativeExtensions: string[];
+  createArtifact: Artifact;
+  updateArtifact: Artifact;
+  editArtifact: Artifact;
+  getArtifact: Artifact | null;
+  listArtifacts: Artifact[];
+};
+
+export type RuntimeHostMainRequestName = keyof RuntimeHostMainRequestMap;
 
 export type RuntimeHostRequestName = keyof RuntimeHostRequestMap;
 
@@ -121,9 +175,28 @@ export type RuntimeHostCrashMessage = {
   stack?: string;
 };
 
+export type RuntimeHostMainRequestMessage<
+  TName extends RuntimeHostMainRequestName = RuntimeHostMainRequestName,
+> = {
+  type: "main-request";
+  id: string;
+  name: TName;
+  payload: RuntimeHostMainRequestMap[TName];
+};
+
+export type RuntimeHostMainResponseMessage =
+  | {
+      type: "main-response";
+      id: string;
+      ok: true;
+      result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName];
+    }
+  | { type: "main-response"; id: string; ok: false; error: string; stack?: string };
+
 export type RuntimeHostToMainMessage =
   | RuntimeHostResponseMessage
   | RuntimeHostEventMessage
-  | RuntimeHostCrashMessage;
+  | RuntimeHostCrashMessage
+  | RuntimeHostMainRequestMessage;
 
-export type RuntimeMainToHostMessage = RuntimeHostRequestMessage;
+export type RuntimeMainToHostMessage = RuntimeHostRequestMessage | RuntimeHostMainResponseMessage;

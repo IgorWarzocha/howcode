@@ -5,6 +5,10 @@ import {
 } from "../../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "../thread-state-db/db.cts";
 import {
+  chatModelKey,
+  chatThinkingLevelKey,
+  codeModelKey,
+  codeThinkingLevelKey,
   composerStreamingBehaviorKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -12,8 +16,12 @@ import {
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
+  gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  howcodeNativeAskQuestionsKey,
+  hoverToBlurKey,
+  hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -42,6 +50,42 @@ import {
 
 export function loadAppSettings(): AppSettings {
   const db = getThreadStateDatabase();
+  const chatModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(chatModelKey) as PreferenceRow | undefined;
+  const chatThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(chatThinkingLevelKey) as PreferenceRow | undefined;
+  const codeModelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(codeModelKey) as PreferenceRow | undefined;
+  const codeThinkingLevelRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(codeThinkingLevelKey) as PreferenceRow | undefined;
   const modelRow = db
     .prepare(
       `
@@ -150,6 +194,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(gitDiffBaselineDefaultKey) as PreferenceRow | undefined;
+  const gitDiffFileTreeDefaultVisibleRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(gitDiffFileTreeDefaultVisibleKey) as PreferenceRow | undefined;
   const gitDiffRenderModeDefaultRow = db
     .prepare(
       `
@@ -168,6 +221,15 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(useAgentsSkillsPathsKey) as PreferenceRow | undefined;
+  const howcodeNativeAskQuestionsRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(howcodeNativeAskQuestionsKey) as PreferenceRow | undefined;
   const piTuiTakeoverRow = db
     .prepare(
       `
@@ -177,6 +239,24 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
+  const hoverToFocusRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(hoverToFocusKey) as PreferenceRow | undefined;
+  const hoverToBlurRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(hoverToBlurKey) as PreferenceRow | undefined;
   const dictationModelIdRow = db
     .prepare(
       `
@@ -206,6 +286,10 @@ export function loadAppSettings(): AppSettings {
     .get(showDictationButtonKey) as PreferenceRow | undefined;
 
   return {
+    chatModel: parseModelSelection(chatModelRow?.valueJson),
+    chatThinkingLevel: parseThinkingLevelPreference(chatThinkingLevelRow?.valueJson),
+    codeModel: parseModelSelection(codeModelRow?.valueJson),
+    codeThinkingLevel: parseThinkingLevelPreference(codeThinkingLevelRow?.valueJson),
     gitCommitMessageModel: parseModelSelection(modelRow?.valueJson),
     gitCommitMessageThinkingLevel:
       parseThinkingLevelPreference(gitCommitThinkingLevelRow?.valueJson) ?? "off",
@@ -232,9 +316,15 @@ export function loadAppSettings(): AppSettings {
     ) ?? { kind: "head" },
     gitDiffRenderModeDefault:
       parseGitDiffRenderModePreference(gitDiffRenderModeDefaultRow?.valueJson) ?? "stacked",
+    gitDiffFileTreeDefaultVisible:
+      parseBooleanPreference(gitDiffFileTreeDefaultVisibleRow?.valueJson) ?? true,
     projectDeletionMode:
       parseProjectDeletionModePreference(projectDeletionModeRow?.valueJson) ?? "pi-only",
     useAgentsSkillsPaths: parseBooleanPreference(useAgentsSkillsPathsRow?.valueJson) ?? false,
+    howcodeNativeAskQuestions:
+      parseBooleanPreference(howcodeNativeAskQuestionsRow?.valueJson) ?? false,
     piTuiTakeover: parseBooleanPreference(piTuiTakeoverRow?.valueJson) ?? false,
+    hoverToFocus: parseBooleanPreference(hoverToFocusRow?.valueJson) ?? true,
+    hoverToBlur: parseBooleanPreference(hoverToBlurRow?.valueJson) ?? false,
   };
 }

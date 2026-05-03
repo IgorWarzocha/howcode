@@ -14,6 +14,10 @@ import {
 } from "../../shared/dictation-settings.ts";
 import { getThreadStateDatabase } from "../thread-state-db/db.cts";
 import {
+  chatModelKey,
+  chatThinkingLevelKey,
+  codeModelKey,
+  codeThinkingLevelKey,
   composerStreamingBehaviorKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -21,8 +25,12 @@ import {
   gitCommitMessageModelKey,
   gitCommitMessageThinkingLevelKey,
   gitDiffBaselineDefaultKey,
+  gitDiffFileTreeDefaultVisibleKey,
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
+  howcodeNativeAskQuestionsKey,
+  hoverToBlurKey,
+  hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -64,6 +72,42 @@ export function setGitCommitMessageModelSelection(selection: ModelSelection | nu
   }
 
   writeAppPreference(gitCommitMessageModelKey, JSON.stringify(selection));
+}
+
+export function setChatModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(chatModelKey);
+    return;
+  }
+
+  writeAppPreference(chatModelKey, JSON.stringify(selection));
+}
+
+export function setChatThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(chatThinkingLevelKey);
+    return;
+  }
+
+  writeAppPreference(chatThinkingLevelKey, JSON.stringify(level));
+}
+
+export function setCodeModelSelection(selection: ModelSelection | null) {
+  if (!selection) {
+    deleteAppPreference(codeModelKey);
+    return;
+  }
+
+  writeAppPreference(codeModelKey, JSON.stringify(selection));
+}
+
+export function setCodeThinkingLevel(level: ComposerThinkingLevel | null) {
+  if (!level) {
+    deleteAppPreference(codeThinkingLevelKey);
+    return;
+  }
+
+  writeAppPreference(codeThinkingLevelKey, JSON.stringify(level));
 }
 
 export function setGitCommitMessageThinkingLevel(level: ComposerThinkingLevel) {
@@ -184,6 +228,15 @@ export function setGitDiffRenderModeDefault(mode: ProjectDiffRenderMode) {
   writeAppPreference(gitDiffRenderModeDefaultKey, JSON.stringify(mode));
 }
 
+export function setGitDiffFileTreeDefaultVisible(visible: boolean) {
+  if (visible) {
+    deleteAppPreference(gitDiffFileTreeDefaultVisibleKey);
+    return;
+  }
+
+  writeAppPreference(gitDiffFileTreeDefaultVisibleKey, JSON.stringify(false));
+}
+
 export function setProjectDeletionMode(mode: ProjectDeletionMode) {
   writeAppPreference(projectDeletionModeKey, JSON.stringify(mode));
 }
@@ -192,6 +245,28 @@ export function setUseAgentsSkillsPaths(enabled: boolean) {
   writeAppPreference(useAgentsSkillsPathsKey, JSON.stringify(enabled));
 }
 
+export function setHowcodeNativeAskQuestions(enabled: boolean) {
+  writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled));
+}
+
 export function setPiTuiTakeover(enabled: boolean) {
   writeAppPreference(piTuiTakeoverKey, JSON.stringify(enabled));
+}
+
+export function setHoverToFocus(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(hoverToFocusKey);
+    return;
+  }
+
+  writeAppPreference(hoverToFocusKey, JSON.stringify(false));
+}
+
+export function setHoverToBlur(enabled: boolean) {
+  if (!enabled) {
+    deleteAppPreference(hoverToBlurKey);
+    return;
+  }
+
+  writeAppPreference(hoverToBlurKey, JSON.stringify(true));
 }

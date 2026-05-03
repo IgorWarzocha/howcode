@@ -8,6 +8,7 @@ import type { Project, View } from "../../../types";
 import { cn } from "../../../utils/cn";
 import { IconButton } from "../../common/IconButton";
 import { ProjectTree } from "../ProjectTree";
+import { SidebarProjectsSkeleton } from "../SidebarSkeletons";
 import { SidebarProjectsCreatePopover } from "./SidebarProjectsCreatePopover";
 import {
   type SidebarProjectsFilterMode,
@@ -26,15 +27,17 @@ type SidebarProjectsSectionProps = {
   protectedProjectId?: string | null;
   projectScopeLockActive: boolean;
   projects: Project[];
+  loading?: boolean;
   selectedProjectId: string;
   selectedThreadId: string | null;
   terminalRunningProjectIds: ReadonlySet<string>;
   terminalRunningSessionPaths: ReadonlySet<string>;
   collapsedProjectIds: Record<string, boolean>;
   onAction: DesktopActionInvoker;
-  onLoadProjectThreads: (projectId: string) => Promise<unknown>;
+  onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   onOpenSettingsPanel: () => void;
   onProjectSelect: (projectId: string) => void;
+  onProjectPrimeSelection: (projectId: string) => void;
   onProjectReorder: (projectIds: string[]) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
@@ -47,6 +50,7 @@ export function SidebarProjectsSection({
   protectedProjectId = null,
   projectScopeLockActive,
   projects,
+  loading = false,
   selectedProjectId,
   selectedThreadId,
   terminalRunningProjectIds,
@@ -56,11 +60,13 @@ export function SidebarProjectsSection({
   onLoadProjectThreads,
   onOpenSettingsPanel,
   onProjectSelect,
+  onProjectPrimeSelection,
   onProjectReorder,
   onThreadOpen,
   onToggleProjectCollapse,
 }: SidebarProjectsSectionProps) {
   const showProjects =
+    activeView === "chat" ||
     activeView === "code" ||
     activeView === "thread" ||
     activeView === "gitops" ||
@@ -116,13 +122,17 @@ export function SidebarProjectsSection({
       const shouldLoadSearchedProject = searchQuery.trim().length > 0;
       const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0;
 
-      if (project.threadsLoaded || (!shouldLoadSearchedProject && !hasIndexedThreads)) {
+      const threadsScope = activeView === "chat" ? "chat" : "code";
+      if (
+        (project.threadsLoaded && project.threadsScope === threadsScope) ||
+        (!shouldLoadSearchedProject && !hasIndexedThreads)
+      ) {
         continue;
       }
 
-      void onLoadProjectThreads(project.id);
+      void onLoadProjectThreads(project.id, { chat: activeView === "chat" });
     }
-  }, [filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects]);
+  }, [activeView, filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects]);
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {
@@ -317,7 +327,9 @@ export function SidebarProjectsSection({
         ) : null}
       </div>
 
-      {visibleProjects.length > 0 || pendingProject ? (
+      {loading && visibleProjects.length === 0 && !pendingProject ? (
+        <SidebarProjectsSkeleton />
+      ) : visibleProjects.length > 0 || pendingProject ? (
         <>
           {pendingProject ? (
             <div className="sidebar-tree-item" aria-live="polite">
@@ -351,6 +363,7 @@ export function SidebarProjectsSection({
               collapsedProjectIds={effectiveCollapsedProjectIds}
               onAction={onAction}
               onProjectSelect={onProjectSelect}
+              onProjectPrimeSelection={onProjectPrimeSelection}
               onProjectReorder={onProjectReorder}
               onThreadOpen={onThreadOpen}
               onToggleProjectCollapse={onToggleProjectCollapse}

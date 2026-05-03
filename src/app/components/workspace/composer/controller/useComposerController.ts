@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { DesktopAction } from "../../../../desktop/actions";
+import { getDesktopActionErrorMessage } from "../../../../desktop/action-results";
 import { getErrorMessage } from "../../../../desktop/error-messages";
 import type {
   ComposerFilePickerState,
@@ -40,10 +41,12 @@ type UseComposerControllerProps = {
   workspaceFooterRef: RefObject<HTMLElement | null>;
   model: ComposerModel | null;
   projectId: string;
+  chatGroupId?: string | null;
   sessionPath: string | null;
   dictationModelId: string | null;
   dictationMaxDurationSeconds: number;
   isStreaming: boolean;
+  replyActivityKey: string;
   isCompacting: boolean;
   isExtensionCommandRunning: boolean;
   restoredQueuedPrompt: string | null;
@@ -64,10 +67,12 @@ export function useComposerController({
   workspaceFooterRef,
   model,
   projectId,
+  chatGroupId = null,
   sessionPath,
   dictationModelId,
   dictationMaxDurationSeconds,
   isStreaming,
+  replyActivityKey,
   isCompacting,
   isExtensionCommandRunning,
   restoredQueuedPrompt,
@@ -79,7 +84,11 @@ export function useComposerController({
   const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
   const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null);
+  const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null);
+  const pendingSubmittedDraftScopeKeyRef = useRef<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const composerMode = activeView === "chat" ? "chat" : "code";
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
   const pickerPanelRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
@@ -98,6 +107,7 @@ export function useComposerController({
     setDraftValue,
     skipNextDraftPersistenceRef,
   } = useComposerDraftState({
+    composerMode,
     projectId,
     sessionPath,
     openMenu,
@@ -146,7 +156,44 @@ export function useComposerController({
 
   const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning;
   const canSend =
-    (draft.trim().length > 0 || attachments.length > 0) && !isSending && !isCompacting;
+    (draft.trim().length > 0 || attachments.length > 0) &&
+    !isSending &&
+    !pendingSubmittedDraft &&
+    !isCompacting;
+
+  useEffect(() => {
+    if (
+      !pendingSubmittedDraft ||
+      pendingSubmittedReplyActivityKeyRef.current === null ||
+      pendingSubmittedReplyActivityKeyRef.current === replyActivityKey
+    ) {
+      return;
+    }
+
+    if (draftValueRef.current === pendingSubmittedDraft) {
+      setDraftValue("");
+    }
+    pendingSubmittedReplyActivityKeyRef.current = null;
+    setPendingSubmittedDraft(null);
+  }, [draftValueRef, pendingSubmittedDraft, replyActivityKey, setDraftValue]);
+
+  useEffect(() => {
+    if (!pendingSubmittedDraft || isSending || isStreaming) return;
+    const submittedReplyActivityKey = pendingSubmittedReplyActivityKeyRef.current;
+    const timeout = window.setTimeout(() => {
+      if (pendingSubmittedReplyActivityKeyRef.current !== submittedReplyActivityKey) return;
+      pendingSubmittedReplyActivityKeyRef.current = null;
+      setPendingSubmittedDraft(null);
+    }, 60_000);
+    return () => window.clearTimeout(timeout);
+  }, [isSending, isStreaming, pendingSubmittedDraft]);
+
+  useEffect(() => {
+    if (pendingSubmittedDraftScopeKeyRef.current === composerScopeKey) return;
+    pendingSubmittedDraftScopeKeyRef.current = composerScopeKey;
+    pendingSubmittedReplyActivityKeyRef.current = null;
+    setPendingSubmittedDraft(null);
+  }, [composerScopeKey]);
 
   useEffect(() => {
     void composerScopeKey;
@@ -198,13 +245,23 @@ export function useComposerController({
     options?: { closeMenu?: boolean },
   ) => {
     try {
-      await onAction(action, payload);
+      const result = await onAction(action, payload);
+      const actionErrorMessage = getDesktopActionErrorMessage(
+        result,
+        "Could not update the composer.",
+      );
+      if (actionErrorMessage) {
+        setErrorMessage(actionErrorMessage);
+        return false;
+      }
       setErrorMessage(null);
       if (options?.closeMenu ?? true) {
         setOpenMenu(null);
       }
+      return true;
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not update the composer."));
+      return false;
     }
   };
 
@@ -216,6 +273,7 @@ export function useComposerController({
     isCompacting,
     onAction,
     projectId,
+    chatGroupId,
     sessionPath,
     setAttachments: setAttachmentValue,
     setDraftValue,
@@ -223,6 +281,9 @@ export function useComposerController({
     extensionCommandRunning,
     setExtensionCommandRunning: setLocalExtensionCommandRunning,
     setIsSending,
+    setPendingSubmittedDraft,
+    pendingSubmittedReplyActivityKeyRef,
+    replyActivityKey,
     setOpenMenu,
     stopDictationAndFlush,
     streamingBehaviorPreference,
@@ -258,6 +319,7 @@ export function useComposerController({
     errorMessage,
     extensionCommandRunning,
     isSending,
+    inputLocked: isSending || pendingSubmittedDraft !== null,
     pickerButtonRef,
     pickerLoading,
     pickerOpen: openMenu === "picker",
