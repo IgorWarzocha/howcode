@@ -35,6 +35,7 @@ import {
   withRuntimeMutationLock,
 } from "./registry/runtime-registry-state.cts";
 export { withRuntimeMutationLock } from "./registry/runtime-registry-state.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 import type { RuntimeRecord } from "./registry/runtime-registry-state.cts";
 import type { PiRuntime } from "./types.cts";
 
@@ -127,7 +128,9 @@ async function createRuntime(options: {
   } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,

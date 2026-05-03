@@ -19,6 +19,10 @@ import {
 import { isHeadlessExtensionCommandRunning } from "./agent-session-extensions.cts";
 import { buildQueuedPrompts } from "./composer-queue";
 import { getNativeAskQuestionsRequest } from "./native-ask-questions-state.cts";
+import {
+  normalizeModelContextWindowValue,
+  normalizeModelRegistryContextWindows,
+} from "../../shared/model-context-window-normalization.ts";
 import type { PiRuntime } from "./types.cts";
 
 export const DEFAULT_COMPOSER_THINKING_LEVEL: ComposerThinkingLevel = "medium";
@@ -64,10 +68,11 @@ function mapContextUsage(session: AgentSession): ComposerContextUsage | null {
     return null;
   }
 
+  const contextWindow = normalizeModelContextWindowValue(usage.contextWindow);
   const contextUsage = {
     tokens: usage.tokens,
-    contextWindow: usage.contextWindow,
-    percent: usage.percent,
+    contextWindow,
+    percent: usage.tokens !== null ? (usage.tokens / contextWindow) * 100 : usage.percent,
   };
   contextUsageCache.set(session, contextUsage);
   return contextUsage;
@@ -200,7 +205,9 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     : (request.projectId ?? getDesktopWorkingDirectory());
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd,

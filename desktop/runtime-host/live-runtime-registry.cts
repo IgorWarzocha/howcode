@@ -26,6 +26,7 @@ import {
 } from "./live-thread-publisher.cts";
 import { emitDesktopEvent } from "./host-events.cts";
 import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from "./live-tool-progress.cts";
+import { normalizeModelRegistryContextWindows } from "../../shared/model-context-window-normalization.ts";
 
 function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
   if (extensionPath.startsWith("command:")) return `/${extensionPath.slice("command:".length)}`;
@@ -122,7 +123,9 @@ async function createRuntime(options: {
   } = await getPiModule();
   const agentDir = getAgentDir();
   const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage, `${agentDir}/models.json`);
+  const modelRegistry = normalizeModelRegistryContextWindows(
+    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
+  );
   const settingsManager = createRuntimeSettingsManager({
     SettingsManager,
     cwd: options.cwd,
