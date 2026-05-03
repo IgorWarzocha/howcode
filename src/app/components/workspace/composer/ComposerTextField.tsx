@@ -2,12 +2,15 @@ import {
   type ClipboardEvent,
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { cn } from "../../../utils/cn";
+import { useHoverToFocus } from "../../../hooks/useHoverToFocus";
 
 type ComposerTextFieldProps = {
   value: string;
@@ -22,6 +25,9 @@ type ComposerTextFieldProps = {
   reservedLineCount?: number;
   trailingAdornment?: ReactNode;
   readOnly?: boolean;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
+  hoverBoundaryRef?: RefObject<HTMLElement | null>;
   onHeightChange?: (height: number) => void;
   onChange: (value: string) => void;
   onInput?: () => void;
@@ -45,6 +51,9 @@ export function ComposerTextField({
   reservedLineCount = 4,
   trailingAdornment = null,
   readOnly = false,
+  hoverToFocus = true,
+  hoverToBlur = false,
+  hoverBoundaryRef,
   onHeightChange,
   onChange,
   onInput,
@@ -65,7 +74,7 @@ export function ComposerTextField({
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null);
   const lineHeightRef = useRef(20);
 
-  const focusTextareaAtEnd = () => {
+  const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
       return;
@@ -74,7 +83,15 @@ export function ComposerTextField({
     textarea.focus();
     const cursorPosition = textarea.value.length;
     textarea.setSelectionRange(cursorPosition, cursorPosition);
-  };
+  }, []);
+  const handleHoverToFocus = useHoverToFocus({
+    enabled: hoverToFocus,
+    boundaryRef: hoverBoundaryRef ?? wrapperRef,
+    targetRef: textareaRef,
+    focus: focusTextareaAtEnd,
+    blur: () => textareaRef.current?.blur(),
+    blurOnLeave: hoverToBlur,
+  });
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -189,17 +206,7 @@ export function ComposerTextField({
       ref={wrapperRef}
       className="grid min-w-0 gap-1"
       style={reservedHeight ? { minHeight: `${reservedHeight}px` } : undefined}
-      onPointerEnter={(event) => {
-        if (event.pointerType !== "mouse") {
-          return;
-        }
-
-        if (document.activeElement === textareaRef.current) {
-          return;
-        }
-
-        focusTextareaAtEnd();
-      }}
+      onPointerEnter={handleHoverToFocus}
       onPointerDown={(event) => {
         if (event.target === textareaRef.current) {
           return;

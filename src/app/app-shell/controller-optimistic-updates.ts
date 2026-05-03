@@ -47,7 +47,9 @@ export function getOptimisticallyUpdatedShellState(
     payload.key !== "projectDeletionMode" &&
     payload.key !== "useAgentsSkillsPaths" &&
     payload.key !== "howcodeNativeAskQuestions" &&
-    payload.key !== "piTuiTakeover"
+    payload.key !== "piTuiTakeover" &&
+    payload.key !== "hoverToFocus" &&
+    payload.key !== "hoverToBlur"
   ) {
     return currentState;
   }
@@ -231,6 +233,16 @@ export function getOptimisticallyUpdatedShellState(
       ? payload.value
       : currentState.appSettings.piTuiTakeover;
 
+  const nextHoverToFocus =
+    payload.key === "hoverToFocus" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.hoverToFocus;
+
+  const nextHoverToBlur =
+    payload.key === "hoverToBlur" && typeof payload.value === "boolean"
+      ? payload.value
+      : currentState.appSettings.hoverToBlur;
+
   return {
     ...currentState,
     appSettings: {
@@ -259,6 +271,8 @@ export function getOptimisticallyUpdatedShellState(
       useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
       howcodeNativeAskQuestions: nextHowcodeNativeAskQuestions,
       piTuiTakeover: nextPiTuiTakeover,
+      hoverToFocus: nextHoverToFocus,
+      hoverToBlur: nextHoverToBlur,
     },
   } satisfies ShellState;
 }

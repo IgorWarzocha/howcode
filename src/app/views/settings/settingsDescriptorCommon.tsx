@@ -77,5 +77,33 @@ export function buildCommonSettingsDescriptors({
         />
       ),
     },
+    {
+      id: "common.hover-to-focus",
+      category: "pi-runtime",
+      title: "Hover to type",
+      description: "Focus composer and terminal input when the mouse enters their typing surface.",
+      keywords: "hover focus type composer terminal drawer input",
+      render: () => (
+        <ToggleBox
+          checked={appSettings.hoverToFocus}
+          label="Hover to type"
+          onClick={controller.toggleHoverToFocus}
+        />
+      ),
+    },
+    {
+      id: "common.hover-to-blur",
+      category: "pi-runtime",
+      title: "Stop typing on hover leave",
+      description: "Blur composer and terminal input when the cursor leaves their hover area.",
+      keywords: "hover blur leave stop typing composer terminal drawer input",
+      render: () => (
+        <ToggleBox
+          checked={appSettings.hoverToBlur}
+          label="Stop typing on hover leave"
+          onClick={controller.toggleHoverToBlur}
+        />
+      ),
+    },
   ];
 }

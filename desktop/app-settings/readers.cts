@@ -20,6 +20,8 @@ import {
   gitDiffRenderModeDefaultKey,
   gitOpsDefaultModeKey,
   howcodeNativeAskQuestionsKey,
+  hoverToBlurKey,
+  hoverToFocusKey,
   initializeGitOnProjectCreateKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -237,6 +239,24 @@ export function loadAppSettings(): AppSettings {
       `,
     )
     .get(piTuiTakeoverKey) as PreferenceRow | undefined;
+  const hoverToFocusRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(hoverToFocusKey) as PreferenceRow | undefined;
+  const hoverToBlurRow = db
+    .prepare(
+      `
+        SELECT value_json AS valueJson
+        FROM app_preferences
+        WHERE key = ?
+      `,
+    )
+    .get(hoverToBlurKey) as PreferenceRow | undefined;
   const dictationModelIdRow = db
     .prepare(
       `
@@ -304,5 +324,7 @@ export function loadAppSettings(): AppSettings {
     howcodeNativeAskQuestions:
       parseBooleanPreference(howcodeNativeAskQuestionsRow?.valueJson) ?? false,
     piTuiTakeover: parseBooleanPreference(piTuiTakeoverRow?.valueJson) ?? false,
+    hoverToFocus: parseBooleanPreference(hoverToFocusRow?.valueJson) ?? true,
+    hoverToBlur: parseBooleanPreference(hoverToBlurRow?.valueJson) ?? false,
   };
 }

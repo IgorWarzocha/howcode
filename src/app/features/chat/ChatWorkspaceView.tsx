@@ -234,6 +234,8 @@ export function ChatWorkspaceView({
                   }
                   favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
                   showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                  hoverToFocus={shellState?.appSettings.hoverToFocus ?? true}
+                  hoverToBlur={shellState?.appSettings.hoverToBlur ?? false}
                   diffRenderMode={diffRenderMode}
                   diffComments={[]}
                   diffCommentCount={0}

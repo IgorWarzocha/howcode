@@ -391,6 +391,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                   useAgentsSkillsPaths: false,
                   howcodeNativeAskQuestions: false,
                   piTuiTakeover: false,
+                  hoverToFocus: true,
+                  hoverToBlur: false,
                 }
               }
               chatSidebarState={controller.chatSidebarState}
@@ -480,6 +482,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               workspaceContentClass={workspaceContentClass}
               onOpenGitOps={handleOpenGitOpsFromTakeover}
               onSetDiffBaseline={handleSetDiffBaseline}
+              hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
+              hoverToBlur={controller.shellState?.appSettings.hoverToBlur ?? false}
             />
 
             {terminalDrawerPresent ? (
@@ -495,6 +499,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                     projectId={composerProjectId}
                     sessionPath={terminalSessionPath}
                     onClose={controller.handleCloseTerminalDrawer}
+                    hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
+                    hoverToBlur={controller.shellState?.appSettings.hoverToBlur ?? false}
                   />
                 </div>
               </div>

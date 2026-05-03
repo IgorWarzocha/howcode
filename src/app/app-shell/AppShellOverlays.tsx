@@ -17,6 +17,8 @@ type AppShellOverlaysProps = {
   workspaceContentClass: string;
   onOpenGitOps: () => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
 };
 
 export function AppShellOverlays({
@@ -31,6 +33,8 @@ export function AppShellOverlays({
   workspaceContentClass,
   onOpenGitOps,
   onSetDiffBaseline,
+  hoverToFocus = true,
+  hoverToBlur = false,
 }: AppShellOverlaysProps) {
   const controllerRef = useRef(controller);
   const { projectGitState } = controller;
@@ -65,6 +69,8 @@ export function AppShellOverlays({
             projectGitState={projectGitState}
             diffBaseline={diffBaseline}
             onSetDiffBaseline={onSetDiffBaseline}
+            hoverToFocus={hoverToFocus}
+            hoverToBlur={hoverToBlur}
           />
         </div>
       </div>

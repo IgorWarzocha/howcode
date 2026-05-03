@@ -32,6 +32,8 @@ type TerminalPanelProps = {
   projectGitState?: ProjectGitState | null;
   diffBaseline?: ProjectDiffBaseline;
   onSetDiffBaseline?: (baseline: ProjectDiffBaseline) => void;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
 };
 
 export const TerminalPanel = memo(function TerminalPanel({
@@ -44,6 +46,8 @@ export const TerminalPanel = memo(function TerminalPanel({
   projectGitState = null,
   diffBaseline,
   onSetDiffBaseline,
+  hoverToFocus = true,
+  hoverToBlur = false,
 }: TerminalPanelProps) {
   const statusId: FeatureStatusId = "feature:terminal.panel";
   const panelRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,8 @@ export const TerminalPanel = memo(function TerminalPanel({
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"
+          hoverToFocus={hoverToFocus}
+          hoverToBlur={hoverToBlur}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
         <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
@@ -146,6 +152,8 @@ export const TerminalPanel = memo(function TerminalPanel({
           onProcessExit={onClose}
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
+          hoverToFocus={hoverToFocus}
+          hoverToBlur={hoverToBlur}
           className="terminal-viewport--flush terminal-viewport--bottom-reserve absolute inset-0 h-auto min-h-0 rounded-none bg-[color:var(--sidebar)]"
         />
       </div>

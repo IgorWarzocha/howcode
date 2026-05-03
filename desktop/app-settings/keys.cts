@@ -22,3 +22,5 @@ export const projectDeletionModeKey = "projectDeletionMode";
 export const useAgentsSkillsPathsKey = "useAgentsSkillsPaths";
 export const howcodeNativeAskQuestionsKey = "howcodeNativeAskQuestions";
 export const piTuiTakeoverKey = "piTuiTakeover";
+export const hoverToFocusKey = "hoverToFocus";
+export const hoverToBlurKey = "hoverToBlur";

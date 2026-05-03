@@ -89,7 +89,9 @@ export type DesktopSettingsUpdatePayload =
   | { key: "projectDeletionMode"; value: ProjectDeletionMode }
   | { key: "useAgentsSkillsPaths"; value: boolean }
   | { key: "howcodeNativeAskQuestions"; value: boolean }
-  | { key: "piTuiTakeover"; value: boolean };
+  | { key: "piTuiTakeover"; value: boolean }
+  | { key: "hoverToFocus"; value: boolean }
+  | { key: "hoverToBlur"; value: boolean };
 
 export type DesktopActionPayloadMap = {
   "threads.collapse-all": EmptyActionPayload;

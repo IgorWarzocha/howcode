@@ -11,6 +11,7 @@ import {
   writeDesktopTerminal,
 } from "../../../hooks/useDesktopTerminal";
 import { cn } from "../../../utils/cn";
+import { useHoverToFocus } from "../../../hooks/useHoverToFocus";
 import {
   cancelScheduledTerminalClose,
   scheduleTerminalClose,
@@ -48,6 +49,8 @@ type TerminalViewportProps = {
   closeWhenSessionFileIdleMs?: number;
   maxKeepAliveMsOnUnmount?: number;
   backgroundCssVar?: TerminalBackgroundCssVar;
+  hoverToFocus?: boolean;
+  hoverToBlur?: boolean;
   className?: string;
 };
 
@@ -82,6 +85,8 @@ export function TerminalViewport({
   closeWhenSessionFileIdleMs = 0,
   maxKeepAliveMsOnUnmount = DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
   backgroundCssVar = "--terminal-bg",
+  hoverToFocus = true,
+  hoverToBlur = false,
   className,
 }: TerminalViewportProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -111,6 +116,28 @@ export function TerminalViewport({
     (effectiveLaunchMode === "pi-session" ? getPersistedSessionPath(sessionPath) : null);
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar]);
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar]);
+  const focusTerminal = useCallback(() => {
+    terminalHandleRef.current?.focus();
+  }, []);
+  const blurTerminal = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  }, []);
+  const isTerminalFocused = useCallback(() => {
+    const terminalElement = terminalInstanceRef.current?.element;
+    const activeElement = document.activeElement;
+    return !!terminalElement && !!activeElement && terminalElement.contains(activeElement);
+  }, []);
+  const handleHoverToFocus = useHoverToFocus({
+    enabled: hoverToFocus,
+    boundaryRef: viewportRef,
+    focus: focusTerminal,
+    blur: blurTerminal,
+    blurOnLeave: hoverToBlur,
+    isFocused: isTerminalFocused,
+  });
 
   const scrollTerminalToBottom = useCallback(() => {
     const terminalElement = terminalInstanceRef.current?.element;
@@ -602,6 +629,7 @@ export function TerminalViewport({
     <div
       ref={viewportRef}
       style={viewportStyle}
+      onPointerEnter={handleHoverToFocus}
       className={cn(
         "terminal-viewport relative h-full min-h-[220px] min-w-0 w-full flex-1 overflow-hidden rounded-[12px] bg-[color:var(--terminal-surface)] text-[color:var(--text)]",
         className,
