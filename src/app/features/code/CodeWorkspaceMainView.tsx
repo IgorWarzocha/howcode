@@ -1,5 +1,4 @@
 import { Suspense, lazy } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type {
   AppSettings,
   ArchivedThread,
@@ -65,9 +64,6 @@ type CodeWorkspaceMainViewProps = {
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
   onSetSkillsProjectScopeActive: (active: boolean) => void;
   onSelectProject: (projectId: string) => void;
-  sidebarCollapsed: boolean;
-  sidebarCompactMode: boolean;
-  onToggleSidebar: () => void;
 };
 
 export function CodeWorkspaceMainView({
@@ -101,9 +97,6 @@ export function CodeWorkspaceMainView({
   onSetExtensionsProjectScopeActive,
   onSetSkillsProjectScopeActive,
   onSelectProject,
-  sidebarCollapsed,
-  sidebarCompactMode,
-  onToggleSidebar,
 }: CodeWorkspaceMainViewProps) {
   if (activeView === "thread") {
     return (
@@ -210,22 +203,6 @@ export function CodeWorkspaceMainView({
 
   return (
     <div className="relative grid h-full min-h-0 w-full justify-items-center overflow-hidden px-4 pb-6">
-      {!sidebarCompactMode ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-4">
-          <div className="pointer-events-auto mb-1.5 ml-3 min-w-0">
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-              onClick={onToggleSidebar}
-              aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-              data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-              data-tooltip-placement="right"
-            >
-              {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-            </button>
-          </div>
-        </div>
-      ) : null}
       <LandingView
         appSettings={appSettings}
         className={workspaceContentClass}

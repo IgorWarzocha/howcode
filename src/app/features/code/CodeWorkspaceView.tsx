@@ -269,9 +269,6 @@ export function CodeWorkspaceView({
                 onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
                 onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
                 onSelectProject={controller.handleProjectSelect}
-                sidebarCollapsed={sidebarCollapsed}
-                sidebarCompactMode={sidebarCompactMode}
-                onToggleSidebar={onToggleSidebar}
               />
             )}
           </main>
@@ -471,6 +468,29 @@ export function CodeWorkspaceView({
                     model={activeComposerState?.currentModel ?? null}
                     thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   />
+                ) : null
+              }
+            />
+          </div>
+        </footer>
+      ) : state.activeView === "code" ? (
+        <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
+          <div className="pointer-events-auto grid gap-2.5">
+            <WorkspaceComposerDock
+              compactControls={sidebarCompactMode}
+              center={null}
+              left={
+                !sidebarCompactMode ? (
+                  <button
+                    type="button"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                    onClick={onToggleSidebar}
+                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip-placement="right"
+                  >
+                    {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                  </button>
                 ) : null
               }
             />
