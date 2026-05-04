@@ -202,7 +202,7 @@ export function CodeWorkspaceMainView({
   }
 
   return (
-    <div className="grid h-full min-h-0 justify-items-center overflow-hidden px-4 pb-6">
+    <div className="relative grid h-full min-h-0 w-full justify-items-center overflow-hidden px-4 pb-6">
       <LandingView
         appSettings={appSettings}
         className={workspaceContentClass}

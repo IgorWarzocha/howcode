@@ -14,11 +14,14 @@ type AppShellWorkspaceProps = {
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
+  terminalDrawerOverlay?: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
+  sidebarAutoHidden: boolean;
+  sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -31,11 +34,14 @@ export function AppShellWorkspace({
   diffBaseline,
   diffRenderMode,
   terminalDrawerVisible,
+  terminalDrawerOverlay = false,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   sidebarCollapsed,
+  sidebarAutoHidden,
+  sidebarCompactMode,
   onToggleSidebar,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
@@ -53,6 +59,8 @@ export function AppShellWorkspace({
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         sidebarCollapsed={sidebarCollapsed}
+        sidebarAutoHidden={sidebarAutoHidden}
+        sidebarCompactMode={sidebarCompactMode}
         onToggleSidebar={onToggleSidebar}
       />
     );
@@ -78,11 +86,14 @@ export function AppShellWorkspace({
       diffBaseline={diffBaseline}
       diffRenderMode={diffRenderMode}
       terminalDrawerVisible={terminalDrawerVisible}
+      terminalDrawerOverlay={terminalDrawerOverlay}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
       onSetDiffRenderMode={onSetDiffRenderMode}
       sidebarCollapsed={sidebarCollapsed}
+      sidebarAutoHidden={sidebarAutoHidden}
+      sidebarCompactMode={sidebarCompactMode}
       onToggleSidebar={onToggleSidebar}
     />
   );

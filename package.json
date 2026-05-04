@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev": "bun run dev:clean && concurrently -k \"bun run dev:web\" \"bun run dev:runtime\" \"bun run dev:desktop\"",
+    "dev:768p": "HOWCODE_DEV_VIEWPORT=768p bun run dev",
     "dev:clean": "rm -rf artifacts/electron build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
     "prepush:clean": "rm -rf artifacts/electron dist build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
     "prepush:check": "bun run lint && bun run typecheck",

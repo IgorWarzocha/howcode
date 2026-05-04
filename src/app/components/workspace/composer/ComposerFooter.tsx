@@ -14,7 +14,6 @@ import { ToolbarButton } from "../../common/ToolbarButton";
 import { ComposerContextMeter } from "./ComposerContextMeter";
 import { ComposerDiffBaselineSelector } from "./ComposerDiffBaselineSelector";
 import {
-  WorkspaceBranchChip,
   workspaceFooterRowClass,
   workspaceFooterTextClass,
   workspaceFooterTrailingGroupClass,
@@ -148,14 +147,12 @@ export function ComposerFooter({
         {projectGitState?.isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
+            branch={projectGitState.branch}
             projectId={projectId}
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}
             onSelectBaseline={onSelectBaseline}
           />
-        ) : null}
-        {projectGitState?.isGitRepo ? (
-          <WorkspaceBranchChip branch={projectGitState.branch} />
         ) : null}
         {!showTerminalControls ? (
           <ToolbarButton

@@ -85,6 +85,7 @@
 .sidebar-footer {
   position: relative;
   margin-top: auto;
+  padding-bottom: 0.75rem;
 }
 
 .sidebar-settings-button {

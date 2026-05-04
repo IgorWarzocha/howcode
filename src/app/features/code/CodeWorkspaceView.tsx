@@ -5,6 +5,7 @@ import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
+import { WorkspaceComposerDock } from "../../components/workspace/WorkspaceComposerDock";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
 import type { Message } from "../../types";
@@ -26,11 +27,14 @@ type CodeWorkspaceViewProps = {
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
+  terminalDrawerOverlay?: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
+  sidebarAutoHidden: boolean;
+  sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -52,11 +56,14 @@ export function CodeWorkspaceView({
   diffBaseline,
   diffRenderMode,
   terminalDrawerVisible,
+  terminalDrawerOverlay = false,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
   onSetDiffRenderMode,
   sidebarCollapsed,
+  sidebarAutoHidden,
+  sidebarCompactMode,
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
@@ -83,7 +90,8 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showThreadFooter = state.activeView === "thread";
   const showDiffInMainView = state.activeView === "gitops";
-  const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
+  const showDesktopTerminalDrawer =
+    state.activeView === "thread" && terminalDrawerVisible && !terminalDrawerOverlay;
   const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalSessionPath ?? "project"}`;
   const gitOpsFileTreeVisible =
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
@@ -279,15 +287,12 @@ export function CodeWorkspaceView({
           style={threadFooterStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
-              <div
-                className={cn(
-                  "mb-1.5 min-w-0 self-end",
-                  state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
-                )}
-              >
-                {(state.activeView === "thread" || state.activeView === "gitops") &&
-                !state.takeoverVisible ? (
+            <WorkspaceComposerDock
+              compactControls={sidebarAutoHidden}
+              left={
+                (state.activeView === "thread" || state.activeView === "gitops") &&
+                !state.takeoverVisible &&
+                !sidebarCompactMode ? (
                   <button
                     type="button"
                     className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
@@ -298,10 +303,10 @@ export function CodeWorkspaceView({
                   >
                     {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
                   </button>
-                ) : null}
-              </div>
-              <div className="w-[800px]">
-                {state.activeView === "gitops" ? (
+                ) : null
+              }
+              center={
+                state.activeView === "gitops" ? (
                   <div>
                     <GitOpsComposerPanel
                       dictationModelId={shellState?.appSettings.dictationModelId ?? null}
@@ -435,15 +440,15 @@ export function CodeWorkspaceView({
                       />
                     </div>
                   </div>
-                )}
-              </div>
-              <div
-                className={cn(
-                  "mb-1.5 min-w-0 self-end",
-                  state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
-                )}
-              >
-                {state.activeView === "gitops" && !state.takeoverVisible ? (
+                )
+              }
+              rightClassName={cn(
+                state.activeView === "gitops"
+                  ? "opacity-100"
+                  : "opacity-0 min-[1400px]:opacity-100",
+              )}
+              right={
+                state.activeView === "gitops" && !state.takeoverVisible ? (
                   <button
                     type="button"
                     className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
@@ -463,9 +468,32 @@ export function CodeWorkspaceView({
                     model={activeComposerState?.currentModel ?? null}
                     thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   />
-                ) : null}
-              </div>
-            </div>
+                ) : null
+              }
+            />
+          </div>
+        </footer>
+      ) : state.activeView === "code" ? (
+        <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
+          <div className="pointer-events-auto grid gap-2.5">
+            <WorkspaceComposerDock
+              compactControls={sidebarCompactMode}
+              center={null}
+              left={
+                !sidebarCompactMode ? (
+                  <button
+                    type="button"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                    onClick={onToggleSidebar}
+                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip-placement="right"
+                  >
+                    {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                  </button>
+                ) : null
+              }
+            />
           </div>
         </footer>
       ) : null}

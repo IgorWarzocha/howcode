@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PanelLeftOpen } from "lucide-react";
 import { getPersistedSessionPath, isLocalSessionPath } from "../../../shared/session-paths";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
+import { cn } from "../utils/cn";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import { appShellRootClass } from "./layout-classes";
-import { SmallWindowOverlay } from "./SmallWindowOverlay";
 import type { AppShellController } from "./useAppShellController";
 import { useAppShellLayoutState } from "./useAppShellLayoutState";
 
@@ -82,6 +83,8 @@ type AppShellLayoutProps = {
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const controllerRef = useRef(controller);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCompactMode, setSidebarCompactMode] = useState(false);
+  const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -350,14 +353,50 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     });
   }, []);
 
+  useEffect(() => {
+    const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236);
+    updateSidebarCompactMode();
+    window.addEventListener("resize", updateSidebarCompactMode);
+    return () => window.removeEventListener("resize", updateSidebarCompactMode);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarCompactMode) setSidebarOverlayOpen(false);
+  }, [sidebarCompactMode]);
+
+  useEffect(() => {
+    if (!sidebarOverlayOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (controllerRef.current.state.settingsOpen) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setSidebarOverlayOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [sidebarOverlayOpen]);
+
+  const handleToggleSidebar = useCallback(() => {
+    if (sidebarCompactMode) {
+      setSidebarCollapsed(false);
+      setSidebarOverlayOpen((open) => !open);
+      return;
+    }
+    setSidebarCollapsed((collapsed) => !collapsed);
+  }, [sidebarCompactMode]);
+
   return (
     <>
       <div className={appShellRootClass}>
         <div
-          className="relative min-w-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
-          style={{ width: sidebarCollapsed ? 0 : 300, opacity: sidebarCollapsed ? 0 : 1 }}
+          className={
+            sidebarCollapsed || sidebarCompactMode
+              ? "relative w-0 min-w-0 shrink-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out pointer-events-none"
+              : "relative w-[clamp(225px,calc(100vw_-_936px),300px)] min-w-0 shrink-0 overflow-hidden opacity-100 transition-[width,opacity] duration-200 ease-out"
+          }
         >
-          {sidebarCollapsed ? null : (
+          {sidebarCollapsed || sidebarCompactMode ? null : (
             <Sidebar
               projects={projects}
               inboxThreads={controller.inboxThreads}
@@ -439,9 +478,139 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               onSelectInboxThread={controller.handleSelectInboxThread}
               onThreadOpen={handleThreadOpen}
               onToggleProjectCollapse={handleToggleProjectCollapse}
+              compactMode={false}
             />
           )}
         </div>
+
+        {sidebarCompactMode && sidebarOverlayOpen ? (
+          <button
+            type="button"
+            className="absolute inset-0 z-40 bg-transparent"
+            aria-label="Close sidebar"
+            onClick={() => setSidebarOverlayOpen(false)}
+          />
+        ) : null}
+
+        {sidebarCompactMode && !sidebarOverlayOpen ? (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4",
+              terminalDrawerVisible ? "px-3" : "px-5",
+            )}
+          >
+            <div className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2">
+              <div
+                className={cn(
+                  "pointer-events-auto mb-1.5 min-w-0 justify-self-end self-end",
+                  terminalDrawerVisible ? "justify-self-start" : "translate-x-10",
+                )}
+              >
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                  onClick={handleToggleSidebar}
+                  aria-label="Show sidebar"
+                  data-tooltip="Show sidebar"
+                  data-tooltip-placement="right"
+                >
+                  <PanelLeftOpen size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {sidebarCompactMode ? (
+          <div
+            className={`absolute top-0 bottom-0 left-0 z-50 w-[min(300px,calc(100%_-_2rem))] min-w-0 overflow-hidden transition-[transform,opacity] duration-200 ease-out ${sidebarOverlayOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`}
+          >
+            <Sidebar
+              projects={projects}
+              inboxThreads={controller.inboxThreads}
+              inboxLoading={controller.inboxLoading}
+              chatSidebarLoading={controller.chatSidebarLoading}
+              projectsLoading={controller.shellLoading}
+              appLaunchedAtMs={controller.appLaunchedAtMs}
+              appSettings={
+                controller.shellState?.appSettings ?? {
+                  chatModel: null,
+                  chatThinkingLevel: null,
+                  codeModel: null,
+                  codeThinkingLevel: null,
+                  gitCommitMessageModel: null,
+                  gitCommitMessageThinkingLevel: "off",
+                  skillCreatorModel: null,
+                  skillCreatorThinkingLevel: "off",
+                  composerStreamingBehavior: "followUp",
+                  dictationModelId: null,
+                  dictationMaxDurationSeconds: 180,
+                  showDictationButton: true,
+                  favoriteFolders: [],
+                  projectImportState: null,
+                  preferredProjectLocation: null,
+                  initializeGitOnProjectCreate: false,
+                  gitOpsDefaultMode: "commit",
+                  gitDiffBaselineDefault: { kind: "head" },
+                  gitDiffRenderModeDefault: "stacked",
+                  gitDiffFileTreeDefaultVisible: true,
+                  projectDeletionMode: "pi-only",
+                  useAgentsSkillsPaths: false,
+                  howcodeNativeAskQuestions: false,
+                  piTuiTakeover: false,
+                  hoverToFocus: true,
+                  hoverToBlur: false,
+                }
+              }
+              chatSidebarState={controller.chatSidebarState}
+              activeView={state.activeView}
+              protectedProjectId={
+                controller.shellState?.resolvedCwd ?? controller.shellState?.cwd ?? null
+              }
+              selectedInboxSessionPath={state.selectedInboxSessionPath}
+              selectedProjectId={state.selectedProjectId}
+              selectedThreadId={state.selectedThreadId}
+              selectedChatGroupId={controller.selectedChatGroupId}
+              settingsOpen={state.settingsOpen}
+              projectScopeLockActive={projectScopeLockActive}
+              terminalRunningProjectIds={controller.terminalRunningProjectIds}
+              terminalRunningSessionPaths={controller.terminalRunningSessionPaths}
+              collapsedProjectIds={effectiveCollapsedProjectIds}
+              onAction={handleAction}
+              onShowView={handleShowView}
+              onToggleSettings={handleToggleSettings}
+              onOpenExtensionsView={() => {
+                handleShowView("extensions");
+              }}
+              onOpenSkillsView={() => {
+                handleShowView("skills");
+              }}
+              onOpenSettingsPanel={() => {
+                handleShowView("settings");
+              }}
+              onOpenArchivedThreads={() => {
+                handleShowView("archived");
+              }}
+              onDismissInboxThread={controller.handleDismissInboxThread}
+              onCreateChatGroup={controller.handleCreateChatGroup}
+              onSelectChatGroup={controller.handleSelectChatGroup}
+              onNewChat={(groupId) => {
+                controller.handleSelectChatGroup(groupId);
+                void handleAction("thread.new", { chatGroupId: groupId });
+              }}
+              onRefreshChatSidebar={controller.refreshChatSidebarState}
+              onProjectSelect={handleProjectSelect}
+              onProjectPrimeSelection={handleSetSelectedProject}
+              onProjectReorder={handleProjectReorder}
+              onLoadProjectThreads={controller.handleLoadProjectThreads}
+              onSelectInboxThread={controller.handleSelectInboxThread}
+              onThreadOpen={handleThreadOpen}
+              onToggleProjectCollapse={handleToggleProjectCollapse}
+              compactMode
+              onCloseCompactSidebar={() => setSidebarOverlayOpen(false)}
+            />
+          </div>
+        ) : null}
 
         <section
           ref={mainSectionRef}
@@ -466,7 +635,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 onSetDiffBaseline={handleSetDiffBaseline}
                 onSetDiffRenderMode={handleSetDiffRenderMode}
                 sidebarCollapsed={sidebarCollapsed}
-                onToggleSidebar={() => setSidebarCollapsed((collapsed) => !collapsed)}
+                sidebarAutoHidden={sidebarCompactMode}
+                sidebarCompactMode={sidebarCompactMode}
+                onToggleSidebar={handleToggleSidebar}
               />
             </div>
 
@@ -479,6 +650,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverTerminalKey={takeoverTerminalKey}
               terminalDrawerVisible={terminalDrawerVisible}
               terminalSessionPath={terminalSessionPath}
+              terminalDrawerOverlay={sidebarCompactMode}
               workspaceContentClass={workspaceContentClass}
               onOpenGitOps={handleOpenGitOpsFromTakeover}
               onSetDiffBaseline={handleSetDiffBaseline}
@@ -489,7 +661,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             {terminalDrawerPresent ? (
               <div
                 className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
-                style={{ width: TERMINAL_DRAWER_WIDTH }}
+                style={{ width: sidebarCompactMode ? "100%" : TERMINAL_DRAWER_WIDTH }}
               >
                 <div
                   data-open={terminalDrawerVisible ? "true" : "false"}
@@ -508,7 +680,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           </div>
         </section>
       </div>
-      <SmallWindowOverlay />
       {controller.toast ? (
         <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-[color:var(--border-strong)] bg-[rgba(14,18,28,0.94)] px-4 py-2 text-[13px] text-[color:var(--text)] shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur-sm">
           {controller.toast}

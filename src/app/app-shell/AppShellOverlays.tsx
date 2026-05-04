@@ -14,6 +14,7 @@ type AppShellOverlaysProps = {
   takeoverTerminalKey: string;
   terminalDrawerVisible: boolean;
   terminalSessionPath: string | null;
+  terminalDrawerOverlay?: boolean;
   workspaceContentClass: string;
   onOpenGitOps: () => void;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
@@ -30,6 +31,7 @@ export function AppShellOverlays({
   takeoverTerminalKey,
   terminalDrawerVisible,
   terminalSessionPath,
+  terminalDrawerOverlay = false,
   workspaceContentClass,
   onOpenGitOps,
   onSetDiffBaseline,
@@ -55,7 +57,11 @@ export function AppShellOverlays({
     >
       <div
         className="motion-terminal-drawer-offset relative h-full min-h-0 overflow-hidden"
-        style={terminalDrawerVisible ? { paddingRight: TERMINAL_DRAWER_OFFSET } : undefined}
+        style={
+          terminalDrawerVisible && !terminalDrawerOverlay
+            ? { paddingRight: TERMINAL_DRAWER_OFFSET }
+            : undefined
+        }
       >
         <div className={`${workspaceContentClass} h-full min-h-0`}>
           <TerminalPanel

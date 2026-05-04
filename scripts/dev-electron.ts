@@ -19,6 +19,15 @@ const watchedFiles = [
 let electronProcess: ChildProcess | null = null;
 let restartTimer: NodeJS.Timeout | null = null;
 
+function getRequestedViewport() {
+  const viewportArg = process.argv.find((arg) => arg.startsWith("--viewport="));
+  if (!viewportArg) {
+    return process.env.HOWCODE_DEV_VIEWPORT;
+  }
+
+  return viewportArg.slice("--viewport=".length);
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -38,6 +47,7 @@ async function startElectronProcess() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: projectRoot,
+      HOWCODE_DEV_VIEWPORT: getRequestedViewport() ?? "",
     },
   });
 

@@ -6,6 +6,7 @@ import {
 } from "../../../../shared/session-paths";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { Composer } from "../../components/workspace/Composer";
+import { WorkspaceComposerDock } from "../../components/workspace/WorkspaceComposerDock";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
 import type { Message } from "../../types";
@@ -27,6 +28,8 @@ type ChatWorkspaceViewProps = {
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
+  sidebarAutoHidden: boolean;
+  sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -50,6 +53,8 @@ export function ChatWorkspaceView({
   onSetDiffBaseline,
   onSetDiffRenderMode,
   sidebarCollapsed,
+  sidebarAutoHidden,
+  sidebarCompactMode,
   onToggleSidebar,
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0);
@@ -176,119 +181,123 @@ export function ChatWorkspaceView({
           )}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
-              <div
-                className={cn(
-                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
-                  artifactsVisible && !artifactsFullscreen && "invisible",
-                )}
-              >
-                <button
-                  type="button"
-                  className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-                  onClick={onToggleSidebar}
-                  aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                  data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                  data-tooltip-placement="right"
-                >
-                  {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-                </button>
-              </div>
-              <div className="grid w-[800px] gap-0">
-                <QueuedPromptsCard
-                  prompts={activeComposerState?.queuedPrompts ?? []}
-                  pendingPromptIds={pendingQueuedPromptIdsForSession}
-                  onEditPrompt={(prompt) => {
-                    void handleEditQueuedPrompt(prompt);
-                  }}
-                  onRemovePrompt={(prompt) => {
-                    void handleRemoveQueuedPrompt(prompt);
-                  }}
-                />
-                <Composer
-                  activeView={state.activeView}
-                  model={activeComposerState?.currentModel ?? null}
-                  contextUsage={activeComposerState?.contextUsage ?? null}
-                  availableModels={activeComposerState?.availableModels ?? []}
-                  isStreaming={activeThreadData?.isStreaming ?? false}
-                  replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-                  isCompacting={activeComposerState?.isCompacting ?? false}
-                  isExtensionCommandRunning={
-                    activeComposerState?.isExtensionCommandRunning ?? false
-                  }
-                  nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
-                  thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
-                  restoredQueuedPrompt={scopedRestoredQueuedPrompt}
-                  streamingBehaviorPreference={
-                    shellState?.appSettings.composerStreamingBehavior ?? "followUp"
-                  }
-                  availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ["off"]}
-                  projectId={composerProjectId}
-                  chatGroupId={
-                    hasPersistedChatSession
-                      ? null
-                      : (draftChatGroupId ?? controller.selectedChatGroupId)
-                  }
-                  projectGitState={null}
-                  diffBaseline={diffBaseline}
-                  sessionPath={terminalSessionPath}
-                  dictationModelId={shellState?.appSettings.dictationModelId ?? null}
-                  dictationMaxDurationSeconds={
-                    shellState?.appSettings.dictationMaxDurationSeconds ?? 180
-                  }
-                  favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
-                  showDictationButton={shellState?.appSettings.showDictationButton ?? true}
-                  hoverToFocus={shellState?.appSettings.hoverToFocus ?? true}
-                  hoverToBlur={shellState?.appSettings.hoverToBlur ?? false}
-                  diffRenderMode={diffRenderMode}
-                  diffComments={[]}
-                  diffCommentCount={0}
-                  diffCommentsSending={false}
-                  diffCommentError={null}
-                  onSetDiffBaseline={onSetDiffBaseline}
-                  onSetDiffRenderMode={onSetDiffRenderMode}
-                  onSendDiffComments={() => {}}
-                  onSelectDiffComment={() => {}}
-                  promptResetKey={composerPromptResetKey}
-                  onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
-                  onOverlayHeightChange={setComposerOverlayHeight}
-                  mainViewRef={mainViewRef}
-                  workspaceFooterRef={footerRef}
-                  onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-                  onOpenGitOpsView={() => {}}
-                  onOpenSettingsView={() => controller.handleShowView("settings")}
-                  onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
-                  onToggleTerminal={handleToggleTerminal}
-                  onToggleArtifacts={
-                    hasConversation && conversationId
-                      ? () =>
-                          setArtifactsVisibleByConversation((current) => ({
-                            ...current,
-                            [conversationId]: !(current[conversationId] ?? false),
-                          }))
-                      : undefined
-                  }
-                  artifactsAvailable={hasConversation}
-                  showTerminalControls={false}
-                  artifactsVisible={artifactsVisible}
-                  terminalVisible={state.terminalVisible}
-                  onListAttachmentEntries={listComposerAttachmentEntries}
-                  onAction={handleAction}
-                />
-              </div>
-              <div
-                className={cn(
-                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
-                  artifactsVisible && !artifactsFullscreen && "invisible",
-                )}
-              >
+            <WorkspaceComposerDock
+              compactControls={sidebarAutoHidden}
+              leftClassName={cn(artifactsVisible && !artifactsFullscreen && "invisible")}
+              left={
+                sidebarCompactMode ? null : (
+                  <button
+                    type="button"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                    onClick={onToggleSidebar}
+                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    data-tooltip-placement="right"
+                  >
+                    {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                  </button>
+                )
+              }
+              center={
+                <div className="grid gap-0">
+                  <QueuedPromptsCard
+                    prompts={activeComposerState?.queuedPrompts ?? []}
+                    pendingPromptIds={pendingQueuedPromptIdsForSession}
+                    onEditPrompt={(prompt) => {
+                      void handleEditQueuedPrompt(prompt);
+                    }}
+                    onRemovePrompt={(prompt) => {
+                      void handleRemoveQueuedPrompt(prompt);
+                    }}
+                  />
+                  <Composer
+                    activeView={state.activeView}
+                    model={activeComposerState?.currentModel ?? null}
+                    contextUsage={activeComposerState?.contextUsage ?? null}
+                    availableModels={activeComposerState?.availableModels ?? []}
+                    isStreaming={activeThreadData?.isStreaming ?? false}
+                    replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
+                    isCompacting={activeComposerState?.isCompacting ?? false}
+                    isExtensionCommandRunning={
+                      activeComposerState?.isExtensionCommandRunning ?? false
+                    }
+                    nativeAskQuestionsRequest={
+                      activeComposerState?.nativeAskQuestionsRequest ?? null
+                    }
+                    thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
+                    restoredQueuedPrompt={scopedRestoredQueuedPrompt}
+                    streamingBehaviorPreference={
+                      shellState?.appSettings.composerStreamingBehavior ?? "followUp"
+                    }
+                    availableThinkingLevels={
+                      activeComposerState?.availableThinkingLevels ?? ["off"]
+                    }
+                    projectId={composerProjectId}
+                    chatGroupId={
+                      hasPersistedChatSession
+                        ? null
+                        : (draftChatGroupId ?? controller.selectedChatGroupId)
+                    }
+                    projectGitState={null}
+                    diffBaseline={diffBaseline}
+                    sessionPath={terminalSessionPath}
+                    dictationModelId={shellState?.appSettings.dictationModelId ?? null}
+                    dictationMaxDurationSeconds={
+                      shellState?.appSettings.dictationMaxDurationSeconds ?? 180
+                    }
+                    favoriteFolders={shellState?.appSettings.favoriteFolders ?? []}
+                    showDictationButton={shellState?.appSettings.showDictationButton ?? true}
+                    hoverToFocus={shellState?.appSettings.hoverToFocus ?? true}
+                    hoverToBlur={shellState?.appSettings.hoverToBlur ?? false}
+                    diffRenderMode={diffRenderMode}
+                    diffComments={[]}
+                    diffCommentCount={0}
+                    diffCommentsSending={false}
+                    diffCommentError={null}
+                    onSetDiffBaseline={onSetDiffBaseline}
+                    onSetDiffRenderMode={onSetDiffRenderMode}
+                    onSendDiffComments={() => {}}
+                    onSelectDiffComment={() => {}}
+                    promptResetKey={composerPromptResetKey}
+                    onLayoutChange={() => setComposerLayoutVersion((current) => current + 1)}
+                    onOverlayHeightChange={setComposerOverlayHeight}
+                    mainViewRef={mainViewRef}
+                    workspaceFooterRef={footerRef}
+                    onOpenTakeoverTerminal={handleShowTakeoverTerminal}
+                    onOpenGitOpsView={() => {}}
+                    onOpenSettingsView={() => controller.handleShowView("settings")}
+                    onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
+                    onToggleTerminal={handleToggleTerminal}
+                    onToggleArtifacts={
+                      hasConversation && conversationId
+                        ? () =>
+                            setArtifactsVisibleByConversation((current) => ({
+                              ...current,
+                              [conversationId]: !(current[conversationId] ?? false),
+                            }))
+                        : undefined
+                    }
+                    artifactsAvailable={hasConversation}
+                    showTerminalControls={false}
+                    artifactsVisible={artifactsVisible}
+                    terminalVisible={state.terminalVisible}
+                    onListAttachmentEntries={listComposerAttachmentEntries}
+                    onAction={handleAction}
+                  />
+                </div>
+              }
+              rightClassName={cn(
+                "opacity-0 min-[1400px]:opacity-100",
+                artifactsVisible && !artifactsFullscreen && "invisible",
+              )}
+              right={
                 <DesktopComposerStatus
                   contextUsage={activeComposerState?.contextUsage ?? null}
                   model={activeComposerState?.currentModel ?? null}
                   thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                 />
-              </div>
-            </div>
+              }
+            />
           </div>
         </footer>
       </div>
