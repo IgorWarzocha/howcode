@@ -105,7 +105,11 @@ export type RuntimeHostResponseMap = {
   generateGitCommitMessage: string | null;
   setComposerModel: { ok: true };
   setComposerThinkingLevel: { ok: true };
-  sendComposerPrompt: "sent" | "stopped";
+  sendComposerPrompt: {
+    outcome: "sent" | "stopped";
+    sessionPath: string | null;
+    threadId: string | null;
+  };
   stopComposerRun: { ok: true };
   dequeueComposerPrompt: string | null;
   answerNativeAskQuestions: { ok: boolean };

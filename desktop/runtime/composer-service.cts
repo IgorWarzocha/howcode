@@ -281,11 +281,17 @@ export async function sendComposerPrompt(
     attachments?: ComposerAttachment[];
     streamingBehavior?: ComposerStreamingBehavior | null;
   },
-): Promise<"sent" | "stopped"> {
+): Promise<{ outcome: "sent" | "stopped"; sessionPath: string | null; threadId: string | null }> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const compactInstructions = parseCompactSlashCommand(request.text);
 
   const runSend = async (runtime: Awaited<ReturnType<typeof getOrCreateRuntimeForSessionPath>>) => {
+    const sendResult = (outcome: "sent" | "stopped") => ({
+      outcome,
+      sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
+      threadId: runtime.session.sessionId ?? null,
+    });
+
     if (compactInstructions !== null) {
       try {
         if (isRuntimeExtensionCommandRunning(runtime)) {
@@ -311,7 +317,7 @@ export async function sendComposerPrompt(
         );
 
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-        return "sent";
+        return sendResult("sent");
       } finally {
         scheduleRuntimeDisposalForRuntime(runtime);
       }
@@ -334,7 +340,7 @@ export async function sendComposerPrompt(
           if (!isExtensionCommandPrompt(runtime, request.text)) {
             await runtime.session.abort();
             await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-            return "stopped";
+            return sendResult("stopped");
           }
         }
 
@@ -353,11 +359,10 @@ export async function sendComposerPrompt(
           request: { ...request, sessionPath: persistedSessionPath },
         });
       }
-
       await publishThreadUpdate(runtime, "update").catch((error) => {
         console.error("Composer prompt accepted but thread update publish failed", error);
       });
-      return "sent";
+      return sendResult("sent");
     } catch (error) {
       scheduleRuntimeDisposalForRuntime(runtime);
       throw error;

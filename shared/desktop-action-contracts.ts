@@ -205,6 +205,8 @@ export type DesktopActionResultData = {
   committed?: boolean;
   composer?: ComposerState;
   composerSendOutcome?: "sent" | "stopped";
+  composerSendSessionPath?: string | null;
+  composerSendThreadId?: string | null;
   dequeuedText?: string | null;
   deletedThreadIds?: string[];
   didMutate?: boolean;

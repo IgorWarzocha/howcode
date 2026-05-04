@@ -71,13 +71,17 @@ export async function handleComposerDesktopAction(
         return handledAction();
       }
 
-      const composerSendOutcome = await sendComposerPrompt({
+      const composerSendResult = await sendComposerPrompt({
         ...getComposerRequest(payload),
         text,
         attachments,
         streamingBehavior: getComposerStreamingBehavior(payload),
       });
-      return handledAction({ composerSendOutcome });
+      return handledAction({
+        composerSendOutcome: composerSendResult.outcome,
+        composerSendSessionPath: composerSendResult.sessionPath,
+        composerSendThreadId: composerSendResult.threadId,
+      });
     }
 
     case "composer.stop": {

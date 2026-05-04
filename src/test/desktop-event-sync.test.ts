@@ -13,6 +13,7 @@ function selectionState(
   return {
     activeView: "code",
     selectedProjectId: "/repo/project-a",
+    selectedThreadId: null,
     selectedSessionPath: null,
     selectedInboxSessionPath: null,
     ...overrides,
@@ -110,14 +111,14 @@ describe("desktop event selection helpers", () => {
     ).toBe(false);
   });
 
-  it("keeps same-project auto-open behavior for empty thread and code views", () => {
+  it("does not auto-open background starts for empty thread and code views", () => {
     expect(
       shouldAutoOpenStartedThread({
         reason: "start",
         projectId: "/repo/project-a",
         workspaceState: selectionState({ activeView: "thread", selectedSessionPath: null }),
       }),
-    ).toBe(true);
+    ).toBe(false);
 
     expect(
       shouldAutoOpenStartedThread({
@@ -125,7 +126,7 @@ describe("desktop event selection helpers", () => {
         projectId: "/repo/project-a",
         workspaceState: selectionState({ activeView: "code" }),
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("does not auto-open non-start updates or when a persisted session is visible", () => {

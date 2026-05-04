@@ -258,6 +258,73 @@ export async function runPostDesktopActionEffects({
     }
   }
 
+  if (action === "composer.send" && !hasActionError(actionResult)) {
+    const projectId = getPayloadProjectId(contextualPayload);
+    const submittedSessionPath =
+      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
+    const resultSessionPath =
+      typeof actionResult?.result?.composerSendSessionPath === "string"
+        ? actionResult.result.composerSendSessionPath
+        : null;
+    const resultThreadId =
+      typeof actionResult?.result?.composerSendThreadId === "string"
+        ? actionResult.result.composerSendThreadId
+        : null;
+
+    if (
+      projectId &&
+      (!submittedSessionPath || isLocalSessionPath(submittedSessionPath)) &&
+      resultSessionPath &&
+      resultThreadId
+    ) {
+      const shellState = (
+        queryClient as {
+          getQueryData?: (queryKey: readonly unknown[]) => unknown;
+        }
+      ).getQueryData?.(["desktop", "shellState"]) as
+        | {
+            projects?: Array<{
+              id: string;
+              threads: Array<{ id: string; sessionPath?: string | null; title?: string }>;
+            }>;
+          }
+        | null
+        | undefined;
+      const existingThreadTitle =
+        shellState?.projects
+          ?.find((candidate) => candidate.id === projectId)
+          ?.threads.find(
+            (candidate) =>
+              candidate.id === resultThreadId || candidate.sessionPath === resultSessionPath,
+          )?.title ?? null;
+
+      applyProjectThreadToShellState(
+        queryClient,
+        projectId,
+        {
+          id: resultThreadId,
+          title: existingThreadTitle ?? "New thread",
+          age: "Now",
+          lastModifiedMs: Date.now(),
+          sessionPath: resultSessionPath,
+        },
+        {
+          replaceSessionPath: isLocalSessionPath(submittedSessionPath)
+            ? submittedSessionPath
+            : null,
+          revealProject: true,
+        },
+      );
+      dispatch({
+        type: "open-thread",
+        projectId,
+        threadId: resultThreadId,
+        sessionPath: resultSessionPath,
+        view: workspaceState.activeView === "chat" ? "chat" : "thread",
+      });
+    }
+  }
+
   // Settings writes are local and already applied optimistically in the renderer.
   // Refreshing shell state here can race against that optimistic update and briefly
   // snap controls back to stale values before the next state load lands.
