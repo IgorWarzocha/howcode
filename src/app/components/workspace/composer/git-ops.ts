@@ -10,8 +10,8 @@ export function getGitOpsEntryButtonClass(mode: GitOpsVisualMode) {
   }
 
   if (mode === "dirty") {
-    return "border-[rgba(92,201,165,0.22)] text-[#7ee0bb] hover:border-[rgba(92,201,165,0.34)] hover:bg-[rgba(92,201,165,0.08)] hover:text-[#bdf7dd]";
+    return "border-[color:var(--accent-border)] text-[color:var(--green)] hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] hover:text-[color:var(--text)]";
   }
 
-  return "border-[rgba(169,178,215,0.16)] text-[color:var(--muted)] hover:border-[rgba(169,178,215,0.26)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
+  return "border-[color:var(--border)] text-[color:var(--muted)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]";
 }

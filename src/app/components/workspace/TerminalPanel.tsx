@@ -78,8 +78,8 @@ export const TerminalPanel = memo(function TerminalPanel({
           stickToBottomOnOutput={false}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
-        <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[rgba(39,42,57,0.94)] shadow-[var(--shadow)]">
-          <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+        <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)]">
+          <div className="h-px bg-[color:var(--border)]" />
           <div className={cn(workspaceFooterRowClass, "rounded-b-[20px]")}>
             <ToolbarButton
               label="Desktop"
@@ -127,17 +127,17 @@ export const TerminalPanel = memo(function TerminalPanel({
   return (
     <section
       aria-label="Terminal drawer"
-      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-l border-[rgba(169,178,215,0.08)] bg-[color:var(--workspace)]"
+      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
       {...getFeatureStatusDataAttributes(statusId)}
     >
-      <div className="flex h-11 items-center justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-3">
+      <div className="flex h-11 items-center justify-between gap-3 border-b border-[color:var(--border)] px-3">
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
           <SquareTerminal size={15} className="shrink-0 text-[color:var(--muted)]" />
           <span className="truncate font-medium">Terminal</span>
         </div>
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
           aria-label="Hide terminal"
           onClick={onClose}
           data-tooltip="Hide terminal"

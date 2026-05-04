@@ -106,7 +106,7 @@ export function ComposerFooter({
             onClick={onToggleTerminal}
             className={cn(
               workspaceFooterTextClass,
-              terminalVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+              terminalVisible && "bg-[color:var(--surface-hover)] text-[color:var(--text)]",
             )}
           />
         </>
@@ -165,7 +165,7 @@ export function ComposerFooter({
             className={cn(
               workspaceFooterTextClass,
               iconActionButtonDisabledClass,
-              artifactsVisible && "bg-[rgba(255,255,255,0.04)] text-[color:var(--text)]",
+              artifactsVisible && "bg-[color:var(--surface-hover)] text-[color:var(--text)]",
             )}
             onClick={onToggleArtifacts}
             disabled={!artifactsAvailable || !onToggleArtifacts}

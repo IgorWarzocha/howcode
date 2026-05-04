@@ -345,7 +345,7 @@ export function ComposerPromptSurface({
 
           {attachments.length > 0 ? (
             <>
-              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
                 {attachments.length}
               </span>
               <button
@@ -467,7 +467,7 @@ export function ComposerPromptSurface({
             </output>
           ) : null}
 
-          <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+          <div className="h-px bg-[color:var(--border)]" />
 
           <ComposerFooter
             availableModels={availableModels}

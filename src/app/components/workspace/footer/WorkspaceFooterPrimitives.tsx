@@ -24,7 +24,7 @@ export function WorkspaceBranchChip({ branch, className }: WorkspaceBranchChipPr
       <div
         className={cn(
           workspaceFooterTextClass,
-          "inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[rgba(255,255,255,0.02)] hover:text-[color:var(--text)]",
+          "inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
           className,
         )}
       >

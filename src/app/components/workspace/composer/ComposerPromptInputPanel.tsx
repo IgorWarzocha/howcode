@@ -304,7 +304,7 @@ export function ComposerPromptInputPanel({
 
           <div className="inline-flex h-8 items-center justify-end gap-2">
             {extensionRunning ? (
-              <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.045)] px-2.5 text-[12px] text-[color:var(--muted)]">
+              <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2.5 text-[12px] text-[color:var(--muted)]">
                 <Loader2 size={12} className="animate-spin" />
                 <span>Pi extension running</span>
               </div>
