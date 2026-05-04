@@ -23,7 +23,7 @@ export function buildPiRuntimeSettingsDescriptors({
       id: "pi-runtime.theme",
       category: "pi-runtime",
       title: "Theme",
-      description: "Use a Pi JSON theme for the terminal and the full Howcode interface.",
+      description: "Select a theme to use. Syncs with Pi's JSON files.",
       keywords: "theme color json pi gui terminal appearance",
       render: () => {
         const themes = piTheme?.themes.length
@@ -75,7 +75,7 @@ export function buildPiRuntimeSettingsDescriptors({
       id: "pi-runtime.transport",
       category: "pi-runtime",
       title: "Transport",
-      description: "How Pi connects to providers that support multiple streaming transports.",
+      description: "Soon to be deprecated.",
       keywords: "transport sse websocket auto provider runtime",
       render: () => (
         <div className="grid grid-cols-3 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
@@ -104,7 +104,7 @@ export function buildPiRuntimeSettingsDescriptors({
       id: "pi-runtime.auto-compact",
       category: "pi-runtime",
       title: "Auto compact context",
-      description: "Let Pi compact long sessions automatically when context gets tight.",
+      description: "Switch auto compaction on or off.",
       keywords: "auto compact context runtime",
       render: () => (
         <ToggleBox
@@ -118,8 +118,7 @@ export function buildPiRuntimeSettingsDescriptors({
       id: "pi-runtime.skill-commands",
       category: "pi-runtime",
       title: "Enable skill slash commands",
-      description:
-        "Expose installed skills as /skill:name commands in Pi and the desktop slash picker.",
+      description: "Expose installed skills as /commands.",
       keywords: "skills slash commands picker runtime",
       render: () => (
         <ToggleBox

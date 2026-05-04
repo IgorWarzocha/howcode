@@ -49,7 +49,7 @@ export function buildDictationSettingsDescriptors({
       id: "dictation.models",
       category: "dictation",
       title: "Speech-to-text model",
-      description: "Download and choose one of the curated sherpa-onnx int8 Whisper models.",
+      description: "Dictation model selection.",
       keywords: "dictation model whisper download tiny base small speech transcription",
       render: () => (
         <div className="grid w-[27rem] max-w-full gap-1.5">
@@ -127,7 +127,7 @@ export function buildDictationSettingsDescriptors({
       id: "dictation.max-duration",
       category: "dictation",
       title: "Max dictation length",
-      description: `Longer captures use more memory before transcription. Default is ${DEFAULT_DICTATION_MAX_DURATION_SECONDS / 60} minutes.`,
+      description: `Safety net in case you forget. Default is ${DEFAULT_DICTATION_MAX_DURATION_SECONDS / 60} minutes.`,
       keywords: "dictation duration length capture minutes seconds",
       render: () => (
         <select
@@ -150,7 +150,7 @@ export function buildDictationSettingsDescriptors({
       id: "dictation.show-button",
       category: "dictation",
       title: "Toggle dictation",
-      description: "If hidden, re-enable the composer microphone button here.",
+      description: "Hide if you have a preferred dictation system.",
       keywords: "dictation button composer microphone show hide",
       render: () => (
         <ToggleBox

@@ -5,11 +5,21 @@ import { popoverPanelClass, composerTextActionButtonClass } from "../../ui/class
 import { cn } from "../../utils/cn";
 import type { InlineSelectOption, SettingDescriptor } from "./settingsTypes";
 
+export const settingRowClass =
+  "grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5";
+
+export const settingsHelpRowClass =
+  "grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-transparent px-1 py-1.5 text-[12px] leading-5 text-[color:var(--muted)] last:border-b-0 sm:grid-cols-1 sm:gap-0";
+
 export function ToggleBox({
   checked,
   label,
   onClick,
-}: { checked: boolean; label: string; onClick: () => void }) {
+}: {
+  checked: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -17,8 +27,6 @@ export function ToggleBox({
       onClick={onClick}
       aria-label={label}
       aria-pressed={checked}
-      data-tooltip={label}
-      data-tooltip-placement="left"
     >
       {checked ? <Check size={13} /> : null}
     </button>
@@ -27,12 +35,17 @@ export function ToggleBox({
 
 export function SettingRow({ setting }: { setting: SettingDescriptor }) {
   return (
-    <div
-      className="grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5"
-      data-setting-id={setting.id}
-    >
-      <div className="min-w-0 truncate text-[13px] text-[color:var(--text)]">{setting.title}</div>
-      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">
+    <div className={settingRowClass} data-setting-id={setting.id}>
+      <div
+        className="min-w-0 truncate text-[13px] text-[color:var(--text)]"
+        data-setting-tooltip={setting.description}
+      >
+        {setting.title}
+      </div>
+      <div
+        className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end"
+        data-setting-tooltip={setting.description}
+      >
         {setting.render()}
       </div>
     </div>

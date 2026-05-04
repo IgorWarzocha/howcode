@@ -163,6 +163,39 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   transform: translate(-2px, -50%);
 }
 
+[data-setting-tooltip] {
+  position: relative;
+}
+
+[data-setting-tooltip]::after {
+  pointer-events: none;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  z-index: 1000;
+  width: max-content;
+  max-width: 280px;
+  transform: translate(-50%, calc(-100% + 4px));
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 6px 10px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  content: attr(data-setting-tooltip);
+  font-size: 11.5px;
+  line-height: 16px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transition: opacity 150ms ease-out 1s, transform 150ms ease-out 1s;
+}
+
+[data-setting-tooltip]:is(:hover, :focus-within)::after {
+  transform: translate(-50%, calc(-100% - 2px));
+  opacity: 1;
+}
+
 .tooltip-anchor {
   position: relative;
   display: inline-flex;

@@ -83,7 +83,10 @@ export function buildModelSettingsDescriptors({
       open={openSelectId === id}
       options={[
         { value: "composer-default", label: "Composer default" },
-        ...modelProviders.map((provider) => ({ value: provider, label: provider })),
+        ...modelProviders.map((provider) => ({
+          value: provider,
+          label: provider,
+        })),
       ]}
       onOpenChange={(open) => setOpenSelectId(open ? id : null)}
       onChange={(value) =>
@@ -186,7 +189,7 @@ export function buildModelSettingsDescriptors({
       id: "models.chat",
       category: "models",
       title: "Chat",
-      description: "Provider, model, and reasoning level for the Chat view.",
+      description: "Default settings for the Chat view.",
       keywords: "chat model provider reasoning thinking",
       render: () =>
         renderModelWorkflowControls(
@@ -208,7 +211,7 @@ export function buildModelSettingsDescriptors({
       id: "models.code",
       category: "models",
       title: "Code",
-      description: "Provider, model, and reasoning level for the Code view.",
+      description: "Default settings for the Code view.",
       keywords: "code model provider reasoning thinking composer",
       render: () =>
         renderModelWorkflowControls(
@@ -230,7 +233,7 @@ export function buildModelSettingsDescriptors({
       id: "models.git-commit",
       category: "models",
       title: "Git commit messages",
-      description: "Provider, model, and reasoning level for generated git commit messages.",
+      description: "Default settings for the GitOps view.",
       keywords: "git commit message model provider reasoning thinking",
       render: () =>
         renderModelWorkflowControls(
@@ -249,7 +252,7 @@ export function buildModelSettingsDescriptors({
       id: "models.skill-creator",
       category: "models",
       title: "Skill creator",
-      description: "Provider, model, and reasoning level for the skill creator workflow.",
+      description: "Default settings for the built-in skill creator.",
       keywords: "skill creator model provider reasoning thinking",
       render: () =>
         renderModelWorkflowControls(
