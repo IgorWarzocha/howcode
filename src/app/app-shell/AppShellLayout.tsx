@@ -144,8 +144,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       ? state.selectedThreadId
       : null;
   const takeoverVisible = state.takeoverVisible;
-  const terminalDrawerVisible =
-    state.activeView === "thread" && state.terminalVisible && !sidebarCompactMode;
+  const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId &&
@@ -394,7 +393,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           className={
             sidebarCollapsed || sidebarCompactMode
               ? "relative w-0 min-w-0 shrink-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out pointer-events-none"
-              : "relative w-[clamp(225px,calc(100vw-936px),300px)] min-w-0 shrink-0 overflow-hidden opacity-100 transition-[width,opacity] duration-200 ease-out"
+              : "relative w-[clamp(225px,calc(100vw_-_936px),300px)] min-w-0 shrink-0 overflow-hidden opacity-100 transition-[width,opacity] duration-200 ease-out"
           }
         >
           {sidebarCollapsed || sidebarCompactMode ? null : (
@@ -524,7 +523,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
         {sidebarCompactMode ? (
           <div
-            className={`absolute top-0 bottom-0 left-0 z-50 w-[min(300px,calc(100%-2rem))] min-w-0 overflow-hidden transition-[transform,opacity] duration-200 ease-out ${sidebarOverlayOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`}
+            className={`absolute top-0 bottom-0 left-0 z-50 w-[min(300px,calc(100%_-_2rem))] min-w-0 overflow-hidden transition-[transform,opacity] duration-200 ease-out ${sidebarOverlayOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`}
           >
             <Sidebar
               projects={projects}
