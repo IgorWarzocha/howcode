@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import type { ProjectGitState, TerminalSessionSnapshot } from "../desktop/types";
 import { listDesktopTerminals, subscribeDesktopTerminal } from "../hooks/useDesktopTerminal";
 
 type UseTerminalGitStateSyncInput = {
   composerProjectId: string;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  setProjectGitState: (state: ProjectGitState | null) => void;
+  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
 };
 
 type TrackedTerminalSession = {
@@ -16,6 +17,26 @@ const gitRefreshDelayMs = 900;
 
 function shouldTrackTerminal(snapshot: TerminalSessionSnapshot) {
   return snapshot.status === "starting" || snapshot.status === "running";
+}
+
+function isSameProjectGitState(left: ProjectGitState | null, right: ProjectGitState | null) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+
+  return (
+    left.projectId === right.projectId &&
+    left.isGitRepo === right.isGitRepo &&
+    left.branch === right.branch &&
+    left.fileCount === right.fileCount &&
+    left.stagedFileCount === right.stagedFileCount &&
+    left.unstagedFileCount === right.unstagedFileCount &&
+    left.insertions === right.insertions &&
+    left.deletions === right.deletions &&
+    left.hasOrigin === right.hasOrigin &&
+    left.originName === right.originName &&
+    left.originUrl === right.originUrl &&
+    left.gitOpsModeOverride === right.gitOpsModeOverride
+  );
 }
 
 export function useTerminalGitStateSync({
@@ -57,7 +78,9 @@ export function useTerminalGitStateSync({
         refreshTimersByProjectIdRef.current.delete(projectId);
         void stateRef.current.loadProjectGitState(projectId).then((nextProjectGitState) => {
           if (projectId === stateRef.current.composerProjectId) {
-            stateRef.current.setProjectGitState(nextProjectGitState);
+            stateRef.current.setProjectGitState((current) =>
+              isSameProjectGitState(current, nextProjectGitState) ? current : nextProjectGitState,
+            );
           }
         });
       }, gitRefreshDelayMs);

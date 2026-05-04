@@ -95,6 +95,7 @@ export function TerminalViewport({
   const terminalHandleRef = useRef<TerminalHandle | null>(null);
   const terminalInstanceRef = useRef<WTerm | null>(null);
   const terminalResizeFrameRef = useRef<number | null>(null);
+  const terminalResizeTimerRefs = useRef<number[]>([]);
   const pendingScrollFrameRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const attachFailedRef = useRef(false);
@@ -184,6 +185,10 @@ export function TerminalViewport({
       if (terminalResizeFrameRef.current !== null) {
         window.cancelAnimationFrame(terminalResizeFrameRef.current);
       }
+      for (const timer of terminalResizeTimerRefs.current) {
+        window.clearTimeout(timer);
+      }
+      terminalResizeTimerRefs.current = [];
       if (pendingScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingScrollFrameRef.current);
       }
@@ -354,6 +359,20 @@ export function TerminalViewport({
     });
   }, [resizeTerminalToContainer]);
 
+  const scheduleTerminalResizeSettlingPasses = useCallback(() => {
+    scheduleTerminalResizeToContainer();
+
+    for (const timer of terminalResizeTimerRefs.current) {
+      window.clearTimeout(timer);
+    }
+
+    terminalResizeTimerRefs.current = [80, 240, 600].map((delay) =>
+      window.setTimeout(() => {
+        scheduleTerminalResizeToContainer();
+      }, delay),
+    );
+  }, [scheduleTerminalResizeToContainer]);
+
   useEffect(() => {
     if (terminalReadyRevision === 0) {
       return;
@@ -369,7 +388,7 @@ export function TerminalViewport({
     });
 
     observer.observe(viewportElement);
-    scheduleTerminalResizeToContainer();
+    scheduleTerminalResizeSettlingPasses();
 
     return () => {
       observer.disconnect();
@@ -377,8 +396,16 @@ export function TerminalViewport({
         window.cancelAnimationFrame(terminalResizeFrameRef.current);
         terminalResizeFrameRef.current = null;
       }
+      for (const timer of terminalResizeTimerRefs.current) {
+        window.clearTimeout(timer);
+      }
+      terminalResizeTimerRefs.current = [];
     };
-  }, [scheduleTerminalResizeToContainer, terminalReadyRevision]);
+  }, [
+    scheduleTerminalResizeSettlingPasses,
+    scheduleTerminalResizeToContainer,
+    terminalReadyRevision,
+  ]);
 
   useEffect(() => {
     if (terminalReadyRevision === 0) {
@@ -564,6 +591,7 @@ export function TerminalViewport({
       if (resizedSize.cols !== snapshot.cols || resizedSize.rows !== snapshot.rows) {
         handleTerminalResize(resizedSize.cols, resizedSize.rows);
       }
+      scheduleTerminalResizeSettlingPasses();
     };
 
     void openSession().catch((error) => {
@@ -624,6 +652,7 @@ export function TerminalViewport({
     terminalPersistedSessionPath,
     projectId,
     resetTerminal,
+    scheduleTerminalResizeSettlingPasses,
     terminalReadyRevision,
     terminalSessionPath,
     writeToTerminal,
