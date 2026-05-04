@@ -5,6 +5,7 @@ The next release will focus on better responsive UI and more useful tooltips/onb
 ### 0.1.5
 
 - Added GUI support for Howcode and Pi JSON themes.
+- Fixed Pi TUI takeover jumpiness.
 - Fixed composer follow-ups opening in the wrong session.
 - Fixed tooltips clipping near window edges.
 
