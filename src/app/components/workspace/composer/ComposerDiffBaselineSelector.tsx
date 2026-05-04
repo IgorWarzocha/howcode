@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Check, Search } from "lucide-react";
+import { Check, GitBranch, Search } from "lucide-react";
 import {
   type RefObject,
   useEffect,
@@ -135,8 +135,11 @@ export function ComposerDiffBaselineSelector({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [positionReady, setPositionReady] = useState(false);
+  const [activeAnchor, setActiveAnchor] = useState<"summary" | "branch" | "compact">("summary");
   const panelId = useId();
   const anchorRef = useRef<HTMLButtonElement>(null);
+  const branchAnchorRef = useRef<HTMLButtonElement>(null);
+  const compactAnchorRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelPosition, setPanelPosition] = useState({ right: 20, bottom: 20 });
 
@@ -199,7 +202,7 @@ export function ComposerDiffBaselineSelector({
   useDismissibleLayer({
     open,
     onDismiss: () => setOpen(false),
-    refs: [anchorRef, panelRef],
+    refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
   });
 
   useEffect(() => {
@@ -216,7 +219,13 @@ export function ComposerDiffBaselineSelector({
 
     const updatePosition = () => {
       const composerRect = composerPanelRef.current?.getBoundingClientRect();
-      const anchorRect = anchorRef.current?.getBoundingClientRect();
+      const activeAnchorRef =
+        activeAnchor === "branch"
+          ? branchAnchorRef
+          : activeAnchor === "compact"
+            ? compactAnchorRef
+            : anchorRef;
+      const anchorRect = activeAnchorRef.current?.getBoundingClientRect();
       if (!composerRect || !anchorRect) {
         return;
       }
@@ -236,11 +245,12 @@ export function ComposerDiffBaselineSelector({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [composerPanelRef, open]);
+  }, [activeAnchor, composerPanelRef, open]);
 
   const fileCountLabel = counts ? formatGitCount(counts.fileCount) : "…";
   const insertionCountLabel = counts ? formatGitCount(counts.insertions) : "…";
   const deletionCountLabel = counts ? formatGitCount(counts.deletions) : "…";
+  const showBranchChip = branch !== undefined;
   const branchLabel = branch ?? "Detached";
 
   return (
@@ -255,7 +265,10 @@ export function ComposerDiffBaselineSelector({
           "composer-diff-summary composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
           open && "text-[color:var(--text)]",
         )}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          setActiveAnchor("summary");
+          setOpen((current) => !current);
+        }}
       >
         <span
           className={cn(
@@ -295,19 +308,45 @@ export function ComposerDiffBaselineSelector({
         </span>
       </button>
 
+      {showBranchChip ? (
+        <button
+          ref={branchAnchorRef}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-controls={open ? panelId : undefined}
+          className={cn(
+            "composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+            open &&
+              "border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]",
+          )}
+          onClick={() => {
+            setActiveAnchor("branch");
+            setOpen((current) => !current);
+          }}
+        >
+          <span className="truncate">{branchLabel}</span>
+        </button>
+      ) : null}
+
       <button
+        ref={compactAnchorRef}
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          "composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
-          open &&
-            "border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]",
+          "composer-baseline-compact-trigger hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+          open && "bg-[color:var(--surface-hover)] text-[color:var(--text)]",
         )}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          setActiveAnchor("compact");
+          setOpen((current) => !current);
+        }}
+        aria-label="Diff baseline selector"
+        data-tooltip="Diff baseline"
       >
-        <span className="truncate">{branchLabel}</span>
+        <GitBranch size={14} />
       </button>
 
       {open && typeof document !== "undefined"

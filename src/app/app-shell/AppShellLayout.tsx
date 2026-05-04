@@ -373,10 +373,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   useEffect(() => {
     if (!sidebarOverlayOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSidebarOverlayOpen(false);
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setSidebarOverlayOpen(false);
     };
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [sidebarOverlayOpen]);
 
   const handleToggleSidebar = useCallback(() => {

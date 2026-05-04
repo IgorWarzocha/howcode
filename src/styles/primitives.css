@@ -235,6 +235,10 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   .composer-branch-chip {
     display: none;
   }
+
+  .composer-baseline-compact-trigger {
+    display: inline-flex;
+  }
 }
 
 .artifact-markdown-editor .mdxeditor {
