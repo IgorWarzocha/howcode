@@ -55,6 +55,7 @@ export function useDesktopEventSync({
     workspaceState: {
       activeView: workspaceState.activeView,
       selectedProjectId: workspaceState.selectedProjectId,
+      selectedThreadId: workspaceState.selectedThreadId,
       selectedSessionPath: workspaceState.selectedSessionPath,
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
     } satisfies DesktopEventSelectionState,
@@ -67,6 +68,7 @@ export function useDesktopEventSync({
       workspaceState: {
         activeView: workspaceState.activeView,
         selectedProjectId: workspaceState.selectedProjectId,
+        selectedThreadId: workspaceState.selectedThreadId,
         selectedSessionPath: workspaceState.selectedSessionPath,
         selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
       },
@@ -75,6 +77,7 @@ export function useDesktopEventSync({
     composerProjectId,
     workspaceState.activeView,
     workspaceState.selectedProjectId,
+    workspaceState.selectedThreadId,
     workspaceState.selectedInboxSessionPath,
     workspaceState.selectedSessionPath,
   ]);
@@ -243,6 +246,18 @@ export function useDesktopEventSync({
           threadId: event.threadId,
           sessionPath: event.sessionPath,
           view: event.isChat === true ? "chat" : "thread",
+        });
+      } else if (
+        isVisibleThreadUpdate &&
+        latestWorkspaceState.selectedThreadId !== event.threadId &&
+        (latestWorkspaceState.activeView === "chat" || latestWorkspaceState.activeView === "thread")
+      ) {
+        dispatch({
+          type: "open-thread",
+          projectId: event.projectId,
+          threadId: event.threadId,
+          sessionPath: event.sessionPath,
+          view: latestWorkspaceState.activeView,
         });
       }
 

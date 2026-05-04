@@ -243,7 +243,14 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
     }
 
     host.pendingRequests.delete(message.id);
-    if (pending.name === "sendComposerPrompt" && (!message.ok || message.result !== "sent")) {
+    const sendOutcome =
+      message.ok &&
+      typeof message.result === "object" &&
+      message.result !== null &&
+      "outcome" in message.result
+        ? message.result.outcome
+        : null;
+    if (pending.name === "sendComposerPrompt" && (!message.ok || sendOutcome !== "sent")) {
       host.busy = false;
     }
     scheduleThreadHostIdleStop(host);

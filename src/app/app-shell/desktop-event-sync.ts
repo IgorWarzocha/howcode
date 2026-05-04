@@ -10,7 +10,11 @@ type QueryClientLike = {
 
 export type DesktopEventSelectionState = Pick<
   WorkspaceState,
-  "activeView" | "selectedProjectId" | "selectedSessionPath" | "selectedInboxSessionPath"
+  | "activeView"
+  | "selectedProjectId"
+  | "selectedThreadId"
+  | "selectedSessionPath"
+  | "selectedInboxSessionPath"
 >;
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
@@ -26,7 +30,6 @@ export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelecti
 export function shouldAutoOpenStartedThread({
   reason,
   projectId,
-  isChat,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
@@ -38,18 +41,9 @@ export function shouldAutoOpenStartedThread({
     return false;
   }
 
-  const visibleSessionPath = getVisibleDesktopSessionPath(workspaceState);
-  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
-
-  if (localDraftProjectId) {
-    return false;
-  }
-
-  return (
-    (workspaceState.activeView === "code" && isChat !== true) ||
-    (workspaceState.activeView === "chat" && visibleSessionPath === null && isChat === true) ||
-    (workspaceState.activeView === "thread" && visibleSessionPath === null)
-  );
+  // Do not let background/runtime-host starts steal focus. User-initiated sends and explicit
+  // thread creation open from their action result; ambient thread events should only update caches.
+  return false;
 }
 
 export function shouldDisplayStartedThreadForLocalDraft({

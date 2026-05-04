@@ -279,11 +279,16 @@ export async function sendComposerPrompt(
     attachments?: ComposerAttachment[];
     streamingBehavior?: ComposerStreamingBehavior | null;
   },
-): Promise<"sent" | "stopped"> {
+): Promise<{ outcome: "sent" | "stopped"; sessionPath: string | null; threadId: string | null }> {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
   const compactInstructions = parseCompactSlashCommand(request.text);
   const runSend = async (runtime: PiRuntime) => {
     const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile);
+    const sendResult = (outcome: "sent" | "stopped") => ({
+      outcome,
+      sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
+      threadId: runtime.session.sessionId ?? null,
+    });
     try {
       if (compactInstructions !== null) {
         if (isRuntimeExtensionCommandRunning(runtime))
@@ -299,7 +304,7 @@ export async function sendComposerPrompt(
           compactInstructions.length > 0 ? compactInstructions : undefined,
         );
         await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-        return "sent" as const;
+        return sendResult("sent");
       }
       const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? []);
       const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ""}${request.text}`;
@@ -312,7 +317,7 @@ export async function sendComposerPrompt(
           if (!isExtensionCommandPrompt(runtime, request.text)) {
             await runtime.session.abort();
             await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath });
-            return "stopped" as const;
+            return sendResult("stopped");
           }
         }
         const promptStreamingBehavior =
@@ -333,7 +338,7 @@ export async function sendComposerPrompt(
       await publishThreadUpdate(runtime, "update").catch((error) =>
         console.error("Composer prompt accepted but thread update publish failed", error),
       );
-      return "sent" as const;
+      return sendResult("sent");
     } finally {
       if (runtimeKey) scheduleRuntimeDisposal(runtimeKey);
     }
