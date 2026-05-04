@@ -127,7 +127,7 @@ export function SettingsDictationSection({
       </div>
 
       {dictationInstallError ? (
-        <output className="text-[12px] text-[#f2a7a7]" aria-live="polite">
+        <output className="text-[12px] text-[color:var(--danger)]" aria-live="polite">
           {dictationInstallError}
         </output>
       ) : null}
@@ -181,7 +181,7 @@ export function SettingsDictationSection({
           className={cn(
             "inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors",
             appSettings.showDictationButton
-              ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+              ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--accent-contrast)]"
               : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
           )}
           onClick={() => setShowDictationButton(!appSettings.showDictationButton)}

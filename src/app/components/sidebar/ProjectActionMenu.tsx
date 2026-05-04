@@ -99,7 +99,7 @@ export function ProjectActionMenu({
             key={item.action}
             className={cn(
               "sidebar-project-menu-item",
-              confirmAction === item.action && item.danger && "text-[#ffd1d1]",
+              confirmAction === item.action && item.danger && "text-[color:var(--danger)]",
             )}
             data-danger={item.danger ? "true" : "false"}
             onClick={() => handleClick(item.action)}
@@ -108,7 +108,7 @@ export function ProjectActionMenu({
           >
             <span className="sidebar-project-menu-item__icon">
               {confirmAction === item.action ? (
-                <span className="text-[13px] font-semibold text-[#f2a7a7]">!</span>
+                <span className="text-[13px] font-semibold text-[color:var(--danger)]">!</span>
               ) : (
                 item.icon
               )}

@@ -37,7 +37,7 @@ export function SegmentedToggle<T extends string>({
             "cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]",
             compact && "px-2.5 py-1 text-[11.5px] leading-4",
             value === option.value
-              ? "bg-[rgba(255,255,255,0.18)] font-medium text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]"
+              ? "bg-[rgba(255,255,255,0.18)] font-medium text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]"
               : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
             option.disabled &&
               "cursor-not-allowed opacity-45 hover:text-[color:var(--muted)] has-[:focus-visible]:outline-0",

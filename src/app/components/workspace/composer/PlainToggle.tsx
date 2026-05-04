@@ -24,7 +24,7 @@ export function PlainToggle({
     >
       <span
         className={cn(
-          "inline-block h-3 w-3 rounded-full bg-[#1a1c26] transition-transform",
+          "inline-block h-3 w-3 rounded-full bg-[color:var(--accent-contrast)] transition-transform",
           checked ? "translate-x-5" : "translate-x-1",
         )}
       />

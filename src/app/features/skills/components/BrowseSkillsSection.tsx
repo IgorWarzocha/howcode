@@ -113,7 +113,7 @@ export function BrowseSkillsSection({
         Loading skills…
       </div>
     ) : skillsQuery.isError ? (
-      <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[#f2a7a7]">
+      <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--danger)]">
         {getActionError(skillsQuery.error)}
       </div>
     ) : catalogItems.length > 0 ? (
@@ -158,7 +158,8 @@ export function BrowseSkillsSection({
                         <span
                           className={cn(
                             "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--muted-2)] bg-transparent transition-colors",
-                            selected && "border-[rgba(183,186,245,0.42)] text-[color:var(--text)]",
+                            selected &&
+                              "border-[color:var(--accent-border)] text-[color:var(--text)]",
                           )}
                         >
                           {selected ? <Check size={11} strokeWidth={2.6} /> : null}

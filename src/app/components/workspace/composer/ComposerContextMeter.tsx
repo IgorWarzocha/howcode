@@ -179,13 +179,13 @@ export function ComposerContextMeter({
             background: `conic-gradient(${tone} ${meterPercent * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
           }}
         />
-        <span className="absolute inset-[11px] rounded-full bg-[#272a39]" />
+        <span className="absolute inset-[11px] rounded-full bg-[color:var(--panel)]" />
       </button>
 
       {open ? (
         <div
           ref={popoverRef}
-          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[rgba(169,178,215,0.18)] bg-[#2d3040] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
+          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
           onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >

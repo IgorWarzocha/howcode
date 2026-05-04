@@ -112,7 +112,7 @@ export function SearchExtensionsSection({
               Loading packages…
             </div>
           ) : catalogError ? (
-            <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[#f2a7a7]">
+            <div className="rounded-xl border border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--danger)]">
               {catalogError}
             </div>
           ) : catalogItems.length > 0 ? (

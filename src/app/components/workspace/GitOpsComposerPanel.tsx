@@ -63,7 +63,7 @@ export function GitOpsComposerPanel({
   return (
     <div
       ref={composerPanelRef}
-      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+      className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
       aria-label="Git ops composer panel"
     >
       <ComposerGitOpsSurface

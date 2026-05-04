@@ -23,7 +23,7 @@ export function QueuedPromptsCard({
   return (
     <div
       className={cn(
-        "relative -left-1 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-2.5 py-2",
+        "relative -left-1 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2",
       )}
     >
       <div className="pl-3.5 text-[12px] text-[color:var(--muted)]">

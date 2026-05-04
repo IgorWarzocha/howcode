@@ -49,7 +49,7 @@ export function ConfirmPopover({
       ) : null}
       <button
         type="button"
-        className="rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-[#ffb4b4] transition-colors hover:bg-[rgba(255,120,120,0.14)]"
+        className="rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-[color:var(--danger)] transition-colors hover:bg-[rgba(255,120,120,0.14)]"
         onClick={() => void onConfirm()}
       >
         {confirmLabel}

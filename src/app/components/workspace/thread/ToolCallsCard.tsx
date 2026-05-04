@@ -20,7 +20,7 @@ function renderToolCallBody(message: ToolCallMessage) {
       <div
         className={
           message.isError
-            ? "grid min-w-0 gap-2 text-[13px] text-[#f2a7a7]"
+            ? "grid min-w-0 gap-2 text-[13px] text-[color:var(--danger)]"
             : "grid min-w-0 gap-2 text-[13px] text-[color:var(--muted-2)]/88"
         }
       >
@@ -94,9 +94,9 @@ export function ToolCallsCard({
         onToggleGroupExpanded?.();
       }}
       panelId={`tool-call-group-${id}`}
-      className="border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)]"
-      triggerClassName="hover:bg-[rgba(255,255,255,0.025)]"
-      bodyClassName="border-[rgba(169,178,215,0.08)] px-2 py-2"
+      className="border border-[color:var(--border)] bg-[color:var(--message-tool-bg)]"
+      triggerClassName="hover:bg-[color:var(--surface-hover)]"
+      bodyClassName="border-[color:var(--border)] px-2 py-2"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
           <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
@@ -126,7 +126,7 @@ export function ToolCallsCard({
               }}
               panelId={`tool-call-panel-${messageKey}`}
               className="bg-transparent"
-              triggerClassName="rounded-lg px-2 py-2 hover:bg-[rgba(255,255,255,0.025)]"
+              triggerClassName="rounded-lg px-2 py-2 hover:bg-[color:var(--surface-hover)]"
               bodyClassName="!border-0 px-2 pt-0 pb-2"
               showChevron={false}
               header={
@@ -140,7 +140,9 @@ export function ToolCallsCard({
                     </span>
                   </span>
                   {isError ? (
-                    <span className="shrink-0 text-[10.5px] font-medium text-[#f2a7a7]">Error</span>
+                    <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--danger)]">
+                      Error
+                    </span>
                   ) : null}
                 </>
               }

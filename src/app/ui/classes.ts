@@ -3,13 +3,13 @@ export const transitionClass = "transition-colors duration-150 ease-out";
 export const hoverSurfaceClass = "hover:bg-[var(--surface-hover)] hover:text-[color:var(--text)]";
 
 export const panelChromeClass =
-  "rounded-[20px] border border-[color:var(--border)] bg-[rgba(39,42,57,0.82)] shadow-[var(--shadow)] backdrop-blur-[18px]";
+  "rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)] backdrop-blur-[18px]";
 
 export const modalPanelClass =
-  "border-[color:var(--border-strong)] bg-[rgba(34,37,50,0.96)] shadow-[0_24px_80px_rgba(0,0,0,0.34)]";
+  "border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]";
 
 export const popoverPanelClass =
-  "border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] shadow-[0_18px_40px_rgba(0,0,0,0.28)]";
+  "border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)]";
 
 export const confirmPopoverClass =
   "motion-popover absolute top-[calc(100%+6px)] right-0 z-20 flex items-center gap-1 rounded-xl p-1";
@@ -36,7 +36,7 @@ export const emptyStateCardClass =
   "rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]";
 
 export const segmentedControlClass =
-  "inline-flex rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-1";
+  "inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--panel)] p-1";
 
 export const segmentedControlOptionClass =
   "rounded-full px-3 py-1 text-[12px] capitalize transition-colors";
@@ -62,13 +62,13 @@ export const ghostButtonClass =
   "rounded-[10px] border border-transparent px-2 py-1 text-[12.5px] leading-5 text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]";
 
 export const primaryButtonClass =
-  "min-h-8 rounded-full border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.06)] px-4 text-[13px] font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[rgba(169,178,215,0.22)] hover:bg-[rgba(255,255,255,0.1)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[rgba(255,255,255,0.035)] disabled:text-[color:var(--muted-2)]";
+  "min-h-8 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] px-4 text-[13px] font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-bg-strong)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]";
 
 export const composerTextActionButtonClass =
-  "inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.06)] px-3 text-[12.5px] font-medium leading-5 text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[rgba(169,178,215,0.22)] hover:bg-[rgba(255,255,255,0.1)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[rgba(255,255,255,0.035)] disabled:text-[color:var(--muted-2)]";
+  "inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 text-[12.5px] font-medium leading-5 text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]";
 
 export const interactiveCardClass =
-  "rounded-[20px] border border-[color:var(--border)] bg-[rgba(39,42,57,0.9)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(44,47,64,0.94)]";
+  "rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[color:var(--panel-2)]";
 
 export const compactCardClass =
   "rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.05)]";
@@ -81,7 +81,7 @@ export const menuItemClass =
   "flex items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left text-[14px]";
 
 export const menuOptionClass =
-  "grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] hover:bg-[rgba(255,255,255,0.04)]";
+  "grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] hover:bg-[color:var(--surface-hover)]";
 
 export const terminalOutputClass =
   "grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs";

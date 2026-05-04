@@ -9,6 +9,7 @@ import type {
   DesktopActionInvoker,
   DictationModelId,
   PiSettings,
+  PiThemeState,
 } from "../desktop/types";
 import { settingsSectionClass } from "../ui/classes";
 import { cn } from "../utils/cn";
@@ -26,6 +27,7 @@ import { SettingRow, normalizeManagedDictationModelId } from "./settings/setting
 type SettingsViewProps = {
   appSettings: AppSettings;
   piSettings: PiSettings;
+  piTheme: PiThemeState | null;
   availableModels: ComposerModel[];
   availableThinkingLevels: ComposerThinkingLevel[];
   currentModel: ComposerModel | null;
@@ -37,6 +39,7 @@ type SettingsViewProps = {
 export function SettingsView({
   appSettings,
   piSettings,
+  piTheme,
   availableModels,
   availableThinkingLevels,
   currentModel,
@@ -46,30 +49,75 @@ export function SettingsView({
 }: SettingsViewProps) {
   const controller = useSettingsController({ appSettings, projects, onAction });
   const [draftPiSettings, setDraftPiSettings] = useState(piSettings);
+  const piSettingsRef = useRef(piSettings);
   const draftPiSettingsRef = useRef(draftPiSettings);
   const dirtyPiSettingsRef = useRef(new Set<keyof PiSettings>());
+  const themeUpdateQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const pendingThemeRef = useRef<string | null>(null);
   const [filter, setFilter] = useState("");
   const [activeCategory, setActiveCategory] = useState<SettingsCategoryId | null>(null);
   const [openSelectId, setOpenSelectId] = useState<string | null>(null);
   const [dictationModelDraft, setDictationModelDraft] = useState<DictationModelId | null>(null);
   const normalizedFilter = filter.trim().toLowerCase();
 
+  const revertFailedThemeUpdate = useCallback((failedTheme: string) => {
+    if (pendingThemeRef.current === failedTheme) {
+      pendingThemeRef.current = null;
+      setDraftPiSettings((current) =>
+        current.theme === failedTheme ? piSettingsRef.current : current,
+      );
+    }
+  }, []);
+
   useEffect(() => {
     draftPiSettingsRef.current = draftPiSettings;
   }, [draftPiSettings]);
 
   useEffect(() => {
+    piSettingsRef.current = piSettings;
+    if (pendingThemeRef.current === piSettings.theme) {
+      pendingThemeRef.current = null;
+    }
+
     if (dirtyPiSettingsRef.current.size === 0) {
-      setDraftPiSettings(piSettings);
+      setDraftPiSettings(
+        pendingThemeRef.current ? { ...piSettings, theme: pendingThemeRef.current } : piSettings,
+      );
     }
   }, [piSettings]);
 
   const setDraftPiSetting = useCallback(
     <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) => {
+      if (key === "theme") {
+        const nextTheme = value as string;
+        dirtyPiSettingsRef.current.delete(key);
+        pendingThemeRef.current = nextTheme;
+        setDraftPiSettings((current) => ({ ...current, theme: nextTheme }));
+        themeUpdateQueueRef.current = themeUpdateQueueRef.current
+          .catch(() => {
+            // Keep later theme updates moving even if an earlier write failed.
+          })
+          .then(async () => {
+            try {
+              const result = await onAction("pi-settings.update", {
+                piSettingsKey: key,
+                value: nextTheme,
+              });
+
+              if (!result || result.ok === false || typeof result.result?.error === "string") {
+                revertFailedThemeUpdate(nextTheme);
+              }
+            } catch {
+              revertFailedThemeUpdate(nextTheme);
+            }
+          });
+        return;
+      }
+
       dirtyPiSettingsRef.current.add(key);
       setDraftPiSettings((current) => ({ ...current, [key]: value }));
     },
-    [],
+    [onAction, revertFailedThemeUpdate],
   );
 
   const flushPiSettings = useCallback(async () => {
@@ -142,6 +190,7 @@ export function SettingsView({
     currentModel,
     controller,
     draftPiSettings,
+    piTheme,
     setDraftPiSetting,
     openSelectId,
     setOpenSelectId,
@@ -200,8 +249,8 @@ export function SettingsView({
             className={cn(
               "flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]",
               activeCategory === null && !normalizedFilter
-                ? "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]"
-                : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                ? "bg-[color:var(--accent-bg)] text-[color:var(--text)]"
+                : "text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
             )}
             onClick={() => setActiveCategory(null)}
           >
@@ -214,8 +263,8 @@ export function SettingsView({
               className={cn(
                 "flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]",
                 activeCategory === category.id && !normalizedFilter
-                  ? "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]"
-                  : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                  ? "bg-[color:var(--accent-bg)] text-[color:var(--text)]"
+                  : "text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
               )}
               onClick={() => setActiveCategory(category.id)}
             >
@@ -245,7 +294,7 @@ export function SettingsView({
               type="button"
               className={cn(
                 "rounded-full border border-[color:var(--border)] px-3 py-1.5 text-[12px] transition-colors",
-                activeCategory === null && "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]",
+                activeCategory === null && "bg-[color:var(--accent-bg)] text-[color:var(--text)]",
               )}
               onClick={() => setActiveCategory(null)}
             >
@@ -258,7 +307,7 @@ export function SettingsView({
                 className={cn(
                   "rounded-full border border-[color:var(--border)] px-3 py-1.5 text-[12px] text-[color:var(--muted)] transition-colors",
                   activeCategory === category.id &&
-                    "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]",
+                    "bg-[color:var(--accent-bg)] text-[color:var(--text)]",
                 )}
                 onClick={() => setActiveCategory(category.id)}
               >

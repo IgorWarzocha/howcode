@@ -154,7 +154,7 @@ export function DiffChangedFilesTree({
         {hasSelection ? (
           <button
             type="button"
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
             onClick={clearSelection}
             aria-label="Clear file focus"
             data-tooltip="Clear file focus"

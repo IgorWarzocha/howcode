@@ -34,7 +34,7 @@ export function SettingsProjectDefaultsSection({
         settingsSectionClass,
         "motion-surface-pulse motion-sidebar-selection-pulse",
         preferredProjectLocationMissing &&
-          "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.06)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.04)]",
+          "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
       )}
     >
       <SectionIntro
@@ -99,7 +99,7 @@ export function SettingsProjectDefaultsSection({
             className={cn(
               "inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors",
               appSettings.initializeGitOnProjectCreate
-                ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+                ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--accent-contrast)]"
                 : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
             )}
             onClick={toggleInitializeGitOnProjectCreate}
@@ -143,7 +143,7 @@ export function SettingsProjectDefaultsSection({
             className={cn(
               "inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors",
               appSettings.piTuiTakeover
-                ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
+                ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--accent-contrast)]"
                 : "border-[color:var(--border)] bg-transparent text-transparent hover:border-[color:var(--border-strong)]",
             )}
             onClick={togglePiTuiTakeover}

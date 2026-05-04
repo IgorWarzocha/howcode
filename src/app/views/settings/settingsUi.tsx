@@ -97,7 +97,7 @@ export function InlineSelect({
         className={cn(
           composerTextActionButtonClass,
           "grid h-8 w-full grid-cols-[minmax(0,1fr)_auto] justify-start gap-2 rounded-lg px-2.5 pr-8 text-left font-normal",
-          open && "border-[rgba(169,178,215,0.22)] bg-[rgba(255,255,255,0.1)]",
+          open && "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]",
         )}
         onClick={() => {
           if (open) {
@@ -126,7 +126,7 @@ export function InlineSelect({
           className={cn(
             popoverPanelClass,
             options.length > 10 && "max-h-64 overflow-y-auto",
-            "absolute top-[calc(100%+6px)] z-[60] grid min-w-full max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border border-[color:var(--border-strong)] bg-[rgba(45,48,64,0.98)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+            "absolute top-[calc(100%+6px)] z-[60] grid min-w-full max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border p-1",
             showSearch && "w-[26.5rem]",
             alignMenuRight ? "right-0" : "left-0",
           )}

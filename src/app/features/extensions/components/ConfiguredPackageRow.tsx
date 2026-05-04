@@ -50,7 +50,7 @@ export function ConfiguredPackageRow({
               <Tooltip content={removePending ? "Removing" : "Remove"}>
                 <TextButton
                   ref={removeButtonRef}
-                  className={cn(compactRoundIconButtonClass, "hover:text-[#ffb4b4]")}
+                  className={cn(compactRoundIconButtonClass, "hover:text-[color:var(--danger)]")}
                   onClick={() => {
                     if (removePending) {
                       return;

@@ -3,6 +3,7 @@ import { defaultPiSettings } from "../../shared/default-pi-settings.ts";
 import { getDesktopWorkingDirectory } from "../../shared/desktop-working-directory.ts";
 import { getPiModule } from "../pi-module.cts";
 import { markRuntimeSettingsStaleForProject } from "../runtime/runtime-registry.cts";
+import { loadPiThemeStateInHost } from "./theme-service.cts";
 
 export type PiSettingsKey = keyof PiSettings;
 
@@ -29,6 +30,7 @@ export async function getPiSessionStorage(projectPath?: string | null) {
 export async function loadPiSettingsInHost(projectPath?: string | null): Promise<PiSettings> {
   const settingsManager = await getPiSettingsManager(projectPath);
   return {
+    theme: settingsManager.getTheme() ?? defaultPiSettings.theme,
     autoCompact: settingsManager.getCompactionEnabled(),
     enableSkillCommands: settingsManager.getEnableSkillCommands(),
     hideThinkingBlock: settingsManager.getHideThinkingBlock(),
@@ -129,6 +131,11 @@ function updateBooleanSetting(
   }
 }
 
+async function isKnownTheme(themeName: string, projectPath?: string | null) {
+  const themeState = await loadPiThemeStateInHost(projectPath);
+  return themeState.themes.some((theme) => theme.name === themeName);
+}
+
 export async function updatePiSettingInHost(
   key: PiSettingsKey,
   value: unknown,
@@ -136,6 +143,15 @@ export async function updatePiSettingInHost(
 ): Promise<PiSettings> {
   const settingsManager = await getPiSettingsManager(projectPath);
   let updated = updateBooleanSetting(settingsManager, key, value);
+
+  if (!updated && key === "theme" && typeof value === "string" && value.trim().length > 0) {
+    const theme = value.trim();
+    if (!(await isKnownTheme(theme, projectPath))) {
+      throw new Error(`Unknown Pi theme: ${theme}`);
+    }
+    settingsManager.setTheme(theme);
+    updated = true;
+  }
 
   if (!updated && key === "transport") {
     const transport = asPiTransport(value);

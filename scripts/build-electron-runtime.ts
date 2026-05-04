@@ -1,4 +1,4 @@
-import { copyFile, mkdir, rm, watch } from "node:fs/promises";
+import { cp, copyFile, mkdir, rm, watch } from "node:fs/promises";
 import path from "node:path";
 
 const isWatchMode = process.argv.includes("--watch");
@@ -71,6 +71,14 @@ async function copyNativeExtensionAssets() {
   await copyFile(nativeAskQuestionsSource, nativeAskQuestionsOutput);
 }
 
+async function copyDesktopResources() {
+  const outputPath = path.join(buildRoot, "resources");
+  await rm(outputPath, { recursive: true, force: true });
+  await cp(path.join(projectRoot, "desktop", "resources"), outputPath, {
+    recursive: true,
+  });
+}
+
 async function runBuild() {
   await prepareBuildDirectories();
 
@@ -96,6 +104,7 @@ async function runBuild() {
   }
 
   await copyNativeExtensionAssets();
+  await copyDesktopResources();
 
   if (isWatchMode) {
     console.log("Watching Electron runtime bundles...");
@@ -105,6 +114,14 @@ async function runBuild() {
           await copyNativeExtensionAssets();
           console.log("Copied native extension assets.");
         }
+      }
+    })();
+    void (async () => {
+      for await (const _event of watch(path.join(projectRoot, "desktop", "resources"), {
+        recursive: true,
+      })) {
+        await copyDesktopResources();
+        console.log("Copied desktop resources.");
       }
     })();
     await new Promise(() => {

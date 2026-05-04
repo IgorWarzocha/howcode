@@ -29,7 +29,7 @@ export function FoldedTimelineRow({
   return (
     <button
       type="button"
-      className="grid w-full min-w-0 gap-1 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(17,19,27,0.28)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
+      className="grid w-full min-w-0 gap-1 rounded-xl border border-[color:var(--border)] bg-[color:var(--message-tool-bg)] px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]"
       onClick={onToggle}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -106,7 +106,7 @@ export function TimelineRowShell({
       {onToggle ? (
         <button
           type="button"
-          className={`${toggleClassName ?? "mt-1"} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]`}
+          className={`${toggleClassName ?? "mt-1"} inline-flex h-5 w-5 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]`}
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={ariaLabel}

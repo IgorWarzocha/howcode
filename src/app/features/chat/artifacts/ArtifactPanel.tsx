@@ -110,7 +110,7 @@ export function ArtifactPanel({
             className={cn(
               compactIconButtonClass,
               "h-7 w-7",
-              view === "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+              view === "list" && "bg-[color:var(--accent-bg)] text-[color:var(--text)]",
             )}
             onClick={() => setView("list")}
             aria-label="Show artifact list"
@@ -124,7 +124,7 @@ export function ArtifactPanel({
               className={cn(
                 compactIconButtonClass,
                 "h-7 w-7",
-                view !== "list" && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+                view !== "list" && "bg-[color:var(--accent-bg)] text-[color:var(--text)]",
               )}
               onClick={() => setView(view === "code" ? "preview" : "code")}
               disabled={!selectedArtifact}
@@ -164,7 +164,7 @@ export function ArtifactPanel({
             className={cn(
               compactIconButtonClass,
               "h-7 w-7",
-              fullscreen && "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]",
+              fullscreen && "bg-[color:var(--accent-bg)] text-[color:var(--text)]",
             )}
             aria-label={fullscreen ? "Exit artifact fullscreen" : "Artifact fullscreen"}
             onClick={onToggleFullscreen}
@@ -255,7 +255,7 @@ export function ArtifactPanel({
         {view === "preview" && selectedArtifact?.kind !== "markdown" ? (
           <div className="relative h-full bg-[color:var(--sidebar)]">
             {previewError ? (
-              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[#f2a7a7]/30 bg-[#2b1720]/95 p-2 text-[11px] whitespace-pre-wrap text-[#ffd1d1]">
+              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[#f2a7a7]/30 bg-[#2b1720]/95 p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)]">
                 {previewError}
               </pre>
             ) : null}

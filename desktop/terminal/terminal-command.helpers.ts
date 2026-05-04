@@ -2,6 +2,7 @@ import { constants, accessSync } from "node:fs";
 import path from "node:path";
 import { getPersistedSessionPath } from "../../shared/session-paths";
 import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
+import { getBundledThemes } from "../bundled-themes.cts";
 import { ensureAskQuestionsExtensionRuntimePath } from "../native-extensions/ask-questions-extension-path.cts";
 import { getSessionNativeExtensions } from "../thread-state-db.cts";
 
@@ -44,6 +45,9 @@ export function resolveTerminalCommand(
   if (request.launchMode === "pi-session") {
     const persistedSessionPath = getPersistedSessionPath(request.sessionPath);
     const args = persistedSessionPath ? ["--session", persistedSessionPath] : [];
+    for (const theme of getBundledThemes()) {
+      args.push("--theme", theme.path);
+    }
     const enabledNativeExtensions = getSessionNativeExtensions(persistedSessionPath) ?? [];
     if (enabledNativeExtensions.includes("askQuestions")) {
       args.push("--extension", ensureAskQuestionsExtensionRuntimePath());

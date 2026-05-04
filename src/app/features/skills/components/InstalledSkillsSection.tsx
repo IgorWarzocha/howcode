@@ -55,7 +55,7 @@ export function InstalledSkillsSection({
                         ? confirmRemoveButtonRef
                         : undefined
                     }
-                    className={cn(compactRoundIconButtonClass, "hover:text-[#ffb4b4]")}
+                    className={cn(compactRoundIconButtonClass, "hover:text-[color:var(--danger)]")}
                     onClick={() => {
                       if (isPendingRemove(configuredSkill.installedPath)) {
                         return;

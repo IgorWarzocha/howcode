@@ -110,10 +110,10 @@ button[data-tooltip]::after {
   transform: translate(-50%, calc(-100% + 4px));
   border: 1px solid var(--border-strong);
   border-radius: 10px;
-  background: rgba(45, 48, 64, 0.98);
+  background: var(--panel);
   padding: 6px 10px;
   color: var(--text);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--shadow);
   content: attr(data-tooltip);
   font-size: 11.5px;
   line-height: 16px;
@@ -177,10 +177,10 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   max-width: 360px;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
-  background: rgba(45, 48, 64, 0.98);
+  background: var(--panel);
   padding: 6px 10px;
   color: var(--text);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--shadow);
   font-size: 11.5px;
   line-height: 16px;
   white-space: normal;
@@ -229,30 +229,30 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   background: var(--sidebar);
   color: var(--text);
   --basePageBg: var(--sidebar);
-  --baseBase: #1f2230;
-  --baseBgSubtle: #242735;
-  --baseBg: #2a2d3b;
-  --baseBgHover: #303446;
-  --baseBgActive: #343848;
+  --baseBase: var(--workspace);
+  --baseBgSubtle: var(--panel);
+  --baseBg: var(--panel-2);
+  --baseBgHover: var(--panel-3);
+  --baseBgActive: var(--surface-hover);
   --baseLine: var(--border);
   --baseBorder: var(--border-strong);
-  --baseBorderHover: rgba(169, 178, 215, 0.22);
+  --baseBorderHover: var(--border-strong);
   --baseSolid: #727894;
   --baseSolidHover: #969db7;
   --baseText: var(--muted);
   --baseTextContrast: var(--text);
-  --accentBase: #25283a;
-  --accentBgSubtle: rgba(185, 191, 243, 0.08);
-  --accentBg: rgba(185, 191, 243, 0.12);
-  --accentBgHover: rgba(185, 191, 243, 0.16);
-  --accentBgActive: rgba(185, 191, 243, 0.22);
-  --accentLine: rgba(185, 191, 243, 0.18);
-  --accentBorder: rgba(185, 191, 243, 0.24);
-  --accentBorderHover: rgba(185, 191, 243, 0.32);
+  --accentBase: var(--accent-bg-subtle);
+  --accentBgSubtle: var(--accent-bg-subtle);
+  --accentBg: var(--accent-bg);
+  --accentBgHover: var(--accent-bg-strong);
+  --accentBgActive: var(--accent-bg-strong);
+  --accentLine: var(--accent-border);
+  --accentBorder: var(--accent-border);
+  --accentBorderHover: var(--accent);
   --accentSolid: var(--accent);
-  --accentSolidHover: #c8cdf7;
+  --accentSolidHover: var(--accent);
   --accentText: var(--accent);
-  --accentTextContrast: #141724;
+  --accentTextContrast: var(--accent-contrast);
 }
 
 .artifact-markdown-editor .mdxeditor > div {
@@ -267,7 +267,7 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 .artifact-markdown-editor .mdxeditor-toolbar {
   flex: 0 0 auto;
   border-bottom: 1px solid var(--border);
-  background: #222532;
+  background: var(--panel);
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar {
@@ -391,12 +391,12 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 
 .artifact-markdown-editor .cm-activeLine,
 .artifact-markdown-editor .cm-activeLineGutter {
-  background-color: rgba(185, 191, 243, 0.06);
+  background-color: var(--accent-bg-subtle);
 }
 
 .artifact-markdown-editor .cm-selectionBackground,
 .artifact-markdown-editor .cm-focused .cm-selectionBackground {
-  background: rgba(185, 191, 243, 0.22) !important;
+  background: var(--accent-bg-strong) !important;
 }
 
 .artifact-markdown-editor .cm-panels,
@@ -469,7 +469,7 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 }
 
 .artifact-markdown-editor .artifact-markdown-editor-content blockquote {
-  border-left: 2px solid rgba(185, 191, 243, 0.32);
+  border-left: 2px solid var(--accent-border);
   color: var(--muted);
 }
 

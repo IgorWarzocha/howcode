@@ -9,6 +9,7 @@ import type {
   DesktopEvent,
   ComposerAttachment,
   PiSettings,
+  PiThemeState,
   PiConfiguredPackage,
   PiPackageMutationResult,
   PiConfiguredSkill,
@@ -30,6 +31,7 @@ export type RuntimeHostRequestMap = {
   };
   getPiSessionStorage: { projectPath?: string | null; chat?: boolean };
   loadPiSettings: { projectPath?: string | null; chat?: boolean };
+  loadPiThemeState: { projectPath?: string | null; chat?: boolean };
   updatePiSetting: {
     key: keyof PiSettings;
     value: unknown;
@@ -44,10 +46,24 @@ export type RuntimeHostRequestMap = {
     projectPath?: string | null;
     chat?: boolean;
   };
-  removePiPackage: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
+  removePiPackage: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
   listConfiguredPiSkills: { projectPath?: string | null; chat?: boolean };
-  installPiSkill: { source: string; local?: boolean; projectPath?: string | null; chat?: boolean };
-  removePiSkill: { installedPath: string; projectPath?: string | null; chat?: boolean };
+  installPiSkill: {
+    source: string;
+    local?: boolean;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
+  removePiSkill: {
+    installedPath: string;
+    projectPath?: string | null;
+    chat?: boolean;
+  };
   loadThreadSnapshot: { sessionPath: string; historyCompactions?: number };
   startSkillCreatorSession: {
     prompt: string;
@@ -57,9 +73,19 @@ export type RuntimeHostRequestMap = {
   };
   continueSkillCreatorSession: { sessionId: string; prompt: string };
   closeSkillCreatorSession: { sessionId: string };
-  generateGitCommitMessage: { request: ComposerStateRequest; context: CommitMessageContext };
-  setComposerModel: { request: ComposerStateRequest; provider: string; modelId: string };
-  setComposerThinkingLevel: { request: ComposerStateRequest; level: ComposerThinkingLevel };
+  generateGitCommitMessage: {
+    request: ComposerStateRequest;
+    context: CommitMessageContext;
+  };
+  setComposerModel: {
+    request: ComposerStateRequest;
+    provider: string;
+    modelId: string;
+  };
+  setComposerThinkingLevel: {
+    request: ComposerStateRequest;
+    level: ComposerThinkingLevel;
+  };
   sendComposerPrompt: ComposerStateRequest & {
     text: string;
     attachments?: ComposerAttachment[];
@@ -91,6 +117,7 @@ export type RuntimeHostResponseMap = {
   invalidateRuntimeSettings: { ok: true };
   getPiSessionStorage: { agentDir: string; sessionDir: string };
   loadPiSettings: PiSettings;
+  loadPiThemeState: PiThemeState;
   updatePiSetting: PiSettings;
   listConfiguredPiPackages: PiConfiguredPackage[];
   installPiPackage: PiPackageMutationResult;
@@ -98,7 +125,11 @@ export type RuntimeHostResponseMap = {
   listConfiguredPiSkills: PiConfiguredSkill[];
   installPiSkill: PiSkillMutationResult;
   removePiSkill: PiSkillMutationResult;
-  loadThreadSnapshot: { projectId: string; threadId: string; thread: ThreadData };
+  loadThreadSnapshot: {
+    projectId: string;
+    threadId: string;
+    thread: ThreadData;
+  };
   startSkillCreatorSession: SkillCreatorSessionState;
   continueSkillCreatorSession: SkillCreatorSessionState;
   closeSkillCreatorSession: { ok: boolean };
@@ -125,7 +156,11 @@ export type RuntimeHostMainRequestMap = {
     kind: ArtifactKind;
     content: string;
   };
-  updateArtifact: { slug: string; content: string; conversationId?: string | null };
+  updateArtifact: {
+    slug: string;
+    content: string;
+    conversationId?: string | null;
+  };
   editArtifact: {
     slug: string;
     conversationId?: string | null;
@@ -195,7 +230,13 @@ export type RuntimeHostMainResponseMessage =
       ok: true;
       result: RuntimeHostMainResponseMap[RuntimeHostMainRequestName];
     }
-  | { type: "main-response"; id: string; ok: false; error: string; stack?: string };
+  | {
+      type: "main-response";
+      id: string;
+      ok: false;
+      error: string;
+      stack?: string;
+    };
 
 export type RuntimeHostToMainMessage =
   | RuntimeHostResponseMessage

@@ -398,7 +398,7 @@ export function InboxComposer({
   return (
     <div
       ref={composerPanelRef}
-      className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+      className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
       aria-label="Inbox composer panel"
     >
       <div className="relative">
@@ -465,7 +465,7 @@ export function InboxComposer({
                     role="listbox"
                     tabIndex={-1}
                     aria-label="Composer slash commands"
-                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                    className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]"
                   >
                     {slashCommands.commands.length > 0 ? (
                       slashCommands.commands.map((command, index) => {
@@ -491,8 +491,8 @@ export function InboxComposer({
                               className={cn(
                                 "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left",
                                 selected
-                                  ? "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]"
-                                  : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                                  ? "bg-[color:var(--accent-bg)] text-[color:var(--text)]"
+                                  : "text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
                               )}
                               onPointerEnter={() => slashCommands.setSelectedIndex(index)}
                               onMouseDown={(event) => event.preventDefault()}
@@ -571,7 +571,7 @@ export function InboxComposer({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
-                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(229,111,111,0.18)] text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.28)] hover:text-[#ffd1d1] disabled:cursor-not-allowed disabled:opacity-45",
+                  "h-6 w-6 shrink-0 rounded-full bg-[color:var(--danger-bg)] text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={onStop}
                 disabled={!isStreaming || isSending || localActionPending}
@@ -584,7 +584,7 @@ export function InboxComposer({
                 type="button"
                 className={cn(
                   compactIconButtonClass,
-                  "h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.46)] text-[color:var(--workspace)] hover:bg-[rgba(146,153,184,0.56)] hover:text-[color:var(--workspace)] disabled:cursor-not-allowed disabled:opacity-45",
+                  "h-6 w-6 shrink-0 rounded-full bg-[color:var(--accent)] text-[color:var(--accent-contrast)] hover:bg-[color:var(--accent)] hover:text-[color:var(--accent-contrast)] disabled:cursor-not-allowed disabled:opacity-45",
                 )}
                 onClick={() => slashCommands.submit()}
                 disabled={!canSend}

@@ -100,7 +100,7 @@ export function SkillsView({
         {controller.actionError ?? ""}
       </output>
       {controller.actionError ? (
-        <div className="text-[12px] text-[#f2a7a7]">{controller.actionError}</div>
+        <div className="text-[12px] text-[color:var(--danger)]">{controller.actionError}</div>
       ) : null}
 
       <SkillCreatorSection

@@ -130,7 +130,7 @@ export function ComposerPromptInputPanel({
                   role="listbox"
                   tabIndex={-1}
                   aria-label="Composer slash commands"
-                  className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[rgba(169,178,215,0.12)] bg-[#202332] p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.38)]"
+                  className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]"
                 >
                   {slashCommands.commands.length > 0 ? (
                     slashCommands.commands.map((command, index) => {
@@ -157,8 +157,8 @@ export function ComposerPromptInputPanel({
                             className={cn(
                               "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left",
                               selected
-                                ? "bg-[rgba(169,178,215,0.14)] text-[color:var(--text)]"
-                                : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                                ? "bg-[color:var(--accent-bg)] text-[color:var(--text)]"
+                                : "text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
                             )}
                             onPointerEnter={() => slashCommands.setSelectedIndex(index)}
                             onMouseDown={(event) => event.preventDefault()}

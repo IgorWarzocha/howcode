@@ -76,7 +76,7 @@ export function buildProjectsSettingsDescriptors({
               className={cn(
                 "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                 appSettings.gitOpsDefaultMode === value &&
-                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
               )}
               onClick={() =>
                 controller.setGitOpsDefaultMode(value as AppSettings["gitOpsDefaultMode"])
@@ -111,7 +111,7 @@ export function buildProjectsSettingsDescriptors({
                 className={cn(
                   "rounded-xl px-3 py-1 transition-colors active:scale-[0.96]",
                   appSettings.gitDiffBaselineDefault.kind === baseline.kind &&
-                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
                 )}
                 onClick={() => controller.setGitDiffBaselineDefault(baseline)}
               >
@@ -140,7 +140,7 @@ export function buildProjectsSettingsDescriptors({
               className={cn(
                 "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                 appSettings.gitDiffRenderModeDefault === value &&
-                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
               )}
               onClick={() =>
                 controller.setGitDiffRenderModeDefault(
@@ -189,7 +189,7 @@ export function buildProjectsSettingsDescriptors({
               className={cn(
                 "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                 appSettings.projectDeletionMode === value &&
-                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
               )}
               onClick={() =>
                 controller.setProjectDeletionMode(value as AppSettings["projectDeletionMode"])
@@ -243,7 +243,7 @@ export function buildProjectsSettingsDescriptors({
             </div>
           ) : null}
           {controller.importErrorMessage ? (
-            <div className="text-right text-[12px] text-[#f2a7a7]">
+            <div className="text-right text-[12px] text-[color:var(--danger)]">
               {controller.importErrorMessage}
             </div>
           ) : null}
@@ -328,7 +328,7 @@ export function buildProjectsSettingsDescriptors({
           ) : null}
           <button
             type="button"
-            className={cn(composerTextActionButtonClass, "shrink-0 text-[#f2a7a7]")}
+            className={cn(composerTextActionButtonClass, "shrink-0 text-[color:var(--danger)]")}
             onClick={() => void controller.handleClearClipboardImages()}
             disabled={controller.clearImagesBusy || !controller.desktopBridgeAvailable}
           >

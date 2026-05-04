@@ -41,7 +41,7 @@ export function MenuItem({
         menuItemClass,
         transitionClass,
         !disabled && hoverSurfaceClass,
-        active && "bg-[rgba(183,186,245,0.08)] text-[color:var(--text)]",
+        active && "bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]",
         !disabled && statusId && getFeatureStatusButtonClass(statusId),
         disabled &&
           "cursor-not-allowed text-[color:var(--muted)] opacity-55 hover:bg-transparent hover:text-[color:var(--muted)]",

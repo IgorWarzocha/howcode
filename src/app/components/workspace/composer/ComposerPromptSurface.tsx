@@ -398,7 +398,7 @@ export function ComposerPromptSurface({
         ) : null}
         <div
           ref={composerPanelRef}
-          className="grid gap-0 overflow-visible rounded-[20px] border border-[rgba(169,178,215,0.06)] bg-[#272a39] shadow-none"
+          className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
           aria-label="Composer panel"
         >
           {/* Let the prompt column size itself to one line by default, then grow upward naturally as
@@ -548,9 +548,9 @@ export function ComposerPromptSurface({
           type="button"
           className={cn(
             compactIconButtonClass,
-            "h-7 w-7 shrink-0 rounded-full text-[#ffb4b4] hover:bg-[rgba(229,111,111,0.2)] hover:text-[#ffd1d1]",
+            "h-7 w-7 shrink-0 rounded-full text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]",
             canStopComposer
-              ? "bg-[rgba(229,111,111,0.14)] opacity-80"
+              ? "bg-[color:var(--danger-bg)] opacity-80"
               : "bg-transparent opacity-25 hover:opacity-45",
           )}
           onClick={() => void stop()}

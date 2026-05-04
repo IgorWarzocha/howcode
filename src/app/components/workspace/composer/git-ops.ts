@@ -6,7 +6,7 @@ export function formatGitCount(value: number) {
 
 export function getGitOpsEntryButtonClass(mode: GitOpsVisualMode) {
   if (mode === "not-git") {
-    return "border-[rgba(255,110,110,0.22)] text-[#ff9c9c] hover:border-[rgba(255,110,110,0.36)] hover:bg-[rgba(255,94,94,0.08)] hover:text-[#ffd1d1]";
+    return "border-[color:var(--danger-border)] text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]";
   }
 
   if (mode === "dirty") {

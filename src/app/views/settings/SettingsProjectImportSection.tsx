@@ -56,7 +56,7 @@ export function SettingsProjectImportSection({
         </div>
       ) : null}
       {importErrorMessage ? (
-        <div className="text-[12px] text-[#f2a7a7]">{importErrorMessage}</div>
+        <div className="text-[12px] text-[color:var(--danger)]">{importErrorMessage}</div>
       ) : null}
     </section>
   );

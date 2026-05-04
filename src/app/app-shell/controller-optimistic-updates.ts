@@ -287,6 +287,7 @@ function isPiSettingsKey(value: unknown): value is keyof PiSettings {
   return (
     typeof value === "string" &&
     [
+      "theme",
       "autoCompact",
       "enableSkillCommands",
       "hideThinkingBlock",
@@ -327,6 +328,12 @@ function getOptimisticPiSettingsValue<Key extends keyof PiSettings>(
     const [min, max] =
       key === "editorPaddingX" ? [0, 3] : key === "autocompleteMaxVisible" ? [3, 20] : [1, 200];
     return Math.max(min, Math.min(max, Math.floor(value))) as PiSettings[Key];
+  }
+
+  if (key === "theme") {
+    return typeof value === "string" && value.trim().length > 0
+      ? (value.trim() as PiSettings[Key])
+      : null;
   }
 
   if (key === "transport" && value !== "sse" && value !== "websocket" && value !== "auto") {
