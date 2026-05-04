@@ -229,38 +229,51 @@ export function SettingsView({
     activeCategory,
   });
   const visibleGroups = groupSettingsByCategory({ settings: filteredSettings });
+
   useLayoutEffect(() => {
-    if (!showHelp || !settingsScrollRef.current) {
-      setSettingRowHeights({});
+    if (!showHelp || !settingsScrollRef.current || typeof ResizeObserver === "undefined") {
+      setSettingRowHeights((current) => (Object.keys(current).length === 0 ? current : {}));
       return;
     }
 
+    let frameId: number | null = null;
     const rows = [...settingsScrollRef.current.querySelectorAll<HTMLElement>("[data-setting-id]")];
     const updateHeights = () => {
-      const nextHeights = Object.fromEntries(
-        rows.map((row) => [row.dataset.settingId ?? "", row.getBoundingClientRect().height]),
-      );
-      setSettingRowHeights((current) => {
-        const currentKeys = Object.keys(current);
-        const nextKeys = Object.keys(nextHeights);
-        const unchanged =
-          currentKeys.length === nextKeys.length &&
-          nextKeys.every((key) => current[key] === nextHeights[key]);
-        return unchanged ? current : nextHeights;
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        const nextHeights = Object.fromEntries(
+          rows.map((row) => [row.dataset.settingId ?? "", Math.ceil(row.offsetHeight)]),
+        );
+        setSettingRowHeights((current) => {
+          const nextKeys = Object.keys(nextHeights);
+          const unchanged =
+            Object.keys(current).length === nextKeys.length &&
+            nextKeys.every((key) => current[key] === nextHeights[key]);
+          return unchanged ? current : nextHeights;
+        });
       });
     };
+
     const observer = new ResizeObserver(updateHeights);
     for (const row of rows) {
       observer.observe(row);
     }
     updateHeights();
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
   });
 
   return (
     <ViewShell
       className="h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden pb-0"
-      maxWidthClassName={showHelp ? "max-w-[1460px]" : "max-w-[1120px]"}
+      maxWidthClassName={showHelp ? "max-w-[1360px]" : "max-w-[1120px]"}
     >
       <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
         <ViewHeader title="App settings" className="items-center" />
@@ -321,7 +334,7 @@ export function SettingsView({
       <div
         className={cn(
           "grid min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]",
-          showHelp && "lg:grid-cols-[220px_minmax(0,1fr)_minmax(15rem,20rem)]",
+          showHelp && "lg:grid-cols-[220px_minmax(0,1fr)_minmax(18rem,24rem)]",
         )}
       >
         <nav className="sticky top-0 hidden max-h-full overflow-y-auto rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid">
@@ -358,7 +371,7 @@ export function SettingsView({
           ref={settingsScrollRef}
           className={cn(
             "grid h-full min-h-0 min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-6",
-            showHelp && "lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,20rem)] lg:gap-x-4",
+            showHelp && "lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-x-4",
           )}
         >
           <div className="grid min-w-0 content-start gap-4 lg:hidden">
@@ -435,9 +448,7 @@ export function SettingsView({
                           className={settingsHelpRowClass}
                           style={
                             settingRowHeights[setting.id]
-                              ? {
-                                  height: `${settingRowHeights[setting.id]}px`,
-                                }
+                              ? { height: `${settingRowHeights[setting.id]}px` }
                               : undefined
                           }
                         >
