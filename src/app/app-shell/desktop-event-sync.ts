@@ -52,6 +52,28 @@ export function shouldAutoOpenStartedThread({
   );
 }
 
+export function shouldDisplayStartedThreadForLocalDraft({
+  reason,
+  projectId,
+  isChat,
+  workspaceState,
+}: {
+  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
+  projectId: string;
+  isChat?: boolean;
+  workspaceState: DesktopEventSelectionState;
+}) {
+  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
+  if (reason !== "start" || localDraftProjectId !== projectId) {
+    return false;
+  }
+
+  return (
+    (workspaceState.activeView === "chat" && isChat === true) ||
+    (workspaceState.activeView === "thread" && isChat !== true)
+  );
+}
+
 export async function refreshVisibleInboxThread({
   event,
   loadProjectThreads,

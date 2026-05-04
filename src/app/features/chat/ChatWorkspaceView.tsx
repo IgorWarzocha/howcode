@@ -82,6 +82,7 @@ export function ChatWorkspaceView({
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
   const previousConversationIdRef = useRef<string | null | undefined>(conversationId);
+  const shouldShowConversationContent = conversationContentVisible || activeThreadData?.isStreaming;
 
   useEffect(() => {
     if (!hasConversation) {
@@ -90,7 +91,8 @@ export function ChatWorkspaceView({
       return;
     }
 
-    if (previousHasConversationRef.current) {
+    if (previousHasConversationRef.current || activeThreadData?.isStreaming) {
+      previousHasConversationRef.current = true;
       setConversationContentVisible(true);
       return;
     }
@@ -98,7 +100,7 @@ export function ChatWorkspaceView({
     previousHasConversationRef.current = true;
     const timeout = window.setTimeout(() => setConversationContentVisible(true), 300);
     return () => window.clearTimeout(timeout);
-  }, [hasConversation]);
+  }, [activeThreadData?.isStreaming, hasConversation]);
 
   useEffect(() => {
     if (!window.piDesktop?.subscribe) return;
@@ -149,14 +151,15 @@ export function ChatWorkspaceView({
           <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden pt-1.5">
             <ChatView
               key={activeThreadData?.sessionPath ?? "new-chat"}
-              messages={conversationContentVisible ? (activeThreadData?.messages ?? []) : []}
+              messages={shouldShowConversationContent ? (activeThreadData?.messages ?? []) : []}
               previousMessageCount={activeThreadData?.previousMessageCount ?? 0}
               isStreaming={activeThreadData?.isStreaming ?? false}
               isCompacting={activeThreadData?.isCompacting ?? false}
               composerLayoutVersion={composerLayoutVersion}
               composerOverlayHeight={composerOverlayHeight}
               loading={
-                controller.activeThreadLoading || (hasConversation && !conversationContentVisible)
+                controller.activeThreadLoading ||
+                (hasConversation && !shouldShowConversationContent)
               }
               onLoadEarlierMessages={handleLoadEarlierMessages}
             />

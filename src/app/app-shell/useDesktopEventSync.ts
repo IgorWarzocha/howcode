@@ -9,6 +9,7 @@ import {
   invalidateProjectWorktreeQueries,
   refreshVisibleInboxThread,
   shouldAutoOpenStartedThread,
+  shouldDisplayStartedThreadForLocalDraft,
 } from "./desktop-event-sync";
 import {
   applyProjectThreadToShellState,
@@ -58,6 +59,7 @@ export function useDesktopEventSync({
       selectedInboxSessionPath: workspaceState.selectedInboxSessionPath,
     } satisfies DesktopEventSelectionState,
   });
+  const localDraftSessionPathByPersistedSessionPathRef = useRef(new Map<string, string>());
 
   useEffect(() => {
     desktopEventStateRef.current = {
@@ -95,8 +97,12 @@ export function useDesktopEventSync({
       }
 
       if (event.type === "composer-update") {
+        const aliasedLocalDraftSessionPath = event.sessionPath
+          ? localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath)
+          : null;
         const shouldApplyComposerUpdate = event.sessionPath
-          ? event.sessionPath === visibleSessionPath
+          ? event.sessionPath === visibleSessionPath ||
+            aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath
           : event.projectId === latestComposerProjectId &&
             ((latestWorkspaceState.activeView !== "thread" &&
               latestWorkspaceState.activeView !== "gitops" &&
@@ -138,13 +144,37 @@ export function useDesktopEventSync({
         isChat: event.isChat,
         workspaceState: latestWorkspaceState,
       });
+      const shouldDisplayLocalDraftThread = shouldDisplayStartedThreadForLocalDraft({
+        reason: event.reason,
+        projectId: event.projectId,
+        isChat: event.isChat,
+        workspaceState: latestWorkspaceState,
+      });
+      if (shouldDisplayLocalDraftThread && latestWorkspaceState.selectedSessionPath) {
+        localDraftSessionPathByPersistedSessionPathRef.current.set(
+          event.sessionPath,
+          latestWorkspaceState.selectedSessionPath,
+        );
+      }
+      const aliasedLocalDraftSessionPath =
+        localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null;
+      const isAliasedLocalDraftUpdate =
+        aliasedLocalDraftSessionPath !== null &&
+        aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath;
       const isCompactionThreadUpdate =
         event.reason === "compaction-start" || event.reason === "compaction";
 
       setLiveThreadData((current) =>
-        isVisibleThreadUpdate || shouldAutoOpenThread || current?.sessionPath === event.sessionPath
+        isVisibleThreadUpdate ||
+        shouldAutoOpenThread ||
+        isAliasedLocalDraftUpdate ||
+        current?.sessionPath === event.sessionPath
           ? {
               ...threadWithPreferences,
+              sessionPath:
+                isAliasedLocalDraftUpdate && aliasedLocalDraftSessionPath
+                  ? aliasedLocalDraftSessionPath
+                  : threadWithPreferences.sessionPath,
               diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
             }
           : current,

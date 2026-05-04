@@ -65,7 +65,7 @@ export function useAppShellController() {
       !(liveThreadData?.sessionPath === selectedPersistedSessionPath || threadDataMatchesSelection),
   );
   const effectiveThreadData =
-    threadHistoryCompactions === 0 && liveThreadData?.sessionPath === selectedPersistedSessionPath
+    threadHistoryCompactions === 0 && liveThreadData?.sessionPath === state.selectedSessionPath
       ? liveThreadData
       : threadDataMatchesSelection
         ? threadData

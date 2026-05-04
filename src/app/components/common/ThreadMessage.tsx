@@ -18,13 +18,13 @@ function renderProse(content: string[], format: "prose" | "list" = "prose") {
     return (
       <MarkdownContent
         markdown={content.map((item) => `- ${item}`).join("\n")}
-        className="gap-1.5"
+        className="gap-1.5 text-pretty"
       />
     );
   }
 
   return (
-    <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
         <MarkdownContent key={paragraph} markdown={paragraph} />
       ))}

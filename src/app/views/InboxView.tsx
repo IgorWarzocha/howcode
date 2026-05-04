@@ -184,7 +184,10 @@ export function InboxView({
         <div className="grid h-full w-full content-start pb-5">
           <div className="min-h-0 max-w-[92ch] text-pretty">
             {messageMarkdown ? (
-              <MarkdownContent markdown={messageMarkdown} className="gap-3 text-[15px]" />
+              <MarkdownContent
+                markdown={messageMarkdown}
+                className="gap-3 text-[15px] text-pretty"
+              />
             ) : (
               <div className="grid min-h-28 place-items-center rounded-[18px] border border-dashed border-[color:var(--border)] text-[14px] text-[color:var(--muted)]">
                 {thread.running ? "Still working…" : "No final assistant message yet."}

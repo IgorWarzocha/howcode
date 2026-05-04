@@ -3,6 +3,7 @@ import { createLocalThreadDraft } from "../../shared/session-paths";
 import {
   getVisibleDesktopSessionPath,
   shouldAutoOpenStartedThread,
+  shouldDisplayStartedThreadForLocalDraft,
   type DesktopEventSelectionState,
 } from "../app/app-shell/desktop-event-sync";
 
@@ -56,6 +57,36 @@ describe("desktop event selection helpers", () => {
       shouldAutoOpenStartedThread({
         reason: "start",
         projectId: draft.projectId,
+        workspaceState: selectionState({
+          activeView: "thread",
+          selectedProjectId: draft.projectId,
+          selectedSessionPath: draft.sessionPath,
+        }),
+      }),
+    ).toBe(false);
+  });
+
+  it("displays same-view started thread updates for the selected local draft without auto-open", () => {
+    const draft = createLocalThreadDraft("/repo/project-a", "draft");
+
+    expect(
+      shouldDisplayStartedThreadForLocalDraft({
+        reason: "start",
+        projectId: draft.projectId,
+        isChat: true,
+        workspaceState: selectionState({
+          activeView: "chat",
+          selectedProjectId: draft.projectId,
+          selectedSessionPath: draft.sessionPath,
+        }),
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldDisplayStartedThreadForLocalDraft({
+        reason: "start",
+        projectId: draft.projectId,
+        isChat: true,
         workspaceState: selectionState({
           activeView: "thread",
           selectedProjectId: draft.projectId,
