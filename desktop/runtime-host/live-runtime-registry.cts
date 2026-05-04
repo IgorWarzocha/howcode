@@ -9,6 +9,7 @@ import {
 } from "../runtime/agent-session-extensions.cts";
 import { buildComposerState } from "../runtime/composer-state.cts";
 import { createArtifactTools } from "../runtime/artifact-tools.cts";
+import { createAttachmentFileTools } from "../runtime/attachment-file-tools.cts";
 import { ensureAskQuestionsExtensionRuntimePath } from "../native-extensions/ask-questions-extension-path.cts";
 import { createNativeAskQuestionsTools } from "./native-ask-questions-tool.cts";
 import { invokeMainRequest } from "./main-request-client.cts";
@@ -160,6 +161,12 @@ async function createRuntime(options: {
         },
       })
     : [];
+  const attachmentFileTools = options.settingsCwd
+    ? createAttachmentFileTools({
+        cwd: options.cwd,
+        autoResizeImages: settingsManager.getImageAutoResize(),
+      })
+    : null;
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
@@ -172,6 +179,7 @@ async function createRuntime(options: {
       ? {
           noTools: "builtin" as const,
           customTools: [
+            ...(attachmentFileTools?.tools ?? []),
             ...createArtifactTools({
               createArtifact: (input) => invokeMainRequest("createArtifact", input),
               editArtifact: (input) => invokeMainRequest("editArtifact", input),
@@ -191,6 +199,7 @@ async function createRuntime(options: {
     cwd: options.cwd,
     session,
     chatGroupId: options.chatGroupId ?? null,
+    attachmentFileAccess: attachmentFileTools?.access,
   } satisfies PiRuntime;
 
   if (!options.sessionManager) {

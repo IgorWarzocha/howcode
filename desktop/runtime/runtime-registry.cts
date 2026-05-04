@@ -14,6 +14,7 @@ import {
 } from "./agent-session-extensions.cts";
 import { buildComposerState } from "./composer-state.cts";
 import { createArtifactTools } from "./artifact-tools.cts";
+import { createAttachmentFileTools } from "./attachment-file-tools.cts";
 import { rememberSessionPath } from "./session-path-index.cts";
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from "./settings-refresh.ts";
 import {
@@ -145,6 +146,12 @@ async function createRuntime(options: {
     settingsCwd: options.settingsCwd,
     settingsManager,
   });
+  const attachmentFileTools = options.settingsCwd
+    ? createAttachmentFileTools({
+        cwd: options.cwd,
+        autoResizeImages: settingsManager.getImageAutoResize(),
+      })
+    : null;
   const { session } = await createAgentSession({
     cwd: options.cwd,
     agentDir,
@@ -156,12 +163,15 @@ async function createRuntime(options: {
     ...(options.settingsCwd
       ? {
           noTools: "builtin" as const,
-          customTools: createArtifactTools({
-            createArtifact,
-            editArtifact,
-            getArtifact: ({ conversationId, slug }) => getArtifact(slug, conversationId),
-            listArtifacts,
-          }),
+          customTools: [
+            ...(attachmentFileTools?.tools ?? []),
+            ...createArtifactTools({
+              createArtifact,
+              editArtifact,
+              getArtifact: ({ conversationId, slug }) => getArtifact(slug, conversationId),
+              listArtifacts,
+            }),
+          ],
         }
       : {}),
   });
@@ -169,6 +179,7 @@ async function createRuntime(options: {
     cwd: options.cwd,
     session,
     chatGroupId: options.chatGroupId ?? null,
+    attachmentFileAccess: attachmentFileTools?.access,
   } satisfies PiRuntime;
 
   rememberSessionPath(session.sessionFile, options.cwd);

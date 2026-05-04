@@ -346,6 +346,7 @@ export async function sendComposerPrompt(
 
         const promptStreamingBehavior =
           streamingBehavior === "stop" ? "followUp" : streamingBehavior;
+        await runtime.attachmentFileAccess?.grantAttachments(request.attachments ?? []);
         await promptAndReturnAfterPreflight({
           runtime,
           message,
@@ -353,6 +354,7 @@ export async function sendComposerPrompt(
           request: { ...request, sessionPath: persistedSessionPath },
         });
       } else {
+        await runtime.attachmentFileAccess?.grantAttachments(request.attachments ?? []);
         await promptAndReturnAfterPreflight({
           runtime,
           message,
