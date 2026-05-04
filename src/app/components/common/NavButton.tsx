@@ -25,6 +25,7 @@ export function NavButton({
       data-active={active ? "true" : "false"}
       aria-current={active ? "page" : undefined}
       data-tooltip={typeof title === "string" ? title : undefined}
+      data-tooltip-placement={typeof title === "string" ? "right" : undefined}
       {...buttonProps}
     >
       {icon}

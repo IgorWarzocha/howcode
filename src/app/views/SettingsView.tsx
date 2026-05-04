@@ -187,6 +187,7 @@ export function SettingsView({
           onClick={closeSettings}
           aria-label="Close app settings"
           data-tooltip="Close app settings"
+          data-tooltip-placement="left"
         >
           <X size={14} />
         </button>

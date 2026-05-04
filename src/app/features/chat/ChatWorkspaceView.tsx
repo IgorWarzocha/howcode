@@ -189,6 +189,7 @@ export function ChatWorkspaceView({
                   onClick={onToggleSidebar}
                   aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
                   data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                  data-tooltip-placement="right"
                 >
                   {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
                 </button>
