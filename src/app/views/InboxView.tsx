@@ -162,7 +162,7 @@ export function InboxView({
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] px-6 pt-6 pb-4">
       <div className="w-full pb-5">
-        <div className="grid w-full gap-2 rounded-[18px] border border-[rgba(169,178,215,0.09)] bg-[rgba(43,47,62,0.72)] px-4 py-3 shadow-[0_18px_48px_rgba(7,8,14,0.16)]">
+        <div className="grid w-full gap-2 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--panel)] px-4 py-3 shadow-[var(--shadow)]">
           <div className="flex min-w-0 items-center gap-2 text-[11px] leading-4 text-[color:var(--muted-2)]">
             <span className="truncate">{thread.projectName}</span>
             <span aria-hidden="true">•</span>

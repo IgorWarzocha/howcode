@@ -27,18 +27,18 @@ function formatTokens(value: number | null | undefined, options: { compact?: boo
 
 function getMeterTone(percent: number | null | undefined) {
   if (percent === null || percent === undefined) {
-    return "rgba(146,153,184,0.64)";
+    return "var(--muted)";
   }
 
   if (percent > 90) {
-    return "#ff9f9f";
+    return "var(--danger)";
   }
 
   if (percent > 70) {
-    return "#f2c27f";
+    return "var(--warning)";
   }
 
-  return "#9bb7ff";
+  return "var(--accent)";
 }
 
 type Point = {
@@ -168,7 +168,7 @@ export function ComposerContextMeter({
       <button
         ref={buttonRef}
         type="button"
-        className="relative inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+        className="relative inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
         onClick={() => setPinned((current) => !current)}
         aria-label={label}
         aria-expanded={open}
@@ -176,7 +176,7 @@ export function ComposerContextMeter({
         <span
           className={cn("absolute inset-[7px] rounded-full", isCompacting && "animate-pulse")}
           style={{
-            background: `conic-gradient(${tone} ${meterPercent * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
+            background: `conic-gradient(${tone} ${meterPercent * 3.6}deg, var(--border-strong) 0deg)`,
           }}
         />
         <span className="absolute inset-[11px] rounded-full bg-[color:var(--panel)]" />
@@ -185,7 +185,7 @@ export function ComposerContextMeter({
       {open ? (
         <div
           ref={popoverRef}
-          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[0_18px_44px_rgba(0,0,0,0.4)]"
+          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[var(--shadow)]"
           onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >
@@ -219,7 +219,7 @@ export function ComposerContextMeter({
             </div>
           ) : null}
           {isCompacting ? (
-            <div className="rounded-lg border border-[rgba(155,183,255,0.2)] bg-[rgba(155,183,255,0.08)] px-2 py-1.5 text-[11px] text-[#cbd7ff]">
+            <div className="rounded-lg border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-1.5 text-[11px] text-[color:var(--accent)]">
               Compacting session context…
             </div>
           ) : null}

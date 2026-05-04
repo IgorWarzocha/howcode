@@ -73,9 +73,9 @@ export function ArtifactPanel({
   return (
     <section
       aria-label="Artifacts drawer"
-      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-l border-[rgba(169,178,215,0.08)] bg-[color:var(--workspace)]"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
     >
-      <div className="flex h-11 items-center justify-between gap-3 border-b border-[rgba(169,178,215,0.08)] px-3">
+      <div className="flex h-11 items-center justify-between gap-3 border-b border-[color:var(--border)] px-3">
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
           <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
           {selectedArtifact ? (
@@ -87,7 +87,7 @@ export function ArtifactPanel({
         <div className="flex items-center gap-1">
           {selectedArtifact ? (
             <select
-              className="h-7 rounded-md border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.03)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]"
+              className="h-7 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
               value={selectedVersion}
               onChange={(event) => {
                 const value = event.target.value;
@@ -175,7 +175,7 @@ export function ArtifactPanel({
           </button>
           <button
             type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
             aria-label="Hide artifacts"
             onClick={onClose}
             data-tooltip="Hide artifacts"
@@ -201,9 +201,9 @@ export function ArtifactPanel({
                   key={artifact.slug}
                   type="button"
                   className={cn(
-                    "rounded-lg px-3 py-2.5 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+                    "rounded-lg px-3 py-2.5 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
                     artifact.slug === selectedArtifact?.slug &&
-                      "bg-[rgba(183,186,245,0.1)] text-[color:var(--text)]",
+                      "bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]",
                   )}
                   onClick={() => {
                     setSelectedArtifactId(artifact.slug);
@@ -222,7 +222,7 @@ export function ArtifactPanel({
 
         {view === "code" ? (
           <textarea
-            className="h-full w-full resize-none overflow-auto bg-[#111521] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)] outline-none"
+            className="h-full w-full resize-none overflow-auto bg-[color:var(--panel)] p-3 font-mono text-[12px] leading-5 text-[color:var(--text)] outline-none"
             value={draft}
             spellCheck={false}
             readOnly={showingHistoricalVersion}
@@ -255,7 +255,7 @@ export function ArtifactPanel({
         {view === "preview" && selectedArtifact?.kind !== "markdown" ? (
           <div className="relative h-full bg-[color:var(--sidebar)]">
             {previewError ? (
-              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[#f2a7a7]/30 bg-[#2b1720]/95 p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)]">
+              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)]">
                 {previewError}
               </pre>
             ) : null}

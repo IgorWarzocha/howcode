@@ -64,7 +64,7 @@ export function ThreadTimelineRow({
           className="group flex w-full items-center justify-center py-1 text-[13px] text-[color:var(--muted-2)]"
           onClick={onJumpToEarlierMessages}
         >
-          <span className="rounded-[12px] px-3 py-1 transition-colors group-hover:bg-[rgba(255,255,255,0.03)] group-focus-visible:bg-[rgba(255,255,255,0.03)]">
+          <span className="rounded-[12px] px-3 py-1 transition-colors group-hover:bg-[color:var(--surface-hover)] group-focus-visible:bg-[color:var(--surface-hover)]">
             {row.hiddenCount} earlier messages
           </span>
         </button>
@@ -167,7 +167,7 @@ export function ThreadTimelineRow({
         >
           <div className="grid min-w-0 gap-3">
             {showCompactionDivider ? (
-              <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+              <div className="h-px w-full bg-[color:var(--border-strong)]" />
             ) : null}
             <FoldedTimelineRow
               label={summaryLabel}
@@ -189,7 +189,7 @@ export function ThreadTimelineRow({
       >
         <div className="grid min-w-0 gap-3">
           {showCompactionDivider ? (
-            <div className="h-px w-full bg-[rgba(161,173,221,0.14)]" />
+            <div className="h-px w-full bg-[color:var(--border-strong)]" />
           ) : null}
           <RowLeadToggleSurface onToggle={() => onToggleRowCollapse(row.id)}>
             <ThreadMessage message={row.message} />
