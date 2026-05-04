@@ -45,7 +45,12 @@ export function SettingRow({
       {showHelp ? (
         title
       ) : (
-        <Tooltip content={setting.description} delayMs={1000} className="block min-w-0">
+        <Tooltip
+          content={setting.description}
+          delayMs={1000}
+          className="block min-w-0"
+          tabIndex={0}
+        >
           {title}
         </Tooltip>
       )}

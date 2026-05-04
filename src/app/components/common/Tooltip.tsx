@@ -29,6 +29,10 @@ export function Tooltip({
   contentClassName,
   delayMs = 0,
   children,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
   ...anchorProps
 }: TooltipProps) {
   const [open, setOpen] = useState(false);
@@ -132,10 +136,22 @@ export function Tooltip({
       {...anchorProps}
       ref={anchorRef}
       className={cn("tooltip-anchor", className)}
-      onMouseEnter={showTooltip}
-      onMouseLeave={hideTooltip}
-      onFocus={showTooltip}
-      onBlur={hideTooltip}
+      onMouseEnter={(event) => {
+        onMouseEnter?.(event);
+        showTooltip();
+      }}
+      onMouseLeave={(event) => {
+        onMouseLeave?.(event);
+        hideTooltip();
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+        showTooltip();
+      }}
+      onBlur={(event) => {
+        onBlur?.(event);
+        hideTooltip();
+      }}
       aria-describedby={open ? tooltipId : undefined}
     >
       {children}

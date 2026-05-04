@@ -198,7 +198,6 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 
 .tooltip-anchor {
   position: relative;
-  display: inline-flex;
   min-width: 0;
 }
 
