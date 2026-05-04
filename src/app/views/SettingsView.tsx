@@ -24,7 +24,8 @@ import {
 import type { SettingsCategoryId } from "./settings/settingsTypes";
 import { buildSettingsDescriptors } from "./settings/settingsDescriptors";
 import { settingsHelpRowClass } from "./settings/settingsClasses";
-import { SettingRow, normalizeManagedDictationModelId } from "./settings/settingsUi";
+import { normalizeManagedDictationModelId } from "./settings/settingsDictationHelpers";
+import { SettingRow } from "./settings/settingsUi";
 
 type SettingsViewProps = {
   appSettings: AppSettings;
@@ -426,7 +427,7 @@ export function SettingsView({
                   </div>
                   <div className="grid">
                     {group.settings.map((setting) => (
-                      <SettingRow key={setting.id} setting={setting} />
+                      <SettingRow key={setting.id} setting={setting} showHelp={showHelp} />
                     ))}
                   </div>
                 </section>

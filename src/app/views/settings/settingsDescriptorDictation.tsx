@@ -8,8 +8,9 @@ import type { AppSettings, DictationModelId } from "../../desktop/types";
 import { ActivitySpinner } from "../../components/common/ActivitySpinner";
 import { composerTextActionButtonClass, settingsInputClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+import { normalizeManagedDictationModelId } from "./settingsDictationHelpers";
 import type { SettingDescriptor } from "./settingsTypes";
-import { InlineSelect, ToggleBox, normalizeManagedDictationModelId } from "./settingsUi";
+import { InlineSelect, ToggleBox } from "./settingsUi";
 import type { SettingsController } from "./settingsDescriptorTypes";
 
 export function buildDictationSettingsDescriptors({

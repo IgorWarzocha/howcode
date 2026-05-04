@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DictationModelId } from "../../desktop/types";
+import { Tooltip } from "../../components/common/Tooltip";
 import { popoverPanelClass, composerTextActionButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import { settingRowClass } from "./settingsClasses";
@@ -28,21 +28,35 @@ export function ToggleBox({
   );
 }
 
-export function SettingRow({ setting }: { setting: SettingDescriptor }) {
+export function SettingRow({
+  setting,
+  showHelp,
+}: { setting: SettingDescriptor; showHelp: boolean }) {
+  const title = (
+    <div className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{setting.title}</div>
+  );
+  const control = <div className="min-w-0 max-w-full">{setting.render()}</div>;
+
   return (
     <div className={settingRowClass} data-setting-id={setting.id}>
-      <div
-        className="min-w-0 truncate text-[12px] text-[color:var(--text)]"
-        data-setting-tooltip={setting.description}
-      >
-        {setting.title}
-      </div>
-      <div
-        className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end"
-        data-setting-tooltip={setting.description}
-      >
-        {setting.render()}
-      </div>
+      {showHelp ? (
+        title
+      ) : (
+        <Tooltip content={setting.description} delayMs={1000} className="block min-w-0">
+          {title}
+        </Tooltip>
+      )}
+      {showHelp ? (
+        <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">{control}</div>
+      ) : (
+        <Tooltip
+          content={setting.description}
+          delayMs={1000}
+          className="block min-w-0 max-w-full justify-self-stretch sm:justify-self-end"
+        >
+          {control}
+        </Tooltip>
+      )}
     </div>
   );
 }
@@ -191,10 +205,4 @@ export function InlineSelect({
       ) : null}
     </span>
   );
-}
-
-export function normalizeManagedDictationModelId(
-  modelId: string | null | undefined,
-): DictationModelId | null {
-  return modelId === "tiny.en" || modelId === "base.en" || modelId === "small.en" ? modelId : null;
 }
