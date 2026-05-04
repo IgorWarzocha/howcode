@@ -20,6 +20,7 @@ type AppShellWorkspaceProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
   sidebarAutoHidden: boolean;
+  sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -38,6 +39,7 @@ export function AppShellWorkspace({
   onSetDiffRenderMode,
   sidebarCollapsed,
   sidebarAutoHidden,
+  sidebarCompactMode,
   onToggleSidebar,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
@@ -56,6 +58,7 @@ export function AppShellWorkspace({
         onSetDiffRenderMode={onSetDiffRenderMode}
         sidebarCollapsed={sidebarCollapsed}
         sidebarAutoHidden={sidebarAutoHidden}
+        sidebarCompactMode={sidebarCompactMode}
         onToggleSidebar={onToggleSidebar}
       />
     );
@@ -87,6 +90,7 @@ export function AppShellWorkspace({
       onSetDiffRenderMode={onSetDiffRenderMode}
       sidebarCollapsed={sidebarCollapsed}
       sidebarAutoHidden={sidebarAutoHidden}
+      sidebarCompactMode={sidebarCompactMode}
       onToggleSidebar={onToggleSidebar}
     />
   );

@@ -33,6 +33,7 @@ type CodeWorkspaceViewProps = {
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
   sidebarAutoHidden: boolean;
+  sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -60,6 +61,7 @@ export function CodeWorkspaceView({
   onSetDiffRenderMode,
   sidebarCollapsed,
   sidebarAutoHidden,
+  sidebarCompactMode,
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
@@ -265,6 +267,7 @@ export function CodeWorkspaceView({
                 onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
                 onSelectProject={controller.handleProjectSelect}
                 sidebarCollapsed={sidebarCollapsed}
+                sidebarCompactMode={sidebarCompactMode}
                 onToggleSidebar={onToggleSidebar}
               />
             )}
@@ -288,7 +291,8 @@ export function CodeWorkspaceView({
               compactControls={sidebarAutoHidden}
               left={
                 (state.activeView === "thread" || state.activeView === "gitops") &&
-                !state.takeoverVisible ? (
+                !state.takeoverVisible &&
+                !sidebarCompactMode ? (
                   <button
                     type="button"
                     className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
