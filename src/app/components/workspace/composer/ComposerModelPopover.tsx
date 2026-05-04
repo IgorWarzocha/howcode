@@ -42,8 +42,8 @@ function TriggerButton({
       type="button"
       className={cn(
         toolbarButtonClass,
-        "grid w-full gap-0.5 rounded-xl px-2.5 py-2 text-left hover:bg-[rgba(255,255,255,0.045)]",
-        active && "bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]",
+        "grid w-full gap-0.5 rounded-xl px-2.5 py-2 text-left hover:bg-[color:var(--surface-hover)]",
+        active && "bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]",
       )}
       onClick={onClick}
     >
@@ -69,7 +69,7 @@ function MenuList({ items }: { items: MenuOption[] }) {
             className={cn(
               menuOptionClass,
               "mr-1 text-[12px] text-[color:var(--text)]",
-              item.selected && "bg-[rgba(255,255,255,0.06)]",
+              item.selected && "bg-[color:var(--accent-bg-subtle)]",
             )}
             onClick={item.onSelect}
           >
@@ -213,7 +213,7 @@ export function ComposerModelPopover({
       ref={panelRef}
       id="composer-model-menu"
       className={cn(
-        "absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px] shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+        "absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px]",
         popoverPanelClass,
       )}
     >
@@ -227,7 +227,7 @@ export function ComposerModelPopover({
             ref={modelSearchRef}
             value={modelSearch}
             onChange={(event) => setModelSearch(event.currentTarget.value)}
-            className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="h-8 w-full rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--panel-2)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
             placeholder={`Search ${modelsForProvider.length} models…`}
             aria-label="Search models"
           />
@@ -236,7 +236,7 @@ export function ComposerModelPopover({
       {openMenuItems.length > 0 ? (
         <>
           <MenuList items={openMenuItems} />
-          <div className="mx-2 mb-1 h-px bg-[rgba(169,178,215,0.08)]" />
+          <div className="mx-2 mb-1 h-px bg-[color:var(--border)]" />
         </>
       ) : showModelSearch ? (
         <div className="px-2 py-3 text-[11px] text-[color:var(--muted)]">No matching models</div>

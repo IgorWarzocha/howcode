@@ -22,7 +22,7 @@ type ThreadTimelineProps = {
 };
 
 const timelineQuickActionButtonClass =
-  "pointer-events-auto h-6 w-6 shrink-0 rounded-full bg-[rgba(146,153,184,0.22)] hover:bg-[rgba(146,153,184,0.32)] disabled:cursor-not-allowed disabled:opacity-45";
+  "pointer-events-auto h-6 w-6 shrink-0 rounded-full bg-[color:var(--panel-2)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-45";
 
 export function ThreadTimeline({
   messages,
@@ -313,9 +313,9 @@ export function ThreadTimeline({
       </div>
       {isCompacting ? (
         <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 flex justify-center">
-          <div className="rounded-full border border-[rgba(155,183,255,0.18)] bg-[color:var(--panel)] px-3 py-2 text-[13px] text-[#cbd7ff] shadow-[0_18px_44px_rgba(0,0,0,0.36)]">
+          <div className="rounded-full border border-[color:var(--accent-border)] bg-[color:var(--panel)] px-3 py-2 text-[13px] text-[color:var(--accent)] shadow-[var(--shadow)]">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#9bb7ff]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[color:var(--accent)]" />
               <span>Compacting session context…</span>
             </div>
           </div>

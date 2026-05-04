@@ -439,7 +439,7 @@ export function InboxComposer({
                     <Paperclip size={16} />
                   </span>
                   {attachments.length > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg-subtle)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
                       {attachments.length}
                     </span>
                   ) : null}
@@ -604,7 +604,7 @@ export function InboxComposer({
         </output>
       ) : null}
 
-      <div className="h-px bg-[rgba(169,178,215,0.07)]" />
+      <div className="h-px bg-[color:var(--border)]" />
 
       <div className="flex items-center justify-end gap-1.5 px-4 pt-2 pb-3 text-[color:var(--muted)] max-md:flex-wrap">
         <div className="relative mr-auto inline-flex h-7 items-center">
