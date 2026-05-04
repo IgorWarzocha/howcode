@@ -3,13 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictationModelId } from "../../desktop/types";
 import { popoverPanelClass, composerTextActionButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+import { settingRowClass } from "./settingsClasses";
 import type { InlineSelectOption, SettingDescriptor } from "./settingsTypes";
-
-export const settingRowClass =
-  "grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5";
-
-export const settingsHelpRowClass =
-  "grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-transparent px-1 py-1.5 text-[12px] leading-5 text-[color:var(--muted)] last:border-b-0 sm:grid-cols-1 sm:gap-0";
 
 export function ToggleBox({
   checked,
@@ -37,7 +32,7 @@ export function SettingRow({ setting }: { setting: SettingDescriptor }) {
   return (
     <div className={settingRowClass} data-setting-id={setting.id}>
       <div
-        className="min-w-0 truncate text-[13px] text-[color:var(--text)]"
+        className="min-w-0 truncate text-[12px] text-[color:var(--text)]"
         data-setting-tooltip={setting.description}
       >
         {setting.title}
@@ -102,7 +97,7 @@ export function InlineSelect({
 
   return (
     <span
-      className={cn("relative block max-w-full text-[13px]", className, "w-52")}
+      className={cn("relative block max-w-full text-[12px]", className, "w-52")}
       data-inline-select-root
     >
       <button
@@ -122,7 +117,7 @@ export function InlineSelect({
         aria-expanded={open}
         aria-controls={`${id}-menu`}
       >
-        <span className="min-w-0 truncate text-[13px] text-[color:var(--text)]">
+        <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">
           {selectedOption?.label ?? "Select"}
         </span>
       </button>
@@ -154,7 +149,7 @@ export function InlineSelect({
                 ref={searchInputRef}
                 value={search}
                 onChange={(event) => setSearch(event.currentTarget.value)}
-                className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
                 placeholder={`Search ${options.length} options…`}
                 aria-label="Search options"
               />
@@ -179,7 +174,7 @@ export function InlineSelect({
                   }}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] leading-4">{option.label}</span>
+                    <span className="block truncate text-[12px] leading-4">{option.label}</span>
                     {option.description ? (
                       <span className="block truncate text-[11px] leading-3 text-[color:var(--muted)]">
                         {option.description}

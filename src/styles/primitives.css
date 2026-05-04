@@ -163,6 +163,11 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   transform: translate(-2px, -50%);
 }
 
+.settings-control-text {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
 [data-setting-tooltip] {
   position: relative;
 }

@@ -23,11 +23,8 @@ import {
 } from "./settings/settingsGroups";
 import type { SettingsCategoryId } from "./settings/settingsTypes";
 import { buildSettingsDescriptors } from "./settings/settingsDescriptors";
-import {
-  SettingRow,
-  normalizeManagedDictationModelId,
-  settingsHelpRowClass,
-} from "./settings/settingsUi";
+import { settingsHelpRowClass } from "./settings/settingsClasses";
+import { SettingRow, normalizeManagedDictationModelId } from "./settings/settingsUi";
 
 type SettingsViewProps = {
   appSettings: AppSettings;
@@ -422,7 +419,7 @@ export function SettingsView({
             visibleGroups.map((group) => (
               <Fragment key={group.id}>
                 <section className={cn(settingsSectionClass, "min-w-0 gap-1 p-2.5")}>
-                  <div className="flex items-baseline justify-between gap-3 px-1 pb-1">
+                  <div className="flex items-baseline justify-between gap-3 px-1 pt-1 pb-1">
                     <h2 className="text-[15px] font-semibold text-[color:var(--text)]">
                       {group.label}
                     </h2>
@@ -436,7 +433,7 @@ export function SettingsView({
                 {showHelp ? (
                   <aside className="hidden min-w-0 content-start gap-1 rounded-[18px] border border-transparent p-2.5 lg:grid">
                     <div
-                      className="flex items-baseline justify-between gap-3 px-1 pb-1"
+                      className="flex items-baseline justify-between gap-3 px-1 pt-1 pb-1"
                       aria-hidden="true"
                     >
                       <h2 className="invisible text-[15px] font-semibold">{group.label}</h2>
