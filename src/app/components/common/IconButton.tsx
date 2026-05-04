@@ -8,7 +8,7 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">
   icon: ReactNode;
   active?: boolean;
   tooltip?: string | null;
-  tooltipPlacement?: "top" | "right";
+  tooltipPlacement?: "top" | "right" | "left";
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(

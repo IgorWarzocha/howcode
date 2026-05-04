@@ -41,6 +41,7 @@ export function ViewHeader({
               onClick={onClose}
               aria-label={closeLabel}
               data-tooltip={closeLabel}
+              data-tooltip-placement="left"
             >
               <X size={14} />
             </button>

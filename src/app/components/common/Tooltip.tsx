@@ -12,7 +12,7 @@ import { cn } from "../../utils/cn";
 
 type TooltipProps = PropsWithChildren<{
   content: ReactNode;
-  placement?: "top" | "right";
+  placement?: "top" | "right" | "left";
   className?: string;
   contentClassName?: string;
 }>;
@@ -28,6 +28,7 @@ export function Tooltip({
   const present = useAnimatedPresence(open, 120);
   const tooltipId = useId();
   const anchorRef = useRef<HTMLSpanElement>(null);
+  const contentRef = useRef<HTMLSpanElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const [positionReady, setPositionReady] = useState(false);
 
@@ -39,22 +40,35 @@ export function Tooltip({
 
     const updatePosition = () => {
       const rect = anchorRef.current?.getBoundingClientRect();
+      const tooltipRect = contentRef.current?.getBoundingClientRect();
       if (!rect) {
         return;
       }
 
       const viewportPadding = 12;
-      const left =
-        placement === "right"
-          ? Math.min(window.innerWidth - viewportPadding, rect.right + 10)
-          : Math.min(
-              window.innerWidth - viewportPadding,
-              Math.max(viewportPadding, rect.left + rect.width / 2),
-            );
+      const tooltipWidth = tooltipRect?.width ?? 0;
+      const centeredLeft = rect.left + rect.width / 2;
+      const minCenteredLeft =
+        tooltipWidth > 0 ? viewportPadding + tooltipWidth / 2 : viewportPadding;
+      const maxCenteredLeft =
+        tooltipWidth > 0
+          ? window.innerWidth - viewportPadding - tooltipWidth / 2
+          : window.innerWidth - viewportPadding;
+      const left = (() => {
+        if (placement === "right") {
+          return Math.min(window.innerWidth - viewportPadding - tooltipWidth, rect.right + 10);
+        }
+        if (placement === "left") {
+          return Math.max(viewportPadding + tooltipWidth, rect.left - 10);
+        }
+
+        return Math.min(maxCenteredLeft, Math.max(minCenteredLeft, centeredLeft));
+      })();
 
       setPosition({
         left,
-        top: placement === "right" ? rect.top + rect.height / 2 : rect.top - 8,
+        top:
+          placement === "right" || placement === "left" ? rect.top + rect.height / 2 : rect.top - 8,
       });
       setPositionReady(true);
     };
@@ -83,6 +97,7 @@ export function Tooltip({
       {present
         ? createPortal(
             <span
+              ref={contentRef}
               id={tooltipId}
               role="tooltip"
               data-open={open ? "true" : "false"}

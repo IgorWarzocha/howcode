@@ -155,6 +155,7 @@ export function ArtifactPanel({
             disabled={!selectedArtifact}
             aria-label="Download artifact"
             data-tooltip="Download"
+            data-tooltip-placement="left"
           >
             <Download size={14} />
           </button>
@@ -168,6 +169,7 @@ export function ArtifactPanel({
             aria-label={fullscreen ? "Exit artifact fullscreen" : "Artifact fullscreen"}
             onClick={onToggleFullscreen}
             data-tooltip={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            data-tooltip-placement="left"
           >
             {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
@@ -177,6 +179,7 @@ export function ArtifactPanel({
             aria-label="Hide artifacts"
             onClick={onClose}
             data-tooltip="Hide artifacts"
+            data-tooltip-placement="left"
           >
             <PanelRightClose size={14} />
           </button>

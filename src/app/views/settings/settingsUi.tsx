@@ -18,6 +18,7 @@ export function ToggleBox({
       aria-label={label}
       aria-pressed={checked}
       data-tooltip={label}
+      data-tooltip-placement="left"
     >
       {checked ? <Check size={13} /> : null}
     </button>

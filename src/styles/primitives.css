@@ -104,7 +104,7 @@ button[data-tooltip]::after {
   position: absolute;
   top: -8px;
   left: 50%;
-  z-index: 120;
+  z-index: 1000;
   width: max-content;
   max-width: 180px;
   transform: translate(-50%, calc(-100% + 4px));
@@ -132,6 +132,37 @@ button[data-tooltip][aria-disabled="true"]::after {
   display: none;
 }
 
+button[data-tooltip][data-tooltip-align="start"]::after {
+  left: 0;
+  transform: translate(0, calc(-100% + 4px));
+}
+
+button[data-tooltip][data-tooltip-align="start"]:is(:hover, :focus-visible)::after {
+  transform: translate(0, calc(-100% - 2px));
+}
+
+button[data-tooltip][data-tooltip-placement="right"]::after {
+  top: 50%;
+  right: auto;
+  left: calc(100% + 8px);
+  transform: translate(-4px, -50%);
+}
+
+button[data-tooltip][data-tooltip-placement="right"]:is(:hover, :focus-visible)::after {
+  transform: translate(2px, -50%);
+}
+
+button[data-tooltip][data-tooltip-placement="left"]::after {
+  top: 50%;
+  right: calc(100% + 8px);
+  left: auto;
+  transform: translate(4px, -50%);
+}
+
+button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::after {
+  transform: translate(-2px, -50%);
+}
+
 .tooltip-anchor {
   position: relative;
   display: inline-flex;
@@ -141,7 +172,7 @@ button[data-tooltip][aria-disabled="true"]::after {
 .tooltip-content {
   pointer-events: none;
   position: fixed;
-  z-index: 120;
+  z-index: 1000;
   width: max-content;
   max-width: 360px;
   border: 1px solid var(--border-strong);
@@ -173,6 +204,15 @@ button[data-tooltip][aria-disabled="true"]::after {
 
 .tooltip-content[data-placement="right"][data-open="true"][data-ready="true"] {
   transform: translate(2px, -50%);
+  opacity: 1;
+}
+
+.tooltip-content[data-placement="left"] {
+  transform: translate(calc(-100% + 4px), -50%);
+}
+
+.tooltip-content[data-placement="left"][data-open="true"][data-ready="true"] {
+  transform: translate(calc(-100% - 2px), -50%);
   opacity: 1;
 }
 

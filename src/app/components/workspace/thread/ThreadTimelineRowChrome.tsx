@@ -111,6 +111,7 @@ export function TimelineRowShell({
           aria-expanded={expanded}
           aria-label={ariaLabel}
           data-tooltip={ariaLabel}
+          data-tooltip-align="start"
         >
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
