@@ -539,26 +539,28 @@ export function ComposerPromptSurface({
         </div>
       </div>
 
-      <div
-        ref={stopButtonBoundaryRef}
-        className="mb-[3.55rem] inline-flex h-8 shrink-0 items-center justify-end text-[color:var(--muted)]"
-      >
-        <button
-          type="button"
-          className={cn(
-            compactIconButtonClass,
-            "h-7 w-7 shrink-0 rounded-full text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]",
-            canStopComposer
-              ? "bg-[color:var(--danger-bg)] opacity-80"
-              : "bg-transparent opacity-25 hover:opacity-45",
-          )}
-          onClick={() => void stop()}
-          disabled={!canStopComposer}
-          aria-label="Stop Pi"
-          data-tooltip="Stop Pi"
+      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+        <div
+          ref={stopButtonBoundaryRef}
+          className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center"
         >
-          <Square size={11} fill="currentColor" />
-        </button>
+          <button
+            type="button"
+            className={cn(
+              compactIconButtonClass,
+              "h-7 w-7 shrink-0 rounded-full text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]",
+              canStopComposer
+                ? "bg-[color:var(--danger-bg)] opacity-80"
+                : "bg-transparent opacity-25 hover:opacity-45",
+            )}
+            onClick={() => void stop()}
+            disabled={!canStopComposer}
+            aria-label="Stop Pi"
+            data-tooltip="Stop Pi"
+          >
+            <Square size={11} fill="currentColor" />
+          </button>
+        </div>
       </div>
     </div>
   );

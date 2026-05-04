@@ -22,6 +22,9 @@ export function WorkspaceComposerDock({
   const leftStyle = {
     transform: "translateX(max(0px, calc(3.75rem - var(--dock-left-lane))))",
   } as CSSProperties;
+  const rightStyle = {
+    transform: "translateX(min(0px, calc(var(--dock-left-lane) - 3.75rem)))",
+  } as CSSProperties;
 
   return (
     <div
@@ -41,7 +44,15 @@ export function WorkspaceComposerDock({
       ) : null}
       <div className="relative col-start-2 w-full">{center}</div>
       {right ? (
-        <div className={cn("col-start-3 mb-1.5 min-w-0 self-end", rightClassName)}>{right}</div>
+        <div
+          className={cn(
+            "col-start-3 mb-1.5 min-w-0 self-end transition-transform duration-100 ease-out",
+            rightClassName,
+          )}
+          style={rightStyle}
+        >
+          {right}
+        </div>
       ) : null}
     </div>
   );

@@ -434,7 +434,9 @@ export function CodeWorkspaceView({
                 )
               }
               rightClassName={cn(
-                state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
+                state.activeView === "gitops"
+                  ? "opacity-100"
+                  : "opacity-0 min-[1400px]:opacity-100",
               )}
               right={
                 state.activeView === "gitops" && !state.takeoverVisible ? (
