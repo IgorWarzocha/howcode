@@ -257,6 +257,21 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   container-type: inline-size;
 }
 
+.composer-expand-button {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.composer-expand-button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.composer-textarea-scroll-above-button::-webkit-scrollbar-track {
+  margin-bottom: 1.25rem;
+}
+
 @container (max-width: 38rem) {
   .composer-diff-summary {
     display: none;

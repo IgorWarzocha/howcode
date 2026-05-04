@@ -9,8 +9,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { cn } from "../../../utils/cn";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { useHoverToFocus } from "../../../hooks/useHoverToFocus";
+import { compactIconButtonClass } from "../../../ui/classes";
+import { cn } from "../../../utils/cn";
+
+const COLLAPSED_VISIBLE_LINE_COUNT = 5;
+const EXPANDED_VISIBLE_LINE_COUNT = 15;
 
 type ComposerTextFieldProps = {
   value: string;
@@ -72,6 +77,8 @@ export function ComposerTextField({
     top: number;
   } | null>(null);
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null);
+  const [fieldExpanded, setFieldExpanded] = useState(false);
+  const [canExpandField, setCanExpandField] = useState(false);
   const lineHeightRef = useRef(20);
 
   const focusTextareaAtEnd = useCallback(() => {
@@ -105,9 +112,24 @@ export function ComposerTextField({
     const reservedHeight = Math.ceil(lineHeight * reservedLineCount);
     setReservedHeight((current) => (current === reservedHeight ? current : reservedHeight));
 
+    const maxVisibleLineCount = fieldExpanded
+      ? EXPANDED_VISIBLE_LINE_COUNT
+      : COLLAPSED_VISIBLE_LINE_COUNT;
+    const maxVisibleHeight = Math.ceil(lineHeight * maxVisibleLineCount);
+
     textarea.style.height = "0px";
-    const nextHeight = Math.max(textarea.scrollHeight, 24);
+    const scrollHeight = Math.max(textarea.scrollHeight, 24);
+    const nextHeight = Math.min(scrollHeight, Math.max(maxVisibleHeight, 24));
     textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = scrollHeight > nextHeight + 1 ? "auto" : "hidden";
+
+    const nextCanExpandField =
+      scrollHeight > Math.ceil(lineHeight * COLLAPSED_VISIBLE_LINE_COUNT) + 1;
+    setCanExpandField((current) => (current === nextCanExpandField ? current : nextCanExpandField));
+    if (!nextCanExpandField && fieldExpanded) {
+      setFieldExpanded(false);
+    }
+
     window.requestAnimationFrame(() => {
       const reportedHeight = wrapperRef.current?.getBoundingClientRect().height ?? nextHeight;
       if (lastReportedHeightRef.current !== reportedHeight) {
@@ -121,7 +143,7 @@ export function ComposerTextField({
     if (value.length === 0) {
       textarea.scrollTop = 0;
     }
-  }, [onExpandedChange, onHeightChange, reservedLineCount, value]);
+  }, [fieldExpanded, onExpandedChange, onHeightChange, reservedLineCount, value]);
 
   useEffect(() => {
     const height = wrapperRef.current?.getBoundingClientRect().height;
@@ -184,7 +206,12 @@ export function ComposerTextField({
       const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth;
       const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap;
       const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5);
-      const nextContainerHeight = Math.max(textarea.scrollHeight, nextTop + lineHeight);
+      const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1;
+      const maxContainerHeight = textarea.offsetHeight + (canGrowForAdornment ? lineHeight : 0);
+      const nextContainerHeight = Math.min(
+        maxContainerHeight,
+        Math.max(textarea.offsetHeight, nextTop + lineHeight),
+      );
 
       setTrailingAdornmentPosition((current) =>
         current?.left === nextLeft && current.top === nextTop
@@ -234,7 +261,9 @@ export function ComposerTextField({
           ref={textareaRef}
           rows={1}
           className={cn(
-            "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150",
+            "m-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]",
+            canExpandField &&
+              "composer-textarea-scroll-above-button relative left-[0.25rem] w-[calc(100%-0.25rem)]",
             readOnly && "cursor-wait opacity-45",
             placeholderTone === "error"
               ? "placeholder:text-[color:var(--danger)]"
@@ -257,6 +286,30 @@ export function ComposerTextField({
           placeholder={placeholder}
           readOnly={readOnly}
         />
+        {canExpandField ? (
+          <div className="pointer-events-none absolute right-[-0.875rem] bottom-0 z-20 flex h-7 items-center justify-end">
+            <button
+              type="button"
+              className={cn(
+                compactIconButtonClass,
+                "composer-expand-button pointer-events-auto h-7 w-7 shrink-0",
+              )}
+              aria-label={fieldExpanded ? "Collapse composer" : "Expand composer"}
+              aria-pressed={fieldExpanded}
+              data-tooltip={fieldExpanded ? "Collapse composer" : "Expand composer"}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                setFieldExpanded((current) => !current);
+              }}
+            >
+              {fieldExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            </button>
+          </div>
+        ) : null}
         {trailingAdornment && trailingAdornmentPosition ? (
           <span
             className="absolute z-10 inline-flex items-center"
