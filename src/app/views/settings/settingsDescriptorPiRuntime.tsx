@@ -136,8 +136,8 @@ export function buildPiRuntimeSettingsDescriptors({
       title: key === "steeringMode" ? "Steering mode" : "Follow-up mode",
       description:
         key === "steeringMode"
-          ? "Advanced Pi queue-drain behavior after steering messages are already queued."
-          : "Advanced Pi queue-drain behavior after follow-up messages are already queued.",
+          ? "Send one queued steer, or drain them all."
+          : "Send one queued follow-up, or drain them all.",
       keywords: "queue drain steering follow-up mode runtime advanced",
       render: () => (
         <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
@@ -163,17 +163,9 @@ export function buildPiRuntimeSettingsDescriptors({
     })),
     ...(
       [
-        [
-          "autoResizeImages",
-          "Auto resize images",
-          "Resize images before sending them to providers for better compatibility.",
-        ],
-        ["blockImages", "Block images", "Prevent images from being sent to model providers."],
-        [
-          "enableInstallTelemetry",
-          "Install telemetry",
-          "Allow Pi's anonymous package update/version ping.",
-        ],
+        ["autoResizeImages", "Auto resize images", "Shrink images before upload."],
+        ["blockImages", "Block images", "Never send images to providers."],
+        ["enableInstallTelemetry", "Install telemetry", "Anonymous Pi version check."],
       ] as const
     ).map(([key, title, description]) => ({
       id: `pi-runtime.${key}`,
@@ -191,29 +183,13 @@ export function buildPiRuntimeSettingsDescriptors({
     })),
     ...(
       [
-        [
-          "doubleEscapeAction",
-          "Double Escape",
-          "Pi TUI action for double Escape on an empty editor.",
-        ],
-        ["showImages", "Show images", "Render supported image attachments in capable terminals."],
-        [
-          "hideThinkingBlock",
-          "Hide thinking blocks",
-          "Collapse model reasoning blocks in Pi TUI conversation output.",
-        ],
-        [
-          "showHardwareCursor",
-          "Hardware cursor",
-          "Show the terminal cursor while Pi still positions it for IME input.",
-        ],
-        [
-          "clearOnShrink",
-          "Clear on shrink",
-          "Clear empty terminal rows when rendered content shrinks.",
-        ],
-        ["quietStartup", "Quiet startup", "Reduce startup resource diagnostics in Pi TUI."],
-        ["collapseChangelog", "Condense changelog", "Show a shorter changelog after Pi updates."],
+        ["doubleEscapeAction", "Double Escape", "Double Escape in an empty editor."],
+        ["showImages", "Show images", "Show images in supported terminals."],
+        ["hideThinkingBlock", "Hide thinking blocks", "Hide reasoning blocks in TUI output."],
+        ["showHardwareCursor", "Hardware cursor", "Show the native terminal cursor."],
+        ["clearOnShrink", "Clear on shrink", "Clear stale rows after resize."],
+        ["quietStartup", "Quiet startup", "Hide startup diagnostics."],
+        ["collapseChangelog", "Condense changelog", "Show a shorter update changelog."],
       ] as const
     ).map(([key, title, description]) => ({
       id: `pi-tui.${key}`,
@@ -274,21 +250,9 @@ export function buildPiRuntimeSettingsDescriptors({
     })),
     ...(
       [
-        [
-          "imageWidthCells",
-          "Image width",
-          "Preferred inline image width in terminal cells.",
-          1,
-          200,
-        ],
-        ["editorPaddingX", "Editor padding", "Horizontal Pi TUI editor padding.", 0, 3],
-        [
-          "autocompleteMaxVisible",
-          "Autocomplete rows",
-          "Maximum visible Pi TUI autocomplete results.",
-          3,
-          20,
-        ],
+        ["imageWidthCells", "Image width", "Inline image width in terminal cells.", 1, 200],
+        ["editorPaddingX", "Editor padding", "Horizontal editor padding.", 0, 3],
+        ["autocompleteMaxVisible", "Autocomplete rows", "Visible autocomplete rows.", 3, 20],
       ] as const
     ).map(([key, title, description, min, max]) => ({
       id: `pi-tui.${key}`,

@@ -227,8 +227,10 @@ export function SettingsView({
     activeCategory,
   });
   const visibleGroups = groupSettingsByCategory({ settings: filteredSettings });
+  const visibleSettingIds = filteredSettings.map((setting) => setting.id).join("|");
 
   useLayoutEffect(() => {
+    void visibleSettingIds;
     if (!showHelp || !settingsScrollRef.current || typeof ResizeObserver === "undefined") {
       setSettingRowHeights((current) => (Object.keys(current).length === 0 ? current : {}));
       return;
@@ -266,7 +268,7 @@ export function SettingsView({
         window.cancelAnimationFrame(frameId);
       }
     };
-  });
+  }, [showHelp, visibleSettingIds]);
 
   return (
     <ViewShell

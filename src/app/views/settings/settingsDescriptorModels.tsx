@@ -171,16 +171,28 @@ export function buildModelSettingsDescriptors({
     selectThinkingLevel: (value: ComposerThinkingLevel | null) => void,
     allowDefaultThinking = false,
   ) => (
-    <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3">
-      {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
-      {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
-      {renderThinkingSelector(
-        `${idPrefix}-thinking`,
-        thinkingLevel,
-        getWorkflowThinkingLevels(selection),
-        selectThinkingLevel,
-        allowDefaultThinking,
-      )}
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 xl:w-auto xl:grid-cols-3 xl:[--settings-model-select-width:10.4rem]">
+      <div className="min-w-0">
+        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+          {buildProviderOptions(`${idPrefix}-provider`, selection, selectModel)}
+        </div>
+      </div>
+      <div className="min-w-0">
+        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+          {buildModelOptions(`${idPrefix}-model`, selection, selectModel)}
+        </div>
+      </div>
+      <div className="min-w-0">
+        <div className="[&_[data-inline-select-root]]:w-full xl:[&_[data-inline-select-root]]:w-[var(--settings-model-select-width)]">
+          {renderThinkingSelector(
+            `${idPrefix}-thinking`,
+            thinkingLevel,
+            getWorkflowThinkingLevels(selection),
+            selectThinkingLevel,
+            allowDefaultThinking,
+          )}
+        </div>
+      </div>
     </div>
   );
 

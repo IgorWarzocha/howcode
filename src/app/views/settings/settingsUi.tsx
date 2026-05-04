@@ -31,7 +31,10 @@ export function ToggleBox({
 export function SettingRow({
   setting,
   showHelp,
-}: { setting: SettingDescriptor; showHelp: boolean }) {
+}: {
+  setting: SettingDescriptor;
+  showHelp: boolean;
+}) {
   const title = (
     <div className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{setting.title}</div>
   );
@@ -46,17 +49,7 @@ export function SettingRow({
           {title}
         </Tooltip>
       )}
-      {showHelp ? (
-        <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">{control}</div>
-      ) : (
-        <Tooltip
-          content={setting.description}
-          delayMs={1000}
-          className="block min-w-0 max-w-full justify-self-stretch sm:justify-self-end"
-        >
-          {control}
-        </Tooltip>
-      )}
+      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">{control}</div>
     </div>
   );
 }
@@ -111,7 +104,7 @@ export function InlineSelect({
 
   return (
     <span
-      className={cn("relative block max-w-full text-[12px]", className, "w-52")}
+      className={cn("relative block w-52 max-w-full text-[12px]", className)}
       data-inline-select-root
     >
       <button
