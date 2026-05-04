@@ -9,6 +9,7 @@ import type {
   DesktopActionInvoker,
   InboxThread,
   PiSettings,
+  PiThemeState,
   ThreadData,
 } from "../../desktop/types";
 import type { Project, View } from "../../types";
@@ -32,6 +33,7 @@ type CodeWorkspaceMainViewProps = {
   activeView: View;
   appSettings: AppSettings;
   piSettings: PiSettings;
+  piTheme: PiThemeState | null;
   archivedThreads: ArchivedThread[];
   availableModels: ComposerModel[];
   availableThinkingLevels: ComposerThinkingLevel[];
@@ -68,6 +70,7 @@ export function CodeWorkspaceMainView({
   activeView,
   appSettings,
   piSettings,
+  piTheme,
   archivedThreads,
   availableModels,
   availableThinkingLevels,
@@ -139,6 +142,7 @@ export function CodeWorkspaceMainView({
       <SettingsView
         appSettings={appSettings}
         piSettings={piSettings}
+        piTheme={piTheme}
         availableModels={availableModels}
         availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}

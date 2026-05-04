@@ -185,7 +185,7 @@ export function ChatWorkspaceView({
               >
                 <button
                   type="button"
-                  className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[rgba(169,178,215,0.1)] hover:text-[color:var(--text)] hover:opacity-100"
+                  className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
                   onClick={onToggleSidebar}
                   aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
                   data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}

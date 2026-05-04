@@ -27,7 +27,7 @@ function ModelActionButton({
       className={cn(
         composerTextActionButtonClass,
         "min-h-7 gap-1 rounded-lg px-2.5 text-[11px]",
-        primary && "border-[rgba(169,178,215,0.22)] bg-[rgba(255,255,255,0.1)]",
+        primary && "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]",
       )}
     >
       {icon}
@@ -65,7 +65,7 @@ export function SettingsDictationModelRow({
             {model.downloadSizeLabel}
           </span>
           {model.selected ? (
-            <span className="rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2 py-0.5 text-[10.5px] text-[color:var(--text)]">
+            <span className="rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-0.5 text-[10.5px] text-[color:var(--text)]">
               Selected
             </span>
           ) : null}
@@ -77,7 +77,7 @@ export function SettingsDictationModelRow({
         {model.installed ? (
           <>
             {model.selected ? (
-              <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] px-2.5 text-[11px] text-[color:var(--text)]">
+              <div className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2.5 text-[11px] text-[color:var(--text)]">
                 <Check size={11} />
                 <span>In use</span>
               </div>

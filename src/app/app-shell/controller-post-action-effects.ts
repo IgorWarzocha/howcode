@@ -82,7 +82,9 @@ export async function runPostDesktopActionEffects({
   queryClient,
 }: RunPostDesktopActionEffectsInput) {
   const invalidateInboxThreads = () =>
-    queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
+    queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.inboxThreads(),
+    });
 
   if (action === "thread.pin" || action === "thread.archive" || action === "thread.archive-many") {
     const projectId = getPayloadProjectId(contextualPayload);
@@ -108,7 +110,10 @@ export async function runPostDesktopActionEffects({
     const selectedThreadId = workspaceState.selectedThreadId;
     if (selectedThreadId && new Set(archivedThreadIds).has(selectedThreadId)) {
       dispatch({ type: "clear-thread-selection" });
-      dispatch({ type: "show-view", view: workspaceState.activeView === "chat" ? "chat" : "code" });
+      dispatch({
+        type: "show-view",
+        view: workspaceState.activeView === "chat" ? "chat" : "code",
+      });
     }
 
     await invalidateInboxThreads();
@@ -151,7 +156,10 @@ export async function runPostDesktopActionEffects({
     const selectedThreadId = workspaceState.selectedThreadId;
     if (selectedThreadId && new Set(deletedThreadIds).has(selectedThreadId)) {
       dispatch({ type: "clear-thread-selection" });
-      dispatch({ type: "show-view", view: workspaceState.activeView === "chat" ? "chat" : "code" });
+      dispatch({
+        type: "show-view",
+        view: workspaceState.activeView === "chat" ? "chat" : "code",
+      });
     }
 
     await invalidateInboxThreads();
@@ -177,6 +185,10 @@ export async function runPostDesktopActionEffects({
   }
 
   if (action === "project.refresh-repo-origin") {
+    await refreshShellState();
+  }
+
+  if (action === "pi-settings.update" && contextualPayload.piSettingsKey === "theme") {
     await refreshShellState();
   }
 
@@ -285,7 +297,11 @@ export async function runPostDesktopActionEffects({
         | {
             projects?: Array<{
               id: string;
-              threads: Array<{ id: string; sessionPath?: string | null; title?: string }>;
+              threads: Array<{
+                id: string;
+                sessionPath?: string | null;
+                title?: string;
+              }>;
             }>;
           }
         | null
@@ -360,7 +376,12 @@ export async function runPostDesktopActionEffects({
       applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
         revealProject: true,
       });
-      dispatch({ type: "open-thread", projectId: nextProjectId, threadId, sessionPath });
+      dispatch({
+        type: "open-thread",
+        projectId: nextProjectId,
+        threadId,
+        sessionPath,
+      });
       await loadProjectThreads(nextProjectId);
       applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
         revealProject: true,

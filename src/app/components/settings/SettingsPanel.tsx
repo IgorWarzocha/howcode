@@ -105,7 +105,7 @@ export function SettingsPanel({
               className={cn(
                 "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
                 !selectedModel
-                  ? "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)]"
+                  ? "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]"
                   : "border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]",
               )}
               onClick={() =>
@@ -137,7 +137,7 @@ export function SettingsPanel({
                     className={cn(
                       "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
                       isSelected
-                        ? "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)]"
+                        ? "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]"
                         : "border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]",
                     )}
                     onClick={() =>

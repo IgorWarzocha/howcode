@@ -2,18 +2,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
+import { getBundledThemes } from "../bundled-themes.cts";
 
 const piPackagePath = path.join("node_modules", "@mariozechner", "pi-coding-agent");
 
+type SessionTheme = AgentSession["resourceLoader"]["getThemes"] extends () => infer Result
+  ? Result extends { themes: Array<infer Theme> }
+    ? Theme
+    : never
+  : never;
+
 type PiThemeModule = {
   initTheme(themeName?: string, enableWatcher?: boolean): void;
-  setRegisteredThemes(
-    themes: AgentSession["resourceLoader"]["getThemes"] extends () => infer Result
-      ? Result extends { themes: infer Themes }
-        ? Themes
-        : never
-      : never,
-  ): void;
+  loadThemeFromPath(themePath: string): unknown;
+  setRegisteredThemes(themes: SessionTheme[]): void;
 };
 
 let themeModulePromise: Promise<PiThemeModule> | null = null;
@@ -52,7 +54,17 @@ async function getPiThemeModule() {
 }
 
 export async function applyHeadlessPiTheme(session: AgentSession) {
-  const { initTheme, setRegisteredThemes } = await getPiThemeModule();
-  setRegisteredThemes(session.resourceLoader.getThemes().themes);
+  const { initTheme, loadThemeFromPath, setRegisteredThemes } = await getPiThemeModule();
+  const bundledThemes: SessionTheme[] = [];
+  for (const theme of getBundledThemes()) {
+    try {
+      bundledThemes.push(loadThemeFromPath(theme.path) as SessionTheme);
+    } catch (error) {
+      console.warn(
+        `Could not load bundled theme ${theme.name}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  setRegisteredThemes([...bundledThemes, ...session.resourceLoader.getThemes().themes]);
   initTheme(session.settingsManager.getTheme(), false);
 }

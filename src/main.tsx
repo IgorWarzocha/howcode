@@ -5,6 +5,7 @@ import "@wterm/react/css";
 import "@fontsource-variable/inter";
 import "./styles.css";
 import App from "./App";
+import { applyStoredPiGuiTheme } from "./app/app-shell/usePiGuiTheme";
 import { installDevWebDesktopBridge } from "./app/dev-web-bridge";
 import { queryClient } from "./app/query/query-client";
 
@@ -14,6 +15,7 @@ if (import.meta.env.DEV) {
 }
 
 try {
+  applyStoredPiGuiTheme();
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>

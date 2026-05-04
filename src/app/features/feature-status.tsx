@@ -34,14 +34,14 @@ export function getFeatureStatusDataAttributes(statusId: FeatureStatusId) {
 
 export function getFeatureStatusAccentClass(statusId: FeatureStatusId) {
   return getFeatureStatusMeta(statusId).status === "mock"
-    ? "border-[rgba(255,110,110,0.42)] bg-[rgba(255,94,94,0.14)] text-[#ff9c9c]"
+    ? "border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] text-[color:var(--danger)]"
     : "border-[rgba(255,214,102,0.4)] bg-[rgba(255,204,102,0.14)] text-[#ffd36a]";
 }
 
 export function getFeatureStatusButtonClass(statusId: FeatureStatusId) {
   return getFeatureStatusMeta(statusId).status === "mock"
-    ? "border-[rgba(255,110,110,0.22)] text-[#ff9c9c] hover:border-[rgba(255,110,110,0.36)] hover:bg-[rgba(255,94,94,0.08)] hover:text-[#ffd1d1]"
-    : "border-[rgba(169,178,215,0.18)] text-[color:var(--muted)] hover:border-[rgba(169,178,215,0.28)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]";
+    ? "border-[color:var(--danger-border)] text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]"
+    : "border-[color:var(--border)] text-[color:var(--muted)] hover:border-[color:var(--border-strong)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[color:var(--text)]";
 }
 
 export function getFeatureStatusBadgeClass(statusId: FeatureStatusId) {

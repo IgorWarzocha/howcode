@@ -6,6 +6,7 @@ import type {
   DesktopActionInvoker,
   DictationModelId,
   PiSettings,
+  PiThemeState,
 } from "../../desktop/types";
 import { buildCommonSettingsDescriptors } from "./settingsDescriptorCommon";
 import { buildDictationSettingsDescriptors } from "./settingsDescriptorDictation";
@@ -22,6 +23,7 @@ export function buildSettingsDescriptors({
   currentModel,
   controller,
   draftPiSettings,
+  piTheme,
   setDraftPiSetting,
   openSelectId,
   setOpenSelectId,
@@ -36,6 +38,7 @@ export function buildSettingsDescriptors({
   currentModel: ComposerModel | null;
   controller: SettingsController;
   draftPiSettings: PiSettings;
+  piTheme: PiThemeState | null;
   setDraftPiSetting: SetDraftPiSetting;
   openSelectId: string | null;
   setOpenSelectId: Dispatch<SetStateAction<string | null>>;
@@ -57,7 +60,13 @@ export function buildSettingsDescriptors({
       setOpenSelectId,
       onAction,
     }),
-    ...buildPiRuntimeSettingsDescriptors({ draftPiSettings, setDraftPiSetting }),
+    ...buildPiRuntimeSettingsDescriptors({
+      draftPiSettings,
+      piTheme,
+      setDraftPiSetting,
+      openSelectId,
+      setOpenSelectId,
+    }),
     ...buildDictationSettingsDescriptors({
       appSettings,
       controller,

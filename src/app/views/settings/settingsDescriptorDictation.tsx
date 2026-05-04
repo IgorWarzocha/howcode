@@ -116,7 +116,7 @@ export function buildDictationSettingsDescriptors({
             )}
           </div>
           {controller.dictationInstallError ? (
-            <output className="text-[12px] text-[#f2a7a7]" aria-live="polite">
+            <output className="text-[12px] text-[color:var(--danger)]" aria-live="polite">
               {controller.dictationInstallError}
             </output>
           ) : null}

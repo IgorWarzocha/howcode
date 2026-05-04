@@ -12,7 +12,10 @@ export {
   stopComposerRun,
 } from "./live-runtime-service.cts";
 export { setRuntimeHostEventSink } from "./host-events.cts";
-export { disposeAllRuntimeHosts, invalidateRuntimeSettings } from "./live-runtime-registry.cts";
+export {
+  disposeAllRuntimeHosts,
+  invalidateRuntimeSettings,
+} from "./live-runtime-registry.cts";
 
 export { generateGitCommitMessage } from "./git-commit-message-service.cts";
 
@@ -21,6 +24,7 @@ export {
   loadPiSettingsInHost as loadPiSettings,
   updatePiSettingInHost as updatePiSetting,
 } from "./settings-service.cts";
+export { loadPiThemeStateInHost as loadPiThemeState } from "./theme-service.cts";
 
 export {
   installPiPackage,

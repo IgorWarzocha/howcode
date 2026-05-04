@@ -19,6 +19,7 @@ import {
   listConfiguredPiPackages,
   listConfiguredPiSkills,
   loadPiSettings,
+  loadPiThemeState,
   loadThreadSnapshot,
   openThreadRuntime,
   selectProjectRuntime,
@@ -83,6 +84,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<"loadPiSettings">["payload"];
       return (await loadPiSettings(payload.projectPath)) as RuntimeHostResponseMap[TName];
+    }
+    case "loadPiThemeState": {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<"loadPiThemeState">["payload"];
+      return (await loadPiThemeState(payload.projectPath)) as RuntimeHostResponseMap[TName];
     }
     case "updatePiSetting": {
       const payload =

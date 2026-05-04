@@ -1,18 +1,76 @@
-import type { PiSettings } from "../../desktop/types";
+import type { PiSettings, PiThemeState } from "../../desktop/types";
 import { settingsInputClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
 import type { SettingDescriptor } from "./settingsTypes";
-import { ToggleBox } from "./settingsUi";
+import { InlineSelect, ToggleBox } from "./settingsUi";
 import type { SetDraftPiSetting } from "./settingsDescriptorTypes";
 
 export function buildPiRuntimeSettingsDescriptors({
   draftPiSettings,
+  piTheme,
   setDraftPiSetting,
+  openSelectId,
+  setOpenSelectId,
 }: {
   draftPiSettings: PiSettings;
+  piTheme: PiThemeState | null;
   setDraftPiSetting: SetDraftPiSetting;
+  openSelectId: string | null;
+  setOpenSelectId: (id: string | null) => void;
 }): SettingDescriptor[] {
   return [
+    {
+      id: "pi-runtime.theme",
+      category: "pi-runtime",
+      title: "Theme",
+      description: "Use a Pi JSON theme for the terminal and the full Howcode interface.",
+      keywords: "theme color json pi gui terminal appearance",
+      render: () => {
+        const themes = piTheme?.themes.length
+          ? piTheme.themes
+          : [
+              {
+                name: draftPiSettings.theme,
+                label: draftPiSettings.theme,
+                source: "pi-json" as const,
+              },
+            ];
+        const hasCurrentTheme = themes.some((theme) => theme.name === draftPiSettings.theme);
+        const options = [
+          ...(!hasCurrentTheme
+            ? [
+                {
+                  value: draftPiSettings.theme,
+                  label: `Missing theme: ${draftPiSettings.theme}`,
+                  description:
+                    "This saved theme is not available. Choose another theme to repair it.",
+                },
+              ]
+            : []),
+          ...themes.map((theme) => ({
+            value: theme.name,
+            label: theme.label,
+            description:
+              theme.source === "howcode"
+                ? "Bundled with Howcode"
+                : theme.source === "pi-builtin"
+                  ? "Pi built-in theme"
+                  : theme.path,
+          })),
+        ];
+
+        return (
+          <InlineSelect
+            id="pi-theme"
+            value={draftPiSettings.theme}
+            options={options}
+            open={openSelectId === "pi-theme"}
+            onOpenChange={(open) => setOpenSelectId(open ? "pi-theme" : null)}
+            onChange={(value) => setDraftPiSetting("theme", value)}
+          />
+        );
+      },
+    },
     {
       id: "pi-runtime.transport",
       category: "pi-runtime",
@@ -32,7 +90,7 @@ export function buildPiRuntimeSettingsDescriptors({
               className={cn(
                 "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                 draftPiSettings.transport === value &&
-                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
               )}
               onClick={() => setDraftPiSetting("transport", value as PiSettings["transport"])}
             >
@@ -94,7 +152,7 @@ export function buildPiRuntimeSettingsDescriptors({
               className={cn(
                 "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                 draftPiSettings[key] === value &&
-                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                  "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
               )}
               onClick={() => setDraftPiSetting(key, value as PiSettings[typeof key])}
             >
@@ -178,7 +236,7 @@ export function buildPiRuntimeSettingsDescriptors({
                 className={cn(
                   "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                   draftPiSettings.doubleEscapeAction === value &&
-                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
                 )}
                 onClick={() =>
                   setDraftPiSetting("doubleEscapeAction", value as PiSettings["doubleEscapeAction"])

@@ -220,7 +220,7 @@ export function ComposerTextField({
         <div
           className={cn(
             "truncate text-[12px] leading-4",
-            statusTone === "success" ? "text-[color:var(--green)]" : "text-[#f2a7a7]",
+            statusTone === "success" ? "text-[color:var(--green)]" : "text-[color:var(--danger)]",
           )}
         >
           {statusMessage}
@@ -237,7 +237,7 @@ export function ComposerTextField({
             "m-0 w-full min-h-6 resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150",
             readOnly && "cursor-wait opacity-45",
             placeholderTone === "error"
-              ? "placeholder:text-[#f2a7a7]"
+              ? "placeholder:text-[color:var(--danger)]"
               : "placeholder:text-[color:var(--muted-2)]",
           )}
           value={value}

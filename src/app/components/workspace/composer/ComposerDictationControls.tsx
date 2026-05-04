@@ -68,7 +68,7 @@ export function ComposerDictationControls({
             type="button"
             className={cn(
               compactIconButtonClass,
-              "h-6 w-6 rounded-full bg-[color:var(--accent)] text-[#1a1c26] hover:bg-[color:var(--accent)] hover:text-[#1a1c26]",
+              "h-6 w-6 rounded-full bg-[color:var(--accent)] text-[color:var(--accent-contrast)] hover:bg-[color:var(--accent)] hover:text-[color:var(--accent-contrast)]",
             )}
             onClick={() => {
               setDictationPromptOpen(false);
@@ -89,7 +89,7 @@ export function ComposerDictationControls({
             <X size={12} />
           </button>
           <TextButton
-            className="rounded-full border border-[rgba(255,110,110,0.22)] px-2 py-0.5 text-[10px] leading-4 whitespace-nowrap text-[#ffbcbc] hover:border-[rgba(255,110,110,0.34)] hover:bg-[rgba(255,110,110,0.08)] hover:text-[#ffd2d2]"
+            className="rounded-full border border-[color:var(--danger-border)] px-2 py-0.5 text-[10px] leading-4 whitespace-nowrap text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]"
             onClick={() => {
               setDictationPromptOpen(false);
               void onAction("settings.update", {
@@ -115,11 +115,11 @@ export function ComposerDictationControls({
             ? "inline-flex h-6 w-6 items-center justify-center rounded-full border border-transparent bg-transparent text-[color:var(--muted-2)] opacity-45 transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[color:var(--muted)] hover:opacity-70"
             : iconButtonClass,
           dictationActive &&
-            "border-[rgba(255,110,110,0.3)] bg-[rgba(255,94,94,0.12)] text-[#ffd1d1] opacity-100",
+            "border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] text-[color:var(--danger)] opacity-100",
           dictationTranscribing &&
-            "border-[rgba(183,186,245,0.3)] bg-[rgba(183,186,245,0.12)] text-[color:var(--text)] opacity-100",
+            "border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] text-[color:var(--text)] opacity-100",
           dictationPromptOpen &&
-            "border-[rgba(183,186,245,0.24)] bg-[rgba(183,186,245,0.08)] text-[color:var(--text)] opacity-100",
+            "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)] opacity-100",
         )}
         aria-label={
           dictationActive

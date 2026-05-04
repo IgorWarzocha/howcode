@@ -49,7 +49,7 @@ export function CatalogItemRow({
                 <span
                   className={cn(
                     "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-[color:var(--muted-2)] bg-transparent transition-colors",
-                    selected && "border-[rgba(183,186,245,0.42)] text-[color:var(--text)]",
+                    selected && "border-[color:var(--accent-border)] text-[color:var(--text)]",
                   )}
                 >
                   {selected ? <Check size={11} strokeWidth={2.6} /> : null}

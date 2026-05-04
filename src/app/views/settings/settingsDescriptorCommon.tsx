@@ -33,7 +33,7 @@ export function buildCommonSettingsDescriptors({
                 className={cn(
                   "rounded-full px-3 py-1 transition-colors active:scale-[0.96]",
                   appSettings.composerStreamingBehavior === value &&
-                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_rgba(183,186,245,0.5)]",
+                    "bg-[rgba(255,255,255,0.18)] text-[color:var(--text)] shadow-[inset_0_0_0_1px_var(--accent-border)]",
                 )}
                 onClick={() =>
                   controller.setComposerStreamingBehavior(

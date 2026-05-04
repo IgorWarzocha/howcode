@@ -154,7 +154,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
             <div className="relative">
               <TextButton
                 ref={deleteAllButtonRef}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[color:var(--danger)]"
                 disabled={busyAction !== null}
                 onClick={() => {
                   setConfirmBulkDeleteTarget((current) => (current === "all" ? null : "all"));
@@ -222,7 +222,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
               <div className="relative">
                 <TextButton
                   ref={deleteSelectedButtonRef}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[color:var(--danger)]"
                   disabled={selectedThreadIds.length === 0 || busyAction !== null}
                   onClick={() => {
                     setConfirmBulkDeleteTarget((current) =>
@@ -299,7 +299,7 @@ export function ArchivedThreadsView({ threads, onAction }: ArchivedThreadsViewPr
                   Restore
                 </PrimaryButton>
                 <TextButton
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[#ffb4b4]"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[color:var(--muted)] hover:text-[color:var(--danger)]"
                   disabled={busyAction !== null}
                   onClick={() => {
                     void runArchivedThreadMutation({

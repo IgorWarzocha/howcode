@@ -49,7 +49,7 @@ function MarkdownLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
     <a
       {...rest}
       href={href}
-      className="text-[#81a2be] underline decoration-[rgba(129,162,190,0.45)] underline-offset-[3px] transition-colors hover:text-[#9bb8cf]"
+      className="text-[color:var(--markdown-link)] underline decoration-[color:var(--accent-border)] underline-offset-[3px] transition-colors hover:text-[color:var(--accent)]"
       onClick={(event) => {
         if (!href) {
           return;
@@ -98,13 +98,13 @@ function MarkdownPre({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
     <div className="group relative min-w-0">
       <pre
         {...props}
-        className="m-0 max-w-full whitespace-pre-wrap break-words rounded-[14px] border border-[rgba(128,128,128,0.34)] bg-[rgba(30,30,36,0.78)] px-3 py-2.5 pr-14 font-mono text-[12.5px] leading-6 text-[#b5bd68] [overflow-wrap:anywhere]"
+        className="m-0 max-w-full whitespace-pre-wrap break-words rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--message-code-bg)] px-3 py-2.5 pr-14 font-mono text-[12.5px] leading-6 text-[color:var(--markdown-code)] [overflow-wrap:anywhere]"
       >
         {children}
       </pre>
       <button
         type="button"
-        className="absolute right-1.5 top-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(22,24,32,0.82)] px-2 text-[11px] font-medium text-[color:var(--muted)] opacity-75 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[rgba(36,39,51,0.92)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(138,190,183,0.45)] active:scale-[0.96] group-hover:opacity-100"
+        className="absolute right-1.5 top-1.5 grid h-8 min-w-8 place-items-center rounded-[10px] border border-[color:var(--border)] bg-[color:var(--panel)] px-2 text-[11px] font-medium text-[color:var(--muted)] opacity-75 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,scale,background-color,color] duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover:opacity-100"
         onClick={() => void handleCopy()}
         aria-label={copyState === "copied" ? "Copied code block" : "Copy code block"}
         title={copyState === "failed" ? "Copy failed" : copyState === "copied" ? "Copied" : "Copy"}
@@ -133,7 +133,12 @@ function getNodeText(node: ReactNode): string {
 
 function MarkdownInlineCode({ children }: { children?: ReactNode }) {
   return (
-    <code className={cn(inlineCodeClass, "bg-[rgba(138,190,183,0.14)] text-[#8abeb7]")}>
+    <code
+      className={cn(
+        inlineCodeClass,
+        "bg-[color:var(--markdown-code-bg)] text-[color:var(--markdown-code)]",
+      )}
+    >
       {children}
     </code>
   );
@@ -156,30 +161,34 @@ export function MarkdownContent({ markdown, tone = "default", className }: Markd
             </p>
           ),
           h1: ({ children }) => (
-            <h1 className="m-0 text-[14px] font-semibold leading-[1.68] text-[#f0c674]">
+            <h1 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="m-0 text-[14px] font-semibold leading-[1.68] text-[#f0c674]">
+            <h2 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="m-0 text-[14px] font-semibold leading-[1.68] text-[#f0c674]">
+            <h3 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="m-0 text-[14px] font-semibold leading-[1.68] text-[#f0c674]">
+            <h4 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
               {children}
             </h4>
           ),
           ul: ({ children }) => (
-            <ul className="m-0 grid list-disc gap-0.5 pl-5 marker:text-[#8abeb7]">{children}</ul>
+            <ul className="m-0 grid list-disc gap-0.5 pl-5 marker:text-[color:var(--markdown-code)]">
+              {children}
+            </ul>
           ),
           ol: ({ children }) => (
-            <ol className="m-0 grid list-decimal gap-0.5 pl-5 marker:text-[#8abeb7]">{children}</ol>
+            <ol className="m-0 grid list-decimal gap-0.5 pl-5 marker:text-[color:var(--markdown-code)]">
+              {children}
+            </ol>
           ),
           li: ({ children }) => (
             <li className={cn("min-w-0 break-words", getToneTextClass(tone))}>{children}</li>
@@ -189,29 +198,29 @@ export function MarkdownContent({ markdown, tone = "default", className }: Markd
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           a: MarkdownLink,
-          hr: () => <hr className="my-0.5 border-0 border-t border-[rgba(128,128,128,0.42)]" />,
+          hr: () => <hr className="my-0.5 border-0 border-t border-[color:var(--border-strong)]" />,
           blockquote: ({ children }) => (
-            <blockquote className="m-0 border-l border-[rgba(128,128,128,0.46)] pl-3 text-[#808080]">
+            <blockquote className="m-0 border-l border-[color:var(--border-strong)] pl-3 text-[color:var(--markdown-quote)]">
               {children}
             </blockquote>
           ),
           table: ({ children }) => (
-            <div className="overflow-x-auto rounded-[12px] border border-[rgba(128,128,128,0.28)]">
+            <div className="overflow-x-auto rounded-[12px] border border-[color:var(--border)]">
               <table className="min-w-full border-collapse text-left text-[13px]">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-[rgba(255,255,255,0.03)]">{children}</thead>
+            <thead className="bg-[color:var(--message-tool-bg)]">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border-b border-[rgba(128,128,128,0.2)] px-3 py-2 font-medium text-[#f0c674]">
+            <th className="border-b border-[color:var(--border)] px-3 py-2 font-medium text-[color:var(--markdown-heading)]">
               {children}
             </th>
           ),
           td: ({ children }) => (
             <td
               className={cn(
-                "border-t border-[rgba(128,128,128,0.14)] px-3 py-2 align-top",
+                "border-t border-[color:var(--border)] px-3 py-2 align-top",
                 getToneTextClass(tone),
               )}
             >

@@ -156,7 +156,7 @@ export function DiffPanelFileList({
                       </span>
                       <span className="flex shrink-0 items-center gap-2 text-[12px]">
                         {deletions > 0 || additions === 0 ? (
-                          <span className="text-[#d06b72]">-{deletions}</span>
+                          <span className="text-[color:var(--danger)]">-{deletions}</span>
                         ) : null}
                         {additions > 0 || deletions === 0 ? (
                           <span className="text-[color:var(--green)]">+{additions}</span>
@@ -176,7 +176,7 @@ export function DiffPanelFileList({
                     return (
                       <button
                         type="button"
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[#1a1c26] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(168,177,255,0.92)] text-[color:var(--accent-contrast)] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:scale-[1.03]"
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();

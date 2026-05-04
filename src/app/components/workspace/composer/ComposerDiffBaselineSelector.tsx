@@ -274,7 +274,9 @@ export function ComposerDiffBaselineSelector({
           <span
             className={cn(
               "inline-flex h-full items-center",
-              counts && counts.deletions > 0 ? "text-[#ff9c9c]" : "text-[color:var(--muted)]",
+              counts && counts.deletions > 0
+                ? "text-[color:var(--danger)]"
+                : "text-[color:var(--muted)]",
             )}
           >
             -{deletionCountLabel}

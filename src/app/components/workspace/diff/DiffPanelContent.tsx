@@ -252,7 +252,7 @@ export function DiffPanelContent({
                         ? `No net changes ${getDiffBaselinePrefix(baseline)} ${getResolvedDiffBaselineLabel(baseline, diff?.resolvedBaseline)}.`
                         : "No patch available for this worktree."}
                   </p>
-                  {error ? <p className="text-[#f2a7a7]">{error}</p> : null}
+                  {error ? <p className="text-[color:var(--danger)]">{error}</p> : null}
                 </div>
               </div>
             ) : renderablePatch.kind === "files" ? (

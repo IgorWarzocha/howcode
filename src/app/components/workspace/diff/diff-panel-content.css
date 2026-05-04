@@ -26,10 +26,10 @@
   --diffs-token-dark-text-decoration: none !important;
   --diffs-fg-number-override: var(--muted) !important;
   --diffs-fg-number-addition-override: var(--green) !important;
-  --diffs-fg-number-deletion-override: #d06b72 !important;
+  --diffs-fg-number-deletion-override: var(--danger) !important;
   --diffs-fg-conflict-marker-override: var(--muted) !important;
   --diffs-addition-color-override: var(--green) !important;
-  --diffs-deletion-color-override: #d06b72 !important;
+  --diffs-deletion-color-override: var(--danger) !important;
   --diffs-modified-color-override: var(--accent) !important;
   --diffs-bg-context-override: var(--workspace) !important;
   --diffs-bg-context-number-override: var(--workspace) !important;
@@ -40,10 +40,10 @@
   --diffs-bg-addition-number-override: color-mix(in srgb, var(--workspace) 86%, var(--green)) !important;
   --diffs-bg-addition-hover-override: color-mix(in srgb, var(--workspace) 84%, var(--green)) !important;
   --diffs-bg-addition-emphasis-override: color-mix(in srgb, var(--workspace) 78%, var(--green)) !important;
-  --diffs-bg-deletion-override: color-mix(in srgb, var(--workspace) 90%, #d06b72) !important;
-  --diffs-bg-deletion-number-override: color-mix(in srgb, var(--workspace) 86%, #d06b72) !important;
-  --diffs-bg-deletion-hover-override: color-mix(in srgb, var(--workspace) 84%, #d06b72) !important;
-  --diffs-bg-deletion-emphasis-override: color-mix(in srgb, var(--workspace) 78%, #d06b72) !important;
+  --diffs-bg-deletion-override: color-mix(in srgb, var(--workspace) 90%, var(--danger)) !important;
+  --diffs-bg-deletion-number-override: color-mix(in srgb, var(--workspace) 86%, var(--danger)) !important;
+  --diffs-bg-deletion-hover-override: color-mix(in srgb, var(--workspace) 84%, var(--danger)) !important;
+  --diffs-bg-deletion-emphasis-override: color-mix(in srgb, var(--workspace) 78%, var(--danger)) !important;
   --diffs-selection-color-override: var(--accent) !important;
   --diffs-bg-selection-override: var(--panel-3) !important;
   --diffs-bg-selection-number-override: var(--panel-2) !important;
@@ -218,7 +218,7 @@ slot[name="header-prefix"]::slotted(*) {
 
 [data-line-type="change-deletion"][data-selected-line][data-line],
 [data-line-type="change-deletion"][data-selected-line][data-line][data-hovered] {
-  background-color: color-mix(in srgb, var(--panel-3) 84%, #d06b72) !important;
+  background-color: color-mix(in srgb, var(--panel-3) 84%, var(--danger)) !important;
 }
 
 [data-line-type="change-addition"][data-selected-line][data-column-number],
@@ -228,7 +228,7 @@ slot[name="header-prefix"]::slotted(*) {
 
 [data-line-type="change-deletion"][data-selected-line][data-column-number],
 [data-line-type="change-deletion"][data-selected-line][data-column-number][data-hovered] {
-  background-color: color-mix(in srgb, var(--panel-2) 84%, #d06b72) !important;
+  background-color: color-mix(in srgb, var(--panel-2) 84%, var(--danger)) !important;
 }
 
 [data-change-icon="change"],

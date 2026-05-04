@@ -18,7 +18,7 @@ function getInitialAnswers(questions: NativeAskQuestion[]) {
 }
 
 const askQuestionsCardClass =
-  "relative mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[#272a39] px-3 pt-2.5 pb-4";
+  "relative mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 pt-2.5 pb-4";
 
 export function AskQuestionsCard({
   composerDraft,
@@ -128,7 +128,7 @@ export function AskQuestionsCard({
           <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
             <button
               type="button"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
               onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
               aria-label="Previous question"
             >
@@ -153,7 +153,7 @@ export function AskQuestionsCard({
             <button
               key={item.id}
               type="button"
-              className="grid grid-cols-[minmax(0,1fr)] rounded-lg px-2 py-1.5 text-left text-[12px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
+              className="grid grid-cols-[minmax(0,1fr)] rounded-lg px-2 py-1.5 text-left text-[12px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
               onClick={() => setActiveIndex(index)}
             >
               <span className="truncate text-[color:var(--text)]">{item.question}</span>
@@ -196,7 +196,7 @@ export function AskQuestionsCard({
         <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)] disabled:opacity-35"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-35"
             disabled={activeIndex === 0}
             onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
             aria-label="Previous question"
@@ -208,7 +208,7 @@ export function AskQuestionsCard({
           </span>
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)] disabled:opacity-35"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-35"
             onClick={() => setActiveIndex((index) => Math.min(reviewIndex, index + 1))}
             aria-label="Next question"
           >
@@ -233,8 +233,8 @@ export function AskQuestionsCard({
                 ? "text-[color:var(--text)]"
                 : "text-[color:var(--muted)] opacity-55"
               : picked
-                ? "bg-[rgba(183,186,245,0.12)] text-[color:var(--text)]"
-                : "text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]",
+                ? "bg-[color:var(--accent-bg)] text-[color:var(--text)]"
+                : "text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
           );
           const mark = (
             <span
@@ -248,8 +248,8 @@ export function AskQuestionsCard({
                       "border",
                       question.multiple ? "rounded" : "rounded-full",
                       picked
-                        ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[#1a1c26]"
-                        : "border-[rgba(169,178,215,0.28)] text-transparent",
+                        ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--accent-contrast)]"
+                        : "border-[color:var(--border-strong)] text-transparent",
                     ),
               )}
             >
@@ -267,7 +267,7 @@ export function AskQuestionsCard({
                 </button>
                 <button
                   type="button"
-                  className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[rgba(169,178,215,0.08)] hover:text-[color:var(--text)]"
+                  className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
                   onClick={() => void closeCard()}
                   aria-label="Dismiss"
                 >

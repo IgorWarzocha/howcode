@@ -98,7 +98,7 @@ export function ComposerGitOpsMessageField({
           <div
             className={
               statusTone === "error"
-                ? "text-[12px] leading-4 text-[#f2a7a7]"
+                ? "text-[12px] leading-4 text-[color:var(--danger)]"
                 : "text-[12px] leading-4 text-[color:var(--green)]"
             }
           >
@@ -121,7 +121,7 @@ export function ComposerGitOpsMessageField({
         <div
           className={
             statusTone === "error"
-              ? "mt-1 truncate text-[12px] leading-4 text-[#f2a7a7]"
+              ? "mt-1 truncate text-[12px] leading-4 text-[color:var(--danger)]"
               : "mt-1 truncate text-[12px] leading-4 text-[color:var(--green)]"
           }
         >

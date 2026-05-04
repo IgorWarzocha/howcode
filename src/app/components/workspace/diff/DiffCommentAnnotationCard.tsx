@@ -62,7 +62,7 @@ export function DiffCommentAnnotationCard({
           </button>
           <button
             type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--accent)] text-[#1a1c26] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--accent)] text-[color:var(--accent-contrast)] disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onPersistDraftComment}
             disabled={(draftComment?.body.trim().length ?? 0) === 0}
             aria-label="Save comment"

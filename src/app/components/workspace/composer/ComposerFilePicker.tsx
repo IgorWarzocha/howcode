@@ -153,7 +153,7 @@ export function ComposerFilePicker({
       </div>
 
       {errorMessage ? (
-        <div className="pointer-events-none absolute right-3 bottom-2 left-3 truncate text-[11px] text-[#f2a7a7]">
+        <div className="pointer-events-none absolute right-3 bottom-2 left-3 truncate text-[11px] text-[color:var(--danger)]">
           {errorMessage}
         </div>
       ) : null}

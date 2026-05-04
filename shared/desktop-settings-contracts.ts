@@ -53,6 +53,7 @@ export type PiDoubleEscapeAction = "fork" | "tree" | "none";
 export type PiTreeFilterMode = "default" | "no-tools" | "user-only" | "labeled-only" | "all";
 
 export type PiSettings = {
+  theme: string;
   autoCompact: boolean;
   enableSkillCommands: boolean;
   hideThinkingBlock: boolean;
@@ -74,6 +75,24 @@ export type PiSettings = {
   imageWidthCells: number;
 };
 
+export type PiThemeState = {
+  selectedTheme: string;
+  themes: Array<{
+    name: string;
+    label: string;
+    source: "howcode" | "pi-builtin" | "pi-json";
+    path?: string;
+  }>;
+  colors: Record<string, string>;
+  exportColors: {
+    pageBg?: string;
+    cardBg?: string;
+    infoBg?: string;
+  };
+  isLight: boolean;
+  diagnostics: Array<{ type: string; message: string; path?: string }>;
+};
+
 export type ShellState = {
   platform: string;
   mockMode: boolean;
@@ -85,5 +104,6 @@ export type ShellState = {
   projects: Project[];
   appSettings: AppSettings;
   piSettings: PiSettings;
+  piTheme: PiThemeState;
   composer: ComposerState;
 };

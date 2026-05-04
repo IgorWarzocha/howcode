@@ -8,6 +8,7 @@ import {
 } from "./action-router-result.cts";
 
 const piSettingsKeys = new Set<PiSettingsKey>([
+  "theme",
   "autoCompact",
   "enableSkillCommands",
   "hideThinkingBlock",
