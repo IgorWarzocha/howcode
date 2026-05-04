@@ -157,6 +157,7 @@ export function ArtifactPanel({
             aria-label={downloadStatus ?? "Download artifact"}
             data-tooltip={downloadStatus ?? "Download"}
             data-tooltip-placement="left"
+            data-tooltip-size={downloadStatus ? "wide" : undefined}
           >
             <Download size={14} />
           </button>
