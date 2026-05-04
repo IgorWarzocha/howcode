@@ -48,6 +48,7 @@ export function ArtifactPanel({
     previewError,
     previewRevision,
     saveDisabled,
+    downloadStatus,
     saveDraft,
     downloadArtifact,
     setDraft,
@@ -151,11 +152,12 @@ export function ArtifactPanel({
           <button
             type="button"
             className={cn(compactIconButtonClass, "h-7 w-7")}
-            onClick={downloadArtifact}
+            onClick={() => void downloadArtifact()}
             disabled={!selectedArtifact}
-            aria-label="Download artifact"
-            data-tooltip="Download"
+            aria-label={downloadStatus ?? "Download artifact"}
+            data-tooltip={downloadStatus ?? "Download"}
             data-tooltip-placement="left"
+            data-tooltip-size={downloadStatus ? "wide" : undefined}
           >
             <Download size={14} />
           </button>

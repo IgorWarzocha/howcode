@@ -11,6 +11,11 @@ import { getArtifactExtension } from "./artifactFormat";
 
 export type ArtifactView = "list" | "code" | "preview";
 
+function getPathBaseName(filePath: string) {
+  const segments = filePath.split(/[\\/]/).filter(Boolean);
+  return segments[segments.length - 1] ?? filePath;
+}
+
 export function useArtifactPanelState(conversationId: string | null) {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
@@ -19,6 +24,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [versions, setVersions] = useState<ArtifactVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<number | "latest">("latest");
   const [saving, setSaving] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
@@ -26,6 +32,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   const draftDirtyRef = useRef(false);
   const previewSourceRef = useRef<MessageEventSource | null>(null);
   const displayedContentRef = useRef("");
+  const selectedArtifactSlugRef = useRef<string | null>(null);
 
   const selectedArtifact = useMemo(
     () =>
@@ -37,6 +44,7 @@ export function useArtifactPanelState(conversationId: string | null) {
       ? null
       : (versions.find((version) => version.version === selectedVersion) ?? null);
   const selectedArtifactSlug = selectedArtifact?.slug ?? null;
+  selectedArtifactSlugRef.current = selectedArtifactSlug;
   const selectedArtifactVersion = selectedArtifact?.version ?? null;
   const displayedContent = selectedHistoricalVersion?.content ?? selectedArtifact?.content ?? "";
   displayedContentRef.current = displayedContent;
@@ -100,6 +108,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     if (previousSelectedArtifactSlugRef.current === selectedArtifactSlug) return;
     previousSelectedArtifactSlugRef.current = selectedArtifactSlug;
     draftDirtyRef.current = false;
+    setDownloadStatus(null);
     setDraft(displayedContentRef.current);
     setSelectedVersion("latest");
   }, [selectedArtifactSlug]);
@@ -190,13 +199,28 @@ export function useArtifactPanelState(conversationId: string | null) {
     }
   };
 
-  const downloadArtifact = () => {
+  const downloadArtifact = async () => {
     if (!selectedArtifact) return;
+    const downloadArtifactSlug = selectedArtifact.slug;
     const content = showingHistoricalVersion ? displayedContent : draft;
-    void window.piDesktop?.saveTextToDownloads?.(
-      `${selectedArtifact.slug}.${getArtifactExtension(selectedArtifact.kind)}`,
-      content,
-    );
+    const fileName = `${selectedArtifact.slug}.${getArtifactExtension(selectedArtifact.kind)}`;
+    const setCurrentDownloadStatus = (message: string) => {
+      if (selectedArtifactSlugRef.current === downloadArtifactSlug) {
+        setDownloadStatus(message);
+      }
+    };
+    try {
+      const result = await window.piDesktop?.saveTextToDownloads?.(fileName, content);
+      if (result?.ok) {
+        setCurrentDownloadStatus(`Saved ${getPathBaseName(result.path ?? fileName)} to Downloads.`);
+      } else {
+        setCurrentDownloadStatus(result?.error ?? "Could not save artifact to Downloads.");
+      }
+    } catch (error) {
+      setCurrentDownloadStatus(
+        error instanceof Error ? error.message : "Could not save artifact to Downloads.",
+      );
+    }
   };
 
   return {
@@ -213,6 +237,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     previewError,
     previewRevision,
     saveDisabled,
+    downloadStatus,
     saveDraft,
     downloadArtifact,
     setDraft,
