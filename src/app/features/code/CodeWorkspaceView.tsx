@@ -5,6 +5,7 @@ import { defaultPiSettings } from "../../../../shared/default-pi-settings";
 import { Composer } from "../../components/workspace/Composer";
 import { DiffPanel } from "../../components/workspace/DiffPanel";
 import { GitOpsComposerPanel } from "../../components/workspace/GitOpsComposerPanel";
+import { WorkspaceComposerDock } from "../../components/workspace/WorkspaceComposerDock";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
 import type { Message } from "../../types";
@@ -279,9 +280,9 @@ export function CodeWorkspaceView({
           style={threadFooterStyle}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,800px)_minmax(0,1fr)] items-end gap-3">
-              <div className="mb-1.5 ml-3 min-w-0 self-end">
-                {(state.activeView === "thread" || state.activeView === "gitops") &&
+            <WorkspaceComposerDock
+              left={
+                (state.activeView === "thread" || state.activeView === "gitops") &&
                 !state.takeoverVisible ? (
                   <button
                     type="button"
@@ -293,10 +294,10 @@ export function CodeWorkspaceView({
                   >
                     {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
                   </button>
-                ) : null}
-              </div>
-              <div className="relative col-start-2 w-full max-w-[800px]">
-                {state.activeView === "gitops" ? (
+                ) : null
+              }
+              center={
+                state.activeView === "gitops" ? (
                   <div>
                     <GitOpsComposerPanel
                       dictationModelId={shellState?.appSettings.dictationModelId ?? null}
@@ -430,15 +431,13 @@ export function CodeWorkspaceView({
                       />
                     </div>
                   </div>
-                )}
-              </div>
-              <div
-                className={cn(
-                  "col-start-3 mb-1.5 min-w-0 self-end",
-                  state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
-                )}
-              >
-                {state.activeView === "gitops" && !state.takeoverVisible ? (
+                )
+              }
+              rightClassName={cn(
+                state.activeView === "gitops" ? "opacity-100" : "opacity-0 xl:opacity-100",
+              )}
+              right={
+                state.activeView === "gitops" && !state.takeoverVisible ? (
                   <button
                     type="button"
                     className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
@@ -458,9 +457,9 @@ export function CodeWorkspaceView({
                     model={activeComposerState?.currentModel ?? null}
                     thinkingLevel={activeComposerState?.currentThinkingLevel ?? "off"}
                   />
-                ) : null}
-              </div>
-            </div>
+                ) : null
+              }
+            />
           </div>
         </footer>
       ) : null}

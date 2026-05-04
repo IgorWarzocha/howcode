@@ -322,7 +322,7 @@ export function ComposerPromptSurface({
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
   return (
-    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible xl:left-1/2 xl:w-[calc(100%+5rem)] xl:-translate-x-1/2">
+    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
       <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
           {attachments.length > 0 ? (
