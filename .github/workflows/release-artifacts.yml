@@ -45,6 +45,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.10
+          no-cache: true
 
       - uses: actions/setup-node@v4
         with:
