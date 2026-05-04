@@ -145,7 +145,7 @@ export function LandingView({ className }: LandingViewProps) {
   return (
     <section
       className={cn(
-        "mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(2rem,10vh,7rem)] pb-6",
+        "relative mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(2rem,10vh,7rem)] pb-6",
         className,
       )}
     >

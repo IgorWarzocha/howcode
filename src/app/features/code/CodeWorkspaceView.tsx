@@ -264,6 +264,8 @@ export function CodeWorkspaceView({
                 onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
                 onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
                 onSelectProject={controller.handleProjectSelect}
+                sidebarCollapsed={sidebarCollapsed}
+                onToggleSidebar={onToggleSidebar}
               />
             )}
           </main>
