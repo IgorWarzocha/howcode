@@ -31,7 +31,7 @@ export function WorkspaceComposerDock({
       {left ? (
         <div
           className={cn(
-            "mb-1.5 ml-3 min-w-0 self-end transition-transform duration-200 ease-out",
+            "mb-1.5 ml-3 min-w-0 self-end transition-transform duration-100 ease-out",
             leftClassName,
           )}
           style={leftStyle}
