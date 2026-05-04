@@ -127,25 +127,10 @@ export const TerminalPanel = memo(function TerminalPanel({
   return (
     <section
       aria-label="Terminal drawer"
-      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
+      className="absolute inset-0 grid min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
       {...getFeatureStatusDataAttributes(statusId)}
     >
-      <div className="flex h-11 items-center justify-between gap-3 border-b border-[color:var(--border)] px-3">
-        <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
-          <SquareTerminal size={15} className="shrink-0 text-[color:var(--muted)]" />
-          <span className="truncate font-medium">Terminal</span>
-        </div>
-        <button
-          type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-          aria-label="Hide terminal"
-          onClick={onClose}
-          data-tooltip="Hide terminal"
-        >
-          <PanelRightClose size={14} />
-        </button>
-      </div>
-      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
+      <div className="relative min-h-0 min-w-0 overflow-hidden bg-[color:var(--sidebar)]">
         <TerminalViewport
           projectId={projectId}
           sessionPath={sessionPath}
@@ -157,6 +142,18 @@ export const TerminalPanel = memo(function TerminalPanel({
           hoverToBlur={hoverToBlur}
           className="terminal-viewport--flush terminal-viewport--bottom-reserve absolute inset-0 h-auto min-h-0 rounded-none bg-[color:var(--sidebar)]"
         />
+      </div>
+      <div className="flex h-[3.75rem] items-start justify-end gap-3 border-t border-[color:var(--border)] px-3 pt-1.5">
+        <button
+          type="button"
+          className="box-border inline-flex h-8 min-h-8 w-8 min-w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--muted)] text-[15px] leading-none transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] [&>svg]:h-[15px] [&>svg]:w-[15px]"
+          aria-label="Hide terminal"
+          onClick={onClose}
+          data-tooltip="Hide terminal"
+          data-tooltip-placement="left"
+        >
+          <PanelRightClose />
+        </button>
       </div>
     </section>
   );

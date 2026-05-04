@@ -6,6 +6,7 @@ import { TerminalPanel } from "../components/workspace/TerminalPanel";
 import { defaultDiffBaseline } from "../components/workspace/composer/diff-baseline";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../desktop/types";
 import { useAnimatedPresence } from "../hooks/useAnimatedPresence";
+import { cn } from "../utils/cn";
 import { AppShellOverlays } from "./AppShellOverlays";
 import { AppShellWorkspace } from "./AppShellWorkspace";
 import { appShellRootClass } from "./layout-classes";
@@ -494,9 +495,19 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
         ) : null}
 
         {sidebarCompactMode && !sidebarOverlayOpen ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[45] px-5 pb-4">
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4",
+              terminalDrawerVisible ? "px-3" : "px-5",
+            )}
+          >
             <div className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2">
-              <div className="pointer-events-auto mb-1.5 min-w-0 translate-x-10 justify-self-end self-end">
+              <div
+                className={cn(
+                  "pointer-events-auto mb-1.5 min-w-0 justify-self-end self-end",
+                  terminalDrawerVisible ? "justify-self-start" : "translate-x-10",
+                )}
+              >
                 <button
                   type="button"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
