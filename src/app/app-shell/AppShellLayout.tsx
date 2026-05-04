@@ -144,7 +144,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       ? state.selectedThreadId
       : null;
   const takeoverVisible = state.takeoverVisible;
-  const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const terminalDrawerVisible =
+    state.activeView === "thread" && state.terminalVisible && !sidebarCompactMode;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId &&
@@ -365,21 +366,16 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   }, [sidebarCompactMode]);
 
   useEffect(() => {
-    if (sidebarCompactMode && controllerRef.current.state.terminalVisible) {
-      controllerRef.current.handleCloseTerminalDrawer();
-    }
-  }, [sidebarCompactMode]);
-
-  useEffect(() => {
     if (!sidebarOverlayOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (controllerRef.current.state.settingsOpen) return;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       setSidebarOverlayOpen(false);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [sidebarOverlayOpen]);
 
   const handleToggleSidebar = useCallback(() => {

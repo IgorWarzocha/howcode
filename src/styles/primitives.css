@@ -229,15 +229,15 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   .composer-diff-summary {
     display: none;
   }
+
+  .composer-baseline-compact-trigger {
+    display: inline-flex;
+  }
 }
 
 @container (max-width: 32rem) {
   .composer-branch-chip {
     display: none;
-  }
-
-  .composer-baseline-compact-trigger {
-    display: inline-flex;
   }
 }
 
