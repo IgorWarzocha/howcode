@@ -19,6 +19,7 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [versions, setVersions] = useState<ArtifactVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<number | "latest">("latest");
   const [saving, setSaving] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewRevision, setPreviewRevision] = useState(0);
@@ -100,6 +101,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     if (previousSelectedArtifactSlugRef.current === selectedArtifactSlug) return;
     previousSelectedArtifactSlugRef.current = selectedArtifactSlug;
     draftDirtyRef.current = false;
+    setDownloadStatus(null);
     setDraft(displayedContentRef.current);
     setSelectedVersion("latest");
   }, [selectedArtifactSlug]);
@@ -190,13 +192,22 @@ export function useArtifactPanelState(conversationId: string | null) {
     }
   };
 
-  const downloadArtifact = () => {
+  const downloadArtifact = async () => {
     if (!selectedArtifact) return;
     const content = showingHistoricalVersion ? displayedContent : draft;
-    void window.piDesktop?.saveTextToDownloads?.(
-      `${selectedArtifact.slug}.${getArtifactExtension(selectedArtifact.kind)}`,
-      content,
-    );
+    const fileName = `${selectedArtifact.slug}.${getArtifactExtension(selectedArtifact.kind)}`;
+    try {
+      const result = await window.piDesktop?.saveTextToDownloads?.(fileName, content);
+      if (result?.ok) {
+        setDownloadStatus(`Saved ${fileName} to Downloads.`);
+      } else {
+        setDownloadStatus(result?.error ?? "Could not save artifact to Downloads.");
+      }
+    } catch (error) {
+      setDownloadStatus(
+        error instanceof Error ? error.message : "Could not save artifact to Downloads.",
+      );
+    }
   };
 
   return {
@@ -213,6 +224,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     previewError,
     previewRevision,
     saveDisabled,
+    downloadStatus,
     saveDraft,
     downloadArtifact,
     setDraft,
