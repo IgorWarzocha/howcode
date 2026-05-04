@@ -1,10 +1,19 @@
-import { BriefcaseBusiness, Code2, Inbox, MessageSquare, PawPrint, Settings } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Code2,
+  Inbox,
+  MessageSquare,
+  PanelLeftClose,
+  PawPrint,
+  Settings,
+} from "lucide-react";
 import { useCallback, useRef } from "react";
 import type { AppSettings, DesktopActionInvoker, InboxThread } from "../../desktop/types";
 import type { ChatSidebarState } from "../../desktop/types";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
 import type { Project, View } from "../../types";
+import { Tooltip } from "../common/Tooltip";
 
 type SidebarNavigableView = Exclude<View, "gitops">;
 import { NavButton } from "../common/NavButton";
@@ -53,6 +62,8 @@ type SidebarProps = {
   onSelectInboxThread: (thread: InboxThread) => void;
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void;
   onToggleProjectCollapse: (projectId: string) => void;
+  compactMode?: boolean;
+  onCloseCompactSidebar?: () => void;
 };
 
 export function Sidebar({
@@ -94,6 +105,8 @@ export function Sidebar({
   onSelectInboxThread,
   onThreadOpen,
   onToggleProjectCollapse,
+  compactMode = false,
+  onCloseCompactSidebar,
 }: SidebarProps) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -225,19 +238,34 @@ export function Sidebar({
       )}
 
       <div className="sidebar-footer">
-        <button
-          ref={settingsButtonRef}
-          type="button"
-          className="sidebar-settings-button"
-          onClick={onToggleSettings}
-          data-open={settingsOpen ? "true" : "false"}
-          aria-haspopup="menu"
-          aria-expanded={settingsOpen}
-          aria-controls={settingsMenuId}
-        >
-          <Settings size={16} />
-          <span>Settings</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            ref={settingsButtonRef}
+            type="button"
+            className="sidebar-settings-button min-w-0 flex-1"
+            onClick={onToggleSettings}
+            data-open={settingsOpen ? "true" : "false"}
+            aria-haspopup="menu"
+            aria-expanded={settingsOpen}
+            aria-controls={settingsMenuId}
+          >
+            <Settings size={16} />
+            <span>Settings</span>
+          </button>
+
+          {compactMode && onCloseCompactSidebar ? (
+            <Tooltip content="Hide sidebar" placement="right">
+              <button
+                type="button"
+                className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+                onClick={onCloseCompactSidebar}
+                aria-label="Hide sidebar"
+              >
+                <PanelLeftClose size={15} />
+              </button>
+            </Tooltip>
+          ) : null}
+        </div>
 
         {settingsMenuPresent ? (
           <SettingsMenu

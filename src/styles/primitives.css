@@ -221,6 +221,22 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   line-height: 1;
 }
 
+.composer-footer-row {
+  container-type: inline-size;
+}
+
+@container (max-width: 38rem) {
+  .composer-diff-summary {
+    display: none;
+  }
+}
+
+@container (max-width: 32rem) {
+  .composer-branch-chip {
+    display: none;
+  }
+}
+
 .artifact-markdown-editor .mdxeditor {
   height: 100%;
   min-height: 0;

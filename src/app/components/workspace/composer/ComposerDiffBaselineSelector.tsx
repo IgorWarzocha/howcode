@@ -32,6 +32,7 @@ type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>;
   projectId: string;
   projectGitState: ProjectGitState | null;
+  branch?: string | null;
   selectedBaseline: ProjectDiffBaseline;
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void;
 };
@@ -127,6 +128,7 @@ export function ComposerDiffBaselineSelector({
   composerPanelRef,
   projectId,
   projectGitState,
+  branch,
   selectedBaseline,
   onSelectBaseline,
 }: ComposerDiffBaselineSelectorProps) {
@@ -239,6 +241,7 @@ export function ComposerDiffBaselineSelector({
   const fileCountLabel = counts ? formatGitCount(counts.fileCount) : "…";
   const insertionCountLabel = counts ? formatGitCount(counts.insertions) : "…";
   const deletionCountLabel = counts ? formatGitCount(counts.deletions) : "…";
+  const branchLabel = branch ?? "Detached";
 
   return (
     <>
@@ -249,7 +252,7 @@ export function ComposerDiffBaselineSelector({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          "composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
+          "composer-diff-summary composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]",
           open && "text-[color:var(--text)]",
         )}
         onClick={() => setOpen((current) => !current)}
@@ -290,6 +293,21 @@ export function ComposerDiffBaselineSelector({
         >
           {baselinePrefix} {baselineLabel}
         </span>
+      </button>
+
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        className={cn(
+          "composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+          open &&
+            "border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]",
+        )}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="truncate">{branchLabel}</span>
       </button>
 
       {open && typeof document !== "undefined"

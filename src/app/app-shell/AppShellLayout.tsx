@@ -473,6 +473,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               onSelectInboxThread={controller.handleSelectInboxThread}
               onThreadOpen={handleThreadOpen}
               onToggleProjectCollapse={handleToggleProjectCollapse}
+              compactMode={false}
             />
           )}
         </div>
@@ -590,6 +591,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               onSelectInboxThread={controller.handleSelectInboxThread}
               onThreadOpen={handleThreadOpen}
               onToggleProjectCollapse={handleToggleProjectCollapse}
+              compactMode
+              onCloseCompactSidebar={() => setSidebarOverlayOpen(false)}
             />
           </div>
         ) : null}
