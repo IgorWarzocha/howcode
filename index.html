@@ -6,6 +6,66 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="icon" type="image/svg+xml" href="/howcode-icon.svg" />
     <title>howcode</title>
+    <script>
+      (() => {
+        const storageKey = "howcode:pi-gui-theme:v1";
+        const managedVars = [
+          "--bg",
+          "--sidebar",
+          "--workspace",
+          "--panel",
+          "--panel-2",
+          "--panel-3",
+          "--border",
+          "--border-strong",
+          "--text",
+          "--muted",
+          "--muted-2",
+          "--accent",
+          "--accent-bg-subtle",
+          "--accent-bg",
+          "--accent-bg-strong",
+          "--accent-border",
+          "--accent-contrast",
+          "--surface-hover",
+          "--green",
+          "--danger",
+          "--danger-bg",
+          "--danger-border",
+          "--warning",
+          "--warning-bg",
+          "--terminal-bg",
+          "--message-user-bg",
+          "--message-assistant-bg",
+          "--message-tool-bg",
+          "--message-code-bg",
+          "--markdown-heading",
+          "--markdown-link",
+          "--markdown-code",
+          "--markdown-code-bg",
+          "--markdown-quote",
+          "--shadow",
+        ];
+
+        try {
+          const values = JSON.parse(window.localStorage.getItem(storageKey) || "null");
+          if (!values || (values.colorScheme !== "dark" && values.colorScheme !== "light")) {
+            return;
+          }
+          if (!managedVars.every((property) => typeof values[property] === "string")) {
+            return;
+          }
+
+          const rootStyle = document.documentElement.style;
+          document.documentElement.style.colorScheme = values.colorScheme;
+          for (const property of managedVars) {
+            rootStyle.setProperty(property, values[property]);
+          }
+        } catch {
+          // Ignore stale or invalid cached theme state during bootstrap.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

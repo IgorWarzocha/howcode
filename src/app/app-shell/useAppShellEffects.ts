@@ -14,6 +14,7 @@ import { useComposerGitStateSync } from "./useComposerGitStateSync";
 import { useDesktopEventSync } from "./useDesktopEventSync";
 import { useProjectShellSync } from "./useProjectShellSync";
 import { useTakeoverVisibilitySync } from "./useTakeoverVisibilitySync";
+import { useTerminalGitStateSync } from "./useTerminalGitStateSync";
 import {
   shouldCloseUtilityViewOnEscape,
   useUtilityViewEscape,
@@ -108,6 +109,7 @@ export function useAppShellEffects({
 
   useWatchedSessionSync(workspaceState);
   useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch });
+  useTerminalGitStateSync({ composerProjectId, loadProjectGitState, setProjectGitState });
 
   useDesktopEventSync({
     composerProjectId,
