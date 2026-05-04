@@ -154,8 +154,8 @@ export function ArtifactPanel({
             className={cn(compactIconButtonClass, "h-7 w-7")}
             onClick={() => void downloadArtifact()}
             disabled={!selectedArtifact}
-            aria-label="Download artifact"
-            data-tooltip="Download"
+            aria-label={downloadStatus ?? "Download artifact"}
+            data-tooltip={downloadStatus ?? "Download"}
             data-tooltip-placement="left"
           >
             <Download size={14} />
@@ -186,11 +186,6 @@ export function ArtifactPanel({
           </button>
         </div>
       </div>
-      {downloadStatus ? (
-        <div className="border-b border-[color:var(--border)] bg-[color:var(--panel)] px-3 py-1.5 text-[11px] text-[color:var(--muted)]">
-          {downloadStatus}
-        </div>
-      ) : null}
 
       <div className="relative min-h-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
         {artifacts.length === 0 ? (
