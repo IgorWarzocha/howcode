@@ -82,6 +82,7 @@ type AppShellLayoutProps = {
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const controllerRef = useRef(controller);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCompactMode, setSidebarCompactMode] = useState(false);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -350,12 +351,22 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     });
   }, []);
 
+  useEffect(() => {
+    const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236);
+    updateSidebarCompactMode();
+    window.addEventListener("resize", updateSidebarCompactMode);
+    return () => window.removeEventListener("resize", updateSidebarCompactMode);
+  }, []);
+
   return (
     <>
       <div className={appShellRootClass}>
         <div
-          className="relative min-w-0 shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out"
-          style={{ width: sidebarCollapsed ? 0 : 300, opacity: sidebarCollapsed ? 0 : 1 }}
+          className={
+            sidebarCollapsed
+              ? "relative w-0 min-w-0 shrink-0 overflow-hidden opacity-0 transition-[width,opacity] duration-200 ease-out"
+              : "relative w-[clamp(225px,calc(100vw-936px),300px)] min-w-0 shrink-0 overflow-hidden opacity-100 transition-[width,opacity] duration-200 ease-out max-[1161px]:w-0 max-[1161px]:opacity-0 max-[1161px]:pointer-events-none"
+          }
         >
           {sidebarCollapsed ? null : (
             <Sidebar
@@ -466,6 +477,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 onSetDiffBaseline={handleSetDiffBaseline}
                 onSetDiffRenderMode={handleSetDiffRenderMode}
                 sidebarCollapsed={sidebarCollapsed}
+                sidebarAutoHidden={sidebarCompactMode}
                 onToggleSidebar={() => setSidebarCollapsed((collapsed) => !collapsed)}
               />
             </div>

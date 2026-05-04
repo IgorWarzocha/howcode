@@ -32,6 +32,7 @@ type CodeWorkspaceViewProps = {
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
   onSetDiffRenderMode: (renderMode: ProjectDiffRenderMode) => void;
   sidebarCollapsed: boolean;
+  sidebarAutoHidden: boolean;
   onToggleSidebar: () => void;
 };
 
@@ -58,6 +59,7 @@ export function CodeWorkspaceView({
   onSetDiffBaseline,
   onSetDiffRenderMode,
   sidebarCollapsed,
+  sidebarAutoHidden,
   onToggleSidebar,
 }: CodeWorkspaceViewProps) {
   const [composerPromptResetKey, setComposerPromptResetKey] = useState(0);
@@ -281,6 +283,7 @@ export function CodeWorkspaceView({
         >
           <div className="pointer-events-auto grid gap-2.5">
             <WorkspaceComposerDock
+              compactControls={sidebarAutoHidden}
               left={
                 (state.activeView === "thread" || state.activeView === "gitops") &&
                 !state.takeoverVisible ? (
