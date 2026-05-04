@@ -1,3 +1,16 @@
+### Next update
+
+The next release will focus on better responsive UI and more useful tooltips/onboarding.
+
+### 0.1.5
+
+- Added GUI support for Howcode and Pi JSON themes.
+- Improved theme coverage across the app.
+- Fixed composer follow-ups opening in the wrong session.
+- Fixed tooltips clipping near window edges.
+
+Snapshot: May 4, 2026.
+
 ### 0.1.4
 
 - Added Chat mode: just chat, with artifacts and minimal tools.
