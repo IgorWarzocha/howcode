@@ -176,10 +176,10 @@ export function ChatWorkspaceView({
           )}
         >
           <div className="pointer-events-auto grid gap-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_800px_minmax(0,1fr)] items-end gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,800px)_minmax(0,1fr)] items-end gap-3">
               <div
                 className={cn(
-                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
+                  "mb-1.5 ml-3 min-w-0 self-end",
                   artifactsVisible && !artifactsFullscreen && "invisible",
                 )}
               >
@@ -194,7 +194,7 @@ export function ChatWorkspaceView({
                   {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
                 </button>
               </div>
-              <div className="grid w-[800px] gap-0">
+              <div className="relative col-start-2 grid w-full max-w-[800px] gap-0">
                 <QueuedPromptsCard
                   prompts={activeComposerState?.queuedPrompts ?? []}
                   pendingPromptIds={pendingQueuedPromptIdsForSession}
@@ -278,7 +278,7 @@ export function ChatWorkspaceView({
               </div>
               <div
                 className={cn(
-                  "mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
+                  "col-start-3 mb-1.5 min-w-0 self-end opacity-0 xl:opacity-100",
                   artifactsVisible && !artifactsFullscreen && "invisible",
                 )}
               >

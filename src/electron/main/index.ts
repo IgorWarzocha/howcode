@@ -3,6 +3,7 @@ import { createMainWindow } from "./app/create-main-window";
 import { loadMainWindow } from "./app/load-main-window";
 import { registerDesktopIpc } from "./ipc/register-desktop-ipc";
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from "./runtime/devtools";
+import { applyDevViewport } from "./runtime/dev-viewport";
 import { configureDesktopEnvironment } from "./runtime/environment";
 import { loadDesktopRuntimeModules } from "./runtime/load-desktop-runtime";
 import { registerDesktopRuntimeShutdown } from "./runtime/shutdown";
@@ -23,6 +24,7 @@ async function openMainWindow() {
   });
 
   await loadMainWindow(mainWindow);
+  await applyDevViewport(mainWindow);
   return mainWindow;
 }
 

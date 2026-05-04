@@ -322,27 +322,9 @@ export function ComposerPromptSurface({
   const attachmentButtonLabel = attachments.length > 0 ? "Manage attachments" : "Add attachment";
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath;
   return (
-    <div className="relative left-1/2 grid w-[calc(100%+5rem)] -translate-x-1/2 grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
-      <div className="relative mb-[3.55rem] h-8 w-8 shrink-0 text-[color:var(--muted)]">
-        <div className="absolute bottom-0 left-0 flex w-7 flex-col-reverse items-center gap-1">
-          <button
-            ref={pickerButtonRef}
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-            onClick={() => {
-              if (slashCommands.open) {
-                slashCommands.dismiss({ clearDraft: true });
-              }
-              pickAttachments();
-            }}
-            aria-label={attachmentButtonLabel}
-            data-tooltip={attachmentButtonLabel}
-          >
-            <span className={cn(compactIconButtonClass, "h-7 w-7 shrink-0 rounded-full")}>
-              <Paperclip size={15} />
-            </span>
-          </button>
-
+    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible xl:left-1/2 xl:w-[calc(100%+5rem)] xl:-translate-x-1/2">
+      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+        <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
           {attachments.length > 0 ? (
             <>
               <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
@@ -362,6 +344,23 @@ export function ComposerPromptSurface({
               </button>
             </>
           ) : null}
+          <button
+            ref={pickerButtonRef}
+            type="button"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            onClick={() => {
+              if (slashCommands.open) {
+                slashCommands.dismiss({ clearDraft: true });
+              }
+              pickAttachments();
+            }}
+            aria-label={attachmentButtonLabel}
+            data-tooltip={attachmentButtonLabel}
+          >
+            <span className={cn(compactIconButtonClass, "h-7 w-7 shrink-0 rounded-full")}>
+              <Paperclip size={15} />
+            </span>
+          </button>
         </div>
       </div>
 

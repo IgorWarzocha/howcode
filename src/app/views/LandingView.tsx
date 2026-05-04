@@ -65,7 +65,12 @@ function PixelHLogo() {
   );
 
   return (
-    <svg viewBox="0 0 800 800" aria-label="Howcode logo" role="img" className="h-[120px] w-[92px]">
+    <svg
+      viewBox="0 0 800 800"
+      aria-label="Howcode logo"
+      role="img"
+      className="h-[clamp(64px,12vh,120px)] w-[clamp(49px,9.2vh,92px)]"
+    >
       {pixels.map((pixel) => (
         <rect
           key={pixel.key}
@@ -140,11 +145,11 @@ export function LandingView({ className }: LandingViewProps) {
   return (
     <section
       className={cn(
-        "mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(6rem,24vh,16rem)] pb-6",
+        "mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(2rem,10vh,7rem)] pb-6",
         className,
       )}
     >
-      <div className="grid h-full min-h-0 w-full max-w-[760px] grid-rows-[auto_auto_minmax(0,1fr)] justify-items-center gap-4 text-center">
+      <div className="grid h-full min-h-0 w-full max-w-[760px] grid-rows-[auto_auto_minmax(0,1fr)] justify-items-center gap-3 text-center sm:gap-4">
         <PixelHLogo />
         <h1 className="sr-only">{content.title}</h1>
 
@@ -167,7 +172,7 @@ export function LandingView({ className }: LandingViewProps) {
                   id={`landing-section-${index}-tab`}
                   role="tab"
                   className={cn(
-                    "border-b px-0 py-4 text-center text-[15px] font-medium transition-colors",
+                    "border-b px-0 py-3 text-center text-[15px] font-medium transition-colors sm:py-4",
                     selected
                       ? "border-[color:var(--accent)] text-[color:var(--text)]"
                       : "border-transparent text-[color:var(--muted)] hover:text-[color:var(--text)]",
