@@ -6,6 +6,9 @@ The next release will focus on better responsive UI and more useful tooltips/onb
 
 - Added GUI support for Howcode and Pi JSON themes.
 - Improved theme coverage across the app.
+- Applied saved themes before first paint.
+- Stabilized Pi TUI takeover sizing.
+- Kept git branch state in sync after terminal/TUI activity.
 - Fixed composer follow-ups opening in the wrong session.
 - Fixed tooltips clipping near window edges.
 
