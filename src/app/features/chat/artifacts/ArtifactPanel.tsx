@@ -255,7 +255,7 @@ export function ArtifactPanel({
         {view === "preview" && selectedArtifact?.kind !== "markdown" ? (
           <div className="relative h-full bg-[color:var(--sidebar)]">
             {previewError ? (
-              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)]">
+              <pre className="absolute right-2 bottom-2 left-2 z-10 max-h-32 overflow-auto rounded-lg border border-[color:var(--danger-border)] bg-[color:var(--panel)] p-2 text-[11px] whitespace-pre-wrap text-[color:var(--danger)] shadow-[var(--shadow)]">
                 {previewError}
               </pre>
             ) : null}
