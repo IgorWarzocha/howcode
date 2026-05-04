@@ -27,6 +27,7 @@ type CodeWorkspaceViewProps = {
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
+  terminalDrawerOverlay?: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
@@ -55,6 +56,7 @@ export function CodeWorkspaceView({
   diffBaseline,
   diffRenderMode,
   terminalDrawerVisible,
+  terminalDrawerOverlay = false,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
@@ -88,7 +90,8 @@ export function CodeWorkspaceView({
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showThreadFooter = state.activeView === "thread";
   const showDiffInMainView = state.activeView === "gitops";
-  const showDesktopTerminalDrawer = state.activeView === "thread" && terminalDrawerVisible;
+  const showDesktopTerminalDrawer =
+    state.activeView === "thread" && terminalDrawerVisible && !terminalDrawerOverlay;
   const gitOpsFileTreeStateKey = `${composerProjectId}:${terminalSessionPath ?? "project"}`;
   const gitOpsFileTreeVisible =
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??

@@ -364,6 +364,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   }, [sidebarCompactMode]);
 
   useEffect(() => {
+    if (sidebarCompactMode && controllerRef.current.state.terminalVisible) {
+      controllerRef.current.handleCloseTerminalDrawer();
+    }
+  }, [sidebarCompactMode]);
+
+  useEffect(() => {
     if (!sidebarOverlayOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSidebarOverlayOpen(false);
@@ -635,6 +641,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               takeoverTerminalKey={takeoverTerminalKey}
               terminalDrawerVisible={terminalDrawerVisible}
               terminalSessionPath={terminalSessionPath}
+              terminalDrawerOverlay={sidebarCompactMode}
               workspaceContentClass={workspaceContentClass}
               onOpenGitOps={handleOpenGitOpsFromTakeover}
               onSetDiffBaseline={handleSetDiffBaseline}
@@ -645,7 +652,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
             {terminalDrawerPresent ? (
               <div
                 className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
-                style={{ width: TERMINAL_DRAWER_WIDTH }}
+                style={{ width: sidebarCompactMode ? "100%" : TERMINAL_DRAWER_WIDTH }}
               >
                 <div
                   data-open={terminalDrawerVisible ? "true" : "false"}

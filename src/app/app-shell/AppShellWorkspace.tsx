@@ -14,6 +14,7 @@ type AppShellWorkspaceProps = {
   diffBaseline: ProjectDiffBaseline;
   diffRenderMode: ProjectDiffRenderMode;
   terminalDrawerVisible: boolean;
+  terminalDrawerOverlay?: boolean;
   terminalSessionPath: string | null;
   workspaceContentClass: string;
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void;
@@ -33,6 +34,7 @@ export function AppShellWorkspace({
   diffBaseline,
   diffRenderMode,
   terminalDrawerVisible,
+  terminalDrawerOverlay = false,
   terminalSessionPath,
   workspaceContentClass,
   onSetDiffBaseline,
@@ -84,6 +86,7 @@ export function AppShellWorkspace({
       diffBaseline={diffBaseline}
       diffRenderMode={diffRenderMode}
       terminalDrawerVisible={terminalDrawerVisible}
+      terminalDrawerOverlay={terminalDrawerOverlay}
       terminalSessionPath={terminalSessionPath}
       workspaceContentClass={workspaceContentClass}
       onSetDiffBaseline={onSetDiffBaseline}
