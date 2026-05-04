@@ -18,7 +18,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.default-location",
       category: "projects",
       title: "Default project location",
-      description: "Folder where new howcode projects are created by default.",
+      description: "Default folder for new projects.",
       keywords: "project folder location path default",
       render: () => (
         <div className="relative w-[22rem] max-w-full">
@@ -48,7 +48,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.initialize-git",
       category: "projects",
       title: "Initialise git",
-      description: "Create a git repository for new projects so diffs work immediately.",
+      description: "Always git init when creating a new project.",
       keywords: "git init initialize projects diffs",
       render: () => (
         <ToggleBox
@@ -62,7 +62,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.gitops-default",
       category: "projects",
       title: "GitOps default",
-      description: "Default commit action for projects that do not have their own override.",
+      description: "Default global commit action.",
       keywords: "gitops commit push default project",
       render: () => (
         <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
@@ -92,7 +92,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.git-diff-baseline-default",
       category: "projects",
       title: "Diff comparison default",
-      description: "Default baseline for the files and lines changed summary.",
+      description: "Default baseline setting for git summary.",
       keywords: "git diff baseline comparison files lines default",
       render: () => (
         <div className="grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)] xl:grid-cols-5">
@@ -159,7 +159,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.git-diff-file-tree-default",
       category: "projects",
       title: "Diff file tree",
-      description: "Default visibility for the GitOps changed-file tree.",
+      description: "Default visibility for the GitOps file tree.",
       keywords: "git diff file tree changed files sidebar default",
       render: () => (
         <ToggleBox
@@ -175,7 +175,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.deletion-mode",
       category: "projects",
       title: "Project deletion cleanup",
-      description: "Delete only Pi session files, or nuke the full project folder from disk.",
+      description: "Delete only Pi session files, or nuke the full project folder.",
       keywords: "delete deletion cleanup project full clean pi only",
       render: () => (
         <div className="grid grid-cols-2 rounded-full border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] p-1 text-[12px] text-[color:var(--muted)]">
@@ -205,7 +205,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.import-ui",
       category: "projects",
       title: "Project UI import",
-      description: "Scan current projects for UI info like repo and origin status.",
+      description: "Scan projects for UI info like repo and origin status.",
       keywords: "project import ui scan repo origin first launch",
       render: () => (
         <div className="grid justify-items-end gap-1.5">
@@ -254,7 +254,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.favorite-folders",
       category: "projects",
       title: "Favorite folders",
-      description: "Pinned paths shown in the attachment picker alongside Home.",
+      description: "Paths shown in the attachment picker alongside Home.",
       keywords: "favorite folders attachment picker paths",
       render: () => (
         <div className="grid w-[28rem] max-w-full gap-2">
@@ -316,8 +316,7 @@ export function buildProjectsSettingsDescriptors({
       id: "projects.clipboard-images",
       category: "projects",
       title: "Clipboard images",
-      description:
-        "Delete temp images created when pasted clipboard screenshots become attachments.",
+      description: "Delete temp clipboard images.",
       keywords: "clipboard images screenshots attachments delete cleanup temp",
       render: () => (
         <div className="flex max-w-full items-center justify-end gap-2">

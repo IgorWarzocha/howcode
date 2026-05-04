@@ -1,15 +1,20 @@
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DictationModelId } from "../../desktop/types";
+import { Tooltip } from "../../components/common/Tooltip";
 import { popoverPanelClass, composerTextActionButtonClass } from "../../ui/classes";
 import { cn } from "../../utils/cn";
+import { settingRowClass } from "./settingsClasses";
 import type { InlineSelectOption, SettingDescriptor } from "./settingsTypes";
 
 export function ToggleBox({
   checked,
   label,
   onClick,
-}: { checked: boolean; label: string; onClick: () => void }) {
+}: {
+  checked: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -17,24 +22,39 @@ export function ToggleBox({
       onClick={onClick}
       aria-label={label}
       aria-pressed={checked}
-      data-tooltip={label}
-      data-tooltip-placement="left"
     >
       {checked ? <Check size={13} /> : null}
     </button>
   );
 }
 
-export function SettingRow({ setting }: { setting: SettingDescriptor }) {
+export function SettingRow({
+  setting,
+  showHelp,
+}: {
+  setting: SettingDescriptor;
+  showHelp: boolean;
+}) {
+  const title = (
+    <div className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{setting.title}</div>
+  );
+  const control = <div className="min-w-0 max-w-full">{setting.render()}</div>;
+
   return (
-    <div
-      className="grid min-h-10 min-w-0 grid-cols-1 items-center gap-2 border-b border-[rgba(169,178,215,0.09)] px-1 py-1.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)] sm:gap-5"
-      data-setting-id={setting.id}
-    >
-      <div className="min-w-0 truncate text-[13px] text-[color:var(--text)]">{setting.title}</div>
-      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">
-        {setting.render()}
-      </div>
+    <div className={settingRowClass} data-setting-id={setting.id}>
+      {showHelp ? (
+        title
+      ) : (
+        <Tooltip
+          content={setting.description}
+          delayMs={1000}
+          className="block min-w-0"
+          tabIndex={0}
+        >
+          {title}
+        </Tooltip>
+      )}
+      <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">{control}</div>
     </div>
   );
 }
@@ -89,7 +109,7 @@ export function InlineSelect({
 
   return (
     <span
-      className={cn("relative block max-w-full text-[13px]", className, "w-52")}
+      className={cn("relative block w-52 max-w-full text-[12px]", className)}
       data-inline-select-root
     >
       <button
@@ -109,7 +129,7 @@ export function InlineSelect({
         aria-expanded={open}
         aria-controls={`${id}-menu`}
       >
-        <span className="min-w-0 truncate text-[13px] text-[color:var(--text)]">
+        <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">
           {selectedOption?.label ?? "Select"}
         </span>
       </button>
@@ -141,7 +161,7 @@ export function InlineSelect({
                 ref={searchInputRef}
                 value={search}
                 onChange={(event) => setSearch(event.currentTarget.value)}
-                className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+                className="h-8 w-full rounded-lg border border-[rgba(169,178,215,0.14)] bg-[rgba(255,255,255,0.055)] px-2.5 pl-8 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
                 placeholder={`Search ${options.length} options…`}
                 aria-label="Search options"
               />
@@ -166,7 +186,7 @@ export function InlineSelect({
                   }}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] leading-4">{option.label}</span>
+                    <span className="block truncate text-[12px] leading-4">{option.label}</span>
                     {option.description ? (
                       <span className="block truncate text-[11px] leading-3 text-[color:var(--muted)]">
                         {option.description}
@@ -183,10 +203,4 @@ export function InlineSelect({
       ) : null}
     </span>
   );
-}
-
-export function normalizeManagedDictationModelId(
-  modelId: string | null | undefined,
-): DictationModelId | null {
-  return modelId === "tiny.en" || modelId === "base.en" || modelId === "small.en" ? modelId : null;
 }

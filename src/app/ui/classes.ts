@@ -65,7 +65,7 @@ export const primaryButtonClass =
   "min-h-8 rounded-full border border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] px-4 text-[13px] font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-bg-strong)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]";
 
 export const composerTextActionButtonClass =
-  "inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 text-[12.5px] font-medium leading-5 text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]";
+  "settings-control-text inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]";
 
 export const interactiveCardClass =
   "rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[color:var(--panel-2)]";
@@ -111,7 +111,7 @@ export const settingsSelectButtonClass =
   "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]";
 
 export const settingsInputClass =
-  "min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]";
+  "settings-control-text min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]";
 
 export const settingsListRowClass =
   "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2";

@@ -1,6 +1,8 @@
 import {
+  type HTMLAttributes,
   type PropsWithChildren,
   type ReactNode,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -10,27 +12,73 @@ import { createPortal } from "react-dom";
 import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import { cn } from "../../utils/cn";
 
-type TooltipProps = PropsWithChildren<{
-  content: ReactNode;
-  placement?: "top" | "right" | "left";
-  className?: string;
-  contentClassName?: string;
-}>;
+type TooltipProps = PropsWithChildren<
+  HTMLAttributes<HTMLSpanElement> & {
+    content: ReactNode;
+    placement?: "top" | "right" | "left";
+    className?: string;
+    contentClassName?: string;
+    delayMs?: number;
+  }
+>;
 
 export function Tooltip({
   content,
   placement = "top",
   className,
   contentClassName,
+  delayMs = 0,
   children,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
+  ...anchorProps
 }: TooltipProps) {
   const [open, setOpen] = useState(false);
   const present = useAnimatedPresence(open, 120);
   const tooltipId = useId();
   const anchorRef = useRef<HTMLSpanElement>(null);
   const contentRef = useRef<HTMLSpanElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+  const openTimerRef = useRef<number | null>(null);
+  const [position, setPosition] = useState<{ left: number; top: number }>({
+    left: 0,
+    top: 0,
+  });
   const [positionReady, setPositionReady] = useState(false);
+
+  const clearOpenTimer = () => {
+    if (openTimerRef.current !== null) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  };
+
+  const showTooltip = () => {
+    clearOpenTimer();
+    if (delayMs <= 0) {
+      setOpen(true);
+      return;
+    }
+
+    openTimerRef.current = window.setTimeout(() => {
+      openTimerRef.current = null;
+      setOpen(true);
+    }, delayMs);
+  };
+
+  const hideTooltip = () => {
+    clearOpenTimer();
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current !== null) {
+        window.clearTimeout(openTimerRef.current);
+      }
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (!present) {
@@ -85,12 +133,25 @@ export function Tooltip({
 
   return (
     <span
+      {...anchorProps}
       ref={anchorRef}
       className={cn("tooltip-anchor", className)}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
+      onMouseEnter={(event) => {
+        onMouseEnter?.(event);
+        showTooltip();
+      }}
+      onMouseLeave={(event) => {
+        onMouseLeave?.(event);
+        hideTooltip();
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+        showTooltip();
+      }}
+      onBlur={(event) => {
+        onBlur?.(event);
+        hideTooltip();
+      }}
       aria-describedby={open ? tooltipId : undefined}
     >
       {children}

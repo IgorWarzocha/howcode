@@ -16,8 +16,7 @@ export function buildCommonSettingsDescriptors({
       id: "common.streaming-behavior",
       category: "pi-runtime",
       title: "Send while Pi is responding",
-      description:
-        "Desktop composer policy. Steer interrupts, Queue waits for the current turn, Stop aborts without sending.",
+      description: "Composer follow-up messages behavior.",
       keywords: "queue steer stop streaming responding send composer",
       render: () => (
         <div className="min-w-0 sm:min-w-[13rem]">
@@ -52,7 +51,7 @@ export function buildCommonSettingsDescriptors({
       id: "common.howcode-native-ask-questions",
       category: "pi-runtime",
       title: "Ask questions tool",
-      description: "Let Pi pause and ask structured questions in Howcode sessions.",
+      description: "Native ask questions tool (GUI+TUI).",
       keywords: "native extensions ask questions tool clarify",
       render: () => (
         <ToggleBox
@@ -66,8 +65,7 @@ export function buildCommonSettingsDescriptors({
       id: "common.pi-tui-takeover",
       category: "pi-runtime",
       title: "Open in TUI",
-      description:
-        "Use Pi takeover by default until a conversation is overridden for this app session.",
+      description: "Always use Pi TUI takeover.",
       keywords: "takeover terminal tui open conversations",
       render: () => (
         <ToggleBox
@@ -81,7 +79,7 @@ export function buildCommonSettingsDescriptors({
       id: "common.hover-to-focus",
       category: "pi-runtime",
       title: "Hover to type",
-      description: "Focus composer and terminal input when the mouse enters their typing surface.",
+      description: "Hover to input for composer and terminal.",
       keywords: "hover focus type composer terminal drawer input",
       render: () => (
         <ToggleBox
@@ -95,7 +93,7 @@ export function buildCommonSettingsDescriptors({
       id: "common.hover-to-blur",
       category: "pi-runtime",
       title: "Stop typing on hover leave",
-      description: "Blur composer and terminal input when the cursor leaves their hover area.",
+      description: "Instantly leave input when not in hover area.",
       keywords: "hover blur leave stop typing composer terminal drawer input",
       render: () => (
         <ToggleBox
