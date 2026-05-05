@@ -3,6 +3,7 @@ import { getDesktopActionErrorMessage } from "../desktop/action-results";
 import { getErrorMessage } from "../desktop/error-messages";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
+import { WorkspaceComposerDock } from "../components/workspace/WorkspaceComposerDock";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
 import { isCompactSlashCommand } from "../../../shared/composer-slash-commands";
 import type {
@@ -160,8 +161,8 @@ export function InboxView({
   const messageMarkdown = thread.content.join("\n\n").trim();
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] px-6 pt-6 pb-4">
-      <div className="w-full pb-5">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] px-4 pt-4 pb-4 min-[900px]:px-6 min-[900px]:pt-6">
+      <div className="mx-auto w-full max-w-[92ch] pb-4 min-[900px]:pb-5">
         <div className="grid w-full gap-2 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--panel)] px-4 py-3 shadow-[var(--shadow)]">
           <div className="flex min-w-0 items-center gap-2 text-[11px] leading-4 text-[color:var(--muted-2)]">
             <span className="truncate">{thread.projectName}</span>
@@ -181,8 +182,8 @@ export function InboxView({
       </div>
 
       <div className="min-h-0 overflow-y-auto">
-        <div className="grid h-full w-full content-start pb-5">
-          <div className="min-h-0 max-w-[92ch] text-pretty">
+        <div className="grid h-full w-full content-start justify-items-center pb-4 min-[900px]:pb-5">
+          <div className="min-h-0 w-full max-w-[92ch] text-pretty">
             {messageMarkdown ? (
               <MarkdownContent
                 markdown={messageMarkdown}
@@ -198,35 +199,40 @@ export function InboxView({
       </div>
 
       <div className="pt-1">
-        <div className="w-full">
-          <InboxComposer
-            appSettings={appSettings}
-            attachments={attachments}
-            availableModels={availableModels}
-            availableThinkingLevels={availableThinkingLevels}
-            contextUsage={contextUsage}
-            currentModel={currentModel}
-            currentThinkingLevel={currentThinkingLevel}
-            draft={draft}
-            errorMessage={errorMessage}
-            favoriteFolders={favoriteFolders}
-            isCompacting={isCompacting}
-            isStreaming={thread.running}
-            isSending={isSending}
-            showDictationButton={showDictationButton}
-            thread={thread}
-            onChangeDraft={setDraft}
-            onChangeAttachments={setAttachments}
-            onChangeErrorMessage={setErrorMessage}
-            onAction={onAction}
-            onDismiss={() => onDismissThread(thread)}
-            onListAttachmentEntries={onListAttachmentEntries}
-            onOpenThread={() => onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)}
-            onOpenSettingsView={onOpenSettingsView}
-            onSend={(sendInput) => handleSend(sendInput)}
-            onStop={handleStop}
-          />
-        </div>
+        <WorkspaceComposerDock
+          compactControls
+          center={
+            <InboxComposer
+              appSettings={appSettings}
+              attachments={attachments}
+              availableModels={availableModels}
+              availableThinkingLevels={availableThinkingLevels}
+              contextUsage={contextUsage}
+              currentModel={currentModel}
+              currentThinkingLevel={currentThinkingLevel}
+              draft={draft}
+              errorMessage={errorMessage}
+              favoriteFolders={favoriteFolders}
+              isCompacting={isCompacting}
+              isStreaming={thread.running}
+              isSending={isSending}
+              showDictationButton={showDictationButton}
+              thread={thread}
+              onChangeDraft={setDraft}
+              onChangeAttachments={setAttachments}
+              onChangeErrorMessage={setErrorMessage}
+              onAction={onAction}
+              onDismiss={() => onDismissThread(thread)}
+              onListAttachmentEntries={onListAttachmentEntries}
+              onOpenThread={() =>
+                onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)
+              }
+              onOpenSettingsView={onOpenSettingsView}
+              onSend={(sendInput) => handleSend(sendInput)}
+              onStop={handleStop}
+            />
+          }
+        />
       </div>
     </div>
   );
