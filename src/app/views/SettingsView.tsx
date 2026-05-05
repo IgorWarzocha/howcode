@@ -272,7 +272,7 @@ export function SettingsView({
 
   return (
     <ViewShell
-      className="h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden pb-0"
+      className="h-full content-stretch grid-rows-[auto_minmax(0,1fr)] overflow-hidden !pb-0"
       maxWidthClassName={showHelp ? "max-w-[1360px]" : "max-w-[1120px]"}
     >
       <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
@@ -333,7 +333,7 @@ export function SettingsView({
 
       <div
         className={cn(
-          "grid min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]",
+          "grid h-full min-h-0 min-w-0 items-start gap-4 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]",
           showHelp && "lg:grid-cols-[220px_minmax(0,1fr)_minmax(18rem,24rem)]",
         )}
       >

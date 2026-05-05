@@ -89,6 +89,12 @@ export function CodeWorkspaceView({
   } = controller;
   const showWorkspaceFooter = state.activeView === "thread" || state.activeView === "gitops";
   const showThreadFooter = state.activeView === "thread";
+  const showCodeSidebarFooter = state.activeView === "code";
+  const showUtilitySidebarButton =
+    state.activeView === "settings" ||
+    state.activeView === "extensions" ||
+    state.activeView === "skills" ||
+    state.activeView === "archived";
   const showDiffInMainView = state.activeView === "gitops";
   const showDesktopTerminalDrawer =
     state.activeView === "thread" && terminalDrawerVisible && !terminalDrawerOverlay;
@@ -454,7 +460,7 @@ export function CodeWorkspaceView({
             />
           </div>
         </footer>
-      ) : state.activeView === "code" ? (
+      ) : showCodeSidebarFooter ? (
         <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
           <div className="pointer-events-auto grid gap-2.5">
             <WorkspaceComposerDock
@@ -464,7 +470,7 @@ export function CodeWorkspaceView({
                 !sidebarCompactMode ? (
                   <button
                     type="button"
-                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                    className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
                     onClick={onToggleSidebar}
                     aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
                     data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
@@ -477,6 +483,19 @@ export function CodeWorkspaceView({
             />
           </div>
         </footer>
+      ) : showUtilitySidebarButton && !sidebarCompactMode ? (
+        <div className="pointer-events-none absolute bottom-5 left-5 z-10">
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+            onClick={onToggleSidebar}
+            aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+            data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+            data-tooltip-placement="right"
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </button>
+        </div>
       ) : null}
     </div>
   );

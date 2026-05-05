@@ -458,6 +458,7 @@ export function InboxComposer({
             favoriteFolders={favoriteFolders}
             pickerLoading={pickerLoading}
             pickerOpen={openMenu === "picker"}
+            pickerButtonRef={pickerButtonRef}
             pickerPanelRef={pickerPanelRef}
             pickerState={pickerState}
             placeholderText={errorMessage ?? "Reply to this thread…"}
