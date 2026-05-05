@@ -1,6 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { ComposerState, DesktopEvent, ProjectGitState, ThreadData } from "../desktop/types";
+import type {
+  ChatSidebarState,
+  ComposerState,
+  DesktopEvent,
+  ProjectGitState,
+  ThreadData,
+} from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import {
@@ -11,10 +17,7 @@ import {
   shouldAutoOpenStartedThread,
   shouldDisplayStartedThreadForLocalDraft,
 } from "./desktop-event-sync";
-import {
-  applyProjectThreadToShellState,
-  getDraftReplacementSessionPath,
-} from "./project-thread-cache";
+import { applyThreadEventToSidebarState } from "./sidebar-thread-sync";
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
@@ -31,6 +34,7 @@ type UseDesktopEventSyncInput = {
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>;
@@ -46,6 +50,7 @@ export function useDesktopEventSync({
   queryClient,
   dispatch,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   setThreadHistoryCompactions,
@@ -164,24 +169,39 @@ export function useDesktopEventSync({
       const isAliasedLocalDraftUpdate =
         aliasedLocalDraftSessionPath !== null &&
         aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath;
+      const hasVisibleAssistantActivity = event.thread.messages.some(
+        (message) => message.role !== "user",
+      );
       const isCompactionThreadUpdate =
         event.reason === "compaction-start" || event.reason === "compaction";
 
-      setLiveThreadData((current) =>
-        isVisibleThreadUpdate ||
-        shouldAutoOpenThread ||
-        isAliasedLocalDraftUpdate ||
-        current?.sessionPath === event.sessionPath
-          ? {
-              ...threadWithPreferences,
-              sessionPath:
-                isAliasedLocalDraftUpdate && aliasedLocalDraftSessionPath
-                  ? aliasedLocalDraftSessionPath
-                  : threadWithPreferences.sessionPath,
-              diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
-            }
-          : current,
-      );
+      setLiveThreadData((current) => {
+        const shouldApplyLiveThread =
+          isVisibleThreadUpdate ||
+          shouldAutoOpenThread ||
+          isAliasedLocalDraftUpdate ||
+          current?.sessionPath === event.sessionPath;
+        if (!shouldApplyLiveThread) return current;
+
+        const shouldSuppressFirstTurnTimeline =
+          !hasVisibleAssistantActivity &&
+          (isAliasedLocalDraftUpdate ||
+            (isVisibleThreadUpdate &&
+              current?.isStreaming === true &&
+              (current.messages.length ?? 0) === 0));
+
+        return {
+          ...threadWithPreferences,
+          messages: shouldSuppressFirstTurnTimeline ? [] : threadWithPreferences.messages,
+          sessionPath:
+            isAliasedLocalDraftUpdate &&
+            aliasedLocalDraftSessionPath &&
+            !hasVisibleAssistantActivity
+              ? aliasedLocalDraftSessionPath
+              : threadWithPreferences.sessionPath,
+          diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
+        };
+      });
 
       if (isCompactionThreadUpdate && isVisibleThreadUpdate) {
         setThreadHistoryCompactions(0);
@@ -197,31 +217,12 @@ export function useDesktopEventSync({
         event.reason === "external" ||
         event.reason === "compaction"
       ) {
-        applyProjectThreadToShellState(
+        applyThreadEventToSidebarState({
+          event,
+          workspaceState: latestWorkspaceState,
           queryClient,
-          event.projectId,
-          {
-            id: event.threadId,
-            title: event.thread.title,
-            age: "Now",
-            lastModifiedMs: Date.now(),
-            sessionPath: event.sessionPath,
-            running: event.thread.isStreaming || event.thread.isCompacting,
-          },
-          {
-            replaceSessionPath: getDraftReplacementSessionPath(
-              latestWorkspaceState.selectedSessionPath,
-              latestWorkspaceState.selectedProjectId,
-              event.projectId,
-            ),
-          },
-        );
-        void loadProjectThreads(event.projectId, {
-          chat: latestWorkspaceState.activeView === "chat",
+          setChatSidebarState,
         });
-        if (latestWorkspaceState.activeView === "chat") {
-          void refreshChatSidebarState();
-        }
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
         if (event.reason !== "compaction") {
           scheduleShellStateRefresh();
@@ -247,6 +248,14 @@ export function useDesktopEventSync({
           sessionPath: event.sessionPath,
           view: event.isChat === true ? "chat" : "thread",
         });
+      } else if (shouldDisplayLocalDraftThread && hasVisibleAssistantActivity) {
+        dispatch({
+          type: "open-thread",
+          projectId: event.projectId,
+          threadId: event.threadId,
+          sessionPath: event.sessionPath,
+          view: event.isChat === true ? "chat" : "thread",
+        });
       } else if (
         isVisibleThreadUpdate &&
         latestWorkspaceState.selectedThreadId !== event.threadId &&
@@ -262,6 +271,15 @@ export function useDesktopEventSync({
       }
 
       if (event.reason === "end" || event.reason === "external") {
+        if (event.isChat === true) {
+          if (latestWorkspaceState.activeView === "chat") {
+            void loadProjectThreads(event.projectId, { chat: true });
+          }
+          void refreshChatSidebarState();
+        } else if (latestWorkspaceState.activeView !== "chat") {
+          void loadProjectThreads(event.projectId);
+        }
+
         invalidateProjectWorktreeQueries({
           activeView: latestWorkspaceState.activeView,
           projectId: event.projectId,
@@ -284,6 +302,7 @@ export function useDesktopEventSync({
     queryClient,
     refreshChatSidebarState,
     scheduleShellStateRefresh,
+    setChatSidebarState,
     setComposerState,
     setLiveThreadData,
     setProjectGitState,

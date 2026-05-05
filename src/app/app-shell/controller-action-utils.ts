@@ -72,8 +72,11 @@ export function hasDesktopBridge() {
   return typeof window.piDesktop?.invokeAction === "function";
 }
 
-export function buildLocalThreadFallback(projectId: string) {
-  return createLocalThreadDraft(projectId);
+export function buildLocalThreadFallback(
+  projectId: string,
+  options: { chatGroupId?: string | null } = {},
+) {
+  return createLocalThreadDraft(projectId, undefined, options);
 }
 
 export function isThreadPinAction(action: DesktopAction) {

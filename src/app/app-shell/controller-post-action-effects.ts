@@ -3,6 +3,7 @@ import type { Dispatch } from "react";
 import type { DesktopAction } from "../desktop/actions";
 import type {
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   DesktopActionResult,
   ProjectDiffBaseline,
@@ -10,12 +11,8 @@ import type {
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
-import { isLocalSessionPath } from "../../../shared/session-paths";
 import { desktopQueryKeys } from "../query/desktop-query";
-import {
-  applyProjectThreadToShellState,
-  removeProjectThreadFromShellState,
-} from "./project-thread-cache";
+import { applyProjectThreadToShellState } from "./project-thread-cache";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
 import {
@@ -29,6 +26,7 @@ import {
   hasDesktopBridge,
   isThreadList,
 } from "./controller-action-utils";
+import { reconcileComposerThreadResult } from "./sidebar-thread-sync";
 
 export {
   applyOptimisticPinUpdate,
@@ -54,9 +52,12 @@ type RunPostDesktopActionEffectsInput = {
     composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
   setArchivedThreads: (threads: ArchivedThread[]) => void;
+  setChatSidebarState: (
+    updater: (state: ChatSidebarState | null) => ChatSidebarState | null,
+  ) => void;
   setComposerState: (state: ComposerState | null) => void;
   setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void;
   setProjectGitState: (state: ProjectGitState | null) => void;
@@ -76,6 +77,7 @@ export async function runPostDesktopActionEffects({
   loadProjectThreads,
   refreshShellState,
   setArchivedThreads,
+  setChatSidebarState,
   setComposerState,
   setLiveThreadData,
   setProjectGitState,
@@ -260,85 +262,16 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-  if (action === "composer.send" && hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const sessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-
-    if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
-      removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
-    }
-  }
-
-  if (action === "composer.send" && !hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const submittedSessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-    const resultSessionPath =
-      typeof actionResult?.result?.composerSendSessionPath === "string"
-        ? actionResult.result.composerSendSessionPath
-        : null;
-    const resultThreadId =
-      typeof actionResult?.result?.composerSendThreadId === "string"
-        ? actionResult.result.composerSendThreadId
-        : null;
-
-    if (
-      projectId &&
-      (!submittedSessionPath || isLocalSessionPath(submittedSessionPath)) &&
-      resultSessionPath &&
-      resultThreadId
-    ) {
-      const shellState = (
-        queryClient as {
-          getQueryData?: (queryKey: readonly unknown[]) => unknown;
-        }
-      ).getQueryData?.(["desktop", "shellState"]) as
-        | {
-            projects?: Array<{
-              id: string;
-              threads: Array<{
-                id: string;
-                sessionPath?: string | null;
-                title?: string;
-              }>;
-            }>;
-          }
-        | null
-        | undefined;
-      const existingThreadTitle =
-        shellState?.projects
-          ?.find((candidate) => candidate.id === projectId)
-          ?.threads.find(
-            (candidate) =>
-              candidate.id === resultThreadId || candidate.sessionPath === resultSessionPath,
-          )?.title ?? null;
-
-      applyProjectThreadToShellState(
-        queryClient,
-        projectId,
-        {
-          id: resultThreadId,
-          title: existingThreadTitle ?? "New thread",
-          age: "Now",
-          lastModifiedMs: Date.now(),
-          sessionPath: resultSessionPath,
-        },
-        {
-          replaceSessionPath: isLocalSessionPath(submittedSessionPath)
-            ? submittedSessionPath
-            : null,
-          revealProject: true,
-        },
-      );
-      dispatch({
-        type: "open-thread",
-        projectId,
-        threadId: resultThreadId,
-        sessionPath: resultSessionPath,
-        view: workspaceState.activeView === "chat" ? "chat" : "thread",
-      });
-    }
+  if (action === "composer.send") {
+    reconcileComposerThreadResult({
+      contextualPayload,
+      actionResult,
+      workspaceState,
+      queryClient,
+      dispatch,
+      setChatSidebarState,
+      setLiveThreadData,
+    });
   }
 
   // Settings writes are local and already applied optimistically in the renderer.
@@ -382,7 +315,7 @@ export async function runPostDesktopActionEffects({
         threadId,
         sessionPath,
       });
-      await loadProjectThreads(nextProjectId);
+      await loadProjectThreads(nextProjectId, { chat: workspaceState.activeView === "chat" });
       applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
         revealProject: true,
       });

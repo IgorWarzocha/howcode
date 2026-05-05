@@ -8,6 +8,7 @@ import type {
   ComposerState,
   DesktopActionInvoker,
   DesktopActionResult,
+  ChatSidebarState,
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
@@ -22,6 +23,10 @@ import {
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from "./controller-post-action-effects";
+import {
+  applyOptimisticComposerThread,
+  removeFailedOptimisticComposerThread,
+} from "./sidebar-thread-sync";
 
 type ActionPayload = AnyDesktopActionPayload;
 
@@ -37,11 +42,12 @@ type UseDesktopActionHandlersArgs = {
     composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
   selectedSessionPath: string | null;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   showToast: (message: string) => void;
@@ -85,6 +91,7 @@ export function useDesktopActionHandlers({
   selectedSessionPath,
   setArchivedThreads,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   showToast,
@@ -99,15 +106,39 @@ export function useDesktopActionHandlers({
     ): Promise<DesktopActionResult | null> => {
       // Build the renderer-context payload first so optimistic UI and desktop writes
       // operate against the same project/session selection.
-      const contextualPayload = buildContextualActionPayload({
+      const initialContextualPayload = buildContextualActionPayload({
         action,
         payload,
         composerProjectId,
         activeView,
         selectedSessionPath,
       });
+      const { contextualPayload } =
+        action === "composer.send"
+          ? applyOptimisticComposerThread({
+              activeView,
+              contextualPayload: initialContextualPayload,
+              queryClient,
+              dispatch,
+              setChatSidebarState,
+              setLiveThreadData,
+            })
+          : { contextualPayload: initialContextualPayload };
 
-      const actionResult = await invokeDesktopAction(action, contextualPayload);
+      let actionResult: DesktopActionResult | null;
+      try {
+        actionResult = await invokeDesktopAction(action, contextualPayload);
+      } catch (error) {
+        if (action === "composer.send") {
+          removeFailedOptimisticComposerThread({
+            contextualPayload,
+            setChatSidebarState,
+            setLiveThreadData,
+            queryClient,
+          });
+        }
+        throw error;
+      }
 
       await runPostDesktopActionEffects({
         action,
@@ -123,6 +154,7 @@ export function useDesktopActionHandlers({
         refreshShellState,
         setArchivedThreads,
         setComposerState,
+        setChatSidebarState,
         setLiveThreadData,
         setProjectGitState,
         queryClient,
@@ -148,6 +180,7 @@ export function useDesktopActionHandlers({
       selectedSessionPath,
       setArchivedThreads,
       setComposerState,
+      setChatSidebarState,
       setLiveThreadData,
       setProjectGitState,
       showToast,
