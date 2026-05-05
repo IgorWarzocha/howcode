@@ -149,6 +149,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const utilityViewActive =
+    state.activeView === "settings" ||
+    state.activeView === "extensions" ||
+    state.activeView === "skills" ||
+    state.activeView === "archived";
   const compactSidebarButtonEdgeMode = terminalDrawerVisible || artifactDrawerOverlayVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
@@ -515,7 +520,22 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           />
         ) : null}
 
-        {sidebarCompactMode && !sidebarOverlayOpen ? (
+        {sidebarCompactMode && !sidebarOverlayOpen && utilityViewActive ? (
+          <div className="pointer-events-none absolute bottom-5 left-5 z-[45]">
+            <button
+              type="button"
+              className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] opacity-70 shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+              onClick={handleToggleSidebar}
+              aria-label="Show sidebar"
+              data-tooltip="Show sidebar"
+              data-tooltip-placement="right"
+            >
+              <PanelLeftOpen size={15} />
+            </button>
+          </div>
+        ) : null}
+
+        {sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive ? (
           <div
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4",
@@ -532,7 +552,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 <button
                   type="button"
                   className={cn(
-                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel)] text-[color:var(--muted)] shadow-[0_10px_28px_rgba(0,0,0,0.22)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
                     !artifactDrawerOverlayVisible && "opacity-70 hover:opacity-100",
                   )}
                   onClick={handleToggleSidebar}

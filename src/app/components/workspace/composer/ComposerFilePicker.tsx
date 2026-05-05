@@ -202,7 +202,7 @@ export function ComposerFilePicker({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [anchorRef, panelRef, picker, searchExpanded, sidePlacementEnabled]);
+  }, [anchorRef, panelRef, sidePlacementEnabled]);
 
   const panelContents = (
     <>
