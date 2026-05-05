@@ -85,7 +85,7 @@ export function ChatWorkspaceView({
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
   const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
-  const hasConversationLayout = hasConversation || Boolean(activeThreadData?.isStreaming);
+  const hasConversationLayout = hasConversation;
   const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null;
   const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath);
   const artifactsVisible = conversationId

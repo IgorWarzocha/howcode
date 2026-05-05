@@ -113,8 +113,7 @@ export function CodeWorkspaceView({
     visible: showWorkspaceFooter,
   });
   const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
-  const hasThreadConversationLayout =
-    hasThreadConversation || Boolean(activeThreadData?.isStreaming);
+  const hasThreadConversationLayout = hasThreadConversation;
   const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
   const previousHasThreadConversationRef = useRef(hasThreadConversation);
   const centerThreadFooter = showThreadFooter && !hasThreadConversationLayout;
