@@ -1,20 +1,35 @@
 import { Check, Search } from "lucide-react";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type { ComposerModel, ComposerThinkingLevel } from "../../../desktop/types";
 import { menuOptionClass, popoverPanelClass, toolbarButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { SurfacePanel } from "../../common/SurfacePanel";
 
 type ComposerModelPopoverProps = {
+  anchorRef: RefObject<HTMLButtonElement | null>;
   availableModels: ComposerModel[];
   availableThinkingLevels: ComposerThinkingLevel[];
   currentModel: ComposerModel | null;
   currentThinkingLevel: ComposerThinkingLevel;
   panelRef: RefObject<HTMLDivElement | null>;
+  preferSidePlacement?: boolean;
   thinkingLevelLabels: Record<ComposerThinkingLevel, string>;
   onSelectModel: (model: ComposerModel) => void;
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void;
 };
+
+const smallDisplayHeightBreakpoint = 768;
+const sidePlacementGap = 8;
+const sidePlacementViewportPadding = 12;
 
 type NestedMenu = "provider" | "model" | "thinking" | null;
 
@@ -91,12 +106,22 @@ function MenuList({ items }: { items: MenuOption[] }) {
   );
 }
 
+function getSmallDisplayPlacementEnabled() {
+  return typeof window !== "undefined" && window.innerHeight <= smallDisplayHeightBreakpoint;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function ComposerModelPopover({
+  anchorRef,
   availableModels,
   availableThinkingLevels,
   currentModel,
   currentThinkingLevel,
   panelRef,
+  preferSidePlacement = false,
   thinkingLevelLabels,
   onSelectModel,
   onSelectThinkingLevel,
@@ -117,7 +142,24 @@ export function ComposerModelPopover({
   const [openMenu, setOpenMenu] = useState<NestedMenu>(null);
   const [selectedProvider, setSelectedProvider] = useState(currentModel?.provider ?? "");
   const [modelSearch, setModelSearch] = useState("");
+  const [smallDisplayHeight, setSmallDisplayHeight] = useState(getSmallDisplayPlacementEnabled);
+  const [sidePosition, setSidePosition] = useState({ left: 0, top: 0 });
+  const [sidePositionReady, setSidePositionReady] = useState(false);
   const modelSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const updatePlacementMode = () => {
+      setSmallDisplayHeight(getSmallDisplayPlacementEnabled());
+    };
+
+    updatePlacementMode();
+    window.addEventListener("resize", updatePlacementMode);
+    return () => {
+      window.removeEventListener("resize", updatePlacementMode);
+    };
+  }, []);
+
+  const sidePlacementEnabled = preferSidePlacement && smallDisplayHeight;
 
   useEffect(() => {
     if (currentModel?.provider) {
@@ -208,15 +250,62 @@ export function ComposerModelPopover({
     }
   }, [showModelSearch]);
 
-  return (
-    <SurfacePanel
-      ref={panelRef}
-      id="composer-model-menu"
-      className={cn(
-        "absolute bottom-[calc(100%+8px)] left-0 z-[60] grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px]",
-        popoverPanelClass,
-      )}
-    >
+  useLayoutEffect(() => {
+    if (!sidePlacementEnabled) {
+      setSidePositionReady(false);
+      return;
+    }
+
+    const updatePosition = (event?: Event) => {
+      const target = event?.target as Node | null;
+      if (target && panelRef.current?.contains(target)) {
+        return;
+      }
+
+      const anchorRect = anchorRef.current?.getBoundingClientRect();
+      const panelRect = panelRef.current?.getBoundingClientRect();
+
+      if (!anchorRect || !panelRect) {
+        return;
+      }
+
+      const maxLeft = window.innerWidth - panelRect.width - sidePlacementViewportPadding;
+      const preferredLeft = anchorRect.right + sidePlacementGap;
+      const left = clamp(
+        preferredLeft,
+        sidePlacementViewportPadding,
+        Math.max(sidePlacementViewportPadding, maxLeft),
+      );
+      const maxTop = window.innerHeight - panelRect.height - sidePlacementViewportPadding;
+      const centeredTop = anchorRect.top + anchorRect.height / 2 - panelRect.height / 2;
+      const top = clamp(
+        centeredTop,
+        sidePlacementViewportPadding,
+        Math.max(sidePlacementViewportPadding, maxTop),
+      );
+
+      setSidePosition((current) => {
+        if (current.left === left && current.top === top) {
+          return current;
+        }
+
+        return { left, top };
+      });
+      setSidePositionReady(true);
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchorRef, openMenu, panelRef, showModelSearch, sidePlacementEnabled]);
+
+  const panelContents = (
+    <>
       {showModelSearch ? (
         <label className="relative mb-1 block">
           <Search
@@ -285,6 +374,39 @@ export function ComposerModelPopover({
           }}
         />
       </div>
+    </>
+  );
+
+  const panelClassName = cn(
+    "grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px]",
+    sidePlacementEnabled
+      ? "fixed z-[120] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out"
+      : "absolute bottom-[calc(100%+8px)] left-0 z-[60]",
+    sidePlacementEnabled && !sidePositionReady && "pointer-events-none opacity-0",
+    popoverPanelClass,
+  );
+
+  const panelStyle: CSSProperties | undefined = sidePlacementEnabled
+    ? { left: `${sidePosition.left}px`, top: `${sidePosition.top}px` }
+    : undefined;
+
+  if (sidePlacementEnabled && typeof document !== "undefined") {
+    return createPortal(
+      <SurfacePanel
+        ref={panelRef}
+        id="composer-model-menu"
+        className={panelClassName}
+        style={panelStyle}
+      >
+        {panelContents}
+      </SurfacePanel>,
+      document.body,
+    );
+  }
+
+  return (
+    <SurfacePanel ref={panelRef} id="composer-model-menu" className={panelClassName}>
+      {panelContents}
     </SurfacePanel>
   );
 }

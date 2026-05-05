@@ -281,6 +281,7 @@ export function ChatWorkspaceView({
                     showTerminalControls={false}
                     artifactsVisible={artifactsVisible}
                     terminalVisible={state.terminalVisible}
+                    preferSideModelPopover={!hasConversation}
                     onListAttachmentEntries={listComposerAttachmentEntries}
                     onAction={handleAction}
                   />

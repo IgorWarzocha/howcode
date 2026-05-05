@@ -33,6 +33,7 @@ type ComposerFooterProps = {
   modelButtonRef: RefObject<HTMLButtonElement | null>;
   modelMenuOpen: boolean;
   modelMenuRef: RefObject<HTMLDivElement | null>;
+  preferSideModelPopover?: boolean;
   onOpenGitOps: () => void;
   onOpenTakeoverTerminal: () => void;
   onCompact: () => void;
@@ -64,6 +65,7 @@ export function ComposerFooter({
   modelButtonRef,
   modelMenuOpen,
   modelMenuRef,
+  preferSideModelPopover = false,
   onOpenGitOps,
   onOpenTakeoverTerminal,
   onCompact,
@@ -132,11 +134,13 @@ export function ComposerFooter({
         </div>
         {modelMenuOpen ? (
           <ComposerModelPopover
+            anchorRef={modelButtonRef}
             availableModels={availableModels}
             availableThinkingLevels={availableThinkingLevels}
             currentModel={model}
             currentThinkingLevel={thinkingLevel}
             panelRef={modelMenuRef}
+            preferSidePlacement={preferSideModelPopover}
             thinkingLevelLabels={thinkingLevelLabels}
             onSelectModel={onSelectModel}
             onSelectThinkingLevel={onSelectThinkingLevel}
