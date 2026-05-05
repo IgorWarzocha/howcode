@@ -53,6 +53,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  preferSideModelPopover = false,
   artifactsVisible,
   artifactsAvailable,
   onSetDiffBaseline,
@@ -480,6 +481,7 @@ export function ComposerPromptSurface({
             modelButtonRef={modelButtonRef}
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
+            preferSideModelPopover={preferSideModelPopover}
             onOpenGitOps={onOpenGitOps}
             onOpenTakeoverTerminal={onOpenTakeoverTerminal}
             onSelectBaseline={onSetDiffBaseline}

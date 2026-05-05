@@ -631,6 +631,7 @@ export function InboxComposer({
           </div>
           {openMenu === "model" ? (
             <ComposerModelPopover
+              anchorRef={modelButtonRef}
               availableModels={availableModels}
               availableThinkingLevels={availableThinkingLevels}
               currentModel={currentModel}
