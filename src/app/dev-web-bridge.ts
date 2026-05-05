@@ -1,208 +1,208 @@
-import type { DesktopAction } from "../../shared/desktop-actions";
+import type { DesktopAction } from '../../shared/desktop-actions'
 import type {
   AnyDesktopActionPayload,
   ComposerAttachment,
   DesktopEvent,
-} from "../../shared/desktop-contracts";
+} from '../../shared/desktop-contracts'
 import type {
   DesktopEventChannel,
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
-} from "../../shared/desktop-ipc";
-import type { TerminalEvent, TerminalOpenRequest } from "../../shared/terminal-contracts";
+} from '../../shared/desktop-ipc'
+import type { TerminalEvent, TerminalOpenRequest } from '../../shared/terminal-contracts'
 
-let bridgeTokenPromise: Promise<string> | null = null;
+let bridgeTokenPromise: Promise<string> | null = null
 
 function getBridgeToken() {
-  bridgeTokenPromise ??= fetch("/__howcode/config")
+  bridgeTokenPromise ??= fetch('/__howcode/config')
     .then((response) => {
       if (!response.ok) {
-        throw new Error("Unable to load dev:web bridge config.");
+        throw new Error('Unable to load dev:web bridge config.')
       }
-      return response.json() as Promise<{ bridgeToken?: string }>;
+      return response.json() as Promise<{ bridgeToken?: string }>
     })
     .then((config) => {
       if (!config.bridgeToken) {
-        throw new Error("dev:web bridge config did not include a token.");
+        throw new Error('dev:web bridge config did not include a token.')
       }
-      return config.bridgeToken;
+      return config.bridgeToken
     })
     .catch((error) => {
-      bridgeTokenPromise = null;
-      throw error;
-    });
+      bridgeTokenPromise = null
+      throw error
+    })
 
-  return bridgeTokenPromise;
+  return bridgeTokenPromise
 }
 
 async function invokeRequest<K extends DesktopRequestChannel>(
   channel: K,
-  params: DesktopRequestMap[K]["params"],
+  params: DesktopRequestMap[K]['params'],
 ) {
-  const bridgeToken = await getBridgeToken();
+  const bridgeToken = await getBridgeToken()
   const response = await fetch(`/__howcode/request/${channel}`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
-      "x-howcode-dev-web-bridge-token": bridgeToken,
+      'content-type': 'application/json',
+      'x-howcode-dev-web-bridge-token': bridgeToken,
     },
     body: JSON.stringify(params),
-  });
+  })
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? `Desktop bridge request failed: ${channel}`);
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(payload?.error ?? `Desktop bridge request failed: ${channel}`)
   }
 
-  return (await response.json()) as DesktopRequestMap[K]["response"];
+  return (await response.json()) as DesktopRequestMap[K]['response']
 }
 
 type EventSubscription = {
-  eventSource: EventSource;
-  listeners: Set<(event: MessageEvent<string>) => void>;
-};
+  eventSource: EventSource
+  listeners: Set<(event: MessageEvent<string>) => void>
+}
 
-const eventSubscriptions = new Map<DesktopEventChannel, EventSubscription>();
+const eventSubscriptions = new Map<DesktopEventChannel, EventSubscription>()
 
 function getEventSubscription(channel: DesktopEventChannel) {
-  const current = eventSubscriptions.get(channel);
+  const current = eventSubscriptions.get(channel)
   if (current) {
-    return current;
+    return current
   }
 
   const subscription: EventSubscription = {
     eventSource: new EventSource(`/__howcode/events/${channel}`),
     listeners: new Set(),
-  };
-  eventSubscriptions.set(channel, subscription);
-  return subscription;
+  }
+  eventSubscriptions.set(channel, subscription)
+  return subscription
 }
 
 function subscribeToEvent<K extends DesktopEventChannel>(
   channel: K,
   listener: (event: DesktopEventMap[K]) => void,
 ) {
-  const subscription = getEventSubscription(channel);
+  const subscription = getEventSubscription(channel)
   const wrappedListener = (event: MessageEvent<string>) => {
     const payload = JSON.parse(event.data) as {
-      channel: K;
-      event: DesktopEventMap[K];
-    };
-    listener(payload.event);
-  };
-
-  subscription.listeners.add(wrappedListener);
-  subscription.eventSource.addEventListener(channel, wrappedListener);
-  return () => {
-    subscription.eventSource.removeEventListener(channel, wrappedListener);
-    subscription.listeners.delete(wrappedListener);
-    if (subscription.listeners.size === 0) {
-      subscription.eventSource.close();
-      eventSubscriptions.delete(channel);
+      channel: K
+      event: DesktopEventMap[K]
     }
-  };
+    listener(payload.event)
+  }
+
+  subscription.listeners.add(wrappedListener)
+  subscription.eventSource.addEventListener(channel, wrappedListener)
+  return () => {
+    subscription.eventSource.removeEventListener(channel, wrappedListener)
+    subscription.listeners.delete(wrappedListener)
+    if (subscription.listeners.size === 0) {
+      subscription.eventSource.close()
+      eventSubscriptions.delete(channel)
+    }
+  }
 }
 
 export function installDevWebDesktopBridge() {
   if (window.piDesktop) {
-    return;
+    return
   }
 
-  window.__howcodeDevWebBridge = true;
+  window.howcodeDevWebBridge = true
 
   window.piDesktop = {
-    clearClipboardImages: () => invokeRequest("clearClipboardImages", {}),
-    getShellState: () => invokeRequest("getShellState", {}),
-    getProjectGitState: (projectId: string) => invokeRequest("getProjectGitState", { projectId }),
+    clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
+    getShellState: () => invokeRequest('getShellState', {}),
+    getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
-      invokeRequest("getProjectDiff", { projectId, baseline }),
+      invokeRequest('getProjectDiff', { projectId, baseline }),
     getProjectDiffStats: (projectId: string, baseline = null) =>
-      invokeRequest("getProjectDiffStats", { projectId, baseline }),
+      invokeRequest('getProjectDiffStats', { projectId, baseline }),
     captureProjectDiffBaseline: (projectId: string) =>
-      invokeRequest("captureProjectDiffBaseline", { projectId }),
+      invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
-      invokeRequest("listProjectCommits", { projectId, limit }),
-    searchPiPackages: (request = {}) => invokeRequest("searchPiPackages", request),
-    getConfiguredPiPackages: (request = {}) => invokeRequest("getConfiguredPiPackages", request),
-    installPiPackage: (request) => invokeRequest("installPiPackage", request),
-    removePiPackage: (request) => invokeRequest("removePiPackage", request),
-    searchPiSkills: (request = {}) => invokeRequest("searchPiSkills", request),
-    getConfiguredPiSkills: (request = {}) => invokeRequest("getConfiguredPiSkills", request),
-    installPiSkill: (request) => invokeRequest("installPiSkill", request),
-    removePiSkill: (request) => invokeRequest("removePiSkill", request),
-    startSkillCreatorSession: (request) => invokeRequest("startSkillCreatorSession", request),
-    continueSkillCreatorSession: (request) => invokeRequest("continueSkillCreatorSession", request),
+      invokeRequest('listProjectCommits', { projectId, limit }),
+    searchPiPackages: (request = {}) => invokeRequest('searchPiPackages', request),
+    getConfiguredPiPackages: (request = {}) => invokeRequest('getConfiguredPiPackages', request),
+    installPiPackage: (request) => invokeRequest('installPiPackage', request),
+    removePiPackage: (request) => invokeRequest('removePiPackage', request),
+    searchPiSkills: (request = {}) => invokeRequest('searchPiSkills', request),
+    getConfiguredPiSkills: (request = {}) => invokeRequest('getConfiguredPiSkills', request),
+    installPiSkill: (request) => invokeRequest('installPiSkill', request),
+    removePiSkill: (request) => invokeRequest('removePiSkill', request),
+    startSkillCreatorSession: (request) => invokeRequest('startSkillCreatorSession', request),
+    continueSkillCreatorSession: (request) => invokeRequest('continueSkillCreatorSession', request),
     closeSkillCreatorSession: (sessionId: string) =>
-      invokeRequest("closeSkillCreatorSession", { sessionId }),
+      invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
     readClipboardSnapshot: (formats: string[] | null = null) =>
-      invokeRequest("readClipboardSnapshot", { formats }),
-    readClipboardFilePaths: () => invokeRequest("readClipboardFilePaths", {}),
-    readClipboardImage: () => invokeRequest("readClipboardImage", {}),
+      invokeRequest('readClipboardSnapshot', { formats }),
+    readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),
+    readClipboardImage: () => invokeRequest('readClipboardImage', {}),
     getAttachmentKindsForPaths: (paths: string[]) =>
-      invokeRequest("getAttachmentKindsForPaths", { paths }),
+      invokeRequest('getAttachmentKindsForPaths', { paths }),
     getPathForFile: () => null,
     listComposerAttachmentEntries: (request = {}) =>
-      invokeRequest("listComposerAttachmentEntries", request),
-    getComposerState: (request = {}) => invokeRequest("getComposerState", request),
-    getComposerSlashCommands: (request = {}) => invokeRequest("getComposerSlashCommands", request),
-    getDictationState: () => invokeRequest("getDictationState", {}),
-    listDictationModels: () => invokeRequest("listDictationModels", {}),
-    installDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") =>
-      invokeRequest("installDictationModel", { modelId }),
-    removeDictationModel: (modelId: "tiny.en" | "base.en" | "small.en") =>
-      invokeRequest("removeDictationModel", { modelId }),
-    transcribeDictation: (request) => invokeRequest("transcribeDictation", request),
-    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
-      invokeRequest("getProjectThreads", { projectId, chat: request.chat }),
+      invokeRequest('listComposerAttachmentEntries', request),
+    getComposerState: (request = {}) => invokeRequest('getComposerState', request),
+    getComposerSlashCommands: (request = {}) => invokeRequest('getComposerSlashCommands', request),
+    getDictationState: () => invokeRequest('getDictationState', {}),
+    listDictationModels: () => invokeRequest('listDictationModels', {}),
+    installDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
+      invokeRequest('installDictationModel', { modelId }),
+    removeDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
+      invokeRequest('removeDictationModel', { modelId }),
+    transcribeDictation: (request) => invokeRequest('transcribeDictation', request),
+    getProjectThreads: (projectId: string, request: { chat?: boolean | undefined } = {}) =>
+      invokeRequest('getProjectThreads', { projectId, chat: request.chat }),
     getChatSidebarState: (selectedGroupId: string | null = null) =>
-      invokeRequest("getChatSidebarState", { selectedGroupId }),
-    createChatGroup: (name: string) => invokeRequest("createChatGroup", { name }),
+      invokeRequest('getChatSidebarState', { selectedGroupId }),
+    createChatGroup: (name: string) => invokeRequest('createChatGroup', { name }),
     listArtifacts: (conversationId: string | null = null) =>
-      invokeRequest("listArtifacts", { conversationId }),
+      invokeRequest('listArtifacts', { conversationId }),
     getArtifact: (artifactSlug: string, conversationId: string | null = null) =>
-      invokeRequest("getArtifact", { artifactSlug, conversationId }),
+      invokeRequest('getArtifact', { artifactSlug, conversationId }),
     updateArtifact: (artifactSlug: string, content: string, conversationId: string | null = null) =>
-      invokeRequest("updateArtifact", { artifactSlug, content, conversationId }),
+      invokeRequest('updateArtifact', { artifactSlug, content, conversationId }),
     editArtifact: (
       artifactSlug: string,
       edits: Array<{ oldText: string; newText: string }>,
       conversationId: string | null = null,
-    ) => invokeRequest("editArtifact", { artifactSlug, edits, conversationId }),
+    ) => invokeRequest('editArtifact', { artifactSlug, edits, conversationId }),
     listArtifactVersions: (artifactSlug: string) =>
-      invokeRequest("listArtifactVersions", { artifactSlug }),
-    compileReactArtifact: (source: string) => invokeRequest("compileReactArtifact", { source }),
-    getInboxThreads: () => invokeRequest("getInboxThreads", {}),
-    getArchivedThreads: () => invokeRequest("getArchivedThreads", {}),
+      invokeRequest('listArtifactVersions', { artifactSlug }),
+    compileReactArtifact: (source: string) => invokeRequest('compileReactArtifact', { source }),
+    getInboxThreads: () => invokeRequest('getInboxThreads', {}),
+    getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
-      invokeRequest("getThread", { sessionPath, historyCompactions }),
+      invokeRequest('getThread', { sessionPath, historyCompactions }),
     watchSession: async (sessionPath: string | null) => {
-      await invokeRequest("watchSession", { sessionPath });
+      await invokeRequest('watchSession', { sessionPath })
     },
     invokeAction: (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
-      invokeRequest("invokeAction", { action, payload }),
-    listTerminals: () => invokeRequest("listTerminals", {}),
-    openTerminal: (request: TerminalOpenRequest) => invokeRequest("terminalOpen", request),
+      invokeRequest('invokeAction', { action, payload }),
+    listTerminals: () => invokeRequest('listTerminals', {}),
+    openTerminal: (request: TerminalOpenRequest) => invokeRequest('terminalOpen', request),
     writeTerminal: async (sessionId: string, data: string) => {
-      await invokeRequest("terminalWrite", { sessionId, data });
+      await invokeRequest('terminalWrite', { sessionId, data })
     },
     resizeTerminal: async (request) => {
-      await invokeRequest("terminalResize", request);
+      await invokeRequest('terminalResize', request)
     },
     closeTerminal: async (request) => {
-      await invokeRequest("terminalClose", request);
+      await invokeRequest('terminalClose', request)
     },
     statTerminalSessionFile: (sessionId: string) =>
-      invokeRequest("terminalSessionFileStat", { sessionId }),
-    getTerminalStatus: (sessionId: string) => invokeRequest("terminalStatus", { sessionId }),
-    openExternal: (url: string) => invokeRequest("openExternal", { url }).then(({ ok }) => ok),
-    openPath: (path: string) => invokeRequest("openPath", { path }).then(({ ok }) => ok),
+      invokeRequest('terminalSessionFileStat', { sessionId }),
+    getTerminalStatus: (sessionId: string) => invokeRequest('terminalStatus', { sessionId }),
+    openExternal: (url: string) => invokeRequest('openExternal', { url }).then(({ ok }) => ok),
+    openPath: (path: string) => invokeRequest('openPath', { path }).then(({ ok }) => ok),
     saveTextToDownloads: (fileName: string, content: string) =>
-      invokeRequest("saveTextToDownloads", { fileName, content }),
+      invokeRequest('saveTextToDownloads', { fileName, content }),
     subscribe: (listener: (event: DesktopEvent) => void) =>
-      subscribeToEvent("desktopEvent", listener),
+      subscribeToEvent('desktopEvent', listener),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
-      subscribeToEvent("terminalEvent", listener),
-  };
+      subscribeToEvent('terminalEvent', listener),
+  }
 }

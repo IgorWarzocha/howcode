@@ -1,12 +1,12 @@
-import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from "./settingsTypes";
+import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from './settingsTypes'
 
 export const settingsCategories: SettingsCategory[] = [
-  { id: "projects", label: "Projects" },
-  { id: "models", label: "Models" },
-  { id: "pi-runtime", label: "Pi Runtime" },
-  { id: "pi-tui", label: "Pi TUI" },
-  { id: "dictation", label: "Dictation" },
-];
+  { id: 'projects', label: 'Projects' },
+  { id: 'models', label: 'Models' },
+  { id: 'pi-runtime', label: 'Pi Runtime' },
+  { id: 'pi-tui', label: 'Pi TUI' },
+  { id: 'dictation', label: 'Dictation' },
+]
 
 export function filterSettings({
   settings,
@@ -14,39 +14,39 @@ export function filterSettings({
   normalizedFilter,
   activeCategory,
 }: {
-  settings: SettingDescriptor[];
-  categories?: SettingsCategory[];
-  normalizedFilter: string;
-  activeCategory: SettingsCategoryId | null;
+  settings: SettingDescriptor[]
+  categories?: SettingsCategory[]
+  normalizedFilter: string
+  activeCategory: SettingsCategoryId | null
 }) {
   return settings.filter((setting) => {
     if (!normalizedFilter && activeCategory && setting.category !== activeCategory) {
-      return false;
+      return false
     }
 
     if (!normalizedFilter) {
-      return true;
+      return true
     }
 
     const categoryLabel =
-      categories.find((category) => category.id === setting.category)?.label ?? "";
-    return `${categoryLabel} ${setting.title} ${setting.description} ${setting.keywords ?? ""}`
+      categories.find((category) => category.id === setting.category)?.label ?? ''
+    return `${categoryLabel} ${setting.title} ${setting.description} ${setting.keywords ?? ''}`
       .toLowerCase()
-      .includes(normalizedFilter);
-  });
+      .includes(normalizedFilter)
+  })
 }
 
 export function groupSettingsByCategory({
   settings,
   categories = settingsCategories,
 }: {
-  settings: SettingDescriptor[];
-  categories?: SettingsCategory[];
+  settings: SettingDescriptor[]
+  categories?: SettingsCategory[]
 }) {
   return categories
     .map((category) => ({
       ...category,
       settings: settings.filter((setting) => setting.category === category.id),
     }))
-    .filter((group) => group.settings.length > 0);
+    .filter((group) => group.settings.length > 0)
 }

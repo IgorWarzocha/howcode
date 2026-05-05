@@ -1,17 +1,17 @@
-import { buildThreadData } from "../../shared/thread-data.ts";
-import { type SessionPathEntry, buildThreadHistorySlice } from "../../shared/thread-history.ts";
-import { getPiModule } from "../pi-module.cts";
+import { buildThreadData } from '../../shared/thread-data.ts'
+import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
+import { getPiModule } from '../pi-module.cts'
 
 export async function loadThreadSnapshot(request: {
-  sessionPath: string;
-  historyCompactions?: number;
+  sessionPath: string
+  historyCompactions?: number | undefined
 }) {
-  const { SessionManager } = await getPiModule();
-  const manager = SessionManager.open(request.sessionPath);
+  const { SessionManager } = await getPiModule()
+  const manager = SessionManager.open(request.sessionPath)
   const historySlice = buildThreadHistorySlice(
     [...(manager.getBranch() as SessionPathEntry[])],
     request.historyCompactions ?? 0,
-  );
+  )
 
   return {
     projectId: manager.getCwd(),
@@ -23,5 +23,5 @@ export async function loadThreadSnapshot(request: {
       isStreaming: false,
       isCompacting: false,
     }),
-  };
+  }
 }

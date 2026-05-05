@@ -1,68 +1,72 @@
-const skillsApiBaseUrl = process.env.HOWCODE_SKILLS_API_URL || "https://skills.sh";
-const fetchTimeoutMs = 15_000;
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+const skillsApiBaseUrl =
+  getProcessEnvironmentVariable('HOWCODE_SKILLS_API_URL') || 'https://skills.sh'
+const fetchTimeoutMs = 15_000
 
 type SkillSearchApiItem = {
-  id?: unknown;
-  skillId?: unknown;
-  name?: unknown;
-  installs?: unknown;
-  source?: unknown;
-};
+  id?: unknown
+  skillId?: unknown
+  name?: unknown
+  installs?: unknown
+  source?: unknown
+}
 
 type SkillSearchApiResponse = {
-  query?: unknown;
-  count?: unknown;
-  skills?: SkillSearchApiItem[];
-};
+  query?: unknown
+  count?: unknown
+  skills?: SkillSearchApiItem[]
+}
 
 export type SkillDownloadApiFile = {
-  path?: unknown;
-  contents?: unknown;
-};
+  path?: unknown
+  contents?: unknown
+}
 
 type SkillDownloadApiResponse = {
-  files?: SkillDownloadApiFile[];
-  hash?: unknown;
-};
+  files?: SkillDownloadApiFile[]
+  hash?: unknown
+}
 
 async function fetchJson<T>(requestUrl: string): Promise<T> {
   const response = await fetch(requestUrl, {
     headers: {
-      accept: "application/json",
+      accept: 'application/json',
     },
     signal: AbortSignal.timeout(fetchTimeoutMs),
-  });
+  })
 
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+    throw new Error(`Request failed (${response.status})`)
   }
 
-  return (await response.json()) as T;
+  return (await response.json()) as T
 }
 
 function encodeRepoSegments(repo: string) {
   return repo
-    .split("/")
+    .split('/')
     .map((segment) => encodeURIComponent(segment))
-    .join("/");
+    .join('/')
 }
 
 export async function searchSkillsApi(query: string, limit: number) {
   return await fetchJson<SkillSearchApiResponse>(
     `${skillsApiBaseUrl}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`,
-  );
+  )
 }
 
 export async function downloadSkillApi(repo: string, slug: string) {
   return await fetchJson<SkillDownloadApiResponse>(
     `${skillsApiBaseUrl}/api/download/${encodeRepoSegments(repo)}/${encodeURIComponent(slug)}`,
-  );
+  )
 }
 
 export function getSkillsAppUrl(id: string) {
-  return `${skillsApiBaseUrl}/${id}`;
+  return `${skillsApiBaseUrl}/${id}`
 }
 
 export function getSkillsSourceUrl(source: string) {
-  return `https://github.com/${source}`;
+  return `https://github.com/${source}`
 }

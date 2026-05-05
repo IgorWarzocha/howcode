@@ -2,56 +2,56 @@ import {
   closeDesktopTerminal,
   getDesktopTerminalStatus,
   statDesktopTerminalSessionFile,
-} from "../../../hooks/useDesktopTerminal";
+} from '../../../hooks/useDesktopTerminal'
 
-const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2;
-type SessionFileStat = { mtimeMs: number; size: number };
+const MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE = 2
+type SessionFileStat = { mtimeMs: number; size: number }
 
-const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const pendingTerminalCloseGenerations = new Map<string, number>();
+const pendingTerminalCloseTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const pendingTerminalCloseGenerations = new Map<string, number>()
 
 function closeScheduledTerminal(sessionId: string, generation: number) {
   if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
-    return;
+    return
   }
 
-  pendingTerminalCloseTimers.delete(sessionId);
+  pendingTerminalCloseTimers.delete(sessionId)
   void closeDesktopTerminal({ sessionId }).finally(() => {
     if (pendingTerminalCloseGenerations.get(sessionId) === generation) {
-      pendingTerminalCloseGenerations.delete(sessionId);
+      pendingTerminalCloseGenerations.delete(sessionId)
     }
-  });
+  })
 }
 
 export function cancelScheduledTerminalClose(sessionId: string) {
-  const timer = pendingTerminalCloseTimers.get(sessionId);
+  const timer = pendingTerminalCloseTimers.get(sessionId)
   if (!timer) {
-    pendingTerminalCloseGenerations.delete(sessionId);
-    return;
+    pendingTerminalCloseGenerations.delete(sessionId)
+    return
   }
 
   pendingTerminalCloseGenerations.set(
     sessionId,
     (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1,
-  );
-  clearTimeout(timer);
-  pendingTerminalCloseTimers.delete(sessionId);
+  )
+  clearTimeout(timer)
+  pendingTerminalCloseTimers.delete(sessionId)
 }
 
 export function scheduleTerminalClose(sessionId: string, delayMs: number) {
-  cancelScheduledTerminalClose(sessionId);
-  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1;
-  pendingTerminalCloseGenerations.set(sessionId, generation);
+  cancelScheduledTerminalClose(sessionId)
+  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1
+  pendingTerminalCloseGenerations.set(sessionId, generation)
 
   const timer = setTimeout(() => {
     if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
-      return;
+      return
     }
 
-    closeScheduledTerminal(sessionId, generation);
-  }, delayMs);
+    closeScheduledTerminal(sessionId, generation)
+  }, delayMs)
 
-  pendingTerminalCloseTimers.set(sessionId, timer);
+  pendingTerminalCloseTimers.set(sessionId, timer)
 }
 
 async function pollSessionFileBeforeClosing({
@@ -63,39 +63,39 @@ async function pollSessionFileBeforeClosing({
   startedAt,
   generation,
 }: {
-  sessionId: string;
-  pollMs: number;
-  maxKeepAliveMs: number;
-  previousStat: SessionFileStat | null;
-  statusFailureCount: number;
-  startedAt: number;
-  generation: number;
+  sessionId: string
+  pollMs: number
+  maxKeepAliveMs: number
+  previousStat: SessionFileStat | null
+  statusFailureCount: number
+  startedAt: number
+  generation: number
 }) {
   if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
-    return;
+    return
   }
 
   if (Date.now() - startedAt >= maxKeepAliveMs) {
-    closeScheduledTerminal(sessionId, generation);
-    return;
+    closeScheduledTerminal(sessionId, generation)
+    return
   }
 
   const [currentStat, terminalStatus] = await Promise.all([
     statDesktopTerminalSessionFile(sessionId).catch(() => null),
     getDesktopTerminalStatus(sessionId).catch(() => undefined),
-  ]);
+  ])
 
   if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
-    return;
+    return
   }
 
   const terminalStillRunning =
-    terminalStatus?.status === "starting" || terminalStatus?.status === "running";
+    terminalStatus?.status === 'starting' || terminalStatus?.status === 'running'
 
   if (terminalStatus === undefined) {
     if (statusFailureCount + 1 >= MAX_TERMINAL_STATUS_FAILURES_BEFORE_CLOSE) {
-      closeScheduledTerminal(sessionId, generation);
-      return;
+      closeScheduledTerminal(sessionId, generation)
+      return
     }
 
     scheduleTerminalCloseWhenSessionFileIdle({
@@ -106,19 +106,19 @@ async function pollSessionFileBeforeClosing({
       statusFailureCount: statusFailureCount + 1,
       startedAt,
       generation,
-    });
-    return;
+    })
+    return
   }
 
   if (!terminalStillRunning) {
-    closeScheduledTerminal(sessionId, generation);
-    return;
+    closeScheduledTerminal(sessionId, generation)
+    return
   }
 
   if (!currentStat) {
     if (!previousStat) {
-      closeScheduledTerminal(sessionId, generation);
-      return;
+      closeScheduledTerminal(sessionId, generation)
+      return
     }
 
     scheduleTerminalCloseWhenSessionFileIdle({
@@ -129,8 +129,8 @@ async function pollSessionFileBeforeClosing({
       statusFailureCount: 0,
       startedAt,
       generation,
-    });
-    return;
+    })
+    return
   }
 
   if (
@@ -138,8 +138,8 @@ async function pollSessionFileBeforeClosing({
     currentStat.mtimeMs === previousStat.mtimeMs &&
     currentStat.size === previousStat.size
   ) {
-    closeScheduledTerminal(sessionId, generation);
-    return;
+    closeScheduledTerminal(sessionId, generation)
+    return
   }
 
   scheduleTerminalCloseWhenSessionFileIdle({
@@ -150,7 +150,7 @@ async function pollSessionFileBeforeClosing({
     statusFailureCount: 0,
     startedAt,
     generation,
-  });
+  })
 }
 
 function scheduleTerminalCloseWhenSessionFileIdle({
@@ -162,13 +162,13 @@ function scheduleTerminalCloseWhenSessionFileIdle({
   startedAt,
   generation,
 }: {
-  sessionId: string;
-  pollMs: number;
-  maxKeepAliveMs: number;
-  previousStat: SessionFileStat | null;
-  statusFailureCount: number;
-  startedAt: number;
-  generation: number;
+  sessionId: string
+  pollMs: number
+  maxKeepAliveMs: number
+  previousStat: SessionFileStat | null
+  statusFailureCount: number
+  startedAt: number
+  generation: number
 }) {
   const timer = setTimeout(() => {
     void pollSessionFileBeforeClosing({
@@ -179,10 +179,10 @@ function scheduleTerminalCloseWhenSessionFileIdle({
       statusFailureCount,
       startedAt,
       generation,
-    });
-  }, pollMs);
+    })
+  }, pollMs)
 
-  pendingTerminalCloseTimers.set(sessionId, timer);
+  pendingTerminalCloseTimers.set(sessionId, timer)
 }
 
 export async function scheduleTerminalCloseAfterSessionFileIdle(
@@ -190,14 +190,14 @@ export async function scheduleTerminalCloseAfterSessionFileIdle(
   pollMs: number,
   maxKeepAliveMs: number,
 ) {
-  cancelScheduledTerminalClose(sessionId);
-  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1;
-  pendingTerminalCloseGenerations.set(sessionId, generation);
-  const startedAt = Date.now();
-  const initialStat = await statDesktopTerminalSessionFile(sessionId).catch(() => null);
+  cancelScheduledTerminalClose(sessionId)
+  const generation = (pendingTerminalCloseGenerations.get(sessionId) ?? 0) + 1
+  pendingTerminalCloseGenerations.set(sessionId, generation)
+  const startedAt = Date.now()
+  const initialStat = await statDesktopTerminalSessionFile(sessionId).catch(() => null)
 
   if (pendingTerminalCloseGenerations.get(sessionId) !== generation) {
-    return;
+    return
   }
 
   scheduleTerminalCloseWhenSessionFileIdle({
@@ -208,5 +208,5 @@ export async function scheduleTerminalCloseAfterSessionFileIdle(
     statusFailureCount: 0,
     startedAt,
     generation,
-  });
+  })
 }

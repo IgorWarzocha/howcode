@@ -1,21 +1,21 @@
-import type { SkillCreatorSessionState } from "../shared/desktop-contracts.ts";
-import { invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
+import type { SkillCreatorSessionState } from '../shared/desktop-contracts.ts'
+import { invokeRuntimeHost } from './runtime-host/client-bridge.cts'
 
 export function startSkillCreatorSession(request: {
-  prompt: string;
-  local?: boolean;
-  projectPath?: string | null;
+  prompt: string
+  local?: boolean | undefined
+  projectPath?: string | undefined | null | undefined
 }): Promise<SkillCreatorSessionState> {
-  return invokeRuntimeHost("startSkillCreatorSession", request);
+  return invokeRuntimeHost('startSkillCreatorSession', request)
 }
 
 export function continueSkillCreatorSession(request: {
-  sessionId: string;
-  prompt: string;
+  sessionId: string
+  prompt: string
 }): Promise<SkillCreatorSessionState> {
-  return invokeRuntimeHost("continueSkillCreatorSession", request);
+  return invokeRuntimeHost('continueSkillCreatorSession', request)
 }
 
 export function closeSkillCreatorSession(request: { sessionId: string }): Promise<{ ok: boolean }> {
-  return invokeRuntimeHost("closeSkillCreatorSession", request);
+  return invokeRuntimeHost('closeSkillCreatorSession', request)
 }

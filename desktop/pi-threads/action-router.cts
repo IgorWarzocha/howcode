@@ -1,16 +1,16 @@
-import type { DesktopAction } from "../../shared/desktop-actions.ts";
+import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type {
   AnyDesktopActionPayload,
   DesktopActionResultData,
-} from "../../shared/desktop-contracts.ts";
-import { assertUnhandledDesktopAction } from "./action-router-result.cts";
-import { handleComposerDesktopAction } from "./composer-actions.cts";
-import { handleChatDesktopAction } from "./chat-actions.cts";
-import { handlePiSettingsDesktopAction } from "./pi-settings-actions.cts";
-import { handleProjectDesktopAction } from "./project-actions.cts";
-import { handleSettingsDesktopAction } from "./settings-actions.cts";
-import { handleThreadDesktopAction } from "./thread-actions.cts";
-import { handleWorkspaceDesktopAction } from "./workspace-actions.cts";
+} from '../../shared/desktop-contracts.ts'
+import { assertUnhandledDesktopAction } from './action-router-result.cts'
+import { handleChatDesktopAction } from './chat-actions.cts'
+import { handleComposerDesktopAction } from './composer-actions.cts'
+import { handlePiSettingsDesktopAction } from './pi-settings-actions.cts'
+import { handleProjectDesktopAction } from './project-actions.cts'
+import { handleSettingsDesktopAction } from './settings-actions.cts'
+import { handleThreadDesktopAction } from './thread-actions.cts'
+import { handleWorkspaceDesktopAction } from './workspace-actions.cts'
 
 export async function handleDesktopAction(
   action: DesktopAction,
@@ -26,13 +26,13 @@ export async function handleDesktopAction(
     await handleWorkspaceDesktopAction(action, payload),
     await handleSettingsDesktopAction(action, payload),
     await handlePiSettingsDesktopAction(action, payload),
-  ];
+  ]
 
   for (const handler of handlers) {
     if (handler.handled) {
-      return handler.result;
+      return handler.result
     }
   }
 
-  return assertUnhandledDesktopAction(action);
+  return assertUnhandledDesktopAction(action)
 }

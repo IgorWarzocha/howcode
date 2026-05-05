@@ -1,30 +1,34 @@
-import type { PiSettings, PiThemeState } from "../shared/desktop-contracts.ts";
-import { invalidateRuntimeHostSettings, invokeRuntimeHost } from "./runtime-host/client-bridge.cts";
+import type { PiSettings, PiThemeState } from '../shared/desktop-contracts.ts'
+import { invalidateRuntimeHostSettings, invokeRuntimeHost } from './runtime-host/client-bridge.cts'
 
-export type PiSettingsKey = keyof PiSettings;
+export type PiSettingsKey = keyof PiSettings
 
-export function loadPiSettings(projectPath?: string | null): Promise<PiSettings> {
-  return invokeRuntimeHost("loadPiSettings", {
+export function loadPiSettings(
+  projectPath?: string | undefined | null | undefined,
+): Promise<PiSettings> {
+  return invokeRuntimeHost('loadPiSettings', {
     projectPath: projectPath ?? null,
-  });
+  })
 }
 
-export function loadPiThemeState(projectPath?: string | null): Promise<PiThemeState> {
-  return invokeRuntimeHost("loadPiThemeState", {
+export function loadPiThemeState(
+  projectPath?: string | undefined | null | undefined,
+): Promise<PiThemeState> {
+  return invokeRuntimeHost('loadPiThemeState', {
     projectPath: projectPath ?? null,
-  });
+  })
 }
 
 export async function updatePiSetting(
   key: PiSettingsKey,
   value: unknown,
-  projectPath?: string | null,
+  projectPath?: string | undefined | null | undefined,
 ): Promise<PiSettings> {
-  const settings = await invokeRuntimeHost("updatePiSetting", {
+  const settings = await invokeRuntimeHost('updatePiSetting', {
     key,
     value,
     projectPath: projectPath ?? null,
-  });
-  await invalidateRuntimeHostSettings({ projectPath: projectPath ?? null });
-  return settings;
+  })
+  await invalidateRuntimeHostSettings({ projectPath: projectPath ?? null })
+  return settings
 }

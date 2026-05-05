@@ -1,40 +1,40 @@
-import { readFile, readdir } from "node:fs/promises";
-import path from "node:path";
-import type { PiConfiguredSkill } from "../../shared/desktop-contracts.ts";
-import { parseSkillFrontmatter } from "./frontmatter.cts";
+import { readdir, readFile } from 'node:fs/promises'
+import path from 'node:path'
+import type { PiConfiguredSkill } from '../../shared/desktop-contracts.ts'
+import { parseSkillFrontmatter } from './frontmatter.cts'
 import {
   getChatSkillsDirs,
   getGlobalSkillsDirs,
   getProjectSkillsDirs,
   pathExists,
-} from "./paths.cts";
+} from './paths.cts'
 
 async function listSkillsInDirectory(
   skillsDirPath: string,
-  scope: PiConfiguredSkill["scope"],
+  scope: PiConfiguredSkill['scope'],
 ): Promise<PiConfiguredSkill[]> {
   if (!(await pathExists(skillsDirPath))) {
-    return [];
+    return []
   }
 
-  const directoryEntries = await readdir(skillsDirPath, { withFileTypes: true });
-  const skills: PiConfiguredSkill[] = [];
+  const directoryEntries = await readdir(skillsDirPath, { withFileTypes: true })
+  const skills: PiConfiguredSkill[] = []
 
   for (const entry of directoryEntries) {
     if (!entry.isDirectory()) {
-      continue;
+      continue
     }
 
-    const skillDirPath = path.join(skillsDirPath, entry.name);
-    const skillFilePath = path.join(skillDirPath, "SKILL.md");
+    const skillDirPath = path.join(skillsDirPath, entry.name)
+    const skillFilePath = path.join(skillDirPath, 'SKILL.md')
 
     if (!(await pathExists(skillFilePath))) {
-      continue;
+      continue
     }
 
-    const markdown = await readFile(skillFilePath, "utf8");
-    const frontmatter = parseSkillFrontmatter(markdown);
-    const source = `local:${skillDirPath}`;
+    const markdown = await readFile(skillFilePath, 'utf8')
+    const frontmatter = parseSkillFrontmatter(markdown)
+    const source = `local:${skillDirPath}`
 
     skills.push({
       source,
@@ -42,59 +42,59 @@ async function listSkillsInDirectory(
       displayName: frontmatter.name ?? entry.name,
       description: frontmatter.description ?? null,
       scope,
-      provenance: "local",
+      provenance: 'local',
       installedPath: skillDirPath,
       skillFilePath,
       sourceRepo: null,
       sourceUrl: null,
-    });
+    })
   }
 
   return skills.sort((left, right) =>
-    left.displayName.localeCompare(right.displayName, undefined, { sensitivity: "base" }),
-  );
+    left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' }),
+  )
 }
 
 function sortConfiguredSkills(skills: PiConfiguredSkill[]) {
-  const scopeRank: Record<PiConfiguredSkill["scope"], number> = {
+  const scopeRank: Record<PiConfiguredSkill['scope'], number> = {
     user: 0,
     project: 1,
     chat: 2,
-  };
+  }
 
   return [...skills].sort((left, right) => {
     if (left.scope !== right.scope) {
-      return scopeRank[left.scope] - scopeRank[right.scope];
+      return scopeRank[left.scope] - scopeRank[right.scope]
     }
 
     return left.displayName.localeCompare(right.displayName, undefined, {
-      sensitivity: "base",
-    });
-  });
+      sensitivity: 'base',
+    })
+  })
 }
 
 export async function listConfiguredPiSkills(
-  request: { projectPath?: string | null; chat?: boolean } = {},
+  request: { projectPath?: string | undefined | null | undefined; chat?: boolean | undefined } = {},
 ): Promise<PiConfiguredSkill[]> {
   const globalSkills = (
     await Promise.all(
-      getGlobalSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, "user")),
+      getGlobalSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, 'user')),
     )
-  ).flat();
+  ).flat()
   const projectSkills = (
     await Promise.all(
       getProjectSkillsDirs(request.projectPath).map((skillsDirPath) =>
-        listSkillsInDirectory(skillsDirPath, "project"),
+        listSkillsInDirectory(skillsDirPath, 'project'),
       ),
     )
-  ).flat();
+  ).flat()
   const chatSkills = request.chat
     ? (
         await Promise.all(
-          getChatSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, "chat")),
+          getChatSkillsDirs().map((skillsDirPath) => listSkillsInDirectory(skillsDirPath, 'chat')),
         )
       ).flat()
-    : [];
+    : []
 
-  return sortConfiguredSkills([...globalSkills, ...projectSkills, ...chatSkills]);
+  return sortConfiguredSkills([...globalSkills, ...projectSkills, ...chatSkills])
 }

@@ -1,30 +1,30 @@
-import { getLocalDraftProjectId, getPersistedSessionPath } from "../../../shared/session-paths";
-import type { DesktopEvent } from "../desktop/types";
-import { desktopQueryKeys } from "../query/desktop-query";
-import type { WorkspaceState } from "../state/workspace";
+import { getLocalDraftProjectId, getPersistedSessionPath } from '../../../shared/session-paths'
+import type { DesktopEvent } from '../desktop/types'
+import { desktopQueryKeys } from '../query/desktop-query'
+import type { WorkspaceState } from '../state/workspace'
 
 type QueryClientLike = {
-  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
-  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown;
-};
+  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void
+  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown
+}
 
 export type DesktopEventSelectionState = Pick<
   WorkspaceState,
-  | "activeView"
-  | "selectedProjectId"
-  | "selectedThreadId"
-  | "selectedSessionPath"
-  | "selectedInboxSessionPath"
->;
+  | 'activeView'
+  | 'selectedProjectId'
+  | 'selectedThreadId'
+  | 'selectedSessionPath'
+  | 'selectedInboxSessionPath'
+>
 
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
-  return workspaceState.activeView === "chat" ||
-    workspaceState.activeView === "thread" ||
-    workspaceState.activeView === "gitops"
+  return workspaceState.activeView === 'chat' ||
+    workspaceState.activeView === 'thread' ||
+    workspaceState.activeView === 'gitops'
     ? getPersistedSessionPath(workspaceState.selectedSessionPath)
-    : workspaceState.activeView === "inbox"
+    : workspaceState.activeView === 'inbox'
       ? (workspaceState.selectedInboxSessionPath ?? null)
-      : null;
+      : null
 }
 
 export function shouldAutoOpenStartedThread({
@@ -32,18 +32,18 @@ export function shouldAutoOpenStartedThread({
   projectId,
   workspaceState,
 }: {
-  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
-  projectId: string;
-  isChat?: boolean;
-  workspaceState: DesktopEventSelectionState;
+  reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
+  projectId: string
+  isChat?: boolean | undefined
+  workspaceState: DesktopEventSelectionState
 }) {
-  if (reason !== "start" || projectId !== workspaceState.selectedProjectId) {
-    return false;
+  if (reason !== 'start' || projectId !== workspaceState.selectedProjectId) {
+    return false
   }
 
   // Do not let background/runtime-host starts steal focus. User-initiated sends and explicit
   // thread creation open from their action result; ambient thread events should only update caches.
-  return false;
+  return false
 }
 
 export function shouldDisplayStartedThreadForLocalDraft({
@@ -52,20 +52,20 @@ export function shouldDisplayStartedThreadForLocalDraft({
   isChat,
   workspaceState,
 }: {
-  reason: Extract<DesktopEvent, { type: "thread-update" }>["reason"];
-  projectId: string;
-  isChat?: boolean;
-  workspaceState: DesktopEventSelectionState;
+  reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
+  projectId: string
+  isChat?: boolean | undefined
+  workspaceState: DesktopEventSelectionState
 }) {
-  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath);
-  if (reason !== "start" || localDraftProjectId !== projectId) {
-    return false;
+  const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath)
+  if (reason !== 'start' || localDraftProjectId !== projectId) {
+    return false
   }
 
   return (
-    (workspaceState.activeView === "chat" && isChat === true) ||
-    (workspaceState.activeView === "thread" && isChat !== true)
-  );
+    (workspaceState.activeView === 'chat' && isChat === true) ||
+    (workspaceState.activeView === 'thread' && isChat !== true)
+  )
 }
 
 export async function refreshVisibleInboxThread({
@@ -73,19 +73,19 @@ export async function refreshVisibleInboxThread({
   loadProjectThreads,
   queryClient,
 }: {
-  event: Extract<DesktopEvent, { type: "thread-update" }>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
-  queryClient: QueryClientLike;
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  loadProjectThreads: (projectId: string) => Promise<unknown>
+  queryClient: QueryClientLike
 }) {
-  await window.piDesktop?.invokeAction("inbox.mark-read", {
+  await window.piDesktop?.invokeAction('inbox.mark-read', {
     sessionPath: event.sessionPath,
     projectId: event.projectId,
-  });
+  })
 
   await Promise.all([
     loadProjectThreads(event.projectId),
     queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
-  ]);
+  ])
 }
 
 export function invalidateProjectWorktreeQueries({
@@ -93,21 +93,21 @@ export function invalidateProjectWorktreeQueries({
   projectId,
   queryClient,
 }: {
-  activeView: WorkspaceState["activeView"];
-  projectId: string;
-  queryClient: QueryClientLike;
+  activeView: WorkspaceState['activeView']
+  projectId: string
+  queryClient: QueryClientLike
 }) {
-  if (activeView === "gitops") {
+  if (activeView === 'gitops') {
     void queryClient.invalidateQueries({
       queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-    });
+    })
   }
 
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-  });
+  })
 
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-  });
+  })
 }

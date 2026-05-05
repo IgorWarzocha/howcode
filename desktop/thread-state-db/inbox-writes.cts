@@ -1,9 +1,9 @@
-import { getThreadStateDatabase } from "./db.cts";
-import type { ThreadInboxMessageRecord } from "./types.cts";
-import { runInTransaction } from "./write-transaction.cts";
+import { getThreadStateDatabase } from './db.cts'
+import type { ThreadInboxMessageRecord } from './types.cts'
+import { runInTransaction } from './write-transaction.cts'
 
 export function upsertInboxThreadPrompt(sessionPath: string, prompt: string | null) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       INSERT INTO inbox_items (session_path, unread, last_user_prompt)
@@ -12,11 +12,11 @@ export function upsertInboxThreadPrompt(sessionPath: string, prompt: string | nu
         last_user_prompt = excluded.last_user_prompt,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(sessionPath, prompt);
+  ).run(sessionPath, prompt)
 }
 
 export function beginInboxThreadTurn(sessionPath: string, prompt: string | null) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const resetInboxItem = db.prepare(
     `
       INSERT INTO inbox_items (
@@ -36,7 +36,7 @@ export function beginInboxThreadTurn(sessionPath: string, prompt: string | null)
         last_assistant_at_ms = NULL,
         updated_at = CURRENT_TIMESTAMP
     `,
-  );
+  )
   const resetThreadAssistantSnapshot = db.prepare(
     `
       UPDATE threads
@@ -47,38 +47,38 @@ export function beginInboxThreadTurn(sessionPath: string, prompt: string | null)
         updated_at = CURRENT_TIMESTAMP
       WHERE session_path = ?
     `,
-  );
+  )
 
   runInTransaction(db, () => {
-    resetInboxItem.run(sessionPath, prompt);
-    resetThreadAssistantSnapshot.run(sessionPath);
-  });
+    resetInboxItem.run(sessionPath, prompt)
+    resetThreadAssistantSnapshot.run(sessionPath)
+  })
 }
 
 export function markInboxThreadRead(sessionPath: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE inbox_items
       SET unread = 0, updated_at = CURRENT_TIMESTAMP
       WHERE session_path = ?
     `,
-  ).run(sessionPath);
+  ).run(sessionPath)
 }
 
 export function dismissInboxThread(sessionPath: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       DELETE FROM inbox_items
       WHERE session_path = ?
     `,
-  ).run(sessionPath);
+  ).run(sessionPath)
 }
 
 export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
-  const db = getThreadStateDatabase();
-  const serializedContent = JSON.stringify(record.content);
+  const db = getThreadStateDatabase()
+  const serializedContent = JSON.stringify(record.content)
 
   db.prepare(
     `
@@ -105,7 +105,7 @@ export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
     serializedContent,
     record.preview,
     record.lastAssistantAtMs,
-  );
+  )
 
   db.prepare(
     `
@@ -117,5 +117,5 @@ export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
         updated_at = CURRENT_TIMESTAMP
       WHERE session_path = ?
     `,
-  ).run(serializedContent, record.preview, record.lastAssistantAtMs, record.sessionPath);
+  ).run(serializedContent, record.preview, record.lastAssistantAtMs, record.sessionPath)
 }

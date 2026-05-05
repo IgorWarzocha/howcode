@@ -1,13 +1,13 @@
-import type { DesktopActionResultData } from "../../shared/desktop-contracts";
+import type { DesktopActionResultData } from '../../shared/desktop-contracts'
 import {
   getProjectImportRefreshError,
   type ProjectImportRefreshMode,
-} from "./project-import-refresh";
+} from './project-import-refresh'
 
 export type ProjectImportRefreshOptions = {
-  emitRefreshEvent?: boolean;
-  force?: boolean;
-};
+  emitRefreshEvent?: boolean | undefined
+  force?: boolean | undefined
+}
 
 export async function resolveProjectImportActionResult<T extends DesktopActionResultData>({
   cwd,
@@ -17,25 +17,25 @@ export async function resolveProjectImportActionResult<T extends DesktopActionRe
   refreshShellIndex,
   runAfterRefresh,
 }: {
-  cwd: string;
-  mode: ProjectImportRefreshMode;
-  projectIds: string[];
-  refreshOptions?: ProjectImportRefreshOptions;
-  refreshShellIndex: (cwd: string, options?: ProjectImportRefreshOptions) => Promise<boolean>;
-  runAfterRefresh: (projectIds: string[]) => Promise<T>;
+  cwd: string
+  mode: ProjectImportRefreshMode
+  projectIds: string[]
+  refreshOptions?: ProjectImportRefreshOptions
+  refreshShellIndex: (cwd: string, options?: ProjectImportRefreshOptions) => Promise<boolean>
+  runAfterRefresh: (projectIds: string[]) => Promise<T>
 }) {
-  const refreshed = await refreshShellIndex(cwd, refreshOptions);
+  const refreshed = await refreshShellIndex(cwd, refreshOptions)
   const refreshError = getProjectImportRefreshError({
     mode,
     projectIds,
     refreshed,
-  });
+  })
 
   if (refreshError) {
     return {
       error: refreshError,
-    } satisfies DesktopActionResultData;
+    } satisfies DesktopActionResultData
   }
 
-  return await runAfterRefresh(projectIds);
+  return await runAfterRefresh(projectIds)
 }

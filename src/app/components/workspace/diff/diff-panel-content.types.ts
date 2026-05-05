@@ -1,22 +1,22 @@
-import type { AnnotationSide, FileDiffMetadata } from "@pierre/diffs/react";
+import type { AnnotationSide, FileDiffMetadata } from '@pierre/diffs/react'
 
 export type RenderablePatch =
   | {
-      kind: "files";
-      files: FileDiffMetadata[];
+      kind: 'files'
+      files: FileDiffMetadata[]
     }
   | {
-      kind: "raw";
-      text: string;
-      reason: string;
-    };
+      kind: 'raw'
+      text: string
+      reason: string
+    }
 
 export type DiffCommentMetadata = {
-  id: string;
-  body: string;
-  kind: "comment" | "draft";
-  side: AnnotationSide;
-  lineNumber: number;
-  endSide?: AnnotationSide;
-  endLineNumber?: number;
-};
+  id: string
+  body: string
+  kind: 'comment' | 'draft'
+  side: AnnotationSide
+  lineNumber: number
+  endSide?: AnnotationSide | undefined
+  endLineNumber?: number | undefined
+}

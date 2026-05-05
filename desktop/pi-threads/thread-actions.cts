@@ -1,15 +1,15 @@
-import { unlink } from "node:fs/promises";
-import type { DesktopAction } from "../../shared/desktop-actions.ts";
-import type { AnyDesktopActionPayload } from "../../shared/desktop-contracts.ts";
+import { unlink } from 'node:fs/promises'
+import type { DesktopAction } from '../../shared/desktop-actions.ts'
+import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import {
   getComposerRequest,
   getSessionPath,
   getThreadId,
   getThreadIds,
-} from "../../shared/pi-thread-action-payloads.ts";
-import { openThreadRuntime, startNewThread } from "../pi-desktop-runtime.cts";
-import { deleteArtifactsForConversation } from "../artifact-state-db.cts";
-import { deleteChatThread } from "../chat-state-db.cts";
+} from '../../shared/pi-thread-action-payloads.ts'
+import { deleteArtifactsForConversation } from '../artifact-state-db.cts'
+import { deleteChatThread } from '../chat-state-db.cts'
+import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.cts'
 import {
   archiveThread,
   archiveThreads,
@@ -20,155 +20,131 @@ import {
   restoreThread,
   restoreThreads,
   toggleThreadPinned,
-} from "../thread-state-db.cts";
-import type { ActionHandlerResult } from "./action-router-result.cts";
-import { handledAction, unhandledAction } from "./action-router-result.cts";
+} from '../thread-state-db.cts'
+import type { ActionHandlerResult } from './action-router-result.cts'
+import { handledAction, unhandledAction } from './action-router-result.cts'
 
 async function deletePersistedThread(threadId: string) {
-  const sessionPath = getThreadSessionPath(threadId);
+  const sessionPath = getThreadSessionPath(threadId)
   if (sessionPath) {
     try {
-      await unlink(sessionPath);
+      await unlink(sessionPath)
     } catch (error) {
       if (
-        typeof error !== "object" ||
+        typeof error !== 'object' ||
         error === null ||
-        !("code" in error) ||
-        error.code !== "ENOENT"
+        !('code' in error) ||
+        error.code !== 'ENOENT'
       ) {
-        throw error;
+        throw error
       }
     }
   }
 
   if (sessionPath) {
-    deleteArtifactsForConversation(sessionPath);
-    deleteChatThread(sessionPath);
+    deleteArtifactsForConversation(sessionPath)
+    deleteChatThread(sessionPath)
   }
-  deleteThreadRecord(threadId);
+  deleteThreadRecord(threadId)
 }
 
 async function deletePersistedThreads(threadIds: string[]) {
-  const deletedThreadIds: string[] = [];
-  const failedThreadIds: string[] = [];
+  const deletedThreadIds: string[] = []
+  const failedThreadIds: string[] = []
 
   for (const threadId of threadIds) {
     try {
-      await deletePersistedThread(threadId);
-      deletedThreadIds.push(threadId);
+      await deletePersistedThread(threadId)
+      deletedThreadIds.push(threadId)
     } catch (error) {
-      console.warn(`Failed to delete persisted thread: ${threadId}`, error);
-      failedThreadIds.push(threadId);
+      console.warn(`Failed to delete persisted thread: ${threadId}`, error)
+      failedThreadIds.push(threadId)
     }
   }
 
   return {
     deletedThreadIds,
     failedThreadIds,
-  };
+  }
 }
+
+type ThreadActionHandler = (
+  payload: AnyDesktopActionPayload,
+) => Promise<ActionHandlerResult> | ActionHandlerResult
+
+async function deleteManyThreadsFromPayload(payload: AnyDesktopActionPayload) {
+  const threadIds = getThreadIds(payload)
+  if (threadIds.length === 0) return handledAction()
+
+  const deleteResult = await deletePersistedThreads(threadIds)
+  if (deleteResult.failedThreadIds.length > 0) {
+    return handledAction({
+      deletedThreadIds: deleteResult.deletedThreadIds,
+      didMutate: deleteResult.deletedThreadIds.length > 0,
+      error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
+      failedThreadIds: deleteResult.failedThreadIds,
+    })
+  }
+
+  return handledAction({ deletedThreadIds: deleteResult.deletedThreadIds })
+}
+
+const threadActionHandlers = {
+  'thread.pin': (payload) => {
+    const threadId = getThreadId(payload)
+    if (threadId) toggleThreadPinned(threadId)
+    return handledAction()
+  },
+  'thread.open': async (payload) => {
+    const sessionPath = getSessionPath(payload)
+    await openThreadRuntime(getComposerRequest(payload))
+    if (sessionPath) markInboxThreadRead(sessionPath)
+    return handledAction()
+  },
+  'thread.archive': (payload) => {
+    const threadId = getThreadId(payload)
+    if (threadId) archiveThread(threadId)
+    return handledAction()
+  },
+  'thread.archive-many': (payload) => {
+    const threadIds = getThreadIds(payload)
+    if (threadIds.length > 0) archiveThreads(threadIds)
+    return handledAction()
+  },
+  'thread.restore': (payload) => {
+    const threadId = getThreadId(payload)
+    if (threadId) restoreThread(threadId)
+    return handledAction()
+  },
+  'thread.restore-many': (payload) => {
+    const threadIds = getThreadIds(payload)
+    if (threadIds.length > 0) restoreThreads(threadIds)
+    return handledAction()
+  },
+  'thread.delete': async (payload) => {
+    const threadId = getThreadId(payload)
+    if (threadId) await deletePersistedThread(threadId)
+    return handledAction()
+  },
+  'thread.delete-many': deleteManyThreadsFromPayload,
+  'thread.new': async (payload) => handledAction(await startNewThread(getComposerRequest(payload))),
+  'inbox.mark-read': (payload) => {
+    const sessionPath = getSessionPath(payload)
+    if (sessionPath) markInboxThreadRead(sessionPath)
+    return handledAction()
+  },
+  'inbox.dismiss': (payload) => {
+    const sessionPath = getSessionPath(payload)
+    if (sessionPath) dismissInboxThread(sessionPath)
+    return handledAction()
+  },
+} satisfies Partial<Record<DesktopAction, ThreadActionHandler>>
 
 export async function handleThreadDesktopAction(
   action: DesktopAction,
   payload: AnyDesktopActionPayload,
 ): Promise<ActionHandlerResult> {
-  switch (action) {
-    case "thread.pin": {
-      const threadId = getThreadId(payload);
-      if (threadId) {
-        toggleThreadPinned(threadId);
-      }
-      return handledAction();
-    }
-
-    case "thread.open": {
-      const sessionPath = getSessionPath(payload);
-      await openThreadRuntime(getComposerRequest(payload));
-      if (sessionPath) {
-        markInboxThreadRead(sessionPath);
-      }
-      return handledAction();
-    }
-
-    case "thread.archive": {
-      const threadId = getThreadId(payload);
-      if (threadId) {
-        archiveThread(threadId);
-      }
-      return handledAction();
-    }
-
-    case "thread.archive-many": {
-      const threadIds = getThreadIds(payload);
-      if (threadIds.length > 0) {
-        archiveThreads(threadIds);
-      }
-      return handledAction();
-    }
-
-    case "thread.restore": {
-      const threadId = getThreadId(payload);
-      if (threadId) {
-        restoreThread(threadId);
-      }
-      return handledAction();
-    }
-
-    case "thread.restore-many": {
-      const threadIds = getThreadIds(payload);
-      if (threadIds.length > 0) {
-        restoreThreads(threadIds);
-      }
-      return handledAction();
-    }
-
-    case "thread.delete": {
-      const threadId = getThreadId(payload);
-      if (threadId) {
-        await deletePersistedThread(threadId);
-      }
-      return handledAction();
-    }
-
-    case "thread.delete-many": {
-      const threadIds = getThreadIds(payload);
-      if (threadIds.length > 0) {
-        const deleteResult = await deletePersistedThreads(threadIds);
-
-        if (deleteResult.failedThreadIds.length > 0) {
-          return handledAction({
-            deletedThreadIds: deleteResult.deletedThreadIds,
-            didMutate: deleteResult.deletedThreadIds.length > 0,
-            error: `Failed to delete ${deleteResult.failedThreadIds.length} thread(s).`,
-            failedThreadIds: deleteResult.failedThreadIds,
-          });
-        }
-
-        return handledAction({ deletedThreadIds: deleteResult.deletedThreadIds });
-      }
-      return handledAction();
-    }
-
-    case "thread.new":
-      return handledAction(await startNewThread(getComposerRequest(payload)));
-
-    case "inbox.mark-read": {
-      const sessionPath = getSessionPath(payload);
-      if (sessionPath) {
-        markInboxThreadRead(sessionPath);
-      }
-      return handledAction();
-    }
-
-    case "inbox.dismiss": {
-      const sessionPath = getSessionPath(payload);
-      if (sessionPath) {
-        dismissInboxThread(sessionPath);
-      }
-      return handledAction();
-    }
-
-    default:
-      return unhandledAction();
-  }
+  const handlers: Partial<Record<DesktopAction, ThreadActionHandler>> = threadActionHandlers
+  const handler = handlers[action]
+  return handler ? await handler(payload) : unhandledAction()
 }

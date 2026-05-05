@@ -1,85 +1,85 @@
 export type SessionSummaryRecord = {
-  id: string;
-  cwd: string;
-  sessionPath: string;
-  title: string;
-  lastModifiedMs: number;
-};
+  id: string
+  cwd: string
+  sessionPath: string
+  title: string
+  lastModifiedMs: number
+}
 
 export type ProjectRow = {
-  id: string;
-  name: string;
-  orderIndex: number | null;
-  pinned: number;
-  collapsed: number;
-  threadCount: number;
-  latestModifiedMs: number;
-  repoOriginUrl: string | null;
-  repoOriginChecked: number;
-  gitOpsMode: string | null;
-};
+  id: string
+  name: string
+  orderIndex: number | null
+  pinned: number
+  collapsed: number
+  threadCount: number
+  latestModifiedMs: number
+  repoOriginUrl: string | null
+  repoOriginChecked: number
+  gitOpsMode: string | null
+}
 
 export type ThreadRow = {
-  id: string;
-  title: string;
-  sessionPath: string;
-  summary: string | null;
-  running: number;
-  unread: number;
-  pinned: number;
-  lastModifiedMs: number;
-};
+  id: string
+  title: string
+  sessionPath: string
+  summary: string | null
+  running: number
+  unread: number
+  pinned: number
+  lastModifiedMs: number
+}
 
 export type InboxThreadRow = {
-  threadId: string;
-  title: string;
-  projectId: string;
-  projectName: string;
-  sessionPath: string;
-  lastUserPrompt: string | null;
-  lastAssistantMessageJson: string | null;
-  lastAssistantPreview: string | null;
-  running: number;
-  unread: number;
-  lastActivityMs: number;
-  isChat: number;
-};
+  threadId: string
+  title: string
+  projectId: string
+  projectName: string
+  sessionPath: string
+  lastUserPrompt: string | null
+  lastAssistantMessageJson: string | null
+  lastAssistantPreview: string | null
+  running: number
+  unread: number
+  lastActivityMs: number
+  isChat: number
+}
 
 export type ThreadInboxMessageRecord = {
-  sessionPath: string;
-  userPrompt: string | null;
-  content: string[];
-  preview: string | null;
-  lastAssistantAtMs: number;
-};
+  sessionPath: string
+  userPrompt: string | null
+  content: string[]
+  preview: string | null
+  lastAssistantAtMs: number
+}
 
 export type InboxPathRow = {
-  sessionPath: string;
-};
+  sessionPath: string
+}
 
 export type ThreadAssistantSnapshotRow = {
-  messageJson: string | null;
-  preview: string | null;
-};
+  messageJson: string | null
+  preview: string | null
+}
 
 export type ArchivedThreadRow = {
-  id: string;
-  title: string;
-  sessionPath: string;
-  projectId: string;
-  projectName: string;
-  lastModifiedMs: number;
-};
+  id: string
+  title: string
+  sessionPath: string
+  projectId: string
+  projectName: string
+  lastModifiedMs: number
+}
 
 export type ThreadPathRow = {
-  sessionPath: string;
-};
+  sessionPath: string
+}
 
 export type ThreadDiffPreferencesRow = {
-  diffBaselineJson: string | null;
-  diffRenderMode: string | null;
-};
+  diffBaselineJson: string | null
+  diffRenderMode: string | null
+}
 
 export type ThreadCwdRow = {
-  cwd: string;
-};
+  cwd: string
+}

@@ -1,1 +1,1 @@
-export { buildComposerAttachmentPrompt } from "../../shared/composer-attachment-prompt";
+export { buildComposerAttachmentPrompt } from '../../shared/composer-attachment-prompt'

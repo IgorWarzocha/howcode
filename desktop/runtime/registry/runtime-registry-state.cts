@@ -1,20 +1,20 @@
-import type { PiRuntime } from "../types.cts";
+import type { PiRuntime } from '../types.cts'
 
-const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000;
-const LIVE_THREAD_UPDATE_THROTTLE_MS = 50;
+const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000
+const LIVE_THREAD_UPDATE_THROTTLE_MS = 50
 
 export type RuntimeRecord = {
-  runtimePromise: Promise<PiRuntime>;
-  disposeTimeout: ReturnType<typeof setTimeout> | null;
-  settingsCwd: string | null;
-};
+  runtimePromise: Promise<PiRuntime>
+  disposeTimeout: ReturnType<typeof setTimeout> | null
+  settingsCwd: string | null
+}
 
-const runtimeRecords = new Map<string, RuntimeRecord>();
-const runtimeMutationTails = new Map<string, Promise<void>>();
-const liveThreadUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>();
+const runtimeRecords = new Map<string, RuntimeRecord>()
+const runtimeMutationTails = new Map<string, Promise<void>>()
+const liveThreadUpdateTimers = new WeakMap<PiRuntime, ReturnType<typeof setTimeout>>()
 
 export function getRuntimeRecord(runtimeKey: string) {
-  return runtimeRecords.get(runtimeKey) ?? null;
+  return runtimeRecords.get(runtimeKey) ?? null
 }
 
 export function getRuntimeRecordSnapshots() {
@@ -22,7 +22,7 @@ export function getRuntimeRecordSnapshots() {
     runtimeKey,
     runtimePromise: record.runtimePromise,
     settingsCwd: record.settingsCwd,
-  }));
+  }))
 }
 
 export function registerRuntime(
@@ -34,93 +34,93 @@ export function registerRuntime(
     runtimePromise,
     disposeTimeout: null,
     settingsCwd,
-  };
+  }
 
-  runtimeRecords.set(runtimeKey, record);
-  return record;
+  runtimeRecords.set(runtimeKey, record)
+  return record
 }
 
 export function deleteRuntimeRecordIfCurrent(runtimeKey: string, record: RuntimeRecord) {
   if (runtimeRecords.get(runtimeKey) === record) {
-    runtimeRecords.delete(runtimeKey);
+    runtimeRecords.delete(runtimeKey)
   }
 }
 
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
-  const record = runtimeRecords.get(runtimeKey);
+  const record = runtimeRecords.get(runtimeKey)
   if (!record?.disposeTimeout) {
-    return;
+    return
   }
 
-  clearTimeout(record.disposeTimeout);
-  record.disposeTimeout = null;
+  clearTimeout(record.disposeTimeout)
+  record.disposeTimeout = null
 }
 
 export function suspendRuntimeDisposal(runtimeKey: string) {
-  clearRuntimeDisposeTimeout(runtimeKey);
+  clearRuntimeDisposeTimeout(runtimeKey)
 }
 
 export function scheduleRuntimeDisposal(
   runtimeKey: string,
   isRuntimeBusy: (runtime: PiRuntime) => boolean,
 ) {
-  const record = runtimeRecords.get(runtimeKey);
+  const record = runtimeRecords.get(runtimeKey)
   if (!record) {
-    return;
+    return
   }
 
-  clearRuntimeDisposeTimeout(runtimeKey);
+  clearRuntimeDisposeTimeout(runtimeKey)
 
   record.disposeTimeout = setTimeout(() => {
     void (async () => {
-      const currentRecord = runtimeRecords.get(runtimeKey);
+      const currentRecord = runtimeRecords.get(runtimeKey)
       if (!currentRecord || currentRecord !== record) {
-        return;
+        return
       }
 
       try {
-        const runtime = await record.runtimePromise;
+        const runtime = await record.runtimePromise
         if (isRuntimeBusy(runtime)) {
-          scheduleRuntimeDisposal(runtimeKey, isRuntimeBusy);
-          return;
+          scheduleRuntimeDisposal(runtimeKey, isRuntimeBusy)
+          return
         }
 
-        runtime.session.dispose();
+        runtime.session.dispose()
       } catch {
         // Ignore runtime disposal races after failed creation.
       } finally {
-        deleteRuntimeRecordIfCurrent(runtimeKey, record);
+        deleteRuntimeRecordIfCurrent(runtimeKey, record)
       }
-    })();
-  }, RUNTIME_IDLE_TIMEOUT_MS);
+    })()
+  }, RUNTIME_IDLE_TIMEOUT_MS)
 }
 
 export function cancelLiveThreadUpdate(runtime: PiRuntime) {
-  const timer = liveThreadUpdateTimers.get(runtime);
+  const timer = liveThreadUpdateTimers.get(runtime)
   if (!timer) {
-    return;
+    return
   }
 
-  clearTimeout(timer);
-  liveThreadUpdateTimers.delete(runtime);
+  clearTimeout(timer)
+  liveThreadUpdateTimers.delete(runtime)
 }
 
 export function deferLiveThreadUpdate(
   runtime: PiRuntime,
   publishLiveThreadUpdate: (runtime: PiRuntime) => void,
-  options: { requireStreaming?: boolean } = {},
+  options: { requireStreaming?: boolean | undefined } = {},
 ) {
-  cancelLiveThreadUpdate(runtime);
+  cancelLiveThreadUpdate(runtime)
   const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime);
+    liveThreadUpdateTimers.delete(runtime)
     if (options.requireStreaming !== false && !runtime.session.isStreaming) {
-      return;
+      return
     }
 
-    publishLiveThreadUpdate(runtime);
-  }, 0);
+    publishLiveThreadUpdate(runtime)
+  }, 0)
 
-  liveThreadUpdateTimers.set(runtime, timer);
+  liveThreadUpdateTimers.set(runtime, timer)
 }
 
 export function scheduleLiveThreadUpdate(
@@ -128,41 +128,41 @@ export function scheduleLiveThreadUpdate(
   publishLiveThreadUpdate: (runtime: PiRuntime) => void,
 ) {
   if (liveThreadUpdateTimers.has(runtime)) {
-    return;
+    return
   }
 
   const timer = setTimeout(() => {
-    liveThreadUpdateTimers.delete(runtime);
+    liveThreadUpdateTimers.delete(runtime)
     if (!runtime.session.isStreaming) {
-      return;
+      return
     }
 
-    publishLiveThreadUpdate(runtime);
-  }, LIVE_THREAD_UPDATE_THROTTLE_MS);
+    publishLiveThreadUpdate(runtime)
+  }, LIVE_THREAD_UPDATE_THROTTLE_MS)
 
-  liveThreadUpdateTimers.set(runtime, timer);
+  liveThreadUpdateTimers.set(runtime, timer)
 }
 
 export async function withRuntimeMutationLock<T>(runtimeKey: string, task: () => Promise<T>) {
-  const previousTail = runtimeMutationTails.get(runtimeKey) ?? Promise.resolve();
-  let releaseCurrentTail: (() => void) | undefined;
+  const previousTail = runtimeMutationTails.get(runtimeKey) ?? Promise.resolve()
+  let releaseCurrentTail: (() => void) | undefined
   const currentTail = new Promise<void>((resolve) => {
-    releaseCurrentTail = resolve;
-  });
+    releaseCurrentTail = resolve
+  })
 
-  const nextTail = previousTail.then(() => currentTail);
-  runtimeMutationTails.set(runtimeKey, nextTail);
+  const nextTail = previousTail.then(() => currentTail)
+  runtimeMutationTails.set(runtimeKey, nextTail)
 
-  await previousTail;
+  await previousTail
 
   try {
-    return await task();
+    return await task()
   } finally {
     if (releaseCurrentTail) {
-      releaseCurrentTail();
+      releaseCurrentTail()
     }
     if (runtimeMutationTails.get(runtimeKey) === nextTail) {
-      runtimeMutationTails.delete(runtimeKey);
+      runtimeMutationTails.delete(runtimeKey)
     }
   }
 }

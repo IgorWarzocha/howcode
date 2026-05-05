@@ -1,310 +1,385 @@
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   appSettingsSlashCommand,
   fallbackAppSlashCommands,
-} from "../../../../../shared/composer-slash-commands";
-import type { ComposerSlashCommand } from "../../../desktop/types";
-import { getComposerSlashCommandsQuery } from "../../../query/desktop-query";
+} from '../../../../../shared/composer-slash-commands'
+import type { ComposerSlashCommand } from '../../../desktop/types'
+import { getComposerSlashCommandsQuery } from '../../../query/desktop-query'
 
-const slashCommandSourceOrder: Record<ComposerSlashCommand["source"], number> = {
+const slashCommandSourceOrder: Record<ComposerSlashCommand['source'], number> = {
   prompt: 0,
   app: 1,
   builtin: 1,
   skill: 2,
   extension: 3,
-};
-
-const slashCommandSourceLabels: Record<ComposerSlashCommand["source"], string> = {
-  app: "System",
-  builtin: "System",
-  extension: "Extensions",
-  prompt: "Prompts",
-  skill: "Skills",
-};
-
-export function getComposerSlashCommandGroupLabel(command: ComposerSlashCommand) {
-  return slashCommandSourceLabels[command.source];
 }
 
-export const composerSlashCommandListboxId = "composer-slash-command-listbox";
+const slashCommandSourceLabels: Record<ComposerSlashCommand['source'], string> = {
+  app: 'System',
+  builtin: 'System',
+  extension: 'Extensions',
+  prompt: 'Prompts',
+  skill: 'Skills',
+}
+const whitespaceCharacterPattern = /\s/
+const whitespaceRunPattern = /\s+/
+
+export function getComposerSlashCommandGroupLabel(command: ComposerSlashCommand) {
+  return slashCommandSourceLabels[command.source]
+}
+
+export const composerSlashCommandListboxId = 'composer-slash-command-listbox'
 
 export function getComposerSlashCommandOptionId(index: number) {
-  return `composer-slash-command-${index}`;
+  return `composer-slash-command-${index}`
 }
 
 function getSlashCommandFilter(draft: string) {
-  if (!draft.startsWith("/")) {
-    return null;
+  if (!draft.startsWith('/')) {
+    return null
   }
 
-  const query = draft.slice(1);
-  if (/\s/.test(query)) {
-    return null;
+  const query = draft.slice(1)
+  if (whitespaceCharacterPattern.test(query)) {
+    return null
   }
 
-  return query.toLowerCase();
+  return query.toLowerCase()
 }
 
 function shouldWaitForSlashCommands(draft: string) {
-  const trimmedDraft = draft.trim();
-  return (
-    trimmedDraft.startsWith("/") && !trimmedDraft.includes(" ") && trimmedDraft !== "/settings"
-  );
+  const trimmedDraft = draft.trim()
+  return trimmedDraft.startsWith('/') && !trimmedDraft.includes(' ') && trimmedDraft !== '/settings'
 }
 
 type UseComposerSlashCommandsOptions = {
-  draft: string;
-  projectId: string;
-  sessionPath: string | null;
-  composerMode?: "chat" | "code";
-  setDraft: (draft: string) => void;
-  send: () => void;
-  sendExtensionCommand?: () => void;
-  onOpenSettingsView: () => void;
-};
+  draft: string
+  projectId: string
+  sessionPath: string | null
+  composerMode?: 'chat' | 'code'
+  setDraft: (draft: string) => void
+  send: () => void
+  sendExtensionCommand?: () => void
+  onOpenSettingsView: () => void
+}
 
-export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>;
+export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
+
+function resolveSlashCommandAfterLoad(input: {
+  commandScopeKey: string
+  commandScopeKeyRef: { current: string }
+  composerMode: 'chat' | 'code'
+  draft: string
+  draftRef: { current: string }
+  projectId: string
+  send: () => void
+  sendExtensionCommand: (() => void) | undefined
+  sessionPath: string | null
+}) {
+  void getComposerSlashCommandsQuery({
+    projectId: input.projectId,
+    sessionPath: input.sessionPath,
+    composerMode: input.composerMode,
+  })
+    .then((nextCommands) => {
+      if (
+        input.draftRef.current !== input.draft ||
+        input.commandScopeKeyRef.current !== input.commandScopeKey
+      )
+        return
+      const commandName = input.draft.trim().slice(1).split(whitespaceRunPattern, 1)[0]
+      const resolvedCommand = nextCommands.find((command) => command.name === commandName)
+      if (resolvedCommand?.source === 'extension') input.sendExtensionCommand?.()
+      else if (resolvedCommand) input.send()
+    })
+    .catch(() => {
+      // Keep slash text in the editor rather than leaking an unresolved command to the model.
+    })
+}
+
+function tryResolveSlashDraft(input: {
+  commandScopeKey: string
+  commandScopeKeyRef: { current: string }
+  commands: ComposerSlashCommand[]
+  composerMode: 'chat' | 'code'
+  dismiss: () => void
+  draft: string
+  draftCommand: ComposerSlashCommand | null
+  draftRef: { current: string }
+  loading: boolean
+  projectId: string
+  send: () => void
+  sendExtensionCommand: (() => void) | undefined
+  sessionPath: string | null
+}) {
+  if (!input.draft.trim().startsWith('/')) return false
+  input.dismiss()
+  if (input.draftCommand?.source === 'extension' && input.sendExtensionCommand) {
+    input.sendExtensionCommand()
+    return true
+  }
+  if (
+    input.draftCommand ||
+    !input.sendExtensionCommand ||
+    !(input.loading || input.commands.length === 0)
+  )
+    return false
+  resolveSlashCommandAfterLoad(input)
+  return true
+}
+
+function getOpenSelectedCommand(input: {
+  filteredCommands: ComposerSlashCommand[]
+  loading: boolean
+  open: boolean
+  selectedIndex: number
+  draft: string
+}) {
+  if (!input.open) return undefined
+  const selectedCommand = input.filteredCommands[input.selectedIndex]
+  if (selectedCommand) return selectedCommand
+  return input.loading && shouldWaitForSlashCommands(input.draft) ? null : undefined
+}
+
+function handleOpenSlashCommandKey(input: {
+  completeCommand: (command: ComposerSlashCommand) => void
+  draft: string
+  event: KeyboardEvent<HTMLTextAreaElement>
+  filteredCommands: ComposerSlashCommand[]
+  loading: boolean
+  selectedIndex: number
+  selectCommand: (command: ComposerSlashCommand) => void
+  setSelectedIndex: (updater: (current: number) => number) => void
+  submit: () => void
+}) {
+  if (input.event.key === 'Escape') return false
+  if (input.event.key === 'ArrowDown') {
+    input.event.preventDefault()
+    input.setSelectedIndex((current) =>
+      Math.min(current + 1, Math.max(0, input.filteredCommands.length - 1)),
+    )
+    return true
+  }
+  if (input.event.key === 'ArrowUp') {
+    input.event.preventDefault()
+    input.setSelectedIndex((current) => Math.max(0, current - 1))
+    return true
+  }
+  const selectedCommand = input.filteredCommands[input.selectedIndex]
+  if (input.event.key === 'Tab' && !input.event.shiftKey && selectedCommand) {
+    input.event.preventDefault()
+    input.completeCommand(selectedCommand)
+    return true
+  }
+  if (input.event.key === 'Enter' && !input.event.shiftKey && selectedCommand) {
+    input.event.preventDefault()
+    input.selectCommand(selectedCommand)
+    return true
+  }
+  if (input.event.key !== 'Enter' || input.event.shiftKey) return false
+  if (input.draft !== '/settings' && !(input.loading && shouldWaitForSlashCommands(input.draft)))
+    return false
+  input.event.preventDefault()
+  if (input.draft === '/settings') input.submit()
+  return true
+}
 
 export function useComposerSlashCommands({
   draft,
   projectId,
   sessionPath,
-  composerMode = "code",
+  composerMode = 'code',
   setDraft,
   send,
   sendExtensionCommand,
   onOpenSettingsView,
 }: UseComposerSlashCommandsOptions) {
-  const [commands, setCommands] = useState<ComposerSlashCommand[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [dismissedDraft, setDismissedDraft] = useState<string | null>(null);
-  const candidateFilter = getSlashCommandFilter(draft);
-  const filter = draft === dismissedDraft ? null : candidateFilter;
-  const open = filter !== null;
-  const commandScopeKey = `${projectId}\0${sessionPath ?? ""}\0${composerMode}`;
-  const draftRef = useRef(draft);
-  const commandScopeKeyRef = useRef(commandScopeKey);
-  draftRef.current = draft;
-  commandScopeKeyRef.current = commandScopeKey;
+  const [commands, setCommands] = useState<ComposerSlashCommand[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [dismissedDraft, setDismissedDraft] = useState<string | null>(null)
+  const candidateFilter = getSlashCommandFilter(draft)
+  const filter = draft === dismissedDraft ? null : candidateFilter
+  const open = filter !== null
+  const commandScopeKey = `${projectId}\0${sessionPath ?? ''}\0${composerMode}`
+  const draftRef = useRef(draft)
+  const commandScopeKeyRef = useRef(commandScopeKey)
+  draftRef.current = draft
+  commandScopeKeyRef.current = commandScopeKey
   const filteredCommands = useMemo(() => {
     if (filter === null) {
-      return [];
+      return []
     }
 
     return commands
       .filter((command) => command.name.toLowerCase().includes(filter))
       .sort((left, right) => {
         const sourceOrder =
-          slashCommandSourceOrder[left.source] - slashCommandSourceOrder[right.source];
+          slashCommandSourceOrder[left.source] - slashCommandSourceOrder[right.source]
         if (sourceOrder !== 0) {
-          return sourceOrder;
+          return sourceOrder
         }
 
-        return left.name.localeCompare(right.name);
-      });
-  }, [commands, filter]);
+        return left.name.localeCompare(right.name)
+      })
+  }, [commands, filter])
 
   const isExactCommandDraft = (command: ComposerSlashCommand) =>
-    draft.trim() === `/${command.name}` && !draft.endsWith(" ");
+    draft.trim() === `/${command.name}` && !draft.endsWith(' ')
 
   const getDraftCommand = () => {
-    const trimmedDraft = draft.trim();
-    if (!trimmedDraft.startsWith("/")) return null;
-    const commandName = trimmedDraft.slice(1).split(/\s+/, 1)[0];
-    return commands.find((command) => command.name === commandName) ?? null;
-  };
+    const trimmedDraft = draft.trim()
+    if (!trimmedDraft.startsWith('/')) return null
+    const commandName = trimmedDraft.slice(1).split(whitespaceRunPattern, 1)[0]
+    return commands.find((command) => command.name === commandName) ?? null
+  }
 
   const selectCommand = (command: ComposerSlashCommand) => {
-    if (command.source === "app" && command.name === "settings") {
-      setDraft("");
-      onOpenSettingsView();
-      return;
+    if (command.source === 'app' && command.name === 'settings') {
+      setDraft('')
+      onOpenSettingsView()
+      return
     }
 
     if (isExactCommandDraft(command)) {
-      dismiss();
-      if (command.source === "extension" && sendExtensionCommand) {
-        sendExtensionCommand();
+      dismiss()
+      if (command.source === 'extension' && sendExtensionCommand) {
+        sendExtensionCommand()
       } else {
-        send();
+        send()
       }
-      return;
+      return
     }
 
-    setDraft(`/${command.name} `);
-  };
+    setDraft(`/${command.name} `)
+  }
 
   const completeCommand = (command: ComposerSlashCommand) => {
-    setDraft(`/${command.name} `);
-  };
+    setDraft(`/${command.name} `)
+  }
 
   const submit = () => {
-    if (open) {
-      const selectedCommand = filteredCommands[selectedIndex];
-      if (selectedCommand) {
-        selectCommand(selectedCommand);
-        return;
-      }
-
-      if (loading && shouldWaitForSlashCommands(draft)) {
-        return;
-      }
+    const openSelectedCommand = getOpenSelectedCommand({
+      draft,
+      filteredCommands,
+      loading,
+      open,
+      selectedIndex,
+    })
+    if (openSelectedCommand === null) return
+    if (openSelectedCommand) {
+      selectCommand(openSelectedCommand)
+      return
     }
 
     // Keep this exact-match only: selected Pi commands named "settings" intentionally insert
     // "/settings " so they can still be sent through AgentSession.prompt().
-    if (draft === "/settings") {
-      selectCommand(appSettingsSlashCommand);
-      return;
+    if (draft === '/settings') {
+      selectCommand(appSettingsSlashCommand)
+      return
     }
 
-    if (draft.trim().startsWith("/")) {
-      const draftCommand = getDraftCommand();
-      dismiss();
-      if (draftCommand?.source === "extension" && sendExtensionCommand) {
-        sendExtensionCommand();
-        return;
-      }
-      if (!draftCommand && sendExtensionCommand && (loading || commands.length === 0)) {
-        const submittedDraft = draft;
-        const submittedScopeKey = commandScopeKey;
-        void getComposerSlashCommandsQuery({ projectId, sessionPath, composerMode })
-          .then((nextCommands) => {
-            if (
-              draftRef.current !== submittedDraft ||
-              commandScopeKeyRef.current !== submittedScopeKey
-            ) {
-              return;
-            }
-            const commandName = submittedDraft.trim().slice(1).split(/\s+/, 1)[0];
-            const resolvedCommand = nextCommands.find((command) => command.name === commandName);
-            if (resolvedCommand?.source === "extension") {
-              sendExtensionCommand();
-            } else if (resolvedCommand) {
-              send();
-            }
-          })
-          .catch(() => {
-            // Keep slash text in the editor rather than leaking an unresolved command to the model.
-          });
-        return;
-      }
-    }
+    if (
+      tryResolveSlashDraft({
+        commandScopeKey,
+        commandScopeKeyRef,
+        commands,
+        composerMode,
+        dismiss,
+        draft,
+        draftCommand: getDraftCommand(),
+        draftRef,
+        loading,
+        projectId,
+        send,
+        sendExtensionCommand,
+        sessionPath,
+      })
+    )
+      return
 
-    send();
-  };
+    send()
+  }
 
   const dismiss = (options?: { clearDraft?: boolean }) => {
-    setDismissedDraft(draft);
-    setCommands([]);
-    setLoading(false);
-    setSelectedIndex(0);
+    setDismissedDraft(draft)
+    setCommands([])
+    setLoading(false)
+    setSelectedIndex(0)
     if (options?.clearDraft) {
-      setDraft("");
+      setDraft('')
     }
-  };
+  }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!open) {
-      return false;
+    if (!open) return false
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      dismiss()
+      return true
     }
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      dismiss();
-      return true;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setSelectedIndex((current) =>
-        Math.min(current + 1, Math.max(0, filteredCommands.length - 1)),
-      );
-      return true;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setSelectedIndex((current) => Math.max(0, current - 1));
-      return true;
-    }
-
-    if (event.key === "Tab" && !event.shiftKey && filteredCommands[selectedIndex]) {
-      event.preventDefault();
-      completeCommand(filteredCommands[selectedIndex]);
-      return true;
-    }
-
-    if (event.key === "Enter" && !event.shiftKey && filteredCommands[selectedIndex]) {
-      event.preventDefault();
-      selectCommand(filteredCommands[selectedIndex]);
-      return true;
-    }
-
-    if (event.key === "Enter" && !event.shiftKey && draft === "/settings") {
-      event.preventDefault();
-      submit();
-      return true;
-    }
-
-    if (event.key === "Enter" && !event.shiftKey && loading && shouldWaitForSlashCommands(draft)) {
-      event.preventDefault();
-      return true;
-    }
-
-    return false;
-  };
+    return handleOpenSlashCommandKey({
+      completeCommand,
+      draft,
+      event,
+      filteredCommands,
+      loading,
+      selectedIndex,
+      selectCommand,
+      setSelectedIndex,
+      submit,
+    })
+  }
 
   useEffect(() => {
     if (!open) {
-      setSelectedIndex(0);
-      setLoading(false);
-      return;
+      setSelectedIndex(0)
+      setLoading(false)
+      return
     }
 
-    let cancelled = false;
-    setCommands([]);
-    setSelectedIndex(0);
-    setLoading(true);
+    let cancelled = false
+    setCommands([])
+    setSelectedIndex(0)
+    setLoading(true)
     void getComposerSlashCommandsQuery({ projectId, sessionPath, composerMode })
       .then((nextCommands) => {
         if (!cancelled) {
-          setCommands(nextCommands);
+          setCommands(nextCommands)
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setCommands(fallbackAppSlashCommands);
+          setCommands(fallbackAppSlashCommands)
         }
       })
       .finally(() => {
         if (!cancelled) {
-          setLoading(false);
+          setLoading(false)
         }
-      });
+      })
 
     return () => {
-      cancelled = true;
-    };
-  }, [composerMode, open, projectId, sessionPath]);
+      cancelled = true
+    }
+  }, [composerMode, open, projectId, sessionPath])
 
   useEffect(() => {
-    void commandScopeKey;
-    setCommands([]);
-  }, [commandScopeKey]);
+    void commandScopeKey
+    setCommands([])
+  }, [commandScopeKey])
 
   useEffect(() => {
     if (selectedIndex >= filteredCommands.length) {
-      setSelectedIndex(Math.max(0, filteredCommands.length - 1));
+      setSelectedIndex(Math.max(0, filteredCommands.length - 1))
     }
-  }, [filteredCommands.length, selectedIndex]);
+  }, [filteredCommands.length, selectedIndex])
 
   useEffect(() => {
     if (dismissedDraft !== null && draft !== dismissedDraft) {
-      setDismissedDraft(null);
+      setDismissedDraft(null)
     }
-  }, [dismissedDraft, draft]);
+  }, [dismissedDraft, draft])
 
   return {
     activeDescendantId: open
@@ -322,5 +397,5 @@ export function useComposerSlashCommands({
     selectedIndex,
     setSelectedIndex,
     submit,
-  };
+  }
 }

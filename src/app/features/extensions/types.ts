@@ -1,14 +1,14 @@
 export type ExtensionsViewProps = {
-  projectPath: string | null;
-  onSetProjectScopeActive: (active: boolean) => void;
-  onClose: () => void;
-};
+  projectPath: string | null
+  onSetProjectScopeActive: (active: boolean) => void
+  onClose: () => void
+}
 
-export type InstallScope = "global" | "project" | "chat";
+export type InstallScope = 'global' | 'project' | 'chat'
 
-export type ManualSourceKind = "npm" | "git";
+export type ManualSourceKind = 'npm' | 'git'
 
 export type PendingAction = {
-  kind: "install" | "remove";
-  source: string;
-};
+  kind: 'install' | 'remove'
+  source: string
+}

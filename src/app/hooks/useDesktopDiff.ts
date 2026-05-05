@@ -1,16 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import { cleanUserErrorMessage } from "../desktop/error-messages";
-import type { ProjectDiffBaseline, ProjectDiffResult } from "../desktop/types";
-import { desktopQueryKeys, getProjectDiffQuery } from "../query/desktop-query";
+import { useQuery } from '@tanstack/react-query'
+import { cleanUserErrorMessage } from '../desktop/error-messages'
+import type { ProjectDiffBaseline, ProjectDiffResult } from '../desktop/types'
+import { desktopQueryKeys, getProjectDiffQuery } from '../query/desktop-query'
 
 type DiffState = {
-  diff: ProjectDiffResult | null;
-  isLoading: boolean;
-  error: string | null;
-};
+  diff: ProjectDiffResult | null
+  isLoading: boolean
+  error: string | null
+}
 
 export function getReadableDesktopDiffError(error: string | null) {
-  return error ? cleanUserErrorMessage(error, "Could not load diff.") : null;
+  return error ? cleanUserErrorMessage(error, 'Could not load diff.') : null
 }
 
 export function useDesktopDiff(
@@ -18,19 +18,19 @@ export function useDesktopDiff(
   baseline: ProjectDiffBaseline | null = null,
   enabled = true,
 ) {
-  const queryEnabled = enabled && Boolean(projectId);
+  const queryEnabled = enabled && Boolean(projectId)
   const query = useQuery<ProjectDiffResult | null, Error>({
     queryKey: projectId
       ? desktopQueryKeys.projectDiff(projectId, baseline)
-      : ["desktop", "projectDiff", null],
+      : ['desktop', 'projectDiff', null],
     queryFn: () => (projectId ? getProjectDiffQuery(projectId, baseline) : Promise.resolve(null)),
     enabled: queryEnabled,
-    refetchOnMount: "always",
-  });
+    refetchOnMount: 'always',
+  })
 
   return {
     diff: query.data ?? null,
     isLoading: query.isLoading || query.isFetching,
     error: queryEnabled ? getReadableDesktopDiffError(query.error?.message ?? null) : null,
-  } satisfies DiffState;
+  } satisfies DiffState
 }

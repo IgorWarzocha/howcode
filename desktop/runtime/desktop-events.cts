@@ -1,17 +1,17 @@
-import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
+import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 
-const desktopListeners = new Set<(event: DesktopEvent) => void>();
+const desktopListeners = new Set<(event: DesktopEvent) => void>()
 
 export function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
-    listener(event);
+    listener(event)
   }
 }
 
 export function subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
-  desktopListeners.add(listener);
+  desktopListeners.add(listener)
 
   return () => {
-    desktopListeners.delete(listener);
-  };
+    desktopListeners.delete(listener)
+  }
 }

@@ -1,6 +1,6 @@
-export { searchPiPackages } from "./catalog.cts";
+export { searchPiPackages } from './catalog.cts'
 export {
   installPiPackage,
   listConfiguredPiPackages,
   removePiPackage,
-} from "./runtime-host-bridge.cts";
+} from './runtime-host-bridge.cts'

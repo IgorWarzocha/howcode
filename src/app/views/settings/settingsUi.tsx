@@ -1,19 +1,19 @@
-import { Check, ChevronDown, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Tooltip } from "../../components/common/Tooltip";
-import { popoverPanelClass, composerTextActionButtonClass } from "../../ui/classes";
-import { cn } from "../../utils/cn";
-import { settingRowClass } from "./settingsClasses";
-import type { InlineSelectOption, SettingDescriptor } from "./settingsTypes";
+import { Check, ChevronDown, Search } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Tooltip } from '../../components/common/tooltip'
+import { composerTextActionButtonClass, popoverPanelClass } from '../../ui/classes'
+import { cn } from '../../utils/cn'
+import { settingRowClass } from './settingsClasses'
+import type { InlineSelectOption, SettingDescriptor } from './settingsTypes'
 
 export function ToggleBox({
   checked,
   label,
   onClick,
 }: {
-  checked: boolean;
-  label: string;
-  onClick: () => void;
+  checked: boolean
+  label: string
+  onClick: () => void
 }) {
   return (
     <button
@@ -25,20 +25,20 @@ export function ToggleBox({
     >
       {checked ? <Check size={13} /> : null}
     </button>
-  );
+  )
 }
 
 export function SettingRow({
   setting,
   showHelp,
 }: {
-  setting: SettingDescriptor;
-  showHelp: boolean;
+  setting: SettingDescriptor
+  showHelp: boolean
 }) {
   const title = (
     <div className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{setting.title}</div>
-  );
-  const control = <div className="min-w-0 max-w-full">{setting.render()}</div>;
+  )
+  const control = <div className="min-w-0 max-w-full">{setting.render()}</div>
 
   return (
     <div className={settingRowClass} data-setting-id={setting.id}>
@@ -56,7 +56,7 @@ export function SettingRow({
       )}
       <div className="min-w-0 max-w-full justify-self-stretch sm:justify-self-end">{control}</div>
     </div>
-  );
+  )
 }
 
 export function InlineSelect({
@@ -68,76 +68,76 @@ export function InlineSelect({
   onChange,
   onOpenChange,
 }: {
-  id: string;
-  value: string;
-  options: InlineSelectOption[];
-  open: boolean;
-  className?: string;
-  onChange: (value: string) => void;
-  onOpenChange: (open: boolean) => void;
+  id: string
+  value: string
+  options: InlineSelectOption[]
+  open: boolean
+  className?: string
+  onChange: (value: string) => void
+  onOpenChange: (open: boolean) => void
 }) {
-  const [search, setSearch] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null;
-  const alignMenuRight = className?.includes("justify-self-end") ?? false;
-  const showSearch = options.length > 12;
-  const normalizedSearch = search.trim().toLowerCase();
+  const [search, setSearch] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null
+  const alignMenuRight = className?.includes('justify-self-end') ?? false
+  const showSearch = options.length > 12
+  const normalizedSearch = search.trim().toLowerCase()
   const visibleOptions = useMemo(() => {
     if (!normalizedSearch) {
-      return options;
+      return options
     }
 
     return options.filter((option) =>
-      `${option.label} ${option.value} ${option.description ?? ""}`
+      `${option.label} ${option.value} ${option.description ?? ''}`
         .toLowerCase()
         .includes(normalizedSearch),
-    );
-  }, [normalizedSearch, options]);
+    )
+  }, [normalizedSearch, options])
   const compactOptionClass =
-    "flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]";
+    'flex min-h-0 w-full items-center rounded-md border border-transparent px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--text)] transition-colors hover:bg-[rgba(255,255,255,0.045)]'
 
   useEffect(() => {
     if (!open) {
-      setSearch("");
-      return;
+      setSearch('')
+      return
     }
 
     if (showSearch) {
-      searchInputRef.current?.focus();
+      searchInputRef.current?.focus()
     }
-  }, [open, showSearch]);
+  }, [open, showSearch])
 
   return (
     <span
-      className={cn("relative block w-52 max-w-full text-[12px]", className)}
+      className={cn('relative block w-52 max-w-full text-[12px]', className)}
       data-inline-select-root
     >
       <button
         type="button"
         className={cn(
           composerTextActionButtonClass,
-          "grid h-8 w-full grid-cols-[minmax(0,1fr)_auto] justify-start gap-2 rounded-lg px-2.5 pr-8 text-left font-normal",
-          open && "border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]",
+          'grid h-8 w-full grid-cols-[minmax(0,1fr)_auto] justify-start gap-2 rounded-lg px-2.5 pr-8 text-left font-normal',
+          open && 'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)]',
         )}
         onClick={() => {
           if (open) {
-            setSearch("");
+            setSearch('')
           }
-          onOpenChange(!open);
+          onOpenChange(!open)
         }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={`${id}-menu`}
       >
         <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">
-          {selectedOption?.label ?? "Select"}
+          {selectedOption?.label ?? 'Select'}
         </span>
       </button>
       <ChevronDown
         size={14}
         className={cn(
-          "pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[color:var(--muted)] transition-transform",
-          open && "rotate-180",
+          'pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[color:var(--muted)] transition-transform',
+          open && 'rotate-180',
         )}
       />
       {open ? (
@@ -145,10 +145,10 @@ export function InlineSelect({
           id={`${id}-menu`}
           className={cn(
             popoverPanelClass,
-            options.length > 10 && "max-h-64 overflow-y-auto",
-            "absolute top-[calc(100%+6px)] z-[60] grid min-w-full max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border p-1",
-            showSearch && "w-[26.5rem]",
-            alignMenuRight ? "right-0" : "left-0",
+            options.length > 10 && 'max-h-64 overflow-y-auto',
+            'absolute top-[calc(100%+6px)] z-[60] grid min-w-full max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border p-1',
+            showSearch && 'w-[26.5rem]',
+            alignMenuRight ? 'right-0' : 'left-0',
           )}
         >
           {showSearch ? (
@@ -177,12 +177,12 @@ export function InlineSelect({
                   aria-checked={option.value === value}
                   className={cn(
                     compactOptionClass,
-                    option.value === value && "bg-[rgba(255,255,255,0.06)]",
+                    option.value === value && 'bg-[rgba(255,255,255,0.06)]',
                   )}
                   onClick={() => {
-                    onChange(option.value);
-                    setSearch("");
-                    onOpenChange(false);
+                    onChange(option.value)
+                    setSearch('')
+                    onOpenChange(false)
                   }}
                 >
                   <span className="min-w-0 flex-1">
@@ -202,5 +202,5 @@ export function InlineSelect({
         </div>
       ) : null}
     </span>
-  );
+  )
 }

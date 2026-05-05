@@ -1,11 +1,13 @@
-import { nodePtyAdapter } from "./node-pty.cts";
+import { nodePtyAdapter } from './node-pty.cts'
+
 export {
   findExecutable,
   resolveTerminalCommand,
   resolveTerminalEnv,
-} from "./terminal-command.helpers.ts";
-import type { PtyAdapter } from "./types.cts";
+} from './terminal-command.helpers.ts'
+
+import type { PtyAdapter } from './types.cts'
 
 export function getTerminalAdapter(_options?: { platform?: NodeJS.Platform }): PtyAdapter {
-  return nodePtyAdapter;
+  return nodePtyAdapter
 }

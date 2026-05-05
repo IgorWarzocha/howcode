@@ -3,55 +3,55 @@ import type {
   InboxThread,
   Project,
   Thread,
-} from "../../shared/desktop-contracts.ts";
-import type { ArchivedThreadRow, InboxThreadRow, ProjectRow, ThreadRow } from "./types.cts";
+} from '../../shared/desktop-contracts.ts'
+import type { ArchivedThreadRow, InboxThreadRow, ProjectRow, ThreadRow } from './types.cts'
 
 function parseStringArrayJson(value: string | null, context: string) {
   if (!value) {
-    return [] as string[];
+    return [] as string[]
   }
 
   try {
-    const parsed = JSON.parse(value);
+    const parsed = JSON.parse(value)
     return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
   } catch (error) {
-    console.warn(`Failed to parse ${context}.`, error);
-    return [];
+    console.warn(`Failed to parse ${context}.`, error)
+    return []
   }
 }
 
 export function formatRelativeAge(lastModifiedMs: number) {
-  const elapsedMs = Math.max(0, Date.now() - lastModifiedMs);
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  const week = 7 * day;
-  const month = 30 * day;
-  const year = 365 * day;
+  const elapsedMs = Math.max(0, Date.now() - lastModifiedMs)
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+  const week = 7 * day
+  const month = 30 * day
+  const year = 365 * day
 
   if (elapsedMs < hour) {
-    return `${Math.max(1, Math.floor(elapsedMs / minute))}m`;
+    return `${Math.max(1, Math.floor(elapsedMs / minute))}m`
   }
 
   if (elapsedMs < day) {
-    return `${Math.floor(elapsedMs / hour)}h`;
+    return `${Math.floor(elapsedMs / hour)}h`
   }
 
   if (elapsedMs < week) {
-    return `${Math.floor(elapsedMs / day)}d`;
+    return `${Math.floor(elapsedMs / day)}d`
   }
 
   if (elapsedMs < month) {
-    return `${Math.floor(elapsedMs / week)}w`;
+    return `${Math.floor(elapsedMs / week)}w`
   }
 
   if (elapsedMs < year) {
-    return `${Math.floor(elapsedMs / month)}mo`;
+    return `${Math.floor(elapsedMs / month)}mo`
   }
 
-  return `${Math.floor(elapsedMs / year)}y`;
+  return `${Math.floor(elapsedMs / year)}y`
 }
 
 export function mapProjectRow(row: ProjectRow): Project {
@@ -66,7 +66,7 @@ export function mapProjectRow(row: ProjectRow): Project {
     collapsed: Boolean(row.collapsed),
     repoOriginUrl: row.repoOriginUrl,
     repoOriginChecked: Boolean(row.repoOriginChecked),
-  };
+  }
 }
 
 export function mapThreadRow(row: ThreadRow): Thread {
@@ -80,7 +80,7 @@ export function mapThreadRow(row: ThreadRow): Thread {
     unread: Boolean(row.unread),
     pinned: Boolean(row.pinned),
     sessionPath: row.sessionPath,
-  };
+  }
 }
 
 export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
@@ -98,7 +98,7 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     running: Boolean(row.running),
     unread: Boolean(row.unread),
     isChat: Boolean(row.isChat),
-  };
+  }
 }
 
 export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
@@ -109,5 +109,5 @@ export function mapArchivedThreadRow(row: ArchivedThreadRow): ArchivedThread {
     projectId: row.projectId,
     projectName: row.projectName,
     sessionPath: row.sessionPath,
-  };
+  }
 }

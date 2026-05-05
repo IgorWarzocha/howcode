@@ -1,81 +1,81 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import type { DesktopAction } from "../desktop/actions";
+import { useQueryClient } from '@tanstack/react-query'
+import type { Dispatch, SetStateAction } from 'react'
+import { useCallback } from 'react'
+import type { DesktopAction } from '../desktop/actions'
+import { cleanUserErrorMessage } from '../desktop/error-messages'
 import type {
   AnyDesktopActionPayload,
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   DesktopActionInvoker,
   DesktopActionResult,
-  ChatSidebarState,
   ProjectGitState,
   ThreadData,
-} from "../desktop/types";
-import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
-import type { View } from "../types";
-import { cleanUserErrorMessage } from "../desktop/error-messages";
-import { buildContextualActionPayload } from "./controller-action-helpers";
+} from '../desktop/types'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { View } from '../types'
+import { buildContextualActionPayload } from './controller-action-helpers'
 import {
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,
   applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
-} from "./controller-post-action-effects";
+} from './controller-post-action-effects'
 import {
   applyOptimisticComposerThread,
   removeFailedOptimisticComposerThread,
-} from "./sidebar-thread-sync";
+} from './sidebar-thread-sync'
 
-type ActionPayload = AnyDesktopActionPayload;
+type ActionPayload = AnyDesktopActionPayload
 
 type UseDesktopActionHandlersArgs = {
-  activeView: View;
-  composerProjectId: string;
-  dispatch: Dispatch<WorkspaceAction>;
-  invokeDesktopAction: DesktopActionInvoker;
-  loadArchivedThreads: () => Promise<ArchivedThread[]>;
+  activeView: View
+  composerProjectId: string
+  dispatch: Dispatch<WorkspaceAction>
+  invokeDesktopAction: DesktopActionInvoker
+  loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
-    projectId?: string | null;
-    sessionPath?: string | null;
-    composerMode?: "chat" | "code" | null;
-  }) => Promise<ComposerState | null>;
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
-  refreshShellState: () => Promise<unknown>;
-  selectedSessionPath: string | null;
-  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
-  setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
-  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
-  showToast: (message: string) => void;
-  workspaceState: WorkspaceState;
-};
+    projectId?: string | null
+    sessionPath?: string | null
+    composerMode?: 'chat' | 'code' | null
+  }) => Promise<ComposerState | null>
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  refreshShellState: () => Promise<unknown>
+  selectedSessionPath: string | null
+  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
+  setComposerState: Dispatch<SetStateAction<ComposerState | null>>
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  showToast: (message: string) => void
+  workspaceState: WorkspaceState
+}
 
 function getActionErrorMessage(actionResult: DesktopActionResult | null) {
   if (!actionResult) {
-    return null;
+    return null
   }
 
-  if (actionResult.ok === false && typeof actionResult.result?.error === "string") {
-    return cleanUserErrorMessage(actionResult.result.error);
+  if (actionResult.ok === false && typeof actionResult.result?.error === 'string') {
+    return cleanUserErrorMessage(actionResult.result.error)
   }
 
-  return typeof actionResult.result?.error === "string"
+  return typeof actionResult.result?.error === 'string'
     ? cleanUserErrorMessage(actionResult.result.error)
-    : null;
+    : null
 }
 
 function shouldShowGlobalActionError(action: DesktopAction) {
   return !(
-    action === "composer.send" ||
-    action === "composer.stop" ||
-    action === "workspace.commit" ||
-    action === "workspace.commit-options" ||
-    action === "workspace.diff-preferences"
-  );
+    action === 'composer.send' ||
+    action === 'composer.stop' ||
+    action === 'workspace.commit' ||
+    action === 'workspace.commit-options' ||
+    action === 'workspace.diff-preferences'
+  )
 }
 
 export function useDesktopActionHandlers({
@@ -97,7 +97,7 @@ export function useDesktopActionHandlers({
   showToast,
   workspaceState,
 }: UseDesktopActionHandlersArgs) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const runDesktopAction = useCallback(
     async (
@@ -112,9 +112,9 @@ export function useDesktopActionHandlers({
         composerProjectId,
         activeView,
         selectedSessionPath,
-      });
+      })
       const { contextualPayload } =
-        action === "composer.send"
+        action === 'composer.send'
           ? applyOptimisticComposerThread({
               activeView,
               contextualPayload: initialContextualPayload,
@@ -123,21 +123,21 @@ export function useDesktopActionHandlers({
               setChatSidebarState,
               setLiveThreadData,
             })
-          : { contextualPayload: initialContextualPayload };
+          : { contextualPayload: initialContextualPayload }
 
-      let actionResult: DesktopActionResult | null;
+      let actionResult: DesktopActionResult | null
       try {
-        actionResult = await invokeDesktopAction(action, contextualPayload);
+        actionResult = await invokeDesktopAction(action, contextualPayload)
       } catch (error) {
-        if (action === "composer.send") {
+        if (action === 'composer.send') {
           removeFailedOptimisticComposerThread({
             contextualPayload,
             setChatSidebarState,
             setLiveThreadData,
             queryClient,
-          });
+          })
         }
-        throw error;
+        throw error
       }
 
       await runPostDesktopActionEffects({
@@ -158,14 +158,14 @@ export function useDesktopActionHandlers({
         setLiveThreadData,
         setProjectGitState,
         queryClient,
-      });
+      })
 
-      const actionErrorMessage = getActionErrorMessage(actionResult);
+      const actionErrorMessage = getActionErrorMessage(actionResult)
       if (actionErrorMessage && shouldShowGlobalActionError(action)) {
-        showToast(actionErrorMessage);
+        showToast(actionErrorMessage)
       }
 
-      return actionResult;
+      return actionResult
     },
     [
       activeView,
@@ -187,7 +187,7 @@ export function useDesktopActionHandlers({
       workspaceState,
       queryClient,
     ],
-  );
+  )
 
   const handleAction = useCallback(
     async (
@@ -196,29 +196,29 @@ export function useDesktopActionHandlers({
     ): Promise<DesktopActionResult | null> => {
       // Optimistic updates happen before the desktop call so the renderer stays stable
       // while the background write and refresh pipeline converges.
-      if (action === "settings.update") {
-        applyOptimisticSettingsUpdate(queryClient, payload);
+      if (action === 'settings.update') {
+        applyOptimisticSettingsUpdate(queryClient, payload)
       }
 
-      if (action === "pi-settings.update") {
-        applyOptimisticPiSettingsUpdate(queryClient, payload);
+      if (action === 'pi-settings.update') {
+        applyOptimisticPiSettingsUpdate(queryClient, payload)
       }
 
-      if (action === "project.edit-name") {
-        applyOptimisticProjectRename(queryClient, payload);
+      if (action === 'project.edit-name') {
+        applyOptimisticProjectRename(queryClient, payload)
       }
 
-      if (action === "thread.pin" || action === "project.pin") {
-        applyOptimisticPinUpdate(queryClient, action, payload);
+      if (action === 'thread.pin' || action === 'project.pin') {
+        applyOptimisticPinUpdate(queryClient, action, payload)
       }
 
-      return await runDesktopAction(action, payload);
+      return await runDesktopAction(action, payload)
     },
     [queryClient, runDesktopAction],
-  );
+  )
 
   return {
     handleAction,
     runDesktopAction,
-  };
+  }
 }

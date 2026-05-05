@@ -1,26 +1,26 @@
-import { isLocalSessionPath } from "../../../shared/session-paths";
-import type { ShellState, Thread } from "../desktop/types";
-import { desktopQueryKeys } from "../query/desktop-query";
+import { isLocalSessionPath } from '../../../shared/session-paths'
+import type { ShellState, Thread } from '../desktop/types'
+import { desktopQueryKeys } from '../query/desktop-query'
 
 type QueryClientLike = {
-  setQueryData: (queryKey: readonly unknown[], updater: (current: unknown) => unknown) => void;
-};
+  setQueryData: (queryKey: readonly unknown[], updater: (current: unknown) => unknown) => void
+}
 
 type ApplyProjectThreadOptions = {
-  replaceSessionPath?: string | null;
-  revealProject?: boolean;
-};
+  replaceSessionPath?: string | null
+  revealProject?: boolean
+}
 
 function sameThread(left: Thread, right: Thread, replaceSessionPath: string | null) {
   if (left.id === right.id) {
-    return true;
+    return true
   }
 
   if (left.sessionPath && right.sessionPath && left.sessionPath === right.sessionPath) {
-    return true;
+    return true
   }
 
-  return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath);
+  return Boolean(replaceSessionPath && left.sessionPath === replaceSessionPath)
 }
 
 function mergeThread(existing: Thread | undefined, next: Thread): Thread {
@@ -29,7 +29,7 @@ function mergeThread(existing: Thread | undefined, next: Thread): Thread {
     ...next,
     pinned: existing?.pinned ?? next.pinned,
     unread: next.unread ?? existing?.unread,
-  };
+  }
 }
 
 export function applyProjectThreadToShellState(
@@ -38,30 +38,30 @@ export function applyProjectThreadToShellState(
   thread: Thread,
   options: ApplyProjectThreadOptions = {},
 ) {
-  const replaceSessionPath = options.replaceSessionPath ?? null;
-  const revealProject = options.revealProject ?? false;
+  const replaceSessionPath = options.replaceSessionPath ?? null
+  const revealProject = options.revealProject ?? false
 
   queryClient.setQueryData(desktopQueryKeys.shellState(), (current) => {
-    const currentState = current as ShellState | null | undefined;
+    const currentState = current as ShellState | null | undefined
     if (!currentState) {
-      return currentState ?? null;
+      return currentState ?? null
     }
 
     return {
       ...currentState,
       projects: currentState.projects.map((project) => {
         if (project.id !== projectId) {
-          return project;
+          return project
         }
 
         const existingThread = project.threads.find((candidate) =>
           sameThread(candidate, thread, replaceSessionPath),
-        );
-        const nextThread = mergeThread(existingThread, thread);
+        )
+        const nextThread = mergeThread(existingThread, thread)
         const remainingThreads = project.threads.filter(
           (candidate) => !sameThread(candidate, thread, replaceSessionPath),
-        );
-        const threads = [nextThread, ...remainingThreads];
+        )
+        const threads = [nextThread, ...remainingThreads]
 
         return {
           ...project,
@@ -70,10 +70,10 @@ export function applyProjectThreadToShellState(
           threadsLoaded: true,
           latestModifiedMs: Math.max(project.latestModifiedMs ?? 0, thread.lastModifiedMs ?? 0),
           collapsed: revealProject ? false : project.collapsed,
-        };
+        }
       }),
-    };
-  });
+    }
+  })
 }
 
 export function getDraftReplacementSessionPath(
@@ -83,7 +83,7 @@ export function getDraftReplacementSessionPath(
 ) {
   return selectedProjectId === eventProjectId && isLocalSessionPath(selectedSessionPath)
     ? selectedSessionPath
-    : null;
+    : null
 }
 
 export function removeProjectThreadFromShellState(
@@ -92,32 +92,32 @@ export function removeProjectThreadFromShellState(
   sessionPath: string,
 ) {
   queryClient.setQueryData(desktopQueryKeys.shellState(), (current) => {
-    const currentState = current as ShellState | null | undefined;
+    const currentState = current as ShellState | null | undefined
     if (!currentState) {
-      return currentState ?? null;
+      return currentState ?? null
     }
 
     return {
       ...currentState,
       projects: currentState.projects.map((project) => {
         if (project.id !== projectId) {
-          return project;
+          return project
         }
 
-        const threads = project.threads.filter((thread) => thread.sessionPath !== sessionPath);
-        const removedThreadCount = project.threads.length - threads.length;
-        const indexedThreadCount = project.threadCount ?? project.threads.length;
+        const threads = project.threads.filter((thread) => thread.sessionPath !== sessionPath)
+        const removedThreadCount = project.threads.length - threads.length
+        const indexedThreadCount = project.threadCount ?? project.threads.length
         const nextThreadCount =
           indexedThreadCount > project.threads.length
             ? indexedThreadCount
-            : Math.max(threads.length, indexedThreadCount - removedThreadCount);
+            : Math.max(threads.length, indexedThreadCount - removedThreadCount)
 
         return {
           ...project,
           threads,
           threadCount: nextThreadCount,
-        };
+        }
       }),
-    };
-  });
+    }
+  })
 }

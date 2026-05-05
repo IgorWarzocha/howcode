@@ -1,13 +1,13 @@
-import type Database from "better-sqlite3";
+import type Database from 'better-sqlite3'
 
 export function runInTransaction(db: Database, operation: () => void) {
-  db.exec("BEGIN");
+  db.exec('BEGIN')
 
   try {
-    operation();
-    db.exec("COMMIT");
+    operation()
+    db.exec('COMMIT')
   } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
+    db.exec('ROLLBACK')
+    throw error
   }
 }

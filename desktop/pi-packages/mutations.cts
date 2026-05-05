@@ -1,33 +1,33 @@
-import type { PiPackageMutationResult } from "../../shared/desktop-contracts.ts";
-import { listConfiguredPiPackages } from "./configured.cts";
-import { normalizePiPackageSource } from "./helpers.ts";
-import { getPiPackageServices } from "./services.cts";
+import type { PiPackageMutationResult } from '../../shared/desktop-contracts.ts'
 import {
   markRuntimeSettingsStaleForProject,
   markRuntimeSettingsStaleForSettingsCwd,
-} from "../runtime/runtime-registry.cts";
+} from '../runtime/runtime-registry.cts'
+import { listConfiguredPiPackages } from './configured.cts'
+import { normalizePiPackageSource } from './helpers.ts'
+import { getPiPackageServices } from './services.cts'
 
 export async function installPiPackage(request: {
-  source: string;
-  kind?: "npm" | "git";
-  local?: boolean;
-  projectPath?: string | null;
-  chat?: boolean;
+  source: string
+  kind?: 'npm' | 'git' | undefined
+  local?: boolean | undefined
+  projectPath?: string | undefined | null | undefined
+  chat?: boolean | undefined
 }): Promise<PiPackageMutationResult> {
-  const normalizedSource = normalizePiPackageSource(request.source, request.kind ?? "npm");
+  const normalizedSource = normalizePiPackageSource(request.source, request.kind ?? 'npm')
 
   if (!normalizedSource) {
-    throw new Error("Enter a package source.");
+    throw new Error('Enter a package source.')
   }
 
-  const { packageManager, projectPath } = await getPiPackageServices(request);
-  const configuredProjectPath = request.chat ? request.projectPath : projectPath;
-  const local = request.local || request.chat;
-  await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {});
+  const { packageManager, projectPath } = await getPiPackageServices(request)
+  const configuredProjectPath = request.chat ? request.projectPath : projectPath
+  const local = request.local || request.chat
+  await packageManager.installAndPersist(normalizedSource, local ? { local: true } : {})
   if (request.chat) {
-    await markRuntimeSettingsStaleForSettingsCwd(projectPath);
+    await markRuntimeSettingsStaleForSettingsCwd(projectPath)
   } else {
-    await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+    await markRuntimeSettingsStaleForProject(local ? projectPath : null)
   }
 
   return {
@@ -37,29 +37,29 @@ export async function installPiPackage(request: {
       projectPath: configuredProjectPath,
       chat: request.chat,
     }),
-  };
+  }
 }
 
 export async function removePiPackage(request: {
-  source: string;
-  local?: boolean;
-  projectPath?: string | null;
-  chat?: boolean;
+  source: string
+  local?: boolean | undefined
+  projectPath?: string | undefined | null | undefined
+  chat?: boolean | undefined
 }): Promise<PiPackageMutationResult> {
-  const source = request.source.trim();
+  const source = request.source.trim()
 
   if (source.length === 0) {
-    throw new Error("Choose a package to remove.");
+    throw new Error('Choose a package to remove.')
   }
 
-  const { packageManager, projectPath } = await getPiPackageServices(request);
-  const configuredProjectPath = request.chat ? request.projectPath : projectPath;
-  const local = request.local || request.chat;
-  await packageManager.removeAndPersist(source, local ? { local: true } : {});
+  const { packageManager, projectPath } = await getPiPackageServices(request)
+  const configuredProjectPath = request.chat ? request.projectPath : projectPath
+  const local = request.local || request.chat
+  await packageManager.removeAndPersist(source, local ? { local: true } : {})
   if (request.chat) {
-    await markRuntimeSettingsStaleForSettingsCwd(projectPath);
+    await markRuntimeSettingsStaleForSettingsCwd(projectPath)
   } else {
-    await markRuntimeSettingsStaleForProject(local ? projectPath : null);
+    await markRuntimeSettingsStaleForProject(local ? projectPath : null)
   }
 
   return {
@@ -69,5 +69,5 @@ export async function removePiPackage(request: {
       projectPath: configuredProjectPath,
       chat: request.chat,
     }),
-  };
+  }
 }

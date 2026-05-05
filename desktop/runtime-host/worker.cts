@@ -1,274 +1,274 @@
-import type {
-  RuntimeMainToHostMessage,
-  RuntimeHostRequestMessage,
-  RuntimeHostRequestName,
-  RuntimeHostResponseMap,
-} from "./protocol.cts";
-import { handleMainResponse } from "./main-request-client.cts";
 import {
-  dequeueComposerPrompt,
   answerNativeAskQuestions,
+  closeSkillCreatorSession,
+  continueSkillCreatorSession,
+  dequeueComposerPrompt,
   disposeAllRuntimeHosts,
-  getComposerSlashCommands,
   generateGitCommitMessage,
+  getComposerSlashCommands,
   getComposerState,
   getPiSessionStorage,
-  invalidateRuntimeSettings,
   installPiPackage,
   installPiSkill,
+  invalidateRuntimeSettings,
   listConfiguredPiPackages,
   listConfiguredPiSkills,
   loadPiSettings,
   loadPiThemeState,
   loadThreadSnapshot,
   openThreadRuntime,
+  removePiPackage,
+  removePiSkill,
   selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
   setComposerThinkingLevel,
   setRuntimeHostEventSink,
-  closeSkillCreatorSession,
-  continueSkillCreatorSession,
   startNewThread,
   startSkillCreatorSession,
   stopComposerRun,
-  removePiPackage,
-  removePiSkill,
   updatePiSetting,
-} from "./host-service.cts";
+} from './host-service.cts'
+import { handleMainResponse } from './main-request-client.cts'
+import type {
+  RuntimeHostRequestMessage,
+  RuntimeHostRequestName,
+  RuntimeHostResponseMap,
+  RuntimeMainToHostMessage,
+} from './protocol.cts'
 
 setRuntimeHostEventSink((event) => {
-  process.send?.({ type: "desktop-event", event });
-});
+  process.send?.({ type: 'desktop-event', event })
+})
 
 async function handleRequest<TName extends RuntimeHostRequestName>(
   message: RuntimeHostRequestMessage<TName>,
 ): Promise<RuntimeHostResponseMap[TName]> {
   switch (message.name) {
-    case "getComposerState": {
+    case 'getComposerState': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"getComposerState">["payload"];
-      return (await getComposerState(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'getComposerState'>['payload']
+      return (await getComposerState(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "getComposerSlashCommands": {
+    case 'getComposerSlashCommands': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"getComposerSlashCommands">["payload"];
-      return (await getComposerSlashCommands(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'getComposerSlashCommands'>['payload']
+      return (await getComposerSlashCommands(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "startNewThread": {
+    case 'startNewThread': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"startNewThread">["payload"];
-      return (await startNewThread(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'startNewThread'>['payload']
+      return (await startNewThread(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "selectProjectRuntime": {
+    case 'selectProjectRuntime': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"selectProjectRuntime">["payload"];
-      return (await selectProjectRuntime(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'selectProjectRuntime'>['payload']
+      return (await selectProjectRuntime(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "openThreadRuntime": {
+    case 'openThreadRuntime': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"openThreadRuntime">["payload"];
-      return (await openThreadRuntime(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'openThreadRuntime'>['payload']
+      return (await openThreadRuntime(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "invalidateRuntimeSettings": {
+    case 'invalidateRuntimeSettings': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"invalidateRuntimeSettings">["payload"];
-      return (await invalidateRuntimeSettings(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'invalidateRuntimeSettings'>['payload']
+      return (await invalidateRuntimeSettings(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "getPiSessionStorage": {
+    case 'getPiSessionStorage': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"getPiSessionStorage">["payload"];
-      return (await getPiSessionStorage(payload.projectPath)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'getPiSessionStorage'>['payload']
+      return (await getPiSessionStorage(payload.projectPath)) as RuntimeHostResponseMap[TName]
     }
-    case "loadPiSettings": {
+    case 'loadPiSettings': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"loadPiSettings">["payload"];
-      return (await loadPiSettings(payload.projectPath)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'loadPiSettings'>['payload']
+      return (await loadPiSettings(payload.projectPath)) as RuntimeHostResponseMap[TName]
     }
-    case "loadPiThemeState": {
+    case 'loadPiThemeState': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"loadPiThemeState">["payload"];
-      return (await loadPiThemeState(payload.projectPath)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'loadPiThemeState'>['payload']
+      return (await loadPiThemeState(payload.projectPath)) as RuntimeHostResponseMap[TName]
     }
-    case "updatePiSetting": {
+    case 'updatePiSetting': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"updatePiSetting">["payload"];
+        message.payload as unknown as RuntimeHostRequestMessage<'updatePiSetting'>['payload']
       return (await updatePiSetting(
         payload.key,
         payload.value,
         payload.projectPath,
-      )) as RuntimeHostResponseMap[TName];
+      )) as RuntimeHostResponseMap[TName]
     }
-    case "listConfiguredPiPackages": {
+    case 'listConfiguredPiPackages': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"listConfiguredPiPackages">["payload"];
-      return (await listConfiguredPiPackages(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'listConfiguredPiPackages'>['payload']
+      return (await listConfiguredPiPackages(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "listConfiguredPiSkills": {
+    case 'listConfiguredPiSkills': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"listConfiguredPiSkills">["payload"];
-      return (await listConfiguredPiSkills(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'listConfiguredPiSkills'>['payload']
+      return (await listConfiguredPiSkills(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "installPiSkill": {
+    case 'installPiSkill': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"installPiSkill">["payload"];
-      return (await installPiSkill(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'installPiSkill'>['payload']
+      return (await installPiSkill(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "removePiSkill": {
+    case 'removePiSkill': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"removePiSkill">["payload"];
-      return (await removePiSkill(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'removePiSkill'>['payload']
+      return (await removePiSkill(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "installPiPackage": {
+    case 'installPiPackage': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"installPiPackage">["payload"];
-      return (await installPiPackage(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'installPiPackage'>['payload']
+      return (await installPiPackage(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "removePiPackage": {
+    case 'removePiPackage': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"removePiPackage">["payload"];
-      return (await removePiPackage(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'removePiPackage'>['payload']
+      return (await removePiPackage(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "loadThreadSnapshot": {
+    case 'loadThreadSnapshot': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"loadThreadSnapshot">["payload"];
-      return (await loadThreadSnapshot(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'loadThreadSnapshot'>['payload']
+      return (await loadThreadSnapshot(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "startSkillCreatorSession": {
+    case 'startSkillCreatorSession': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"startSkillCreatorSession">["payload"];
-      return (await startSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'startSkillCreatorSession'>['payload']
+      return (await startSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "continueSkillCreatorSession": {
+    case 'continueSkillCreatorSession': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"continueSkillCreatorSession">["payload"];
-      return (await continueSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'continueSkillCreatorSession'>['payload']
+      return (await continueSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "closeSkillCreatorSession": {
+    case 'closeSkillCreatorSession': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"closeSkillCreatorSession">["payload"];
-      return (await closeSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'closeSkillCreatorSession'>['payload']
+      return (await closeSkillCreatorSession(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "generateGitCommitMessage": {
+    case 'generateGitCommitMessage': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"generateGitCommitMessage">["payload"];
+        message.payload as unknown as RuntimeHostRequestMessage<'generateGitCommitMessage'>['payload']
       return (await generateGitCommitMessage(
         payload.request,
         payload.context,
-      )) as RuntimeHostResponseMap[TName];
+      )) as RuntimeHostResponseMap[TName]
     }
-    case "setComposerModel": {
+    case 'setComposerModel': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"setComposerModel">["payload"];
+        message.payload as unknown as RuntimeHostRequestMessage<'setComposerModel'>['payload']
       return (await setComposerModel(
         payload.request,
         payload.provider,
         payload.modelId,
-      )) as RuntimeHostResponseMap[TName];
+      )) as RuntimeHostResponseMap[TName]
     }
-    case "setComposerThinkingLevel": {
+    case 'setComposerThinkingLevel': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"setComposerThinkingLevel">["payload"];
+        message.payload as unknown as RuntimeHostRequestMessage<'setComposerThinkingLevel'>['payload']
       return (await setComposerThinkingLevel(
         payload.request,
         payload.level,
-      )) as RuntimeHostResponseMap[TName];
+      )) as RuntimeHostResponseMap[TName]
     }
-    case "sendComposerPrompt": {
+    case 'sendComposerPrompt': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"sendComposerPrompt">["payload"];
-      return (await sendComposerPrompt(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'sendComposerPrompt'>['payload']
+      return (await sendComposerPrompt(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "stopComposerRun": {
+    case 'stopComposerRun': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"stopComposerRun">["payload"];
-      return (await stopComposerRun(payload.request)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'stopComposerRun'>['payload']
+      return (await stopComposerRun(payload.request)) as RuntimeHostResponseMap[TName]
     }
-    case "dequeueComposerPrompt": {
+    case 'dequeueComposerPrompt': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"dequeueComposerPrompt">["payload"];
-      return (await dequeueComposerPrompt(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'dequeueComposerPrompt'>['payload']
+      return (await dequeueComposerPrompt(payload)) as RuntimeHostResponseMap[TName]
     }
-    case "answerNativeAskQuestions": {
+    case 'answerNativeAskQuestions': {
       const payload =
-        message.payload as unknown as RuntimeHostRequestMessage<"answerNativeAskQuestions">["payload"];
-      return (await answerNativeAskQuestions(payload)) as RuntimeHostResponseMap[TName];
+        message.payload as unknown as RuntimeHostRequestMessage<'answerNativeAskQuestions'>['payload']
+      return (await answerNativeAskQuestions(payload)) as RuntimeHostResponseMap[TName]
     }
     default:
       throw new Error(
         `Unknown runtime host request: ${(message as RuntimeHostRequestMessage).name}`,
-      );
+      )
   }
 }
 
-process.on("message", (message: RuntimeMainToHostMessage) => {
-  if (message && message.type === "main-response") {
-    handleMainResponse(message);
-    return;
+process.on('message', (message: RuntimeMainToHostMessage) => {
+  if (message && message.type === 'main-response') {
+    handleMainResponse(message)
+    return
   }
-  if (!message || message.type !== "request") {
-    return;
+  if (!message || message.type !== 'request') {
+    return
   }
 
   void handleRequest(message)
     .then((result) => {
-      process.send?.({ type: "response", id: message.id, ok: true, result });
+      process.send?.({ type: 'response', id: message.id, ok: true, result })
     })
     .catch((error) => {
       process.send?.({
-        type: "response",
+        type: 'response',
         id: message.id,
         ok: false,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-      });
-    });
-});
+      })
+    })
+})
 
 function reportFatalHostError(error: unknown) {
   process.send?.(
     {
-      type: "host-error",
+      type: 'host-error',
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     },
     () => {
-      process.exit(1);
+      process.exit(1)
     },
-  );
-  setTimeout(() => process.exit(1), 100).unref();
+  )
+  setTimeout(() => process.exit(1), 100).unref()
 }
 
-process.on("uncaughtException", reportFatalHostError);
+process.on('uncaughtException', reportFatalHostError)
 
-process.on("unhandledRejection", (error) => {
+process.on('unhandledRejection', (error) => {
   process.send?.({
-    type: "host-error",
+    type: 'host-error',
     error: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
-  });
-});
+  })
+})
 
-let isShuttingDown = false;
+let isShuttingDown = false
 
 async function shutdownRuntimeHost() {
-  if (isShuttingDown) return;
-  isShuttingDown = true;
+  if (isShuttingDown) return
+  isShuttingDown = true
   try {
-    await disposeAllRuntimeHosts();
+    await disposeAllRuntimeHosts()
   } finally {
-    process.exit(0);
+    process.exit(0)
   }
 }
 
-process.once("disconnect", () => {
-  void shutdownRuntimeHost();
-});
+process.once('disconnect', () => {
+  void shutdownRuntimeHost()
+})
 
-process.once("SIGTERM", () => {
-  void shutdownRuntimeHost();
-});
+process.once('SIGTERM', () => {
+  void shutdownRuntimeHost()
+})
 
-process.once("SIGINT", () => {
-  void shutdownRuntimeHost();
-});
+process.once('SIGINT', () => {
+  void shutdownRuntimeHost()
+})

@@ -1,0 +1,290 @@
+import {
+  closestCorners,
+  DndContext,
+  type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+  type DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { type ReactNode, useMemo, useState } from 'react'
+import type { DesktopActionInvoker } from '../../desktop/types'
+import type { Project, View } from '../../types'
+import { ProjectActionMenu } from './project-action-menu'
+import { ProjectRow } from './project-tree/project-row'
+import { ProjectThreadsList } from './project-tree/project-threads-list'
+import { isProtectedProjectDeletionTarget } from './project-tree/project-tree-paths'
+import { useProjectMenuDismiss } from './project-tree/useProjectMenuDismiss'
+
+type ProjectTreeProps = {
+  projects: Project[]
+  protectedProjectId?: string | null
+  selectedProjectId: string
+  selectedThreadId: string | null
+  terminalRunningSessionPaths: ReadonlySet<string>
+  activeView: View
+  selectionModeActive: boolean
+  revealOldThreads?: boolean
+  collapsedProjectIds: Record<string, boolean>
+  onAction: DesktopActionInvoker
+  onProjectSelect: (projectId: string) => void
+  onProjectPrimeSelection: (projectId: string) => void
+  onProjectReorder: (projectIds: string[]) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+  ) => void
+  onToggleProjectCollapse: (projectId: string) => void
+}
+
+type SortableProjectItemProps = {
+  projectId: string
+  disabled?: boolean
+  children: (input: {
+    dragHandleProps:
+      | {
+          attributes: DraggableAttributes
+          listeners: DraggableSyntheticListeners | undefined
+        }
+      | undefined
+    isDragging: boolean
+  }) => ReactNode
+}
+
+function SortableProjectItem({ projectId, disabled = false, children }: SortableProjectItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: projectId,
+    disabled,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        transition,
+      }}
+      className={isDragging ? 'z-20 opacity-80' : undefined}
+    >
+      {children({
+        dragHandleProps: disabled ? undefined : { attributes, listeners },
+        isDragging,
+      })}
+    </div>
+  )
+}
+
+export function ProjectTree({
+  projects,
+  protectedProjectId = null,
+  selectedProjectId,
+  selectedThreadId,
+  terminalRunningSessionPaths,
+  activeView,
+  selectionModeActive,
+  revealOldThreads = false,
+  collapsedProjectIds,
+  onAction,
+  onProjectSelect,
+  onProjectPrimeSelection,
+  onProjectReorder,
+  onThreadOpen,
+  onToggleProjectCollapse,
+}: ProjectTreeProps) {
+  const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null)
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
+  const [draggingProjectId, setDraggingProjectId] = useState<string | null>(null)
+  const [expandedOldProjectIds, setExpandedOldProjectIds] = useState<Record<string, boolean>>({})
+  const [renameDraft, setRenameDraft] = useState('')
+  const { containerRef } = useProjectMenuDismiss(openProjectMenuId !== null, () =>
+    setOpenProjectMenuId(null),
+  )
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  )
+  const projectIds = useMemo(() => projects.map((project) => project.id), [projects])
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingProjectId(typeof event.active.id === 'string' ? event.active.id : null)
+    setOpenProjectMenuId(null)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingProjectId(null)
+
+    const { active, over } = event
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = projects.findIndex((project) => project.id === active.id)
+    const newIndex = projects.findIndex((project) => project.id === over.id)
+
+    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) {
+      return
+    }
+
+    const nextProjects = arrayMove(projects, oldIndex, newIndex)
+    onProjectReorder(nextProjects.map((project) => project.id))
+  }
+
+  const handleStartEdit = (projectId: string, projectName: string) => {
+    setOpenProjectMenuId(null)
+    setEditingProjectId(projectId)
+    setRenameDraft(projectName)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingProjectId(null)
+    setRenameDraft('')
+  }
+
+  const handleSubmitEdit = (projectId: string) => {
+    const nextProjectName = renameDraft.trim()
+    if (!nextProjectName) {
+      handleCancelEdit()
+      return
+    }
+
+    void onAction('project.edit-name', {
+      projectId,
+      projectName: nextProjectName,
+    })
+    setEditingProjectId(null)
+    setRenameDraft('')
+  }
+
+  return (
+    <div ref={containerRef} className="sidebar-project-tree">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+        onDragStart={handleDragStart}
+        onDragCancel={() => setDraggingProjectId(null)}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={projectIds} strategy={verticalListSortingStrategy}>
+          {projects.map((project) => {
+            const isExpanded = !collapsedProjectIds[project.id]
+            const effectiveIsExpanded = isExpanded && draggingProjectId !== project.id
+            const projectMenuOpen = openProjectMenuId === project.id
+            const threadGroupId = `project-threads-${project.id}`
+            const actionMenuId = `project-actions-${project.id}`
+
+            return (
+              <SortableProjectItem
+                key={project.id}
+                projectId={project.id}
+                disabled={selectionModeActive}
+              >
+                {({ dragHandleProps, isDragging }) => (
+                  <div className="sidebar-tree-item">
+                    <div className="relative">
+                      <ProjectRow
+                        actionMenuId={actionMenuId}
+                        actionMenuOpen={projectMenuOpen}
+                        dragHandleProps={dragHandleProps}
+                        isActive={selectionModeActive && selectedProjectId === project.id}
+                        isDragging={isDragging}
+                        isEditing={editingProjectId === project.id}
+                        isExpanded={effectiveIsExpanded}
+                        hasRepoOrigin={Boolean(project.repoOriginUrl)}
+                        canEdit={!selectionModeActive}
+                        canToggleExpanded={!selectionModeActive}
+                        name={project.name}
+                        renameDraft={renameDraft}
+                        showActions={!selectionModeActive}
+                        threadGroupId={threadGroupId}
+                        onCancelEdit={handleCancelEdit}
+                        onChangeRenameDraft={setRenameDraft}
+                        onEdit={() => handleStartEdit(project.id, project.name)}
+                        onSelect={() => {
+                          onProjectSelect(project.id)
+                          if (activeView !== 'extensions' && activeView !== 'skills') {
+                            void onAction('project.select', { projectId: project.id })
+                          }
+                          setOpenProjectMenuId(null)
+                        }}
+                        onSubmitEdit={() => handleSubmitEdit(project.id)}
+                        onCreateSession={() => {
+                          if (activeView !== 'chat') {
+                            onProjectPrimeSelection(project.id)
+                          }
+                          void onAction('thread.new', { projectId: project.id })
+                          setOpenProjectMenuId(null)
+                        }}
+                        onToggleActions={() =>
+                          setOpenProjectMenuId((current) =>
+                            current === project.id ? null : project.id,
+                          )
+                        }
+                        onToggleExpanded={() => onToggleProjectCollapse(project.id)}
+                      />
+                      {projectMenuOpen &&
+                      editingProjectId !== project.id &&
+                      !selectionModeActive ? (
+                        <ProjectActionMenu
+                          menuId={actionMenuId}
+                          canDelete={
+                            !isProtectedProjectDeletionTarget(
+                              project.resolvedId ?? project.id,
+                              protectedProjectId,
+                            )
+                          }
+                          projectId={project.id}
+                          projectName={project.name}
+                          pinned={Boolean(project.pinned)}
+                          onAction={onAction}
+                          onClose={() => setOpenProjectMenuId(null)}
+                        />
+                      ) : null}
+                    </div>
+
+                    {selectionModeActive ? null : (
+                      <ProjectThreadsList
+                        activeView={activeView}
+                        expandedByUser={expandedOldProjectIds[project.id] === true}
+                        isExpanded={effectiveIsExpanded}
+                        project={project}
+                        revealOldThreads={revealOldThreads}
+                        selectedThreadId={selectedThreadId}
+                        terminalRunningSessionPaths={terminalRunningSessionPaths}
+                        threadGroupId={threadGroupId}
+                        onAction={onAction}
+                        onCloseProjectMenu={() => setOpenProjectMenuId(null)}
+                        onThreadOpen={onThreadOpen}
+                        onToggleOldThreads={(currentlyExpanded) =>
+                          setExpandedOldProjectIds((current) => ({
+                            ...current,
+                            [project.id]: !currentlyExpanded,
+                          }))
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+              </SortableProjectItem>
+            )
+          })}
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
+}

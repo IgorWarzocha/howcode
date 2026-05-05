@@ -1,305 +1,305 @@
-const fs = require("node:fs");
-const fsp = require("node:fs/promises");
-const crypto = require("node:crypto");
-const os = require("node:os");
-const path = require("node:path");
-const { spawn } = require("node:child_process");
-const { pipeline } = require("node:stream/promises");
-const { Readable } = require("node:stream");
-const tar = require("tar");
+const fs = require('node:fs')
+const fsp = require('node:fs/promises')
+const crypto = require('node:crypto')
+const os = require('node:os')
+const path = require('node:path')
+const { spawn } = require('node:child_process')
+const { pipeline } = require('node:stream/promises')
+const { Readable } = require('node:stream')
+const tar = require('tar')
 
-const packageJson = require("../package.json");
+const packageJson = require('../package.json')
 
-const APP_NAME = packageJson.howcode.appName;
-const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl;
-const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
+const APP_NAME = packageJson.howcode.appName
+const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl
+const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 
 const TARGETS = {
-  "darwin:arm64": {
-    os: "macos",
-    arch: "arm64",
+  'darwin:arm64': {
+    os: 'macos',
+    arch: 'arm64',
     executable: `${APP_NAME}.app/Contents/MacOS/${APP_NAME}`,
   },
-  "darwin:x64": {
-    os: "macos",
-    arch: "x64",
+  'darwin:x64': {
+    os: 'macos',
+    arch: 'x64',
     executable: `${APP_NAME}.app/Contents/MacOS/${APP_NAME}`,
   },
-  "linux:arm64": {
-    os: "linux",
-    arch: "arm64",
+  'linux:arm64': {
+    os: 'linux',
+    arch: 'arm64',
     executable: `${APP_NAME}/${APP_NAME}`,
   },
-  "linux:x64": {
-    os: "linux",
-    arch: "x64",
+  'linux:x64': {
+    os: 'linux',
+    arch: 'x64',
     executable: `${APP_NAME}/${APP_NAME}`,
   },
-  "win32:arm64": {
-    os: "win",
-    arch: "arm64",
+  'win32:arm64': {
+    os: 'win',
+    arch: 'arm64',
     executable: `${APP_NAME}/${APP_NAME}.exe`,
   },
-  "win32:x64": {
-    os: "win",
-    arch: "x64",
+  'win32:x64': {
+    os: 'win',
+    arch: 'x64',
     executable: `${APP_NAME}/${APP_NAME}.exe`,
   },
-};
+}
 
 function readJsonIfPresent(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
   } catch {
-    return null;
+    return null
   }
 }
 
 function getTarget() {
-  const key = `${process.platform}:${process.arch}`;
-  const target = TARGETS[key];
+  const key = `${process.platform}:${process.arch}`
+  const target = TARGETS[key]
   if (!target) {
-    throw new Error(`Unsupported platform: ${process.platform} ${process.arch}`);
+    throw new Error(`Unsupported platform: ${process.platform} ${process.arch}`)
   }
-  return target;
+  return target
 }
 
 function getCacheRoot() {
   if (process.env.HOWCODE_CACHE_DIR) {
-    return process.env.HOWCODE_CACHE_DIR;
+    return process.env.HOWCODE_CACHE_DIR
   }
 
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     return path.join(
-      process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
+      process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
       APP_NAME,
-    );
+    )
   }
 
-  if (process.platform === "darwin") {
-    return path.join(os.homedir(), "Library", "Caches", APP_NAME);
+  if (process.platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Caches', APP_NAME)
   }
 
-  return path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache"), APP_NAME);
+  return path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), APP_NAME)
 }
 
 function getPaths(target, releaseInfo) {
-  const cacheRoot = getCacheRoot();
-  const versionsRoot = path.join(cacheRoot, "versions");
-  const releaseKey = `${releaseInfo.version}-${releaseInfo.hash}`;
-  const installDir = path.join(versionsRoot, releaseKey);
-  const launcherWorkingDirectory = path.dirname(path.join(installDir, target.executable));
+  const cacheRoot = getCacheRoot()
+  const versionsRoot = path.join(cacheRoot, 'versions')
+  const releaseKey = `${releaseInfo.version}-${releaseInfo.hash}`
+  const installDir = path.join(versionsRoot, releaseKey)
+  const launcherWorkingDirectory = path.dirname(path.join(installDir, target.executable))
   return {
     cacheRoot,
-    currentFile: path.join(cacheRoot, "current.json"),
+    currentFile: path.join(cacheRoot, 'current.json'),
     windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
     launcherWorkingDirectory,
     installDir,
     executablePath: path.join(installDir, target.executable),
-  };
+  }
 }
 
 function getWindowsStartMenuShortcutPath() {
-  const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-  return path.join(appData, "Microsoft", "Windows", "Start Menu", "Programs", `${APP_NAME}.lnk`);
+  const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming')
+  return path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', `${APP_NAME}.lnk`)
 }
 
 function escapeWindowsCommandValue(value) {
-  return value.replace(/%/g, "%%");
+  return value.replace(/%/g, '%%')
 }
 
 function getWindowsScriptHostPath(executableName) {
-  const systemRoot = process.env.SystemRoot || process.env.SYSTEMROOT;
+  const systemRoot = process.env.SystemRoot || process.env.SYSTEMROOT
   if (systemRoot) {
-    return path.join(systemRoot, "System32", executableName);
+    return path.join(systemRoot, 'System32', executableName)
   }
 
-  return path.join("C:", "Windows", "System32", executableName);
+  return path.join('C:', 'Windows', 'System32', executableName)
 }
 
 async function writeWindowsCommandLauncher(paths) {
   const commandContents = [
-    "@echo off",
-    "chcp 65001 >nul",
-    "setlocal",
-    "set NODE_TLS_REJECT_UNAUTHORIZED=",
-    `set \"HOWCODE_EXE=${escapeWindowsCommandValue(paths.executablePath)}\"`,
-    `set \"HOWCODE_REPO_ROOT=${escapeWindowsCommandValue(paths.launcherWorkingDirectory)}\"`,
+    '@echo off',
+    'chcp 65001 >nul',
+    'setlocal',
+    'set NODE_TLS_REJECT_UNAUTHORIZED=',
+    `set "HOWCODE_EXE=${escapeWindowsCommandValue(paths.executablePath)}"`,
+    `set "HOWCODE_REPO_ROOT=${escapeWindowsCommandValue(paths.launcherWorkingDirectory)}"`,
     'if not exist "%HOWCODE_EXE%" (',
     `  echo ${APP_NAME}: installed app executable was not found.`,
     `  echo Run npx ${APP_NAME} to repair the local install.`,
-    "  exit /b 1",
-    ")",
+    '  exit /b 1',
+    ')',
     'start "" /D "%HOWCODE_REPO_ROOT%" "%HOWCODE_EXE%"',
-    "endlocal",
-    "",
-  ].join("\r\n");
+    'endlocal',
+    '',
+  ].join('\r\n')
 
-  await fsp.writeFile(paths.windowsCommandFile, commandContents, "utf8");
+  await fsp.writeFile(paths.windowsCommandFile, commandContents, 'utf8')
 }
 
 async function createWindowsStartMenuShortcut(paths) {
-  const shortcutPath = getWindowsStartMenuShortcutPath();
+  const shortcutPath = getWindowsStartMenuShortcutPath()
   const shortcutScriptPath = path.join(
     paths.cacheRoot,
     `.create-${APP_NAME}-shortcut-${process.pid}.js`,
-  );
-  await fsp.mkdir(path.dirname(shortcutPath), { recursive: true });
+  )
+  await fsp.mkdir(path.dirname(shortcutPath), { recursive: true })
   await fsp.writeFile(
     shortcutScriptPath,
     [
       "var shell = WScript.CreateObject('WScript.Shell');",
-      "var shortcut = shell.CreateShortcut(WScript.Arguments.Item(0));",
-      "shortcut.TargetPath = WScript.Arguments.Item(1);",
-      "shortcut.WorkingDirectory = WScript.Arguments.Item(2);",
-      "shortcut.IconLocation = WScript.Arguments.Item(3);",
-      "shortcut.Description = WScript.Arguments.Item(4);",
-      "shortcut.Save();",
-      "",
-    ].join("\r\n"),
-    "utf8",
-  );
+      'var shortcut = shell.CreateShortcut(WScript.Arguments.Item(0));',
+      'shortcut.TargetPath = WScript.Arguments.Item(1);',
+      'shortcut.WorkingDirectory = WScript.Arguments.Item(2);',
+      'shortcut.IconLocation = WScript.Arguments.Item(3);',
+      'shortcut.Description = WScript.Arguments.Item(4);',
+      'shortcut.Save();',
+      '',
+    ].join('\r\n'),
+    'utf8',
+  )
 
   try {
     await new Promise((resolve, reject) => {
       const child = spawn(
-        getWindowsScriptHostPath("cscript.exe"),
+        getWindowsScriptHostPath('cscript.exe'),
         [
-          "//NoLogo",
+          '//NoLogo',
           shortcutScriptPath,
           shortcutPath,
           paths.windowsCommandFile,
           paths.launcherWorkingDirectory,
           `${paths.executablePath},0`,
-          "howcode",
+          'howcode',
         ],
-        { stdio: "ignore", windowsHide: true },
-      );
-      child.on("error", reject);
-      child.on("exit", (code) => {
+        { stdio: 'ignore', windowsHide: true },
+      )
+      child.on('error', reject)
+      child.on('exit', (code) => {
         if (code === 0) {
-          resolve();
+          resolve()
         } else {
-          reject(new Error(`cscript exited with code ${code} while creating Start Menu shortcut.`));
+          reject(new Error(`cscript exited with code ${code} while creating Start Menu shortcut.`))
         }
-      });
-    });
+      })
+    })
   } finally {
-    await fsp.rm(shortcutScriptPath, { force: true });
+    await fsp.rm(shortcutScriptPath, { force: true })
   }
 
-  return shortcutPath;
+  return shortcutPath
 }
 
 async function ensureWindowsLaunchIntegration(target, paths) {
-  if (target.os !== "win") {
-    return true;
+  if (target.os !== 'win') {
+    return true
   }
 
   try {
-    await writeWindowsCommandLauncher(paths);
+    await writeWindowsCommandLauncher(paths)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`${APP_NAME}: could not create command launcher: ${message}`);
-    console.warn(`${APP_NAME}: Start Menu shortcut was not updated.`);
-    return false;
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`${APP_NAME}: could not create command launcher: ${message}`)
+    console.warn(`${APP_NAME}: Start Menu shortcut was not updated.`)
+    return false
   }
 
   try {
-    await createWindowsStartMenuShortcut(paths);
-    return true;
+    await createWindowsStartMenuShortcut(paths)
+    return true
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`${APP_NAME}: could not create Start Menu shortcut: ${message}`);
-    console.warn(`${APP_NAME}: you can still relaunch with ${paths.windowsCommandFile}`);
-    return false;
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`${APP_NAME}: could not create Start Menu shortcut: ${message}`)
+    console.warn(`${APP_NAME}: you can still relaunch with ${paths.windowsCommandFile}`)
+    return false
   }
 }
 
 async function fetchJson(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal })
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} while fetching ${url}`);
+      throw new Error(`HTTP ${response.status} while fetching ${url}`)
     }
-    return await response.json();
+    return await response.json()
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeout)
   }
 }
 
 async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok || !response.body) {
-      throw new Error(`HTTP ${response.status} while downloading ${url}`);
+    const response = await fetch(url, { signal: controller.signal })
+    if (!(response.ok && response.body)) {
+      throw new Error(`HTTP ${response.status} while downloading ${url}`)
     }
 
-    await fsp.mkdir(path.dirname(filePath), { recursive: true });
-    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(filePath));
+    await fsp.mkdir(path.dirname(filePath), { recursive: true })
+    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(filePath))
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeout)
   }
 }
 
 async function sha256File(filePath) {
-  const hash = crypto.createHash("sha256");
-  await pipeline(fs.createReadStream(filePath), hash);
-  return hash.digest("hex");
+  const hash = crypto.createHash('sha256')
+  await pipeline(fs.createReadStream(filePath), hash)
+  return hash.digest('hex')
 }
 
 async function resolveLatestRelease(target) {
-  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`;
-  const metadata = await fetchJson(updateUrl);
-  if (!metadata || typeof metadata.version !== "string" || typeof metadata.hash !== "string") {
-    throw new Error(`Invalid release metadata from ${updateUrl}`);
+  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`
+  const metadata = await fetchJson(updateUrl)
+  if (!metadata || typeof metadata.version !== 'string' || typeof metadata.hash !== 'string') {
+    throw new Error(`Invalid release metadata from ${updateUrl}`)
   }
 
   return {
     version: metadata.version,
     hash: metadata.hash,
     assetUrl: `${RELEASE_BASE_URL}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
-  };
+  }
 }
 
 async function installRelease(target, releaseInfo, paths) {
-  const tempRoot = path.join(paths.cacheRoot, `.tmp-${Date.now()}-${process.pid}`);
-  const tempInstallDir = `${paths.installDir}.partial`;
-  const archivePath = path.join(tempRoot, `${APP_NAME}-${target.os}-${target.arch}.tar.gz`);
+  const tempRoot = path.join(paths.cacheRoot, `.tmp-${Date.now()}-${process.pid}`)
+  const tempInstallDir = `${paths.installDir}.partial`
+  const archivePath = path.join(tempRoot, `${APP_NAME}-${target.os}-${target.arch}.tar.gz`)
 
-  console.log(`Downloading ${APP_NAME} ${releaseInfo.version} for ${target.os}-${target.arch}...`);
+  console.log(`Downloading ${APP_NAME} ${releaseInfo.version} for ${target.os}-${target.arch}...`)
 
-  await fsp.rm(tempRoot, { recursive: true, force: true });
-  await fsp.rm(tempInstallDir, { recursive: true, force: true });
-  await fsp.mkdir(tempRoot, { recursive: true });
-  await fsp.mkdir(path.dirname(paths.installDir), { recursive: true });
-  await downloadFile(releaseInfo.assetUrl, archivePath);
+  await fsp.rm(tempRoot, { recursive: true, force: true })
+  await fsp.rm(tempInstallDir, { recursive: true, force: true })
+  await fsp.mkdir(tempRoot, { recursive: true })
+  await fsp.mkdir(path.dirname(paths.installDir), { recursive: true })
+  await downloadFile(releaseInfo.assetUrl, archivePath)
 
-  const archiveHash = await sha256File(archivePath);
+  const archiveHash = await sha256File(archivePath)
   if (archiveHash !== releaseInfo.hash) {
-    await fsp.rm(tempRoot, { recursive: true, force: true });
+    await fsp.rm(tempRoot, { recursive: true, force: true })
     throw new Error(
       `Downloaded archive hash mismatch. Expected ${releaseInfo.hash}, got ${archiveHash}.`,
-    );
+    )
   }
 
-  await fsp.mkdir(tempInstallDir, { recursive: true });
+  await fsp.mkdir(tempInstallDir, { recursive: true })
 
-  await tar.x({ file: archivePath, cwd: tempInstallDir });
+  await tar.x({ file: archivePath, cwd: tempInstallDir })
 
   if (!fs.existsSync(path.join(tempInstallDir, target.executable))) {
-    throw new Error(`Downloaded archive did not contain ${target.executable}.`);
+    throw new Error(`Downloaded archive did not contain ${target.executable}.`)
   }
 
-  await fsp.rm(paths.installDir, { recursive: true, force: true });
-  await fsp.rename(tempInstallDir, paths.installDir);
-  await fsp.rm(tempRoot, { recursive: true, force: true });
+  await fsp.rm(paths.installDir, { recursive: true, force: true })
+  await fsp.rename(tempInstallDir, paths.installDir)
+  await fsp.rm(tempRoot, { recursive: true, force: true })
 
   await fsp.writeFile(
     paths.currentFile,
@@ -313,17 +313,17 @@ async function installRelease(target, releaseInfo, paths) {
       null,
       2,
     ),
-  );
+  )
 }
 
 async function pruneOldVersions(cacheRoot, keepDir) {
-  const versionsRoot = path.join(cacheRoot, "versions");
-  let entries = [];
+  const versionsRoot = path.join(cacheRoot, 'versions')
+  let entries = []
 
   try {
-    entries = await fsp.readdir(versionsRoot, { withFileTypes: true });
+    entries = await fsp.readdir(versionsRoot, { withFileTypes: true })
   } catch {
-    return;
+    return
   }
 
   await Promise.all(
@@ -332,7 +332,7 @@ async function pruneOldVersions(cacheRoot, keepDir) {
       .map((entry) => path.join(versionsRoot, entry.name))
       .filter((dirPath) => dirPath !== keepDir)
       .map((dirPath) => fsp.rm(dirPath, { recursive: true, force: true })),
-  );
+  )
 }
 
 function spawnLauncherProcess(executablePath, options = {}) {
@@ -340,77 +340,77 @@ function spawnLauncherProcess(executablePath, options = {}) {
     ...process.env,
     HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
     ...(options.env || {}),
-  };
-  Reflect.deleteProperty(env, "NODE_TLS_REJECT_UNAUTHORIZED");
+  }
+  Reflect.deleteProperty(env, 'NODE_TLS_REJECT_UNAUTHORIZED')
 
   return spawn(executablePath, [], {
     detached: true,
-    stdio: options.stdio || "ignore",
+    stdio: options.stdio || 'ignore',
     windowsHide: true,
     cwd: path.dirname(executablePath),
     env,
-  });
+  })
 }
 
 async function launch(executablePath) {
-  const child = spawnLauncherProcess(executablePath);
+  const child = spawnLauncherProcess(executablePath)
 
-  child.unref();
+  child.unref()
 }
 
 async function main() {
-  const target = getTarget();
-  const cacheRoot = getCacheRoot();
-  await fsp.mkdir(cacheRoot, { recursive: true });
+  const target = getTarget()
+  const cacheRoot = getCacheRoot()
+  await fsp.mkdir(cacheRoot, { recursive: true })
 
-  const current = readJsonIfPresent(path.join(cacheRoot, "current.json"));
+  const current = readJsonIfPresent(path.join(cacheRoot, 'current.json'))
 
-  let releaseInfo = null;
+  let releaseInfo = null
   try {
-    releaseInfo = await resolveLatestRelease(target);
+    releaseInfo = await resolveLatestRelease(target)
   } catch (error) {
     if (current?.executablePath && fs.existsSync(current.executablePath)) {
       await ensureWindowsLaunchIntegration(target, {
         cacheRoot,
-        currentFile: path.join(cacheRoot, "current.json"),
+        currentFile: path.join(cacheRoot, 'current.json'),
         windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
         installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
         launcherWorkingDirectory: path.dirname(current.executablePath),
         executablePath: current.executablePath,
-      });
-      await launch(current.executablePath);
-      return;
+      })
+      await launch(current.executablePath)
+      return
     }
 
-    throw error;
+    throw error
   }
 
-  const paths = getPaths(target, releaseInfo);
-  const didInstall = !fs.existsSync(paths.executablePath);
+  const paths = getPaths(target, releaseInfo)
+  const didInstall = !fs.existsSync(paths.executablePath)
   if (!fs.existsSync(paths.executablePath)) {
-    await installRelease(target, releaseInfo, paths);
+    await installRelease(target, releaseInfo, paths)
   }
 
-  const launchIntegrationReady = await ensureWindowsLaunchIntegration(target, paths);
-  if (target.os === "win" && didInstall && launchIntegrationReady) {
-    console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`);
+  const launchIntegrationReady = await ensureWindowsLaunchIntegration(target, paths)
+  if (target.os === 'win' && didInstall && launchIntegrationReady) {
+    console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`)
   }
-  await pruneOldVersions(cacheRoot, paths.installDir);
-  await launch(paths.executablePath);
+  await pruneOldVersions(cacheRoot, paths.installDir)
+  await launch(paths.executablePath)
 }
 
 module.exports = {
   main: async () => {
     try {
-      await main();
+      await main()
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`howcode: ${message}`);
-      process.exit(1);
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`howcode: ${message}`)
+      process.exit(1)
     }
   },
-};
+}
 
 if (require.main === module) {
-  module.exports.main();
+  module.exports.main()
 }

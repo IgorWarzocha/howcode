@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
-import type { ComposerAttachment } from "../../../../desktop/types";
-import { mergeDraftWithRestoredQueuedPrompt } from "../composer-queue.helpers";
-import { composerDraftStore, getComposerDraftThreadId } from "../composerDraftStore";
+import { type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComposerAttachment } from '../../../../desktop/types'
+import { mergeDraftWithRestoredQueuedPrompt } from '../composer-queue.helpers'
+import { composerDraftStore, getComposerDraftThreadId } from '../composerDraftStore'
 
 export function useComposerDraftState({
   composerMode,
@@ -13,91 +13,91 @@ export function useComposerDraftState({
   restoredQueuedPrompt,
   onRestoredQueuedPromptApplied,
 }: {
-  composerMode: "chat" | "code";
-  projectId: string;
-  sessionPath: string | null;
-  openMenu: "model" | "picker" | null;
-  setOpenMenu: (value: SetStateAction<"model" | "picker" | null>) => void;
-  setErrorMessage: (value: SetStateAction<string | null>) => void;
-  restoredQueuedPrompt: string | null;
-  onRestoredQueuedPromptApplied: () => void;
+  composerMode: 'chat' | 'code'
+  projectId: string
+  sessionPath: string | null
+  openMenu: 'model' | 'picker' | null
+  setOpenMenu: (value: SetStateAction<'model' | 'picker' | null>) => void
+  setErrorMessage: (value: SetStateAction<string | null>) => void
+  restoredQueuedPrompt: string | null
+  onRestoredQueuedPromptApplied: () => void
 }) {
   const draftThreadId = useMemo(
     () => getComposerDraftThreadId({ composerMode, projectId, sessionPath }),
     [composerMode, projectId, sessionPath],
-  );
-  const [draft, setDraft] = useState("");
-  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  )
+  const [draft, setDraft] = useState('')
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
   const composerScopeKey = useMemo(
-    () => `${composerMode}::${projectId}::${sessionPath ?? ""}::${draftThreadId ?? ""}`,
+    () => `${composerMode}::${projectId}::${sessionPath ?? ''}::${draftThreadId ?? ''}`,
     [composerMode, draftThreadId, projectId, sessionPath],
-  );
-  const activeComposerScopeKeyRef = useRef(composerScopeKey);
-  const activeDraftThreadIdRef = useRef<string | null>(draftThreadId);
-  const skipNextDraftPersistenceRef = useRef<string | null>(null);
-  const attachmentsRef = useRef<ComposerAttachment[]>([]);
-  const draftValueRef = useRef("");
+  )
+  const activeComposerScopeKeyRef = useRef(composerScopeKey)
+  const activeDraftThreadIdRef = useRef<string | null>(draftThreadId)
+  const skipNextDraftPersistenceRef = useRef<string | null>(null)
+  const attachmentsRef = useRef<ComposerAttachment[]>([])
+  const draftValueRef = useRef('')
 
-  activeDraftThreadIdRef.current = draftThreadId;
-  activeComposerScopeKeyRef.current = composerScopeKey;
-  attachmentsRef.current = attachments;
+  activeDraftThreadIdRef.current = draftThreadId
+  activeComposerScopeKeyRef.current = composerScopeKey
+  attachmentsRef.current = attachments
 
   const setDraftValue = useCallback((value: SetStateAction<string>) => {
     const nextValue =
-      typeof value === "function"
+      typeof value === 'function'
         ? (value as (current: string) => string)(draftValueRef.current)
-        : value;
-    draftValueRef.current = nextValue;
-    setDraft(nextValue);
-  }, []);
+        : value
+    draftValueRef.current = nextValue
+    setDraft(nextValue)
+  }, [])
 
   const setAttachmentValue = useCallback((value: SetStateAction<ComposerAttachment[]>) => {
     const nextValue =
-      typeof value === "function"
+      typeof value === 'function'
         ? (value as (current: ComposerAttachment[]) => ComposerAttachment[])(attachmentsRef.current)
-        : value;
-    attachmentsRef.current = nextValue;
-    setAttachments(nextValue);
-  }, []);
+        : value
+    attachmentsRef.current = nextValue
+    setAttachments(nextValue)
+  }, [])
 
   useEffect(() => {
-    skipNextDraftPersistenceRef.current = draftThreadId;
+    skipNextDraftPersistenceRef.current = draftThreadId
 
-    const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null;
-    setDraftValue(persistedDraft?.prompt ?? "");
-    setAttachmentValue(persistedDraft?.attachments ?? []);
-    setOpenMenu(persistedDraft?.pickerOpen ? "picker" : null);
-    setErrorMessage(null);
-  }, [draftThreadId, setAttachmentValue, setDraftValue, setErrorMessage, setOpenMenu]);
+    const persistedDraft = draftThreadId ? composerDraftStore.getDraft(draftThreadId) : null
+    setDraftValue(persistedDraft?.prompt ?? '')
+    setAttachmentValue(persistedDraft?.attachments ?? [])
+    setOpenMenu(persistedDraft?.pickerOpen ? 'picker' : null)
+    setErrorMessage(null)
+  }, [draftThreadId, setAttachmentValue, setDraftValue, setErrorMessage, setOpenMenu])
 
   useEffect(() => {
     if (!draftThreadId) {
-      return;
+      return
     }
 
     if (skipNextDraftPersistenceRef.current === draftThreadId) {
-      skipNextDraftPersistenceRef.current = null;
-      return;
+      skipNextDraftPersistenceRef.current = null
+      return
     }
 
     composerDraftStore.setDraft(draftThreadId, {
       prompt: draft,
       attachments,
-      pickerOpen: openMenu === "picker",
-    });
-  }, [attachments, draft, draftThreadId, openMenu]);
+      pickerOpen: openMenu === 'picker',
+    })
+  }, [attachments, draft, draftThreadId, openMenu])
 
   useEffect(() => {
     if (!restoredQueuedPrompt) {
-      return;
+      return
     }
 
     setDraftValue((currentDraft) =>
       mergeDraftWithRestoredQueuedPrompt(currentDraft, restoredQueuedPrompt),
-    );
-    setErrorMessage(null);
-    onRestoredQueuedPromptApplied();
-  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue, setErrorMessage]);
+    )
+    setErrorMessage(null)
+    onRestoredQueuedPromptApplied()
+  }, [onRestoredQueuedPromptApplied, restoredQueuedPrompt, setDraftValue, setErrorMessage])
 
   return {
     activeComposerScopeKeyRef,
@@ -111,5 +111,5 @@ export function useComposerDraftState({
     setAttachmentValue,
     setDraftValue,
     skipNextDraftPersistenceRef,
-  };
+  }
 }

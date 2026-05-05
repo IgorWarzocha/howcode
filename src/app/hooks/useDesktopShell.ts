@@ -1,13 +1,13 @@
-import { Debouncer } from "@tanstack/react-pacer";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo } from "react";
+import { Debouncer } from '@tanstack/react-pacer'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo } from 'react'
 import type {
   ArchivedThread,
   ComposerState,
   ComposerStateRequest,
   ProjectGitState,
   ShellState,
-} from "../desktop/types";
+} from '../desktop/types'
 import {
   desktopQueryKeys,
   getArchivedThreadsQuery,
@@ -17,34 +17,34 @@ import {
   getShellStateQuery,
   listComposerAttachmentEntriesQuery,
   pickComposerAttachmentsQuery,
-} from "../query/desktop-query";
+} from '../query/desktop-query'
 
 function mergeShellStateProjects(
   currentState: ShellState | null | undefined,
   nextState: ShellState | null,
 ): ShellState | null {
   if (!nextState) {
-    return null;
+    return null
   }
 
   if (!currentState) {
-    return nextState;
+    return nextState
   }
 
   const currentProjectsById = new Map(
     currentState.projects.map((project) => [project.id, project] as const),
-  );
+  )
 
   return {
     ...nextState,
     projects: nextState.projects.map((project) => {
-      const currentProject = currentProjectsById.get(project.id);
+      const currentProject = currentProjectsById.get(project.id)
 
       // Shell refreshes rebuild project rows from backend metadata only, which currently drops
       // loaded thread lists. Preserve already-loaded sidebar thread data across refreshes so
       // desktop events do not cause the tree to briefly reset/jump before per-project reloads land.
       if (!currentProject?.threadsLoaded || project.threadsLoaded) {
-        return project;
+        return project
       }
 
       return {
@@ -53,62 +53,62 @@ function mergeShellStateProjects(
         threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
         threadsLoaded: true,
         threadsScope: currentProject.threadsScope,
-      };
+      }
     }),
-  };
+  }
 }
 
 export function useDesktopShell() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   const loadMergedShellState = useCallback(async () => {
-    const nextState = await getShellStateQuery();
-    const currentState = queryClient.getQueryData<ShellState | null>(desktopQueryKeys.shellState());
-    return mergeShellStateProjects(currentState, nextState);
-  }, [queryClient]);
+    const nextState = await getShellStateQuery()
+    const currentState = queryClient.getQueryData<ShellState | null>(desktopQueryKeys.shellState())
+    return mergeShellStateProjects(currentState, nextState)
+  }, [queryClient])
 
   const shellStateQuery = useQuery<ShellState | null>({
     queryKey: desktopQueryKeys.shellState(),
     queryFn: loadMergedShellState,
     staleTime: Number.POSITIVE_INFINITY,
-  });
+  })
 
   const shellRefreshDebouncer = useMemo(
     () =>
       new Debouncer(
         () => {
-          void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.shellState() });
+          void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.shellState() })
         },
         { wait: 140 },
       ),
     [queryClient],
-  );
+  )
 
   const refreshShellState = useCallback(async () => {
     const nextState = await queryClient.fetchQuery({
       queryKey: desktopQueryKeys.shellState(),
       queryFn: loadMergedShellState,
       staleTime: 0,
-    });
+    })
 
-    return nextState;
-  }, [loadMergedShellState, queryClient]);
+    return nextState
+  }, [loadMergedShellState, queryClient])
 
   const scheduleShellStateRefresh = useCallback(() => {
-    shellRefreshDebouncer.maybeExecute();
-  }, [shellRefreshDebouncer]);
+    shellRefreshDebouncer.maybeExecute()
+  }, [shellRefreshDebouncer])
 
   const loadProjectThreads = useCallback(
-    async (projectId: string, options: { chat?: boolean } = {}) => {
-      const threadsScope = options.chat ? "chat" : "code";
+    async (projectId: string, options: { chat?: boolean | undefined } = {}) => {
+      const threadsScope = options.chat ? 'chat' : 'code'
       const threads = await queryClient.fetchQuery({
         queryKey: desktopQueryKeys.projectThreads(projectId, options.chat === true),
         queryFn: () => getProjectThreadsQuery(projectId, options.chat === true),
         staleTime: 0,
-      });
+      })
 
       queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
         if (!currentState) {
-          return currentState ?? null;
+          return currentState ?? null
         }
 
         return {
@@ -124,56 +124,56 @@ export function useDesktopShell() {
                 }
               : project,
           ),
-        };
-      });
+        }
+      })
 
-      return threads;
+      return threads
     },
     [queryClient],
-  );
+  )
 
   const applyProjectOrder = useCallback(
     (projectIds: string[]) => {
       queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) => {
         if (!currentState) {
-          return currentState ?? null;
+          return currentState ?? null
         }
 
-        const orderIndexById = new Map(projectIds.map((projectId, index) => [projectId, index]));
+        const orderIndexById = new Map(projectIds.map((projectId, index) => [projectId, index]))
 
         return {
           ...currentState,
           projects: [...currentState.projects].sort((left, right) => {
-            const leftIndex = orderIndexById.get(left.id);
-            const rightIndex = orderIndexById.get(right.id);
+            const leftIndex = orderIndexById.get(left.id)
+            const rightIndex = orderIndexById.get(right.id)
 
             if (leftIndex !== undefined && rightIndex !== undefined) {
-              return leftIndex - rightIndex;
+              return leftIndex - rightIndex
             }
 
             if (leftIndex !== undefined) {
-              return -1;
+              return -1
             }
 
             if (rightIndex !== undefined) {
-              return 1;
+              return 1
             }
 
-            return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+            return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
           }),
-        };
-      });
+        }
+      })
     },
     [queryClient],
-  );
+  )
 
   const loadArchivedThreads = useCallback(async () => {
     return queryClient.fetchQuery<ArchivedThread[]>({
       queryKey: desktopQueryKeys.archivedThreads(),
       queryFn: getArchivedThreadsQuery,
       staleTime: 0,
-    });
-  }, [queryClient]);
+    })
+  }, [queryClient])
 
   const loadComposerState = useCallback(
     async (request: ComposerStateRequest = {}) => {
@@ -181,10 +181,10 @@ export function useDesktopShell() {
         queryKey: desktopQueryKeys.composerState(request),
         queryFn: () => getComposerStateQuery(request),
         staleTime: 0,
-      });
+      })
     },
     [queryClient],
-  );
+  )
 
   const loadProjectGitState = useCallback(
     async (projectId: string) => {
@@ -192,31 +192,31 @@ export function useDesktopShell() {
         queryKey: desktopQueryKeys.projectGitState(projectId),
         queryFn: () => getProjectGitStateQuery(projectId),
         staleTime: 0,
-      });
+      })
     },
     [queryClient],
-  );
+  )
 
   const pickComposerAttachments = useCallback(async (projectId?: string | null) => {
-    return pickComposerAttachmentsQuery(projectId ?? null);
-  }, []);
+    return pickComposerAttachmentsQuery(projectId ?? null)
+  }, [])
 
   const listComposerAttachmentEntries = useCallback(
     async (request: {
-      projectId?: string | null;
-      path?: string | null;
-      rootPath?: string | null;
+      projectId?: string | null
+      path?: string | null
+      rootPath?: string | null
     }) => {
-      return listComposerAttachmentEntriesQuery(request);
+      return listComposerAttachmentEntriesQuery(request)
     },
     [],
-  );
+  )
 
   useEffect(() => {
     return () => {
-      shellRefreshDebouncer.cancel();
-    };
-  }, [shellRefreshDebouncer]);
+      shellRefreshDebouncer.cancel()
+    }
+  }, [shellRefreshDebouncer])
 
   return {
     shellState: shellStateQuery.data ?? null,
@@ -230,5 +230,5 @@ export function useDesktopShell() {
     listComposerAttachmentEntries,
     loadProjectGitState,
     pickComposerAttachments,
-  };
+  }
 }

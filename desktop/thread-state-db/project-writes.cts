@@ -1,11 +1,11 @@
-import path from "node:path";
-import { ensureChatStateSchema } from "../chat-state-db.cts";
-import { getThreadStateDatabase } from "./db.cts";
-import { runInTransaction } from "./write-transaction.cts";
+import path from 'node:path'
+import { ensureChatStateSchema } from '../chat-state-db.cts'
+import { getThreadStateDatabase } from './db.cts'
+import { runInTransaction } from './write-transaction.cts'
 
 export function ensureProject(cwd: string) {
-  const db = getThreadStateDatabase();
-  const projectName = path.basename(cwd) || cwd;
+  const db = getThreadStateDatabase()
+  const projectName = path.basename(cwd) || cwd
 
   db.prepare(
     `
@@ -16,44 +16,44 @@ export function ensureProject(cwd: string) {
         hidden = 0,
         updated_at = CURRENT_TIMESTAMP
     `,
-  ).run(cwd, projectName);
+  ).run(cwd, projectName)
 }
 
 export function setProjectCollapsed(projectId: string, collapsed: boolean) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET collapsed = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(collapsed ? 1 : 0, projectId);
+  ).run(collapsed ? 1 : 0, projectId)
 }
 
 export function toggleProjectPinned(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET pinned = CASE pinned WHEN 1 THEN 0 ELSE 1 END, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectId);
+  ).run(projectId)
 }
 
 export function collapseAllProjects() {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET collapsed = 1, updated_at = CURRENT_TIMESTAMP
     `,
-  ).run();
+  ).run()
 }
 
 export function archiveProjectThreads(projectId: string) {
-  ensureChatStateSchema();
-  const db = getThreadStateDatabase();
+  ensureChatStateSchema()
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE threads
@@ -64,65 +64,65 @@ export function archiveProjectThreads(projectId: string) {
           SELECT 1 FROM chat_threads WHERE chat_threads.session_path = threads.session_path
         )
     `,
-  ).run(projectId);
+  ).run(projectId)
 }
 
 export function renameProject(projectId: string, projectName: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET custom_name = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectName, projectId);
+  ).run(projectName, projectId)
 }
 
 export function setProjectRepoOrigin(projectId: string, originUrl: string | null) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET repo_origin_url = ?, repo_origin_checked = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(originUrl, projectId);
+  ).run(originUrl, projectId)
 }
 
-export function setProjectGitOpsMode(projectId: string, mode: "commit" | "commit-push" | null) {
-  const db = getThreadStateDatabase();
+export function setProjectGitOpsMode(projectId: string, mode: 'commit' | 'commit-push' | null) {
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET git_ops_mode = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(mode, projectId);
+  ).run(mode, projectId)
 }
 
 export function reorderProjects(projectIds: string[]) {
   if (projectIds.length === 0) {
-    return;
+    return
   }
 
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const updateProjectOrder = db.prepare(
     `
       UPDATE projects
       SET order_index = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  );
+  )
 
   runInTransaction(db, () => {
     projectIds.forEach((projectId, index) => {
-      updateProjectOrder.run(index, projectId);
-    });
-  });
+      updateProjectOrder.run(index, projectId)
+    })
+  })
 }
 
 export function moveProjectToTop(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -131,9 +131,9 @@ export function moveProjectToTop(projectId: string) {
         WHERE hidden = 0 AND order_index IS NOT NULL
       `,
     )
-    .get() as { minOrderIndex?: number | null } | undefined;
+    .get() as { minOrderIndex?: number | undefined | null } | undefined
 
-  const nextOrderIndex = typeof row?.minOrderIndex === "number" ? row.minOrderIndex - 1 : 0;
+  const nextOrderIndex = typeof row?.minOrderIndex === 'number' ? row.minOrderIndex - 1 : 0
 
   db.prepare(
     `
@@ -141,26 +141,26 @@ export function moveProjectToTop(projectId: string) {
       SET order_index = ?, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(nextOrderIndex, projectId);
+  ).run(nextOrderIndex, projectId)
 }
 
 export function hideProject(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       UPDATE projects
       SET hidden = 1, updated_at = CURRENT_TIMESTAMP
       WHERE cwd = ?
     `,
-  ).run(projectId);
+  ).run(projectId)
 }
 
 export function deleteProject(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   db.prepare(
     `
       DELETE FROM projects
       WHERE cwd = ?
     `,
-  ).run(projectId);
+  ).run(projectId)
 }

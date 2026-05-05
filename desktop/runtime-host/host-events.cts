@@ -1,11 +1,11 @@
-import type { DesktopEvent } from "../../shared/desktop-contracts.ts";
+import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 
-let eventSink: ((event: DesktopEvent) => void) | null = null;
+let eventSink: ((event: DesktopEvent) => void) | null = null
 
 export function setRuntimeHostEventSink(sink: (event: DesktopEvent) => void) {
-  eventSink = sink;
+  eventSink = sink
 }
 
 export function emitDesktopEvent(event: DesktopEvent) {
-  eventSink?.(event);
+  eventSink?.(event)
 }

@@ -1,43 +1,49 @@
-import type { ProjectGitState } from "../../shared/desktop-contracts.ts";
-import { getThreadStateDatabase } from "../thread-state-db/db.cts";
-import { hasHeadCommit, runGit, runGitWithOptions } from "./git-runner.cts";
+import type { ProjectGitState } from '../../shared/desktop-contracts.ts'
+import { getThreadStateDatabase } from '../thread-state-db/db.cts'
+import { hasHeadCommit, runGit, runGitWithOptions } from './git-runner.cts'
+
+const shortStatInsertionsPattern = /(\d+)\s+insertions?\(\+\)/
+const shortStatDeletionsPattern = /(\d+)\s+deletions?\(-\)/
+const trailingSlashPattern = /\/$/
+const originPathSeparatorPattern = /[/:]/
+const gitSuffixPattern = /\.git$/i
 
 function parseShortStat(output: string) {
-  const insertionsMatch = output.match(/(\d+)\s+insertions?\(\+\)/);
-  const deletionsMatch = output.match(/(\d+)\s+deletions?\(-\)/);
+  const insertionsMatch = output.match(shortStatInsertionsPattern)
+  const deletionsMatch = output.match(shortStatDeletionsPattern)
 
   return {
-    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1], 10) : 0,
-    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1], 10) : 0,
-  };
+    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1] ?? '0', 10) : 0,
+    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1] ?? '0', 10) : 0,
+  }
 }
 
 function parseStatusSummary(output: string) {
-  let fileCount = 0;
-  let stagedFileCount = 0;
-  let unstagedFileCount = 0;
+  let fileCount = 0
+  let stagedFileCount = 0
+  let unstagedFileCount = 0
 
-  for (const line of output.split("\n")) {
-    if (!line || line.startsWith("## ")) {
-      continue;
+  for (const line of output.split('\n')) {
+    if (!line || line.startsWith('## ')) {
+      continue
     }
 
-    fileCount += 1;
+    fileCount += 1
 
-    if (line.startsWith("??")) {
-      unstagedFileCount += 1;
-      continue;
+    if (line.startsWith('??')) {
+      unstagedFileCount += 1
+      continue
     }
 
-    const stagedStatus = line[0] ?? " ";
-    const unstagedStatus = line[1] ?? " ";
+    const stagedStatus = line[0] ?? ' '
+    const unstagedStatus = line[1] ?? ' '
 
-    if (stagedStatus !== " ") {
-      stagedFileCount += 1;
+    if (stagedStatus !== ' ') {
+      stagedFileCount += 1
     }
 
-    if (unstagedStatus !== " ") {
-      unstagedFileCount += 1;
+    if (unstagedStatus !== ' ') {
+      unstagedFileCount += 1
     }
   }
 
@@ -45,53 +51,53 @@ function parseStatusSummary(output: string) {
     fileCount,
     stagedFileCount,
     unstagedFileCount,
-  };
+  }
 }
 
 export async function isGitRepository(projectId: string) {
   try {
-    const { stdout } = await runGit(projectId, ["rev-parse", "--is-inside-work-tree"]);
-    return stdout.trim() === "true";
+    const { stdout } = await runGit(projectId, ['rev-parse', '--is-inside-work-tree'])
+    return stdout.trim() === 'true'
   } catch {
-    return false;
+    return false
   }
 }
 
 async function getStatusSummary(projectId: string) {
   try {
-    const { stdout } = await runGitWithOptions(projectId, ["status", "--short", "--branch"], {
+    const { stdout } = await runGitWithOptions(projectId, ['status', '--short', '--branch'], {
       timeout: 10_000,
       maxBuffer: 1024 * 1024 * 4,
-    });
-    return parseStatusSummary(stdout);
+    })
+    return parseStatusSummary(stdout)
   } catch {
     return {
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
-    };
+    }
   }
 }
 
 export async function getOriginUrl(projectId: string) {
   try {
-    const { stdout } = await runGit(projectId, ["remote", "get-url", "origin"]);
-    const originUrl = stdout.trim();
-    return originUrl.length > 0 ? originUrl : null;
+    const { stdout } = await runGit(projectId, ['remote', 'get-url', 'origin'])
+    const originUrl = stdout.trim()
+    return originUrl.length > 0 ? originUrl : null
   } catch {
-    return null;
+    return null
   }
 }
 
 function deriveOriginName(originUrl: string | null) {
   if (!originUrl) {
-    return null;
+    return null
   }
 
-  const normalizedUrl = originUrl.replace(/\/$/, "");
-  const parts = normalizedUrl.split(/[/:]/).filter((part) => part.length > 0);
-  const lastPart = parts.at(-1) ?? originUrl;
-  return lastPart.replace(/\.git$/i, "") || "origin";
+  const normalizedUrl = originUrl.replace(trailingSlashPattern, '')
+  const parts = normalizedUrl.split(originPathSeparatorPattern).filter((part) => part.length > 0)
+  const lastPart = parts.at(-1) ?? originUrl
+  return lastPart.replace(gitSuffixPattern, '') || 'origin'
 }
 
 function getProjectGitOpsModeOverride(projectId: string) {
@@ -103,17 +109,17 @@ function getProjectGitOpsModeOverride(projectId: string) {
         WHERE cwd = ?
       `,
     )
-    .get(projectId) as { gitOpsMode?: string | null } | undefined;
+    .get(projectId) as { gitOpsMode?: string | undefined | null | undefined } | undefined
 
-  return row?.gitOpsMode === "commit" || row?.gitOpsMode === "commit-push" ? row.gitOpsMode : null;
+  return row?.gitOpsMode === 'commit' || row?.gitOpsMode === 'commit-push' ? row.gitOpsMode : null
 }
 
 export async function getBranch(projectId: string) {
   try {
-    const { stdout } = await runGit(projectId, ["branch", "--show-current"]);
-    const branch = stdout.trim();
+    const { stdout } = await runGit(projectId, ['branch', '--show-current'])
+    const branch = stdout.trim()
     if (branch) {
-      return branch;
+      return branch
     }
   } catch {
     // Fallback below.
@@ -121,33 +127,33 @@ export async function getBranch(projectId: string) {
 
   try {
     if (await hasHeadCommit(projectId)) {
-      const { stdout } = await runGit(projectId, ["rev-parse", "--short", "HEAD"]);
-      return stdout.trim() || null;
+      const { stdout } = await runGit(projectId, ['rev-parse', '--short', 'HEAD'])
+      return stdout.trim() || null
     }
   } catch {
-    return null;
+    return null
   }
 
-  return null;
+  return null
 }
 
 async function getDiffStats(projectId: string) {
   try {
     const args = (await hasHeadCommit(projectId))
-      ? ["diff", "--shortstat", "HEAD", "--"]
-      : ["diff", "--cached", "--shortstat", "--root", "--"];
+      ? ['diff', '--shortstat', 'HEAD', '--']
+      : ['diff', '--cached', '--shortstat', '--root', '--']
     const { stdout } = await runGitWithOptions(projectId, args, {
       timeout: 10_000,
       maxBuffer: 1024 * 1024 * 4,
-    });
-    return parseShortStat(stdout);
+    })
+    return parseShortStat(stdout)
   } catch {
-    return { insertions: 0, deletions: 0 };
+    return { insertions: 0, deletions: 0 }
   }
 }
 
 export async function loadProjectGitState(projectId: string): Promise<ProjectGitState> {
-  const gitOpsModeOverride = getProjectGitOpsModeOverride(projectId);
+  const gitOpsModeOverride = getProjectGitOpsModeOverride(projectId)
 
   if (!(await isGitRepository(projectId))) {
     return {
@@ -163,7 +169,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       originName: null,
       originUrl: null,
       gitOpsModeOverride,
-    };
+    }
   }
 
   const [branch, statusSummary, originUrl, stats] = await Promise.all([
@@ -171,7 +177,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     getStatusSummary(projectId),
     getOriginUrl(projectId),
     getDiffStats(projectId),
-  ]);
+  ])
 
   return {
     projectId,
@@ -186,5 +192,5 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     originName: deriveOriginName(originUrl),
     originUrl,
     gitOpsModeOverride,
-  };
+  }
 }

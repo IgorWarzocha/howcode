@@ -1,0 +1,157 @@
+import { useState } from 'react'
+import type { Message } from '../../../types'
+import { getToolCallPreview, getToolCallTitle } from '../../../utils/thread-previews'
+import { ExpandablePanel } from '../../common/expandable-panel'
+
+type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }>
+
+type ToolCallsCardProps = {
+  id: string
+  messages: ToolCallMessage[]
+  expanded: boolean
+  forceExpanded?: boolean
+  onToggleGroupExpanded?: () => void
+  onToggleToolCallExpanded?: () => void
+}
+
+function renderToolCallBody(message: ToolCallMessage) {
+  if (message.role === 'toolResult') {
+    return (
+      <div
+        className={
+          message.isError
+            ? 'grid min-w-0 gap-2 text-[13px] text-[color:var(--danger)]'
+            : 'grid min-w-0 gap-2 text-[13px] text-[color:var(--muted-2)]/88'
+        }
+      >
+        {message.content.map((paragraph) => (
+          <p
+            key={paragraph}
+            className="m-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+          >
+            {paragraph}
+          </p>
+        ))}
+        {message.images && message.images.length > 0 ? (
+          <div className="grid min-w-0 gap-2">
+            {message.images.map((image) => (
+              <img
+                key={image.src}
+                src={image.src}
+                alt={image.alt}
+                className="max-h-[420px] max-w-full rounded-lg border border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.03)] object-contain"
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid min-w-0 gap-2 font-mono text-[12px] text-[color:var(--muted-2)]/84">
+      <div className="whitespace-pre-wrap break-all text-[color:var(--muted-2)]/88">
+        $ {message.command}
+      </div>
+      {message.output.length > 0 ? (
+        <div className="grid min-w-0 gap-1 whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
+          {message.output.map((line) => (
+            <p key={line} className="m-0 min-w-0">
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <div className="text-[color:var(--muted-2)]/80">No output</div>
+      )}
+      <div className="text-[color:var(--muted-2)]/80">
+        exit {message.exitCode ?? '?'}
+        {message.cancelled ? ' · cancelled' : ''}
+        {message.truncated ? ' · truncated' : ''}
+      </div>
+    </div>
+  )
+}
+
+export function ToolCallsCard({
+  id,
+  messages,
+  expanded,
+  forceExpanded = false,
+  onToggleGroupExpanded,
+  onToggleToolCallExpanded,
+}: ToolCallsCardProps) {
+  const [expandedToolCallIds, setExpandedToolCallIds] = useState<Record<string, boolean>>({})
+
+  return (
+    <ExpandablePanel
+      expanded={expanded}
+      onToggle={() => {
+        if (forceExpanded) {
+          return
+        }
+
+        onToggleGroupExpanded?.()
+      }}
+      panelId={`tool-call-group-${id}`}
+      className="border border-[color:var(--border)] bg-[color:var(--message-tool-bg)]"
+      triggerClassName="hover:bg-[color:var(--surface-hover)]"
+      bodyClassName="border-[color:var(--border)] px-2 py-2"
+      header={
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
+          <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
+            Tool calls ({messages.length})
+          </span>
+        </span>
+      }
+    >
+      <div className="grid min-w-0 gap-1">
+        {messages.map((message, index) => {
+          const messageKey = `${message.id}:${index}`
+          const toolCallExpanded = expandedToolCallIds[messageKey] ?? false
+          const title = getToolCallTitle(message)
+          const preview = getToolCallPreview(message)
+          const isError = message.role === 'toolResult' && message.isError
+
+          return (
+            <ExpandablePanel
+              key={messageKey}
+              expanded={toolCallExpanded}
+              onToggle={() => {
+                onToggleToolCallExpanded?.()
+                setExpandedToolCallIds((current) => ({
+                  ...current,
+                  [messageKey]: !toolCallExpanded,
+                }))
+              }}
+              panelId={`tool-call-panel-${messageKey}`}
+              className="bg-transparent"
+              triggerClassName="rounded-lg px-2 py-2 hover:bg-[color:var(--surface-hover)]"
+              bodyClassName="!border-0 px-2 pt-0 pb-2"
+              showChevron={false}
+              header={
+                <>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                    <span className="shrink-0 truncate text-[12px] leading-[1.2] text-[color:var(--muted)]/92">
+                      {title}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82">
+                      {preview}
+                    </span>
+                  </span>
+                  {isError ? (
+                    <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--danger)]">
+                      Error
+                    </span>
+                  ) : null}
+                </>
+              }
+            >
+              {renderToolCallBody(message)}
+            </ExpandablePanel>
+          )
+        })}
+      </div>
+    </ExpandablePanel>
+  )
+}

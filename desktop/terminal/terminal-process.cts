@@ -1,25 +1,25 @@
-import type { TerminalOpenRequest } from "../../shared/terminal-contracts.ts";
-import { clampHistory, flushSession, nowIso, persistSession } from "./session-history.cts";
-import type { TerminalSessionRecord } from "./session-record.cts";
-import { emitTerminalEvent, getTerminalSession } from "./session-store.cts";
+import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
+import { clampHistory, flushSession, nowIso, persistSession } from './session-history.cts'
+import type { TerminalSessionRecord } from './session-record.cts'
+import { emitTerminalEvent, getTerminalSession } from './session-store.cts'
 import {
   getTerminalAdapter,
   resolveTerminalCommand,
   resolveTerminalEnv,
-} from "./terminal-command.cts";
-import { hasVisibleTerminalContent } from "./terminal-visibility.cts";
+} from './terminal-command.cts'
+import { hasVisibleTerminalContent } from './terminal-visibility.cts'
 
 export function clearSessionBindings(record: TerminalSessionRecord) {
   for (const dispose of record.cleanup) {
-    dispose();
+    dispose()
   }
 
-  record.cleanup = [];
+  record.cleanup = []
 }
 
-export async function startProcess(record: TerminalSessionRecord, reason: "started" | "restarted") {
-  clearSessionBindings(record);
-  const adapter = getTerminalAdapter();
+export async function startProcess(record: TerminalSessionRecord, reason: 'started' | 'restarted') {
+  clearSessionBindings(record)
+  const adapter = getTerminalAdapter()
   const request = {
     projectId: record.snapshot.projectId,
     sessionPath: record.snapshot.sessionPath,
@@ -27,8 +27,8 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
     launchMode: record.snapshot.launchMode,
     cols: record.snapshot.cols,
     rows: record.snapshot.rows,
-  } as TerminalOpenRequest;
-  const command = resolveTerminalCommand(request);
+  } as TerminalOpenRequest
+  const command = resolveTerminalCommand(request)
 
   try {
     const processHandle = await adapter.spawn({
@@ -38,22 +38,22 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
       cols: record.snapshot.cols,
       rows: record.snapshot.rows,
       env: resolveTerminalEnv(request),
-    });
+    })
 
     if (getTerminalSession(record.snapshot.sessionId) !== record) {
-      processHandle.kill();
-      return;
+      processHandle.kill()
+      return
     }
 
-    record.process = processHandle;
+    record.process = processHandle
     record.snapshot = {
       ...record.snapshot,
-      status: "running",
+      status: 'running',
       pid: processHandle.pid,
       exitCode: null,
       exitSignal: null,
       updatedAt: nowIso(),
-    };
+    }
 
     record.cleanup.push(
       processHandle.onData((data) => {
@@ -64,65 +64,65 @@ export async function startProcess(record: TerminalSessionRecord, reason: "start
             record.snapshot.hasVisibleContent ||
             (!record.suppressOutputVisibilityUntilInput && hasVisibleTerminalContent(data)),
           updatedAt: nowIso(),
-        };
-        persistSession(record);
+        }
+        persistSession(record)
         emitTerminalEvent({
-          type: "output",
+          type: 'output',
           sessionId: record.snapshot.sessionId,
           data,
           createdAt: nowIso(),
-        });
+        })
       }),
-    );
+    )
 
     record.cleanup.push(
       processHandle.onExit((event) => {
-        record.process = null;
-        clearSessionBindings(record);
+        record.process = null
+        clearSessionBindings(record)
         record.snapshot = {
           ...record.snapshot,
-          status: "exited",
+          status: 'exited',
           pid: null,
           exitCode: event.exitCode,
           exitSignal: event.signal,
           updatedAt: nowIso(),
-        };
-        flushSession(record);
+        }
+        flushSession(record)
         emitTerminalEvent({
-          type: "exited",
+          type: 'exited',
           sessionId: record.snapshot.sessionId,
           exitCode: event.exitCode,
           exitSignal: event.signal,
           createdAt: nowIso(),
-        });
+        })
       }),
-    );
+    )
 
-    flushSession(record);
+    flushSession(record)
     emitTerminalEvent({
       type: reason,
       sessionId: record.snapshot.sessionId,
       snapshot: record.snapshot,
       createdAt: nowIso(),
-    });
+    })
   } catch (error) {
     if (getTerminalSession(record.snapshot.sessionId) !== record) {
-      return;
+      return
     }
 
-    record.process = null;
+    record.process = null
     record.snapshot = {
       ...record.snapshot,
-      status: "error",
+      status: 'error',
       pid: null,
       updatedAt: nowIso(),
-    };
-    flushSession(record);
+    }
+    flushSession(record)
     emitTerminalEvent({
-      type: "error",
+      type: 'error',
       sessionId: record.snapshot.sessionId,
-      message: error instanceof Error ? error.message : "Unable to open terminal.",
+      message: error instanceof Error ? error.message : 'Unable to open terminal.',
       createdAt: nowIso(),
-    });
+    })
   }
 }

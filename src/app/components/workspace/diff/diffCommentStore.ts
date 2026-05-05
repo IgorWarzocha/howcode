@@ -1,74 +1,74 @@
 import {
-  type PersistedRecordStoreOptions,
   createStoragePersistence,
   getBeforeUnloadTarget,
   getBrowserStorage,
   hydratePersistedRecordMap,
-} from "../persistence/persistedRecordStore";
+  type PersistedRecordStoreOptions,
+} from '../persistence/persistedRecordStore'
 
-type AnnotationSide = "deletions" | "additions";
+type AnnotationSide = 'deletions' | 'additions'
 
 export type DiffCommentDraft = {
-  fileKey: string;
-  filePath: string;
-  side: AnnotationSide;
-  lineNumber: number;
-  endSide?: AnnotationSide;
-  endLineNumber?: number;
-  body: string;
-};
+  fileKey: string
+  filePath: string
+  side: AnnotationSide
+  lineNumber: number
+  endSide?: AnnotationSide | undefined
+  endLineNumber?: number | undefined
+  body: string
+}
 
 export type SavedDiffComment = DiffCommentDraft & {
-  id: string;
-  createdAt: string;
-};
+  id: string
+  createdAt: string
+}
 
 type DiffCommentContext = {
-  comments: SavedDiffComment[];
-  draft: DiffCommentDraft | null;
-};
+  comments: SavedDiffComment[]
+  draft: DiffCommentDraft | null
+}
 
 type PersistedDiffCommentContext = {
-  comments?: SavedDiffComment[];
-  draft?: DiffCommentDraft | null;
-};
+  comments?: SavedDiffComment[] | undefined
+  draft?: DiffCommentDraft | null | undefined
+}
 
 type PersistedDiffCommentState = {
-  version: 1;
-  contextsById: Record<string, PersistedDiffCommentContext>;
-};
+  version: 1
+  contextsById: Record<string, PersistedDiffCommentContext>
+}
 
-type DiffCommentStoreOptions = PersistedRecordStoreOptions;
+type DiffCommentStoreOptions = PersistedRecordStoreOptions
 
-type DiffCommentStoreListener = () => void;
+type DiffCommentStoreListener = () => void
 
-const DEFAULT_STORAGE_KEY = "howcode:diff-comments:v1";
-const DEFAULT_DEBOUNCE_MS = 320;
+const DEFAULT_STORAGE_KEY = 'howcode:diff-comments:v1'
+const DEFAULT_DEBOUNCE_MS = 320
 
 function isAnnotationSide(value: unknown): value is AnnotationSide {
-  return value === "deletions" || value === "additions";
+  return value === 'deletions' || value === 'additions'
 }
 
 function isValidOptionalLineNumber(value: unknown): value is number | undefined {
-  return value === undefined || (typeof value === "number" && Number.isFinite(value));
+  return value === undefined || (typeof value === 'number' && Number.isFinite(value))
 }
 
 function toDraft(value: unknown): DiffCommentDraft | null {
-  if (!value || typeof value !== "object") {
-    return null;
+  if (!value || typeof value !== 'object') {
+    return null
   }
 
-  const candidate = value as Partial<DiffCommentDraft>;
+  const candidate = value as Partial<DiffCommentDraft>
   if (
-    typeof candidate.fileKey !== "string" ||
-    typeof candidate.filePath !== "string" ||
+    typeof candidate.fileKey !== 'string' ||
+    typeof candidate.filePath !== 'string' ||
     !isAnnotationSide(candidate.side) ||
-    typeof candidate.lineNumber !== "number" ||
+    typeof candidate.lineNumber !== 'number' ||
     !isValidOptionalLineNumber(candidate.endLineNumber) ||
     (candidate.endSide !== undefined && !isAnnotationSide(candidate.endSide)) ||
-    typeof candidate.body !== "string"
+    typeof candidate.body !== 'string'
   ) {
-    return null;
+    return null
   }
 
   return {
@@ -77,60 +77,60 @@ function toDraft(value: unknown): DiffCommentDraft | null {
     side: candidate.side,
     lineNumber: candidate.lineNumber,
     ...(candidate.endSide ? { endSide: candidate.endSide } : {}),
-    ...(candidate.endLineNumber !== undefined ? { endLineNumber: candidate.endLineNumber } : {}),
+    ...(candidate.endLineNumber === undefined ? {} : { endLineNumber: candidate.endLineNumber }),
     body: candidate.body,
-  };
+  }
 }
 
 function toSavedComment(value: unknown): SavedDiffComment | null {
-  if (!value || typeof value !== "object") {
-    return null;
+  if (!value || typeof value !== 'object') {
+    return null
   }
 
-  const candidate = value as Partial<SavedDiffComment>;
-  const draft = toDraft(candidate);
-  if (!draft || typeof candidate.id !== "string" || typeof candidate.createdAt !== "string") {
-    return null;
+  const candidate = value as Partial<SavedDiffComment>
+  const draft = toDraft(candidate)
+  if (!draft || typeof candidate.id !== 'string' || typeof candidate.createdAt !== 'string') {
+    return null
   }
 
   return {
     ...draft,
     id: candidate.id,
     createdAt: candidate.createdAt,
-  };
+  }
 }
 
 function cloneDraft(draft: DiffCommentDraft | null): DiffCommentDraft | null {
-  return draft ? { ...draft } : null;
+  return draft ? { ...draft } : null
 }
 
 function cloneComments(comments: SavedDiffComment[]) {
-  return comments.map((comment) => ({ ...comment }));
+  return comments.map((comment) => ({ ...comment }))
 }
 
 function cloneContext(context: DiffCommentContext): DiffCommentContext {
   return {
     comments: cloneComments(context.comments),
     draft: cloneDraft(context.draft),
-  };
+  }
 }
 
 function isContextEmpty(context: DiffCommentContext) {
-  return context.comments.length === 0 && !context.draft;
+  return context.comments.length === 0 && !context.draft
 }
 
 function toContext(value: unknown): DiffCommentContext | null {
-  if (!value || typeof value !== "object") {
-    return null;
+  if (!value || typeof value !== 'object') {
+    return null
   }
 
-  const candidate = value as PersistedDiffCommentContext;
-  const draft = toDraft(candidate.draft);
+  const candidate = value as PersistedDiffCommentContext
+  const draft = toDraft(candidate.draft)
   const comments = Array.isArray(candidate.comments)
     ? candidate.comments.map(toSavedComment).filter((comment) => comment !== null)
-    : [];
+    : []
 
-  return comments.length === 0 && !draft ? null : { comments, draft };
+  return comments.length === 0 && !draft ? null : { comments, draft }
 }
 
 function serializeContexts(
@@ -147,19 +147,15 @@ function serializeContexts(
         },
       ]),
     ),
-  };
+  }
 }
 
-export function getDiffCommentContextId({
-  projectId,
-}: {
-  projectId: string;
-}) {
+export function getDiffCommentContextId({ projectId }: { projectId: string }) {
   if (projectId.length === 0) {
-    return null;
+    return null
   }
 
-  return `project:${projectId}:worktree-diff`;
+  return `project:${projectId}:worktree-diff`
 }
 
 export function createDiffCommentStore({
@@ -172,17 +168,17 @@ export function createDiffCommentStore({
     storage,
     storageKey,
     version: 1,
-    recordKey: "contextsById",
+    recordKey: 'contextsById',
     toEntry: toContext,
-  });
-  let contextCount = Object.keys(contextsById).length;
-  const listeners = new Set<DiffCommentStoreListener>();
+  })
+  let contextCount = Object.keys(contextsById).length
+  const listeners = new Set<DiffCommentStoreListener>()
 
   const notifyListeners = () => {
     for (const listener of listeners) {
-      listener();
+      listener()
     }
-  };
+  }
 
   const persistence = createStoragePersistence({
     storage,
@@ -191,62 +187,62 @@ export function createDiffCommentStore({
     beforeUnloadTarget,
     hasEntries: () => contextCount > 0,
     serialize: () => serializeContexts(contextsById),
-  });
+  })
 
   const writeContext = (contextId: string, context: DiffCommentContext) => {
     if (isContextEmpty(context)) {
       if (contextId in contextsById) {
-        delete contextsById[contextId];
-        contextCount -= 1;
+        delete contextsById[contextId]
+        contextCount -= 1
       }
     } else {
-      const addsContext = !(contextId in contextsById);
+      const addsContext = !(contextId in contextsById)
       contextsById = {
         ...contextsById,
         [contextId]: cloneContext(context),
-      };
+      }
       if (addsContext) {
-        contextCount += 1;
+        contextCount += 1
       }
     }
 
-    notifyListeners();
-    persistence.schedulePersist();
-  };
+    notifyListeners()
+    persistence.schedulePersist()
+  }
 
   return {
     storageKey,
     getContext(contextId: string) {
-      const context = contextsById[contextId];
-      return context ? cloneContext(context) : null;
+      const context = contextsById[contextId]
+      return context ? cloneContext(context) : null
     },
     setContext(contextId: string, context: DiffCommentContext) {
-      writeContext(contextId, context);
+      writeContext(contextId, context)
     },
     clearContext(contextId: string) {
       if (!(contextId in contextsById)) {
-        return;
+        return
       }
 
-      delete contextsById[contextId];
-      contextCount -= 1;
-      notifyListeners();
-      persistence.schedulePersist();
+      delete contextsById[contextId]
+      contextCount -= 1
+      notifyListeners()
+      persistence.schedulePersist()
     },
     subscribe(listener: DiffCommentStoreListener) {
-      listeners.add(listener);
+      listeners.add(listener)
 
       return () => {
-        listeners.delete(listener);
-      };
+        listeners.delete(listener)
+      }
     },
     flush: persistence.flush,
     destroy() {
-      persistence.destroy();
+      persistence.destroy()
     },
-  };
+  }
 }
 
-export const diffCommentStorageKey = DEFAULT_STORAGE_KEY;
+export const diffCommentStorageKey = DEFAULT_STORAGE_KEY
 
-export const diffCommentStore = createDiffCommentStore();
+export const diffCommentStore = createDiffCommentStore()

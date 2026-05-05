@@ -1,53 +1,46 @@
-import path from "node:path";
-import { getChatSessionDir } from "../chat-session-dir.cts";
+import path from 'node:path'
 import type {
   ArchivedThread,
   InboxThread,
   Project,
+  ProjectDiffBaseline,
+  ProjectDiffPreferences,
   Thread,
-} from "../../shared/desktop-contracts.ts";
+} from '../../shared/desktop-contracts.ts'
 import {
   getEffectiveThreadRunningState,
   sortInboxThreadsByPriority,
-} from "../../shared/thread-running-state.ts";
-import { getThreadStateDatabase } from "./db.cts";
-import {
-  mapArchivedThreadRow,
-  mapInboxThreadRow,
-  mapProjectRow,
-  mapThreadRow,
-} from "./mappers.cts";
+} from '../../shared/thread-running-state.ts'
+import { getChatSessionDir } from '../chat-session-dir.cts'
+import { ensureChatStateSchema, isChatSessionPath } from '../chat-state-db.cts'
+import { getLiveThread } from '../runtime/live-thread-store.cts'
+import { getThreadStateDatabase } from './db.cts'
+import { mapArchivedThreadRow, mapInboxThreadRow, mapProjectRow, mapThreadRow } from './mappers.cts'
 import type {
   ArchivedThreadRow,
   InboxPathRow,
   InboxThreadRow,
-  ThreadDiffPreferencesRow,
   ProjectRow,
   ThreadAssistantSnapshotRow,
   ThreadCwdRow,
+  ThreadDiffPreferencesRow,
   ThreadPathRow,
   ThreadRow,
-} from "./types.cts";
-import type {
-  ProjectDiffBaseline,
-  ProjectDiffPreferences,
-} from "../../shared/desktop-contracts.ts";
-import { getLiveThread } from "../runtime/live-thread-store.cts";
-import { ensureChatStateSchema, isChatSessionPath } from "../chat-state-db.cts";
-import { ensureProject } from "./writes.cts";
+} from './types.cts'
+import { ensureProject } from './writes.cts'
 
-function matchesThreadScope(sessionPath: string, options: { chat?: boolean } = {}) {
-  return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath);
+function matchesThreadScope(sessionPath: string, options: { chat?: boolean | undefined } = {}) {
+  return options.chat ? isChatSessionPath(sessionPath) : !isChatSessionPath(sessionPath)
 }
 
 function getChatSessionLikePattern() {
-  return `${getChatSessionDir() + path.sep}%`;
+  return `${getChatSessionDir() + path.sep}%`
 }
 
 export function listProjects(cwd: string): Project[] {
-  ensureChatStateSchema();
-  const db = getThreadStateDatabase();
-  ensureProject(cwd);
+  ensureChatStateSchema()
+  const db = getThreadStateDatabase()
+  ensureProject(cwd)
 
   const rows = db
     .prepare(
@@ -90,13 +83,13 @@ export function listProjects(cwd: string): Project[] {
           projects.name COLLATE NOCASE ASC
       `,
     )
-    .all(getChatSessionLikePattern(), cwd) as ProjectRow[];
+    .all(getChatSessionLikePattern(), cwd) as ProjectRow[]
 
-  return rows.map(mapProjectRow);
+  return rows.map(mapProjectRow)
 }
 
 export function hasProject(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -105,13 +98,13 @@ export function hasProject(projectId: string) {
         WHERE cwd = ? AND hidden = 0
       `,
     )
-    .get(projectId) as { id?: string } | undefined;
+    .get(projectId) as { id?: string | undefined } | undefined
 
-  return row?.id === projectId;
+  return row?.id === projectId
 }
 
 export function hasRunningProjectThread(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const rows = db
     .prepare(
       `
@@ -122,54 +115,61 @@ export function hasRunningProjectThread(projectId: string) {
         WHERE cwd = ?
       `,
     )
-    .all(projectId) as Array<{ sessionPath: string; running: number }>;
+    .all(projectId) as Array<{ sessionPath: string; running: number }>
 
   return rows.some((row) =>
     getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath)),
-  );
+  )
 }
 
 function parseDiffBaseline(value: string | null): ProjectDiffBaseline | null {
   if (!value) {
-    return null;
+    return null
   }
 
   try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!parsed || typeof parsed !== "object") {
-      return null;
+    const parsed = JSON.parse(value) as unknown
+    if (!parsed || typeof parsed !== 'object') {
+      return null
     }
 
-    const baseline = parsed as Record<string, unknown>;
+    const baseline = parsed as {
+      kind?: unknown
+      rev?: unknown
+      capturedAt?: unknown
+      sha?: unknown
+    }
     switch (baseline.kind) {
-      case "head":
-      case "previous":
-      case "yesterday":
-      case "main-branch":
-      case "dev-branch":
-        return { kind: baseline.kind };
-      case "last-opened":
-        return typeof baseline.rev === "string" && baseline.rev.trim().length > 0
+      case 'head':
+      case 'previous':
+      case 'yesterday':
+      case 'main-branch':
+      case 'dev-branch':
+        return { kind: baseline.kind }
+      case 'last-opened':
+        return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
           ? {
-              kind: "last-opened",
+              kind: 'last-opened',
               rev: baseline.rev,
-              capturedAt: baseline.capturedAt as string | null | undefined,
+              ...(baseline.capturedAt === undefined
+                ? {}
+                : { capturedAt: baseline.capturedAt as string | null }),
             }
-          : null;
-      case "commit":
-        return typeof baseline.sha === "string" && baseline.sha.trim().length > 0
-          ? { kind: "commit", sha: baseline.sha }
-          : null;
+          : null
+      case 'commit':
+        return typeof baseline.sha === 'string' && baseline.sha.trim().length > 0
+          ? { kind: 'commit', sha: baseline.sha }
+          : null
       default:
-        return null;
+        return null
     }
   } catch {
-    return null;
+    return null
   }
 }
 
 export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPreferences {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -180,17 +180,20 @@ export function getThreadDiffPreferences(sessionPath: string): ProjectDiffPrefer
         WHERE session_path = ?
       `,
     )
-    .get(sessionPath) as ThreadDiffPreferencesRow | undefined;
-  const renderMode = row?.diffRenderMode;
+    .get(sessionPath) as ThreadDiffPreferencesRow | undefined
+  const renderMode = row?.diffRenderMode
 
   return {
     baseline: parseDiffBaseline(row?.diffBaselineJson ?? null),
-    renderMode: renderMode === "stacked" || renderMode === "split" ? renderMode : null,
-  };
+    renderMode: renderMode === 'stacked' || renderMode === 'split' ? renderMode : null,
+  }
 }
 
-export function listProjectThreads(projectId: string, options: { chat?: boolean } = {}): Thread[] {
-  const db = getThreadStateDatabase();
+export function listProjectThreads(
+  projectId: string,
+  options: { chat?: boolean | undefined } = {},
+): Thread[] {
+  const db = getThreadStateDatabase()
   const rows = db
     .prepare(
       `
@@ -209,7 +212,7 @@ export function listProjectThreads(projectId: string, options: { chat?: boolean 
         ORDER BY threads.pinned DESC, threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
     )
-    .all(projectId) as ThreadRow[];
+    .all(projectId) as ThreadRow[]
 
   return rows
     .filter((row) => matchesThreadScope(row.sessionPath, options))
@@ -220,11 +223,11 @@ export function listProjectThreads(projectId: string, options: { chat?: boolean 
           ? 1
           : 0,
       }),
-    );
+    )
 }
 
 export function listInboxThreads(): InboxThread[] {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const rows = db
     .prepare(
       `
@@ -255,7 +258,7 @@ export function listInboxThreads(): InboxThread[] {
           threads.title COLLATE NOCASE ASC
       `,
     )
-    .all() as InboxThreadRow[];
+    .all() as InboxThreadRow[]
 
   return sortInboxThreadsByPriority(
     rows.map((row) =>
@@ -266,11 +269,11 @@ export function listInboxThreads(): InboxThread[] {
           : 0,
       }),
     ),
-  );
+  )
 }
 
 export function listArchivedThreads(): ArchivedThread[] {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const rows = db
     .prepare(
       `
@@ -288,13 +291,13 @@ export function listArchivedThreads(): ArchivedThread[] {
         ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
       `,
     )
-    .all() as ArchivedThreadRow[];
+    .all() as ArchivedThreadRow[]
 
-  return rows.map(mapArchivedThreadRow);
+  return rows.map(mapArchivedThreadRow)
 }
 
 export function listProjectSessionPaths(projectId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const rows = db
     .prepare(
       `
@@ -303,13 +306,13 @@ export function listProjectSessionPaths(projectId: string) {
         WHERE cwd = ?
       `,
     )
-    .all(projectId) as ThreadPathRow[];
+    .all(projectId) as ThreadPathRow[]
 
-  return rows.map((row) => row.sessionPath);
+  return rows.map((row) => row.sessionPath)
 }
 
 export function getThreadSessionPath(threadId: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -318,13 +321,13 @@ export function getThreadSessionPath(threadId: string) {
         WHERE id = ?
       `,
     )
-    .get(threadId) as ThreadPathRow | undefined;
+    .get(threadId) as ThreadPathRow | undefined
 
-  return row?.sessionPath ?? null;
+  return row?.sessionPath ?? null
 }
 
 export function getThreadCwd(sessionPath: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -333,13 +336,13 @@ export function getThreadCwd(sessionPath: string) {
         WHERE session_path = ?
       `,
     )
-    .get(sessionPath) as ThreadCwdRow | undefined;
+    .get(sessionPath) as ThreadCwdRow | undefined
 
-  return row?.cwd ?? null;
+  return row?.cwd ?? null
 }
 
 export function hasInboxItem(sessionPath: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -348,13 +351,13 @@ export function hasInboxItem(sessionPath: string) {
         WHERE session_path = ?
       `,
     )
-    .get(sessionPath) as InboxPathRow | undefined;
+    .get(sessionPath) as InboxPathRow | undefined
 
-  return Boolean(row?.sessionPath);
+  return Boolean(row?.sessionPath)
 }
 
 export function getThreadAssistantSnapshot(sessionPath: string) {
-  const db = getThreadStateDatabase();
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -365,20 +368,20 @@ export function getThreadAssistantSnapshot(sessionPath: string) {
         WHERE session_path = ?
       `,
     )
-    .get(sessionPath) as ThreadAssistantSnapshotRow | undefined;
+    .get(sessionPath) as ThreadAssistantSnapshotRow | undefined
 
   if (!row?.messageJson) {
-    return null;
+    return null
   }
 
-  return row;
+  return row
 }
 
 export function getSessionNativeExtensions(
   sessionPath: string | null | undefined,
 ): string[] | null {
-  if (!sessionPath) return null;
-  const db = getThreadStateDatabase();
+  if (!sessionPath) return null
+  const db = getThreadStateDatabase()
   const row = db
     .prepare(
       `
@@ -387,16 +390,16 @@ export function getSessionNativeExtensions(
         WHERE session_path = ?
       `,
     )
-    .get(sessionPath) as { enabledJson?: string } | undefined;
+    .get(sessionPath) as { enabledJson?: string | undefined } | undefined
 
-  if (!row?.enabledJson) return null;
+  if (!row?.enabledJson) return null
 
   try {
-    const parsed = JSON.parse(row.enabledJson) as unknown;
+    const parsed = JSON.parse(row.enabledJson) as unknown
     return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : null;
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : null
   } catch {
-    return null;
+    return null
   }
 }

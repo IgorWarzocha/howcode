@@ -4,4 +4,4 @@
 // white strip at the bottom and mis-sizes the workspace. `#root` already tracks
 // the real content area, so `h-full` keeps the shell aligned from launch.
 export const appShellRootClass =
-  "relative flex h-full min-h-0 overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]";
+  'relative flex h-full min-h-0 overflow-hidden bg-[color:var(--workspace)] text-[color:var(--text)]'

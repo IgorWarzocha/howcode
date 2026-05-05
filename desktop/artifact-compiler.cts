@@ -1,10 +1,12 @@
-import type { ReactArtifactCompileResult } from "../shared/desktop-contracts.ts";
+import type { ReactArtifactCompileResult } from '../shared/desktop-contracts.ts'
 
-const allowedArtifactImports = new Set(["react", "react/jsx-runtime", "react/jsx-dev-runtime"]);
+const allowedArtifactImports = new Set(['react', 'react/jsx-runtime', 'react/jsx-dev-runtime'])
+const artifactSourcePathPattern = /^artifact:source$/
+const anyImportPathPattern = /.*/
 
 export async function compileReactArtifact(source: string): Promise<ReactArtifactCompileResult> {
   try {
-    const esbuild = await import("esbuild");
+    const esbuild = await import('esbuild')
     const result = await esbuild.build({
       stdin: {
         contents: `
@@ -16,57 +18,60 @@ export async function compileReactArtifact(source: string): Promise<ReactArtifac
       if (typeof Artifact !== "function") throw new Error("React artifact default export must be a component function.");
       createRoot(rootElement).render(React.createElement(Artifact));
     `,
-        loader: "tsx",
+        loader: 'tsx',
         resolveDir: process.cwd(),
-        sourcefile: "artifact-preview-entry.tsx",
+        sourcefile: 'artifact-preview-entry.tsx',
       },
       bundle: true,
       write: false,
-      format: "esm",
-      platform: "browser",
-      target: "es2020",
-      jsx: "automatic",
-      logLevel: "silent",
+      format: 'esm',
+      platform: 'browser',
+      target: 'es2020',
+      jsx: 'automatic',
+      logLevel: 'silent',
       treeShaking: true,
       plugins: [
         {
-          name: "artifact-source",
+          name: 'artifact-source',
           setup(build) {
-            build.onResolve({ filter: /^artifact:source$/ }, (args) => ({
+            build.onResolve({ filter: artifactSourcePathPattern }, (args) => ({
               path: args.path,
-              namespace: "artifact-source",
-            }));
-            build.onResolve({ filter: /.*/, namespace: "artifact-source" }, (args) => {
-              if (allowedArtifactImports.has(args.path)) {
-                return { path: require.resolve(args.path) };
-              }
+              namespace: 'artifact-source',
+            }))
+            build.onResolve(
+              { filter: anyImportPathPattern, namespace: 'artifact-source' },
+              (args) => {
+                if (allowedArtifactImports.has(args.path)) {
+                  return { path: require.resolve(args.path) }
+                }
 
-              return {
-                errors: [
-                  {
-                    text: `React artifacts cannot import ${JSON.stringify(args.path)}. Keep artifacts self-contained; React is provided by the preview runtime.`,
-                  },
-                ],
-              };
-            });
-            build.onLoad({ filter: /.*/, namespace: "artifact-source" }, () => ({
+                return {
+                  errors: [
+                    {
+                      text: `React artifacts cannot import ${JSON.stringify(args.path)}. Keep artifacts self-contained; React is provided by the preview runtime.`,
+                    },
+                  ],
+                }
+              },
+            )
+            build.onLoad({ filter: anyImportPathPattern, namespace: 'artifact-source' }, () => ({
               contents: source,
-              loader: "tsx",
-            }));
+              loader: 'tsx',
+            }))
           },
         },
       ],
-    });
+    })
     return {
       ok: true,
-      js: result.outputFiles[0]?.text ?? "",
+      js: result.outputFiles[0]?.text ?? '',
       warnings: result.warnings.map((warning) => warning.text),
-    };
+    }
   } catch (error) {
     return {
       ok: false,
       error: error instanceof Error ? error.message : String(error),
       warnings: [],
-    };
+    }
   }
 }

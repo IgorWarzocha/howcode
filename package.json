@@ -16,7 +16,7 @@
     "dev:768p": "HOWCODE_DEV_VIEWPORT=768p bun run dev",
     "dev:clean": "rm -rf artifacts/electron build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
     "prepush:clean": "rm -rf artifacts/electron dist build/electron build/desktop build/dev-server.json build/dev-web-bridge.mjs build/dev-web-bridge.mjs.map",
-    "prepush:check": "bun run lint && bun run typecheck",
+    "prepush:check": "bun run ai:check",
     "dev:web": "bun ./scripts/dev-web.ts",
     "dev:runtime": "bun ./scripts/build-electron-runtime.ts --watch",
     "dev:desktop": "bun ./scripts/dev-electron.ts",
@@ -30,21 +30,22 @@
     "preview": "vite preview",
     "prepare": "test -d .git && husky || true",
     "postinstall": "node ./node_modules/electron/install.js && electron-builder install-app-deps",
-    "lint": "biome check --organize-imports-enabled=false .",
-    "format": "biome format --write .",
+    "lint": "biome check --error-on-warnings .",
+    "format": "biome check --write .",
     "typecheck": "bun run typecheck:web && bun run typecheck:desktop && bun run typecheck:electron && bun run typecheck:scripts",
-    "typecheck:web": "tsc --noEmit",
-    "typecheck:desktop": "tsc -p tsconfig.desktop.json --noEmit",
-    "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
-    "typecheck:scripts": "tsc -p tsconfig.scripts.json --noEmit",
+    "typecheck:web": "tsgo --noEmit",
+    "typecheck:desktop": "tsgo -p tsconfig.desktop.json --noEmit",
+    "typecheck:electron": "tsgo -p tsconfig.electron.json --noEmit",
+    "typecheck:scripts": "tsgo -p tsconfig.scripts.json --noEmit",
     "test": "vitest run",
     "test:composer": "vitest run src/test/composer",
     "test:watch": "vitest",
-    "check": "bun run lint && bun run typecheck && bun run test && bun run build"
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "ai:check": "biome check --write --error-on-warnings . && bun run typecheck && bun run test"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
-      "biome check --organize-imports-enabled=false --no-errors-on-unmatched"
+      "biome check --write --error-on-warnings --no-errors-on-unmatched"
     ]
   },
   "dependencies": {
@@ -80,13 +81,14 @@
     "tar": "^7.5.13"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.14",
     "@tailwindcss/vite": "^4.1.8",
     "@types/bun": "^1.3.11",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/three": "^0.183.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260505.1",
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.2.0",
     "electron": "41.2.1",
@@ -95,7 +97,7 @@
     "lint-staged": "^15.2.7",
     "react-grab": "^0.1.32",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3",
+    "typescript": "^6.0.3",
     "vite": "^7.0.4",
     "vitest": "^3.2.4"
   },

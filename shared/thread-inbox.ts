@@ -1,63 +1,61 @@
-import type { Message, ProseMessage } from "./desktop-contracts";
+import type { Message, ProseMessage } from './desktop-contracts'
 
-type AssistantMessage = ProseMessage & { role: "assistant" };
+type AssistantMessage = ProseMessage & { role: 'assistant' }
+
+function getCurrentTurnStartIndex(messages: Message[]) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === 'user') {
+      return index + 1
+    }
+  }
+  return 0
+}
+
+function findLatestAssistantMessageInTurn(messages: Message[], turnStartIndex: number) {
+  for (let index = messages.length - 1; index >= turnStartIndex; index -= 1) {
+    const message = messages[index]
+    if (message?.role === 'assistant' && message.content.some((part) => part.trim().length > 0)) {
+      return { message: message as AssistantMessage, index }
+    }
+  }
+  return null
+}
+
+function getNonEmptyMessageParts(message: AssistantMessage) {
+  return message.content.map((part) => part.trim()).filter(Boolean)
+}
+
+function hasLaterTurnWork(messages: Message[], latestAssistantIndex: number) {
+  const laterMessages = messages.slice(latestAssistantIndex + 1)
+  return laterMessages.some(
+    (message) =>
+      message.role === 'assistant' ||
+      message.role === 'user' ||
+      message.role === 'toolResult' ||
+      message.role === 'bashExecution',
+  )
+}
 
 export function getLatestInboxAssistantMessage(messages: Message[]) {
-  let turnStartIndex = 0;
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === "user") {
-      turnStartIndex = index + 1;
-      break;
-    }
+  const turnStartIndex = getCurrentTurnStartIndex(messages)
+  const latestAssistant = findLatestAssistantMessageInTurn(messages, turnStartIndex)
+
+  if (!latestAssistant) {
+    return null
   }
 
-  let latestAssistantMessage: AssistantMessage | undefined;
-  let latestAssistantIndex = -1;
-  for (let index = messages.length - 1; index >= turnStartIndex; index -= 1) {
-    const message = messages[index];
-    if (message?.role === "assistant" && message.content.some((part) => part.trim().length > 0)) {
-      latestAssistantMessage = message as AssistantMessage;
-      latestAssistantIndex = index;
-      break;
-    }
-  }
-
-  if (!latestAssistantMessage) {
-    return null;
-  }
-
-  const content: string[] = [];
-  for (const part of latestAssistantMessage.content) {
-    const trimmedPart = part.trim();
-    if (trimmedPart) {
-      content.push(trimmedPart);
-    }
-  }
+  const content = getNonEmptyMessageParts(latestAssistant.message)
 
   if (content.length === 0) {
-    return null;
+    return null
   }
 
-  let hasLaterTurnWork = false;
-  for (let index = latestAssistantIndex + 1; index < messages.length; index += 1) {
-    const message = messages[index];
-    if (
-      message.role === "assistant" ||
-      message.role === "user" ||
-      message.role === "toolResult" ||
-      message.role === "bashExecution"
-    ) {
-      hasLaterTurnWork = true;
-      break;
-    }
-  }
-
-  if (hasLaterTurnWork) {
-    return null;
+  if (hasLaterTurnWork(messages, latestAssistant.index)) {
+    return null
   }
 
   return {
     content,
     preview: content[0] ?? null,
-  };
+  }
 }

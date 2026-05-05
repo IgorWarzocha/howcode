@@ -1,156 +1,156 @@
-import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
-import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
+const windowsUnpackedDirectoryPattern = /win.*unpacked$/i
+const linuxUnpackedDirectoryPattern = /linux.*unpacked$/i
 
-const appName = "howcode";
+import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync } from 'node:fs'
+import { cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 
-const electronOutputRoot = path.join(process.cwd(), "artifacts", "electron");
-const artifactRoot = path.join(process.cwd(), "artifacts");
-const launcherOutputRoot = path.join(artifactRoot, "npm-launcher");
+const appName = 'howcode'
+
+const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
+const artifactRoot = path.join(process.cwd(), 'artifacts')
+const launcherOutputRoot = path.join(artifactRoot, 'npm-launcher')
 
 type Target = {
-  os: "macos" | "linux" | "win";
-  arch: "arm64" | "x64";
-};
+  os: 'macos' | 'linux' | 'win'
+  arch: 'arm64' | 'x64'
+}
 
 function getCurrentTarget(): Target {
-  if (process.platform === "darwin") {
-    return { os: "macos", arch: process.arch === "arm64" ? "arm64" : "x64" };
+  if (process.platform === 'darwin') {
+    return { os: 'macos', arch: process.arch === 'arm64' ? 'arm64' : 'x64' }
   }
 
-  if (process.platform === "win32") {
-    return { os: "win", arch: process.arch === "arm64" ? "arm64" : "x64" };
+  if (process.platform === 'win32') {
+    return { os: 'win', arch: process.arch === 'arm64' ? 'arm64' : 'x64' }
   }
 
-  return { os: "linux", arch: process.arch === "arm64" ? "arm64" : "x64" };
+  return { os: 'linux', arch: process.arch === 'arm64' ? 'arm64' : 'x64' }
 }
 
 async function findPaths(rootPath: string, matcher: (entryPath: string) => boolean) {
-  const stack = [rootPath];
-  const matches: string[] = [];
+  const stack = [rootPath]
+  const matches: string[] = []
 
   while (stack.length > 0) {
-    const currentPath = stack.pop();
+    const currentPath = stack.pop()
     if (!currentPath) {
-      continue;
+      continue
     }
 
-    const entries = await readdir(currentPath, { withFileTypes: true });
+    const entries = await readdir(currentPath, { withFileTypes: true })
 
     for (const entry of entries) {
-      const entryPath = path.join(currentPath, entry.name);
+      const entryPath = path.join(currentPath, entry.name)
       if (matcher(entryPath)) {
-        matches.push(entryPath);
+        matches.push(entryPath)
       }
 
       if (entry.isDirectory()) {
-        stack.push(entryPath);
+        stack.push(entryPath)
       }
     }
   }
 
-  return matches;
+  return matches
 }
 
 function getPreferredBundlePathCandidates(target: Target) {
-  if (target.os === "macos") {
+  if (target.os === 'macos') {
     return [
       path.join(electronOutputRoot, `mac-${target.arch}`, `${appName}.app`),
-      path.join(electronOutputRoot, "mac", `${appName}.app`),
+      path.join(electronOutputRoot, 'mac', `${appName}.app`),
       path.join(electronOutputRoot, `${appName}.app`),
-    ];
+    ]
   }
 
-  if (target.os === "win") {
+  if (target.os === 'win') {
     return [
       path.join(electronOutputRoot, `win-${target.arch}-unpacked`),
-      path.join(electronOutputRoot, "win-unpacked"),
-    ];
+      path.join(electronOutputRoot, 'win-unpacked'),
+    ]
   }
 
   return [
     path.join(electronOutputRoot, `linux-${target.arch}-unpacked`),
-    path.join(electronOutputRoot, "linux-unpacked"),
-  ];
+    path.join(electronOutputRoot, 'linux-unpacked'),
+  ]
 }
 
 async function sortPathsByModifiedTime(paths: string[]) {
   const pathsWithMetadata = await Promise.all(
     paths.map(async (entryPath) => ({ entryPath, modifiedAtMs: (await stat(entryPath)).mtimeMs })),
-  );
+  )
 
   return pathsWithMetadata
     .sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
-    .map(({ entryPath }) => entryPath);
+    .map(({ entryPath }) => entryPath)
 }
 
 async function resolveBundlePath(target: Target) {
   if (!existsSync(electronOutputRoot)) {
-    throw new Error("Missing Electron output. Run `bun run build:release` first.");
+    throw new Error('Missing Electron output. Run `bun run build:release` first.')
   }
 
   const preferredBundleCandidates = getPreferredBundlePathCandidates(target).filter((entryPath) =>
     existsSync(entryPath),
-  );
+  )
   if (preferredBundleCandidates.length > 0) {
-    const [preferredBundlePath] = await sortPathsByModifiedTime(preferredBundleCandidates);
+    const [preferredBundlePath] = await sortPathsByModifiedTime(preferredBundleCandidates)
     if (preferredBundlePath) {
-      return preferredBundlePath;
+      return preferredBundlePath
     }
   }
 
   const matches = await findPaths(electronOutputRoot, (entryPath) => {
-    const normalized = entryPath.replace(/\\/g, "/");
-    if (target.os === "macos") {
-      return normalized.endsWith(`/${appName}.app`);
+    const normalized = entryPath.replace(/\\/g, '/')
+    if (target.os === 'macos') {
+      return normalized.endsWith(`/${appName}.app`)
     }
 
-    if (target.os === "win") {
-      return /win.*unpacked$/i.test(path.basename(entryPath));
+    if (target.os === 'win') {
+      return windowsUnpackedDirectoryPattern.test(path.basename(entryPath))
     }
 
-    return /linux.*unpacked$/i.test(path.basename(entryPath));
-  });
+    return linuxUnpackedDirectoryPattern.test(path.basename(entryPath))
+  })
 
-  const [bundlePath] = await sortPathsByModifiedTime(matches);
+  const [bundlePath] = await sortPathsByModifiedTime(matches)
   if (!bundlePath) {
-    throw new Error(`Could not find unpacked Electron bundle in ${electronOutputRoot}.`);
+    throw new Error(`Could not find unpacked Electron bundle in ${electronOutputRoot}.`)
   }
 
-  return bundlePath;
+  return bundlePath
 }
 
 async function createNormalizedArchive(bundlePath: string, target: Target) {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`));
-  const normalizedBundleName = target.os === "macos" ? `${appName}.app` : appName;
-  const normalizedBundlePath = path.join(tempRoot, normalizedBundleName);
-  const archivePath = path.join(
-    launcherOutputRoot,
-    `${appName}-${target.os}-${target.arch}.tar.gz`,
-  );
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), `${appName}-${target.os}-${target.arch}-`))
+  const normalizedBundleName = target.os === 'macos' ? `${appName}.app` : appName
+  const normalizedBundlePath = path.join(tempRoot, normalizedBundleName)
+  const archivePath = path.join(launcherOutputRoot, `${appName}-${target.os}-${target.arch}.tar.gz`)
 
-  await cp(bundlePath, normalizedBundlePath, { recursive: true });
+  await cp(bundlePath, normalizedBundlePath, { recursive: true })
 
-  const tarResult = spawnSync("tar", ["-czf", archivePath, "-C", tempRoot, normalizedBundleName], {
-    stdio: "inherit",
-  });
+  const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {
+    stdio: 'inherit',
+  })
 
-  await rm(tempRoot, { recursive: true, force: true });
+  await rm(tempRoot, { recursive: true, force: true })
 
   if (tarResult.status !== 0) {
-    throw new Error(`Failed to package launcher archive for ${target.os}-${target.arch}.`);
+    throw new Error(`Failed to package launcher archive for ${target.os}-${target.arch}.`)
   }
 
-  return archivePath;
+  return archivePath
 }
 
 async function createUpdateMetadata(archivePath: string, target: Target, version: string) {
-  const archiveBuffer = await readFile(archivePath);
-  const hash = createHash("sha256").update(archiveBuffer).digest("hex");
-  const metadataPath = path.join(artifactRoot, `stable-${target.os}-${target.arch}-update.json`);
+  const archiveBuffer = await readFile(archivePath)
+  const hash = createHash('sha256').update(archiveBuffer).digest('hex')
+  const metadataPath = path.join(artifactRoot, `stable-${target.os}-${target.arch}-update.json`)
 
   await writeFile(
     metadataPath,
@@ -162,22 +162,22 @@ async function createUpdateMetadata(archivePath: string, target: Target, version
       null,
       2,
     ),
-  );
+  )
 }
 
 async function main() {
   const packageJson = JSON.parse(
-    await readFile(path.join(process.cwd(), "package.json"), "utf8"),
-  ) as { version: string };
-  mkdirSync(launcherOutputRoot, { recursive: true });
-  const target = getCurrentTarget();
-  const bundlePath = await resolveBundlePath(target);
-  const archivePath = await createNormalizedArchive(bundlePath, target);
-  await createUpdateMetadata(archivePath, target, packageJson.version);
-  console.log(`created ${path.relative(process.cwd(), archivePath)}`);
+    await readFile(path.join(process.cwd(), 'package.json'), 'utf8'),
+  ) as { version: string }
+  mkdirSync(launcherOutputRoot, { recursive: true })
+  const target = getCurrentTarget()
+  const bundlePath = await resolveBundlePath(target)
+  const archivePath = await createNormalizedArchive(bundlePath, target)
+  await createUpdateMetadata(archivePath, target, packageJson.version)
+  console.log(`created ${path.relative(process.cwd(), archivePath)}`)
 }
 
 void main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+  console.error(error)
+  process.exit(1)
+})

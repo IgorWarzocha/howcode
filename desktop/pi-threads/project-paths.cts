@@ -1,24 +1,24 @@
-import { realpath } from "node:fs/promises";
-import path from "node:path";
-import type { Project } from "../../shared/desktop-contracts.ts";
+import { realpath } from 'node:fs/promises'
+import path from 'node:path'
+import type { Project } from '../../shared/desktop-contracts.ts'
 
 export async function resolveProjectPathForComparison(projectId: string) {
-  const resolvedProjectId = path.resolve(projectId);
+  const resolvedProjectId = path.resolve(projectId)
 
   try {
-    return await realpath(resolvedProjectId);
+    return await realpath(resolvedProjectId)
   } catch (error) {
     if (
-      typeof error === "object" &&
+      typeof error === 'object' &&
       error !== null &&
-      "code" in error &&
-      typeof error.code === "string" &&
-      error.code !== "ENOENT"
+      'code' in error &&
+      typeof error.code === 'string' &&
+      error.code !== 'ENOENT'
     ) {
-      console.warn(`Failed to resolve project path for shell state: ${resolvedProjectId}`, error);
+      console.warn(`Failed to resolve project path for shell state: ${resolvedProjectId}`, error)
     }
 
-    return resolvedProjectId;
+    return resolvedProjectId
   }
 }
 
@@ -28,19 +28,19 @@ export async function enrichProjectsWithResolvedIds(projects: Project[]) {
       ...project,
       resolvedId: await resolveProjectPathForComparison(project.id),
     })),
-  );
+  )
 }
 
 export async function isProtectedProjectDeletionTarget(projectId: string, activeProjectId: string) {
   const [resolvedProjectId, resolvedActiveProjectId] = await Promise.all([
     resolveProjectPathForComparison(projectId),
     resolveProjectPathForComparison(activeProjectId),
-  ]);
-  const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId);
+  ])
+  const relativePath = path.relative(resolvedProjectId, resolvedActiveProjectId)
   const isOutsideCandidate =
-    relativePath === ".." ||
+    relativePath === '..' ||
     relativePath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativePath);
+    path.isAbsolute(relativePath)
 
-  return relativePath.length === 0 || !isOutsideCandidate;
+  return relativePath.length === 0 || !isOutsideCandidate
 }

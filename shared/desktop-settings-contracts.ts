@@ -2,108 +2,129 @@ import type {
   ComposerState,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
-} from "./desktop-composer-contracts";
-import type { DictationModelId } from "./desktop-dictation-contracts";
+} from './desktop-composer-contracts'
+import type { DictationModelId } from './desktop-dictation-contracts'
 import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
-} from "./desktop-project-git-contracts";
-import type { Project } from "./desktop-thread-contracts";
+} from './desktop-project-git-contracts'
+import type { Project } from './desktop-thread-contracts'
 
 export type ModelSelection = {
-  provider: string;
-  id: string;
-};
+  provider: string
+  id: string
+}
 
-export type ProjectDeletionMode = "pi-only" | "full-clean";
-export type GitOpsMode = "commit" | "commit-push";
+export type ProjectDeletionMode = 'pi-only' | 'full-clean'
+export type GitOpsMode = 'commit' | 'commit-push'
 
 export type AppSettings = {
-  chatModel: ModelSelection | null;
-  chatThinkingLevel: ComposerThinkingLevel | null;
-  codeModel: ModelSelection | null;
-  codeThinkingLevel: ComposerThinkingLevel | null;
-  gitCommitMessageModel: ModelSelection | null;
-  gitCommitMessageThinkingLevel: ComposerThinkingLevel;
-  skillCreatorModel: ModelSelection | null;
-  skillCreatorThinkingLevel: ComposerThinkingLevel;
-  composerStreamingBehavior: ComposerStreamingBehavior;
-  dictationModelId: DictationModelId | null;
-  dictationMaxDurationSeconds: number;
-  showDictationButton: boolean;
-  favoriteFolders: string[];
-  projectImportState: boolean | null;
-  preferredProjectLocation: string | null;
-  initializeGitOnProjectCreate: boolean;
-  gitOpsDefaultMode: GitOpsMode;
-  gitDiffBaselineDefault: ProjectDiffDefaultBaseline;
-  gitDiffRenderModeDefault: ProjectDiffRenderMode;
-  gitDiffFileTreeDefaultVisible: boolean;
-  projectDeletionMode: ProjectDeletionMode;
-  useAgentsSkillsPaths: boolean;
-  howcodeNativeAskQuestions: boolean;
-  piTuiTakeover: boolean;
-  hoverToFocus: boolean;
-  hoverToBlur: boolean;
-};
+  chatModel: ModelSelection | null
+  chatThinkingLevel: ComposerThinkingLevel | null
+  codeModel: ModelSelection | null
+  codeThinkingLevel: ComposerThinkingLevel | null
+  gitCommitMessageModel: ModelSelection | null
+  gitCommitMessageThinkingLevel: ComposerThinkingLevel
+  skillCreatorModel: ModelSelection | null
+  skillCreatorThinkingLevel: ComposerThinkingLevel
+  composerStreamingBehavior: ComposerStreamingBehavior
+  dictationModelId: DictationModelId | null
+  dictationMaxDurationSeconds: number
+  showDictationButton: boolean
+  favoriteFolders: string[]
+  projectImportState: boolean | null
+  preferredProjectLocation: string | null
+  initializeGitOnProjectCreate: boolean
+  gitOpsDefaultMode: GitOpsMode
+  gitDiffBaselineDefault: ProjectDiffDefaultBaseline
+  gitDiffRenderModeDefault: ProjectDiffRenderMode
+  gitDiffFileTreeDefaultVisible: boolean
+  projectDeletionMode: ProjectDeletionMode
+  useAgentsSkillsPaths: boolean
+  howcodeNativeAskQuestions: boolean
+  piTuiTakeover: boolean
+  hoverToFocus: boolean
+  hoverToBlur: boolean
+}
 
-export type PiTransportMode = "sse" | "websocket" | "auto";
-export type PiQueueMode = "all" | "one-at-a-time";
-export type PiDoubleEscapeAction = "fork" | "tree" | "none";
-export type PiTreeFilterMode = "default" | "no-tools" | "user-only" | "labeled-only" | "all";
+export type PiTransportMode = 'sse' | 'websocket' | 'auto'
+export type PiQueueMode = 'all' | 'one-at-a-time'
+export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
+export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
 
 export type PiSettings = {
-  theme: string;
-  autoCompact: boolean;
-  enableSkillCommands: boolean;
-  hideThinkingBlock: boolean;
-  quietStartup: boolean;
-  showImages: boolean;
-  autoResizeImages: boolean;
-  blockImages: boolean;
-  collapseChangelog: boolean;
-  enableInstallTelemetry: boolean;
-  showHardwareCursor: boolean;
-  clearOnShrink: boolean;
-  transport: PiTransportMode;
-  steeringMode: PiQueueMode;
-  followUpMode: PiQueueMode;
-  doubleEscapeAction: PiDoubleEscapeAction;
-  treeFilterMode: PiTreeFilterMode;
-  editorPaddingX: number;
-  autocompleteMaxVisible: number;
-  imageWidthCells: number;
-};
+  theme: string
+  autoCompact: boolean
+  enableSkillCommands: boolean
+  hideThinkingBlock: boolean
+  quietStartup: boolean
+  showImages: boolean
+  autoResizeImages: boolean
+  blockImages: boolean
+  collapseChangelog: boolean
+  enableInstallTelemetry: boolean
+  showHardwareCursor: boolean
+  clearOnShrink: boolean
+  transport: PiTransportMode
+  steeringMode: PiQueueMode
+  followUpMode: PiQueueMode
+  doubleEscapeAction: PiDoubleEscapeAction
+  treeFilterMode: PiTreeFilterMode
+  editorPaddingX: number
+  autocompleteMaxVisible: number
+  imageWidthCells: number
+}
 
 export type PiThemeState = {
-  selectedTheme: string;
+  selectedTheme: string
   themes: Array<{
-    name: string;
-    label: string;
-    source: "howcode" | "pi-builtin" | "pi-json";
-    path?: string;
-  }>;
-  colors: Record<string, string>;
+    name: string
+    label: string
+    source: 'howcode' | 'pi-builtin' | 'pi-json'
+    path?: string | undefined
+  }>
+  colors: Record<string, string> &
+    Partial<
+      Record<
+        | 'toolPendingBg'
+        | 'userMessageBg'
+        | 'text'
+        | 'muted'
+        | 'dim'
+        | 'accent'
+        | 'selectedBg'
+        | 'success'
+        | 'error'
+        | 'warning'
+        | 'customMessageBg'
+        | 'mdCodeBlock'
+        | 'mdHeading'
+        | 'mdLink'
+        | 'mdCode'
+        | 'mdQuote',
+        string
+      >
+    >
   exportColors: {
-    pageBg?: string;
-    cardBg?: string;
-    infoBg?: string;
-  };
-  isLight: boolean;
-  diagnostics: Array<{ type: string; message: string; path?: string }>;
-};
+    pageBg?: string | undefined
+    cardBg?: string | undefined
+    infoBg?: string | undefined
+  }
+  isLight: boolean
+  diagnostics: Array<{ type: string; message: string; path?: string | undefined }>
+}
 
 export type ShellState = {
-  platform: string;
-  mockMode: boolean;
-  productName: string;
-  cwd: string;
-  resolvedCwd?: string;
-  agentDir: string;
-  sessionDir: string;
-  projects: Project[];
-  appSettings: AppSettings;
-  piSettings: PiSettings;
-  piTheme: PiThemeState;
-  composer: ComposerState;
-};
+  platform: string
+  mockMode: boolean
+  productName: string
+  cwd: string
+  resolvedCwd?: string | undefined
+  agentDir: string
+  sessionDir: string
+  projects: Project[]
+  appSettings: AppSettings
+  piSettings: PiSettings
+  piTheme: PiThemeState
+  composer: ComposerState
+}

@@ -15,14 +15,27 @@
   "bin": {
     "howcode": "bin/howcode.js"
   },
-  "files": ["bin", "lib", "README.md", "LICENSE"],
+  "files": [
+    "bin",
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "tar": "^7.5.1"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["desktop", "coding", "ai", "terminal", "git", "diff", "assistant"],
+  "keywords": [
+    "desktop",
+    "coding",
+    "ai",
+    "terminal",
+    "git",
+    "diff",
+    "assistant"
+  ],
   "howcode": {
     "appName": "howcode",
     "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/latest/download"

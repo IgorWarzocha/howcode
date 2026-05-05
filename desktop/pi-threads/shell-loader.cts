@@ -8,85 +8,88 @@ import type {
   DictationTranscriptionRequest,
   DictationTranscriptionResult,
   ProjectCommitEntry,
-} from "../../shared/desktop-contracts.ts";
+} from '../../shared/desktop-contracts.ts'
 import {
   getDictationState as getSherpaDictationState,
   installDictationModel as installSherpaDictationModel,
   listDictationModels as listSherpaDictationModels,
   removeDictationModel as removeSherpaDictationModel,
   transcribeDictation as transcribeSherpaDictation,
-} from "../dictation/sherpa-onnx.cts";
+} from '../dictation/sherpa-onnx.cts'
 import {
-  getComposerState,
   getComposerSlashCommands,
+  getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
-} from "../pi-desktop-runtime.cts";
+} from '../pi-desktop-runtime.cts'
 import {
   captureProjectDiffBaseline,
   listProjectCommits,
   loadProjectDiff,
   loadProjectDiffStats,
   loadProjectGitState,
-} from "../project-git.cts";
-import { disposeSessionWatcher, setWatchedSessionPath } from "./session-watch.cts";
-import { shutdownRuntimeHosts } from "../runtime-host/client-bridge.cts";
-export { loadInboxThreadList } from "./thread-loader.cts";
-export { refreshShellIndex } from "./shell-index.cts";
-export { loadShellState } from "./shell-state.cts";
+} from '../project-git.cts'
+import { shutdownRuntimeHosts } from '../runtime-host/client-bridge.cts'
+import { disposeSessionWatcher, setWatchedSessionPath } from './session-watch.cts'
+
+export { refreshShellIndex } from './shell-index.cts'
+export { loadShellState } from './shell-state.cts'
+export { loadInboxThreadList } from './thread-loader.cts'
 
 export async function loadComposerState(
   request: ComposerStateRequest = {},
 ): Promise<ComposerState> {
-  return getComposerState(request);
+  return getComposerState(request)
 }
 
 export async function loadComposerSlashCommands(request: ComposerStateRequest = {}) {
-  return getComposerSlashCommands(request);
+  return getComposerSlashCommands(request)
 }
 
 export async function getDictationState(): Promise<DictationState> {
-  return getSherpaDictationState();
+  return getSherpaDictationState()
 }
 
 export async function listDictationModels(): Promise<DictationModelSummary[]> {
-  return listSherpaDictationModels();
+  return listSherpaDictationModels()
 }
 
 export async function installDictationModel(request: {
-  modelId: "tiny.en" | "base.en" | "small.en";
+  modelId: 'tiny.en' | 'base.en' | 'small.en'
 }): Promise<DictationModelInstallResult> {
-  return installSherpaDictationModel(request.modelId);
+  return installSherpaDictationModel(request.modelId)
 }
 
 export async function removeDictationModel(request: {
-  modelId: "tiny.en" | "base.en" | "small.en";
+  modelId: 'tiny.en' | 'base.en' | 'small.en'
 }): Promise<DictationModelRemoveResult> {
-  return removeSherpaDictationModel(request.modelId);
+  return removeSherpaDictationModel(request.modelId)
 }
 
 export async function transcribeDictation(
   request: DictationTranscriptionRequest,
 ): Promise<DictationTranscriptionResult> {
-  return transcribeSherpaDictation(request);
+  return transcribeSherpaDictation(request)
 }
 
 export async function loadProjectCommitHistory(
   projectId: string,
-  limit?: number | null,
+  limit?: number | undefined | null,
 ): Promise<ProjectCommitEntry[]> {
-  return listProjectCommits(projectId, limit ?? null);
+  return listProjectCommits(projectId, limit ?? null)
 }
 
-export { loadProjectGitState };
-export { loadProjectDiff };
-export { loadProjectDiffStats };
-export { captureProjectDiffBaseline };
-export { listProjectCommits };
-export { setWatchedSessionPath };
+export {
+  captureProjectDiffBaseline,
+  listProjectCommits,
+  loadProjectDiff,
+  loadProjectDiffStats,
+  loadProjectGitState,
+  setWatchedSessionPath,
+}
 
-export const subscribeDesktopEvents = subscribeRuntimeEvents;
+export const subscribeDesktopEvents = subscribeRuntimeEvents
 
 export async function disposeDesktopRuntime() {
-  disposeSessionWatcher();
-  shutdownRuntimeHosts();
+  disposeSessionWatcher()
+  shutdownRuntimeHosts()
 }

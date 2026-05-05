@@ -1,1 +1,1 @@
-export { makeSessionId } from "./session-id.ts";
+export { makeSessionId } from './session-id.ts'

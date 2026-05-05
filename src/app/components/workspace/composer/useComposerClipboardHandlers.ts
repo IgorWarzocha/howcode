@@ -1,20 +1,17 @@
-import { type Dispatch, type SetStateAction, useCallback } from "react";
+import { type Dispatch, type SetStateAction, useCallback } from 'react'
 import {
   mergeComposerAttachments,
   normalizeComposerAttachments,
-} from "../../../../../shared/composer-attachments";
-import type {
-  ComposerAttachment,
-  DesktopClipboardFilePaths,
-  DesktopClipboardSnapshot,
-} from "../../../desktop/types";
+} from '../../../../../shared/composer-attachments'
+import type { ComposerAttachment } from '../../../desktop/types'
 import {
   getAttachmentKindsForPathsQuery,
   getPathForFileQuery,
   readClipboardFilePathsQuery,
   readClipboardImageQuery,
   readClipboardSnapshotQuery,
-} from "../../../query/desktop-query";
+} from '../../../query/desktop-query'
+import { buildLocalAttachmentKindLookup } from './composer-attachment-kind-lookup'
 import {
   attachmentClipboardSnapshotFormats,
   getComposerAttachmentsFromClipboardData,
@@ -25,53 +22,127 @@ import {
   getPreferredClipboardTextFromClipboardSnapshot,
   hasAttachmentHintInClipboardData,
   hasFilePayloadInClipboardData,
-} from "./composer-paste-attachments";
-import { buildLocalAttachmentKindLookup } from "./composer-attachment-kind-lookup";
+} from './composer-paste-attachments'
 
 function applyPastedTextToTextarea(textarea: HTMLTextAreaElement, pastedText: string) {
-  const selectionStart = textarea.selectionStart ?? textarea.value.length;
-  const selectionEnd = textarea.selectionEnd ?? textarea.value.length;
-  textarea.setRangeText(pastedText, selectionStart, selectionEnd, "end");
-  return textarea.value;
+  const selectionStart = textarea.selectionStart ?? textarea.value.length
+  const selectionEnd = textarea.selectionEnd ?? textarea.value.length
+  textarea.setRangeText(pastedText, selectionStart, selectionEnd, 'end')
+  return textarea.value
 }
 
 function resolveDesktopFilePath(file: {
-  path?: string | null;
-  name?: string | null;
-  type?: string | null;
+  path?: string | null
+  name?: string | null
+  type?: string | null
 }) {
-  return getPathForFileQuery(file as File) ?? null;
+  return getPathForFileQuery(file as File) ?? null
 }
 
 async function resolveDesktopAttachmentKinds(paths: string[]) {
   try {
-    return await getAttachmentKindsForPathsQuery(paths);
+    return await getAttachmentKindsForPathsQuery(paths)
   } catch {
-    return null;
+    return null
   }
 }
 
 async function normalizeDesktopAttachments(attachments: ComposerAttachment[]) {
-  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(attachments);
-  const kindsByPath = await resolveDesktopAttachmentKinds(localPaths);
-  const hasLookup = kindsByPath !== null;
+  const { fallbackKindsByPath, localPaths } = buildLocalAttachmentKindLookup(attachments)
+  const kindsByPath = await resolveDesktopAttachmentKinds(localPaths)
+  const hasLookup = kindsByPath !== null
 
   return normalizeComposerAttachments(attachments, {
     resolveAttachmentKind: (path) => {
-      if (hasLookup && kindsByPath && Object.prototype.hasOwnProperty.call(kindsByPath, path)) {
-        return kindsByPath[path] ?? null;
+      if (hasLookup && kindsByPath && Object.hasOwn(kindsByPath, path)) {
+        return kindsByPath[path] ?? null
       }
 
-      return fallbackKindsByPath[path] ?? null;
+      return fallbackKindsByPath[path] ?? null
     },
-  });
+  })
+}
+
+type PasteContext = {
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: (value: SetStateAction<string>) => void
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+}
+
+function applyAttachmentPaste(context: PasteContext, attachments: ComposerAttachment[]) {
+  if (attachments.length === 0) return false
+  context.setAttachments((current) => mergeComposerAttachments(current, attachments))
+  context.setErrorMessage(null)
+  return true
+}
+
+function applyTextPaste(context: PasteContext, textarea: HTMLTextAreaElement, pastedText: string) {
+  const nextValue = applyPastedTextToTextarea(textarea, pastedText)
+  context.setDraftValue(nextValue)
+  context.setErrorMessage(null)
+  const nextCursorPosition = textarea.selectionStart ?? nextValue.length
+  requestAnimationFrame(() => {
+    textarea.focus()
+    textarea.setSelectionRange(nextCursorPosition, nextCursorPosition)
+  })
+}
+
+async function readFallbackClipboardFilePaths() {
+  try {
+    return await readClipboardFilePathsQuery()
+  } catch {
+    return null
+  }
+}
+
+async function readFallbackClipboardSnapshot() {
+  try {
+    return await readClipboardSnapshotQuery(attachmentClipboardSnapshotFormats)
+  } catch {
+    return null
+  }
+}
+
+async function tryApplyClipboardImage(context: PasteContext, hasDirectFilePayload: boolean) {
+  if (!hasDirectFilePayload) return false
+  const clipboardImageAttachment = await readClipboardImageQuery().catch(() => null)
+  if (!clipboardImageAttachment) return false
+  return applyAttachmentPaste(context, [clipboardImageAttachment])
+}
+
+function resolvePastedText(input: {
+  directPastedText: string | null
+  fallbackClipboardFilePaths: Awaited<ReturnType<typeof readFallbackClipboardFilePaths>>
+  fallbackSnapshot: Awaited<ReturnType<typeof readFallbackClipboardSnapshot>>
+}) {
+  return (
+    input.directPastedText ||
+    getPreferredClipboardTextFromClipboardFilePaths(input.fallbackClipboardFilePaths) ||
+    getPreferredClipboardTextFromClipboardSnapshot(input.fallbackSnapshot)
+  )
+}
+
+function reportUnattachedFilePath(
+  context: PasteContext,
+  input: {
+    directAttachmentCount: number
+    hasDirectAttachmentHint: boolean
+    pastedText: string | null
+  },
+) {
+  if (!input.hasDirectAttachmentHint) return false
+  if (input.pastedText && input.directAttachmentCount === 0) return false
+  context.setErrorMessage(
+    'Could not attach the pasted file path. Check that the file still exists.',
+  )
+  return true
 }
 
 type UseComposerClipboardHandlersInput = {
-  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
-  setDraftValue: (value: SetStateAction<string>) => void;
-  setErrorMessage: Dispatch<SetStateAction<string | null>>;
-};
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: (value: SetStateAction<string>) => void
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+}
 
 export function useComposerClipboardHandlers({
   setAttachments,
@@ -79,108 +150,54 @@ export function useComposerClipboardHandlers({
   setErrorMessage,
 }: UseComposerClipboardHandlersInput) {
   const handlePaste = useCallback(
-    async (request: {
-      clipboardData: DataTransfer | null;
-      textarea: HTMLTextAreaElement;
-    }) => {
-      const { clipboardData, textarea } = request;
-      const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData);
-      const hasDirectAttachmentHint = hasAttachmentHintInClipboardData(clipboardData);
-      const hasDirectFilePayload = hasFilePayloadInClipboardData(clipboardData);
-
+    async (request: { clipboardData: DataTransfer | null; textarea: HTMLTextAreaElement }) => {
+      const context = { setAttachments, setDraftValue, setErrorMessage }
+      const { clipboardData, textarea } = request
+      const directPastedText = getPreferredClipboardTextFromClipboardData(clipboardData)
+      const hasDirectAttachmentHint = hasAttachmentHintInClipboardData(clipboardData)
+      const hasDirectFilePayload = hasFilePayloadInClipboardData(clipboardData)
       const directAttachments = getComposerAttachmentsFromClipboardData(clipboardData, {
         resolveFilePath: resolveDesktopFilePath,
-      });
-      const hasDirectAttachmentCandidate = directAttachments.length > 0;
-      const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments);
-      if (normalizedDirectAttachments.length > 0) {
-        setAttachments((current) => mergeComposerAttachments(current, normalizedDirectAttachments));
-        setErrorMessage(null);
-        return;
-      }
-
+      })
+      const normalizedDirectAttachments = await normalizeDesktopAttachments(directAttachments)
+      if (applyAttachmentPaste(context, normalizedDirectAttachments)) return
       if (directPastedText && !hasDirectAttachmentHint) {
-        setDraftValue(applyPastedTextToTextarea(textarea, directPastedText));
-        setErrorMessage(null);
-        return;
+        applyTextPaste(context, textarea, directPastedText)
+        return
       }
 
-      let fallbackSnapshot: DesktopClipboardSnapshot | null = null;
-      let fallbackClipboardFilePaths: DesktopClipboardFilePaths | null = null;
-      try {
-        fallbackClipboardFilePaths = await readClipboardFilePathsQuery();
-      } catch {
-        fallbackClipboardFilePaths = null;
-      }
-
+      const fallbackClipboardFilePaths = await readFallbackClipboardFilePaths()
       const nativeAttachments = getComposerAttachmentsFromClipboardFilePaths(
         fallbackClipboardFilePaths,
-      );
-      const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments);
-      if (normalizedNativeAttachments.length > 0) {
-        setAttachments((current) => mergeComposerAttachments(current, normalizedNativeAttachments));
-        setErrorMessage(null);
-        return;
+      )
+      const normalizedNativeAttachments = await normalizeDesktopAttachments(nativeAttachments)
+      if (applyAttachmentPaste(context, normalizedNativeAttachments)) return
+
+      const fallbackSnapshot = await readFallbackClipboardSnapshot()
+      const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot)
+      const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments)
+      if (applyAttachmentPaste(context, normalizedFallbackAttachments)) return
+      if (await tryApplyClipboardImage(context, hasDirectFilePayload)) return
+
+      const pastedText = resolvePastedText({
+        directPastedText,
+        fallbackClipboardFilePaths,
+        fallbackSnapshot,
+      })
+      if (
+        reportUnattachedFilePath(context, {
+          directAttachmentCount: directAttachments.length,
+          hasDirectAttachmentHint,
+          pastedText,
+        }) ||
+        !pastedText
+      ) {
+        return
       }
-
-      try {
-        fallbackSnapshot = await readClipboardSnapshotQuery(attachmentClipboardSnapshotFormats);
-      } catch {
-        fallbackSnapshot = null;
-      }
-
-      const fallbackAttachments = getComposerAttachmentsFromClipboardSnapshot(fallbackSnapshot);
-      const normalizedFallbackAttachments = await normalizeDesktopAttachments(fallbackAttachments);
-      if (normalizedFallbackAttachments.length > 0) {
-        setAttachments((current) =>
-          mergeComposerAttachments(current, normalizedFallbackAttachments),
-        );
-        setErrorMessage(null);
-        return;
-      }
-
-      if (hasDirectFilePayload) {
-        const clipboardImageAttachment = await readClipboardImageQuery().catch(() => null);
-        if (clipboardImageAttachment) {
-          setAttachments((current) =>
-            mergeComposerAttachments(current, [clipboardImageAttachment]),
-          );
-          setErrorMessage(null);
-          return;
-        }
-      }
-
-      const pastedText =
-        directPastedText ||
-        getPreferredClipboardTextFromClipboardFilePaths(fallbackClipboardFilePaths) ||
-        getPreferredClipboardTextFromClipboardSnapshot(fallbackSnapshot);
-
-      if (!pastedText) {
-        if (hasDirectAttachmentHint) {
-          setErrorMessage(
-            "Could not attach the pasted file path. Check that the file still exists.",
-          );
-        }
-        return;
-      }
-
-      if (hasDirectAttachmentCandidate && hasDirectAttachmentHint) {
-        setErrorMessage("Could not attach the pasted file path. Check that the file still exists.");
-        return;
-      }
-
-      const nextValue = applyPastedTextToTextarea(textarea, pastedText);
-      setDraftValue(nextValue);
-      setErrorMessage(null);
-
-      const nextCursorPosition = textarea.selectionStart ?? nextValue.length;
-      requestAnimationFrame(() => {
-        textarea.focus();
-        textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
-      });
+      applyTextPaste(context, textarea, pastedText)
     },
     [setAttachments, setDraftValue, setErrorMessage],
-  );
+  )
 
   const handleDrop = useCallback(
     async (dataTransfer: DataTransfer | null) => {
@@ -188,17 +205,17 @@ export function useComposerClipboardHandlers({
         getComposerAttachmentsFromClipboardData(dataTransfer, {
           resolveFilePath: resolveDesktopFilePath,
         }),
-      );
+      )
       if (droppedAttachments.length === 0) {
-        return false;
+        return false
       }
 
-      setAttachments((current) => mergeComposerAttachments(current, droppedAttachments));
-      setErrorMessage(null);
-      return true;
+      setAttachments((current) => mergeComposerAttachments(current, droppedAttachments))
+      setErrorMessage(null)
+      return true
     },
     [setAttachments, setErrorMessage],
-  );
+  )
 
-  return { handleDrop, handlePaste };
+  return { handleDrop, handlePaste }
 }

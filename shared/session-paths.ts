@@ -1,63 +1,64 @@
-const LOCAL_SESSION_PREFIX = "local://";
+const LOCAL_SESSION_PREFIX = 'local://'
+const localSessionPathPattern = /^local:\/\/([^/]+)\/[^?]+(?:\?chatGroupId=([^&]+))?$/
 
 function buildLocalSessionToken() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 export function isLocalSessionPath(sessionPath: string | null | undefined) {
-  return typeof sessionPath === "string" && sessionPath.startsWith(LOCAL_SESSION_PREFIX);
+  return typeof sessionPath === 'string' && sessionPath.startsWith(LOCAL_SESSION_PREFIX)
 }
 
 export function getPersistedSessionPath(sessionPath: string | null | undefined) {
-  return typeof sessionPath === "string" &&
+  return typeof sessionPath === 'string' &&
     sessionPath.length > 0 &&
     !isLocalSessionPath(sessionPath)
     ? sessionPath
-    : null;
+    : null
 }
 
 function getLocalDraftParts(sessionPath: string | null | undefined) {
-  if (typeof sessionPath !== "string" || !isLocalSessionPath(sessionPath)) {
-    return null;
+  if (typeof sessionPath !== 'string' || !isLocalSessionPath(sessionPath)) {
+    return null
   }
 
-  const [, encodedProjectId = "", encodedChatGroupId = ""] =
-    sessionPath.match(/^local:\/\/([^/]+)\/[^?]+(?:\?chatGroupId=([^&]+))?$/) ?? [];
+  const [, encodedProjectId = '', encodedChatGroupId = ''] =
+    sessionPath.match(localSessionPathPattern) ?? []
   if (encodedProjectId.length === 0) {
-    return null;
+    return null
   }
 
   try {
     return {
       projectId: decodeURIComponent(encodedProjectId),
       chatGroupId: encodedChatGroupId ? decodeURIComponent(encodedChatGroupId) : null,
-    };
+    }
   } catch {
-    return null;
+    return null
   }
 }
 
 export function getLocalDraftProjectId(sessionPath: string | null | undefined) {
-  return getLocalDraftParts(sessionPath)?.projectId ?? null;
+  return getLocalDraftParts(sessionPath)?.projectId ?? null
 }
 
 export function getLocalDraftChatGroupId(sessionPath: string | null | undefined) {
-  return getLocalDraftParts(sessionPath)?.chatGroupId ?? null;
+  return getLocalDraftParts(sessionPath)?.chatGroupId ?? null
 }
 
 export function createLocalThreadDraft(
   projectId: string,
   token = buildLocalSessionToken(),
-  options: { chatGroupId?: string | null } = {},
+  options: { chatGroupId?: string | undefined | null | undefined } = {},
 ) {
-  const encodedProjectId = encodeURIComponent(projectId);
+  const encodedProjectId = encodeURIComponent(projectId)
   const chatGroupSuffix = options.chatGroupId
     ? `?chatGroupId=${encodeURIComponent(options.chatGroupId)}`
-    : "";
+    : ''
 
   return {
     projectId,
     threadId: `local-thread-${token}`,
     sessionPath: `${LOCAL_SESSION_PREFIX}${encodedProjectId}/${token}${chatGroupSuffix}`,
-  };
+  }
 }

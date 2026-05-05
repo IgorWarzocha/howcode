@@ -1,11 +1,11 @@
-export type PiModule = typeof import("@mariozechner/pi-coding-agent");
+export type PiModule = typeof import('@mariozechner/pi-coding-agent')
 
-let piModulePromise: Promise<PiModule> | undefined;
+let piModulePromise: Promise<PiModule> | undefined
 
 export function getPiModule() {
   if (!piModulePromise) {
-    piModulePromise = import("@mariozechner/pi-coding-agent");
+    piModulePromise = import('@mariozechner/pi-coding-agent')
   }
 
-  return piModulePromise;
+  return piModulePromise
 }

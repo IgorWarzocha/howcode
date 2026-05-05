@@ -1,46 +1,48 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-export const defaultHowcodeThemeName = "howcode-default";
+export const defaultHowcodeThemeName = 'howcode-default'
 
 export type BundledTheme = {
-  name: string;
-  label: string;
-  source: "howcode";
-  path: string;
-};
+  name: string
+  label: string
+  source: 'howcode'
+  path: string
+}
 
 function resolvePackagedThemePath(name: string) {
-  const processWithResourcesPath = process as NodeJS.Process & { resourcesPath?: string };
+  const processWithResourcesPath = process as NodeJS.Process & {
+    resourcesPath?: string | undefined
+  }
   const packaged = processWithResourcesPath.resourcesPath
-    ? path.join(processWithResourcesPath.resourcesPath, "resources", "themes", `${name}.json`)
-    : null;
+    ? path.join(processWithResourcesPath.resourcesPath, 'resources', 'themes', `${name}.json`)
+    : null
   if (packaged && fs.existsSync(packaged)) {
-    return packaged;
+    return packaged
   }
 
   const fromBuild = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "resources",
-    "themes",
+    '..',
+    'resources',
+    'themes',
     `${name}.json`,
-  );
+  )
   if (fs.existsSync(fromBuild)) {
-    return fromBuild;
+    return fromBuild
   }
 
-  return fileURLToPath(new URL(`./resources/themes/${name}.json`, import.meta.url));
+  return fileURLToPath(new URL(`./resources/themes/${name}.json`, import.meta.url))
 }
 
 export function getBundledThemes(): BundledTheme[] {
   return [
     {
       name: defaultHowcodeThemeName,
-      label: "Howcode default",
-      source: "howcode",
+      label: 'Howcode default',
+      source: 'howcode',
       path: resolvePackagedThemePath(defaultHowcodeThemeName),
     },
-  ];
+  ]
 }
