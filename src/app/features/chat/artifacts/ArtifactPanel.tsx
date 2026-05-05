@@ -76,8 +76,8 @@ export function ArtifactPanel({
       aria-label="Artifacts drawer"
       className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
     >
-      <div className="flex h-11 items-center justify-between gap-3 border-b border-[color:var(--border)] px-3">
-        <div className="flex min-w-0 items-center gap-2 text-[13px] text-[color:var(--text)]">
+      <div className="flex min-h-11 items-center justify-between gap-2 border-b border-[color:var(--border)] px-2 py-2 min-[420px]:gap-3 min-[420px]:px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-[color:var(--text)]">
           <FileCode2 size={15} className="shrink-0 text-[color:var(--muted)]" />
           {selectedArtifact ? (
             <span className="truncate font-medium">
@@ -85,10 +85,10 @@ export function ArtifactPanel({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 shrink items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {selectedArtifact ? (
             <select
-              className="h-7 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              className="h-7 max-w-28 shrink-0 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
               value={selectedVersion}
               onChange={(event) => {
                 const value = event.target.value;

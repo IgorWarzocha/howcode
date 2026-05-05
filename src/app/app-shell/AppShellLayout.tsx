@@ -85,6 +85,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarCompactMode, setSidebarCompactMode] = useState(false);
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
+  const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false);
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -145,6 +146,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const compactSidebarButtonEdgeMode = terminalDrawerVisible || artifactDrawerOverlayVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId &&
@@ -353,6 +355,14 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     });
   }, []);
 
+  const handleArtifactDrawerOverlayChange = useCallback((visible: boolean) => {
+    setArtifactDrawerOverlayVisible(visible);
+  }, []);
+
+  useEffect(() => {
+    if (state.activeView !== "chat") setArtifactDrawerOverlayVisible(false);
+  }, [state.activeView]);
+
   useEffect(() => {
     const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236);
     updateSidebarCompactMode();
@@ -496,14 +506,14 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           <div
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4",
-              terminalDrawerVisible ? "px-3" : "px-5",
+              compactSidebarButtonEdgeMode ? "px-3" : "px-5",
             )}
           >
             <div className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2">
               <div
                 className={cn(
                   "pointer-events-auto mb-1.5 min-w-0 justify-self-end self-end",
-                  terminalDrawerVisible ? "justify-self-start" : "translate-x-10",
+                  compactSidebarButtonEdgeMode ? "justify-self-start" : "translate-x-10",
                 )}
               >
                 <button
@@ -638,6 +648,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 sidebarAutoHidden={sidebarCompactMode}
                 sidebarCompactMode={sidebarCompactMode}
                 onToggleSidebar={handleToggleSidebar}
+                onArtifactDrawerOverlayChange={handleArtifactDrawerOverlayChange}
               />
             </div>
 

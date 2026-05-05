@@ -23,6 +23,7 @@ type AppShellWorkspaceProps = {
   sidebarAutoHidden: boolean;
   sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
+  onArtifactDrawerOverlayChange?: (visible: boolean) => void;
 };
 
 export function AppShellWorkspace({
@@ -43,6 +44,7 @@ export function AppShellWorkspace({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
+  onArtifactDrawerOverlayChange,
 }: AppShellWorkspaceProps) {
   const { state } = controller;
 
@@ -62,6 +64,7 @@ export function AppShellWorkspace({
         sidebarAutoHidden={sidebarAutoHidden}
         sidebarCompactMode={sidebarCompactMode}
         onToggleSidebar={onToggleSidebar}
+        onArtifactDrawerOverlayChange={onArtifactDrawerOverlayChange}
       />
     );
   }

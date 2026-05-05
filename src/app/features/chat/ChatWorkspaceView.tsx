@@ -9,6 +9,7 @@ import { Composer } from "../../components/workspace/Composer";
 import { WorkspaceComposerDock } from "../../components/workspace/WorkspaceComposerDock";
 import { QueuedPromptsCard } from "../../components/workspace/composer/QueuedPromptsCard";
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from "../../desktop/types";
+import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
 import type { Message } from "../../types";
 import { cn } from "../../utils/cn";
 import { ChatView } from "./ChatView";
@@ -31,9 +32,10 @@ type ChatWorkspaceViewProps = {
   sidebarAutoHidden: boolean;
   sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
+  onArtifactDrawerOverlayChange?: (visible: boolean) => void;
 };
 
-const ARTIFACT_DRAWER_WIDTH = "min(760px, max(0px, calc(100% - 900px)))";
+const ARTIFACT_DRAWER_WIDTH = "clamp(420px, calc(100% - 820px), 760px)";
 
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages
@@ -56,6 +58,7 @@ export function ChatWorkspaceView({
   sidebarAutoHidden,
   sidebarCompactMode,
   onToggleSidebar,
+  onArtifactDrawerOverlayChange,
 }: ChatWorkspaceViewProps) {
   const [composerPromptResetKey] = useState(0);
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0);
@@ -83,7 +86,16 @@ export function ChatWorkspaceView({
   const artifactsVisible = conversationId
     ? (artifactsVisibleByConversation[conversationId] ?? false)
     : false;
-  const artifactDrawerInsetStyle = artifactsVisible ? { right: ARTIFACT_DRAWER_WIDTH } : undefined;
+  const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen;
+  const artifactDrawerOverlay = sidebarCompactMode;
+  const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay;
+  const artifactDrawerPresent = useAnimatedPresence(artifactDrawerVisible);
+  const artifactDrawerInsetStyle = showDesktopArtifactDrawer
+    ? { right: ARTIFACT_DRAWER_WIDTH }
+    : undefined;
+  const artifactDrawerStyle = artifactDrawerPresent
+    ? { width: artifactDrawerOverlay ? "100%" : ARTIFACT_DRAWER_WIDTH }
+    : undefined;
   const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
   const previousHasConversationRef = useRef(hasConversation);
   const previousConversationIdRef = useRef<string | null | undefined>(conversationId);
@@ -128,6 +140,34 @@ export function ChatWorkspaceView({
   useEffect(() => {
     if (!artifactsVisible) setArtifactsFullscreen(false);
   }, [artifactsVisible]);
+
+  useEffect(() => {
+    const overlayVisible = artifactDrawerVisible && artifactDrawerOverlay;
+    onArtifactDrawerOverlayChange?.(overlayVisible);
+    return () => onArtifactDrawerOverlayChange?.(false);
+  }, [artifactDrawerOverlay, artifactDrawerVisible, onArtifactDrawerOverlayChange]);
+
+  useEffect(() => {
+    if (!artifactsVisible || (!artifactDrawerOverlay && !artifactsFullscreen)) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (artifactsFullscreen) {
+        setArtifactsFullscreen(false);
+        return;
+      }
+      if (!conversationId) return;
+      setArtifactsVisibleByConversation((current) => ({
+        ...current,
+        [conversationId]: false,
+      }));
+    };
+
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [artifactsFullscreen, artifactDrawerOverlay, artifactsVisible, conversationId]);
   const {
     handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
@@ -144,7 +184,7 @@ export function ChatWorkspaceView({
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <div
         className={cn(
-          "absolute inset-0 min-h-0 overflow-hidden transition-[right] duration-200 ease-out",
+          "motion-terminal-drawer-offset absolute inset-0 min-h-0 overflow-hidden",
           artifactsFullscreen && "hidden",
         )}
         style={!artifactsFullscreen ? artifactDrawerInsetStyle : undefined}
@@ -174,7 +214,7 @@ export function ChatWorkspaceView({
         <footer
           ref={footerRef}
           className={cn(
-            "pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
+            "motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
             hasConversation
               ? "bottom-0 translate-y-0"
               : "top-1/2 -translate-y-1/2 transition-[top,transform] duration-300 ease-out",
@@ -183,7 +223,6 @@ export function ChatWorkspaceView({
           <div className="pointer-events-auto grid gap-2.5">
             <WorkspaceComposerDock
               compactControls={sidebarAutoHidden}
-              leftClassName={cn(artifactsVisible && !artifactsFullscreen && "invisible")}
               left={
                 sidebarCompactMode ? null : (
                   <button
@@ -288,7 +327,7 @@ export function ChatWorkspaceView({
               }
               rightClassName={cn(
                 "opacity-0 min-[1400px]:opacity-100",
-                artifactsVisible && !artifactsFullscreen && "invisible",
+                showDesktopArtifactDrawer && "invisible",
               )}
               right={
                 <DesktopComposerStatus
@@ -301,32 +340,52 @@ export function ChatWorkspaceView({
           </div>
         </footer>
       </div>
-      <div
-        className={cn(
-          "absolute top-0 right-0 bottom-0 min-h-0 overflow-hidden transition-[width] duration-200 ease-out",
-          !artifactsVisible && "w-0",
-          artifactsFullscreen && "left-0 w-auto",
-        )}
-        style={
-          artifactsVisible && !artifactsFullscreen ? { width: ARTIFACT_DRAWER_WIDTH } : undefined
-        }
-      >
-        <ArtifactPanel
-          conversationId={conversationId}
-          visible={artifactsVisible}
-          fullscreen={artifactsFullscreen}
-          onToggleFullscreen={() => setArtifactsFullscreen((fullscreen) => !fullscreen)}
-          onClose={() => {
-            if (conversationId) {
-              setArtifactsVisibleByConversation((current) => ({
-                ...current,
-                [conversationId]: false,
-              }));
-            }
-            setArtifactsFullscreen(false);
-          }}
-        />
-      </div>
+      {artifactDrawerPresent ? (
+        <div
+          className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
+          style={artifactDrawerStyle}
+        >
+          <div
+            data-open={artifactDrawerVisible ? "true" : "false"}
+            className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${artifactDrawerVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+          >
+            <ArtifactPanel
+              conversationId={conversationId}
+              visible={artifactDrawerPresent}
+              fullscreen={false}
+              onToggleFullscreen={() => setArtifactsFullscreen(true)}
+              onClose={() => {
+                if (conversationId) {
+                  setArtifactsVisibleByConversation((current) => ({
+                    ...current,
+                    [conversationId]: false,
+                  }));
+                }
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {artifactsFullscreen ? (
+        <div className="absolute inset-0 z-20 min-h-0 overflow-hidden">
+          <ArtifactPanel
+            conversationId={conversationId}
+            visible={artifactsVisible}
+            fullscreen={artifactsFullscreen}
+            onToggleFullscreen={() => setArtifactsFullscreen(false)}
+            onClose={() => {
+              if (conversationId) {
+                setArtifactsVisibleByConversation((current) => ({
+                  ...current,
+                  [conversationId]: false,
+                }));
+              }
+              setArtifactsFullscreen(false);
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
