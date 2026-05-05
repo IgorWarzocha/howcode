@@ -53,6 +53,7 @@ export function ComposerPromptSurface({
   onListAttachmentEntries,
   onAction,
   terminalVisible,
+  preferSideFilePicker = false,
   preferSideModelPopover = false,
   artifactsVisible,
   artifactsAvailable,
@@ -420,7 +421,9 @@ export function ComposerPromptSurface({
               favoriteFolders={favoriteFolders}
               pickerLoading={pickerLoading}
               pickerOpen={pickerOpen}
+              pickerButtonRef={pickerButtonRef}
               pickerPanelRef={pickerPanelRef}
+              preferSideFilePicker={preferSideFilePicker}
               pickerState={pickerState}
               placeholderText={placeholderText}
               projectId={projectId}

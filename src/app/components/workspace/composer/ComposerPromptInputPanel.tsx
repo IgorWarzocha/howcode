@@ -32,8 +32,10 @@ type ComposerPromptInputPanelProps = {
   favoriteFolders: string[];
   pickerLoading: boolean;
   pickerOpen: boolean;
+  pickerButtonRef: RefObject<HTMLButtonElement | null>;
   hoverBoundaryRef: RefObject<HTMLElement | null>;
   pickerPanelRef: RefObject<HTMLDivElement | null>;
+  preferSideFilePicker?: boolean;
   pickerState: Parameters<typeof ComposerFilePicker>[0]["picker"];
   placeholderText: string;
   projectId: string;
@@ -77,7 +79,9 @@ export function ComposerPromptInputPanel({
   hoverBoundaryRef,
   pickerLoading,
   pickerOpen,
+  pickerButtonRef,
   pickerPanelRef,
+  preferSideFilePicker = false,
   pickerState,
   placeholderText,
   projectId,
@@ -104,12 +108,14 @@ export function ComposerPromptInputPanel({
     <>
       {pickerOpen ? (
         <ComposerFilePicker
+          anchorRef={pickerButtonRef}
           attachments={attachments}
           errorMessage={errorMessage}
           favoriteFolders={favoriteFolders}
           loading={pickerLoading}
           picker={pickerState}
           panelRef={pickerPanelRef}
+          preferSidePlacement={preferSideFilePicker}
           projectRootPath={projectId}
           onAttachAttachments={attachPickerAttachments}
           onOpenRoot={openPickerRoot}
