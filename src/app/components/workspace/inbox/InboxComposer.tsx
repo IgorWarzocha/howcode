@@ -100,6 +100,7 @@ export function InboxComposer({
   onStop,
 }: InboxComposerProps) {
   const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
+  const composerSurfaceRef = useRef<HTMLDivElement>(null);
   const composerPanelRef = useRef<HTMLDivElement>(null);
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
   const pickerPanelRef = useRef<HTMLDivElement>(null);
@@ -158,7 +159,7 @@ export function InboxComposer({
         return;
       }
 
-      if (composerPanelRef.current?.contains(target)) {
+      if (composerSurfaceRef.current?.contains(target)) {
         return;
       }
 
@@ -276,7 +277,7 @@ export function InboxComposer({
 
       if (
         slashCommandPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target)
+        composerSurfaceRef.current?.contains(target)
       ) {
         return;
       }
@@ -395,7 +396,10 @@ export function InboxComposer({
   };
 
   return (
-    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
+    <div
+      ref={composerSurfaceRef}
+      className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
+    >
       <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
           {attachments.length > 0 ? (
@@ -466,7 +470,7 @@ export function InboxComposer({
             handlePaste={handlePaste}
             hoverToFocus={appSettings.hoverToFocus}
             hoverToBlur={appSettings.hoverToBlur}
-            hoverBoundaryRef={composerPanelRef}
+            hoverBoundaryRef={composerSurfaceRef}
             onAction={onAction}
             onOpenSettingsView={onOpenSettingsView}
             openPickerDirectory={openPickerDirectory}
