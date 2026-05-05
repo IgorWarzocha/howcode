@@ -181,12 +181,16 @@ export function useDesktopEventSync({
           current?.sessionPath === event.sessionPath;
         if (!shouldApplyLiveThread) return current;
 
-        const shouldSuppressDraftTimeline =
-          isAliasedLocalDraftUpdate && !hasVisibleAssistantActivity;
+        const shouldSuppressFirstTurnTimeline =
+          !hasVisibleAssistantActivity &&
+          (isAliasedLocalDraftUpdate ||
+            (isVisibleThreadUpdate &&
+              current?.isStreaming === true &&
+              (current.messages.length ?? 0) === 0));
 
         return {
           ...threadWithPreferences,
-          messages: shouldSuppressDraftTimeline ? [] : threadWithPreferences.messages,
+          messages: shouldSuppressFirstTurnTimeline ? [] : threadWithPreferences.messages,
           sessionPath:
             isAliasedLocalDraftUpdate &&
             aliasedLocalDraftSessionPath &&
