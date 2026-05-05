@@ -191,9 +191,10 @@ export function useComposerController({
   useEffect(() => {
     if (pendingSubmittedDraftScopeKeyRef.current === composerScopeKey) return;
     pendingSubmittedDraftScopeKeyRef.current = composerScopeKey;
+    if (pendingSubmittedDraft && isStreaming && replyActivityKey.length === 0) return;
     pendingSubmittedReplyActivityKeyRef.current = null;
     setPendingSubmittedDraft(null);
-  }, [composerScopeKey]);
+  }, [composerScopeKey, isStreaming, pendingSubmittedDraft, replyActivityKey]);
 
   useEffect(() => {
     void composerScopeKey;
@@ -311,7 +312,7 @@ export function useComposerController({
     canSend,
     clearAttachments,
     clearError: () => setErrorMessage(null),
-    draft,
+    draft: pendingSubmittedDraft ?? draft,
     dictationActive,
     dictationInterimText,
     dictationMissingModel,
