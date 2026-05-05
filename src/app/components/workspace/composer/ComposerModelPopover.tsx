@@ -302,7 +302,7 @@ export function ComposerModelPopover({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [anchorRef, openMenu, panelRef, showModelSearch, sidePlacementEnabled]);
+  }, [anchorRef, panelRef, sidePlacementEnabled]);
 
   const panelContents = (
     <>
