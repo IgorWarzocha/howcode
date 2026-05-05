@@ -256,7 +256,12 @@ export function ComposerModelPopover({
       return;
     }
 
-    const updatePosition = () => {
+    const updatePosition = (event?: Event) => {
+      const target = event?.target as Node | null;
+      if (target && panelRef.current?.contains(target)) {
+        return;
+      }
+
       const anchorRect = anchorRef.current?.getBoundingClientRect();
       const panelRect = panelRef.current?.getBoundingClientRect();
 
@@ -279,7 +284,13 @@ export function ComposerModelPopover({
         Math.max(sidePlacementViewportPadding, maxTop),
       );
 
-      setSidePosition({ left, top });
+      setSidePosition((current) => {
+        if (current.left === left && current.top === top) {
+          return current;
+        }
+
+        return { left, top };
+      });
       setSidePositionReady(true);
     };
 
