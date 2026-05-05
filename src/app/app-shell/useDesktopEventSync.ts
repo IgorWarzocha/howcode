@@ -30,6 +30,7 @@ type UseDesktopEventSyncInput = {
   loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
   scheduleShellStateRefresh: () => void;
+  refreshChatSidebarState: () => Promise<unknown>;
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
@@ -45,6 +46,7 @@ export function useDesktopEventSync({
   loadProjectThreads,
   loadProjectGitState,
   scheduleShellStateRefresh,
+  refreshChatSidebarState,
   queryClient,
   dispatch,
   setComposerState,
@@ -269,6 +271,15 @@ export function useDesktopEventSync({
       }
 
       if (event.reason === "end" || event.reason === "external") {
+        if (event.isChat === true) {
+          if (latestWorkspaceState.activeView === "chat") {
+            void loadProjectThreads(event.projectId, { chat: true });
+          }
+          void refreshChatSidebarState();
+        } else if (latestWorkspaceState.activeView !== "chat") {
+          void loadProjectThreads(event.projectId);
+        }
+
         invalidateProjectWorktreeQueries({
           activeView: latestWorkspaceState.activeView,
           projectId: event.projectId,
@@ -289,6 +300,7 @@ export function useDesktopEventSync({
     loadProjectGitState,
     loadProjectThreads,
     queryClient,
+    refreshChatSidebarState,
     scheduleShellStateRefresh,
     setChatSidebarState,
     setComposerState,

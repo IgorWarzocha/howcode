@@ -66,6 +66,7 @@ function upsertSidebarThread({
   projectId,
   thread,
   chatGroupId,
+  updateProjectThreads = true,
   replaceSessionPath = null,
   revealProject = false,
 }: {
@@ -74,13 +75,16 @@ function upsertSidebarThread({
   projectId: string;
   thread: Thread;
   chatGroupId?: string | null;
+  updateProjectThreads?: boolean;
   replaceSessionPath?: string | null;
   revealProject?: boolean;
 }) {
-  applyProjectThreadToShellState(queryClient, projectId, thread, {
-    replaceSessionPath,
-    revealProject,
-  });
+  if (updateProjectThreads) {
+    applyProjectThreadToShellState(queryClient, projectId, thread, {
+      replaceSessionPath,
+      revealProject,
+    });
+  }
 
   if (chatGroupId !== undefined) {
     setChatSidebarState((current) =>
@@ -190,10 +194,12 @@ export function removeFailedOptimisticComposerThread({
   contextualPayload,
   queryClient,
   setChatSidebarState,
+  setLiveThreadData,
 }: {
   contextualPayload: ActionPayload;
   queryClient: QueryClientLike;
   setChatSidebarState: SetChatSidebarState;
+  setLiveThreadData?: SetLiveThreadData;
 }) {
   const projectId = getPayloadProjectId(contextualPayload);
   const sessionPath =
@@ -203,6 +209,7 @@ export function removeFailedOptimisticComposerThread({
 
   removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
   setChatSidebarState((current) => removeChatThreadFromSidebarState(current, sessionPath));
+  setLiveThreadData?.((current) => (current?.sessionPath === sessionPath ? null : current));
 }
 
 export function reconcileComposerThreadResult({
@@ -223,7 +230,12 @@ export function reconcileComposerThreadResult({
   setLiveThreadData: SetLiveThreadData;
 }) {
   if (hasActionError(actionResult)) {
-    removeFailedOptimisticComposerThread({ contextualPayload, queryClient, setChatSidebarState });
+    removeFailedOptimisticComposerThread({
+      contextualPayload,
+      queryClient,
+      setChatSidebarState,
+      setLiveThreadData,
+    });
     return;
   }
 
@@ -245,6 +257,12 @@ export function reconcileComposerThreadResult({
     !resultThreadId ||
     (submittedSessionPath && !isLocalSessionPath(submittedSessionPath))
   ) {
+    removeFailedOptimisticComposerThread({
+      contextualPayload,
+      queryClient,
+      setChatSidebarState,
+      setLiveThreadData,
+    });
     return;
   }
 
@@ -291,7 +309,7 @@ export function applyThreadEventToSidebarState({
   setChatSidebarState,
 }: {
   event: Extract<DesktopEvent, { type: "thread-update" }>;
-  workspaceState: Pick<WorkspaceState, "selectedProjectId" | "selectedSessionPath">;
+  workspaceState: Pick<WorkspaceState, "activeView" | "selectedProjectId" | "selectedSessionPath">;
   queryClient: QueryClientLike;
   setChatSidebarState: SetChatSidebarState;
 }) {
@@ -300,6 +318,8 @@ export function applyThreadEventToSidebarState({
     workspaceState.selectedProjectId,
     event.projectId,
   );
+  const eventIsChat = event.isChat === true;
+  const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === "chat");
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
@@ -311,6 +331,7 @@ export function applyThreadEventToSidebarState({
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
     chatGroupId: event.isChat === true ? (event.chatGroupId ?? null) : undefined,
+    updateProjectThreads: projectThreadScopeMatchesView,
     replaceSessionPath,
   });
 }

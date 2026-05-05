@@ -14,7 +14,7 @@ function mergeChatThread(existing: ChatThread | undefined, next: ChatThread): Ch
   return {
     ...existing,
     ...next,
-    pinned: existing?.pinned ?? next.pinned,
+    pinned: next.pinned ?? existing?.pinned,
     unread: next.unread ?? existing?.unread,
   };
 }

@@ -250,6 +250,7 @@ export function ComposerModelPopover({
     }
   }, [showModelSearch]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Menu/search changes alter panel height and must trigger side-placement measurement.
   useLayoutEffect(() => {
     if (!sidePlacementEnabled) {
       setSidePositionReady(false);
@@ -302,7 +303,7 @@ export function ComposerModelPopover({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [anchorRef, panelRef, sidePlacementEnabled]);
+  }, [anchorRef, openMenu, panelRef, showModelSearch, sidePlacementEnabled]);
 
   const panelContents = (
     <>
