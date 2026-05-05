@@ -1,6 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { ComposerState, DesktopEvent, ProjectGitState, ThreadData } from "../desktop/types";
+import type {
+  ChatSidebarState,
+  ComposerState,
+  DesktopEvent,
+  ProjectGitState,
+  ThreadData,
+} from "../desktop/types";
 import { desktopQueryKeys } from "../query/desktop-query";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import {
@@ -15,6 +21,7 @@ import {
   applyProjectThreadToShellState,
   getDraftReplacementSessionPath,
 } from "./project-thread-cache";
+import { applyChatThreadToSidebarState } from "./chat-sidebar-cache";
 
 type QueryClientLike = {
   setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
@@ -31,6 +38,7 @@ type UseDesktopEventSyncInput = {
   queryClient: QueryClientLike;
   dispatch: Dispatch<WorkspaceAction>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>;
@@ -46,6 +54,7 @@ export function useDesktopEventSync({
   queryClient,
   dispatch,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   setThreadHistoryCompactions,
@@ -219,7 +228,30 @@ export function useDesktopEventSync({
         void loadProjectThreads(event.projectId, {
           chat: latestWorkspaceState.activeView === "chat",
         });
-        if (latestWorkspaceState.activeView === "chat") {
+        if (event.isChat === true) {
+          setChatSidebarState((current) =>
+            applyChatThreadToSidebarState(
+              current,
+              {
+                id: event.threadId,
+                title: event.thread.title,
+                age: "Now",
+                lastModifiedMs: Date.now(),
+                sessionPath: event.sessionPath,
+                running: event.thread.isStreaming || event.thread.isCompacting,
+                projectId: event.projectId,
+                groupId: event.chatGroupId ?? null,
+              },
+              {
+                replaceSessionPath: getDraftReplacementSessionPath(
+                  latestWorkspaceState.selectedSessionPath,
+                  latestWorkspaceState.selectedProjectId,
+                  event.projectId,
+                ),
+              },
+            ),
+          );
+        } else if (latestWorkspaceState.activeView === "chat") {
           void refreshChatSidebarState();
         }
         void queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() });
@@ -240,6 +272,14 @@ export function useDesktopEventSync({
       }
 
       if (shouldAutoOpenThread) {
+        dispatch({
+          type: "open-thread",
+          projectId: event.projectId,
+          threadId: event.threadId,
+          sessionPath: event.sessionPath,
+          view: event.isChat === true ? "chat" : "thread",
+        });
+      } else if (shouldDisplayLocalDraftThread) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
@@ -284,6 +324,7 @@ export function useDesktopEventSync({
     queryClient,
     refreshChatSidebarState,
     scheduleShellStateRefresh,
+    setChatSidebarState,
     setComposerState,
     setLiveThreadData,
     setProjectGitState,

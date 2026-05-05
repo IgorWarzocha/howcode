@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type {
   AppSettings,
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   InboxThread,
   ProjectGitState,
@@ -51,6 +52,7 @@ export function useAppShellEffects({
   dispatch,
   setArchivedThreads,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   setProjectGitLoading,
@@ -77,6 +79,7 @@ export function useAppShellEffects({
   dispatch: Dispatch<WorkspaceAction>;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   setProjectGitLoading: Dispatch<SetStateAction<boolean>>;
@@ -121,6 +124,7 @@ export function useAppShellEffects({
     queryClient,
     dispatch,
     setComposerState,
+    setChatSidebarState,
     setLiveThreadData,
     setProjectGitState,
     setThreadHistoryCompactions,

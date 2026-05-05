@@ -3,6 +3,7 @@ import type { Dispatch } from "react";
 import type { DesktopAction } from "../desktop/actions";
 import type {
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   DesktopActionResult,
   ProjectDiffBaseline,
@@ -11,6 +12,10 @@ import type {
   ThreadData,
 } from "../desktop/types";
 import { isLocalSessionPath } from "../../../shared/session-paths";
+import {
+  applyChatThreadToSidebarState,
+  removeChatThreadFromSidebarState,
+} from "./chat-sidebar-cache";
 import { desktopQueryKeys } from "../query/desktop-query";
 import {
   applyProjectThreadToShellState,
@@ -54,9 +59,12 @@ type RunPostDesktopActionEffectsInput = {
     composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
   setArchivedThreads: (threads: ArchivedThread[]) => void;
+  setChatSidebarState: (
+    updater: (state: ChatSidebarState | null) => ChatSidebarState | null,
+  ) => void;
   setComposerState: (state: ComposerState | null) => void;
   setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void;
   setProjectGitState: (state: ProjectGitState | null) => void;
@@ -76,6 +84,7 @@ export async function runPostDesktopActionEffects({
   loadProjectThreads,
   refreshShellState,
   setArchivedThreads,
+  setChatSidebarState,
   setComposerState,
   setLiveThreadData,
   setProjectGitState,
@@ -267,6 +276,7 @@ export async function runPostDesktopActionEffects({
 
     if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
       removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
+      setChatSidebarState((current) => removeChatThreadFromSidebarState(current, sessionPath));
     }
   }
 
@@ -338,6 +348,30 @@ export async function runPostDesktopActionEffects({
         sessionPath: resultSessionPath,
         view: workspaceState.activeView === "chat" ? "chat" : "thread",
       });
+      if (workspaceState.activeView === "chat") {
+        setChatSidebarState((current) =>
+          applyChatThreadToSidebarState(
+            current,
+            {
+              id: resultThreadId,
+              title: existingThreadTitle ?? "New thread",
+              age: "Now",
+              lastModifiedMs: Date.now(),
+              sessionPath: resultSessionPath,
+              projectId,
+              groupId:
+                typeof contextualPayload.chatGroupId === "string"
+                  ? contextualPayload.chatGroupId
+                  : null,
+            },
+            {
+              replaceSessionPath: isLocalSessionPath(submittedSessionPath)
+                ? submittedSessionPath
+                : null,
+            },
+          ),
+        );
+      }
     }
   }
 
@@ -382,7 +416,7 @@ export async function runPostDesktopActionEffects({
         threadId,
         sessionPath,
       });
-      await loadProjectThreads(nextProjectId);
+      await loadProjectThreads(nextProjectId, { chat: workspaceState.activeView === "chat" });
       applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
         revealProject: true,
       });

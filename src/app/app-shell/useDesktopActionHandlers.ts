@@ -8,6 +8,7 @@ import type {
   ComposerState,
   DesktopActionInvoker,
   DesktopActionResult,
+  ChatSidebarState,
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
@@ -15,6 +16,7 @@ import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import type { View } from "../types";
 import { cleanUserErrorMessage } from "../desktop/error-messages";
 import { buildContextualActionPayload } from "./controller-action-helpers";
+import { buildLocalThreadFallback } from "./controller-action-utils";
 import {
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,
@@ -22,6 +24,8 @@ import {
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from "./controller-post-action-effects";
+import { applyChatThreadToSidebarState } from "./chat-sidebar-cache";
+import { applyProjectThreadToShellState } from "./project-thread-cache";
 
 type ActionPayload = AnyDesktopActionPayload;
 
@@ -37,11 +41,12 @@ type UseDesktopActionHandlersArgs = {
     composerMode?: "chat" | "code" | null;
   }) => Promise<ComposerState | null>;
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
   refreshShellState: () => Promise<unknown>;
   selectedSessionPath: string | null;
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>;
   setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
   setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
   showToast: (message: string) => void;
@@ -85,6 +90,7 @@ export function useDesktopActionHandlers({
   selectedSessionPath,
   setArchivedThreads,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   showToast,
@@ -99,13 +105,70 @@ export function useDesktopActionHandlers({
     ): Promise<DesktopActionResult | null> => {
       // Build the renderer-context payload first so optimistic UI and desktop writes
       // operate against the same project/session selection.
-      const contextualPayload = buildContextualActionPayload({
+      let contextualPayload = buildContextualActionPayload({
         action,
         payload,
         composerProjectId,
         activeView,
         selectedSessionPath,
       });
+
+      if (
+        action === "composer.send" &&
+        activeView !== "inbox" &&
+        typeof contextualPayload.projectId === "string" &&
+        !contextualPayload.sessionPath
+      ) {
+        const localFallback = buildLocalThreadFallback(contextualPayload.projectId, {
+          chatGroupId:
+            activeView === "chat" ? (contextualPayload.chatGroupId as string | null) : null,
+        });
+        contextualPayload = { ...contextualPayload, sessionPath: localFallback.sessionPath };
+        const optimisticThread = {
+          id: localFallback.threadId,
+          title: "New thread",
+          age: "Now",
+          lastModifiedMs: Date.now(),
+          sessionPath: localFallback.sessionPath,
+          running: true,
+        };
+        applyProjectThreadToShellState(queryClient, localFallback.projectId, optimisticThread, {
+          revealProject: true,
+        });
+        if (activeView === "chat") {
+          setChatSidebarState((current) =>
+            applyChatThreadToSidebarState(current, {
+              ...optimisticThread,
+              projectId: localFallback.projectId,
+              groupId:
+                typeof contextualPayload.chatGroupId === "string"
+                  ? contextualPayload.chatGroupId
+                  : null,
+            }),
+          );
+        }
+        setLiveThreadData(() => ({
+          sessionPath: localFallback.sessionPath,
+          title: "New thread",
+          messages: [
+            {
+              id: `${localFallback.threadId}:user`,
+              role: "user",
+              content: typeof contextualPayload.text === "string" ? [contextualPayload.text] : [],
+            },
+          ],
+          previousMessageCount: 0,
+          isStreaming: true,
+          isCompacting: false,
+        }));
+        dispatch({
+          type: "open-thread",
+          projectId: localFallback.projectId,
+          threadId: localFallback.threadId,
+          sessionPath: localFallback.sessionPath,
+          view: activeView === "chat" ? "chat" : "thread",
+        });
+      }
 
       const actionResult = await invokeDesktopAction(action, contextualPayload);
 
@@ -123,6 +186,7 @@ export function useDesktopActionHandlers({
         refreshShellState,
         setArchivedThreads,
         setComposerState,
+        setChatSidebarState,
         setLiveThreadData,
         setProjectGitState,
         queryClient,
@@ -148,6 +212,7 @@ export function useDesktopActionHandlers({
       selectedSessionPath,
       setArchivedThreads,
       setComposerState,
+      setChatSidebarState,
       setLiveThreadData,
       setProjectGitState,
       showToast,
