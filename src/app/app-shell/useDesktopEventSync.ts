@@ -188,7 +188,9 @@ export function useDesktopEventSync({
           ...threadWithPreferences,
           messages: shouldSuppressDraftTimeline ? [] : threadWithPreferences.messages,
           sessionPath:
-            isAliasedLocalDraftUpdate && aliasedLocalDraftSessionPath
+            isAliasedLocalDraftUpdate &&
+            aliasedLocalDraftSessionPath &&
+            !hasVisibleAssistantActivity
               ? aliasedLocalDraftSessionPath
               : threadWithPreferences.sessionPath,
           diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,

@@ -101,10 +101,8 @@ export function ChatWorkspaceView({
   const artifactDrawerStyle = artifactDrawerPresent
     ? { width: artifactDrawerOverlay ? "100%" : ARTIFACT_DRAWER_WIDTH }
     : undefined;
-  const [conversationContentVisible, setConversationContentVisible] = useState(hasConversation);
-  const previousHasConversationRef = useRef(hasConversation);
   const previousConversationIdRef = useRef<string | null | undefined>(conversationId);
-  const shouldShowConversationContent = conversationContentVisible || activeThreadData?.isStreaming;
+  const shouldShowConversationContent = hasConversation;
   const handleCloseArtifacts = useCallback(() => {
     if (conversationId) {
       setArtifactsVisibleByConversation((current) => ({
@@ -159,24 +157,6 @@ export function ChatWorkspaceView({
       }
     };
   }, [artifactDrawerOverlay, artifactDrawerVisible]);
-
-  useEffect(() => {
-    if (!hasConversation) {
-      previousHasConversationRef.current = false;
-      setConversationContentVisible(false);
-      return;
-    }
-
-    if (previousHasConversationRef.current || activeThreadData?.isStreaming) {
-      previousHasConversationRef.current = true;
-      setConversationContentVisible(true);
-      return;
-    }
-
-    previousHasConversationRef.current = true;
-    const timeout = window.setTimeout(() => setConversationContentVisible(true), 300);
-    return () => window.clearTimeout(timeout);
-  }, [activeThreadData?.isStreaming, hasConversation]);
 
   useEffect(() => {
     if (!window.piDesktop?.subscribe) return;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FolderGit2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { AppShellController } from "../../app-shell/useAppShellController";
 import { defaultPiSettings } from "../../../../shared/default-pi-settings";
@@ -114,27 +114,8 @@ export function CodeWorkspaceView({
   });
   const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0;
   const hasThreadConversationLayout = hasThreadConversation;
-  const [threadContentVisible, setThreadContentVisible] = useState(hasThreadConversation);
-  const previousHasThreadConversationRef = useRef(hasThreadConversation);
   const centerThreadFooter = showThreadFooter && !hasThreadConversationLayout;
   const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0;
-
-  useEffect(() => {
-    if (!hasThreadConversation) {
-      previousHasThreadConversationRef.current = false;
-      setThreadContentVisible(false);
-      return;
-    }
-
-    if (previousHasThreadConversationRef.current) {
-      setThreadContentVisible(true);
-      return;
-    }
-
-    previousHasThreadConversationRef.current = true;
-    const timeout = window.setTimeout(() => setThreadContentVisible(true), 300);
-    return () => window.clearTimeout(timeout);
-  }, [hasThreadConversation]);
   const {
     diffCommentCount,
     diffCommentError,
@@ -172,13 +153,7 @@ export function CodeWorkspaceView({
         top: centerThreadFooter ? "50%" : `calc(100% - ${footerHeight}px)`,
       }
     : terminalDrawerInsetStyle;
-  const visibleThreadData =
-    state.activeView === "thread" && activeThreadData && !threadContentVisible
-      ? { ...activeThreadData, messages: [] }
-      : activeThreadData;
-  const threadTimelineLoading =
-    state.activeView === "thread" &&
-    (controller.activeThreadLoading || (hasThreadConversation && !threadContentVisible));
+  const threadTimelineLoading = state.activeView === "thread" && controller.activeThreadLoading;
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -255,7 +230,7 @@ export function CodeWorkspaceView({
                 projects={controller.projects}
                 selectedProjectId={controller.state.selectedProjectId}
                 workspaceContentClass={workspaceContentClass}
-                threadData={visibleThreadData}
+                threadData={activeThreadData}
                 threadLoading={threadTimelineLoading}
                 composerLayoutVersion={composerLayoutVersion}
                 composerOverlayHeight={composerOverlayHeight}
