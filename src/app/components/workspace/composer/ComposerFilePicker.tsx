@@ -1,4 +1,14 @@
-import { type DragEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type DragEvent,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type { ComposerAttachment, ComposerFilePickerState } from "../../../desktop/types";
 import { popoverPanelClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
@@ -13,12 +23,14 @@ import {
 } from "./composer-file-picker-utils";
 
 type ComposerFilePickerProps = {
+  anchorRef?: RefObject<HTMLButtonElement | null>;
   attachments: ComposerAttachment[];
   errorMessage: string | null;
   favoriteFolders: string[];
   loading: boolean;
   picker: ComposerFilePickerState | null;
   panelRef: RefObject<HTMLDivElement | null>;
+  preferSidePlacement?: boolean;
   projectRootPath: string;
   onAttachAttachments: (
     attachments: ComposerAttachment[],
@@ -30,13 +42,27 @@ type ComposerFilePickerProps = {
   onToggleFile: (attachment: ComposerAttachment) => void;
 };
 
+const smallDisplayHeightBreakpoint = 768;
+const sidePlacementGap = 8;
+const sidePlacementViewportPadding = 12;
+
+function getSmallDisplayPlacementEnabled() {
+  return typeof window !== "undefined" && window.innerHeight <= smallDisplayHeightBreakpoint;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function ComposerFilePicker({
+  anchorRef,
   attachments,
   errorMessage,
   favoriteFolders,
   loading,
   picker,
   panelRef,
+  preferSidePlacement = false,
   projectRootPath,
   onAttachAttachments,
   onOpenRoot,
@@ -48,7 +74,24 @@ export function ComposerFilePicker({
   const [dropActive, setDropActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
+  const [smallDisplayHeight, setSmallDisplayHeight] = useState(getSmallDisplayPlacementEnabled);
+  const [sidePosition, setSidePosition] = useState({ left: 0, top: 0 });
+  const [sidePositionReady, setSidePositionReady] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const updatePlacementMode = () => {
+      setSmallDisplayHeight(getSmallDisplayPlacementEnabled());
+    };
+
+    updatePlacementMode();
+    window.addEventListener("resize", updatePlacementMode);
+    return () => {
+      window.removeEventListener("resize", updatePlacementMode);
+    };
+  }, []);
+
+  const sidePlacementEnabled = preferSidePlacement && smallDisplayHeight && Boolean(anchorRef);
 
   const attachedByPath = useMemo(
     () => new Set(attachments.map((attachment) => attachment.path)),
@@ -107,14 +150,62 @@ export function ComposerFilePicker({
     }
   }, [searchExpanded]);
 
-  return (
-    <SurfacePanel
-      ref={panelRef}
-      className={cn(
-        "absolute right-0 bottom-full left-0 z-[70] grid h-[min(378px,calc(100vh-12rem))] min-h-[220px] grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
-        popoverPanelClass,
-      )}
-    >
+  useLayoutEffect(() => {
+    if (!sidePlacementEnabled) {
+      setSidePositionReady(false);
+      return;
+    }
+
+    const updatePosition = (event?: Event) => {
+      const target = event?.target instanceof Node ? event.target : null;
+      if (target && panelRef.current?.contains(target)) {
+        return;
+      }
+
+      const anchorRect = anchorRef?.current?.getBoundingClientRect();
+      const panelRect = panelRef.current?.getBoundingClientRect();
+
+      if (!anchorRect || !panelRect) {
+        return;
+      }
+
+      const maxLeft = window.innerWidth - panelRect.width - sidePlacementViewportPadding;
+      const preferredLeft = anchorRect.right + sidePlacementGap;
+      const left = clamp(
+        preferredLeft,
+        sidePlacementViewportPadding,
+        Math.max(sidePlacementViewportPadding, maxLeft),
+      );
+      const maxTop = window.innerHeight - panelRect.height - sidePlacementViewportPadding;
+      const centeredTop = anchorRect.top + anchorRect.height / 2 - panelRect.height / 2;
+      const top = clamp(
+        centeredTop,
+        sidePlacementViewportPadding,
+        Math.max(sidePlacementViewportPadding, maxTop),
+      );
+
+      setSidePosition((current) => {
+        if (current.left === left && current.top === top) {
+          return current;
+        }
+
+        return { left, top };
+      });
+      setSidePositionReady(true);
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchorRef, panelRef, picker, searchExpanded, sidePlacementEnabled]);
+
+  const panelContents = (
+    <>
       <ComposerFilePickerHeader
         picker={picker}
         projectRootPath={projectRootPath}
@@ -157,6 +248,34 @@ export function ComposerFilePicker({
           {errorMessage}
         </div>
       ) : null}
+    </>
+  );
+
+  const panelClassName = cn(
+    "grid grid-rows-[44px_minmax(0,1fr)] overflow-hidden rounded-[20px] border-[color:var(--border-strong)] p-0 shadow-[0_18px_40px_rgba(0,0,0,0.28)]",
+    sidePlacementEnabled
+      ? "fixed z-[120] h-[min(378px,calc(100vh-1.5rem))] min-h-[220px] w-[min(38rem,calc(100vw-1.5rem))] transition-opacity duration-150 ease-out"
+      : "absolute right-0 bottom-full left-0 z-[70] h-[min(378px,calc(100vh-12rem))] min-h-[220px]",
+    sidePlacementEnabled && !sidePositionReady && "pointer-events-none opacity-0",
+    popoverPanelClass,
+  );
+
+  const panelStyle: CSSProperties | undefined = sidePlacementEnabled
+    ? { left: `${sidePosition.left}px`, top: `${sidePosition.top}px` }
+    : undefined;
+
+  if (sidePlacementEnabled && typeof document !== "undefined") {
+    return createPortal(
+      <SurfacePanel ref={panelRef} className={panelClassName} style={panelStyle}>
+        {panelContents}
+      </SurfacePanel>,
+      document.body,
+    );
+  }
+
+  return (
+    <SurfacePanel ref={panelRef} className={panelClassName}>
+      {panelContents}
     </SurfacePanel>
   );
 }

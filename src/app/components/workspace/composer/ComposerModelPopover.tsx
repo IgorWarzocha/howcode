@@ -258,7 +258,7 @@ export function ComposerModelPopover({
     }
 
     const updatePosition = (event?: Event) => {
-      const target = event?.target as Node | null;
+      const target = event?.target instanceof Node ? event.target : null;
       if (target && panelRef.current?.contains(target)) {
         return;
       }
