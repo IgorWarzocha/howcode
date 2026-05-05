@@ -70,6 +70,7 @@ export function ChatWorkspaceView({
   const rootRef = useRef<HTMLDivElement>(null);
   const desktopContentRef = useRef<HTMLDivElement>(null);
   const artifactDrawerRef = useRef<HTMLDivElement>(null);
+  const artifactOverlayPreviousFocusRef = useRef<HTMLElement | null>(null);
   const footerRef = useRef<HTMLElement>(null);
   const mainViewRef = useRef<HTMLElement>(null);
   const {
@@ -135,6 +136,8 @@ export function ChatWorkspaceView({
     const drawerElement = artifactDrawerRef.current;
     if (!drawerElement) return;
     if (document.activeElement && drawerElement.contains(document.activeElement)) return;
+    artifactOverlayPreviousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const animationFrame = window.requestAnimationFrame(() => {
       const focusTarget = drawerElement.querySelector<HTMLElement>(
@@ -142,7 +145,18 @@ export function ChatWorkspaceView({
       );
       focusTarget?.focus();
     });
-    return () => window.cancelAnimationFrame(animationFrame);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      const previousFocus = artifactOverlayPreviousFocusRef.current;
+      artifactOverlayPreviousFocusRef.current = null;
+      if (!previousFocus?.isConnected) return;
+      if (
+        document.activeElement instanceof HTMLElement &&
+        drawerElement.contains(document.activeElement)
+      ) {
+        previousFocus.focus();
+      }
+    };
   }, [artifactDrawerOverlay, artifactDrawerVisible]);
 
   useEffect(() => {
@@ -204,8 +218,9 @@ export function ChatWorkspaceView({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (state.settingsOpen) return;
       event.preventDefault();
-      event.stopImmediatePropagation();
+      event.stopPropagation();
       if (artifactsFullscreen) {
         setArtifactsFullscreen(false);
         return;
@@ -219,7 +234,13 @@ export function ChatWorkspaceView({
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [artifactsFullscreen, artifactDrawerOverlay, artifactsVisible, conversationId]);
+  }, [
+    artifactsFullscreen,
+    artifactDrawerOverlay,
+    artifactsVisible,
+    conversationId,
+    state.settingsOpen,
+  ]);
   const {
     handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
