@@ -360,8 +360,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
 
   const handleArtifactDrawerOverlayChange = useCallback(
     (visible: boolean, onClose?: () => void) => {
-      setArtifactDrawerOverlayVisible(visible);
-      setCloseArtifactDrawerOverlay(() => (visible && onClose ? onClose : null));
+      setArtifactDrawerOverlayVisible((current) => (current === visible ? current : visible));
+      setCloseArtifactDrawerOverlay((current) => {
+        const next = visible && onClose ? onClose : null;
+        return current === next ? current : next;
+      });
     },
     [],
   );
@@ -528,34 +531,61 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
               >
                 <button
                   type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+                    !artifactDrawerOverlayVisible && "opacity-70 hover:opacity-100",
+                  )}
                   onClick={handleToggleSidebar}
                   aria-label="Show sidebar"
                   data-tooltip="Show sidebar"
                   data-tooltip-placement="right"
                 >
-                  <PanelLeftOpen size={15} />
+                  <PanelLeftOpen
+                    size={15}
+                    className={cn(
+                      artifactDrawerOverlayVisible &&
+                        "[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]",
+                    )}
+                  />
+                </button>
+              </div>
+              <div
+                className={cn(
+                  "pointer-events-none col-start-3 mb-1.5 min-w-0 justify-self-end self-end transition-opacity duration-150 ease-out",
+                  !sidebarOverlayOpen && artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
+                    ? "opacity-100"
+                    : "opacity-0",
+                )}
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+                    !sidebarOverlayOpen &&
+                      artifactDrawerOverlayVisible &&
+                      closeArtifactDrawerOverlay
+                      ? "pointer-events-auto"
+                      : "pointer-events-none",
+                  )}
+                  onClick={() => closeArtifactDrawerOverlay?.()}
+                  aria-label="Hide artifacts"
+                  data-tooltip="Hide artifacts"
+                  data-tooltip-placement="left"
+                  tabIndex={
+                    !sidebarOverlayOpen &&
+                    artifactDrawerOverlayVisible &&
+                    closeArtifactDrawerOverlay
+                      ? 0
+                      : -1
+                  }
+                >
+                  <PanelRightClose
+                    size={15}
+                    className="[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]"
+                  />
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
-
-        {sidebarCompactMode &&
-        !sidebarOverlayOpen &&
-        artifactDrawerOverlayVisible &&
-        closeArtifactDrawerOverlay ? (
-          <div className="pointer-events-none fixed right-3 bottom-[1.375rem] z-[45]">
-            <button
-              type="button"
-              className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-              onClick={closeArtifactDrawerOverlay}
-              aria-label="Hide artifacts"
-              data-tooltip="Hide artifacts"
-              data-tooltip-placement="left"
-            >
-              <PanelRightClose size={15} />
-            </button>
           </div>
         ) : null}
 
