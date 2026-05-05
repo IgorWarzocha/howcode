@@ -149,7 +149,6 @@ export function useAppShellController() {
     loadComposerState,
     loadProjectGitState,
     scheduleShellStateRefresh,
-    refreshChatSidebarState,
     queryClient,
     dispatch,
     setArchivedThreads,

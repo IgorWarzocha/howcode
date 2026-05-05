@@ -11,16 +11,8 @@ import type {
   ProjectGitState,
   ThreadData,
 } from "../desktop/types";
-import { isLocalSessionPath } from "../../../shared/session-paths";
-import {
-  applyChatThreadToSidebarState,
-  removeChatThreadFromSidebarState,
-} from "./chat-sidebar-cache";
 import { desktopQueryKeys } from "../query/desktop-query";
-import {
-  applyProjectThreadToShellState,
-  removeProjectThreadFromShellState,
-} from "./project-thread-cache";
+import { applyProjectThreadToShellState } from "./project-thread-cache";
 import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
 import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
 import {
@@ -34,6 +26,7 @@ import {
   hasDesktopBridge,
   isThreadList,
 } from "./controller-action-utils";
+import { reconcileComposerThreadResult } from "./sidebar-thread-sync";
 
 export {
   applyOptimisticPinUpdate,
@@ -269,110 +262,15 @@ export async function runPostDesktopActionEffects({
     await invalidateInboxThreads();
   }
 
-  if (action === "composer.send" && hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const sessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-
-    if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
-      removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
-      setChatSidebarState((current) => removeChatThreadFromSidebarState(current, sessionPath));
-    }
-  }
-
-  if (action === "composer.send" && !hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const submittedSessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-    const resultSessionPath =
-      typeof actionResult?.result?.composerSendSessionPath === "string"
-        ? actionResult.result.composerSendSessionPath
-        : null;
-    const resultThreadId =
-      typeof actionResult?.result?.composerSendThreadId === "string"
-        ? actionResult.result.composerSendThreadId
-        : null;
-
-    if (
-      projectId &&
-      (!submittedSessionPath || isLocalSessionPath(submittedSessionPath)) &&
-      resultSessionPath &&
-      resultThreadId
-    ) {
-      const shellState = (
-        queryClient as {
-          getQueryData?: (queryKey: readonly unknown[]) => unknown;
-        }
-      ).getQueryData?.(["desktop", "shellState"]) as
-        | {
-            projects?: Array<{
-              id: string;
-              threads: Array<{
-                id: string;
-                sessionPath?: string | null;
-                title?: string;
-              }>;
-            }>;
-          }
-        | null
-        | undefined;
-      const existingThreadTitle =
-        shellState?.projects
-          ?.find((candidate) => candidate.id === projectId)
-          ?.threads.find(
-            (candidate) =>
-              candidate.id === resultThreadId || candidate.sessionPath === resultSessionPath,
-          )?.title ?? null;
-
-      applyProjectThreadToShellState(
-        queryClient,
-        projectId,
-        {
-          id: resultThreadId,
-          title: existingThreadTitle ?? "New thread",
-          age: "Now",
-          lastModifiedMs: Date.now(),
-          sessionPath: resultSessionPath,
-        },
-        {
-          replaceSessionPath: isLocalSessionPath(submittedSessionPath)
-            ? submittedSessionPath
-            : null,
-          revealProject: true,
-        },
-      );
-      dispatch({
-        type: "open-thread",
-        projectId,
-        threadId: resultThreadId,
-        sessionPath: resultSessionPath,
-        view: workspaceState.activeView === "chat" ? "chat" : "thread",
-      });
-      if (workspaceState.activeView === "chat") {
-        setChatSidebarState((current) =>
-          applyChatThreadToSidebarState(
-            current,
-            {
-              id: resultThreadId,
-              title: existingThreadTitle ?? "New thread",
-              age: "Now",
-              lastModifiedMs: Date.now(),
-              sessionPath: resultSessionPath,
-              projectId,
-              groupId:
-                typeof contextualPayload.chatGroupId === "string"
-                  ? contextualPayload.chatGroupId
-                  : null,
-            },
-            {
-              replaceSessionPath: isLocalSessionPath(submittedSessionPath)
-                ? submittedSessionPath
-                : null,
-            },
-          ),
-        );
-      }
-    }
+  if (action === "composer.send") {
+    reconcileComposerThreadResult({
+      contextualPayload,
+      actionResult,
+      workspaceState,
+      queryClient,
+      dispatch,
+      setChatSidebarState,
+    });
   }
 
   // Settings writes are local and already applied optimistically in the renderer.
