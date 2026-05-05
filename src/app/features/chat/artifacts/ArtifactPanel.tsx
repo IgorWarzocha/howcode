@@ -11,6 +11,7 @@ import {
   Save,
 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
+import { Tooltip } from "../../../components/common/Tooltip";
 import { compactIconButtonClass } from "../../../ui/classes";
 import { cn } from "../../../utils/cn";
 import { createMarkdownEditorPlugins, HistoricalMarkdownPreview } from "./ArtifactMarkdown";
@@ -149,18 +150,24 @@ export function ArtifactPanel({
           >
             <Save size={14} />
           </button>
-          <button
-            type="button"
-            className={cn(compactIconButtonClass, "h-7 w-7")}
-            onClick={() => void downloadArtifact()}
-            disabled={!selectedArtifact}
-            aria-label={downloadStatus ?? "Download artifact"}
-            data-tooltip={downloadStatus ?? "Download"}
-            data-tooltip-placement="left"
-            data-tooltip-size={downloadStatus ? "wide" : undefined}
+          <Tooltip
+            content={downloadStatus ?? "Download"}
+            placement="left"
+            className="inline-flex shrink-0"
+            contentClassName={
+              downloadStatus ? "max-w-[min(520px,calc(100vw-3rem))] whitespace-nowrap" : undefined
+            }
           >
-            <Download size={14} />
-          </button>
+            <button
+              type="button"
+              className={cn(compactIconButtonClass, "h-7 w-7")}
+              onClick={() => void downloadArtifact()}
+              disabled={!selectedArtifact}
+              aria-label={downloadStatus ?? "Download artifact"}
+            >
+              <Download size={14} />
+            </button>
+          </Tooltip>
           <button
             type="button"
             className={cn(

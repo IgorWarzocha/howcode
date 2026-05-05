@@ -35,8 +35,7 @@ type ChatWorkspaceViewProps = {
   onArtifactDrawerOverlayChange?: (visible: boolean, onClose?: () => void) => void;
 };
 
-const ARTIFACT_DRAWER_WIDTH = "clamp(420px, calc(100% - 820px), 760px)";
-const ARTIFACT_DRAWER_OVERLAY_WORKSPACE_WIDTH = 1220;
+const ARTIFACT_DRAWER_WIDTH = "clamp(320px, calc(100% - 820px), 760px)";
 
 function getReplyActivityKey(messages: readonly Message[]) {
   return messages
@@ -68,7 +67,6 @@ export function ChatWorkspaceView({
     Record<string, boolean>
   >({});
   const [artifactsFullscreen, setArtifactsFullscreen] = useState(false);
-  const [artifactWorkspaceOverlay, setArtifactWorkspaceOverlay] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const desktopContentRef = useRef<HTMLDivElement>(null);
   const artifactDrawerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +90,7 @@ export function ChatWorkspaceView({
     ? (artifactsVisibleByConversation[conversationId] ?? false)
     : false;
   const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen;
-  const artifactDrawerOverlay = sidebarCompactMode || artifactWorkspaceOverlay;
+  const artifactDrawerOverlay = sidebarCompactMode;
   const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay;
   const artifactDrawerPresent = useAnimatedPresence(artifactDrawerVisible);
   const artifactDrawerInsetStyle = showDesktopArtifactDrawer
@@ -114,21 +112,6 @@ export function ChatWorkspaceView({
     }
     setArtifactsFullscreen(false);
   }, [conversationId]);
-
-  useEffect(() => {
-    const rootElement = rootRef.current;
-    if (!rootElement) return;
-
-    const updateWorkspaceOverlay = () => {
-      const nextOverlay = rootElement.clientWidth <= ARTIFACT_DRAWER_OVERLAY_WORKSPACE_WIDTH;
-      setArtifactWorkspaceOverlay((current) => (current === nextOverlay ? current : nextOverlay));
-    };
-    updateWorkspaceOverlay();
-
-    const resizeObserver = new ResizeObserver(updateWorkspaceOverlay);
-    resizeObserver.observe(rootElement);
-    return () => resizeObserver.disconnect();
-  }, []);
 
   useEffect(() => {
     const desktopContentElement = desktopContentRef.current;
