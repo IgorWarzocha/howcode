@@ -270,7 +270,6 @@ export async function runPostDesktopActionEffects({
       queryClient,
       dispatch,
       setChatSidebarState,
-      setLiveThreadData,
     });
   }
 

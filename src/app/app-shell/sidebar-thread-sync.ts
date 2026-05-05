@@ -212,7 +212,6 @@ export function reconcileComposerThreadResult({
   queryClient,
   dispatch,
   setChatSidebarState,
-  setLiveThreadData,
 }: {
   contextualPayload: ActionPayload;
   actionResult: DesktopActionResult | null;
@@ -220,7 +219,6 @@ export function reconcileComposerThreadResult({
   queryClient: QueryClientLike;
   dispatch: DispatchWorkspaceAction;
   setChatSidebarState: SetChatSidebarState;
-  setLiveThreadData: SetLiveThreadData;
 }) {
   if (hasActionError(actionResult)) {
     removeFailedOptimisticComposerThread({ contextualPayload, queryClient, setChatSidebarState });
@@ -266,22 +264,15 @@ export function reconcileComposerThreadResult({
     replaceSessionPath,
     revealProject: true,
   });
-  setLiveThreadData((current) => {
-    if (current?.sessionPath !== submittedSessionPath) return current;
-    return {
-      ...current,
+  if (!replaceSessionPath) {
+    dispatch({
+      type: "open-thread",
+      projectId,
+      threadId: resultThreadId,
       sessionPath: resultSessionPath,
-      title: title ?? current.title,
-      isStreaming: current.isStreaming || current.messages.length === 0,
-    };
-  });
-  dispatch({
-    type: "open-thread",
-    projectId,
-    threadId: resultThreadId,
-    sessionPath: resultSessionPath,
-    view: workspaceState.activeView === "chat" ? "chat" : "thread",
-  });
+      view: workspaceState.activeView === "chat" ? "chat" : "thread",
+    });
+  }
 }
 
 export function applyThreadEventToSidebarState({

@@ -167,24 +167,33 @@ export function useDesktopEventSync({
       const isAliasedLocalDraftUpdate =
         aliasedLocalDraftSessionPath !== null &&
         aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath;
+      const hasVisibleAssistantActivity = event.thread.messages.some(
+        (message) => message.role !== "user",
+      );
       const isCompactionThreadUpdate =
         event.reason === "compaction-start" || event.reason === "compaction";
 
-      setLiveThreadData((current) =>
-        isVisibleThreadUpdate ||
-        shouldAutoOpenThread ||
-        isAliasedLocalDraftUpdate ||
-        current?.sessionPath === event.sessionPath
-          ? {
-              ...threadWithPreferences,
-              sessionPath:
-                isAliasedLocalDraftUpdate && aliasedLocalDraftSessionPath
-                  ? aliasedLocalDraftSessionPath
-                  : threadWithPreferences.sessionPath,
-              diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
-            }
-          : current,
-      );
+      setLiveThreadData((current) => {
+        const shouldApplyLiveThread =
+          isVisibleThreadUpdate ||
+          shouldAutoOpenThread ||
+          isAliasedLocalDraftUpdate ||
+          current?.sessionPath === event.sessionPath;
+        if (!shouldApplyLiveThread) return current;
+
+        const shouldSuppressDraftTimeline =
+          isAliasedLocalDraftUpdate && !hasVisibleAssistantActivity;
+
+        return {
+          ...threadWithPreferences,
+          messages: shouldSuppressDraftTimeline ? [] : threadWithPreferences.messages,
+          sessionPath:
+            isAliasedLocalDraftUpdate && aliasedLocalDraftSessionPath
+              ? aliasedLocalDraftSessionPath
+              : threadWithPreferences.sessionPath,
+          diffPreferences: threadWithPreferences.diffPreferences ?? current?.diffPreferences,
+        };
+      });
 
       if (isCompactionThreadUpdate && isVisibleThreadUpdate) {
         setThreadHistoryCompactions(0);
@@ -231,7 +240,7 @@ export function useDesktopEventSync({
           sessionPath: event.sessionPath,
           view: event.isChat === true ? "chat" : "thread",
         });
-      } else if (shouldDisplayLocalDraftThread) {
+      } else if (shouldDisplayLocalDraftThread && hasVisibleAssistantActivity) {
         dispatch({
           type: "open-thread",
           projectId: event.projectId,
