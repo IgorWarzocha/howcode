@@ -165,7 +165,10 @@ export function CodeWorkspaceView({
           <main
             ref={mainViewRef}
             className={
-              state.activeView === "thread" || state.activeView === "code" || showDiffInMainView
+              state.activeView === "thread" ||
+              state.activeView === "code" ||
+              state.activeView === "inbox" ||
+              showDiffInMainView
                 ? "min-h-0 overflow-hidden pt-1.5"
                 : mainPanelClass
             }
@@ -239,6 +242,9 @@ export function CodeWorkspaceView({
                 onListAttachmentEntries={listComposerAttachmentEntries}
                 onOpenThread={controller.handleThreadOpen}
                 onOpenSettingsView={() => controller.handleShowView("settings")}
+                sidebarCollapsed={sidebarCollapsed}
+                sidebarCompactMode={sidebarCompactMode}
+                onToggleSidebar={onToggleSidebar}
                 onCloseUtilityView={controller.handleCloseUtilityView}
                 onLoadEarlierMessages={handleLoadEarlierMessages}
                 onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
