@@ -36,7 +36,7 @@ export function applyChatThreadToSidebarState(
       (candidate) => !sameChatThread(candidate, thread, replaceSessionPath),
     );
 
-    if (!shouldInsert && !existingThread) return remainingThreads;
+    if (!shouldInsert) return remainingThreads;
 
     return [mergeChatThread(existingThread, thread), ...remainingThreads];
   };

@@ -23,7 +23,10 @@ import {
   applyOptimisticSettingsUpdate,
   runPostDesktopActionEffects,
 } from "./controller-post-action-effects";
-import { applyOptimisticComposerThread } from "./sidebar-thread-sync";
+import {
+  applyOptimisticComposerThread,
+  removeFailedOptimisticComposerThread,
+} from "./sidebar-thread-sync";
 
 type ActionPayload = AnyDesktopActionPayload;
 
@@ -122,7 +125,20 @@ export function useDesktopActionHandlers({
             })
           : { contextualPayload: initialContextualPayload };
 
-      const actionResult = await invokeDesktopAction(action, contextualPayload);
+      let actionResult: DesktopActionResult | null;
+      try {
+        actionResult = await invokeDesktopAction(action, contextualPayload);
+      } catch (error) {
+        if (action === "composer.send") {
+          removeFailedOptimisticComposerThread({
+            contextualPayload,
+            setChatSidebarState,
+            setLiveThreadData,
+            queryClient,
+          });
+        }
+        throw error;
+      }
 
       await runPostDesktopActionEffects({
         action,

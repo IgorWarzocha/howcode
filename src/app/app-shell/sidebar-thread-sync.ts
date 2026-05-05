@@ -250,6 +250,7 @@ export function reconcileComposerThreadResult({
     typeof actionResult?.result?.composerSendThreadId === "string"
       ? actionResult.result.composerSendThreadId
       : null;
+  const sendOutcome = actionResult?.result?.composerSendOutcome;
 
   if (
     !projectId ||
@@ -257,12 +258,14 @@ export function reconcileComposerThreadResult({
     !resultThreadId ||
     (submittedSessionPath && !isLocalSessionPath(submittedSessionPath))
   ) {
-    removeFailedOptimisticComposerThread({
-      contextualPayload,
-      queryClient,
-      setChatSidebarState,
-      setLiveThreadData,
-    });
+    if (sendOutcome === "stopped") {
+      removeFailedOptimisticComposerThread({
+        contextualPayload,
+        queryClient,
+        setChatSidebarState,
+        setLiveThreadData,
+      });
+    }
     return;
   }
 
@@ -330,7 +333,7 @@ export function applyThreadEventToSidebarState({
       sessionPath: event.sessionPath,
       running: event.thread.isStreaming || event.thread.isCompacting,
     }),
-    chatGroupId: event.isChat === true ? (event.chatGroupId ?? null) : undefined,
+    chatGroupId: event.isChat === true ? event.chatGroupId : undefined,
     updateProjectThreads: projectThreadScopeMatchesView,
     replaceSessionPath,
   });
