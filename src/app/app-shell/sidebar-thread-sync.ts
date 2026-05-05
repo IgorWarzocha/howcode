@@ -170,15 +170,9 @@ export function applyOptimisticComposerThread({
   setLiveThreadData(() => ({
     sessionPath: localFallback.sessionPath,
     title: "New thread",
-    messages: [
-      {
-        id: `${localFallback.threadId}:user`,
-        role: "user",
-        content: typeof contextualPayload.text === "string" ? [contextualPayload.text] : [],
-      },
-    ],
+    messages: [],
     previousMessageCount: 0,
-    isStreaming: true,
+    isStreaming: false,
     isCompacting: false,
   }));
   dispatch({

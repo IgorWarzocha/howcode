@@ -85,6 +85,7 @@ export function ChatWorkspaceView({
   const footerHeight = useWorkspaceFooterHeight({ footerRef, visible: true });
   const conversationId = activeThreadData?.sessionPath ?? terminalSessionPath;
   const hasConversation = (activeThreadData?.messages.length ?? 0) > 0;
+  const hasConversationLayout = hasConversation || Boolean(activeThreadData?.isStreaming);
   const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null;
   const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath);
   const artifactsVisible = conversationId
@@ -265,7 +266,7 @@ export function ChatWorkspaceView({
       >
         <div
           className="absolute inset-x-0 top-0 overflow-hidden px-5"
-          style={{ bottom: hasConversation ? `${footerHeight}px` : "0px" }}
+          style={{ bottom: hasConversationLayout ? `${footerHeight}px` : "0px" }}
         >
           <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden pt-1.5">
             <ChatView
@@ -289,7 +290,7 @@ export function ChatWorkspaceView({
           ref={footerRef}
           className={cn(
             "motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4",
-            hasConversation
+            hasConversationLayout
               ? "bottom-0 translate-y-0"
               : "top-1/2 -translate-y-1/2 transition-[top,transform] duration-300 ease-out",
           )}
@@ -382,7 +383,7 @@ export function ChatWorkspaceView({
                     onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
                     onToggleTerminal={handleToggleTerminal}
                     onToggleArtifacts={
-                      hasConversation && conversationId
+                      hasConversationLayout && conversationId
                         ? () =>
                             setArtifactsVisibleByConversation((current) => ({
                               ...current,
@@ -394,7 +395,7 @@ export function ChatWorkspaceView({
                     showTerminalControls={false}
                     artifactsVisible={artifactsVisible}
                     terminalVisible={state.terminalVisible}
-                    preferSideModelPopover={!hasConversation}
+                    preferSideModelPopover={!hasConversationLayout}
                     onListAttachmentEntries={listComposerAttachmentEntries}
                     onAction={handleAction}
                   />
