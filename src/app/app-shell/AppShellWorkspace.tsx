@@ -23,7 +23,7 @@ type AppShellWorkspaceProps = {
   sidebarAutoHidden: boolean;
   sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
-  onArtifactDrawerOverlayChange?: (visible: boolean) => void;
+  onArtifactDrawerOverlayChange?: (visible: boolean, onClose?: () => void) => void;
 };
 
 export function AppShellWorkspace({

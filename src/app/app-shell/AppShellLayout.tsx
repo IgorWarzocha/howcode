@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PanelLeftOpen } from "lucide-react";
+import { PanelLeftOpen, PanelRightClose } from "lucide-react";
 import { getPersistedSessionPath, isLocalSessionPath } from "../../../shared/session-paths";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -86,6 +86,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const [sidebarCompactMode, setSidebarCompactMode] = useState(false);
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
   const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false);
+  const [closeArtifactDrawerOverlay, setCloseArtifactDrawerOverlay] = useState<(() => void) | null>(
+    null,
+  );
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -355,12 +358,19 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     });
   }, []);
 
-  const handleArtifactDrawerOverlayChange = useCallback((visible: boolean) => {
-    setArtifactDrawerOverlayVisible(visible);
-  }, []);
+  const handleArtifactDrawerOverlayChange = useCallback(
+    (visible: boolean, onClose?: () => void) => {
+      setArtifactDrawerOverlayVisible(visible);
+      setCloseArtifactDrawerOverlay(() => (visible && onClose ? onClose : null));
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (state.activeView !== "chat") setArtifactDrawerOverlayVisible(false);
+    if (state.activeView !== "chat") {
+      setArtifactDrawerOverlayVisible(false);
+      setCloseArtifactDrawerOverlay(null);
+    }
   }, [state.activeView]);
 
   useEffect(() => {
@@ -528,6 +538,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 </button>
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {sidebarCompactMode &&
+        !sidebarOverlayOpen &&
+        artifactDrawerOverlayVisible &&
+        closeArtifactDrawerOverlay ? (
+          <div className="pointer-events-none fixed right-3 bottom-[1.375rem] z-[45]">
+            <button
+              type="button"
+              className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+              onClick={closeArtifactDrawerOverlay}
+              aria-label="Hide artifacts"
+              data-tooltip="Hide artifacts"
+              data-tooltip-placement="left"
+            >
+              <PanelRightClose size={15} />
+            </button>
           </div>
         ) : null}
 

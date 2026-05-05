@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   getLocalDraftChatGroupId,
@@ -32,7 +32,7 @@ type ChatWorkspaceViewProps = {
   sidebarAutoHidden: boolean;
   sidebarCompactMode: boolean;
   onToggleSidebar: () => void;
-  onArtifactDrawerOverlayChange?: (visible: boolean) => void;
+  onArtifactDrawerOverlayChange?: (visible: boolean, onClose?: () => void) => void;
 };
 
 const ARTIFACT_DRAWER_WIDTH = "clamp(420px, calc(100% - 820px), 760px)";
@@ -100,6 +100,15 @@ export function ChatWorkspaceView({
   const previousHasConversationRef = useRef(hasConversation);
   const previousConversationIdRef = useRef<string | null | undefined>(conversationId);
   const shouldShowConversationContent = conversationContentVisible || activeThreadData?.isStreaming;
+  const handleCloseArtifacts = useCallback(() => {
+    if (conversationId) {
+      setArtifactsVisibleByConversation((current) => ({
+        ...current,
+        [conversationId]: false,
+      }));
+    }
+    setArtifactsFullscreen(false);
+  }, [conversationId]);
 
   useEffect(() => {
     if (!hasConversation) {
@@ -143,9 +152,17 @@ export function ChatWorkspaceView({
 
   useEffect(() => {
     const overlayVisible = artifactDrawerVisible && artifactDrawerOverlay;
-    onArtifactDrawerOverlayChange?.(overlayVisible);
+    onArtifactDrawerOverlayChange?.(
+      overlayVisible,
+      overlayVisible ? handleCloseArtifacts : undefined,
+    );
     return () => onArtifactDrawerOverlayChange?.(false);
-  }, [artifactDrawerOverlay, artifactDrawerVisible, onArtifactDrawerOverlayChange]);
+  }, [
+    artifactDrawerOverlay,
+    artifactDrawerVisible,
+    handleCloseArtifacts,
+    onArtifactDrawerOverlayChange,
+  ]);
 
   useEffect(() => {
     if (!artifactsVisible || (!artifactDrawerOverlay && !artifactsFullscreen)) return;
@@ -354,14 +371,7 @@ export function ChatWorkspaceView({
               visible={artifactDrawerPresent}
               fullscreen={false}
               onToggleFullscreen={() => setArtifactsFullscreen(true)}
-              onClose={() => {
-                if (conversationId) {
-                  setArtifactsVisibleByConversation((current) => ({
-                    ...current,
-                    [conversationId]: false,
-                  }));
-                }
-              }}
+              onClose={handleCloseArtifacts}
             />
           </div>
         </div>
@@ -374,15 +384,7 @@ export function ChatWorkspaceView({
             visible={artifactsVisible}
             fullscreen={artifactsFullscreen}
             onToggleFullscreen={() => setArtifactsFullscreen(false)}
-            onClose={() => {
-              if (conversationId) {
-                setArtifactsVisibleByConversation((current) => ({
-                  ...current,
-                  [conversationId]: false,
-                }));
-              }
-              setArtifactsFullscreen(false);
-            }}
+            onClose={handleCloseArtifacts}
           />
         </div>
       ) : null}
