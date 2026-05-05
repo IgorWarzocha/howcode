@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { getDesktopActionErrorMessage } from "../desktop/action-results";
 import { getErrorMessage } from "../desktop/error-messages";
 import { EmptyStateCard } from "../components/common/EmptyStateCard";
 import { MarkdownContent } from "../components/common/MarkdownContent";
+import { WorkspaceComposerDock } from "../components/workspace/WorkspaceComposerDock";
 import { InboxComposer } from "../components/workspace/inbox/InboxComposer";
 import { isCompactSlashCommand } from "../../../shared/composer-slash-commands";
+import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from "../ui/layout";
 import type {
   AppSettings,
   ComposerAttachment,
@@ -36,6 +39,9 @@ type InboxViewProps = {
   }) => Promise<ComposerFilePickerState | null>;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
   onOpenSettingsView: () => void;
+  sidebarCollapsed: boolean;
+  sidebarCompactMode: boolean;
+  onToggleSidebar: () => void;
 };
 
 export function InboxView({
@@ -54,6 +60,9 @@ export function InboxView({
   onListAttachmentEntries,
   onOpenThread,
   onOpenSettingsView,
+  sidebarCollapsed,
+  sidebarCompactMode,
+  onToggleSidebar,
 }: InboxViewProps) {
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
@@ -160,8 +169,8 @@ export function InboxView({
   const messageMarkdown = thread.content.join("\n\n").trim();
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] px-6 pt-6 pb-4">
-      <div className="w-full pb-5">
+    <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] pt-6 pb-4">
+      <div className={`mx-auto w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} pb-5`}>
         <div className="grid w-full gap-2 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--panel)] px-4 py-3 shadow-[var(--shadow)]">
           <div className="flex min-w-0 items-center gap-2 text-[11px] leading-4 text-[color:var(--muted-2)]">
             <span className="truncate">{thread.projectName}</span>
@@ -181,8 +190,8 @@ export function InboxView({
       </div>
 
       <div className="min-h-0 overflow-y-auto">
-        <div className="grid h-full w-full content-start pb-5">
-          <div className="min-h-0 max-w-[92ch] text-pretty">
+        <div className="grid h-full w-full content-start justify-items-center pb-5">
+          <div className={`min-h-0 w-full ${WORKSPACE_CONTENT_MAX_WIDTH_CLASS} text-pretty`}>
             {messageMarkdown ? (
               <MarkdownContent
                 markdown={messageMarkdown}
@@ -198,35 +207,54 @@ export function InboxView({
       </div>
 
       <div className="pt-1">
-        <div className="w-full">
-          <InboxComposer
-            appSettings={appSettings}
-            attachments={attachments}
-            availableModels={availableModels}
-            availableThinkingLevels={availableThinkingLevels}
-            contextUsage={contextUsage}
-            currentModel={currentModel}
-            currentThinkingLevel={currentThinkingLevel}
-            draft={draft}
-            errorMessage={errorMessage}
-            favoriteFolders={favoriteFolders}
-            isCompacting={isCompacting}
-            isStreaming={thread.running}
-            isSending={isSending}
-            showDictationButton={showDictationButton}
-            thread={thread}
-            onChangeDraft={setDraft}
-            onChangeAttachments={setAttachments}
-            onChangeErrorMessage={setErrorMessage}
-            onAction={onAction}
-            onDismiss={() => onDismissThread(thread)}
-            onListAttachmentEntries={onListAttachmentEntries}
-            onOpenThread={() => onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)}
-            onOpenSettingsView={onOpenSettingsView}
-            onSend={(sendInput) => handleSend(sendInput)}
-            onStop={handleStop}
-          />
-        </div>
+        <WorkspaceComposerDock
+          compactControls={sidebarCompactMode}
+          left={
+            !sidebarCompactMode ? (
+              <button
+                type="button"
+                className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                onClick={onToggleSidebar}
+                aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                data-tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                data-tooltip-placement="right"
+              >
+                {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+              </button>
+            ) : null
+          }
+          center={
+            <InboxComposer
+              appSettings={appSettings}
+              attachments={attachments}
+              availableModels={availableModels}
+              availableThinkingLevels={availableThinkingLevels}
+              contextUsage={contextUsage}
+              currentModel={currentModel}
+              currentThinkingLevel={currentThinkingLevel}
+              draft={draft}
+              errorMessage={errorMessage}
+              favoriteFolders={favoriteFolders}
+              isCompacting={isCompacting}
+              isStreaming={thread.running}
+              isSending={isSending}
+              showDictationButton={showDictationButton}
+              thread={thread}
+              onChangeDraft={setDraft}
+              onChangeAttachments={setAttachments}
+              onChangeErrorMessage={setErrorMessage}
+              onAction={onAction}
+              onDismiss={() => onDismissThread(thread)}
+              onListAttachmentEntries={onListAttachmentEntries}
+              onOpenThread={() =>
+                onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)
+              }
+              onOpenSettingsView={onOpenSettingsView}
+              onSend={(sendInput) => handleSend(sendInput)}
+              onStop={handleStop}
+            />
+          }
+        />
       </div>
     </div>
   );

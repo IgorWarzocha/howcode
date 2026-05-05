@@ -60,6 +60,9 @@ type CodeWorkspaceMainViewProps = {
   onCloseUtilityView: () => void;
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void;
   onOpenSettingsView: () => void;
+  sidebarCollapsed: boolean;
+  sidebarCompactMode: boolean;
+  onToggleSidebar: () => void;
   onLoadEarlierMessages: () => void;
   onSetExtensionsProjectScopeActive: (active: boolean) => void;
   onSetSkillsProjectScopeActive: (active: boolean) => void;
@@ -93,6 +96,9 @@ export function CodeWorkspaceMainView({
   onCloseUtilityView,
   onOpenThread,
   onOpenSettingsView,
+  sidebarCollapsed,
+  sidebarCompactMode,
+  onToggleSidebar,
   onLoadEarlierMessages,
   onSetExtensionsProjectScopeActive,
   onSetSkillsProjectScopeActive,
@@ -133,6 +139,9 @@ export function CodeWorkspaceMainView({
         onListAttachmentEntries={onListAttachmentEntries}
         onOpenThread={onOpenThread}
         onOpenSettingsView={onOpenSettingsView}
+        sidebarCollapsed={sidebarCollapsed}
+        sidebarCompactMode={sidebarCompactMode}
+        onToggleSidebar={onToggleSidebar}
       />
     );
   }
