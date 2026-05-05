@@ -319,7 +319,7 @@ export function useComposerController({
     errorMessage,
     extensionCommandRunning,
     isSending,
-    inputLocked: isSending || pendingSubmittedDraft !== null,
+    inputLocked: isSending || pendingSubmittedDraft !== null || (isStreaming && !replyActivityKey),
     pickerButtonRef,
     pickerLoading,
     pickerOpen: openMenu === "picker",
