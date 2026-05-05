@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PanelLeftOpen } from "lucide-react";
+import { PanelLeftOpen, PanelRightClose } from "lucide-react";
 import { getPersistedSessionPath, isLocalSessionPath } from "../../../shared/session-paths";
 import { Sidebar } from "../components/sidebar/Sidebar";
 import { TerminalPanel } from "../components/workspace/TerminalPanel";
@@ -85,6 +85,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarCompactMode, setSidebarCompactMode] = useState(false);
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false);
+  const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false);
+  const [closeArtifactDrawerOverlay, setCloseArtifactDrawerOverlay] = useState<(() => void) | null>(
+    null,
+  );
   const [diffBaselineState, setDiffBaselineState] = useState<{
     projectId: string;
     threadId: string | null;
@@ -145,6 +149,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
       : null;
   const takeoverVisible = state.takeoverVisible;
   const terminalDrawerVisible = state.activeView === "thread" && state.terminalVisible;
+  const compactSidebarButtonEdgeMode = terminalDrawerVisible || artifactDrawerOverlayVisible;
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible);
   const diffBaseline =
     diffBaselineState.projectId === composerProjectId &&
@@ -353,6 +358,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     });
   }, []);
 
+  const handleArtifactDrawerOverlayChange = useCallback(
+    (visible: boolean, onClose?: () => void) => {
+      setArtifactDrawerOverlayVisible((current) => (current === visible ? current : visible));
+      setCloseArtifactDrawerOverlay((current) => {
+        const next = visible && onClose ? onClose : null;
+        return current === next ? current : next;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (state.activeView !== "chat") {
+      setArtifactDrawerOverlayVisible(false);
+      setCloseArtifactDrawerOverlay(null);
+    }
+  }, [state.activeView]);
+
   useEffect(() => {
     const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236);
     updateSidebarCompactMode();
@@ -496,25 +519,70 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
           <div
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 z-[45] pb-4",
-              terminalDrawerVisible ? "px-3" : "px-5",
+              compactSidebarButtonEdgeMode ? "px-3" : "px-5",
             )}
           >
             <div className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2">
               <div
                 className={cn(
                   "pointer-events-auto mb-1.5 min-w-0 justify-self-end self-end",
-                  terminalDrawerVisible ? "justify-self-start" : "translate-x-10",
+                  compactSidebarButtonEdgeMode ? "justify-self-start" : "translate-x-10",
                 )}
               >
                 <button
                   type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+                    !artifactDrawerOverlayVisible && "opacity-70 hover:opacity-100",
+                  )}
                   onClick={handleToggleSidebar}
                   aria-label="Show sidebar"
                   data-tooltip="Show sidebar"
                   data-tooltip-placement="right"
                 >
-                  <PanelLeftOpen size={15} />
+                  <PanelLeftOpen
+                    size={15}
+                    className={cn(
+                      artifactDrawerOverlayVisible &&
+                        "[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]",
+                    )}
+                  />
+                </button>
+              </div>
+              <div
+                className={cn(
+                  "pointer-events-none col-start-3 mb-1.5 min-w-0 justify-self-end self-end transition-opacity duration-150 ease-out",
+                  !sidebarOverlayOpen && artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
+                    ? "opacity-100"
+                    : "opacity-0",
+                )}
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]",
+                    !sidebarOverlayOpen &&
+                      artifactDrawerOverlayVisible &&
+                      closeArtifactDrawerOverlay
+                      ? "pointer-events-auto"
+                      : "pointer-events-none",
+                  )}
+                  onClick={() => closeArtifactDrawerOverlay?.()}
+                  aria-label="Hide artifacts"
+                  data-tooltip="Hide artifacts"
+                  data-tooltip-placement="left"
+                  tabIndex={
+                    !sidebarOverlayOpen &&
+                    artifactDrawerOverlayVisible &&
+                    closeArtifactDrawerOverlay
+                      ? 0
+                      : -1
+                  }
+                >
+                  <PanelRightClose
+                    size={15}
+                    className="[&_*]:fill-[color:var(--workspace)] [&_*]:stroke-[color:var(--muted)]"
+                  />
                 </button>
               </div>
             </div>
@@ -638,6 +706,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
                 sidebarAutoHidden={sidebarCompactMode}
                 sidebarCompactMode={sidebarCompactMode}
                 onToggleSidebar={handleToggleSidebar}
+                onArtifactDrawerOverlayChange={handleArtifactDrawerOverlayChange}
               />
             </div>
 
