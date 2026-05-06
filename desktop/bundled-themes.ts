@@ -11,12 +11,19 @@ export type BundledTheme = {
   path: string
 }
 
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
 function resolvePackagedThemePath(name: string) {
   const processWithResourcesPath = process as NodeJS.Process & {
     resourcesPath?: string | undefined
   }
-  const packaged = processWithResourcesPath.resourcesPath
-    ? path.join(processWithResourcesPath.resourcesPath, 'resources', 'themes', `${name}.json`)
+  const resourcesPath =
+    getProcessEnvironmentVariable('HOWCODE_ELECTRON_RESOURCES_PATH')?.trim() ||
+    processWithResourcesPath.resourcesPath
+  const packaged = resourcesPath
+    ? path.join(resourcesPath, 'resources', 'themes', `${name}.json`)
     : null
   if (packaged && fs.existsSync(packaged)) {
     return packaged
