@@ -27,6 +27,37 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@wterm/ghostty'],
   },
+  build: {
+    chunkSizeWarningLimit: 1300,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-react',
+              test: /node_modules[/](?:react|react-dom|scheduler)[/]/,
+              priority: 30,
+            },
+            {
+              name: 'vendor-terminal',
+              test: /node_modules[/]@wterm[/]/,
+              priority: 20,
+            },
+            {
+              name: 'vendor-ui',
+              test: /node_modules[/](?:@dnd-kit|@tanstack|lucide-react|react-grab)[/]/,
+              priority: 10,
+            },
+            {
+              name: 'vendor-pi',
+              test: /node_modules[/]@mariozechner[/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [stripGhosttyPackageSourcemaps(), react(), tailwindcss()],
   worker: {
     format: 'es',

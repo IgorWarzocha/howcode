@@ -1,6 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '../../../../shared/session-paths'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { Composer } from '../../components/workspace/composer'
@@ -13,8 +13,11 @@ import { cn } from '../../utils/cn'
 import { DesktopComposerStatus } from '../code/desktop-composer-status'
 import { useQueuedPromptRestore } from '../code/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code/useWorkspaceFooterHeight'
-import { ArtifactPanel } from './artifacts/artifact-panel'
 import { ChatView } from './chat-view'
+
+const ArtifactPanel = lazy(() =>
+  import('./artifacts/artifact-panel').then((module) => ({ default: module.ArtifactPanel })),
+)
 
 type ChatWorkspaceViewProps = {
   controller: AppShellController
@@ -381,13 +384,15 @@ function ChatArtifactDrawer(props: ChatWorkspaceContentProps) {
         data-open={artifactDrawerVisible ? 'true' : 'false'}
         className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${artifactDrawerVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
       >
-        <ArtifactPanel
-          conversationId={conversationId ?? null}
-          visible={artifactDrawerPresent}
-          fullscreen={false}
-          onToggleFullscreen={() => setArtifactsFullscreen(true)}
-          onClose={handleCloseArtifacts}
-        />
+        <Suspense fallback={null}>
+          <ArtifactPanel
+            conversationId={conversationId ?? null}
+            visible={artifactDrawerPresent}
+            fullscreen={false}
+            onToggleFullscreen={() => setArtifactsFullscreen(true)}
+            onClose={handleCloseArtifacts}
+          />
+        </Suspense>
       </div>
     </div>
   )
@@ -404,13 +409,15 @@ function ChatArtifactFullscreen(props: ChatWorkspaceContentProps) {
   if (!artifactsFullscreen) return null
   return (
     <div className="absolute inset-0 z-20 min-h-0 overflow-hidden">
-      <ArtifactPanel
-        conversationId={conversationId ?? null}
-        visible={artifactsVisible}
-        fullscreen={artifactsFullscreen}
-        onToggleFullscreen={() => setArtifactsFullscreen(false)}
-        onClose={handleCloseArtifacts}
-      />
+      <Suspense fallback={null}>
+        <ArtifactPanel
+          conversationId={conversationId ?? null}
+          visible={artifactsVisible}
+          fullscreen={artifactsFullscreen}
+          onToggleFullscreen={() => setArtifactsFullscreen(false)}
+          onClose={handleCloseArtifacts}
+        />
+      </Suspense>
     </div>
   )
 }

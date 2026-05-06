@@ -10,7 +10,7 @@ files:
   - package.json
   - "!node_modules/**/*.map"
   - "!node_modules/lucide-react/**"
-asar: false
+asar: true
 extraResources:
   - from: desktop/resources
     to: resources
