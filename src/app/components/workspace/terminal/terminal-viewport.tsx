@@ -3,6 +3,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { type ITheme, Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
+import { piGuiThemeUpdatedEvent } from '../../../app-shell/usePiGuiTheme'
 import type { TerminalEvent } from '../../../desktop/types'
 import {
   closeDesktopTerminal,
@@ -488,6 +489,23 @@ export function TerminalViewport({
 
     terminal.options.theme = buildXtermTheme(mount)
   }, [terminalStyle])
+
+  useEffect(() => {
+    const handleThemeUpdate = () => {
+      const terminal = terminalInstanceRef.current
+      const mount = terminalMountRef.current
+      if (!(terminal && mount)) {
+        return
+      }
+
+      terminal.options.theme = buildXtermTheme(mount)
+    }
+
+    window.addEventListener(piGuiThemeUpdatedEvent, handleThemeUpdate)
+    return () => {
+      window.removeEventListener(piGuiThemeUpdatedEvent, handleThemeUpdate)
+    }
+  }, [])
 
   const resizeTerminalToContainer = useCallback(() => {
     const terminal = terminalInstanceRef.current

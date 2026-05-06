@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import type { PiThemeState } from '../desktop/types'
 
 const storageKey = 'howcode:pi-gui-theme:v1'
+export const piGuiThemeUpdatedEvent = 'howcode:pi-gui-theme-updated'
 
 const managedVars = [
   '--bg',
@@ -180,6 +181,7 @@ function applyValues(values: GuiThemeValues) {
   for (const property of managedVars) {
     root.style.setProperty(property, values[property])
   }
+  window.dispatchEvent(new CustomEvent(piGuiThemeUpdatedEvent))
 }
 
 export function applyStoredPiGuiTheme() {
