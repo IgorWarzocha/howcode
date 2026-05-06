@@ -779,7 +779,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible = state.activeView === 'thread' && state.terminalVisible
   const utilityViewActive = isUtilityView(state.activeView)
-  const compactSidebarButtonEdgeMode = terminalDrawerVisible || artifactDrawerOverlayVisible
+  const compactSidebarButtonEdgeMode =
+    state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible
   const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
   const diffBaseline = getEffectiveDiffBaseline({
     activeThreadId,
