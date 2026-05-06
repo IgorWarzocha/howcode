@@ -71,6 +71,14 @@ const XTERM_THEME_COLOR_KEYS = [
   'brightCyan',
   'brightWhite',
 ] as const
+const XTERM_STICKY_BOTTOM_THRESHOLD_ROWS = 2
+
+function isXtermNearBottom(terminal: XTerm) {
+  return (
+    terminal.buffer.active.baseY - terminal.buffer.active.viewportY <=
+    XTERM_STICKY_BOTTOM_THRESHOLD_ROWS
+  )
+}
 
 function resolveCssColor(element: HTMLElement, value: string, fallback: string) {
   const trimmedValue = value.trim()
@@ -170,6 +178,7 @@ export function TerminalViewport({
   const terminalResizeTimerRefs = useRef<number[]>([])
   const pendingScrollFrameRef = useRef<number | null>(null)
   const pendingBottomAlignFrameRef = useRef<number | null>(null)
+  const terminalInitialFitTimerRef = useRef<number | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const attachFailedRef = useRef(false)
   const pendingEventsRef = useRef<TerminalEvent[]>([])
@@ -273,8 +282,7 @@ export function TerminalViewport({
     (data: string | Uint8Array) => {
       const terminal = terminalInstanceRef.current
       const shouldStickToBottom =
-        stickToBottomOnOutput &&
-        (!terminal || terminal.buffer.active.viewportY >= terminal.buffer.active.baseY)
+        stickToBottomOnOutput && (!terminal || isXtermNearBottom(terminal))
 
       terminal?.write(data, () => {
         scheduleXtermBottomAlign()
@@ -304,6 +312,9 @@ export function TerminalViewport({
       }
       if (pendingBottomAlignFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingBottomAlignFrameRef.current)
+      }
+      if (terminalInitialFitTimerRef.current !== null) {
+        window.clearTimeout(terminalInitialFitTimerRef.current)
       }
     },
     [],
@@ -440,7 +451,8 @@ export function TerminalViewport({
       }
       setTerminalInitError(null)
       setTerminalReadyRevision((current) => current + 1)
-      window.setTimeout(() => {
+      terminalInitialFitTimerRef.current = window.setTimeout(() => {
+        terminalInitialFitTimerRef.current = null
         fitAddon.fit()
         scheduleXtermBottomAlign()
         terminal.scrollToBottom()
@@ -450,6 +462,10 @@ export function TerminalViewport({
     }
 
     return () => {
+      if (terminalInitialFitTimerRef.current !== null) {
+        window.clearTimeout(terminalInitialFitTimerRef.current)
+        terminalInitialFitTimerRef.current = null
+      }
       fitAddonRef.current = null
       terminalInstanceRef.current?.dispose()
       terminalInstanceRef.current = null
@@ -463,6 +479,7 @@ export function TerminalViewport({
   ])
 
   useEffect(() => {
+    void terminalStyle
     const terminal = terminalInstanceRef.current
     const mount = terminalMountRef.current
     if (!(terminal && mount)) {
@@ -470,7 +487,7 @@ export function TerminalViewport({
     }
 
     terminal.options.theme = buildXtermTheme(mount)
-  })
+  }, [terminalStyle])
 
   const resizeTerminalToContainer = useCallback(() => {
     const terminal = terminalInstanceRef.current
@@ -479,8 +496,7 @@ export function TerminalViewport({
       return
     }
 
-    const shouldStickToBottom =
-      stickToBottomOnOutput && terminal.buffer.active.viewportY >= terminal.buffer.active.baseY
+    const shouldStickToBottom = stickToBottomOnOutput && isXtermNearBottom(terminal)
     fitAddonRef.current?.fit()
     const cols = normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols)
     const rows = normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows)
