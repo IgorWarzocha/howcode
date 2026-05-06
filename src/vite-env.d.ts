@@ -10,5 +10,4 @@ declare module '*.md?raw' {
   export default content
 }
 
-declare module '@wterm/react/css'
 declare module '@fontsource-variable/inter'
