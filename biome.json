@@ -6,14 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!**//artifacts",
-      "!**//build",
-      "!**//dist",
-      "!**//node_modules",
-      "!**//vendor"
-    ],
+    "includes": ["**", "!**/artifacts", "!**/build", "!**/dist", "!**/node_modules", "!**/vendor"],
     "ignoreUnknown": true
   },
   "formatter": {

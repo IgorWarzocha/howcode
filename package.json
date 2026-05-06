@@ -41,7 +41,7 @@
     "test:composer": "vitest run src/test/composer",
     "test:watch": "vitest",
     "check": "bun run lint && bun run typecheck && bun run test && bun run build",
-    "ai:check": "biome check --write --error-on-warnings . && bun run typecheck && bun run test"
+    "ai:check": "bun run lint && bun run typecheck && bun run test"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
