@@ -2,9 +2,9 @@ import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
 import { getPersistedSessionPath } from '../../shared/session-paths'
 import type { TerminalOpenRequest } from '../../shared/terminal-contracts.ts'
-import { getBundledThemes } from '../bundled-themes.cts'
-import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.cts'
-import { getSessionNativeExtensions } from '../thread-state-db.cts'
+import { getBundledThemes } from '../bundled-themes.ts'
+import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.ts'
+import { getSessionNativeExtensions } from '../thread-state-db.ts'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]

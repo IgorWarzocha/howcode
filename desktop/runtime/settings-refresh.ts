@@ -1,7 +1,7 @@
 import path from 'node:path'
 import type { ComposerState } from '../../shared/desktop-contracts'
 import { getPersistedSessionPath } from '../../shared/session-paths'
-import type { PiRuntime } from './types.cts'
+import type { PiRuntime } from './types.ts'
 
 export type RuntimeRecordSnapshot = {
   runtimeKey: string

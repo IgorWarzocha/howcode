@@ -167,8 +167,8 @@ vi.mock('better-sqlite3', () => ({
 
 async function loadArtifactDb() {
   const [artifactDb, threadDb] = await Promise.all([
-    import('./artifact-state-db.cts'),
-    import('./thread-state-db/db.cts'),
+    import('./artifact-state-db.ts'),
+    import('./thread-state-db/db.ts'),
   ])
   return { artifactDb, threadDb }
 }

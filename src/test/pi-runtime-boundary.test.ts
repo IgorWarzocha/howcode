@@ -9,13 +9,13 @@ const sourceFileExtensionPattern = /\.(?:cts|ts|mts|tsx)$/
 const allowedPiRuntimeImportPrefixes = [
   'desktop/runtime-host/',
   'desktop/runtime/',
-  'desktop/pi-module.cts',
-  // Package internals are only exported to Electron through runtime-host-bridge.cts; the host
+  'desktop/pi-module.ts',
+  // Package internals are only exported to Electron through runtime-host-bridge.ts; the host
   // imports these implementations directly so native package-manager dependencies stay in Node.
-  'desktop/pi-packages/services.cts',
-  'desktop/pi-packages/configured.cts',
-  'desktop/pi-packages/mutations.cts',
-  'desktop/skills/mutations.cts',
+  'desktop/pi-packages/services.ts',
+  'desktop/pi-packages/configured.ts',
+  'desktop/pi-packages/mutations.ts',
+  'desktop/skills/mutations.ts',
 ]
 
 function walkFiles(dir: string): string[] {
@@ -43,7 +43,7 @@ function isAllowedRuntimeFile(repoPath: string) {
 function resolveImportSpecifier(importerPath: string, specifier: string) {
   if (!specifier.startsWith('.')) return specifier
   const resolved = path.resolve(path.dirname(importerPath), specifier)
-  for (const candidate of [resolved, `${resolved}.cts`, `${resolved}.ts`, `${resolved}.mts`]) {
+  for (const candidate of [resolved, `${resolved}.ts`, `${resolved}.ts`, `${resolved}.mts`]) {
     if (existsSync(candidate)) return toRepoPath(candidate)
   }
   return toRepoPath(resolved)
@@ -51,13 +51,13 @@ function resolveImportSpecifier(importerPath: string, specifier: string) {
 
 function isForbiddenRuntimeSpecifier(resolvedSpecifier: string) {
   return (
-    resolvedSpecifier === './pi-module.cts' ||
-    resolvedSpecifier === '../pi-module.cts' ||
-    resolvedSpecifier.includes('/pi-module.cts') ||
-    resolvedSpecifier.startsWith('desktop/runtime/composer-service.cts') ||
-    resolvedSpecifier.startsWith('desktop/runtime/composer-state.cts') ||
-    resolvedSpecifier.startsWith('desktop/runtime/runtime-registry.cts') ||
-    resolvedSpecifier.startsWith('desktop/runtime/thread-publisher.cts') ||
+    resolvedSpecifier === './pi-module.ts' ||
+    resolvedSpecifier === '../pi-module.ts' ||
+    resolvedSpecifier.includes('/pi-module.ts') ||
+    resolvedSpecifier.startsWith('desktop/runtime/composer-service.ts') ||
+    resolvedSpecifier.startsWith('desktop/runtime/composer-state.ts') ||
+    resolvedSpecifier.startsWith('desktop/runtime/runtime-registry.ts') ||
+    resolvedSpecifier.startsWith('desktop/runtime/thread-publisher.ts') ||
     resolvedSpecifier.startsWith('@mariozechner/pi-')
   )
 }

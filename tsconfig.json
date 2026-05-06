@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": ["ESNext", "DOM"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -24,7 +24,10 @@
     "noPropertyAccessFromIndexSignature": true,
     "verbatimModuleSyntax": true,
     "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force"
+    "moduleDetection": "force",
+    "erasableSyntaxOnly": true,
+    "stableTypeOrdering": true,
+    "libReplacement": false
   },
   "include": ["src", "vite.config.ts"],
   "exclude": ["src/electron/**/*"]

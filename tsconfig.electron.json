@@ -18,10 +18,13 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "noPropertyAccessFromIndexSignature": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force"
+    "moduleDetection": "force",
+    "erasableSyntaxOnly": true,
+    "stableTypeOrdering": true,
+    "libReplacement": false
   },
   "include": ["src/electron/**/*.ts", "shared/**/*.ts", "src/desktop-host/**/*.ts"]
 }

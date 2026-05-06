@@ -22,10 +22,10 @@ const buildTargets = [
   {
     label: 'desktop-runtime',
     entrypoints: [
-      path.join(projectRoot, 'desktop', 'pi-threads.cts'),
-      path.join(projectRoot, 'desktop', 'pi-skills.cts'),
-      path.join(projectRoot, 'desktop', 'skill-creator-session.cts'),
-      path.join(projectRoot, 'desktop', 'runtime-host', 'worker.cts'),
+      path.join(projectRoot, 'desktop', 'pi-threads.ts'),
+      path.join(projectRoot, 'desktop', 'pi-skills.ts'),
+      path.join(projectRoot, 'desktop', 'skill-creator-session.ts'),
+      path.join(projectRoot, 'desktop', 'runtime-host', 'worker.ts'),
     ],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop'),
@@ -36,7 +36,7 @@ const buildTargets = [
   },
   {
     label: 'terminal-manager',
-    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'manager.cts')],
+    entrypoints: [path.join(projectRoot, 'desktop', 'terminal', 'manager.ts')],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop', 'terminal'),
     naming: {

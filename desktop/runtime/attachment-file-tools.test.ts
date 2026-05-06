@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 const notAttachedFileErrorPattern = /not an attached file/
 
-import { createAttachmentFileTools } from './attachment-file-tools.cts'
+import { createAttachmentFileTools } from './attachment-file-tools.ts'
 
 async function createFixture() {
   const cwd = await mkdtemp(path.join(tmpdir(), 'howcode-attachment-tools-'))
