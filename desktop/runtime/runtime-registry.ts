@@ -10,6 +10,7 @@ import {
 } from './agent-session-extensions.ts'
 import { createArtifactTools } from './artifact-tools.ts'
 import { createAttachmentFileTools } from './attachment-file-tools.ts'
+import { getRuntimeSystemPrompt } from './chat-system-prompt.ts'
 import { buildComposerState } from './composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
@@ -245,6 +246,7 @@ async function createRuntime(options: {
     agentDir,
     settingsCwd: options.settingsCwd,
     settingsManager,
+    systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
   const attachmentFileTools = options.settingsCwd
     ? createAttachmentFileTools({

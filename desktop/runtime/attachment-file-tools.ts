@@ -79,9 +79,19 @@ async function isGrantedPath(filePath: string, grants: AttachmentGrant, cwd: str
   return false
 }
 
+async function isGrantedDirectoryPath(filePath: string, grants: AttachmentGrant, cwd: string) {
+  const resolved = await tryRealpath(await existingPathVariant(resolveToolPath(filePath, cwd)))
+  return grants.directories.has(resolved)
+}
+
 async function assertGrantedPath(filePath: string, grants: AttachmentGrant, cwd: string) {
   if (await isGrantedPath(filePath, grants, cwd)) return
   throw new Error(`Path is not an attached file or inside an attached folder: ${filePath}`)
+}
+
+async function assertGrantedDirectoryPath(filePath: string, grants: AttachmentGrant, cwd: string) {
+  if (await isGrantedDirectoryPath(filePath, grants, cwd)) return
+  throw new Error(`Path is not an attached folder: ${filePath}`)
 }
 
 function createAttachmentFileAccess(grants: AttachmentGrant): AttachmentFileAccess {
@@ -125,7 +135,7 @@ export function createAttachmentFileTools(options: { cwd: string; autoResizeImag
   const lsTool = createLsToolDefinition(options.cwd)
   const lsExecute = lsTool.execute.bind(lsTool)
   lsTool.execute = async (toolCallId, params, signal, onUpdate, ctx) => {
-    await assertGrantedPath(params.path ?? '.', grants, options.cwd)
+    await assertGrantedDirectoryPath(params.path ?? '.', grants, options.cwd)
     return await lsExecute(toolCallId, params, signal, onUpdate, ctx)
   }
 

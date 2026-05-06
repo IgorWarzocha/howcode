@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+const notAttachedDirectoryErrorPattern = /not an attached folder/
 const notAttachedFileErrorPattern = /not an attached file/
 
 import { createAttachmentFileTools } from './attachment-file-tools.ts'
@@ -12,11 +13,13 @@ async function createFixture() {
   const attachedFile = path.join(cwd, 'attached.txt')
   const outsideFile = path.join(cwd, 'outside.txt')
   const attachedDir = path.join(cwd, 'folder')
+  const nestedDir = path.join(attachedDir, 'nested-folder')
   await mkdir(attachedDir)
+  await mkdir(nestedDir)
   await writeFile(attachedFile, 'attached file')
   await writeFile(outsideFile, 'outside file')
   await writeFile(path.join(attachedDir, 'nested.txt'), 'nested file')
-  return { cwd, attachedFile, outsideFile, attachedDir }
+  return { cwd, attachedFile, outsideFile, attachedDir, nestedDir }
 }
 
 function getTool(tools: ReturnType<typeof createAttachmentFileTools>['tools'], name: string) {
@@ -56,14 +59,17 @@ describe('attachment file tools', () => {
     ).rejects.toThrow(notAttachedFileErrorPattern)
   })
 
-  it('allows ls inside attached folders and blocks symlink escapes', async () => {
-    const { cwd, outsideFile, attachedDir } = await createFixture()
+  it('allows ls of attached folders only and blocks symlink escapes', async () => {
+    const { cwd, attachedFile, outsideFile, attachedDir, nestedDir } = await createFixture()
     await symlink(outsideFile, path.join(attachedDir, 'escape.txt'))
     const { tools, access } = createAttachmentFileTools({ cwd, autoResizeImages: true })
     const ls = getTool(tools, 'ls')
     const read = getTool(tools, 'read')
 
-    await access.grantAttachments([{ path: attachedDir, name: 'folder', kind: 'directory' }])
+    await access.grantAttachments([
+      { path: attachedFile, name: 'attached.txt', kind: 'text' },
+      { path: attachedDir, name: 'folder', kind: 'directory' },
+    ])
 
     await expect(
       ls.execute('call', { path: 'folder' }, undefined, undefined, { cwd } as never),
@@ -72,7 +78,13 @@ describe('attachment file tools', () => {
     })
     await expect(
       ls.execute('call', { path: '.' }, undefined, undefined, { cwd } as never),
-    ).rejects.toThrow(notAttachedFileErrorPattern)
+    ).rejects.toThrow(notAttachedDirectoryErrorPattern)
+    await expect(
+      ls.execute('call', { path: attachedFile }, undefined, undefined, { cwd } as never),
+    ).rejects.toThrow(notAttachedDirectoryErrorPattern)
+    await expect(
+      ls.execute('call', { path: nestedDir }, undefined, undefined, { cwd } as never),
+    ).rejects.toThrow(notAttachedDirectoryErrorPattern)
     await expect(
       read.execute('call', { path: path.join('folder', 'escape.txt') }, undefined, undefined, {
         cwd,
