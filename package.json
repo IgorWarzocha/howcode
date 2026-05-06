@@ -41,7 +41,10 @@
     "test:composer": "vitest run src/test/composer",
     "test:watch": "vitest",
     "check": "bun run lint && bun run typecheck && bun run test && bun run build",
-    "ai:check": "bun run lint && bun run typecheck && bun run test"
+    "ai:check": "bun run lint && bun run typecheck && bun run test",
+    "pages:dev": "vite --config pages/vite.config.ts",
+    "pages:build": "vite build --config pages/vite.config.ts",
+    "pages:preview": "vite preview --config pages/vite.config.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
