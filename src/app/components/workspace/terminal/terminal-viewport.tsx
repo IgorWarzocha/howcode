@@ -1,5 +1,4 @@
-import { GhosttyCore } from '@wterm/ghostty'
-import { Terminal, type TerminalCore, type TerminalHandle, type WTerm } from '@wterm/react'
+import { Terminal, type TerminalHandle, type WTerm } from '@wterm/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import type { TerminalEvent } from '../../../desktop/types'
@@ -53,27 +52,6 @@ type TerminalViewportProps = {
   hoverToBlur?: boolean | undefined
   stickToBottomOnOutput?: boolean | undefined
   className?: string | undefined
-}
-
-async function loadUsableGhosttyCore() {
-  const probe = await GhosttyCore.load({ scrollbackLimit: 100 })
-  probe.init(20, 5)
-  for (let line = 1; line <= 8; line += 1) {
-    probe.writeString(`ghostty-scrollback-probe-${line}\r\n`)
-  }
-
-  const scrollbackCount = probe.getScrollbackCount()
-  const hasReadableScrollback =
-    scrollbackCount === 0 ||
-    Array.from({ length: scrollbackCount }, (_, offset) => probe.getScrollbackLineLen(offset)).some(
-      (lineLength) => lineLength > 0,
-    )
-
-  if (!hasReadableScrollback) {
-    return null
-  }
-
-  return GhosttyCore.load()
 }
 
 function cleanupTerminalSessionOnUnmount(input: {
@@ -146,7 +124,6 @@ export function TerminalViewport({
   const lastSentSizeRef = useRef<{ sessionId: string; cols: number; rows: number } | null>(null)
   const [terminalReadyRevision, setTerminalReadyRevision] = useState(0)
   const [terminalInitError, setTerminalInitError] = useState<string | null>(null)
-  const [terminalCore, setTerminalCore] = useState<TerminalCore | null | undefined>(undefined)
   const effectiveLaunchMode = launchMode
   if (effectiveLaunchMode === 'pi-session' && piSessionPathRef.current === null) {
     piSessionPathRef.current = { value: sessionPath }
@@ -280,30 +257,6 @@ export function TerminalViewport({
   const handleTerminalError = useCallback((error: unknown) => {
     const message = error instanceof Error ? error.message : 'Unable to initialize terminal.'
     setTerminalInitError(message)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    setTerminalCore(undefined)
-    setTerminalInitError(null)
-
-    void loadUsableGhosttyCore().then(
-      (core) => {
-        if (!cancelled) {
-          setTerminalCore(core)
-        }
-      },
-      (error: unknown) => {
-        if (!cancelled) {
-          const message = error instanceof Error ? error.message : 'Unable to initialize terminal.'
-          setTerminalInitError(message)
-        }
-      },
-    )
-
-    return () => {
-      cancelled = true
-    }
   }, [])
 
   const handleTerminalResize = useCallback((cols: number, rows: number) => {
@@ -692,25 +645,17 @@ export function TerminalViewport({
         className,
       )}
     >
-      {terminalCore == null ? null : (
-        <Terminal
-          ref={terminalHandleRef}
-          core={terminalCore}
-          autoResize
-          cursorBlink
-          onReady={handleTerminalReady}
-          onError={handleTerminalError}
-          onResize={handleTerminalResize}
-          onData={handleTerminalData}
-          className="h-full w-full"
-          style={{ height: '100%', width: '100%', ...terminalStyle }}
-        />
-      )}
-      {terminalCore === undefined && !terminalInitError ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)] px-4 py-3 text-[12px] leading-5 text-[color:var(--muted)]">
-          <span>[terminal] Loading Ghostty renderer…</span>
-        </div>
-      ) : null}
+      <Terminal
+        ref={terminalHandleRef}
+        autoResize
+        cursorBlink
+        onReady={handleTerminalReady}
+        onError={handleTerminalError}
+        onResize={handleTerminalResize}
+        onData={handleTerminalData}
+        className="h-full w-full"
+        style={{ height: '100%', width: '100%', ...terminalStyle }}
+      />
       {terminalInitError ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
           <span>[terminal] {terminalInitError}</span>

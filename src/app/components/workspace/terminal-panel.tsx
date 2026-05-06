@@ -132,7 +132,6 @@ function TerminalPanelComponent({
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="shell"
-          onProcessExit={onClose}
           preserveSessionOnUnmount
           backgroundCssVar="--sidebar"
           hoverToFocus={hoverToFocus}
