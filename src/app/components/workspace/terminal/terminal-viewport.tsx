@@ -1,4 +1,6 @@
-import { Terminal, type TerminalHandle, type WTerm } from '@wterm/react'
+import { FitAddon } from '@xterm/addon-fit'
+import { WebLinksAddon } from '@xterm/addon-web-links'
+import { type ITheme, Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import type { TerminalEvent } from '../../../desktop/types'
@@ -22,15 +24,11 @@ import {
   DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
   DEFAULT_TERMINAL_COLS,
   DEFAULT_TERMINAL_ROWS,
-  findTerminalLinkAtPoint,
-  hasSelectionInside,
   hasVisibleTerminalHistory,
-  isTerminalElementNearBottom,
   isUsableTerminalSize,
   MAX_PENDING_TERMINAL_EVENTS,
   MIN_INITIAL_TERMINAL_COLS,
   MIN_INITIAL_TERMINAL_ROWS,
-  measureTerminalSize,
   normalizeTerminalDimension,
   type TerminalBackgroundCssVar,
   terminalStyleVars,
@@ -51,7 +49,62 @@ type TerminalViewportProps = {
   hoverToFocus?: boolean | undefined
   hoverToBlur?: boolean | undefined
   stickToBottomOnOutput?: boolean | undefined
+  bottomAlignInitialContent?: boolean | undefined
   className?: string | undefined
+}
+
+const XTERM_THEME_COLOR_KEYS = [
+  'black',
+  'red',
+  'green',
+  'yellow',
+  'blue',
+  'magenta',
+  'cyan',
+  'white',
+  'brightBlack',
+  'brightRed',
+  'brightGreen',
+  'brightYellow',
+  'brightBlue',
+  'brightMagenta',
+  'brightCyan',
+  'brightWhite',
+] as const
+
+function resolveCssColor(element: HTMLElement, value: string, fallback: string) {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return fallback
+
+  const probe = element.ownerDocument.createElement('span')
+  probe.style.color = trimmedValue
+  probe.style.display = 'none'
+  element.appendChild(probe)
+  const resolvedColor = getComputedStyle(probe).color
+  probe.remove()
+
+  return resolvedColor || trimmedValue || fallback
+}
+
+function buildXtermTheme(element: HTMLElement): ITheme {
+  const styles = getComputedStyle(element)
+  const resolve = (value: string, fallback: string) => resolveCssColor(element, value, fallback)
+  const color = (cssVar: string, fallback: string) =>
+    resolve(styles.getPropertyValue(cssVar), fallback)
+  const theme: ITheme = {
+    background: color('--term-bg', '#171923'),
+    foreground: color('--term-fg', '#d5daed'),
+    cursor: color('--term-cursor', '#b9bff3'),
+    cursorAccent: color('--term-bg', '#171923'),
+    selectionBackground: color('--terminal-selection', 'rgba(185, 191, 243, 0.18)'),
+    selectionInactiveBackground: color('--terminal-selection', 'rgba(185, 191, 243, 0.18)'),
+  }
+
+  for (const [index, key] of XTERM_THEME_COLOR_KEYS.entries()) {
+    theme[key] = color(`--term-color-${index}`, theme.foreground ?? '#d5daed')
+  }
+
+  return theme
 }
 
 function cleanupTerminalSessionOnUnmount(input: {
@@ -106,14 +159,17 @@ export function TerminalViewport({
   hoverToFocus = true,
   hoverToBlur = false,
   stickToBottomOnOutput = true,
+  bottomAlignInitialContent = false,
   className,
 }: TerminalViewportProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null)
-  const terminalHandleRef = useRef<TerminalHandle | null>(null)
-  const terminalInstanceRef = useRef<WTerm | null>(null)
+  const terminalMountRef = useRef<HTMLDivElement | null>(null)
+  const terminalInstanceRef = useRef<XTerm | null>(null)
+  const fitAddonRef = useRef<FitAddon | null>(null)
   const terminalResizeFrameRef = useRef<number | null>(null)
   const terminalResizeTimerRefs = useRef<number[]>([])
   const pendingScrollFrameRef = useRef<number | null>(null)
+  const pendingBottomAlignFrameRef = useRef<number | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const attachFailedRef = useRef(false)
   const pendingEventsRef = useRef<TerminalEvent[]>([])
@@ -136,7 +192,7 @@ export function TerminalViewport({
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar])
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar])
   const focusTerminal = useCallback(() => {
-    terminalHandleRef.current?.focus()
+    terminalInstanceRef.current?.focus()
   }, [])
   const blurTerminal = useCallback(() => {
     const activeElement = document.activeElement
@@ -159,12 +215,7 @@ export function TerminalViewport({
   })
 
   const scrollTerminalToBottom = useCallback(() => {
-    const terminalElement = terminalInstanceRef.current?.element
-    if (!terminalElement) {
-      return
-    }
-
-    terminalElement.scrollTop = terminalElement.scrollHeight
+    terminalInstanceRef.current?.scrollToBottom()
   }, [])
 
   const scheduleTerminalScrollToBottom = useCallback(() => {
@@ -181,19 +232,62 @@ export function TerminalViewport({
     })
   }, [scrollTerminalToBottom])
 
+  const applyXtermBottomAlign = useCallback(() => {
+    const terminal = terminalInstanceRef.current
+    const screen = terminal?.element?.querySelector<HTMLElement>('.xterm-screen')
+    if (!(terminal && screen)) {
+      return
+    }
+
+    if (!bottomAlignInitialContent || terminal.buffer.active.baseY > 0) {
+      screen.style.transform = ''
+      return
+    }
+
+    const screenHeight = screen.getBoundingClientRect().height
+    const rowHeight = terminal.rows > 0 ? screenHeight / terminal.rows : 0
+    if (!(Number.isFinite(rowHeight) && rowHeight > 0)) {
+      screen.style.transform = ''
+      return
+    }
+
+    const cursorY = terminal.buffer.active.cursorY
+    const offsetRows = Math.max(0, terminal.rows - cursorY - 1)
+    screen.style.transform = offsetRows > 0 ? `translateY(${offsetRows * rowHeight}px)` : ''
+  }, [bottomAlignInitialContent])
+
+  const scheduleXtermBottomAlign = useCallback(() => {
+    if (pendingBottomAlignFrameRef.current !== null) {
+      window.cancelAnimationFrame(pendingBottomAlignFrameRef.current)
+    }
+
+    pendingBottomAlignFrameRef.current = window.requestAnimationFrame(() => {
+      pendingBottomAlignFrameRef.current = window.requestAnimationFrame(() => {
+        pendingBottomAlignFrameRef.current = null
+        applyXtermBottomAlign()
+      })
+    })
+  }, [applyXtermBottomAlign])
+
   const writeToTerminal = useCallback(
     (data: string | Uint8Array) => {
-      const terminalElement = terminalInstanceRef.current?.element
+      const terminal = terminalInstanceRef.current
       const shouldStickToBottom =
-        stickToBottomOnOutput && (!terminalElement || isTerminalElementNearBottom(terminalElement))
+        stickToBottomOnOutput &&
+        (!terminal || terminal.buffer.active.viewportY >= terminal.buffer.active.baseY)
 
-      terminalHandleRef.current?.write(data)
+      terminal?.write(data, () => {
+        scheduleXtermBottomAlign()
+        if (shouldStickToBottom) {
+          terminal.scrollToBottom()
+        }
+      })
 
       if (shouldStickToBottom) {
         scheduleTerminalScrollToBottom()
       }
     },
-    [scheduleTerminalScrollToBottom, stickToBottomOnOutput],
+    [scheduleTerminalScrollToBottom, scheduleXtermBottomAlign, stickToBottomOnOutput],
   )
 
   useEffect(
@@ -208,6 +302,9 @@ export function TerminalViewport({
       if (pendingScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(pendingScrollFrameRef.current)
       }
+      if (pendingBottomAlignFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingBottomAlignFrameRef.current)
+      }
     },
     [],
   )
@@ -220,8 +317,9 @@ export function TerminalViewport({
       if (nextHistory) {
         writeToTerminal(nextHistory)
       }
+      scheduleXtermBottomAlign()
     },
-    [writeToTerminal],
+    [scheduleXtermBottomAlign, writeToTerminal],
   )
 
   const appendTerminalHistory = useCallback(
@@ -242,17 +340,6 @@ export function TerminalViewport({
     },
     [writeToTerminal],
   )
-
-  const handleTerminalReady = useCallback((terminal: WTerm) => {
-    terminalInstanceRef.current = terminal
-    setTerminalInitError(null)
-    const measuredSize = measureTerminalSize(terminal)
-    lastKnownSizeRef.current = {
-      cols: normalizeTerminalDimension(measuredSize?.cols ?? terminal.cols, DEFAULT_TERMINAL_COLS),
-      rows: normalizeTerminalDimension(measuredSize?.rows ?? terminal.rows, DEFAULT_TERMINAL_ROWS),
-    }
-    setTerminalReadyRevision((current) => current + 1)
-  }, [])
 
   const handleTerminalError = useCallback((error: unknown) => {
     const message = error instanceof Error ? error.message : 'Unable to initialize terminal.'
@@ -310,6 +397,81 @@ export function TerminalViewport({
     [writeToTerminal],
   )
 
+  useEffect(() => {
+    const mount = terminalMountRef.current
+    if (!mount || terminalInstanceRef.current) {
+      return
+    }
+
+    try {
+      const terminal = new XTerm({
+        cols: DEFAULT_TERMINAL_COLS,
+        rows: DEFAULT_TERMINAL_ROWS,
+        cursorBlink: true,
+        scrollback: 5_000,
+        convertEol: false,
+        fontFamily: '"Liberation Mono", Consolas, Menlo, monospace',
+        fontSize: 12,
+        lineHeight: 1.2,
+        theme: buildXtermTheme(mount),
+      })
+      const fitAddon = new FitAddon()
+      terminal.loadAddon(fitAddon)
+      terminal.loadAddon(
+        new WebLinksAddon((event, uri) => {
+          terminal.focus()
+          event.preventDefault()
+          void window.piDesktop?.openExternal?.(uri).then((opened) => {
+            if (!opened) {
+              writeSystemMessage((message) => writeToTerminal(message), `Unable to open ${uri}`)
+            }
+          })
+        }),
+      )
+      terminal.open(mount)
+      terminal.onData((data) => handleTerminalData(data))
+      terminal.onResize(({ cols, rows }) => handleTerminalResize(cols, rows))
+      terminalInstanceRef.current = terminal
+      fitAddonRef.current = fitAddon
+      fitAddon.fit()
+      lastKnownSizeRef.current = {
+        cols: normalizeTerminalDimension(terminal.cols, DEFAULT_TERMINAL_COLS),
+        rows: normalizeTerminalDimension(terminal.rows, DEFAULT_TERMINAL_ROWS),
+      }
+      setTerminalInitError(null)
+      setTerminalReadyRevision((current) => current + 1)
+      window.setTimeout(() => {
+        fitAddon.fit()
+        scheduleXtermBottomAlign()
+        terminal.scrollToBottom()
+      }, 30)
+    } catch (error) {
+      handleTerminalError(error)
+    }
+
+    return () => {
+      fitAddonRef.current = null
+      terminalInstanceRef.current?.dispose()
+      terminalInstanceRef.current = null
+    }
+  }, [
+    handleTerminalData,
+    handleTerminalError,
+    handleTerminalResize,
+    scheduleXtermBottomAlign,
+    writeToTerminal,
+  ])
+
+  useEffect(() => {
+    const terminal = terminalInstanceRef.current
+    const mount = terminalMountRef.current
+    if (!(terminal && mount)) {
+      return
+    }
+
+    terminal.options.theme = buildXtermTheme(mount)
+  })
+
   const resizeTerminalToContainer = useCallback(() => {
     const terminal = terminalInstanceRef.current
     const terminalElement = terminal?.element
@@ -318,27 +480,20 @@ export function TerminalViewport({
     }
 
     const shouldStickToBottom =
-      stickToBottomOnOutput && isTerminalElementNearBottom(terminalElement)
-    const measuredSize = measureTerminalSize(terminal)
-    if (!measuredSize) {
-      return
-    }
-
-    const cols = normalizeTerminalDimension(measuredSize.cols, lastKnownSizeRef.current.cols)
-    const rows = normalizeTerminalDimension(measuredSize.rows, lastKnownSizeRef.current.rows)
+      stickToBottomOnOutput && terminal.buffer.active.viewportY >= terminal.buffer.active.baseY
+    fitAddonRef.current?.fit()
+    const cols = normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols)
+    const rows = normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows)
     if (!isUsableTerminalSize(cols, rows)) {
       return
-    }
-
-    if (terminal.cols !== cols || terminal.rows !== rows) {
-      terminal.resize(cols, rows)
     }
     handleTerminalResize(cols, rows)
 
     if (shouldStickToBottom) {
-      scheduleTerminalScrollToBottom()
+      terminal.scrollToBottom()
     }
-  }, [handleTerminalResize, scheduleTerminalScrollToBottom, stickToBottomOnOutput])
+    scheduleXtermBottomAlign()
+  }, [handleTerminalResize, scheduleXtermBottomAlign, stickToBottomOnOutput])
 
   const scheduleTerminalResizeToContainer = useCallback(() => {
     if (terminalResizeFrameRef.current !== null) {
@@ -404,43 +559,6 @@ export function TerminalViewport({
       return
     }
 
-    const terminalElement = terminalInstanceRef.current?.element
-    if (!terminalElement) {
-      return
-    }
-
-    const handleClick = (event: MouseEvent) => {
-      if (hasSelectionInside(terminalElement)) {
-        return
-      }
-
-      const match = findTerminalLinkAtPoint(terminalElement, event.clientX, event.clientY)
-      if (!match) {
-        return
-      }
-
-      terminalHandleRef.current?.focus()
-      event.preventDefault()
-
-      void window.piDesktop?.openExternal?.(match.text).then((opened) => {
-        if (!opened) {
-          writeSystemMessage((message) => writeToTerminal(message), `Unable to open ${match.text}`)
-        }
-      })
-    }
-
-    terminalElement.addEventListener('click', handleClick, true)
-
-    return () => {
-      terminalElement.removeEventListener('click', handleClick, true)
-    }
-  }, [terminalReadyRevision, writeToTerminal])
-
-  useEffect(() => {
-    if (terminalReadyRevision === 0) {
-      return
-    }
-
     const terminal = terminalInstanceRef.current
     if (!terminal) {
       return
@@ -483,6 +601,7 @@ export function TerminalViewport({
         case 'cleared':
           terminalHistoryRef.current = ''
           clearTerminal((message) => writeToTerminal(message))
+          scheduleXtermBottomAlign()
           break
         case 'started':
         case 'restarted':
@@ -529,17 +648,11 @@ export function TerminalViewport({
     })
 
     const getCurrentSize = () => {
-      const measuredSize = measureTerminalSize(terminal)
+      fitAddonRef.current?.fit()
 
       return {
-        cols: normalizeTerminalDimension(
-          measuredSize?.cols ?? terminal.cols,
-          lastKnownSizeRef.current.cols,
-        ),
-        rows: normalizeTerminalDimension(
-          measuredSize?.rows ?? terminal.rows,
-          lastKnownSizeRef.current.rows,
-        ),
+        cols: normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols),
+        rows: normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows),
       }
     }
 
@@ -579,7 +692,7 @@ export function TerminalViewport({
       }
 
       replayBufferedEvents(snapshot.sessionId)
-      terminalHandleRef.current?.focus()
+      terminalInstanceRef.current?.focus()
 
       const resizedSize = getCurrentSize()
       if (resizedSize.cols !== snapshot.cols || resizedSize.rows !== snapshot.rows) {
@@ -630,6 +743,7 @@ export function TerminalViewport({
     projectId,
     resetTerminal,
     scheduleTerminalResizeSettlingPasses,
+    scheduleXtermBottomAlign,
     terminalReadyRevision,
     terminalSessionPath,
     writeToTerminal,
@@ -645,17 +759,7 @@ export function TerminalViewport({
         className,
       )}
     >
-      <Terminal
-        ref={terminalHandleRef}
-        autoResize
-        cursorBlink
-        onReady={handleTerminalReady}
-        onError={handleTerminalError}
-        onResize={handleTerminalResize}
-        onData={handleTerminalData}
-        className="h-full w-full"
-        style={{ height: '100%', width: '100%', ...terminalStyle }}
-      />
+      <div ref={terminalMountRef} className="h-full w-full" style={terminalStyle} />
       {terminalInitError ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-start bg-[color:var(--terminal-surface)]/92 px-4 py-3 text-[12px] leading-5 text-[color:var(--text)]">
           <span>[terminal] {terminalInitError}</span>

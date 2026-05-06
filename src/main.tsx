@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import '@wterm/react/css'
+import '@xterm/xterm/css/xterm.css'
 import '@fontsource-variable/inter'
 import './styles.css'
 import App from './app'
