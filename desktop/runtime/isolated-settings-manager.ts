@@ -6,18 +6,23 @@ type SettingsManagerFactory = {
   inMemory: (settings?: Record<string, unknown>) => SettingsManager
 }
 
-function mergeSettingsArrays(globalValue: unknown, projectValue: unknown) {
-  const values = [
-    ...(Array.isArray(globalValue) ? globalValue : []),
-    ...(Array.isArray(projectValue) ? projectValue : []),
-  ]
-  const seen = new Set<string>()
-  return values.filter((value) => {
-    const key = JSON.stringify(value)
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+const isolatedResourceSettingsKeys = ['packages', 'extensions', 'skills', 'prompts', 'themes']
+
+function getSettingsArray(value: unknown) {
+  return Array.isArray(value) ? value : []
+}
+
+function createIsolatedSettings(
+  globalSettings: Record<string, unknown>,
+  projectSettings: Record<string, unknown>,
+) {
+  return {
+    ...globalSettings,
+    ...projectSettings,
+    ...Object.fromEntries(
+      isolatedResourceSettingsKeys.map((key) => [key, getSettingsArray(projectSettings[key])]),
+    ),
+  }
 }
 
 export function createRuntimeSettingsManager(options: {
@@ -35,18 +40,16 @@ export function createRuntimeSettingsManager(options: {
     return diskSettingsManager
   }
 
-  const globalSettings = diskSettingsManager.getGlobalSettings()
-  const projectSettings = diskSettingsManager.getProjectSettings()
+  const globalSettings = diskSettingsManager.getGlobalSettings() as unknown as Record<
+    string,
+    unknown
+  >
+  const projectSettings = diskSettingsManager.getProjectSettings() as unknown as Record<
+    string,
+    unknown
+  >
 
-  return options.SettingsManager.inMemory({
-    ...globalSettings,
-    ...projectSettings,
-    packages: mergeSettingsArrays(globalSettings.packages, projectSettings.packages),
-    extensions: mergeSettingsArrays(globalSettings.extensions, projectSettings.extensions),
-    skills: mergeSettingsArrays(globalSettings.skills, projectSettings.skills),
-    prompts: mergeSettingsArrays(globalSettings.prompts, projectSettings.prompts),
-    themes: mergeSettingsArrays(globalSettings.themes, projectSettings.themes),
-  })
+  return options.SettingsManager.inMemory(createIsolatedSettings(globalSettings, projectSettings))
 }
 
 export async function createIsolatedRuntimeResourceLoader(options: {
@@ -56,11 +59,13 @@ export async function createIsolatedRuntimeResourceLoader(options: {
     settingsManager: SettingsManager
     noSkills?: boolean
     additionalSkillPaths?: string[]
+    systemPrompt?: string
   }) => ResourceLoader
   cwd: string
   agentDir: string
   settingsCwd?: string | null | undefined
   settingsManager: SettingsManager
+  systemPrompt?: string | undefined
 }) {
   if (!options.settingsCwd) {
     return undefined
@@ -71,6 +76,7 @@ export async function createIsolatedRuntimeResourceLoader(options: {
     agentDir: options.agentDir,
     settingsManager: options.settingsManager,
     noSkills: true,
+    ...(options.systemPrompt ? { systemPrompt: options.systemPrompt } : {}),
     additionalSkillPaths: [
       path.join(options.settingsCwd, '.pi', 'skills'),
       path.join(options.settingsCwd, '.agents', 'skills'),

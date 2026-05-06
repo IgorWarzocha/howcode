@@ -17,6 +17,7 @@ import {
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { isHeadlessExtensionCommandRunning } from './agent-session-extensions.ts'
+import { getRuntimeSystemPrompt } from './chat-system-prompt.ts'
 import { buildQueuedPrompts } from './composer-queue'
 import {
   createIsolatedRuntimeResourceLoader,
@@ -226,6 +227,7 @@ export async function createComposerSnapshotSession(request: ComposerStateReques
     agentDir,
     settingsCwd: request.composerSessionDir,
     settingsManager,
+    systemPrompt: getRuntimeSystemPrompt({ settingsCwd: request.composerSessionDir }),
   })
   const { session } = await createAgentSession({
     cwd,

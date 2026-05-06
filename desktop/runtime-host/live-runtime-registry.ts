@@ -13,6 +13,7 @@ import {
 } from '../runtime/agent-session-extensions.ts'
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
+import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
 import {
   createIsolatedRuntimeResourceLoader,
@@ -255,6 +256,7 @@ async function createRuntime(options: {
     agentDir,
     settingsCwd: options.settingsCwd,
     settingsManager,
+    systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
   })
   let runtime: PiRuntime | null = null
   const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
