@@ -119,7 +119,9 @@ button[data-tooltip]::after {
   line-height: 16px;
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 button[data-tooltip]:is(:hover, :focus-visible)::after {
@@ -193,7 +195,9 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   white-space: normal;
   overflow-wrap: anywhere;
   opacity: 0;
-  transition: opacity 150ms ease-out 1s, transform 150ms ease-out 1s;
+  transition:
+    opacity 150ms ease-out 1s,
+    transform 150ms ease-out 1s;
 }
 
 [data-setting-tooltip]:is(:hover, :focus-within)::after {
@@ -223,7 +227,9 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   white-space: normal;
   overflow-wrap: anywhere;
   opacity: 0;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 .tooltip-content[data-placement="top"] {
@@ -468,7 +474,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .artifact-markdown-editor .cm-selectionBackground,
 .artifact-markdown-editor .cm-focused .cm-selectionBackground {
-  background: var(--accent-bg-strong) !important;
+  background: var(--accent-bg-strong);
 }
 
 .artifact-markdown-editor .cm-panels,

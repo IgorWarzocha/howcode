@@ -1,42 +1,42 @@
-import type { SavedDiffComment } from "./diffCommentStore";
+import type { SavedDiffComment } from './diffCommentStore'
 
 function formatCommentLocation(comment: SavedDiffComment) {
-  const endLineNumber = comment.endLineNumber ?? comment.lineNumber;
-  const endSide = comment.endSide ?? comment.side;
+  const endLineNumber = comment.endLineNumber ?? comment.lineNumber
+  const endSide = comment.endSide ?? comment.side
 
   if (comment.side === endSide) {
-    const start = Math.min(comment.lineNumber, endLineNumber);
-    const end = Math.max(comment.lineNumber, endLineNumber);
-    const sideLabel = comment.side === "deletions" ? "old" : "new";
+    const start = Math.min(comment.lineNumber, endLineNumber)
+    const end = Math.max(comment.lineNumber, endLineNumber)
+    const sideLabel = comment.side === 'deletions' ? 'old' : 'new'
 
     return start === end
       ? `${comment.filePath}:${start} (${sideLabel} side)`
-      : `${comment.filePath}:${start}-${end} (${sideLabel} side)`;
+      : `${comment.filePath}:${start}-${end} (${sideLabel} side)`
   }
 
-  const startSideLabel = comment.side === "deletions" ? "old" : "new";
-  const endSideLabel = endSide === "deletions" ? "old" : "new";
-  return `${comment.filePath}:${comment.lineNumber} (${startSideLabel} side) → ${endLineNumber} (${endSideLabel} side)`;
+  const startSideLabel = comment.side === 'deletions' ? 'old' : 'new'
+  const endSideLabel = endSide === 'deletions' ? 'old' : 'new'
+  return `${comment.filePath}:${comment.lineNumber} (${startSideLabel} side) → ${endLineNumber} (${endSideLabel} side)`
 }
 
 export function buildDiffCommentPrompt({
   comments,
   instruction,
 }: {
-  comments: SavedDiffComment[];
-  instruction?: string | null;
+  comments: SavedDiffComment[]
+  instruction?: string | null | undefined
 }) {
   const intro =
-    typeof instruction === "string" && instruction.trim().length > 0
+    typeof instruction === 'string' && instruction.trim().length > 0
       ? instruction.trim()
-      : "Address & fix these comments:";
+      : 'Address & fix these comments:'
 
   const bullets = comments
     .map((comment, index) => {
-      const location = formatCommentLocation(comment);
-      return `${index + 1}. ${location}\n   ${comment.body.trim()}`;
+      const location = formatCommentLocation(comment)
+      return `${index + 1}. ${location}\n   ${comment.body.trim()}`
     })
-    .join("\n\n");
+    .join('\n\n')
 
-  return `${intro}\n\n${bullets}`;
+  return `${intro}\n\n${bullets}`
 }

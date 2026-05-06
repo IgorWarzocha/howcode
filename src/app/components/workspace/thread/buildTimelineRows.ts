@@ -1,123 +1,129 @@
-import type { Message } from "../../../types";
+import type { Message } from '../../../types'
 import {
+  isToolCallMessage,
   type TimelineRow,
   type TimelineTurnItem,
   type ToolCallMessage,
-  isToolCallMessage,
-} from "./timeline-row";
+} from './timeline-row'
 
 type BuildTimelineRowsInput = {
-  messages: Message[];
-  previousMessageCount: number;
-};
+  messages: Message[]
+  previousMessageCount: number
+}
+
+function isSummaryMessage(
+  message: Message,
+): message is Extract<Message, { role: 'branchSummary' | 'compactionSummary' }> {
+  return message.role === 'branchSummary' || message.role === 'compactionSummary'
+}
 
 export function buildTimelineRows({
   messages,
   previousMessageCount,
 }: BuildTimelineRowsInput): TimelineRow[] {
-  const nextRows: TimelineRow[] = [];
-  let pendingToolMessages: ToolCallMessage[] = [];
-  let currentTurn: Extract<TimelineRow, { kind: "turn" }> | null = null;
-  let pendingImplicitTurnId: string | null = null;
+  const nextRows: TimelineRow[] = []
+  let pendingToolMessages: ToolCallMessage[] = []
+  let currentTurn: Extract<TimelineRow, { kind: 'turn' }> | null = null
+  let pendingImplicitTurnId: string | null = null
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {
-      return;
+      return
     }
 
-    const firstMessage = pendingToolMessages[0];
-    const lastMessage = pendingToolMessages[pendingToolMessages.length - 1];
-    const toolGroup: Extract<TimelineTurnItem, { kind: "tool-group" }> = {
-      kind: "tool-group",
-      id: `tool-group:${firstMessage?.id ?? "start"}:${lastMessage?.id ?? "end"}:${pendingToolMessages.length}`,
+    const firstMessage = pendingToolMessages[0]
+    const lastMessage = pendingToolMessages[pendingToolMessages.length - 1]
+    const toolGroup: Extract<TimelineTurnItem, { kind: 'tool-group' }> = {
+      kind: 'tool-group',
+      id: `tool-group:${firstMessage?.id ?? 'start'}:${lastMessage?.id ?? 'end'}:${pendingToolMessages.length}`,
       messages: pendingToolMessages,
-    };
+    }
 
     if (currentTurn) {
-      currentTurn.items.push(toolGroup);
+      currentTurn.items.push(toolGroup)
     } else {
       currentTurn = {
-        kind: "turn",
-        id: pendingImplicitTurnId ?? `turn:implicit:${firstMessage?.id ?? "tool-group"}`,
+        kind: 'turn',
+        id: pendingImplicitTurnId ?? `turn:implicit:${firstMessage?.id ?? 'tool-group'}`,
         userMessage: null,
         items: [toolGroup],
-      };
-      pendingImplicitTurnId = null;
+      }
+      pendingImplicitTurnId = null
     }
 
-    pendingToolMessages = [];
-  };
+    pendingToolMessages = []
+  }
 
   const flushCurrentTurn = () => {
     if (!currentTurn) {
-      return;
+      return
     }
 
-    nextRows.push(currentTurn);
-    currentTurn = null;
-  };
+    nextRows.push(currentTurn)
+    currentTurn = null
+  }
 
   if (previousMessageCount > 0) {
     nextRows.push({
-      kind: "history-divider",
+      kind: 'history-divider',
       id: `history-divider:${previousMessageCount}`,
       hiddenCount: previousMessageCount,
-    });
+    })
   }
 
   for (const message of messages) {
     if (isToolCallMessage(message)) {
-      pendingToolMessages.push(message);
-      continue;
+      pendingToolMessages.push(message)
+      continue
     }
 
-    flushPendingToolMessages();
+    flushPendingToolMessages()
 
-    const timelineMessage: Extract<TimelineTurnItem, { kind: "message" }> = {
-      kind: "message",
+    const timelineMessage: Extract<TimelineTurnItem, { kind: 'message' }> = {
+      kind: 'message',
       id: message.id,
       message,
-    };
+    }
 
-    if (message.role === "user") {
-      flushCurrentTurn();
-      pendingImplicitTurnId = null;
+    if (message.role === 'user') {
+      flushCurrentTurn()
+      pendingImplicitTurnId = null
       currentTurn = {
-        kind: "turn",
+        kind: 'turn',
         id: `turn:${message.id}`,
         userMessage: message,
         items: [],
-      };
-      continue;
+      }
+      continue
     }
 
-    if (message.role === "branchSummary" || message.role === "compactionSummary") {
-      flushCurrentTurn();
+    if (isSummaryMessage(message)) {
+      flushCurrentTurn()
       nextRows.push({
-        kind: "summary",
+        kind: 'summary',
         id: `summary:${message.id}`,
         message,
-      });
+      })
       pendingImplicitTurnId =
-        message.role === "compactionSummary" ? `turn:post-summary:${message.id}` : null;
-      continue;
+        message.role === 'compactionSummary' ? `turn:post-summary:${message.id}` : null
+      continue
     }
 
     if (currentTurn) {
-      currentTurn.items.push(timelineMessage);
+      currentTurn.items.push(timelineMessage)
     } else {
       currentTurn = {
-        kind: "turn",
+        kind: 'turn',
         id: pendingImplicitTurnId ?? `turn:implicit:${message.id}`,
         userMessage: null,
         items: [timelineMessage],
-      };
-      pendingImplicitTurnId = null;
+      }
+      pendingImplicitTurnId = null
     }
   }
 
-  flushPendingToolMessages();
-  flushCurrentTurn();
+  flushPendingToolMessages()
+  flushCurrentTurn()
 
-  return nextRows;
+  return nextRows
 }

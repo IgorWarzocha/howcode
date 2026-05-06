@@ -1,8 +1,12 @@
-import type { FileDiffMetadata } from "@pierre/diffs/react";
-import type { Virtualizer } from "@tanstack/react-virtual";
-import { useEffect } from "react";
-import { alignElementInScrollViewport, buildFileDiffRenderKey } from "./diff-panel-content.helpers";
-import type { SavedDiffComment } from "./diffCommentStore";
+import type { FileDiffMetadata } from '@pierre/diffs/react'
+import type { Virtualizer } from '@tanstack/react-virtual'
+import { useEffect } from 'react'
+import { alignElementInScrollViewport, buildFileDiffRenderKey } from './diff-panel-content.helpers'
+import type { SavedDiffComment } from './diffCommentStore'
+
+function getDatasetValue(element: HTMLElement, key: string) {
+  return element.dataset[key]
+}
 
 export function useDiffPanelScrollAlignment({
   collapsedFiles,
@@ -17,126 +21,126 @@ export function useDiffPanelScrollAlignment({
   selectedFilePath,
   setCollapsedFiles,
 }: {
-  collapsedFiles: Record<string, boolean>;
-  draftCardRef: React.RefObject<HTMLDivElement | null>;
+  collapsedFiles: Record<string, boolean>
+  draftCardRef: React.RefObject<HTMLDivElement | null>
   draftTarget: {
-    fileKey: string;
-    filePath: string;
-    side: "deletions" | "additions";
-    lineNumber: number;
-    endSide?: "deletions" | "additions";
-    endLineNumber?: number;
-  } | null;
-  fileListVirtualizer: Virtualizer<HTMLDivElement, Element>;
-  renderableFiles: FileDiffMetadata[];
-  savedComments: SavedDiffComment[];
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
-  selectedCommentId: string | null;
-  selectedCommentJumpKey: number;
-  selectedFilePath: string | null;
-  setCollapsedFiles: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+    fileKey: string
+    filePath: string
+    side: 'deletions' | 'additions'
+    lineNumber: number
+    endSide?: 'deletions' | 'additions' | undefined
+    endLineNumber?: number | undefined
+  } | null
+  fileListVirtualizer: Virtualizer<HTMLDivElement, Element>
+  renderableFiles: FileDiffMetadata[]
+  savedComments: SavedDiffComment[]
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>
+  selectedCommentId: string | null
+  selectedCommentJumpKey: number
+  selectedFilePath: string | null
+  setCollapsedFiles: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }) {
   useEffect(() => {
     if (!draftTarget) {
-      return;
+      return
     }
 
-    const scrollContainer = scrollContainerRef.current;
+    const scrollContainer = scrollContainerRef.current
     if (!scrollContainer) {
-      return;
+      return
     }
 
     const frame = window.requestAnimationFrame(() => {
-      const draftCard = draftCardRef.current;
+      const draftCard = draftCardRef.current
       if (!draftCard) {
-        return;
+        return
       }
 
       alignElementInScrollViewport({
         scrollContainer,
         targetElement: draftCard,
-        mode: "draft-fit",
-      });
-    });
+        mode: 'draft-fit',
+      })
+    })
 
     return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [draftCardRef, draftTarget, scrollContainerRef]);
+      window.cancelAnimationFrame(frame)
+    }
+  }, [draftCardRef, draftTarget, scrollContainerRef])
 
   useEffect(() => {
     if (!selectedCommentId || selectedCommentJumpKey < 0) {
-      return;
+      return
     }
 
-    const scrollContainer = scrollContainerRef.current;
-    const selectedComment = savedComments.find((comment) => comment.id === selectedCommentId);
-    if (!scrollContainer || !selectedComment) {
-      return;
+    const scrollContainer = scrollContainerRef.current
+    const selectedComment = savedComments.find((comment) => comment.id === selectedCommentId)
+    if (!(scrollContainer && selectedComment)) {
+      return
     }
 
     if (collapsedFiles[selectedComment.fileKey] === true) {
       setCollapsedFiles((current) => ({
         ...current,
         [selectedComment.fileKey]: false,
-      }));
-      return;
+      }))
+      return
     }
 
     const selectedFileIndex = renderableFiles.findIndex(
       (fileDiff) => buildFileDiffRenderKey(fileDiff) === selectedComment.fileKey,
-    );
+    )
     if (selectedFileIndex >= 0) {
-      fileListVirtualizer.scrollToIndex(selectedFileIndex, { align: "center" });
+      fileListVirtualizer.scrollToIndex(selectedFileIndex, { align: 'center' })
     }
 
-    let cancelled = false;
-    let attempts = 0;
-    let frame = 0;
+    let cancelled = false
+    let attempts = 0
+    let frame = 0
 
     const alignSelectedComment = () => {
       if (cancelled) {
-        return;
+        return
       }
 
       const commentElement = Array.from(
-        scrollContainer.querySelectorAll<HTMLElement>("[data-saved-diff-comment-id]"),
-      ).find((element) => element.dataset.savedDiffCommentId === selectedCommentId);
+        scrollContainer.querySelectorAll<HTMLElement>('[data-saved-diff-comment-id]'),
+      ).find((element) => getDatasetValue(element, 'savedDiffCommentId') === selectedCommentId)
 
       if (commentElement) {
         alignElementInScrollViewport({
           scrollContainer,
           targetElement: commentElement,
-          mode: "center",
-        });
-        return;
+          mode: 'center',
+        })
+        return
       }
 
       if (attempts >= 6) {
         const fileElement = Array.from(
-          scrollContainer.querySelectorAll<HTMLElement>("[data-diff-file-path]"),
-        ).find((element) => element.dataset.diffFilePath === selectedFilePath);
+          scrollContainer.querySelectorAll<HTMLElement>('[data-diff-file-path]'),
+        ).find((element) => getDatasetValue(element, 'diffFilePath') === selectedFilePath)
 
         if (fileElement) {
           alignElementInScrollViewport({
             scrollContainer,
             targetElement: fileElement,
-            mode: "center",
-          });
+            mode: 'center',
+          })
         }
-        return;
+        return
       }
 
-      attempts += 1;
-      frame = window.requestAnimationFrame(alignSelectedComment);
-    };
+      attempts += 1
+      frame = window.requestAnimationFrame(alignSelectedComment)
+    }
 
-    frame = window.requestAnimationFrame(alignSelectedComment);
+    frame = window.requestAnimationFrame(alignSelectedComment)
 
     return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(frame);
-    };
+      cancelled = true
+      window.cancelAnimationFrame(frame)
+    }
   }, [
     collapsedFiles,
     fileListVirtualizer,
@@ -147,5 +151,5 @@ export function useDiffPanelScrollAlignment({
     selectedCommentJumpKey,
     selectedFilePath,
     setCollapsedFiles,
-  ]);
+  ])
 }

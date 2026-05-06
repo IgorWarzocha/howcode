@@ -1,34 +1,34 @@
-import type { TimelineRow } from "./timeline-row";
+import type { TimelineRow } from './timeline-row'
 
-type FoldableRow = Extract<TimelineRow, { kind: "turn" | "summary" }>;
+type FoldableRow = Extract<TimelineRow, { kind: 'turn' | 'summary' }>
 
 type ReconcileCollapsedRowIdsOptions = {
-  defaultExpandedRowId?: string | null;
-  forcedExpandedRowId?: string | null;
-};
+  defaultExpandedRowId?: string | null
+  forcedExpandedRowId?: string | null
+}
 
 export function reconcileCollapsedRowIds(
   foldableRows: FoldableRow[],
   current: Record<string, boolean>,
-  options?: ReconcileCollapsedRowIdsOptions,
+  options?: ReconcileCollapsedRowIdsOptions | undefined,
 ) {
-  const next: Record<string, boolean> = {};
-  const defaultExpandedRowId = options?.defaultExpandedRowId ?? null;
-  const forcedExpandedRowId = options?.forcedExpandedRowId ?? null;
+  const next: Record<string, boolean> = {}
+  const defaultExpandedRowId = options?.defaultExpandedRowId ?? null
+  const forcedExpandedRowId = options?.forcedExpandedRowId ?? null
 
   for (const row of foldableRows) {
     if (row.id === forcedExpandedRowId) {
-      next[row.id] = false;
-      continue;
+      next[row.id] = false
+      continue
     }
 
-    if (Object.prototype.hasOwnProperty.call(current, row.id)) {
-      next[row.id] = current[row.id] as boolean;
-      continue;
+    if (Object.hasOwn(current, row.id)) {
+      next[row.id] = current[row.id] as boolean
+      continue
     }
 
-    next[row.id] = row.id !== defaultExpandedRowId;
+    next[row.id] = row.id !== defaultExpandedRowId
   }
 
-  return next;
+  return next
 }

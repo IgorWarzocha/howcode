@@ -3,7 +3,9 @@ const artifactScrollbarCss = `
   *::-webkit-scrollbar { width: 8px; height: 8px; }
   *::-webkit-scrollbar-thumb { border: 1px solid transparent; border-radius: 999px; background: rgba(140, 148, 181, 0.22); background-clip: padding-box; }
   * { scrollbar-color: rgba(140, 148, 181, 0.22) transparent; }
-</style>`;
+</style>`
+
+const htmlHeadOpenRegex = /<head([^>]*)>/i
 
 const artifactDarkPreviewCss = `
     html { background: #262936; }
@@ -12,10 +14,10 @@ const artifactDarkPreviewCss = `
     code, pre { color: #d5daed; background: rgba(255,255,255,0.04); }
     blockquote { color: #969db7; border-left: 3px solid rgba(185,191,243,0.32); margin-left: 0; padding-left: 1rem; }
     hr { border: 0; border-top: 1px solid rgba(169,178,215,0.14); }
-`;
+`
 
 function escapeScriptContent(script: string) {
-  return script.replace(/<\/script/gi, "<\\/script");
+  return script.replace(/<\/script/gi, '<\\/script')
 }
 
 export function buildHtmlPreview(content: string) {
@@ -32,10 +34,10 @@ console.error = function(...args) {
   parent.postMessage({ source: 'howcode-artifact-preview', phase: 'runtime', message: args.map(String).join(' ') }, '*');
   originalError.apply(console, args);
 };
-</script>`;
-  return content.includes("<head")
-    ? content.replace(/<head([^>]*)>/i, `<head$1>${capture}`)
-    : `${capture}${content}`;
+</script>`
+  return content.includes('<head')
+    ? content.replace(htmlHeadOpenRegex, `<head$1>${capture}`)
+    : `${capture}${content}`
 }
 
 export function buildReactPreview(compiledJs: string) {
@@ -68,5 +70,5 @@ export function buildReactPreview(compiledJs: string) {
   </script>
   <script type="module">${escapeScriptContent(compiledJs)}</script>
 </body>
-</html>`;
+</html>`
 }

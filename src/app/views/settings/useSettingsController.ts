@@ -1,163 +1,163 @@
-import { useEffect, useRef, useState } from "react";
-import type { AppSettings, DesktopActionInvoker, PiSettings } from "../../desktop/types";
-import { useAnimatedPresence } from "../../hooks/useAnimatedPresence";
-import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
-import type { Project } from "../../types";
+import { useEffect, useRef, useState } from 'react'
+import type { AppSettings, DesktopActionInvoker, PiSettings } from '../../desktop/types'
+import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import {
   desktopBridgeUnavailableMessage,
   useDesktopBridgeAvailable,
-} from "../../hooks/useDesktopBridge";
+} from '../../hooks/useDesktopBridge'
+import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
+import type { Project } from '../../types'
 import {
   buildModelSelectionPayload,
   getActionError,
   getModelSettingValue,
   getProjectImportSummaryMessage,
-} from "./helpers";
-import { useSettingsDictationController } from "./useSettingsDictationController";
+} from './helpers'
+import { useSettingsDictationController } from './useSettingsDictationController'
 
 export function useSettingsController({
   appSettings,
   onAction,
 }: {
-  appSettings: AppSettings;
-  projects: Project[];
-  onAction: DesktopActionInvoker;
+  appSettings: AppSettings
+  projects: Project[]
+  onAction: DesktopActionInvoker
 }) {
   const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
-    appSettings.preferredProjectLocation ?? "",
-  );
-  const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false);
-  const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false);
-  const [favoriteFolderDraft, setFavoriteFolderDraft] = useState("");
-  const [importBusy, setImportBusy] = useState(false);
-  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
-  const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null);
-  const [clearImagesBusy, setClearImagesBusy] = useState(false);
-  const [clearImagesStatusMessage, setClearImagesStatusMessage] = useState<string | null>(null);
-  const gitCommitButtonRef = useRef<HTMLButtonElement>(null);
-  const gitCommitPanelRef = useRef<HTMLDivElement>(null);
-  const gitCommitMenuPresent = useAnimatedPresence(gitCommitMenuOpen);
-  const skillCreatorButtonRef = useRef<HTMLButtonElement>(null);
-  const skillCreatorPanelRef = useRef<HTMLDivElement>(null);
-  const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen);
+    appSettings.preferredProjectLocation ?? '',
+  )
+  const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
+  const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
+  const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
+  const [importBusy, setImportBusy] = useState(false)
+  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null)
+  const [importErrorMessage, setImportErrorMessage] = useState<string | null>(null)
+  const [clearImagesBusy, setClearImagesBusy] = useState(false)
+  const [clearImagesStatusMessage, setClearImagesStatusMessage] = useState<string | null>(null)
+  const gitCommitButtonRef = useRef<HTMLButtonElement>(null)
+  const gitCommitPanelRef = useRef<HTMLDivElement>(null)
+  const gitCommitMenuPresent = useAnimatedPresence(gitCommitMenuOpen)
+  const skillCreatorButtonRef = useRef<HTMLButtonElement>(null)
+  const skillCreatorPanelRef = useRef<HTMLDivElement>(null)
+  const skillCreatorMenuPresent = useAnimatedPresence(skillCreatorMenuOpen)
 
-  const dictation = useSettingsDictationController({ appSettings, onAction });
-  const desktopBridgeAvailable = useDesktopBridgeAvailable();
+  const dictation = useSettingsDictationController({ appSettings, onAction })
+  const desktopBridgeAvailable = useDesktopBridgeAvailable()
 
   useEffect(() => {
-    setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? "");
-  }, [appSettings.preferredProjectLocation]);
+    setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? '')
+  }, [appSettings.preferredProjectLocation])
 
   const closeGitCommitMenu = () => {
-    setGitCommitMenuOpen(false);
-  };
+    setGitCommitMenuOpen(false)
+  }
 
   const closeSkillCreatorMenu = () => {
-    setSkillCreatorMenuOpen(false);
-  };
+    setSkillCreatorMenuOpen(false)
+  }
 
   useDismissibleLayer({
     open: gitCommitMenuOpen,
     onDismiss: closeGitCommitMenu,
     refs: [gitCommitButtonRef, gitCommitPanelRef],
-  });
+  })
 
   useDismissibleLayer({
     open: skillCreatorMenuOpen,
     onDismiss: closeSkillCreatorMenu,
     refs: [skillCreatorButtonRef, skillCreatorPanelRef],
-  });
+  })
 
   const updateFavoriteFolders = (nextFavoriteFolders: string[]) => {
-    void onAction("settings.update", {
-      key: "favoriteFolders",
+    void onAction('settings.update', {
+      key: 'favoriteFolders',
       folders: nextFavoriteFolders,
-    });
-  };
+    })
+  }
 
   const addFavoriteFolder = () => {
-    const nextFavoriteFolder = favoriteFolderDraft.trim();
+    const nextFavoriteFolder = favoriteFolderDraft.trim()
     if (!nextFavoriteFolder) {
-      return;
+      return
     }
 
-    updateFavoriteFolders([...appSettings.favoriteFolders, nextFavoriteFolder]);
-    setFavoriteFolderDraft("");
-  };
+    updateFavoriteFolders([...appSettings.favoriteFolders, nextFavoriteFolder])
+    setFavoriteFolderDraft('')
+  }
 
   const savePreferredProjectLocation = () => {
-    void onAction("settings.update", {
-      key: "preferredProjectLocation",
+    void onAction('settings.update', {
+      key: 'preferredProjectLocation',
       value: preferredProjectLocationDraft,
-    });
-  };
+    })
+  }
 
   const selectModel = (
-    key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
+    key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
     id: string,
     closeMenu: () => void,
   ) => {
-    void onAction("settings.update", buildModelSelectionPayload(key, id));
-    closeMenu();
-  };
+    void onAction('settings.update', buildModelSelectionPayload(key, id))
+    closeMenu()
+  }
 
   const handleImportProjectUi = async () => {
     if (!desktopBridgeAvailable) {
-      setImportStatusMessage(null);
-      setImportErrorMessage(desktopBridgeUnavailableMessage);
-      return;
+      setImportStatusMessage(null)
+      setImportErrorMessage(desktopBridgeUnavailableMessage)
+      return
     }
 
-    setImportBusy(true);
-    setImportStatusMessage("Scanning projects for UI info…");
-    setImportErrorMessage(null);
+    setImportBusy(true)
+    setImportStatusMessage('Scanning projects for UI info…')
+    setImportErrorMessage(null)
 
     try {
-      const result = await onAction("projects.import.apply", {
+      const result = await onAction('projects.import.apply', {
         projectIds: [],
-      });
-      const error = getActionError(result);
+      })
+      const error = getActionError(result)
       if (error) {
-        setImportErrorMessage(error);
-        setImportStatusMessage(null);
-        return;
+        setImportErrorMessage(error)
+        setImportStatusMessage(null)
+        return
       }
 
-      setImportStatusMessage(getProjectImportSummaryMessage(result));
+      setImportStatusMessage(getProjectImportSummaryMessage(result))
     } finally {
-      setImportBusy(false);
+      setImportBusy(false)
     }
-  };
+  }
 
   const handleClearClipboardImages = async () => {
     if (!desktopBridgeAvailable) {
-      setClearImagesStatusMessage(desktopBridgeUnavailableMessage);
-      return;
+      setClearImagesStatusMessage(desktopBridgeUnavailableMessage)
+      return
     }
 
-    setClearImagesBusy(true);
-    setClearImagesStatusMessage(null);
+    setClearImagesBusy(true)
+    setClearImagesStatusMessage(null)
     try {
-      const result = await onAction("settings.clear-clipboard-images", {});
-      const error = getActionError(result);
+      const result = await onAction('settings.clear-clipboard-images', {})
+      const error = getActionError(result)
       if (error) {
-        setClearImagesStatusMessage(error);
-        return;
+        setClearImagesStatusMessage(error)
+        return
       }
 
-      const clearedCount = result?.result?.clearedCount ?? 0;
-      const failedCount = result?.result?.clearFailedCount ?? 0;
+      const clearedCount = result?.result?.clearedCount ?? 0
+      const failedCount = result?.result?.clearFailedCount ?? 0
       const deletedMessage =
         clearedCount === 1
-          ? "Deleted 1 clipboard image."
-          : `Deleted ${clearedCount} clipboard images.`;
+          ? 'Deleted 1 clipboard image.'
+          : `Deleted ${clearedCount} clipboard images.`
       setClearImagesStatusMessage(
         failedCount > 0 ? `${deletedMessage} ${failedCount} failed.` : deletedMessage,
-      );
+      )
     } finally {
-      setClearImagesBusy(false);
+      setClearImagesBusy(false)
     }
-  };
+  }
 
   return {
     addFavoriteFolder,
@@ -172,7 +172,7 @@ export function useSettingsController({
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
-    gitCommitMenuId: "settings-git-commit-model-menu",
+    gitCommitMenuId: 'settings-git-commit-model-menu',
     gitCommitMenuOpen,
     gitCommitMenuPresent,
     gitCommitPanelRef,
@@ -184,105 +184,111 @@ export function useSettingsController({
     preferredProjectLocationDraft,
     refreshDictationState: dictation.refreshDictationState,
     savePreferredProjectLocation,
-    setComposerStreamingBehavior: (value: AppSettings["composerStreamingBehavior"]) =>
-      void onAction("settings.update", {
-        key: "composerStreamingBehavior",
+    setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
+      void onAction('settings.update', {
+        key: 'composerStreamingBehavior',
         value,
       }),
-    setDictationMaxDurationSeconds: (value: AppSettings["dictationMaxDurationSeconds"]) =>
-      void onAction("settings.update", {
-        key: "dictationMaxDurationSeconds",
+    setDictationMaxDurationSeconds: (value: AppSettings['dictationMaxDurationSeconds']) =>
+      void onAction('settings.update', {
+        key: 'dictationMaxDurationSeconds',
         value,
       }),
-    setDictationModelId: (value: AppSettings["dictationModelId"]) =>
-      void onAction("settings.update", {
-        key: "dictationModelId",
+    setDictationModelId: (value: AppSettings['dictationModelId']) =>
+      void onAction('settings.update', {
+        key: 'dictationModelId',
         value,
       }),
     setShowDictationButton: (value: boolean) =>
-      void onAction("settings.update", {
-        key: "showDictationButton",
+      void onAction('settings.update', {
+        key: 'showDictationButton',
         value,
       }),
     selectDictationModel: dictation.selectDictationModel,
-    selectChatModel: (id: string) => selectModel("chatModel", id, () => {}),
-    selectCodeModel: (id: string) => selectModel("codeModel", id, () => {}),
+    selectChatModel: (id: string) =>
+      selectModel('chatModel', id, () => {
+        // Chat model menu is managed by the native select control.
+      }),
+    selectCodeModel: (id: string) =>
+      selectModel('codeModel', id, () => {
+        // Code model menu is managed by the native select control.
+      }),
     selectGitCommitModel: (id: string) =>
-      selectModel("gitCommitMessageModel", id, closeGitCommitMenu),
+      selectModel('gitCommitMessageModel', id, closeGitCommitMenu),
     selectSkillCreatorModel: (id: string) =>
-      selectModel("skillCreatorModel", id, closeSkillCreatorMenu),
+      selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
     setFavoriteFolderDraft,
     setGitCommitMenuOpen,
     setPreferredProjectLocationDraft,
     setSkillCreatorMenuOpen,
     skillCreatorButtonRef,
     skillCreatorCurrentValue: getModelSettingValue(appSettings.skillCreatorModel),
-    skillCreatorMenuId: "settings-skill-creator-model-menu",
+    skillCreatorMenuId: 'settings-skill-creator-model-menu',
     skillCreatorMenuOpen,
     skillCreatorMenuPresent,
     skillCreatorPanelRef,
     toggleInitializeGitOnProjectCreate: () =>
-      void onAction("settings.update", {
-        key: "initializeGitOnProjectCreate",
+      void onAction('settings.update', {
+        key: 'initializeGitOnProjectCreate',
         value: !appSettings.initializeGitOnProjectCreate,
       }),
-    setProjectDeletionMode: (value: AppSettings["projectDeletionMode"]) =>
-      void onAction("settings.update", {
-        key: "projectDeletionMode",
+    setProjectDeletionMode: (value: AppSettings['projectDeletionMode']) =>
+      void onAction('settings.update', {
+        key: 'projectDeletionMode',
         value,
       }),
-    setGitOpsDefaultMode: (value: AppSettings["gitOpsDefaultMode"]) =>
-      void onAction("settings.update", {
-        key: "gitOpsDefaultMode",
+    setGitOpsDefaultMode: (value: AppSettings['gitOpsDefaultMode']) =>
+      void onAction('settings.update', {
+        key: 'gitOpsDefaultMode',
         value,
       }),
-    setGitDiffBaselineDefault: (value: AppSettings["gitDiffBaselineDefault"]) =>
-      void onAction("settings.update", {
-        key: "gitDiffBaselineDefault",
+    setGitDiffBaselineDefault: (value: AppSettings['gitDiffBaselineDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffBaselineDefault',
         value,
       }),
-    setGitDiffRenderModeDefault: (value: AppSettings["gitDiffRenderModeDefault"]) =>
-      void onAction("settings.update", {
-        key: "gitDiffRenderModeDefault",
+    setGitDiffRenderModeDefault: (value: AppSettings['gitDiffRenderModeDefault']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffRenderModeDefault',
         value,
       }),
-    setGitDiffFileTreeDefaultVisible: (value: AppSettings["gitDiffFileTreeDefaultVisible"]) =>
-      void onAction("settings.update", {
-        key: "gitDiffFileTreeDefaultVisible",
+    setGitDiffFileTreeDefaultVisible: (value: AppSettings['gitDiffFileTreeDefaultVisible']) =>
+      void onAction('settings.update', {
+        key: 'gitDiffFileTreeDefaultVisible',
         value,
       }),
     updatePiSetting: <Key extends keyof PiSettings>(key: Key, value: PiSettings[Key]) =>
-      void onAction("pi-settings.update", {
+      void onAction('pi-settings.update', {
         piSettingsKey: key,
         value,
       }),
     togglePiTuiTakeover: () =>
-      void onAction("settings.update", {
-        key: "piTuiTakeover",
+      void onAction('settings.update', {
+        key: 'piTuiTakeover',
         value: !appSettings.piTuiTakeover,
       }),
     toggleHowcodeNativeAskQuestions: () =>
-      void onAction("settings.update", {
-        key: "howcodeNativeAskQuestions",
+      void onAction('settings.update', {
+        key: 'howcodeNativeAskQuestions',
         value: !appSettings.howcodeNativeAskQuestions,
       }),
     toggleHoverToFocus: () =>
-      void onAction("settings.update", {
-        key: "hoverToFocus",
+      void onAction('settings.update', {
+        key: 'hoverToFocus',
         value: !appSettings.hoverToFocus,
       }),
     toggleHoverToBlur: () =>
-      void onAction("settings.update", {
-        key: "hoverToBlur",
+      void onAction('settings.update', {
+        key: 'hoverToBlur',
         value: !appSettings.hoverToBlur,
       }),
     updateFavoriteFolders,
     handleImportProjectUi,
     handleClearClipboardImages,
     showFirstLaunchReminderAgain: () =>
-      void onAction("settings.update", {
-        key: "projectImportState",
+      void onAction('settings.update', {
+        key: 'projectImportState',
         imported: null,
       }),
-  };
+  }
 }

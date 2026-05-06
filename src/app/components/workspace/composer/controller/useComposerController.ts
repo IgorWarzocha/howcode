@@ -1,64 +1,64 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import type { DesktopAction } from "../../../../desktop/actions";
-import { getDesktopActionErrorMessage } from "../../../../desktop/action-results";
-import { getErrorMessage } from "../../../../desktop/error-messages";
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { getDesktopActionErrorMessage } from '../../../../desktop/action-results'
+import type { DesktopAction } from '../../../../desktop/actions'
+import { getErrorMessage } from '../../../../desktop/error-messages'
 import type {
   ComposerFilePickerState,
   ComposerModel,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DesktopActionInvoker,
-} from "../../../../desktop/types";
-import type { View } from "../../../../types";
-import { useDismissibleLayer } from "../../../../hooks/useDismissibleLayer";
-import { useComposerAttachmentPicker } from "../useComposerAttachmentPicker";
-import { useComposerClipboardHandlers } from "../useComposerClipboardHandlers";
-import { useComposerDictation } from "../useComposerDictation";
-import { useComposerSubmission } from "../useComposerSubmission";
-import { useComposerDraftState } from "./useComposerDraftState";
+} from '../../../../desktop/types'
+import { useDismissibleLayer } from '../../../../hooks/useDismissibleLayer'
+import type { View } from '../../../../types'
+import { useComposerAttachmentPicker } from '../useComposerAttachmentPicker'
+import { useComposerClipboardHandlers } from '../useComposerClipboardHandlers'
+import { useComposerDictation } from '../useComposerDictation'
+import { useComposerSubmission } from '../useComposerSubmission'
+import { useComposerDraftState } from './useComposerDraftState'
 
 const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
-  off: "Off",
-  minimal: "Minimal",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  xhigh: "X-High",
-};
+  off: 'Off',
+  minimal: 'Minimal',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  xhigh: 'X-High',
+}
 
 function getModelLabel(model: ComposerModel | null) {
   if (!model) {
-    return "No model";
+    return 'No model'
   }
 
-  return model.name;
+  return model.name
 }
 
 type UseComposerControllerProps = {
-  activeView: View;
-  composerPanelRef: RefObject<HTMLDivElement | null>;
-  mainViewRef: RefObject<HTMLElement | null>;
-  workspaceFooterRef: RefObject<HTMLElement | null>;
-  model: ComposerModel | null;
-  projectId: string;
-  chatGroupId?: string | null;
-  sessionPath: string | null;
-  dictationModelId: string | null;
-  dictationMaxDurationSeconds: number;
-  isStreaming: boolean;
-  replyActivityKey: string;
-  isCompacting: boolean;
-  isExtensionCommandRunning: boolean;
-  restoredQueuedPrompt: string | null;
-  streamingBehaviorPreference: ComposerStreamingBehavior;
-  onAction: DesktopActionInvoker;
-  onRestoredQueuedPromptApplied: () => void;
+  activeView: View
+  composerPanelRef: RefObject<HTMLDivElement | null>
+  mainViewRef: RefObject<HTMLElement | null>
+  workspaceFooterRef: RefObject<HTMLElement | null>
+  model: ComposerModel | null
+  projectId: string
+  chatGroupId?: string | null | undefined
+  sessionPath: string | null
+  dictationModelId: string | null
+  dictationMaxDurationSeconds: number
+  isStreaming: boolean
+  replyActivityKey: string
+  isCompacting: boolean
+  isExtensionCommandRunning: boolean
+  restoredQueuedPrompt: string | null
+  streamingBehaviorPreference: ComposerStreamingBehavior
+  onAction: DesktopActionInvoker
+  onRestoredQueuedPromptApplied: () => void
   onListAttachmentEntries: (request: {
-    projectId?: string | null;
-    path?: string | null;
-    rootPath?: string | null;
-  }) => Promise<ComposerFilePickerState | null>;
-};
+    projectId?: string | null
+    path?: string | null
+    rootPath?: string | null
+  }) => Promise<ComposerFilePickerState | null>
+}
 
 export function useComposerController({
   activeView,
@@ -81,19 +81,19 @@ export function useComposerController({
   onRestoredQueuedPromptApplied,
   onListAttachmentEntries,
 }: UseComposerControllerProps) {
-  const [openMenu, setOpenMenu] = useState<"model" | "picker" | null>(null);
-  const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null);
-  const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null);
-  const pendingSubmittedDraftScopeKeyRef = useRef<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const composerMode = activeView === "chat" ? "chat" : "code";
-  const pickerButtonRef = useRef<HTMLButtonElement>(null);
-  const pickerPanelRef = useRef<HTMLDivElement>(null);
-  const modelButtonRef = useRef<HTMLButtonElement>(null);
-  const modelMenuRef = useRef<HTMLDivElement>(null);
-  const sendLockRef = useRef(false);
+  const [openMenu, setOpenMenu] = useState<'model' | 'picker' | null>(null)
+  const [localExtensionCommandRunning, setLocalExtensionCommandRunning] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [pendingSubmittedDraft, setPendingSubmittedDraft] = useState<string | null>(null)
+  const pendingSubmittedReplyActivityKeyRef = useRef<string | null>(null)
+  const pendingSubmittedDraftScopeKeyRef = useRef<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const composerMode = activeView === 'chat' ? 'chat' : 'code'
+  const pickerButtonRef = useRef<HTMLButtonElement>(null)
+  const pickerPanelRef = useRef<HTMLDivElement>(null)
+  const modelButtonRef = useRef<HTMLButtonElement>(null)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
+  const sendLockRef = useRef(false)
   const {
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
@@ -115,51 +115,51 @@ export function useComposerController({
     setErrorMessage,
     restoredQueuedPrompt,
     onRestoredQueuedPromptApplied,
-  });
+  })
 
   useDismissibleLayer({
-    open: openMenu === "model",
+    open: openMenu === 'model',
     onDismiss: () => setOpenMenu(null),
     refs: [modelButtonRef, modelMenuRef],
-  });
+  })
 
   useEffect(() => {
-    if (openMenu !== "picker") {
-      return;
+    if (openMenu !== 'picker') {
+      return
     }
 
     const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
+      const target = event.target as Node | null
 
       if (!target) {
-        return;
+        return
       }
 
       if (pickerButtonRef.current?.contains(target) || pickerPanelRef.current?.contains(target)) {
-        return;
+        return
       }
 
       if (composerPanelRef.current?.contains(target)) {
-        return;
+        return
       }
 
       if (mainViewRef.current?.contains(target) || workspaceFooterRef.current?.contains(target)) {
-        setOpenMenu((current) => (current === "picker" ? null : current));
+        setOpenMenu((current) => (current === 'picker' ? null : current))
       }
-    };
+    }
 
-    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener('pointerdown', handlePointerDown, true)
     return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-    };
-  }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef]);
+      window.removeEventListener('pointerdown', handlePointerDown, true)
+    }
+  }, [composerPanelRef, mainViewRef, openMenu, workspaceFooterRef])
 
-  const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning;
+  const extensionCommandRunning = isExtensionCommandRunning || localExtensionCommandRunning
   const canSend =
     (draft.trim().length > 0 || attachments.length > 0) &&
     !isSending &&
     !pendingSubmittedDraft &&
-    !isCompacting;
+    !isCompacting
 
   useEffect(() => {
     if (
@@ -167,39 +167,39 @@ export function useComposerController({
       pendingSubmittedReplyActivityKeyRef.current === null ||
       pendingSubmittedReplyActivityKeyRef.current === replyActivityKey
     ) {
-      return;
+      return
     }
 
     if (draftValueRef.current === pendingSubmittedDraft) {
-      setDraftValue("");
+      setDraftValue('')
     }
-    pendingSubmittedReplyActivityKeyRef.current = null;
-    setPendingSubmittedDraft(null);
-  }, [draftValueRef, pendingSubmittedDraft, replyActivityKey, setDraftValue]);
+    pendingSubmittedReplyActivityKeyRef.current = null
+    setPendingSubmittedDraft(null)
+  }, [draftValueRef, pendingSubmittedDraft, replyActivityKey, setDraftValue])
 
   useEffect(() => {
-    if (!pendingSubmittedDraft || isSending || isStreaming) return;
-    const submittedReplyActivityKey = pendingSubmittedReplyActivityKeyRef.current;
+    if (!pendingSubmittedDraft || isSending || isStreaming) return
+    const submittedReplyActivityKey = pendingSubmittedReplyActivityKeyRef.current
     const timeout = window.setTimeout(() => {
-      if (pendingSubmittedReplyActivityKeyRef.current !== submittedReplyActivityKey) return;
-      pendingSubmittedReplyActivityKeyRef.current = null;
-      setPendingSubmittedDraft(null);
-    }, 60_000);
-    return () => window.clearTimeout(timeout);
-  }, [isSending, isStreaming, pendingSubmittedDraft]);
+      if (pendingSubmittedReplyActivityKeyRef.current !== submittedReplyActivityKey) return
+      pendingSubmittedReplyActivityKeyRef.current = null
+      setPendingSubmittedDraft(null)
+    }, 60_000)
+    return () => window.clearTimeout(timeout)
+  }, [isSending, isStreaming, pendingSubmittedDraft])
 
   useEffect(() => {
-    if (pendingSubmittedDraftScopeKeyRef.current === composerScopeKey) return;
-    pendingSubmittedDraftScopeKeyRef.current = composerScopeKey;
-    if (pendingSubmittedDraft && isStreaming && replyActivityKey.length === 0) return;
-    pendingSubmittedReplyActivityKeyRef.current = null;
-    setPendingSubmittedDraft(null);
-  }, [composerScopeKey, isStreaming, pendingSubmittedDraft, replyActivityKey]);
+    if (pendingSubmittedDraftScopeKeyRef.current === composerScopeKey) return
+    pendingSubmittedDraftScopeKeyRef.current = composerScopeKey
+    if (pendingSubmittedDraft && isStreaming && replyActivityKey.length === 0) return
+    pendingSubmittedReplyActivityKeyRef.current = null
+    setPendingSubmittedDraft(null)
+  }, [composerScopeKey, isStreaming, pendingSubmittedDraft, replyActivityKey])
 
   useEffect(() => {
-    void composerScopeKey;
-    setLocalExtensionCommandRunning(false);
-  }, [composerScopeKey]);
+    void composerScopeKey
+    setLocalExtensionCommandRunning(false)
+  }, [composerScopeKey])
 
   const {
     cancelDictation,
@@ -218,7 +218,7 @@ export function useComposerController({
     sessionPath,
     setDraftValue,
     setErrorMessage,
-  });
+  })
 
   const {
     attachPickerAttachments,
@@ -238,33 +238,33 @@ export function useComposerController({
     setErrorMessage,
     setOpenMenu,
     onListAttachmentEntries,
-  });
+  })
 
   const runComposerAction = async (
     action: DesktopAction,
     payload: NonNullable<Parameters<DesktopActionInvoker>[1]>,
-    options?: { closeMenu?: boolean },
+    options?: { closeMenu?: boolean } | undefined,
   ) => {
     try {
-      const result = await onAction(action, payload);
+      const result = await onAction(action, payload)
       const actionErrorMessage = getDesktopActionErrorMessage(
         result,
-        "Could not update the composer.",
-      );
+        'Could not update the composer.',
+      )
       if (actionErrorMessage) {
-        setErrorMessage(actionErrorMessage);
-        return false;
+        setErrorMessage(actionErrorMessage)
+        return false
       }
-      setErrorMessage(null);
+      setErrorMessage(null)
       if (options?.closeMenu ?? true) {
-        setOpenMenu(null);
+        setOpenMenu(null)
       }
-      return true;
+      return true
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Could not update the composer."));
-      return false;
+      setErrorMessage(getErrorMessage(error, 'Could not update the composer.'))
+      return false
     }
-  };
+  }
 
   const { compact, send, sendExtensionCommand, stop } = useComposerSubmission({
     composerScopeKey,
@@ -294,15 +294,15 @@ export function useComposerController({
     draftValueRef,
     sendLockRef,
     skipNextDraftPersistenceRef,
-  });
+  })
 
-  const modelLabel = useMemo(() => getModelLabel(model), [model]);
+  const modelLabel = useMemo(() => getModelLabel(model), [model])
 
   const { handleDrop, handlePaste } = useComposerClipboardHandlers({
     setAttachments: setAttachmentValue,
     setDraftValue,
     setErrorMessage,
-  });
+  })
 
   return {
     attachments,
@@ -323,12 +323,12 @@ export function useComposerController({
     inputLocked: isSending || pendingSubmittedDraft !== null || (isStreaming && !replyActivityKey),
     pickerButtonRef,
     pickerLoading,
-    pickerOpen: openMenu === "picker",
+    pickerOpen: openMenu === 'picker',
     pickerPanelRef,
     pickerState,
     modelButtonRef,
     modelLabel,
-    modelMenuOpen: openMenu === "model",
+    modelMenuOpen: openMenu === 'model',
     modelMenuRef,
     isStreaming,
     pickAttachments,
@@ -346,5 +346,5 @@ export function useComposerController({
     attachPickerAttachments,
     togglePendingPickerAttachment,
     thinkingLevelLabels,
-  };
+  }
 }

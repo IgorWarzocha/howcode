@@ -1,76 +1,97 @@
-import type { AnnotationSide } from "@pierre/diffs/react";
+import type { AnnotationSide } from '@pierre/diffs/react'
+
+function isIgnoredPointerTarget(node: HTMLElement) {
+  return (
+    node instanceof HTMLButtonElement ||
+    node instanceof HTMLTextAreaElement ||
+    node instanceof HTMLInputElement ||
+    node instanceof HTMLSelectElement ||
+    node.hasAttribute('data-title') ||
+    node.hasAttribute('data-file-info')
+  )
+}
+
+function readLineNumberAttribute(node: HTMLElement, attribute: string) {
+  const value = node.getAttribute(attribute)
+  if (!value) return null
+  const parsedLineNumber = Number.parseInt(value, 10)
+  return Number.isNaN(parsedLineNumber) ? null : parsedLineNumber
+}
+
+function resolveLineTargetSide(lineType: string | null, codeElement: HTMLElement): AnnotationSide {
+  if (lineType === 'change-deletion') return 'deletions'
+  if (lineType === 'change-addition') return 'additions'
+  return codeElement.hasAttribute('data-deletions') ? 'deletions' : 'additions'
+}
+
+type PointerLineScanState = {
+  codeElement: HTMLElement | null
+  lineType: string | null
+  lineNumber: number | null
+  numberElement: HTMLElement | null
+}
+
+function applyPointerLineNode(
+  state: PointerLineScanState,
+  node: HTMLElement,
+): PointerLineScanState {
+  if (!state.numberElement) {
+    const parsedLineNumber = readLineNumberAttribute(node, 'data-column-number')
+    if (parsedLineNumber !== null) {
+      return {
+        ...state,
+        numberElement: node,
+        lineNumber: parsedLineNumber,
+        lineType: node.getAttribute('data-line-type'),
+      }
+    }
+  }
+
+  if (state.lineNumber == null) {
+    const parsedLineNumber = readLineNumberAttribute(node, 'data-line')
+    if (parsedLineNumber !== null) {
+      return {
+        ...state,
+        lineNumber: parsedLineNumber,
+        lineType: node.getAttribute('data-line-type'),
+      }
+    }
+  }
+
+  return !state.codeElement && node.hasAttribute('data-code')
+    ? { ...state, codeElement: node }
+    : state
+}
 
 export function resolvePointerLineTarget(event: MouseEvent | PointerEvent): {
-  side: AnnotationSide;
-  lineNumber: number;
+  side: AnnotationSide
+  lineNumber: number
 } | null {
-  const path = event.composedPath?.() ?? [];
-  let numberElement: HTMLElement | null = null;
-  let codeElement: HTMLElement | null = null;
-  let lineType: string | null = null;
-  let lineNumber: number | null = null;
+  const path = event.composedPath?.() ?? []
+  let state: PointerLineScanState = {
+    codeElement: null,
+    lineNumber: null,
+    lineType: null,
+    numberElement: null,
+  }
 
   for (const node of path) {
     if (!(node instanceof HTMLElement)) {
-      continue;
+      continue
     }
 
-    if (
-      node instanceof HTMLButtonElement ||
-      node instanceof HTMLTextAreaElement ||
-      node instanceof HTMLInputElement ||
-      node instanceof HTMLSelectElement
-    ) {
-      return null;
-    }
+    if (isIgnoredPointerTarget(node)) return null
 
-    if (node.hasAttribute("data-title") || node.hasAttribute("data-file-info")) {
-      return null;
-    }
-
-    if (!numberElement) {
-      const columnNumber = node.getAttribute("data-column-number");
-      if (columnNumber) {
-        const parsedLineNumber = Number.parseInt(columnNumber, 10);
-        if (!Number.isNaN(parsedLineNumber)) {
-          numberElement = node;
-          lineNumber = parsedLineNumber;
-          lineType = node.getAttribute("data-line-type");
-          continue;
-        }
-      }
-    }
-
-    if (lineNumber == null) {
-      const lineAttribute = node.getAttribute("data-line");
-      if (lineAttribute) {
-        const parsedLineNumber = Number.parseInt(lineAttribute, 10);
-        if (!Number.isNaN(parsedLineNumber)) {
-          lineNumber = parsedLineNumber;
-          lineType = node.getAttribute("data-line-type");
-          continue;
-        }
-      }
-    }
-
-    if (!codeElement && node.hasAttribute("data-code")) {
-      codeElement = node;
-      break;
-    }
+    state = applyPointerLineNode(state, node)
+    if (state.codeElement) break
   }
 
-  if (!codeElement || lineNumber == null) {
-    return null;
+  if (!state.codeElement || state.lineNumber == null) {
+    return null
   }
 
-  const side: AnnotationSide =
-    lineType === "change-deletion"
-      ? "deletions"
-      : lineType === "change-addition"
-        ? "additions"
-        : codeElement.hasAttribute("data-deletions")
-          ? "deletions"
-          : "additions";
-
-  return { side, lineNumber };
+  return {
+    side: resolveLineTargetSide(state.lineType, state.codeElement),
+    lineNumber: state.lineNumber,
+  }
 }

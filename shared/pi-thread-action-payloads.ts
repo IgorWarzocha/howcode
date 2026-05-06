@@ -8,319 +8,319 @@ import type {
   DictationModelId,
   GitOpsMode,
   ModelSelection,
+  ProjectDeletionMode,
   ProjectDiffBaseline,
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
-  ProjectDeletionMode,
-} from "./desktop-contracts";
-import { getPersistedSessionPath } from "./session-paths";
+} from './desktop-contracts'
+import { getPersistedSessionPath } from './session-paths'
 
 const composerThinkingLevels = new Set<ComposerThinkingLevel>([
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-]);
+  'off',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+])
 
 export function getComposerRequest(payload: DesktopActionPayloadInput): ComposerStateRequest {
   return {
-    projectId: typeof payload.projectId === "string" ? payload.projectId : null,
+    projectId: typeof payload.projectId === 'string' ? payload.projectId : null,
     sessionPath: getPersistedSessionPath(
-      typeof payload.sessionPath === "string" ? payload.sessionPath : null,
+      typeof payload.sessionPath === 'string' ? payload.sessionPath : null,
     ),
     composerMode:
-      payload.composerMode === "chat" || payload.composerMode === "code"
+      payload.composerMode === 'chat' || payload.composerMode === 'code'
         ? payload.composerMode
         : null,
-    chatGroupId: typeof payload.chatGroupId === "string" ? payload.chatGroupId : null,
-  };
+    chatGroupId: typeof payload.chatGroupId === 'string' ? payload.chatGroupId : null,
+  }
 }
 
 export function getProjectId(payload: DesktopActionPayloadInput) {
-  return typeof payload.projectId === "string" ? payload.projectId : null;
+  return typeof payload.projectId === 'string' ? payload.projectId : null
 }
 
 export function getSessionPath(payload: DesktopActionPayloadInput) {
-  return typeof payload.sessionPath === "string" ? payload.sessionPath : null;
+  return typeof payload.sessionPath === 'string' ? payload.sessionPath : null
 }
 
 export function getThreadId(payload: DesktopActionPayloadInput) {
-  return typeof payload.threadId === "string" ? payload.threadId : null;
+  return typeof payload.threadId === 'string' ? payload.threadId : null
 }
 
 export function getThreadIds(payload: DesktopActionPayloadInput) {
   return Array.isArray(payload.threadIds)
     ? payload.threadIds.filter(
-        (threadId: unknown): threadId is string => typeof threadId === "string",
+        (threadId: unknown): threadId is string => typeof threadId === 'string',
       )
-    : [];
+    : []
 }
 
 export function getProjectName(payload: DesktopActionPayloadInput) {
-  const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
-  return projectName.length > 0 ? projectName : null;
+  const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
+  return projectName.length > 0 ? projectName : null
 }
 
 export function getProjectIds(payload: DesktopActionPayloadInput) {
   return Array.isArray(payload.projectIds)
     ? payload.projectIds.filter(
-        (projectId: unknown): projectId is string => typeof projectId === "string",
+        (projectId: unknown): projectId is string => typeof projectId === 'string',
       )
-    : [];
+    : []
 }
 
 export function getComposerText(payload: DesktopActionPayloadInput) {
-  return typeof payload.text === "string" ? payload.text.trim() : "";
+  return typeof payload.text === 'string' ? payload.text.trim() : ''
 }
 
 export function getComposerAttachments(payload: DesktopActionPayloadInput): ComposerAttachment[] {
   return Array.isArray(payload.attachments)
     ? payload.attachments.filter((attachment: unknown): attachment is ComposerAttachment => {
-        if (typeof attachment !== "object" || attachment === null) {
-          return false;
+        if (typeof attachment !== 'object' || attachment === null) {
+          return false
         }
 
-        const candidate = attachment as Partial<ComposerAttachment>;
+        const candidate = attachment as Partial<ComposerAttachment>
         return (
-          typeof candidate.path === "string" &&
-          typeof candidate.name === "string" &&
-          (candidate.kind === "directory" ||
-            candidate.kind === "text" ||
-            candidate.kind === "image")
-        );
+          typeof candidate.path === 'string' &&
+          typeof candidate.name === 'string' &&
+          (candidate.kind === 'directory' ||
+            candidate.kind === 'text' ||
+            candidate.kind === 'image')
+        )
       })
-    : [];
+    : []
 }
 
 export function getComposerStreamingBehavior(
   payload: DesktopActionPayloadInput,
 ): ComposerStreamingBehavior | null {
-  return payload.streamingBehavior === "steer" ||
-    payload.streamingBehavior === "followUp" ||
-    payload.streamingBehavior === "stop"
+  return payload.streamingBehavior === 'steer' ||
+    payload.streamingBehavior === 'followUp' ||
+    payload.streamingBehavior === 'stop'
     ? payload.streamingBehavior
-    : null;
+    : null
 }
 
 export function getComposerQueueMode(payload: DesktopActionPayloadInput) {
-  return payload.queueMode === "steer" || payload.queueMode === "followUp"
+  return payload.queueMode === 'steer' || payload.queueMode === 'followUp'
     ? payload.queueMode
-    : null;
+    : null
 }
 
 export function getComposerQueueId(payload: DesktopActionPayloadInput) {
-  return typeof payload.queueId === "string" && payload.queueId.length > 0 ? payload.queueId : null;
+  return typeof payload.queueId === 'string' && payload.queueId.length > 0 ? payload.queueId : null
 }
 
 export function getComposerQueueSnapshotKey(payload: DesktopActionPayloadInput) {
-  return typeof payload.queueSnapshotKey === "string" && payload.queueSnapshotKey.length > 0
+  return typeof payload.queueSnapshotKey === 'string' && payload.queueSnapshotKey.length > 0
     ? payload.queueSnapshotKey
-    : null;
+    : null
 }
 
 export function getComposerQueueIndex(payload: DesktopActionPayloadInput) {
-  return typeof payload.queueIndex === "number" && Number.isInteger(payload.queueIndex)
+  return typeof payload.queueIndex === 'number' && Number.isInteger(payload.queueIndex)
     ? payload.queueIndex
-    : null;
+    : null
 }
 
 export function getComposerModelSelection(payload: DesktopActionPayloadInput) {
-  const provider = typeof payload.provider === "string" ? payload.provider : null;
-  const modelId = typeof payload.modelId === "string" ? payload.modelId : null;
+  const provider = typeof payload.provider === 'string' ? payload.provider : null
+  const modelId = typeof payload.modelId === 'string' ? payload.modelId : null
 
-  return provider && modelId ? { provider, modelId } : null;
+  return provider && modelId ? { provider, modelId } : null
 }
 
 export function getComposerThinkingLevel(payload: DesktopActionPayloadInput) {
-  const level = typeof payload.level === "string" ? payload.level : null;
+  const level = typeof payload.level === 'string' ? payload.level : null
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
     ? (level as ComposerThinkingLevel)
-    : null;
+    : null
 }
 
 export function getGitCommitMessage(payload: DesktopActionPayloadInput) {
-  const message = typeof payload.message === "string" ? payload.message.trim() : "";
-  return message.length > 0 ? message : null;
+  const message = typeof payload.message === 'string' ? payload.message.trim() : ''
+  return message.length > 0 ? message : null
 }
 
 export function getGitIncludeUnstaged(payload: DesktopActionPayloadInput) {
-  return typeof payload.includeUnstaged === "boolean" ? payload.includeUnstaged : true;
+  return typeof payload.includeUnstaged === 'boolean' ? payload.includeUnstaged : true
 }
 
 export function getGitPush(payload: DesktopActionPayloadInput) {
-  return typeof payload.push === "boolean" ? payload.push : false;
+  return typeof payload.push === 'boolean' ? payload.push : false
 }
 
 export function getGitPreview(payload: DesktopActionPayloadInput) {
-  return payload.preview === true;
+  return payload.preview === true
 }
 
 export function getGitRepoUrl(payload: DesktopActionPayloadInput) {
-  const repoUrl = typeof payload.repoUrl === "string" ? payload.repoUrl.trim() : "";
-  return repoUrl.length > 0 ? repoUrl : null;
+  const repoUrl = typeof payload.repoUrl === 'string' ? payload.repoUrl.trim() : ''
+  return repoUrl.length > 0 ? repoUrl : null
 }
 
 export function getGitOpsMode(
   payload: DesktopActionPayloadInput,
-): GitOpsMode | null | undefined | "invalid" {
-  if (!("gitOpsMode" in payload) || payload.gitOpsMode === undefined) {
-    return undefined;
+): GitOpsMode | null | undefined | 'invalid' {
+  if (!('gitOpsMode' in payload) || payload.gitOpsMode === undefined) {
+    return undefined
   }
 
   if (payload.gitOpsMode === null) {
-    return null;
+    return null
   }
 
-  return payload.gitOpsMode === "commit" || payload.gitOpsMode === "commit-push"
+  return payload.gitOpsMode === 'commit' || payload.gitOpsMode === 'commit-push'
     ? payload.gitOpsMode
-    : "invalid";
+    : 'invalid'
 }
 
 function isProjectDiffBaseline(value: unknown): value is ProjectDiffBaseline {
-  if (!value || typeof value !== "object") {
-    return false;
+  if (!value || typeof value !== 'object') {
+    return false
   }
 
-  const baseline = value as Record<string, unknown>;
+  const baseline = value as { kind?: unknown; rev?: unknown; sha?: unknown }
   switch (baseline.kind) {
-    case "head":
-    case "previous":
-    case "yesterday":
-    case "main-branch":
-    case "dev-branch":
-      return true;
-    case "last-opened":
-      return typeof baseline.rev === "string" && baseline.rev.trim().length > 0;
-    case "commit":
-      return typeof baseline.sha === "string" && baseline.sha.trim().length > 0;
+    case 'head':
+    case 'previous':
+    case 'yesterday':
+    case 'main-branch':
+    case 'dev-branch':
+      return true
+    case 'last-opened':
+      return typeof baseline.rev === 'string' && baseline.rev.trim().length > 0
+    case 'commit':
+      return typeof baseline.sha === 'string' && baseline.sha.trim().length > 0
     default:
-      return false;
+      return false
   }
 }
 
 export function getProjectDiffBaselinePreference(
   payload: DesktopActionPayloadInput,
-): ProjectDiffBaseline | null | undefined | "invalid" {
-  if (!("diffBaseline" in payload) || payload.diffBaseline === undefined) {
-    return undefined;
+): ProjectDiffBaseline | null | undefined | 'invalid' {
+  if (!('diffBaseline' in payload) || payload.diffBaseline === undefined) {
+    return undefined
   }
 
   if (payload.diffBaseline === null) {
-    return null;
+    return null
   }
 
-  return isProjectDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : "invalid";
+  return isProjectDiffBaseline(payload.diffBaseline) ? payload.diffBaseline : 'invalid'
 }
 
 export function getProjectDiffRenderModePreference(
   payload: DesktopActionPayloadInput,
-): ProjectDiffRenderMode | null | undefined | "invalid" {
-  if (!("diffRenderMode" in payload) || payload.diffRenderMode === undefined) {
-    return undefined;
+): ProjectDiffRenderMode | null | undefined | 'invalid' {
+  if (!('diffRenderMode' in payload) || payload.diffRenderMode === undefined) {
+    return undefined
   }
 
   if (payload.diffRenderMode === null) {
-    return null;
+    return null
   }
 
-  return payload.diffRenderMode === "stacked" || payload.diffRenderMode === "split"
+  return payload.diffRenderMode === 'stacked' || payload.diffRenderMode === 'split'
     ? payload.diffRenderMode
-    : "invalid";
+    : 'invalid'
 }
 
 export function getSettingsProjectDiffBaselineDefault(
   payload: DesktopActionPayloadInput,
 ): ProjectDiffDefaultBaseline | null {
   return isProjectDiffBaseline(payload.value) &&
-    (payload.value.kind === "head" ||
-      payload.value.kind === "previous" ||
-      payload.value.kind === "yesterday" ||
-      payload.value.kind === "main-branch" ||
-      payload.value.kind === "dev-branch")
+    (payload.value.kind === 'head' ||
+      payload.value.kind === 'previous' ||
+      payload.value.kind === 'yesterday' ||
+      payload.value.kind === 'main-branch' ||
+      payload.value.kind === 'dev-branch')
     ? payload.value
-    : null;
+    : null
 }
 
 export function getSettingsProjectDiffRenderModeDefault(
   payload: DesktopActionPayloadInput,
 ): ProjectDiffRenderMode | null {
-  return payload.value === "stacked" || payload.value === "split" ? payload.value : null;
+  return payload.value === 'stacked' || payload.value === 'split' ? payload.value : null
 }
 
 export function getSettingsKey(payload: DesktopActionPayloadInput) {
-  return payload.key === "chatModel" ||
-    payload.key === "chatThinkingLevel" ||
-    payload.key === "codeModel" ||
-    payload.key === "codeThinkingLevel" ||
-    payload.key === "gitCommitMessageModel" ||
-    payload.key === "gitCommitMessageThinkingLevel" ||
-    payload.key === "skillCreatorModel" ||
-    payload.key === "skillCreatorThinkingLevel" ||
-    payload.key === "composerStreamingBehavior" ||
-    payload.key === "dictationModelId" ||
-    payload.key === "dictationMaxDurationSeconds" ||
-    payload.key === "showDictationButton" ||
-    payload.key === "favoriteFolders" ||
-    payload.key === "projectImportState" ||
-    payload.key === "preferredProjectLocation" ||
-    payload.key === "initializeGitOnProjectCreate" ||
-    payload.key === "gitOpsDefaultMode" ||
-    payload.key === "gitDiffBaselineDefault" ||
-    payload.key === "gitDiffRenderModeDefault" ||
-    payload.key === "gitDiffFileTreeDefaultVisible" ||
-    payload.key === "projectDeletionMode" ||
-    payload.key === "useAgentsSkillsPaths" ||
-    payload.key === "howcodeNativeAskQuestions" ||
-    payload.key === "piTuiTakeover" ||
-    payload.key === "hoverToFocus" ||
-    payload.key === "hoverToBlur"
+  return payload.key === 'chatModel' ||
+    payload.key === 'chatThinkingLevel' ||
+    payload.key === 'codeModel' ||
+    payload.key === 'codeThinkingLevel' ||
+    payload.key === 'gitCommitMessageModel' ||
+    payload.key === 'gitCommitMessageThinkingLevel' ||
+    payload.key === 'skillCreatorModel' ||
+    payload.key === 'skillCreatorThinkingLevel' ||
+    payload.key === 'composerStreamingBehavior' ||
+    payload.key === 'dictationModelId' ||
+    payload.key === 'dictationMaxDurationSeconds' ||
+    payload.key === 'showDictationButton' ||
+    payload.key === 'favoriteFolders' ||
+    payload.key === 'projectImportState' ||
+    payload.key === 'preferredProjectLocation' ||
+    payload.key === 'initializeGitOnProjectCreate' ||
+    payload.key === 'gitOpsDefaultMode' ||
+    payload.key === 'gitDiffBaselineDefault' ||
+    payload.key === 'gitDiffRenderModeDefault' ||
+    payload.key === 'gitDiffFileTreeDefaultVisible' ||
+    payload.key === 'projectDeletionMode' ||
+    payload.key === 'useAgentsSkillsPaths' ||
+    payload.key === 'howcodeNativeAskQuestions' ||
+    payload.key === 'piTuiTakeover' ||
+    payload.key === 'hoverToFocus' ||
+    payload.key === 'hoverToBlur'
     ? (payload.key as keyof AppSettings)
-    : null;
+    : null
 }
 
 export function getNativeAskQuestionsRequestId(payload: DesktopActionPayloadInput) {
-  return typeof payload.requestId === "string" ? payload.requestId : null;
+  return typeof payload.requestId === 'string' ? payload.requestId : null
 }
 
 export function getNativeAskQuestionsAnswers(
   payload: DesktopActionPayloadInput,
 ): string[][] | null {
-  if (payload.answers === null) return null;
-  if (!Array.isArray(payload.answers)) return [];
+  if (payload.answers === null) return null
+  if (!Array.isArray(payload.answers)) return []
   return payload.answers.map((answer) =>
     Array.isArray(answer)
       ? answer
-          .filter((item): item is string => typeof item === "string")
+          .filter((item): item is string => typeof item === 'string')
           .map((item) => item.trim())
           .filter(Boolean)
       : [],
-  );
+  )
 }
 
 export function getSettingsThinkingLevel(payload: DesktopActionPayloadInput) {
-  const level = typeof payload.value === "string" ? payload.value : null;
+  const level = typeof payload.value === 'string' ? payload.value : null
   return level && composerThinkingLevels.has(level as ComposerThinkingLevel)
     ? (level as ComposerThinkingLevel)
-    : null;
+    : null
 }
 
 export function getSettingsNumberValue(payload: DesktopActionPayloadInput) {
-  return typeof payload.value === "number" && Number.isFinite(payload.value) ? payload.value : null;
+  return typeof payload.value === 'number' && Number.isFinite(payload.value) ? payload.value : null
 }
 
 export function getSettingsReset(payload: DesktopActionPayloadInput) {
-  return payload.reset === true;
+  return payload.reset === true
 }
 
 export function getSettingsModelSelection(
   payload: DesktopActionPayloadInput,
 ): ModelSelection | null {
-  const provider = typeof payload.provider === "string" ? payload.provider : null;
-  const id = typeof payload.modelId === "string" ? payload.modelId : null;
+  const provider = typeof payload.provider === 'string' ? payload.provider : null
+  const id = typeof payload.modelId === 'string' ? payload.modelId : null
 
-  return provider && id ? { provider, id } : null;
+  return provider && id ? { provider, id } : null
 }
 
 export function getSettingsFavoriteFolders(payload: DesktopActionPayloadInput): string[] {
@@ -328,46 +328,46 @@ export function getSettingsFavoriteFolders(payload: DesktopActionPayloadInput): 
     ? [
         ...new Set(
           payload.folders
-            .filter((folder: unknown): folder is string => typeof folder === "string")
+            .filter((folder: unknown): folder is string => typeof folder === 'string')
             .map((folder) => folder.trim())
             .filter(Boolean),
         ),
       ]
-    : [];
+    : []
 }
 
 export function getSettingsProjectImportState(payload: DesktopActionPayloadInput) {
-  return payload.imported === null || typeof payload.imported === "boolean"
+  return payload.imported === null || typeof payload.imported === 'boolean'
     ? payload.imported
-    : null;
+    : null
 }
 
 export function getSettingsPreferredProjectLocation(payload: DesktopActionPayloadInput) {
-  return typeof payload.value === "string" ? payload.value.trim() : null;
+  return typeof payload.value === 'string' ? payload.value.trim() : null
 }
 
 export function getSettingsBooleanValue(payload: DesktopActionPayloadInput) {
-  return typeof payload.value === "boolean" ? payload.value : null;
+  return typeof payload.value === 'boolean' ? payload.value : null
 }
 
 export function getSettingsComposerStreamingBehavior(
   payload: DesktopActionPayloadInput,
 ): ComposerStreamingBehavior | null {
-  return payload.value === "steer" || payload.value === "followUp" || payload.value === "stop"
+  return payload.value === 'steer' || payload.value === 'followUp' || payload.value === 'stop'
     ? payload.value
-    : null;
+    : null
 }
 
 export function getSettingsDictationModelId(
   payload: DesktopActionPayloadInput,
 ): DictationModelId | null {
-  return payload.value === "tiny.en" || payload.value === "base.en" || payload.value === "small.en"
+  return payload.value === 'tiny.en' || payload.value === 'base.en' || payload.value === 'small.en'
     ? payload.value
-    : null;
+    : null
 }
 
 export function getSettingsProjectDeletionMode(
   payload: DesktopActionPayloadInput,
 ): ProjectDeletionMode | null {
-  return payload.value === "pi-only" || payload.value === "full-clean" ? payload.value : null;
+  return payload.value === 'pi-only' || payload.value === 'full-clean' ? payload.value : null
 }

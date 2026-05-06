@@ -1,55 +1,55 @@
-import { useEffect, useState } from "react";
-import type { DesktopAction } from "../desktop/actions";
-import { getErrorMessage } from "../desktop/error-messages";
-import type { DesktopActionInvoker, DesktopActionResult } from "../desktop/types";
+import { useEffect, useState } from 'react'
+import type { DesktopAction } from '../desktop/actions'
+import { getErrorMessage } from '../desktop/error-messages'
+import type { DesktopActionInvoker, DesktopActionResult } from '../desktop/types'
 
 export const desktopBridgeUnavailableMessage =
-  "Desktop bridge is unavailable. Restart the dev server or run `bun run dev` for the full desktop app.";
+  'Desktop bridge is unavailable. Restart the dev server or run `bun run dev` for the full desktop app.'
 
 export function hasDesktopBridge() {
-  return typeof window !== "undefined" && typeof window.piDesktop?.invokeAction === "function";
+  return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
 }
 
 export function useDesktopBridgeAvailable() {
   const [available, setAvailable] = useState(() => {
     if (!hasDesktopBridge()) {
-      return false;
+      return false
     }
 
-    return !window.__howcodeDevWebBridge;
-  });
+    return !window.howcodeDevWebBridge
+  })
 
   useEffect(() => {
     if (!hasDesktopBridge()) {
-      setAvailable(false);
-      return;
+      setAvailable(false)
+      return
     }
 
-    if (!window.__howcodeDevWebBridge) {
-      setAvailable(true);
-      return;
+    if (!window.howcodeDevWebBridge) {
+      setAvailable(true)
+      return
     }
 
-    let cancelled = false;
-    setAvailable(false);
-    void fetch("/__howcode/config", { cache: "no-store" })
+    let cancelled = false
+    setAvailable(false)
+    void fetch('/__howcode/config', { cache: 'no-store' })
       .then((response) => {
         if (!cancelled) {
-          setAvailable(response.ok);
+          setAvailable(response.ok)
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setAvailable(false);
+          setAvailable(false)
         }
-      });
+      })
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
-  return available;
+  return available
 }
 
 export function useDesktopBridge() {
@@ -65,10 +65,10 @@ export function useDesktopBridge() {
         result: {
           error: desktopBridgeUnavailableMessage,
         },
-      };
+      }
     }
 
-    const desktopBridge = window.piDesktop;
+    const desktopBridge = window.piDesktop
     if (!desktopBridge) {
       return {
         ok: false,
@@ -77,22 +77,22 @@ export function useDesktopBridge() {
         result: {
           error: desktopBridgeUnavailableMessage,
         },
-      };
+      }
     }
 
     try {
-      return await desktopBridge.invokeAction(action, payload);
+      return await desktopBridge.invokeAction(action, payload)
     } catch (error) {
       return {
         ok: false,
         at: new Date().toISOString(),
         payload: { action, payload },
         result: {
-          error: getErrorMessage(error, "Desktop action request failed."),
+          error: getErrorMessage(error, 'Desktop action request failed.'),
         },
-      };
+      }
     }
-  };
+  }
 
-  return invokeDesktopAction;
+  return invokeDesktopAction
 }

@@ -1,27 +1,27 @@
-import type { ThreadData } from "../desktop/types";
-import { getCurrentTitle, getProjectName, selectProject, selectThread } from "../state/workspace";
-import type { WorkspaceState } from "../state/workspace";
-import type { Project, Thread } from "../types";
+import type { ThreadData } from '../desktop/types'
+import type { WorkspaceState } from '../state/workspace'
+import { getCurrentTitle, getProjectName, selectProject, selectThread } from '../state/workspace'
+import type { Project, Thread } from '../types'
 
 type DeriveControllerViewModelInput = {
-  projects: Project[];
-  workspaceState: WorkspaceState;
-  threadData: ThreadData | null;
-  shellCwd: string | null | undefined;
-  composerState: import("../desktop/types").ComposerState | null;
-  shellComposerState: import("../desktop/types").ComposerState | null | undefined;
-};
+  projects: Project[]
+  workspaceState: WorkspaceState
+  threadData: ThreadData | null
+  shellCwd: string | null | undefined
+  composerState: import('../desktop/types').ComposerState | null
+  shellComposerState: import('../desktop/types').ComposerState | null | undefined
+}
 
 type ControllerViewModel = {
-  collapsedProjectIds: Record<string, boolean>;
-  selectedProject: Project | undefined;
-  selectedThread: Thread | undefined;
-  activeThreadData: ThreadData | null;
-  currentTitle: string;
-  currentProjectName: string;
-  composerProjectId: string;
-  activeComposerState: import("../desktop/types").ComposerState | null;
-};
+  collapsedProjectIds: Record<string, boolean>
+  selectedProject: Project | undefined
+  selectedThread: Thread | undefined
+  activeThreadData: ThreadData | null
+  currentTitle: string
+  currentProjectName: string
+  composerProjectId: string
+  activeComposerState: import('../desktop/types').ComposerState | null
+}
 
 function buildFallbackThreadData(
   sessionPath: string,
@@ -29,12 +29,12 @@ function buildFallbackThreadData(
 ): ThreadData {
   return {
     sessionPath,
-    title: selectedThread?.title ?? "New thread",
+    title: selectedThread?.title ?? 'New thread',
     messages: [],
     previousMessageCount: 0,
     isStreaming: false,
     isCompacting: false,
-  };
+  }
 }
 
 export function deriveControllerViewModel({
@@ -50,12 +50,12 @@ export function deriveControllerViewModel({
       project.id,
       workspaceState.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
     ]),
-  );
-  const selectedProject = selectProject(projects, workspaceState.selectedProjectId);
-  const selectedThread = selectThread(selectedProject, workspaceState.selectedThreadId);
+  )
+  const selectedProject = selectProject(projects, workspaceState.selectedProjectId)
+  const selectedThread = selectThread(selectedProject, workspaceState.selectedThreadId)
   const activeThreadData = workspaceState.selectedSessionPath
     ? (threadData ?? buildFallbackThreadData(workspaceState.selectedSessionPath, selectedThread))
-    : null;
+    : null
 
   return {
     collapsedProjectIds,
@@ -63,11 +63,11 @@ export function deriveControllerViewModel({
     selectedThread,
     activeThreadData,
     currentTitle:
-      workspaceState.activeView === "chat" || workspaceState.activeView === "thread"
-        ? (activeThreadData?.title ?? selectedThread?.title ?? "New thread")
+      workspaceState.activeView === 'chat' || workspaceState.activeView === 'thread'
+        ? (activeThreadData?.title ?? selectedThread?.title ?? 'New thread')
         : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getProjectName(selectedProject),
-    composerProjectId: selectedProject?.id ?? shellCwd ?? "",
+    composerProjectId: selectedProject?.id ?? shellCwd ?? '',
     activeComposerState: composerState ?? shellComposerState ?? null,
-  };
+  }
 }

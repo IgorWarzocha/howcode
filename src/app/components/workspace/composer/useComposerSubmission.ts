@@ -1,56 +1,257 @@
 import {
-  useCallback,
-  useRef,
   type Dispatch,
   type MutableRefObject,
   type SetStateAction,
-} from "react";
-import { getDesktopActionErrorMessage } from "../../../desktop/action-results";
-import { getErrorMessage } from "../../../desktop/error-messages";
+  useCallback,
+  useRef,
+} from 'react'
+import { isCompactSlashCommand } from '../../../../../shared/composer-slash-commands'
+import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
+import { getErrorMessage } from '../../../desktop/error-messages'
 import type {
   ComposerAttachment,
   ComposerStreamingBehavior,
   DesktopActionInvoker,
-} from "../../../desktop/types";
-import { composerDraftStore } from "./composerDraftStore";
-import { withComposerSendLock } from "./composerSendLock";
-import { isCompactSlashCommand } from "../../../../../shared/composer-slash-commands";
-import { submitComposerDraft } from "./submitComposerDraft";
-
+} from '../../../desktop/types'
 import {
   areSameAttachments,
   getComposerPostSendCleanup,
   isSameSubmittedDraft,
-} from "./composer-submission-cleanup";
+} from './composer-submission-cleanup'
+import { composerDraftStore } from './composerDraftStore'
+import { withComposerSendLock } from './composerSendLock'
+import { submitComposerDraft } from './submitComposerDraft'
+
+type SubmitResult = Awaited<ReturnType<typeof submitComposerDraft>>
+
+function clearPendingSubmitted(input: {
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
+}) {
+  input.setPendingSubmittedDraft(null)
+  input.pendingSubmittedReplyActivityKeyRef.current = null
+}
+
+function restoreSubmittedDraft(input: {
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>
+  result: Extract<SubmitResult, { status: 'error' | 'stopped' }>
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: Dispatch<SetStateAction<string>>
+  submittedAttachments: ComposerAttachment[]
+  submittedRawDraft: string
+  draftValueRef: MutableRefObject<string>
+}) {
+  if (
+    isSameSubmittedDraft(input.draftValueRef.current, input.submittedRawDraft) &&
+    areSameAttachments(input.attachmentsRef.current, input.submittedAttachments)
+  ) {
+    input.setDraftValue(input.result.text)
+    input.setAttachments(input.submittedAttachments)
+  }
+}
+
+function handleSentComposerResult(input: {
+  activeDraftThreadIdRef: MutableRefObject<string | null>
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>
+  draftValueRef: MutableRefObject<string>
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
+  preserveAttachments: boolean
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: Dispatch<SetStateAction<string>>
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
+  skipNextDraftPersistenceRef: MutableRefObject<string | null>
+  submittedAttachments: ComposerAttachment[]
+  submittedDraftThreadId: string | null
+  submittedRawDraft: string
+  submittedWhileStreaming: boolean
+}) {
+  const cleanup = getComposerPostSendCleanup({
+    activeDraftThreadId: input.activeDraftThreadIdRef.current,
+    submittedDraftThreadId: input.submittedDraftThreadId,
+    preserveAttachments: input.preserveAttachments,
+    currentDraft: input.draftValueRef.current,
+    submittedRawDraft: input.submittedRawDraft,
+    currentAttachments: input.attachmentsRef.current,
+    submittedAttachments: input.submittedAttachments,
+  })
+  if (cleanup.clearStoredDraft && input.submittedDraftThreadId) {
+    if (cleanup.skipNextDraftPersistence)
+      input.skipNextDraftPersistenceRef.current = input.submittedDraftThreadId
+    composerDraftStore.clearThreadDraft(input.submittedDraftThreadId)
+  }
+  if (cleanup.clearStoredPrompt && input.submittedDraftThreadId)
+    composerDraftStore.setPrompt(input.submittedDraftThreadId, '')
+  if (cleanup.nextAttachments !== null) input.setAttachments(cleanup.nextAttachments)
+  if (
+    input.submittedWhileStreaming &&
+    input.activeDraftThreadIdRef.current === input.submittedDraftThreadId
+  ) {
+    clearPendingSubmitted(input)
+    if (isSameSubmittedDraft(input.draftValueRef.current, input.submittedRawDraft))
+      input.setDraftValue('')
+  }
+}
+
+function handleRestorableComposerResult(input: {
+  activeDraftThreadIdRef: MutableRefObject<string | null>
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>
+  draftValueRef: MutableRefObject<string>
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
+  result: Extract<SubmitResult, { status: 'error' | 'stopped' }>
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: Dispatch<SetStateAction<string>>
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
+  submittedAttachments: ComposerAttachment[]
+  submittedDraftThreadId: string | null
+  submittedRawDraft: string
+}) {
+  if (input.activeDraftThreadIdRef.current !== input.submittedDraftThreadId) return
+  clearPendingSubmitted(input)
+  restoreSubmittedDraft(input)
+  if (input.result.status === 'error') input.setErrorMessage(input.result.errorMessage)
+}
+
+async function runExtensionCommandSubmission(input: {
+  activeComposerScopeKeyRef: MutableRefObject<string>
+  chatGroupId: string | null
+  composerScopeKey: string
+  draftThreadId: string | null
+  draftValueRef: MutableRefObject<string>
+  onAction: DesktopActionInvoker
+  projectId: string
+  runId: number
+  sessionPath: string | null
+  setDraftValue: Dispatch<SetStateAction<string>>
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>
+  extensionCommandRunIdRef: MutableRefObject<number>
+  stopDictationAndFlush: () => Promise<void>
+  streamingBehaviorPreference: ComposerStreamingBehavior
+}) {
+  try {
+    await input.stopDictationAndFlush()
+    if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
+    const submittedDraft = input.draftValueRef.current.trim()
+    if (submittedDraft.length === 0) return
+    input.setDraftValue('')
+    if (input.draftThreadId) composerDraftStore.setPrompt(input.draftThreadId, '')
+    const result = await submitComposerDraft({
+      draft: submittedDraft,
+      attachments: [],
+      isSending: false,
+      projectId: input.projectId,
+      chatGroupId: input.chatGroupId,
+      sessionPath: input.sessionPath,
+      streamingBehaviorPreference: input.streamingBehaviorPreference,
+      onAction: input.onAction,
+    })
+    if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
+    if (result.status === 'error') {
+      input.setDraftValue(result.text)
+      input.setErrorMessage(result.errorMessage)
+    } else if (result.status === 'stopped') input.setDraftValue(result.text)
+  } catch (error) {
+    if (input.activeComposerScopeKeyRef.current === input.composerScopeKey)
+      input.setErrorMessage(getErrorMessage(error, 'Could not send prompt.'))
+  } finally {
+    if (input.extensionCommandRunIdRef.current === input.runId)
+      input.setExtensionCommandRunning(false)
+  }
+}
+
+async function runComposerSendSubmission(input: {
+  activeComposerScopeKeyRef: MutableRefObject<string>
+  activeDraftThreadIdRef: MutableRefObject<string | null>
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>
+  chatGroupId: string | null
+  composerScopeKey: string
+  draftThreadId: string | null
+  draftValueRef: MutableRefObject<string>
+  isStreaming: boolean
+  onAction: DesktopActionInvoker
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
+  projectId: string
+  replyActivityKey: string
+  sessionPath: string | null
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: Dispatch<SetStateAction<string>>
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+  setOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
+  skipNextDraftPersistenceRef: MutableRefObject<string | null>
+  stopDictationAndFlush: () => Promise<void>
+  streamingBehaviorPreference: ComposerStreamingBehavior
+}) {
+  const submittedDraftThreadId = input.draftThreadId
+  await input.stopDictationAndFlush()
+  if (input.activeComposerScopeKeyRef.current !== input.composerScopeKey) return
+  const submittedRawDraft = input.draftValueRef.current
+  const submittedDraft = submittedRawDraft.trim()
+  const submittedAttachments = input.attachmentsRef.current
+  if (submittedDraft.length === 0 && submittedAttachments.length === 0) return
+  input.setErrorMessage(null)
+  input.setOpenMenu(null)
+  input.pendingSubmittedReplyActivityKeyRef.current = input.replyActivityKey
+  input.setPendingSubmittedDraft(submittedRawDraft)
+  const result = await submitComposerDraft({
+    draft: submittedDraft,
+    attachments: submittedAttachments,
+    isSending: false,
+    projectId: input.projectId,
+    chatGroupId: input.chatGroupId,
+    sessionPath: input.sessionPath,
+    streamingBehaviorPreference: input.streamingBehaviorPreference,
+    onAction: input.onAction,
+  })
+  if (result.status === 'sent')
+    handleSentComposerResult({
+      ...input,
+      preserveAttachments: isCompactSlashCommand(submittedDraft),
+      submittedAttachments,
+      submittedDraftThreadId,
+      submittedRawDraft,
+      submittedWhileStreaming: input.isStreaming,
+    })
+  else if (result.status === 'error' || result.status === 'stopped')
+    handleRestorableComposerResult({
+      ...input,
+      result,
+      submittedAttachments,
+      submittedDraftThreadId,
+      submittedRawDraft,
+    })
+}
+
 type UseComposerSubmissionProps = {
-  composerScopeKey: string;
-  draftThreadId: string | null;
-  isSending: boolean;
-  isStreaming: boolean;
-  isCompacting: boolean;
-  extensionCommandRunning: boolean;
-  onAction: DesktopActionInvoker;
-  projectId: string;
-  chatGroupId?: string | null;
-  sessionPath: string | null;
-  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>;
-  setDraftValue: Dispatch<SetStateAction<string>>;
-  setErrorMessage: Dispatch<SetStateAction<string | null>>;
-  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>;
-  setIsSending: Dispatch<SetStateAction<boolean>>;
-  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>;
-  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>;
-  replyActivityKey: string;
-  setOpenMenu: Dispatch<SetStateAction<"model" | "picker" | null>>;
-  stopDictationAndFlush: () => Promise<void>;
-  streamingBehaviorPreference: ComposerStreamingBehavior;
-  activeComposerScopeKeyRef: MutableRefObject<string>;
-  activeDraftThreadIdRef: MutableRefObject<string | null>;
-  attachmentsRef: MutableRefObject<ComposerAttachment[]>;
-  draftValueRef: MutableRefObject<string>;
-  sendLockRef: MutableRefObject<boolean>;
-  skipNextDraftPersistenceRef: MutableRefObject<string | null>;
-};
+  composerScopeKey: string
+  draftThreadId: string | null
+  isSending: boolean
+  isStreaming: boolean
+  isCompacting: boolean
+  extensionCommandRunning: boolean
+  onAction: DesktopActionInvoker
+  projectId: string
+  chatGroupId?: string | null
+  sessionPath: string | null
+  setAttachments: Dispatch<SetStateAction<ComposerAttachment[]>>
+  setDraftValue: Dispatch<SetStateAction<string>>
+  setErrorMessage: Dispatch<SetStateAction<string | null>>
+  setExtensionCommandRunning: Dispatch<SetStateAction<boolean>>
+  setIsSending: Dispatch<SetStateAction<boolean>>
+  setPendingSubmittedDraft: Dispatch<SetStateAction<string | null>>
+  pendingSubmittedReplyActivityKeyRef: MutableRefObject<string | null>
+  replyActivityKey: string
+  setOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
+  stopDictationAndFlush: () => Promise<void>
+  streamingBehaviorPreference: ComposerStreamingBehavior
+  activeComposerScopeKeyRef: MutableRefObject<string>
+  activeDraftThreadIdRef: MutableRefObject<string | null>
+  attachmentsRef: MutableRefObject<ComposerAttachment[]>
+  draftValueRef: MutableRefObject<string>
+  sendLockRef: MutableRefObject<boolean>
+  skipNextDraftPersistenceRef: MutableRefObject<string | null>
+}
 
 export function useComposerSubmission({
   composerScopeKey,
@@ -81,69 +282,38 @@ export function useComposerSubmission({
   sendLockRef,
   skipNextDraftPersistenceRef,
 }: UseComposerSubmissionProps) {
-  const extensionCommandRunIdRef = useRef(0);
+  const extensionCommandRunIdRef = useRef(0)
 
   const sendExtensionCommand = useCallback(() => {
     if (isCompacting || extensionCommandRunning || sendLockRef.current) {
-      return;
+      return
     }
 
-    const runId = extensionCommandRunIdRef.current + 1;
-    extensionCommandRunIdRef.current = runId;
-    setErrorMessage(null);
-    setOpenMenu(null);
-    setExtensionCommandRunning(true);
+    const runId = extensionCommandRunIdRef.current + 1
+    extensionCommandRunIdRef.current = runId
+    setErrorMessage(null)
+    setOpenMenu(null)
+    setExtensionCommandRunning(true)
 
-    void withComposerSendLock(sendLockRef, async () => {
-      const submittedScopeKey = composerScopeKey;
-      const submittedDraftThreadId = draftThreadId;
-
-      try {
-        await stopDictationAndFlush();
-
-        if (activeComposerScopeKeyRef.current !== submittedScopeKey) {
-          return;
-        }
-
-        const submittedDraft = draftValueRef.current.trim();
-        if (submittedDraft.length === 0) {
-          return;
-        }
-
-        setDraftValue("");
-        if (submittedDraftThreadId) {
-          composerDraftStore.setPrompt(submittedDraftThreadId, "");
-        }
-
-        const result = await submitComposerDraft({
-          draft: submittedDraft,
-          attachments: [],
-          isSending: false,
-          projectId,
-          chatGroupId,
-          sessionPath,
-          streamingBehaviorPreference,
-          onAction,
-        });
-
-        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
-          if (result.status === "error") {
-            setDraftValue(result.text);
-            setErrorMessage(result.errorMessage);
-          } else if (result.status === "stopped") {
-            setDraftValue(result.text);
-          }
-        }
-      } catch (error) {
-        if (activeComposerScopeKeyRef.current === submittedScopeKey) {
-          setErrorMessage(getErrorMessage(error, "Could not send prompt."));
-        }
-      } finally {
-        if (extensionCommandRunIdRef.current === runId) {
-          setExtensionCommandRunning(false);
-        }
-      }
-    });
+    void withComposerSendLock(sendLockRef, () =>
+      runExtensionCommandSubmission({
+        activeComposerScopeKeyRef,
+        chatGroupId,
+        composerScopeKey,
+        draftThreadId,
+        draftValueRef,
+        extensionCommandRunIdRef,
+        onAction,
+        projectId,
+        runId,
+        sessionPath,
+        setDraftValue,
+        setErrorMessage,
+        setExtensionCommandRunning,
+        stopDictationAndFlush,
+        streamingBehaviorPreference,
+      }),
+    )
   }, [
     activeComposerScopeKeyRef,
     chatGroupId,
@@ -162,133 +332,47 @@ export function useComposerSubmission({
     setOpenMenu,
     stopDictationAndFlush,
     streamingBehaviorPreference,
-  ]);
+  ])
 
   const send = useCallback(async () => {
     if (isSending || isCompacting || sendLockRef.current) {
-      return;
+      return
     }
 
     await withComposerSendLock(sendLockRef, async () => {
-      const submittedScopeKey = composerScopeKey;
-      const submittedProjectId = projectId;
-      const submittedSessionPath = sessionPath;
-      const submittedDraftThreadId = draftThreadId;
-
-      setIsSending(true);
-
+      setIsSending(true)
       try {
-        await stopDictationAndFlush();
-
-        if (activeComposerScopeKeyRef.current !== submittedScopeKey) {
-          return;
-        }
-
-        const submittedRawDraft = draftValueRef.current;
-        const textToSend = submittedRawDraft.trim();
-        const submittedAttachments = attachmentsRef.current;
-        const submittedWhileStreaming = isStreaming;
-        if (textToSend.length === 0 && submittedAttachments.length === 0) {
-          return;
-        }
-
-        const submittedDraft = textToSend;
-        const preserveAttachments = isCompactSlashCommand(submittedDraft);
-
-        setErrorMessage(null);
-        setOpenMenu(null);
-        pendingSubmittedReplyActivityKeyRef.current = replyActivityKey;
-        setPendingSubmittedDraft(submittedRawDraft);
-
-        const result = await submitComposerDraft({
-          draft: submittedDraft,
-          attachments: submittedAttachments,
-          isSending: false,
-          projectId: submittedProjectId,
+        await runComposerSendSubmission({
+          activeComposerScopeKeyRef,
+          activeDraftThreadIdRef,
+          attachmentsRef,
           chatGroupId,
-          sessionPath: submittedSessionPath,
-          streamingBehaviorPreference,
+          composerScopeKey,
+          draftThreadId,
+          draftValueRef,
+          isStreaming,
           onAction,
-        });
-
-        if (result.status === "sent") {
-          const cleanup = getComposerPostSendCleanup({
-            activeDraftThreadId: activeDraftThreadIdRef.current,
-            submittedDraftThreadId,
-            preserveAttachments,
-            currentDraft: draftValueRef.current,
-            submittedRawDraft,
-            currentAttachments: attachmentsRef.current,
-            submittedAttachments,
-          });
-
-          if (cleanup.clearStoredDraft && submittedDraftThreadId) {
-            if (cleanup.skipNextDraftPersistence) {
-              skipNextDraftPersistenceRef.current = submittedDraftThreadId;
-            }
-            composerDraftStore.clearThreadDraft(submittedDraftThreadId);
-          }
-
-          if (cleanup.clearStoredPrompt && submittedDraftThreadId) {
-            composerDraftStore.setPrompt(submittedDraftThreadId, "");
-          }
-
-          if (cleanup.nextAttachments !== null) {
-            setAttachments(cleanup.nextAttachments);
-          }
-
-          if (
-            submittedWhileStreaming &&
-            activeDraftThreadIdRef.current === submittedDraftThreadId
-          ) {
-            setPendingSubmittedDraft(null);
-            pendingSubmittedReplyActivityKeyRef.current = null;
-            if (isSameSubmittedDraft(draftValueRef.current, submittedRawDraft)) {
-              setDraftValue("");
-            }
-          }
-        }
-
-        if (
-          result.status === "error" &&
-          activeDraftThreadIdRef.current === submittedDraftThreadId
-        ) {
-          setPendingSubmittedDraft(null);
-          pendingSubmittedReplyActivityKeyRef.current = null;
-          if (
-            isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
-            areSameAttachments(attachmentsRef.current, submittedAttachments)
-          ) {
-            setDraftValue(result.text);
-            setAttachments(submittedAttachments);
-          }
-          setErrorMessage(result.errorMessage);
-        }
-
-        if (
-          result.status === "stopped" &&
-          activeDraftThreadIdRef.current === submittedDraftThreadId
-        ) {
-          setPendingSubmittedDraft(null);
-          pendingSubmittedReplyActivityKeyRef.current = null;
-          if (
-            isSameSubmittedDraft(draftValueRef.current, submittedRawDraft) &&
-            areSameAttachments(attachmentsRef.current, submittedAttachments)
-          ) {
-            setDraftValue(result.text);
-            setAttachments(submittedAttachments);
-          }
-        }
+          pendingSubmittedReplyActivityKeyRef,
+          projectId,
+          replyActivityKey,
+          sessionPath,
+          setAttachments,
+          setDraftValue,
+          setErrorMessage,
+          setOpenMenu,
+          setPendingSubmittedDraft,
+          skipNextDraftPersistenceRef,
+          stopDictationAndFlush,
+          streamingBehaviorPreference,
+        })
       } catch (error) {
-        if (activeDraftThreadIdRef.current === submittedDraftThreadId) {
-          setPendingSubmittedDraft(null);
-          pendingSubmittedReplyActivityKeyRef.current = null;
-        }
-        setErrorMessage(getErrorMessage(error, "Could not send prompt."));
+        if (activeDraftThreadIdRef.current === draftThreadId)
+          clearPendingSubmitted({ pendingSubmittedReplyActivityKeyRef, setPendingSubmittedDraft })
+        setErrorMessage(getErrorMessage(error, 'Could not send prompt.'))
       } finally {
-        setIsSending(false);
+        setIsSending(false)
       }
-    });
+    })
   }, [
     activeComposerScopeKeyRef,
     activeDraftThreadIdRef,
@@ -315,30 +399,30 @@ export function useComposerSubmission({
     skipNextDraftPersistenceRef,
     stopDictationAndFlush,
     streamingBehaviorPreference,
-  ]);
+  ])
 
   const stop = useCallback(async () => {
-    if ((!isStreaming && !extensionCommandRunning) || isSending || !sessionPath) {
-      return;
+    if (!(isStreaming || extensionCommandRunning) || isSending || !sessionPath) {
+      return
     }
 
-    setIsSending(true);
-    setErrorMessage(null);
+    setIsSending(true)
+    setErrorMessage(null)
 
     try {
-      const result = await onAction("composer.stop", {
+      const result = await onAction('composer.stop', {
         projectId,
         sessionPath,
-      });
+      })
 
-      const actionErrorMessage = getDesktopActionErrorMessage(result, "Could not stop Pi.");
+      const actionErrorMessage = getDesktopActionErrorMessage(result, 'Could not stop Pi.')
       if (actionErrorMessage) {
-        setErrorMessage(actionErrorMessage);
+        setErrorMessage(actionErrorMessage)
       }
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Could not stop Pi."));
+      setErrorMessage(getErrorMessage(error, 'Could not stop Pi.'))
     } finally {
-      setIsSending(false);
+      setIsSending(false)
     }
   }, [
     extensionCommandRunning,
@@ -349,22 +433,22 @@ export function useComposerSubmission({
     sessionPath,
     setErrorMessage,
     setIsSending,
-  ]);
+  ])
 
   const compact = useCallback(async () => {
     if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
-      return;
+      return
     }
 
     await withComposerSendLock(sendLockRef, async () => {
-      setIsSending(true);
-      setErrorMessage(null);
+      setIsSending(true)
+      setErrorMessage(null)
 
       try {
-        await stopDictationAndFlush();
+        await stopDictationAndFlush()
 
         const result = await submitComposerDraft({
-          draft: "/compact",
+          draft: '/compact',
           attachments: [],
           isSending: false,
           projectId,
@@ -372,15 +456,15 @@ export function useComposerSubmission({
           sessionPath,
           streamingBehaviorPreference,
           onAction,
-        });
+        })
 
-        if (result.status === "error") {
-          setErrorMessage(result.errorMessage);
+        if (result.status === 'error') {
+          setErrorMessage(result.errorMessage)
         }
       } finally {
-        setIsSending(false);
+        setIsSending(false)
       }
-    });
+    })
   }, [
     isCompacting,
     isSending,
@@ -394,12 +478,12 @@ export function useComposerSubmission({
     setIsSending,
     stopDictationAndFlush,
     streamingBehaviorPreference,
-  ]);
+  ])
 
   return {
     compact,
     send,
     sendExtensionCommand,
     stop,
-  };
+  }
 }

@@ -1,21 +1,17 @@
-import type { SelectedLineRange } from "@pierre/diffs";
-import type { DiffLineAnnotation } from "@pierre/diffs/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { type DiffCommentMetadata, buildDraftTarget } from "./diff-panel-content.helpers";
+import type { SelectedLineRange } from '@pierre/diffs'
+import type { DiffLineAnnotation } from '@pierre/diffs/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { buildDraftTarget, type DiffCommentMetadata } from './diff-panel-content.helpers'
 import {
   type DiffCommentDraft,
-  type SavedDiffComment,
   diffCommentStore,
   getDiffCommentContextId,
-} from "./diffCommentStore";
+  type SavedDiffComment,
+} from './diffCommentStore'
 
-export function useDiffPanelCommentState({
-  projectId,
-}: {
-  projectId: string;
-}) {
-  const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([]);
-  const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null);
+export function useDiffPanelCommentState({ projectId }: { projectId: string }) {
+  const [savedComments, setSavedComments] = useState<SavedDiffComment[]>([])
+  const [draftComment, setDraftComment] = useState<DiffCommentDraft | null>(null)
 
   const diffCommentContextId = useMemo(
     () =>
@@ -23,34 +19,34 @@ export function useDiffPanelCommentState({
         projectId,
       }),
     [projectId],
-  );
+  )
 
   useEffect(() => {
     if (!diffCommentContextId) {
-      setSavedComments([]);
-      setDraftComment(null);
-      return;
+      setSavedComments([])
+      setDraftComment(null)
+      return
     }
 
-    const persistedContext = diffCommentStore.getContext(diffCommentContextId);
-    setSavedComments(persistedContext?.comments ?? []);
-    setDraftComment(persistedContext?.draft ?? null);
-  }, [diffCommentContextId]);
+    const persistedContext = diffCommentStore.getContext(diffCommentContextId)
+    setSavedComments(persistedContext?.comments ?? [])
+    setDraftComment(persistedContext?.draft ?? null)
+  }, [diffCommentContextId])
 
   useEffect(() => {
     if (!diffCommentContextId) {
-      return;
+      return
     }
 
     diffCommentStore.setContext(diffCommentContextId, {
       comments: savedComments,
       draft: draftComment,
-    });
-  }, [diffCommentContextId, draftComment, savedComments]);
+    })
+  }, [diffCommentContextId, draftComment, savedComments])
 
   const draftTarget = useMemo(() => {
     if (!draftComment) {
-      return null;
+      return null
     }
 
     return buildDraftTarget({
@@ -60,12 +56,12 @@ export function useDiffPanelCommentState({
       lineNumber: draftComment.lineNumber,
       endSide: draftComment.endSide,
       endLineNumber: draftComment.endLineNumber,
-    });
-  }, [draftComment]);
+    })
+  }, [draftComment])
 
   const draftSelectedLines = useMemo<SelectedLineRange | null>(() => {
     if (!draftTarget) {
-      return null;
+      return null
     }
 
     return {
@@ -73,65 +69,65 @@ export function useDiffPanelCommentState({
       end: draftTarget.endLineNumber ?? draftTarget.lineNumber,
       side: draftTarget.side,
       endSide: draftTarget.endSide ?? draftTarget.side,
-    };
-  }, [draftTarget]);
+    }
+  }, [draftTarget])
 
   const commentAnnotationsByFile = useMemo(() => {
-    const next = new Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>();
+    const next = new Map<string, DiffLineAnnotation<DiffCommentMetadata>[]>()
 
     for (const comment of savedComments) {
-      const entries = next.get(comment.fileKey) ?? [];
+      const entries = next.get(comment.fileKey) ?? []
       entries.push({
         side: comment.side,
         lineNumber: comment.lineNumber,
         metadata: {
           id: comment.id,
           body: comment.body,
-          kind: "comment",
+          kind: 'comment',
           side: comment.side,
           lineNumber: comment.lineNumber,
           endSide: comment.endSide,
           endLineNumber: comment.endLineNumber,
         },
-      });
-      next.set(comment.fileKey, entries);
+      })
+      next.set(comment.fileKey, entries)
     }
 
     if (draftTarget) {
-      const entries = next.get(draftTarget.fileKey) ?? [];
+      const entries = next.get(draftTarget.fileKey) ?? []
       entries.push({
         side: draftTarget.side,
         lineNumber: draftTarget.lineNumber,
         metadata: {
           id: `draft:${draftTarget.fileKey}:${draftTarget.side}:${draftTarget.lineNumber}`,
-          body: "",
-          kind: "draft",
+          body: '',
+          kind: 'draft',
           side: draftTarget.side,
           lineNumber: draftTarget.lineNumber,
           endSide: draftTarget.endSide,
           endLineNumber: draftTarget.endLineNumber,
         },
-      });
-      next.set(draftTarget.fileKey, entries);
+      })
+      next.set(draftTarget.fileKey, entries)
     }
 
-    return next;
-  }, [draftTarget, savedComments]);
+    return next
+  }, [draftTarget, savedComments])
 
   const annotationCountByFile = useMemo(() => {
-    const next = new Map<string, number>();
+    const next = new Map<string, number>()
 
     for (const [fileKey, annotations] of commentAnnotationsByFile) {
-      next.set(fileKey, annotations.length);
+      next.set(fileKey, annotations.length)
     }
 
-    return next;
-  }, [commentAnnotationsByFile]);
+    return next
+  }, [commentAnnotationsByFile])
 
   const persistDraftComment = useCallback(() => {
-    const nextBody = draftComment?.body.trim() ?? "";
+    const nextBody = draftComment?.body.trim() ?? ''
     if (!draftComment || nextBody.length === 0) {
-      return;
+      return
     }
 
     setSavedComments((current) => [
@@ -142,13 +138,13 @@ export function useDiffPanelCommentState({
         body: nextBody,
         createdAt: new Date().toISOString(),
       },
-    ]);
-    setDraftComment(null);
-  }, [draftComment]);
+    ])
+    setDraftComment(null)
+  }, [draftComment])
 
   const removeComment = useCallback((commentId: string) => {
-    setSavedComments((current) => current.filter((comment) => comment.id !== commentId));
-  }, []);
+    setSavedComments((current) => current.filter((comment) => comment.id !== commentId))
+  }, [])
 
   return {
     annotationCountByFile,
@@ -161,5 +157,5 @@ export function useDiffPanelCommentState({
     removeComment,
     savedComments,
     setDraftComment,
-  };
+  }
 }

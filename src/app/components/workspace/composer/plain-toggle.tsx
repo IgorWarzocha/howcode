@@ -1,0 +1,50 @@
+import { cn } from '../../../utils/cn'
+
+type PlainToggleProps = {
+  checked: boolean
+  disabled?: boolean
+  label: string
+  onClick: () => void
+  toggleSide?: 'left' | 'right'
+}
+
+export function PlainToggle({
+  checked,
+  disabled = false,
+  label,
+  onClick,
+  toggleSide = 'right',
+}: PlainToggleProps) {
+  const toggle = (
+    <span
+      className={cn(
+        'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+        checked ? 'bg-[color:var(--accent)]' : 'bg-[rgba(255,255,255,0.14)]',
+      )}
+    >
+      <span
+        className={cn(
+          'inline-block h-3 w-3 rounded-full bg-[color:var(--accent-contrast)] transition-transform',
+          checked ? 'translate-x-5' : 'translate-x-1',
+        )}
+      />
+    </span>
+  )
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] transition-colors',
+        disabled ? 'cursor-not-allowed opacity-45' : 'hover:text-[color:var(--text)]',
+      )}
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={checked}
+    >
+      {toggleSide === 'left' ? toggle : null}
+      <span>{label}</span>
+      {toggleSide === 'right' ? toggle : null}
+    </button>
+  )
+}

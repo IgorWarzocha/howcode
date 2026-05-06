@@ -1,120 +1,120 @@
-import type { ProjectDiffPreferences } from "./desktop-project-git-contracts";
+import type { ProjectDiffPreferences } from './desktop-project-git-contracts'
 
 export type Thread = {
-  id: string;
-  title: string;
-  age: string;
-  lastModifiedMs?: number;
-  sessionPath?: string;
-  summary?: string;
-  running?: boolean;
-  unread?: boolean;
-  pinned?: boolean;
-};
+  id: string
+  title: string
+  age: string
+  lastModifiedMs?: number | undefined
+  sessionPath?: string | undefined
+  summary?: string | undefined
+  running?: boolean | undefined
+  unread?: boolean | undefined
+  pinned?: boolean | undefined
+}
 
 export type InboxThread = {
-  threadId: string;
-  title: string;
-  projectId: string;
-  projectName: string;
-  sessionPath: string;
-  age: string;
-  lastActivityMs?: number;
-  prompt: string | null;
-  content: string[];
-  preview: string | null;
-  running: boolean;
-  unread: boolean;
-  isChat?: boolean;
-};
+  threadId: string
+  title: string
+  projectId: string
+  projectName: string
+  sessionPath: string
+  age: string
+  lastActivityMs?: number | undefined
+  prompt: string | null
+  content: string[]
+  preview: string | null
+  running: boolean
+  unread: boolean
+  isChat?: boolean | undefined
+}
 
 export type Project = {
-  id: string;
-  resolvedId?: string;
-  name: string;
-  threads: Thread[];
-  latestModifiedMs?: number;
-  pinned?: boolean;
-  collapsed?: boolean;
-  threadsLoaded?: boolean;
-  threadsScope?: "chat" | "code";
-  threadCount?: number;
-  repoOriginUrl?: string | null;
-  repoOriginChecked?: boolean;
-};
+  id: string
+  resolvedId?: string | undefined
+  name: string
+  threads: Thread[]
+  latestModifiedMs?: number | undefined
+  pinned?: boolean | undefined
+  collapsed?: boolean | undefined
+  threadsLoaded?: boolean | undefined
+  threadsScope?: 'chat' | 'code' | undefined
+  threadCount?: number | undefined
+  repoOriginUrl?: string | undefined | null
+  repoOriginChecked?: boolean | undefined
+}
 
 export type ProjectImportCandidate = {
-  projectId: string;
-  name: string;
-  isGitRepo: boolean;
-  hasOrigin: boolean;
-  originUrl: string | null;
-  alreadyImported: boolean;
-};
+  projectId: string
+  name: string
+  isGitRepo: boolean
+  hasOrigin: boolean
+  originUrl: string | null
+  alreadyImported: boolean
+}
 
 export type ArchivedThread = {
-  id: string;
-  title: string;
-  age: string;
-  projectId: string;
-  projectName: string;
-  sessionPath: string;
-};
+  id: string
+  title: string
+  age: string
+  projectId: string
+  projectName: string
+  sessionPath: string
+}
 
 export type ProseMessage = {
-  id: string;
-  role: "assistant" | "user";
-  format?: "prose" | "list";
-  content: string[];
-  thinkingContent?: string[];
-  thinkingHeaders?: string[];
-  thinkingRedacted?: boolean;
-};
+  id: string
+  role: 'assistant' | 'user'
+  format?: 'prose' | 'list' | undefined
+  content: string[]
+  thinkingContent?: string[] | undefined
+  thinkingHeaders?: string[] | undefined
+  thinkingRedacted?: boolean | undefined
+}
 
 export type ToolResultMessage = {
-  id: string;
-  role: "toolResult";
-  toolName: string;
-  content: string[];
-  images?: ToolResultImage[];
-  isError: boolean;
-};
+  id: string
+  role: 'toolResult'
+  toolName: string
+  content: string[]
+  images?: ToolResultImage[] | undefined
+  isError: boolean
+}
 
 export type ToolResultImage = {
-  src: string;
-  mimeType: string;
-  alt: string;
-};
+  src: string
+  mimeType: string
+  alt: string
+}
 
 export type BashExecutionMessage = {
-  id: string;
-  role: "bashExecution";
-  command: string;
-  output: string[];
-  exitCode: number | null;
-  cancelled: boolean;
-  truncated: boolean;
-};
+  id: string
+  role: 'bashExecution'
+  command: string
+  output: string[]
+  exitCode: number | null
+  cancelled: boolean
+  truncated: boolean
+}
 
 export type CustomThreadMessage = {
-  id: string;
-  role: "custom";
-  customType: string;
-  content: string[];
-};
+  id: string
+  role: 'custom'
+  customType: string
+  content: string[]
+}
 
 export type SystemThreadMessage = {
-  id: string;
-  role: "system";
-  label: string;
-  content: string[];
-};
+  id: string
+  role: 'system'
+  label: string
+  content: string[]
+}
 
 export type SummaryThreadMessage = {
-  id: string;
-  role: "branchSummary" | "compactionSummary";
-  content: string[];
-};
+  id: string
+  role: 'branchSummary' | 'compactionSummary'
+  content: string[]
+}
 
 export type Message =
   | ProseMessage
@@ -122,14 +122,14 @@ export type Message =
   | BashExecutionMessage
   | CustomThreadMessage
   | SystemThreadMessage
-  | SummaryThreadMessage;
+  | SummaryThreadMessage
 
 export type ThreadData = {
-  sessionPath: string;
-  title: string;
-  messages: Message[];
-  previousMessageCount: number;
-  isStreaming: boolean;
-  isCompacting: boolean;
-  diffPreferences?: ProjectDiffPreferences;
-};
+  sessionPath: string
+  title: string
+  messages: Message[]
+  previousMessageCount: number
+  isStreaming: boolean
+  isCompacting: boolean
+  diffPreferences?: ProjectDiffPreferences | undefined
+}

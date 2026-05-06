@@ -1,7 +1,7 @@
-import type { PiSettings } from "./desktop-settings-contracts";
+import type { PiSettings } from './desktop-settings-contracts'
 
 export const defaultPiSettings: PiSettings = {
-  theme: "howcode-default",
+  theme: 'howcode-default',
   autoCompact: true,
   enableSkillCommands: true,
   hideThinkingBlock: false,
@@ -13,12 +13,12 @@ export const defaultPiSettings: PiSettings = {
   enableInstallTelemetry: true,
   showHardwareCursor: false,
   clearOnShrink: false,
-  transport: "auto",
-  steeringMode: "one-at-a-time",
-  followUpMode: "one-at-a-time",
-  doubleEscapeAction: "tree",
-  treeFilterMode: "default",
+  transport: 'auto',
+  steeringMode: 'one-at-a-time',
+  followUpMode: 'one-at-a-time',
+  doubleEscapeAction: 'tree',
+  treeFilterMode: 'default',
   editorPaddingX: 0,
   autocompleteMaxVisible: 5,
   imageWidthCells: 60,
-};
+}
