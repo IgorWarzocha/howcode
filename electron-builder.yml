@@ -36,6 +36,7 @@ nsis:
   createDesktopShortcut: false
   createStartMenuShortcut: true
 asarUnpack:
+  - build/desktop/**
   - node_modules/**/*.node
   - node_modules/node-pty/build/Release/**
   - node_modules/node-pty/prebuilds/**

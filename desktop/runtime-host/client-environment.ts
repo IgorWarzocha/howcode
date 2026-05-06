@@ -11,12 +11,24 @@ let cachedNodeExecutable: string | null = null
 
 export function getRuntimeHostPath() {
   const siblingWorkerPath = fileURLToPath(new URL('./worker.mjs', import.meta.url))
+  const siblingUnpackedWorkerPath = getAsarUnpackedPath(siblingWorkerPath)
+  if (siblingUnpackedWorkerPath && existsSync(siblingUnpackedWorkerPath)) {
+    return siblingUnpackedWorkerPath
+  }
   if (existsSync(siblingWorkerPath)) return siblingWorkerPath
 
   const bundledBridgeWorkerPath = fileURLToPath(new URL('./desktop/worker.mjs', import.meta.url))
+  const bundledBridgeUnpackedWorkerPath = getAsarUnpackedPath(bundledBridgeWorkerPath)
+  if (bundledBridgeUnpackedWorkerPath && existsSync(bundledBridgeUnpackedWorkerPath)) {
+    return bundledBridgeUnpackedWorkerPath
+  }
   if (existsSync(bundledBridgeWorkerPath)) return bundledBridgeWorkerPath
 
   return path.join(process.cwd(), 'build', 'desktop', 'worker.mjs')
+}
+
+function getAsarUnpackedPath(filePath: string) {
+  return filePath.includes('.asar') ? filePath.replace('.asar', '.asar.unpacked') : null
 }
 
 function isExecutableFile(filePath: string) {
