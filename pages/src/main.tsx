@@ -167,6 +167,13 @@ function App() {
         </button>
       ) : null}
 
+      <p className="pi-credit">
+        Howcode is built on top of <a href="https://pi.dev/">Pi</a>. Thank you Mario for creating
+        such a based piece of software. If you want the cleaner, terminal-first thing underneath all
+        this, start at <a href="https://pi.dev/">pi.dev</a>. Pi now lives with{' '}
+        <a href="https://earendil.com/">Earendil</a>.
+      </p>
+
       <section className="section statement" id="shape">
         <p className="eyebrow">what it is</p>
         <h2>Code mode, Chat mode, GitOps, Pi TUI.</h2>

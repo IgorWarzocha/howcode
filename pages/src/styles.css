@@ -371,6 +371,19 @@ code {
   box-shadow: 0 28px 90px oklch(0% 0 0 / 42%);
 }
 
+.pi-credit {
+  max-width: 78ch;
+  margin: calc(var(--space-5xl) * -0.55) 0 var(--space-5xl);
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-wrap: pretty;
+}
+
+.pi-credit a {
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .section {
   display: grid;
   grid-template-columns: 0.8fr 1fr;
