@@ -53,16 +53,7 @@ export async function createProject(options: {
   const projectPath = path.join(parentDirectory, folderName)
 
   await mkdir(parentDirectory, { recursive: true })
-
-  try {
-    await mkdir(projectPath)
-  } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'EEXIST') {
-      throw new Error('A project with that name already exists there.')
-    }
-
-    throw error
-  }
+  await mkdir(projectPath, { recursive: true })
 
   if (options.initializeGit) {
     await initializeProjectGit(projectPath)
@@ -159,6 +150,12 @@ export async function createProjectFromGitHubUrl(options: {
   )
   if (existingDirectoryProject) {
     return existingDirectoryProject
+  }
+
+  if (await directoryExists(projectPath)) {
+    throw new Error(
+      `A folder named ${repository.folderName} already exists there. Choose an empty location before cloning this GitHub repository.`,
+    )
   }
 
   try {
