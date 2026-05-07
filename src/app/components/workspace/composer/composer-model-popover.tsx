@@ -27,7 +27,6 @@ type ComposerModelPopoverProps = {
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
 }
 
-const smallDisplayHeightBreakpoint = 768
 const sidePlacementGap = 8
 const sidePlacementViewportPadding = 12
 
@@ -106,10 +105,6 @@ function MenuList({ items }: { items: MenuOption[] }) {
   )
 }
 
-function getSmallDisplayPlacementEnabled() {
-  return typeof window !== 'undefined' && window.innerHeight <= smallDisplayHeightBreakpoint
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
@@ -142,24 +137,36 @@ export function ComposerModelPopover({
   const [openMenu, setOpenMenu] = useState<NestedMenu>(null)
   const [selectedProvider, setSelectedProvider] = useState(currentModel?.provider ?? '')
   const [modelSearch, setModelSearch] = useState('')
-  const [smallDisplayHeight, setSmallDisplayHeight] = useState(getSmallDisplayPlacementEnabled)
+  const [sidePlacementEnabled, setSidePlacementEnabled] = useState(false)
   const [sidePosition, setSidePosition] = useState({ left: 0, top: 0 })
   const [sidePositionReady, setSidePositionReady] = useState(false)
   const modelSearchRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePlacementMode = () => {
-      setSmallDisplayHeight(getSmallDisplayPlacementEnabled())
+      const anchorRect = anchorRef.current?.getBoundingClientRect()
+      const estimatedPanelHeight = Math.min(
+        360,
+        window.innerHeight - sidePlacementViewportPadding * 2,
+      )
+      setSidePlacementEnabled(
+        Boolean(
+          anchorRect &&
+            (preferSidePlacement ||
+              anchorRect.top <
+                estimatedPanelHeight + sidePlacementGap + sidePlacementViewportPadding),
+        ),
+      )
     }
 
     updatePlacementMode()
     window.addEventListener('resize', updatePlacementMode)
+    window.addEventListener('scroll', updatePlacementMode, true)
     return () => {
       window.removeEventListener('resize', updatePlacementMode)
+      window.removeEventListener('scroll', updatePlacementMode, true)
     }
-  }, [])
-
-  const sidePlacementEnabled = preferSidePlacement && smallDisplayHeight
+  }, [anchorRef, preferSidePlacement])
 
   useEffect(() => {
     if (currentModel?.provider) {

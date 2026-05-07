@@ -17,6 +17,7 @@ export type {
   ComposerFilePickerState,
   ComposerModel,
   ComposerQueuedPrompt,
+  ComposerSkillReference,
   ComposerSlashCommand,
   ComposerSlashCommandSource,
   ComposerState,

@@ -1,8 +1,10 @@
 const whitespaceRunPattern = /\s+/
+const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
 
 import { parseCompactSlashCommand } from '../../shared/composer-slash-commands.ts'
 import type {
   ComposerAttachment,
+  ComposerSkillReference,
   ComposerStateRequest,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
@@ -61,6 +63,53 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
   if (!text.startsWith('/')) return false
   const commandName = text.slice(1).split(whitespaceRunPattern, 1)[0] ?? ''
   return Boolean(runtime.session.extensionRunner.getCommand(commandName))
+}
+
+function mapSessionSkills(session: PiRuntime['session']): ComposerSkillReference[] {
+  return session.resourceLoader.getSkills().skills.map((skill) => ({
+    name: skill.name,
+    description: skill.description,
+    filePath: skill.filePath,
+    sourceInfo: skill.sourceInfo,
+  }))
+}
+
+function buildSkillReferencePrompt(input: {
+  skills: ComposerSkillReference[]
+  userRequest: string
+}) {
+  return [
+    'The user asked you to use the following skills. Read their SKILL.md files if available.',
+    '',
+    ...input.skills.map((skill) => `- $${skill.name}: ${skill.filePath}`),
+    '',
+    'User request:',
+    input.userRequest,
+  ].join('\n')
+}
+
+function expandDollarSkillReferences(runtime: PiRuntime, text: string) {
+  const skillsByName = new Map(
+    mapSessionSkills(runtime.session).map((skill) => [skill.name, skill]),
+  )
+  const skills: ComposerSkillReference[] = []
+  const seenSkillNames = new Set<string>()
+
+  for (const match of text.matchAll(dollarSkillTokenPattern)) {
+    const skillName = match[2]
+    if (!skillName || seenSkillNames.has(skillName)) continue
+    const skill = skillsByName.get(skillName)
+    if (!skill) continue
+    seenSkillNames.add(skillName)
+    skills.push(skill)
+  }
+
+  if (skills.length === 0) return text
+
+  return buildSkillReferencePrompt({
+    skills,
+    userRequest: text,
+  })
 }
 
 async function selectRequestedComposerModel(runtime: PiRuntime, request: ComposerStateRequest) {
@@ -171,6 +220,35 @@ export async function getComposerSlashCommands(request: ComposerStateRequest = {
       console.warn('Pi extension resource discovery failed', error)
     })
     return mapSessionCommands(snapshot.session)
+  } finally {
+    snapshot.session.dispose()
+  }
+}
+
+export async function getComposerSkills(request: ComposerStateRequest = {}) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  if (persistedSessionPath) {
+    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+      suspendDisposal: true,
+      settingsCwd: request.composerSessionDir ?? null,
+      chatGroupId: request.chatGroupId ?? null,
+    })
+    await reloadRuntimeSettingsIfSafe(persistedSessionPath)
+    scheduleRuntimeDisposal(persistedSessionPath)
+    return mapSessionSkills(runtime.session)
+  }
+
+  const snapshot = await createComposerSnapshotSession({
+    ...request,
+    projectId: request.projectId ?? getDesktopWorkingDirectory(),
+    sessionPath: persistedSessionPath,
+  })
+
+  try {
+    await discoverHeadlessAgentSessionResources(snapshot.session).catch((error) => {
+      console.warn('Pi extension resource discovery failed', error)
+    })
+    return mapSessionSkills(snapshot.session)
   } finally {
     snapshot.session.dispose()
   }
@@ -360,13 +438,14 @@ export async function sendComposerPrompt(
         })
       }
       const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? [])
+      const skillExpandedText = expandDollarSkillReferences(runtime, request.text)
       const message = `${
         attachmentPrompt
           ? `${attachmentPrompt}
 
 `
           : ''
-      }${request.text}`
+      }${skillExpandedText}`
       const streamingBehavior =
         request.streamingBehavior ?? request.composerStreamingBehavior ?? 'followUp'
       return await promptComposerRuntime({

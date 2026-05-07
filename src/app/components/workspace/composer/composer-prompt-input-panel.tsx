@@ -9,7 +9,9 @@ import {
   getComposerAttachmentsFromClipboardData,
   hasAttachmentHintInClipboardData,
 } from './composer-paste-attachments'
+import { ComposerSkillMentionPanel } from './composer-skill-mention-panel'
 import { ComposerTextField } from './composer-text-field'
+import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import {
   type ComposerSlashCommands,
   getComposerSlashCommandGroupLabel,
@@ -66,8 +68,46 @@ function SlashCommandOption({
   )
 }
 
+function SlashCommandPanel({
+  panelRef,
+  slashCommands,
+}: {
+  panelRef: RefObject<HTMLDivElement | null>
+  slashCommands: ComposerSlashCommands
+}) {
+  if (!slashCommands.open) return null
+  return (
+    <div
+      ref={panelRef}
+      id={slashCommands.listboxId}
+      role="listbox"
+      tabIndex={-1}
+      aria-label="Composer slash commands"
+      className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]"
+    >
+      {slashCommands.commands.length > 0 ? (
+        slashCommands.commands.map((command, index) => (
+          <SlashCommandOption
+            key={`${command.source}:${command.name}`}
+            command={command}
+            index={index}
+            previousCommand={slashCommands.commands[index - 1]}
+            selected={index === slashCommands.selectedIndex}
+            slashCommands={slashCommands}
+          />
+        ))
+      ) : (
+        <div className="px-2 py-2 text-[12px] text-[color:var(--muted)]">
+          {slashCommands.loading ? 'Loading commands…' : 'No matching commands'}
+        </div>
+      )}
+    </div>
+  )
+}
+
 type ComposerKeyDownInput = {
   cancelDictation: () => Promise<void>
+  clearError: () => void
   dictationActive: boolean
   dictationTranscribing: boolean
   inputLocked: boolean
@@ -75,6 +115,8 @@ type ComposerKeyDownInput = {
   onEscapeOverride?: (() => boolean) | undefined
   onSubmitOverride?: (() => boolean) | undefined
   slashCommands: ComposerSlashCommands
+  skillMentions: ComposerSkillMentions
+  setDraft: (value: string) => void
 }
 
 function isCursorAtStart(textarea: HTMLTextAreaElement) {
@@ -86,6 +128,68 @@ function isCursorAtEnd(textarea: HTMLTextAreaElement) {
     textarea.selectionStart === textarea.selectionEnd &&
     textarea.selectionEnd === textarea.value.length
   )
+}
+
+function handleOpenAutocompleteKeyDown(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+) {
+  return input.slashCommands.handleKeyDown(event) || input.skillMentions.handleKeyDown(event)
+}
+
+function handleDeleteTextKey(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  setDraft: (value: string) => void,
+  clearError: () => void,
+) {
+  if (event.key !== 'Backspace' && event.key !== 'Delete') return false
+  if (event.altKey || event.ctrlKey || event.metaKey) return false
+  const textarea = event.currentTarget
+  const selectionStart = textarea.selectionStart
+  const selectionEnd = textarea.selectionEnd
+  const segments = [
+    ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(textarea.value),
+  ]
+  const previousSegment = [...segments].reverse().find((segment) => segment.index < selectionStart)
+  const nextSegment = segments.find((segment) => segment.index > selectionEnd)
+  const deleteStart =
+    selectionStart === selectionEnd && event.key === 'Backspace'
+      ? (previousSegment?.index ?? 0)
+      : selectionStart
+  const deleteEnd =
+    selectionStart === selectionEnd && event.key === 'Delete'
+      ? (nextSegment?.index ?? textarea.value.length)
+      : selectionEnd
+  if (deleteStart === deleteEnd) return false
+  event.preventDefault()
+  const nextValue = `${textarea.value.slice(0, deleteStart)}${textarea.value.slice(deleteEnd)}`
+  setDraft(nextValue)
+  clearError()
+  window.requestAnimationFrame(() => textarea.setSelectionRange(deleteStart, deleteStart))
+  return true
+}
+
+function handleHorizontalBoundaryNavigation(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  onArrowNavigationOverride: ((direction: 'previous' | 'next') => boolean) | undefined,
+) {
+  if (
+    event.key === 'ArrowLeft' &&
+    isCursorAtStart(event.currentTarget) &&
+    onArrowNavigationOverride?.('previous')
+  ) {
+    event.preventDefault()
+    return true
+  }
+  if (
+    event.key === 'ArrowRight' &&
+    isCursorAtEnd(event.currentTarget) &&
+    onArrowNavigationOverride?.('next')
+  ) {
+    event.preventDefault()
+    return true
+  }
+  return false
 }
 
 function handleComposerTextKeyDown(
@@ -105,28 +209,20 @@ function handleComposerTextKeyDown(
     event.preventDefault()
     return
   }
+  if (handleDeleteTextKey(event, input.setDraft, input.clearError)) {
+    return
+  }
+  if (handleOpenAutocompleteKeyDown(event, input)) {
+    return
+  }
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()
     return
   }
-  if (
-    event.key === 'ArrowLeft' &&
-    isCursorAtStart(event.currentTarget) &&
-    input.onArrowNavigationOverride?.('previous')
-  ) {
-    event.preventDefault()
+  if (handleHorizontalBoundaryNavigation(event, input.onArrowNavigationOverride)) {
     return
   }
-  if (
-    event.key === 'ArrowRight' &&
-    isCursorAtEnd(event.currentTarget) &&
-    input.onArrowNavigationOverride?.('next')
-  ) {
-    event.preventDefault()
-    return
-  }
-  input.slashCommands.handleKeyDown(event)
 }
 
 type ComposerPromptInputPanelProps = {
@@ -154,6 +250,8 @@ type ComposerPromptInputPanelProps = {
   projectId: string
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
+  skillMentionPanelRef: RefObject<HTMLDivElement | null>
+  skillMentions: ComposerSkillMentions
   showDictationButton: boolean
   attachPickerAttachments: Parameters<typeof ComposerFilePicker>[0]['onAttachAttachments']
   cancelDictation: () => Promise<void>
@@ -200,6 +298,8 @@ export function ComposerPromptInputPanel({
   projectId,
   slashCommandPanelRef,
   slashCommands,
+  skillMentionPanelRef,
+  skillMentions,
   showDictationButton,
   attachPickerAttachments,
   cancelDictation,
@@ -241,33 +341,7 @@ export function ComposerPromptInputPanel({
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-end gap-2">
             <div className="min-w-0 flex-1">
-              {slashCommands.open ? (
-                <div
-                  ref={slashCommandPanelRef}
-                  id={slashCommands.listboxId}
-                  role="listbox"
-                  tabIndex={-1}
-                  aria-label="Composer slash commands"
-                  className="absolute right-0 bottom-full left-0 z-20 max-h-64 scroll-py-1.5 overflow-auto rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]"
-                >
-                  {slashCommands.commands.length > 0 ? (
-                    slashCommands.commands.map((command, index) => (
-                      <SlashCommandOption
-                        key={`${command.source}:${command.name}`}
-                        command={command}
-                        index={index}
-                        previousCommand={slashCommands.commands[index - 1]}
-                        selected={index === slashCommands.selectedIndex}
-                        slashCommands={slashCommands}
-                      />
-                    ))
-                  ) : (
-                    <div className="px-2 py-2 text-[12px] text-[color:var(--muted)]">
-                      {slashCommands.loading ? 'Loading commands…' : 'No matching commands'}
-                    </div>
-                  )}
-                </div>
-              ) : null}
+              <SlashCommandPanel panelRef={slashCommandPanelRef} slashCommands={slashCommands} />
               <ComposerTextField
                 value={draft}
                 onChange={setDraft}
@@ -279,13 +353,16 @@ export function ComposerPromptInputPanel({
                 onKeyDown={(event) =>
                   handleComposerTextKeyDown(event, {
                     cancelDictation,
+                    clearError,
                     dictationActive,
                     dictationTranscribing,
                     inputLocked,
                     onArrowNavigationOverride,
                     onEscapeOverride,
                     onSubmitOverride,
+                    setDraft,
                     slashCommands,
+                    skillMentions,
                   })
                 }
                 onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -312,8 +389,16 @@ export function ComposerPromptInputPanel({
                   })
                 }}
                 ariaLabel="Prompt composer"
-                ariaActiveDescendant={slashCommands.activeDescendantId}
-                ariaControls={slashCommands.open ? slashCommands.listboxId : undefined}
+                ariaActiveDescendant={
+                  slashCommands.activeDescendantId ?? skillMentions.activeDescendantId
+                }
+                ariaControls={
+                  slashCommands.open
+                    ? slashCommands.listboxId
+                    : skillMentions.open
+                      ? skillMentions.listboxId
+                      : undefined
+                }
                 placeholder={placeholderText}
                 readOnly={inputLocked}
                 hoverToFocus={hoverToFocus}
@@ -322,6 +407,14 @@ export function ComposerPromptInputPanel({
                 placeholderTone={errorMessage ? 'error' : 'muted'}
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}
+                inlinePopover={
+                  skillMentions.open ? (
+                    <ComposerSkillMentionPanel
+                      panelRef={skillMentionPanelRef}
+                      skillMentions={skillMentions}
+                    />
+                  ) : null
+                }
                 trailingAdornment={
                   <ComposerDictationControls
                     dictationActive={dictationActive}

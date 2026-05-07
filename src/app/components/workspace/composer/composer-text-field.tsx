@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
@@ -27,6 +28,7 @@ type ComposerTextFieldProps = {
   ariaActiveDescendant?: string | undefined
   ariaControls?: string | undefined
   reservedLineCount?: number
+  inlinePopover?: ReactNode
   trailingAdornment?: ReactNode
   readOnly?: boolean
   hoverToFocus?: boolean
@@ -164,6 +166,49 @@ function TrailingAdornment({
   )
 }
 
+function measureTextareaMarkerPosition(input: {
+  markerText: string
+  placeholder: string
+  textarea: HTMLTextAreaElement
+}) {
+  const computedStyle = window.getComputedStyle(input.textarea)
+  const mirror = document.createElement('div')
+  const marker = document.createElement('span')
+  const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20
+
+  mirror.style.position = 'absolute'
+  mirror.style.visibility = 'hidden'
+  mirror.style.pointerEvents = 'none'
+  mirror.style.whiteSpace = 'pre-wrap'
+  mirror.style.overflowWrap = 'break-word'
+  mirror.style.wordBreak = 'break-word'
+  mirror.style.boxSizing = computedStyle.boxSizing
+  mirror.style.width = `${input.textarea.clientWidth}px`
+  mirror.style.font = computedStyle.font
+  mirror.style.fontFamily = computedStyle.fontFamily
+  mirror.style.fontSize = computedStyle.fontSize
+  mirror.style.fontWeight = computedStyle.fontWeight
+  mirror.style.letterSpacing = computedStyle.letterSpacing
+  mirror.style.lineHeight = computedStyle.lineHeight
+  mirror.style.padding = computedStyle.padding
+  mirror.style.border = computedStyle.border
+
+  mirror.textContent = input.markerText || input.placeholder || ''
+  marker.textContent = '\u200b'
+  mirror.appendChild(marker)
+  document.body.appendChild(mirror)
+
+  const mirrorRect = mirror.getBoundingClientRect()
+  const markerRect = marker.getBoundingClientRect()
+  document.body.removeChild(mirror)
+
+  return {
+    left: Math.max(0, markerRect.left - mirrorRect.left),
+    lineHeight,
+    top: Math.max(0, markerRect.top - mirrorRect.top),
+  }
+}
+
 export function ComposerTextField({
   value,
   placeholder,
@@ -174,6 +219,7 @@ export function ComposerTextField({
   ariaActiveDescendant,
   ariaControls,
   reservedLineCount = 4,
+  inlinePopover = null,
   trailingAdornment = null,
   readOnly = false,
   hoverToFocus = true,
@@ -190,9 +236,14 @@ export function ComposerTextField({
 }: ComposerTextFieldProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const inlinePopoverWrapperRef = useRef<HTMLDivElement>(null)
   const lastReportedHeightRef = useRef<number | null>(null)
   const [reservedHeight, setReservedHeight] = useState<number | null>(null)
   const [trailingAdornmentPosition, setTrailingAdornmentPosition] = useState<{
+    left: number
+    top: number
+  } | null>(null)
+  const [inlinePopoverPosition, setInlinePopoverPosition] = useState<{
     left: number
     top: number
   } | null>(null)
@@ -263,39 +314,14 @@ export function ComposerTextField({
     }
 
     const measureTrailingAdornmentPosition = () => {
-      const computedStyle = window.getComputedStyle(textarea)
-      const mirror = document.createElement('div')
-      const marker = document.createElement('span')
-      const lineHeight = Number.parseFloat(computedStyle.lineHeight) || lineHeightRef.current
-
-      mirror.style.position = 'absolute'
-      mirror.style.visibility = 'hidden'
-      mirror.style.pointerEvents = 'none'
-      mirror.style.whiteSpace = 'pre-wrap'
-      mirror.style.overflowWrap = 'break-word'
-      mirror.style.wordBreak = 'break-word'
-      mirror.style.boxSizing = computedStyle.boxSizing
-      mirror.style.width = `${textarea.clientWidth}px`
-      mirror.style.font = computedStyle.font
-      mirror.style.fontFamily = computedStyle.fontFamily
-      mirror.style.fontSize = computedStyle.fontSize
-      mirror.style.fontWeight = computedStyle.fontWeight
-      mirror.style.letterSpacing = computedStyle.letterSpacing
-      mirror.style.lineHeight = computedStyle.lineHeight
-      mirror.style.padding = computedStyle.padding
-      mirror.style.border = computedStyle.border
-
-      mirror.textContent = value || placeholder || ''
-      marker.textContent = '\u200b'
-      mirror.appendChild(marker)
-      document.body.appendChild(mirror)
-
-      const mirrorRect = mirror.getBoundingClientRect()
-      const markerRect = marker.getBoundingClientRect()
-      document.body.removeChild(mirror)
-
-      const markerLeft = Math.max(0, markerRect.left - mirrorRect.left)
-      const markerTop = Math.max(0, markerRect.top - mirrorRect.top)
+      const markerPosition = measureTextareaMarkerPosition({
+        markerText: value,
+        placeholder,
+        textarea,
+      })
+      const markerLeft = markerPosition.left
+      const markerTop = markerPosition.top
+      const lineHeight = markerPosition.lineHeight || lineHeightRef.current
       const adornmentWidth = 24
       const adornmentGap = 6
       const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth
@@ -322,6 +348,77 @@ export function ComposerTextField({
     window.addEventListener('resize', measureTrailingAdornmentPosition)
     return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
   }, [placeholder, trailingAdornment, value])
+
+  useLayoutEffect(() => {
+    if (!inlinePopover) {
+      setInlinePopoverPosition(null)
+      return
+    }
+
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const measureInlinePopoverPosition = () => {
+      const cursorPosition = textarea.selectionStart ?? value.length
+      const markerPosition = measureTextareaMarkerPosition({
+        markerText: value.slice(0, cursorPosition),
+        placeholder,
+        textarea,
+      })
+      const textareaRect = textarea.getBoundingClientRect()
+      const popoverHeight = inlinePopoverWrapperRef.current?.getBoundingClientRect().height ?? 288
+      const popoverWidth = 320
+      const gap = 8
+      const nextLeft = Math.max(
+        12,
+        Math.min(
+          window.innerWidth - popoverWidth - 12,
+          textareaRect.left + markerPosition.left + gap,
+        ),
+      )
+      const preferredTop =
+        textareaRect.top +
+        markerPosition.top -
+        textarea.scrollTop +
+        markerPosition.lineHeight / 2 -
+        popoverHeight / 2
+      const nextTop = Math.min(window.innerHeight - popoverHeight - 12, Math.max(12, preferredTop))
+      setInlinePopoverPosition((current) =>
+        current?.left === nextLeft && current.top === nextTop
+          ? current
+          : { left: nextLeft, top: nextTop },
+      )
+    }
+
+    measureInlinePopoverPosition()
+    window.addEventListener('resize', measureInlinePopoverPosition)
+    textarea.addEventListener('keyup', measureInlinePopoverPosition)
+    textarea.addEventListener('click', measureInlinePopoverPosition)
+    textarea.addEventListener('input', measureInlinePopoverPosition)
+    return () => {
+      window.removeEventListener('resize', measureInlinePopoverPosition)
+      textarea.removeEventListener('keyup', measureInlinePopoverPosition)
+      textarea.removeEventListener('click', measureInlinePopoverPosition)
+      textarea.removeEventListener('input', measureInlinePopoverPosition)
+    }
+  }, [inlinePopover, placeholder, value])
+
+  const inlinePopoverElement =
+    inlinePopover && inlinePopoverPosition && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            ref={inlinePopoverWrapperRef}
+            className="pointer-events-none fixed z-[120]"
+            style={{
+              left: `${inlinePopoverPosition.left}px`,
+              top: `${inlinePopoverPosition.top}px`,
+            }}
+          >
+            {inlinePopover}
+          </div>,
+          document.body,
+        )
+      : null
 
   return (
     <div
@@ -376,6 +473,7 @@ export function ComposerTextField({
           fieldExpanded={fieldExpanded}
           setFieldExpanded={setFieldExpanded}
         />
+        {inlinePopoverElement}
         <TrailingAdornment
           lineHeight={lineHeightRef.current}
           position={trailingAdornmentPosition}

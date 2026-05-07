@@ -17,6 +17,7 @@ import {
   transcribeDictation as transcribeSherpaDictation,
 } from '../dictation/sherpa-onnx.ts'
 import {
+  getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
   subscribeDesktopEvents as subscribeRuntimeEvents,
@@ -43,6 +44,10 @@ export async function loadComposerState(
 
 export async function loadComposerSlashCommands(request: ComposerStateRequest = {}) {
   return getComposerSlashCommands(request)
+}
+
+export async function loadComposerSkills(request: ComposerStateRequest = {}) {
+  return getComposerSkills(request)
 }
 
 export async function getDictationState(): Promise<DictationState> {

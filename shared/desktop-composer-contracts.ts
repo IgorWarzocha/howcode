@@ -93,3 +93,10 @@ export type ComposerSlashCommand = {
   source: ComposerSlashCommandSource
   sourceInfo?: unknown | undefined
 }
+
+export type ComposerSkillReference = {
+  name: string
+  description: string
+  filePath: string
+  sourceInfo?: unknown | undefined
+}

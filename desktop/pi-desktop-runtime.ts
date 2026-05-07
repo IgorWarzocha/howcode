@@ -193,6 +193,12 @@ export function getComposerSlashCommands(request: ComposerStateRequest = {}) {
   })
 }
 
+export function getComposerSkills(request: ComposerStateRequest = {}) {
+  return invokeRuntimeHost('getComposerSkills', {
+    request: withComposerModeSettings(request),
+  })
+}
+
 export function getComposerState(request = {}) {
   return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
 }

@@ -8,6 +8,7 @@ import type {
   ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
+  ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
@@ -144,6 +145,7 @@ declare global {
       }) => Promise<ComposerFilePickerState>
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>
       getComposerSlashCommands?: (request?: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
+      getComposerSkills?: (request?: ComposerStateRequest) => Promise<ComposerSkillReference[]>
       getDictationState?: () => Promise<DictationState>
       listDictationModels?: () => Promise<DictationModelSummary[]>
       installDictationModel?: (

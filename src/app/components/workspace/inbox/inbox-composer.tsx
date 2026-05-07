@@ -24,6 +24,7 @@ import { ComposerPromptInputPanel } from '../composer/composer-prompt-input-pane
 import { useComposerAttachmentPicker } from '../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../composer/useComposerClipboardHandlers'
 import { useComposerDictation } from '../composer/useComposerDictation'
+import { useComposerSkillMentions } from '../composer/useComposerSkillMentions'
 import { useComposerSlashCommands } from '../composer/useComposerSlashCommands'
 import {
   workspaceFooterRowClass,
@@ -107,6 +108,7 @@ export function InboxComposer({
   const modelButtonRef = useRef<HTMLButtonElement>(null)
   const modelMenuRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
+  const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const draftValueRef = useRef(draft)
   const attachmentsRef = useRef(attachments)
   const sendLockRef = useRef(false)
@@ -251,6 +253,15 @@ export function InboxComposer({
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)
     .join('|')
+  const skillMentions = useComposerSkillMentions({
+    draft,
+    projectId: thread.projectId,
+    sessionPath: thread.sessionPath,
+    setDraft: setDraftValue,
+  })
+  const skillMentionListSignature = skillMentions.skills
+    .map((skill) => `${skill.name}:${skill.filePath}`)
+    .join('|')
   const { handlePaste } = useComposerClipboardHandlers({
     setAttachments: setAttachmentValue,
     setDraftValue,
@@ -258,13 +269,13 @@ export function InboxComposer({
   })
 
   useEffect(() => {
-    if (slashCommands.open) {
+    if (slashCommands.open || skillMentions.open) {
       setOpenMenu((current) => (current === 'picker' ? null : current))
     }
-  }, [slashCommands.open])
+  }, [skillMentions.open, slashCommands.open])
 
   useEffect(() => {
-    if (!slashCommands.open) {
+    if (!(slashCommands.open || skillMentions.open)) {
       return
     }
 
@@ -277,12 +288,14 @@ export function InboxComposer({
 
       if (
         slashCommandPanelRef.current?.contains(target) ||
+        skillMentionPanelRef.current?.contains(target) ||
         composerSurfaceRef.current?.contains(target)
       ) {
         return
       }
 
-      slashCommands.dismiss({ clearDraft: true })
+      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+      if (skillMentions.open) skillMentions.dismiss()
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -292,7 +305,8 @@ export function InboxComposer({
 
       event.preventDefault()
       event.stopImmediatePropagation()
-      slashCommands.dismiss()
+      if (slashCommands.open) slashCommands.dismiss()
+      if (skillMentions.open) skillMentions.dismiss()
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
@@ -301,7 +315,7 @@ export function InboxComposer({
       window.removeEventListener('pointerdown', handlePointerDown, true)
       window.removeEventListener('keydown', handleKeyDown, true)
     }
-  }, [slashCommands])
+  }, [skillMentions, slashCommands])
 
   useEffect(() => {
     if (!(slashCommands.open && slashCommands.activeDescendantId)) {
@@ -339,6 +353,28 @@ export function InboxComposer({
     slashCommands.activeDescendantId,
     slashCommands.selectedIndex,
     slashCommandListSignature,
+  ])
+
+  useEffect(() => {
+    if (!(skillMentions.open && skillMentions.activeDescendantId)) {
+      return
+    }
+
+    void skillMentionListSignature
+
+    const panel = skillMentionPanelRef.current
+    const option = panel?.querySelector<HTMLElement>(`#${skillMentions.activeDescendantId}`)
+    if (!(panel && option)) return
+    if (skillMentions.selectedIndex === 0) {
+      panel.scrollTop = 0
+      return
+    }
+    option.scrollIntoView({ block: 'nearest' })
+  }, [
+    skillMentionListSignature,
+    skillMentions.activeDescendantId,
+    skillMentions.open,
+    skillMentions.selectedIndex,
   ])
 
   const compact = async () => {
@@ -465,6 +501,8 @@ export function InboxComposer({
             projectId={thread.projectId}
             slashCommandPanelRef={slashCommandPanelRef}
             slashCommands={slashCommands}
+            skillMentionPanelRef={skillMentionPanelRef}
+            skillMentions={skillMentions}
             showDictationButton={showDictationButton}
             attachPickerAttachments={attachPickerAttachments}
             cancelDictation={cancelDictation}

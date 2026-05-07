@@ -5,6 +5,7 @@ import {
   dequeueComposerPrompt,
   disposeAllRuntimeHosts,
   generateGitCommitMessage,
+  getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
   getPiSessionStorage,
@@ -54,6 +55,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<'getComposerSlashCommands'>['payload']
       return (await getComposerSlashCommands(payload.request)) as RuntimeHostResponseMap[TName]
+    }
+    case 'getComposerSkills': {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<'getComposerSkills'>['payload']
+      return (await getComposerSkills(payload.request)) as RuntimeHostResponseMap[TName]
     }
     case 'startNewThread': {
       const payload =
