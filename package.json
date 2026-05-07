@@ -27,6 +27,7 @@
     "release:prepare": "bun run build:release && bun run build:launcher-artifacts",
     "pack:howcode": "cd packages/howcode && npm pack",
     "publish:howcode:dry-run": "cd packages/howcode && npm publish --dry-run",
+    "watch:earendil-packages": "bun ./scripts/watch-earendil-packages.ts",
     "preview": "vite preview",
     "prepare": "test -d .git && husky || true",
     "postinstall": "node ./node_modules/electron/install.js && electron-builder install-app-deps",
