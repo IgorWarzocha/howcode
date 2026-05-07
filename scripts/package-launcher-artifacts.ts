@@ -134,6 +134,19 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
 
   await cp(bundlePath, normalizedBundlePath, { recursive: true })
 
+  const resourcesPath =
+    target.os === 'macos'
+      ? path.join(normalizedBundlePath, 'Contents', 'Resources')
+      : path.join(normalizedBundlePath, 'resources')
+  if (
+    !(
+      existsSync(path.join(resourcesPath, 'app.asar')) ||
+      existsSync(path.join(resourcesPath, 'app', 'package.json'))
+    )
+  ) {
+    throw new Error(`Packaged Electron bundle is missing app.asar/app in ${resourcesPath}.`)
+  }
+
   const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {
     stdio: 'inherit',
   })

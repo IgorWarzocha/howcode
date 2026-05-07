@@ -99,6 +99,26 @@ function getPaths(target, releaseInfo) {
   }
 }
 
+function getAppResourcesPath(installDir, target) {
+  if (target.os === 'macos') {
+    return path.join(installDir, `${APP_NAME}.app`, 'Contents', 'Resources')
+  }
+
+  return path.join(installDir, APP_NAME, 'resources')
+}
+
+function hasPackagedAppBundle(installDir, target) {
+  const resourcesPath = getAppResourcesPath(installDir, target)
+  return (
+    fs.existsSync(path.join(resourcesPath, 'app.asar')) ||
+    fs.existsSync(path.join(resourcesPath, 'app', 'package.json'))
+  )
+}
+
+function isValidInstall(paths, target) {
+  return fs.existsSync(paths.executablePath) && hasPackagedAppBundle(paths.installDir, target)
+}
+
 function getWindowsStartMenuShortcutPath() {
   const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming')
   return path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', `${APP_NAME}.lnk`)
@@ -297,6 +317,10 @@ async function installRelease(target, releaseInfo, paths) {
     throw new Error(`Downloaded archive did not contain ${target.executable}.`)
   }
 
+  if (!hasPackagedAppBundle(tempInstallDir, target)) {
+    throw new Error('Downloaded archive did not contain the packaged app bundle.')
+  }
+
   await fsp.rm(paths.installDir, { recursive: true, force: true })
   await fsp.rename(tempInstallDir, paths.installDir)
   await fsp.rm(tempRoot, { recursive: true, force: true })
@@ -369,14 +393,20 @@ async function main() {
   try {
     releaseInfo = await resolveLatestRelease(target)
   } catch (error) {
-    if (current?.executablePath && fs.existsSync(current.executablePath)) {
-      await ensureWindowsLaunchIntegration(target, {
+    if (current?.executablePath) {
+      const currentPaths = {
         cacheRoot,
         currentFile: path.join(cacheRoot, 'current.json'),
         windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
         installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
         launcherWorkingDirectory: path.dirname(current.executablePath),
         executablePath: current.executablePath,
+      }
+      if (!isValidInstall(currentPaths, target)) {
+        throw error
+      }
+      await ensureWindowsLaunchIntegration(target, {
+        ...currentPaths,
       })
       await launch(current.executablePath)
       return
@@ -386,8 +416,8 @@ async function main() {
   }
 
   const paths = getPaths(target, releaseInfo)
-  const didInstall = !fs.existsSync(paths.executablePath)
-  if (!fs.existsSync(paths.executablePath)) {
+  const didInstall = !isValidInstall(paths, target)
+  if (didInstall) {
     await installRelease(target, releaseInfo, paths)
   }
 

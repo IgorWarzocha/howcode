@@ -1,3 +1,9 @@
+### 0.1.61
+
+- ASAR is back. And then it disappeared. And it's back again.
+
+Snapshot: May 7, 2026.
+
 ### 0.1.6
 
 - Added responsive layouts everywhere-ish.

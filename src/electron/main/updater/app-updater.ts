@@ -96,6 +96,28 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   }
 }
 
+function getAppResourcesPath(installDir: string, target: UpdateTarget) {
+  if (target.os === 'macos') {
+    return path.join(installDir, `${APP_NAME}.app`, 'Contents', 'Resources')
+  }
+
+  return path.join(installDir, APP_NAME, 'resources')
+}
+
+function hasPackagedAppBundle(installDir: string, target: UpdateTarget) {
+  const resourcesPath = getAppResourcesPath(installDir, target)
+  return (
+    existsSync(path.join(resourcesPath, 'app.asar')) ||
+    existsSync(path.join(resourcesPath, 'app', 'package.json'))
+  )
+}
+
+async function isValidInstall(paths: ReturnType<typeof getInstallPaths>, target: UpdateTarget) {
+  return (
+    (await isExecutableFile(paths.executablePath)) && hasPackagedAppBundle(paths.installDir, target)
+  )
+}
+
 function isUpdateEnabled() {
   return app.isPackaged || updateAllowedInDev
 }
@@ -367,7 +389,7 @@ export class AppUpdater {
         currentRecord.hash === release.hash &&
         currentRecord.installDir === paths.installDir &&
         currentRecord.executablePath === paths.executablePath &&
-        (await isExecutableFile(paths.executablePath))
+        (await isValidInstall(paths, target))
       if (!existingCacheTrusted) {
         tempRoot = path.join(paths.cacheRoot, `.tmp-update-${Date.now()}-${process.pid}`)
         tempInstallDir = `${paths.installDir}.partial`
@@ -386,6 +408,9 @@ export class AppUpdater {
         await extractTar({ file: archivePath, cwd: tempInstallDir })
         if (!existsSync(path.join(tempInstallDir, target.executable))) {
           throw new Error(`Downloaded archive did not contain ${target.executable}.`)
+        }
+        if (!hasPackagedAppBundle(tempInstallDir, target)) {
+          throw new Error('Downloaded archive did not contain the packaged app bundle.')
         }
         await rm(paths.installDir, { recursive: true, force: true })
         await mkdir(path.dirname(paths.installDir), { recursive: true })
@@ -454,7 +479,7 @@ export class AppUpdater {
     ) {
       return
     }
-    if (!(await isExecutableFile(record.executablePath))) return
+    if (!(await isValidInstall(expectedPaths, target))) return
     this.installedUpdate = record
     this.latestRelease = record
     this.setState({ status: 'ready', latestVersion: record.version, error: null })
