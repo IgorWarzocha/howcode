@@ -1,7 +1,3 @@
-### Next update
-
-Waiting on the Earendil package chore to land, then this becomes the next release.
-
 ### 0.1.6
 
 - Added responsive layouts everywhere.
