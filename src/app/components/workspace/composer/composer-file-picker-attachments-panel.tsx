@@ -11,6 +11,7 @@ import {
 
 type ComposerFilePickerAttachmentsPanelProps = {
   attachments: ComposerAttachment[]
+  className?: string
   draggedAttachments: ComposerAttachment[]
   dropActive: boolean
   onDragActiveChange: (active: boolean) => void
@@ -32,6 +33,7 @@ function getOpenAttachmentIcon(attachment: ComposerAttachment) {
 
 export function ComposerFilePickerAttachmentsPanel({
   attachments,
+  className,
   draggedAttachments,
   dropActive,
   onDragActiveChange,
@@ -44,6 +46,7 @@ export function ComposerFilePickerAttachmentsPanel({
       className={cn(
         'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] py-2 pr-0 pl-2',
         dropActive && 'bg-[rgba(255,255,255,0.04)]',
+        className,
       )}
       onDragOver={(event) => {
         event.preventDefault()
@@ -57,12 +60,12 @@ export function ComposerFilePickerAttachmentsPanel({
       }}
       onDrop={onDrop}
     >
-      <div className="grid min-h-full content-start gap-0">
+      <div className="grid min-h-full content-start gap-0 max-[520px]:min-h-0 max-[520px]:gap-1">
         {attachments.length > 0 ? (
           attachments.map((attachment) => (
             <div
               key={attachment.path}
-              className="flex h-5 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
+              className="flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
               title={attachment.path}
             >
               <button
@@ -73,7 +76,7 @@ export function ComposerFilePickerAttachmentsPanel({
               >
                 {getOpenAttachmentIcon(attachment)}
               </button>
-              <span className="min-w-0 max-w-[20ch] flex-1 truncate leading-none">
+              <span className="min-w-0 flex-1 truncate leading-none">
                 {getAttachmentDisplayLabel(attachment)}
               </span>
               <button

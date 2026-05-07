@@ -42,7 +42,7 @@ export function FileEntryButton({
       type="button"
       draggable={!isAlreadyAttached}
       className={cn(
-        'flex h-8 min-w-0 items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors',
+        'flex h-8 min-w-0 w-full items-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-left text-[12px] text-[color:var(--text)] transition-colors',
         isAlreadyAttached && 'border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.05)]',
         isAlreadyAttached &&
           'cursor-default text-[color:var(--muted)] hover:border-transparent hover:bg-transparent',

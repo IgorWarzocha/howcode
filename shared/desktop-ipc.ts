@@ -8,6 +8,7 @@ import type {
   ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
+  ComposerFileSearchEntry,
   ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
@@ -185,6 +186,14 @@ export type DesktopRequestMap = {
       rootPath?: string | undefined | null | undefined
     }
     response: ComposerFilePickerState
+  }
+  searchComposerAttachmentEntries: {
+    params: {
+      projectId?: string | undefined | null | undefined
+      query?: string | undefined | null | undefined
+      limit?: number | undefined | null | undefined
+    }
+    response: ComposerFileSearchEntry[]
   }
   getComposerState: { params: ComposerStateRequest; response: ComposerState }
   getComposerSlashCommands: { params: ComposerStateRequest; response: ComposerSlashCommand[] }

@@ -145,6 +145,8 @@ export function installDevWebDesktopBridge() {
     getPathForFile: () => null,
     listComposerAttachmentEntries: (request = {}) =>
       invokeRequest('listComposerAttachmentEntries', request),
+    searchComposerAttachmentEntries: (request = {}) =>
+      invokeRequest('searchComposerAttachmentEntries', request),
     getComposerState: (request = {}) => invokeRequest('getComposerState', request),
     getComposerSlashCommands: (request = {}) => invokeRequest('getComposerSlashCommands', request),
     getComposerSkills: (request = {}) => invokeRequest('getComposerSkills', request),
