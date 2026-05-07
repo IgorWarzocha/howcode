@@ -14,6 +14,7 @@
         "@earendil-works/pi-coding-agent": "npm:@mariozechner/pi-coding-agent@0.73.0",
         "@earendil-works/pi-tui": "npm:@mariozechner/pi-tui@0.73.0",
         "@fontsource-variable/inter": "^5.2.8",
+        "@mariozechner/pi-tui": "0.73.0",
         "@mdxeditor/editor": "^3.55.0",
         "@pierre/diffs": "^1.1.0-beta.16",
         "@pierre/trees": "1.0.0-beta.3",

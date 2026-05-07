@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = path.resolve(__dirname, '../..')
@@ -94,10 +95,17 @@ describe('Pi runtime import boundary', () => {
     expect(violations).toEqual([])
   })
 
-  it('keeps the bundled ask-questions extension loadable by external Pi CLIs', () => {
+  it('keeps the bundled ask-questions extension loadable by external Pi CLIs', async () => {
     const source = readFileSync(askQuestionsExtensionPath, 'utf8')
 
     expect(source).toContain("from '@mariozechner/pi-tui'")
     expect(source).not.toContain("from '@earendil-works/pi-tui'")
+
+    await expect(import(pathToFileURL(askQuestionsExtensionPath).href)).resolves.toEqual(
+      expect.objectContaining({
+        createHowcodeAskQuestionsTool: expect.any(Function),
+        default: expect.any(Function),
+      }),
+    )
   })
 })
