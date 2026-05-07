@@ -7,7 +7,7 @@ import {
   createLsToolDefinition,
   createReadToolDefinition,
   type ToolDefinition,
-} from '@mariozechner/pi-coding-agent'
+} from '@earendil-works/pi-coding-agent'
 import type { ComposerAttachment } from '../../shared/desktop-contracts.ts'
 
 type AttachmentGrant = {

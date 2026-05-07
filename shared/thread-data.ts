@@ -1,4 +1,4 @@
-import type { AgentMessage } from '@mariozechner/pi-agent-core'
+import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { ThreadData } from './desktop-contracts'
 import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from './pi-message-mapper'
 

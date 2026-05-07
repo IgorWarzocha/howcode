@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { ResourceLoader, SettingsManager } from '@mariozechner/pi-coding-agent'
+import type { ResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent'
 
 type SettingsManagerFactory = {
   create: (cwd: string, agentDir?: string | undefined) => SettingsManager

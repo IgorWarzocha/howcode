@@ -1,4 +1,4 @@
-import type { ExtensionContext, ToolDefinition } from '@mariozechner/pi-coding-agent'
+import type { ExtensionContext, ToolDefinition } from '@earendil-works/pi-coding-agent'
 import type { Artifact, ArtifactKind } from '../../shared/desktop-contracts.ts'
 
 export type ArtifactEdit = { oldText: string; newText: string }

@@ -1,4 +1,4 @@
-import type { AgentMessage } from '@mariozechner/pi-agent-core'
+import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { mapAgentMessageToUiMessage } from '../../shared/pi-message-mapper.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'

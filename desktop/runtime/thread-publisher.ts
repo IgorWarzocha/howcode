@@ -1,5 +1,5 @@
 import { stat } from 'node:fs/promises'
-import type { AgentMessage } from '@mariozechner/pi-agent-core'
+import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { ComposerState, ProseMessage, ThreadData } from '../../shared/desktop-contracts.ts'
 import {
   buildThreadData,

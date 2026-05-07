@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 const repoRoot = path.resolve(__dirname, '../..')
 const desktopRoot = path.join(repoRoot, 'desktop')
+const askQuestionsExtensionPath = path.join(
+  repoRoot,
+  'desktop/native-extensions/howcode-native-ask-questions.mjs',
+)
 const sourceFileExtensionPattern = /\.(?:cts|ts|mts|tsx)$/
 
 const allowedPiRuntimeImportPrefixes = [
@@ -58,6 +62,7 @@ function isForbiddenRuntimeSpecifier(resolvedSpecifier: string) {
     resolvedSpecifier.startsWith('desktop/runtime/composer-state.ts') ||
     resolvedSpecifier.startsWith('desktop/runtime/runtime-registry.ts') ||
     resolvedSpecifier.startsWith('desktop/runtime/thread-publisher.ts') ||
+    resolvedSpecifier.startsWith('@earendil-works/pi-') ||
     resolvedSpecifier.startsWith('@mariozechner/pi-')
   )
 }
@@ -87,5 +92,12 @@ describe('Pi runtime import boundary', () => {
       })
 
     expect(violations).toEqual([])
+  })
+
+  it('keeps the bundled ask-questions extension loadable by external Pi CLIs', () => {
+    const source = readFileSync(askQuestionsExtensionPath, 'utf8')
+
+    expect(source).toContain("from '@mariozechner/pi-tui'")
+    expect(source).not.toContain("from '@earendil-works/pi-tui'")
   })
 })

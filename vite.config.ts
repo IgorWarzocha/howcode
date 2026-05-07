@@ -50,7 +50,7 @@ export default defineConfig({
             },
             {
               name: 'vendor-pi',
-              test: /node_modules[/]@mariozechner[/]/,
+              test: /node_modules[/](?:@earendil-works|@mariozechner)[/]/,
               priority: 10,
             },
           ],
