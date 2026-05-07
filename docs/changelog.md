@@ -1,6 +1,6 @@
 ### 0.1.6
 
-- Added responsive layouts everywhere.
+- Added responsive layouts everywhere-ish.
 - Added fuzzy file mentions in the composer using `@`.
 - Added `$skill` mentions in the composer.
 - Hardened Chat mode filesystem and extensions guardrails.

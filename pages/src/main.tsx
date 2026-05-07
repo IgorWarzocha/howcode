@@ -55,7 +55,7 @@ function copyCommand(command: string) {
 }
 
 const changelog = [
-  '0.1.6 added responsive layouts everywhere',
+  '0.1.6 added responsive layouts everywhere-ish',
   'composer now has @ file mentions and $skill mentions',
   'hardened Chat mode filesystem and extensions guardrails',
   'added a custom Chat mode system prompt and scrollable composer input',
