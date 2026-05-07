@@ -37,6 +37,8 @@ type GitOpsComposerPanelProps = {
 
 function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: () => void }) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const helperText =
+    copyState === 'failed' ? '- copy failed, press Escape to dismiss' : '- click copy to dismiss'
 
   useEffect(() => {
     if (copyState === 'idle') return
@@ -44,6 +46,18 @@ function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: 
     const timeout = window.setTimeout(() => setCopyState('idle'), 1400)
     return () => window.clearTimeout(timeout)
   }, [copyState])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+
+      event.preventDefault()
+      onDismiss()
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [onDismiss])
 
   const handleCopy = async () => {
     try {
@@ -56,15 +70,21 @@ function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: 
   }
 
   return (
-    <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(100%+0.75rem)] z-20">
+    <div
+      className="pointer-events-auto absolute inset-x-0 bottom-[calc(100%+0.75rem)] z-20"
+      role="alert"
+      aria-live="polite"
+    >
       <div className="group relative rounded-xl border border-[color:var(--danger-border)] bg-[color:var(--panel)] px-3 py-2 pr-12 text-[13px] shadow-[var(--shadow)]">
         <div className="grid gap-1">
           <div className="flex items-center gap-2 text-[color:var(--danger)]">
             <span className="h-2 w-2 rounded-full bg-[color:var(--danger)]" />
-            <span>Git commit failed</span>
-            <span className="text-[color:var(--muted)]">- click copy to dismiss</span>
+            <span>GitOps action failed</span>
+            <span className="text-[color:var(--muted)]">{helperText}</span>
           </div>
-          <div className="font-mono text-[12px] text-[color:var(--muted)]">{detail}</div>
+          <div className="whitespace-pre-wrap font-mono text-[12px] text-[color:var(--muted)]">
+            {detail}
+          </div>
         </div>
         <button
           type="button"
@@ -108,26 +128,16 @@ export function GitOpsComposerPanel({
 }: GitOpsComposerPanelProps) {
   const composerPanelRef = useRef<HTMLDivElement>(null)
   const [gitActionErrorMessage, setGitActionErrorMessage] = useState<string | null>(null)
-  const [dismissedGitActionErrorMessage, setDismissedGitActionErrorMessage] = useState<
-    string | null
-  >(null)
+  const [gitActionErrorDismissed, setGitActionErrorDismissed] = useState(false)
   const visibleGitActionErrorMessage =
-    gitActionErrorMessage && gitActionErrorMessage !== dismissedGitActionErrorMessage
-      ? gitActionErrorMessage
-      : null
-
-  useEffect(() => {
-    if (!gitActionErrorMessage) {
-      setDismissedGitActionErrorMessage(null)
-    }
-  }, [gitActionErrorMessage])
+    gitActionErrorMessage && !gitActionErrorDismissed ? gitActionErrorMessage : null
 
   return (
     <div className="relative grid gap-0 overflow-visible">
       {visibleGitActionErrorMessage ? (
         <GitOpsErrorDetails
           detail={visibleGitActionErrorMessage}
-          onDismiss={() => setDismissedGitActionErrorMessage(visibleGitActionErrorMessage)}
+          onDismiss={() => setGitActionErrorDismissed(true)}
         />
       ) : null}
       <section
@@ -159,7 +169,10 @@ export function GitOpsComposerPanel({
           onAction={onAction}
           onLayoutChange={onLayoutChange}
           onBack={onBack}
-          onActionErrorMessageChange={setGitActionErrorMessage}
+          onActionErrorMessageChange={(message) => {
+            setGitActionErrorMessage(message)
+            setGitActionErrorDismissed(false)
+          }}
         />
       </section>
     </div>
