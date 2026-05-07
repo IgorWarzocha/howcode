@@ -322,6 +322,16 @@ export async function listComposerAttachmentEntriesQuery(
   return (await window.piDesktop?.listComposerAttachmentEntries?.(request)) ?? null
 }
 
+export async function searchComposerAttachmentEntriesQuery(
+  request: {
+    projectId?: string | null | undefined
+    query?: string | null | undefined
+    limit?: number | null | undefined
+  } = {},
+) {
+  return (await window.piDesktop?.searchComposerAttachmentEntries?.(request)) ?? []
+}
+
 export async function readClipboardSnapshotQuery(
   formats?: string[] | null | undefined,
 ): Promise<DesktopClipboardSnapshot | null> {

@@ -8,6 +8,7 @@ import type {
   ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
+  ComposerFileSearchEntry,
   ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
@@ -143,6 +144,11 @@ declare global {
         path?: string | null | undefined
         rootPath?: string | null | undefined
       }) => Promise<ComposerFilePickerState>
+      searchComposerAttachmentEntries?: (request?: {
+        projectId?: string | null | undefined
+        query?: string | null | undefined
+        limit?: number | null | undefined
+      }) => Promise<ComposerFileSearchEntry[]>
       getComposerState?: (request?: ComposerStateRequest) => Promise<ComposerState>
       getComposerSlashCommands?: (request?: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
       getComposerSkills?: (request?: ComposerStateRequest) => Promise<ComposerSkillReference[]>

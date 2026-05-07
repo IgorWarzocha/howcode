@@ -27,6 +27,7 @@ export type {
   ComposerContextUsage,
   ComposerFilePickerEntry,
   ComposerFilePickerState,
+  ComposerFileSearchEntry,
   ComposerModel,
   ComposerQueuedPrompt,
   ComposerSkillReference,

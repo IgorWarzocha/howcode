@@ -112,6 +112,7 @@ export function ComposerFilePicker({
     () => filterFilePickerEntries(picker?.entries ?? [], searchQuery),
     [picker?.entries, searchQuery],
   )
+  const showAttachmentsPanel = attachments.length > 0 || draggedAttachments.length > 0 || dropActive
 
   const handleEntryDragStart = (
     attachment: ComposerAttachment,
@@ -226,15 +227,24 @@ export function ComposerFilePicker({
         onSearchQueryChange={setSearchQuery}
       />
 
-      <div className="grid min-h-0 grid-cols-[minmax(120px,0.25fr)_minmax(0,0.75fr)] overflow-hidden">
-        <ComposerFilePickerAttachmentsPanel
-          attachments={attachments}
-          draggedAttachments={draggedAttachments}
-          dropActive={dropActive}
-          onDragActiveChange={setDropActive}
-          onDrop={handleDropIntoAttachments}
-          onRemoveAttachment={onRemoveAttachment}
-        />
+      <div
+        className={cn(
+          'grid min-h-0 overflow-hidden',
+          showAttachmentsPanel
+            ? 'w-full grid-cols-[minmax(7.5rem,0.34fr)_minmax(0,1fr)]'
+            : 'grid-cols-1',
+        )}
+      >
+        {showAttachmentsPanel ? (
+          <ComposerFilePickerAttachmentsPanel
+            attachments={attachments}
+            draggedAttachments={draggedAttachments}
+            dropActive={dropActive}
+            onDragActiveChange={setDropActive}
+            onDrop={handleDropIntoAttachments}
+            onRemoveAttachment={onRemoveAttachment}
+          />
+        ) : null}
 
         <ComposerFilePickerFileGrid
           attachedByPath={attachedByPath}

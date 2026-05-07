@@ -8,6 +8,7 @@ import { ComposerFooter } from './composer-footer'
 import { hasFilePayloadInClipboardData } from './composer-paste-attachments'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
 import { useComposerController } from './controller/useComposerController'
+import { useComposerFileMentions } from './useComposerFileMentions'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 
@@ -147,6 +148,7 @@ export function ComposerPromptSurface({
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
+  const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
@@ -186,9 +188,18 @@ export function ComposerPromptSurface({
   const skillMentionListSignature = skillMentions.skills
     .map((skill) => `${skill.name}:${skill.filePath}`)
     .join('|')
+  const fileMentions = useComposerFileMentions({
+    draft,
+    projectId,
+    setDraft,
+    attachAttachments: attachPickerAttachments,
+  })
+  const fileMentionListSignature = fileMentions.files
+    .map((file) => `${file.kind}:${file.path}`)
+    .join('|')
 
   useEffect(() => {
-    if (!(slashCommands.open || skillMentions.open)) {
+    if (!(slashCommands.open || fileMentions.open || skillMentions.open)) {
       return
     }
 
@@ -197,6 +208,7 @@ export function ComposerPromptSurface({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
+        fileMentionPanelRef.current?.contains(target) ||
         skillMentionPanelRef.current?.contains(target) ||
         composerPanelRef.current?.contains(target) ||
         stopButtonBoundaryRef.current?.contains(target)
@@ -205,6 +217,7 @@ export function ComposerPromptSurface({
       }
 
       if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+      if (fileMentions.open) fileMentions.dismiss()
       if (skillMentions.open) skillMentions.dismiss()
     }
 
@@ -212,7 +225,7 @@ export function ComposerPromptSurface({
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [composerPanelRef, skillMentions, slashCommands])
+  }, [composerPanelRef, fileMentions, skillMentions, slashCommands])
 
   useEffect(() => {
     if (!(slashCommands.open && slashCommands.activeDescendantId)) {
@@ -252,6 +265,24 @@ export function ComposerPromptSurface({
     slashCommands.activeDescendantId,
     slashCommands.selectedIndex,
     slashCommandListSignature,
+  ])
+
+  useEffect(() => {
+    if (!(fileMentions.open && fileMentions.activeDescendantId)) return
+    void fileMentionListSignature
+    const panel = fileMentionPanelRef.current
+    const option = panel?.querySelector<HTMLElement>(`#${fileMentions.activeDescendantId}`)
+    if (!(panel && option)) return
+    if (fileMentions.selectedIndex === 0) {
+      panel.scrollTop = 0
+      return
+    }
+    option.scrollIntoView({ block: 'nearest' })
+  }, [
+    fileMentionListSignature,
+    fileMentions.activeDescendantId,
+    fileMentions.open,
+    fileMentions.selectedIndex,
   ])
 
   useEffect(() => {
@@ -480,6 +511,8 @@ export function ComposerPromptSurface({
               projectId={projectId}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
+              fileMentionPanelRef={fileMentionPanelRef}
+              fileMentions={fileMentions}
               skillMentionPanelRef={skillMentionPanelRef}
               skillMentions={skillMentions}
               showDictationButton={showDictationButton}

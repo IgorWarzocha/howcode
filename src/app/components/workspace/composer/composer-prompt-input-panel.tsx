@@ -4,6 +4,7 @@ import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
 import { ComposerDictationControls } from './composer-dictation-controls'
+import { ComposerFileMentionPanel } from './composer-file-mention-panel'
 import { ComposerFilePicker } from './composer-file-picker'
 import {
   getComposerAttachmentsFromClipboardData,
@@ -11,6 +12,7 @@ import {
 } from './composer-paste-attachments'
 import { ComposerSkillMentionPanel } from './composer-skill-mention-panel'
 import { ComposerTextField } from './composer-text-field'
+import type { ComposerFileMentions } from './useComposerFileMentions'
 import type { ComposerSkillMentions } from './useComposerSkillMentions'
 import {
   type ComposerSlashCommands,
@@ -115,6 +117,7 @@ type ComposerKeyDownInput = {
   onEscapeOverride?: (() => boolean) | undefined
   onSubmitOverride?: (() => boolean) | undefined
   slashCommands: ComposerSlashCommands
+  fileMentions: ComposerFileMentions
   skillMentions: ComposerSkillMentions
   setDraft: (value: string) => void
 }
@@ -134,7 +137,11 @@ function handleOpenAutocompleteKeyDown(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
 ) {
-  return input.slashCommands.handleKeyDown(event) || input.skillMentions.handleKeyDown(event)
+  return (
+    input.slashCommands.handleKeyDown(event) ||
+    input.fileMentions.handleKeyDown(event) ||
+    input.skillMentions.handleKeyDown(event)
+  )
 }
 
 function handleDeleteTextKey(
@@ -250,6 +257,8 @@ type ComposerPromptInputPanelProps = {
   projectId: string
   slashCommandPanelRef: RefObject<HTMLDivElement | null>
   slashCommands: ComposerSlashCommands
+  fileMentionPanelRef: RefObject<HTMLDivElement | null>
+  fileMentions: ComposerFileMentions
   skillMentionPanelRef: RefObject<HTMLDivElement | null>
   skillMentions: ComposerSkillMentions
   showDictationButton: boolean
@@ -298,6 +307,8 @@ export function ComposerPromptInputPanel({
   projectId,
   slashCommandPanelRef,
   slashCommands,
+  fileMentionPanelRef,
+  fileMentions,
   skillMentionPanelRef,
   skillMentions,
   showDictationButton,
@@ -356,6 +367,7 @@ export function ComposerPromptInputPanel({
                     clearError,
                     dictationActive,
                     dictationTranscribing,
+                    fileMentions,
                     inputLocked,
                     onArrowNavigationOverride,
                     onEscapeOverride,
@@ -390,14 +402,18 @@ export function ComposerPromptInputPanel({
                 }}
                 ariaLabel="Prompt composer"
                 ariaActiveDescendant={
-                  slashCommands.activeDescendantId ?? skillMentions.activeDescendantId
+                  slashCommands.activeDescendantId ??
+                  fileMentions.activeDescendantId ??
+                  skillMentions.activeDescendantId
                 }
                 ariaControls={
                   slashCommands.open
                     ? slashCommands.listboxId
-                    : skillMentions.open
-                      ? skillMentions.listboxId
-                      : undefined
+                    : fileMentions.open
+                      ? fileMentions.listboxId
+                      : skillMentions.open
+                        ? skillMentions.listboxId
+                        : undefined
                 }
                 placeholder={placeholderText}
                 readOnly={inputLocked}
@@ -408,7 +424,12 @@ export function ComposerPromptInputPanel({
                 statusMessage={errorMessage && draft.length > 0 ? errorMessage : null}
                 reservedLineCount={1}
                 inlinePopover={
-                  skillMentions.open ? (
+                  fileMentions.open ? (
+                    <ComposerFileMentionPanel
+                      fileMentions={fileMentions}
+                      panelRef={fileMentionPanelRef}
+                    />
+                  ) : skillMentions.open ? (
                     <ComposerSkillMentionPanel
                       panelRef={skillMentionPanelRef}
                       skillMentions={skillMentions}

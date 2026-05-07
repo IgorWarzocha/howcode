@@ -1,5 +1,12 @@
 import { ArrowUpRight, Bot, Paperclip, Square, X } from 'lucide-react'
-import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react'
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type {
@@ -24,6 +31,7 @@ import { ComposerPromptInputPanel } from '../composer/composer-prompt-input-pane
 import { useComposerAttachmentPicker } from '../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../composer/useComposerClipboardHandlers'
 import { useComposerDictation } from '../composer/useComposerDictation'
+import { useComposerFileMentions } from '../composer/useComposerFileMentions'
 import { useComposerSkillMentions } from '../composer/useComposerSkillMentions'
 import { useComposerSlashCommands } from '../composer/useComposerSlashCommands'
 import {
@@ -39,6 +47,10 @@ const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
   medium: 'Medium',
   high: 'High',
   xhigh: 'X-High',
+}
+
+function isTargetWithinRefs(target: Node, refs: RefObject<Node | null>[]) {
+  return refs.some((ref) => ref.current?.contains(target))
 }
 
 type InboxComposerProps = {
@@ -108,6 +120,7 @@ export function InboxComposer({
   const modelButtonRef = useRef<HTMLButtonElement>(null)
   const modelMenuRef = useRef<HTMLDivElement>(null)
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
+  const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const draftValueRef = useRef(draft)
   const attachmentsRef = useRef(attachments)
@@ -262,6 +275,15 @@ export function InboxComposer({
   const skillMentionListSignature = skillMentions.skills
     .map((skill) => `${skill.name}:${skill.filePath}`)
     .join('|')
+  const fileMentions = useComposerFileMentions({
+    draft,
+    projectId: thread.projectId,
+    setDraft: setDraftValue,
+    attachAttachments: attachPickerAttachments,
+  })
+  const fileMentionListSignature = fileMentions.files
+    .map((file) => `${file.kind}:${file.path}`)
+    .join('|')
   const { handlePaste } = useComposerClipboardHandlers({
     setAttachments: setAttachmentValue,
     setDraftValue,
@@ -269,13 +291,13 @@ export function InboxComposer({
   })
 
   useEffect(() => {
-    if (slashCommands.open || skillMentions.open) {
+    if (slashCommands.open || fileMentions.open || skillMentions.open) {
       setOpenMenu((current) => (current === 'picker' ? null : current))
     }
-  }, [skillMentions.open, slashCommands.open])
+  }, [fileMentions.open, skillMentions.open, slashCommands.open])
 
   useEffect(() => {
-    if (!(slashCommands.open || skillMentions.open)) {
+    if (!(slashCommands.open || fileMentions.open || skillMentions.open)) {
       return
     }
 
@@ -287,14 +309,18 @@ export function InboxComposer({
       }
 
       if (
-        slashCommandPanelRef.current?.contains(target) ||
-        skillMentionPanelRef.current?.contains(target) ||
-        composerSurfaceRef.current?.contains(target)
+        isTargetWithinRefs(target, [
+          slashCommandPanelRef,
+          fileMentionPanelRef,
+          skillMentionPanelRef,
+          composerSurfaceRef,
+        ])
       ) {
         return
       }
 
       if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+      if (fileMentions.open) fileMentions.dismiss()
       if (skillMentions.open) skillMentions.dismiss()
     }
 
@@ -306,6 +332,7 @@ export function InboxComposer({
       event.preventDefault()
       event.stopImmediatePropagation()
       if (slashCommands.open) slashCommands.dismiss()
+      if (fileMentions.open) fileMentions.dismiss()
       if (skillMentions.open) skillMentions.dismiss()
     }
 
@@ -315,7 +342,7 @@ export function InboxComposer({
       window.removeEventListener('pointerdown', handlePointerDown, true)
       window.removeEventListener('keydown', handleKeyDown, true)
     }
-  }, [skillMentions, slashCommands])
+  }, [fileMentions, skillMentions, slashCommands])
 
   useEffect(() => {
     if (!(slashCommands.open && slashCommands.activeDescendantId)) {
@@ -353,6 +380,24 @@ export function InboxComposer({
     slashCommands.activeDescendantId,
     slashCommands.selectedIndex,
     slashCommandListSignature,
+  ])
+
+  useEffect(() => {
+    if (!(fileMentions.open && fileMentions.activeDescendantId)) return
+    void fileMentionListSignature
+    const panel = fileMentionPanelRef.current
+    const option = panel?.querySelector<HTMLElement>(`#${fileMentions.activeDescendantId}`)
+    if (!(panel && option)) return
+    if (fileMentions.selectedIndex === 0) {
+      panel.scrollTop = 0
+      return
+    }
+    option.scrollIntoView({ block: 'nearest' })
+  }, [
+    fileMentionListSignature,
+    fileMentions.activeDescendantId,
+    fileMentions.open,
+    fileMentions.selectedIndex,
   ])
 
   useEffect(() => {
@@ -501,6 +546,8 @@ export function InboxComposer({
             projectId={thread.projectId}
             slashCommandPanelRef={slashCommandPanelRef}
             slashCommands={slashCommands}
+            fileMentionPanelRef={fileMentionPanelRef}
+            fileMentions={fileMentions}
             skillMentionPanelRef={skillMentionPanelRef}
             skillMentions={skillMentions}
             showDictationButton={showDictationButton}

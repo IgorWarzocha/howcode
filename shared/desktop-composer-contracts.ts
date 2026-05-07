@@ -73,6 +73,10 @@ export type ComposerFilePickerState = {
   entries: ComposerFilePickerEntry[]
 }
 
+export type ComposerFileSearchEntry = ComposerFilePickerEntry & {
+  relativePath: string
+}
+
 export type ComposerStateRequest = {
   projectId?: string | undefined | null | undefined
   sessionPath?: string | undefined | null | undefined

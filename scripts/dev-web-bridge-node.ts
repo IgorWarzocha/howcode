@@ -18,7 +18,10 @@ import type {
 } from '../shared/desktop-ipc'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
 import { getSafeExternalUrl } from '../shared/external-url'
-import { listComposerAttachmentEntries } from '../src/desktop-host/composer-attachments'
+import {
+  listComposerAttachmentEntries,
+  searchComposerAttachmentEntries,
+} from '../src/desktop-host/composer-attachments'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -135,6 +138,7 @@ const handlers: DesktopRequestHandlerMap = {
     return Object.fromEntries(entries)
   },
   listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
+  searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
   getComposerState: (request) => piThreads.loadComposerState(request),
   getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
   getComposerSkills: (request) => piThreads.loadComposerSkills(request),

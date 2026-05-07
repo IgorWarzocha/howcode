@@ -5,6 +5,7 @@ import { FileEntryButton } from './file-entry-button'
 
 type ComposerFilePickerFileGridProps = {
   attachedByPath: Set<string>
+  className?: string
   entries: ComposerFilePickerState['entries']
   loading: boolean
   picker: ComposerFilePickerState | null
@@ -18,6 +19,7 @@ type ComposerFilePickerFileGridProps = {
 
 export function ComposerFilePickerFileGrid({
   attachedByPath,
+  className,
   entries,
   loading,
   picker,
@@ -29,13 +31,18 @@ export function ComposerFilePickerFileGrid({
   onToggleFile,
 }: ComposerFilePickerFileGridProps) {
   return (
-    <div className="min-h-0 overflow-x-hidden overflow-y-auto p-2 pt-1">
+    <div className={cn('min-h-0 w-full overflow-x-hidden overflow-y-auto p-2 pt-1', className)}>
       {!picker && loading ? (
         <div className="px-2 py-8 text-center text-[12px] text-[color:var(--muted)]">
           Loading files…
         </div>
       ) : entries.length > 0 ? (
-        <div className={cn('grid grid-cols-3 gap-1', loading && 'pointer-events-none opacity-70')}>
+        <div
+          className={cn(
+            'grid w-full grid-cols-3 gap-1 max-[640px]:grid-cols-2',
+            loading && 'pointer-events-none opacity-70',
+          )}
+        >
           {entries.map((entry) => {
             const attachment: ComposerAttachment = {
               path: entry.path,

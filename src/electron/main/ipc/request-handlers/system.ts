@@ -13,6 +13,7 @@ import { getSafeExternalUrl } from '../../../../../shared/external-url'
 import {
   listComposerAttachmentEntries,
   normalizeDialogFilePaths,
+  searchComposerAttachmentEntries,
 } from '../../../../desktop-host/composer-attachments'
 import { readNativeClipboardFilePaths } from './clipboard-file-paths'
 
@@ -25,6 +26,7 @@ type SystemRequestHandlers = Pick<
   | 'readClipboardImage'
   | 'getAttachmentKindsForPaths'
   | 'listComposerAttachmentEntries'
+  | 'searchComposerAttachmentEntries'
   | 'openExternal'
   | 'openPath'
   | 'saveTextToDownloads'
@@ -189,6 +191,7 @@ export function createSystemHandlers(): SystemRequestHandlers {
       return Object.fromEntries(entries)
     },
     listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
+    searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
     openExternal: async ({ url }) => {
       const safeUrl = getSafeExternalUrl(url)
       if (!safeUrl) {
