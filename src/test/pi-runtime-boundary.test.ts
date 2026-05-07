@@ -63,8 +63,7 @@ function isForbiddenRuntimeSpecifier(resolvedSpecifier: string) {
     resolvedSpecifier.startsWith('desktop/runtime/composer-state.ts') ||
     resolvedSpecifier.startsWith('desktop/runtime/runtime-registry.ts') ||
     resolvedSpecifier.startsWith('desktop/runtime/thread-publisher.ts') ||
-    resolvedSpecifier.startsWith('@earendil-works/pi-') ||
-    resolvedSpecifier.startsWith('@mariozechner/pi-')
+    resolvedSpecifier.startsWith('@earendil-works/pi-')
   )
 }
 
@@ -95,11 +94,11 @@ describe('Pi runtime import boundary', () => {
     expect(violations).toEqual([])
   })
 
-  it('keeps the bundled ask-questions extension loadable by external Pi CLIs', async () => {
+  it('keeps the bundled ask-questions extension loadable by Pi CLIs', async () => {
     const source = readFileSync(askQuestionsExtensionPath, 'utf8')
 
-    expect(source).toContain("from '@mariozechner/pi-tui'")
-    expect(source).not.toContain("from '@earendil-works/pi-tui'")
+    expect(source).toContain("from '@earendil-works/pi-tui'")
+    expect(source).not.toContain("from '@mariozechner/pi-tui'")
 
     await expect(import(pathToFileURL(askQuestionsExtensionPath).href)).resolves.toEqual(
       expect.objectContaining({

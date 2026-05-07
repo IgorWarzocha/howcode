@@ -1,4 +1,4 @@
-import { Editor, Key, matchesKey, Text, truncateToWidth } from '@mariozechner/pi-tui'
+import { Editor, Key, matchesKey, Text, truncateToWidth } from '@earendil-works/pi-tui'
 import { Type } from 'typebox'
 
 const OptionSchema = Type.Object({
