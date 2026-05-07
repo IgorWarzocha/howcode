@@ -55,11 +55,16 @@ function copyCommand(command: string) {
 }
 
 const changelog = [
+  '0.1.6 added responsive layouts everywhere',
+  'composer now has @ file mentions and $skill mentions',
+  'hardened Chat mode filesystem and extensions guardrails',
+  'added a custom Chat mode system prompt and scrollable composer input',
+  'Git errors are more visible now; please report any',
+  'terminal is back on xterm, because addon-fit',
+  'ASAR is back, TS6 is fully implemented, and CI is stricter',
+  'now on @earendil-works packages. RIP',
+  'https://igorwarzocha.github.io/howcode/ is live',
   '0.1.5 added Howcode and Pi JSON theme support',
-  'fixed Pi TUI takeover jumpiness',
-  'fixed composer follow-ups opening in the wrong session',
-  'fixed tooltips clipping near window edges',
-  '0.1.4 added Chat mode, GitOps changed-files tree, and update detection',
 ]
 
 function App() {

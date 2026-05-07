@@ -1,6 +1,24 @@
 ### Next update
 
-The next release will focus on better responsive UI and more useful tooltips/onboarding.
+Waiting on the Earendil package chore to land, then this becomes the next release.
+
+### 0.1.6
+
+- Added responsive layouts everywhere.
+- Added fuzzy file mentions in the composer using `@`.
+- Added `$skill` mentions in the composer.
+- Hardened Chat mode filesystem and extensions guardrails.
+- Added a custom system prompt to Chat mode.
+- Added scrollable composer input.
+- Added more visible Git errors. Please report any.
+- Terminal is back on xterm, because addon-fit.
+- ASAR is back.
+- TS6 fully implemented.
+- Added new CI with super strict Biome and typechecking.
+- Now on `@earendil-works` packages. RIP.
+- https://igorwarzocha.github.io/howcode/ is now live.
+
+Snapshot: May 7, 2026.
 
 ### 0.1.5
 
