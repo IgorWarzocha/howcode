@@ -14,7 +14,7 @@ const require = createRequire(__filename)
 
 function resolvePiPackageDirectory() {
   try {
-    return path.dirname(require.resolve('@mariozechner/pi-coding-agent/package.json'))
+    return path.dirname(require.resolve('@earendil-works/pi-coding-agent/package.json'))
   } catch {
     return null
   }

@@ -1,5 +1,5 @@
 import { pathToFileURL } from 'node:url'
-import type { defineTool as definePiTool } from '@mariozechner/pi-coding-agent'
+import type { defineTool as definePiTool } from '@earendil-works/pi-coding-agent'
 import type { NativeAskQuestion } from '../../shared/desktop-contracts.ts'
 import { createPendingNativeAskQuestionsRequest } from '../runtime/native-ask-questions-state.ts'
 

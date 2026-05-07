@@ -1,10 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { AgentSession } from '@mariozechner/pi-coding-agent'
+import type { AgentSession } from '@earendil-works/pi-coding-agent'
 import { getBundledThemes } from '../bundled-themes.ts'
 
-const piPackagePath = path.join('node_modules', '@mariozechner', 'pi-coding-agent')
+const piPackagePath = path.join('node_modules', '@earendil-works', 'pi-coding-agent')
 
 type SessionTheme = AgentSession['resourceLoader']['getThemes'] extends () => infer Result
   ? Result extends { themes: Array<infer Theme> }
@@ -21,7 +21,7 @@ type PiThemeModule = {
 let themeModulePromise: Promise<PiThemeModule> | null = null
 
 async function resolvePiPackageRootFromImport() {
-  const entryUrl = await import.meta.resolve('@mariozechner/pi-coding-agent')
+  const entryUrl = await import.meta.resolve('@earendil-works/pi-coding-agent')
   const entryPath = fileURLToPath(entryUrl)
   return path.resolve(path.dirname(entryPath), '..')
 }
@@ -37,7 +37,7 @@ function findPiPackageRoot() {
 
     const parent = path.dirname(directory)
     if (parent === directory) {
-      throw new Error('Could not locate @mariozechner/pi-coding-agent package root.')
+      throw new Error('Could not locate @earendil-works/pi-coding-agent package root.')
     }
     directory = parent
   }
