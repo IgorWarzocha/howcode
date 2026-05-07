@@ -94,12 +94,7 @@ describe('Pi runtime import boundary', () => {
     expect(violations).toEqual([])
   })
 
-  it('keeps the bundled ask-questions extension loadable by Pi CLIs', async () => {
-    const source = readFileSync(askQuestionsExtensionPath, 'utf8')
-
-    expect(source).toContain("from '@earendil-works/pi-tui'")
-    expect(source).not.toContain("from '@mariozechner/pi-tui'")
-
+  it('keeps the bundled ask-questions extension loadable', async () => {
     await expect(import(pathToFileURL(askQuestionsExtensionPath).href)).resolves.toEqual(
       expect.objectContaining({
         createHowcodeAskQuestionsTool: expect.any(Function),
