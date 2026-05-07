@@ -36,6 +36,7 @@ nsis:
   createDesktopShortcut: false
   createStartMenuShortcut: true
 asarUnpack:
+  - node_modules/**
   - build/desktop/**
   - node_modules/bindings/**
   - node_modules/file-uri-to-path/**

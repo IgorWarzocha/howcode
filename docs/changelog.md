@@ -1,3 +1,9 @@
+### 0.1.62
+
+- Hotfix: unpack runtime host dependencies for external Node.
+
+Snapshot: May 7, 2026.
+
 ### 0.1.61
 
 - ASAR is back. And then it disappeared. And it's back again.

@@ -55,6 +55,7 @@ function copyCommand(command: string) {
 }
 
 const changelog = [
+  '0.1.62 hotfix unpacks runtime host dependencies',
   "0.1.61: ASAR is back. And then it disappeared. And it's back again.",
   '0.1.6 added responsive layouts everywhere-ish',
   'composer now has @ file mentions and $skill mentions',
