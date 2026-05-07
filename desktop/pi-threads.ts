@@ -24,6 +24,7 @@ export {
   installDictationModel,
   listDictationModels,
   listProjectCommits,
+  loadComposerSkills,
   loadComposerSlashCommands,
   loadComposerState,
   loadProjectDiff,

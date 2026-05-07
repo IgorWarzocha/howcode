@@ -442,7 +442,11 @@ function shouldUseThreadHost<TName extends RuntimeHostRequestName>(
 ) {
   if (name === 'startNewThread' || name === 'selectProjectRuntime') return false
   if (name === 'loadThreadSnapshot') return false
-  if (name === 'getComposerSlashCommands' && !getRequestSessionPath(name, payload)) return false
+  if (
+    (name === 'getComposerSlashCommands' || name === 'getComposerSkills') &&
+    !getRequestSessionPath(name, payload)
+  )
+    return false
   return Boolean(getPersistedSessionPath(getRequestSessionPath(name, payload)))
 }
 

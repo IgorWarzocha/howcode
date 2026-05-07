@@ -169,6 +169,10 @@ export async function getComposerSlashCommandsQuery(
   return (await window.piDesktop?.getComposerSlashCommands?.(request)) ?? fallbackAppSlashCommands
 }
 
+export async function getComposerSkillsQuery(request: ComposerStateRequest = {}) {
+  return (await window.piDesktop?.getComposerSkills?.(request)) ?? []
+}
+
 export async function getProjectGitStateQuery(projectId: string): Promise<ProjectGitState | null> {
   return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null
 }

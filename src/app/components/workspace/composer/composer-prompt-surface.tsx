@@ -8,6 +8,7 @@ import { ComposerFooter } from './composer-footer'
 import { hasFilePayloadInClipboardData } from './composer-paste-attachments'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
 import { useComposerController } from './controller/useComposerController'
+import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
@@ -146,6 +147,7 @@ export function ComposerPromptSurface({
   const dictationTranscribing = dictationInterimText.length > 0
   const composerMode = activeView === 'chat' ? 'chat' : 'code'
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
+  const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
   const lastAskQuestionsOverlayHeightRef = useRef(0)
@@ -174,9 +176,19 @@ export function ComposerPromptSurface({
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)
     .join('|')
+  const skillMentions = useComposerSkillMentions({
+    draft,
+    projectId,
+    sessionPath,
+    composerMode,
+    setDraft,
+  })
+  const skillMentionListSignature = skillMentions.skills
+    .map((skill) => `${skill.name}:${skill.filePath}`)
+    .join('|')
 
   useEffect(() => {
-    if (!slashCommands.open) {
+    if (!(slashCommands.open || skillMentions.open)) {
       return
     }
 
@@ -185,20 +197,22 @@ export function ComposerPromptSurface({
       if (
         !target ||
         slashCommandPanelRef.current?.contains(target) ||
+        skillMentionPanelRef.current?.contains(target) ||
         composerPanelRef.current?.contains(target) ||
         stopButtonBoundaryRef.current?.contains(target)
       ) {
         return
       }
 
-      slashCommands.dismiss({ clearDraft: true })
+      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
+      if (skillMentions.open) skillMentions.dismiss()
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, true)
     }
-  }, [composerPanelRef, slashCommands])
+  }, [composerPanelRef, skillMentions, slashCommands])
 
   useEffect(() => {
     if (!(slashCommands.open && slashCommands.activeDescendantId)) {
@@ -238,6 +252,30 @@ export function ComposerPromptSurface({
     slashCommands.activeDescendantId,
     slashCommands.selectedIndex,
     slashCommandListSignature,
+  ])
+
+  useEffect(() => {
+    if (!(skillMentions.open && skillMentions.activeDescendantId)) {
+      return
+    }
+
+    void skillMentionListSignature
+
+    const panel = skillMentionPanelRef.current
+    const option = panel?.querySelector<HTMLElement>(`#${skillMentions.activeDescendantId}`)
+    if (!(panel && option)) return
+
+    if (skillMentions.selectedIndex === 0) {
+      panel.scrollTop = 0
+      return
+    }
+
+    option.scrollIntoView({ block: 'nearest' })
+  }, [
+    skillMentionListSignature,
+    skillMentions.activeDescendantId,
+    skillMentions.open,
+    skillMentions.selectedIndex,
   ])
 
   useEffect(() => {
@@ -442,6 +480,8 @@ export function ComposerPromptSurface({
               projectId={projectId}
               slashCommandPanelRef={slashCommandPanelRef}
               slashCommands={slashCommands}
+              skillMentionPanelRef={skillMentionPanelRef}
+              skillMentions={skillMentions}
               showDictationButton={showDictationButton}
               attachPickerAttachments={attachPickerAttachments}
               cancelDictation={cancelDictation}

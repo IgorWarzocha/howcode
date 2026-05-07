@@ -8,6 +8,7 @@ import type {
   ChatSidebarState,
   ComposerAttachment,
   ComposerFilePickerState,
+  ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
@@ -187,6 +188,7 @@ export type DesktopRequestMap = {
   }
   getComposerState: { params: ComposerStateRequest; response: ComposerState }
   getComposerSlashCommands: { params: ComposerStateRequest; response: ComposerSlashCommand[] }
+  getComposerSkills: { params: ComposerStateRequest; response: ComposerSkillReference[] }
   getDictationState: { params: Record<string, never>; response: DictationState }
   listDictationModels: { params: Record<string, never>; response: DictationModelSummary[] }
   installDictationModel: {

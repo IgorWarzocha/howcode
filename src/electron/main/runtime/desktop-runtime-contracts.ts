@@ -5,6 +5,7 @@ import type {
   Artifact,
   ArtifactVersion,
   ChatSidebarState,
+  ComposerSkillReference,
   ComposerSlashCommand,
   ComposerState,
   ComposerStateRequest,
@@ -52,6 +53,7 @@ export type PiThreadsModule = {
   loadInboxThreadList: () => Promise<InboxThread[]>
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>
   loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
+  loadComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
   getDictationState: () => Promise<DictationState>
   listDictationModels: () => Promise<DictationModelSummary[]>
   installDictationModel: (request: {

@@ -14,6 +14,7 @@ export {
 export {
   answerNativeAskQuestions,
   dequeueComposerPrompt,
+  getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
   openThreadRuntime,
