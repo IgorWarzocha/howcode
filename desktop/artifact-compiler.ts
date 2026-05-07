@@ -1,12 +1,38 @@
+import { createRequire } from 'node:module'
 import type { ReactArtifactCompileResult } from '../shared/desktop-contracts.ts'
 
-const allowedArtifactImports = new Set(['react', 'react/jsx-runtime', 'react/jsx-dev-runtime'])
+const previewRuntimeImports = new Set([
+  'react',
+  'react-dom/client',
+  'react/jsx-runtime',
+  'react/jsx-dev-runtime',
+])
 const artifactSourcePathPattern = /^artifact:source$/
 const anyImportPathPattern = /.*/
+const requireFromHere = createRequire(import.meta.url)
+const reactImportPattern = /(?:^|\n)\s*import\s+(?:[^'"]+?\s+from\s+)?['"]react['"]/m
+const reactNamespacePattern = /\bReact\s*\./
+const bareHookPattern = /\b(?:useState|useEffect|useMemo|useCallback|useRef|useReducer)\s*\(/
+
+function normalizeReactArtifactSource(source: string) {
+  if (reactImportPattern.test(source)) return source
+
+  const needsReactNamespace = reactNamespacePattern.test(source)
+  const needsBareHooks = bareHookPattern.test(source)
+  if (!(needsReactNamespace || needsBareHooks)) return source
+
+  const imports = [
+    needsReactNamespace ? 'React' : null,
+    needsBareHooks ? '{ useCallback, useEffect, useMemo, useReducer, useRef, useState }' : null,
+  ].filter(Boolean)
+
+  return `import ${imports.join(', ')} from 'react';\n${source}`
+}
 
 export async function compileReactArtifact(source: string): Promise<ReactArtifactCompileResult> {
   try {
     const esbuild = await import('esbuild')
+    const normalizedSource = normalizeReactArtifactSource(source)
     const result = await esbuild.build({
       stdin: {
         contents: `
@@ -34,6 +60,11 @@ export async function compileReactArtifact(source: string): Promise<ReactArtifac
         {
           name: 'artifact-source',
           setup(build) {
+            build.onResolve({ filter: anyImportPathPattern }, (args) => {
+              if (previewRuntimeImports.has(args.path)) {
+                return { path: requireFromHere.resolve(args.path) }
+              }
+            })
             build.onResolve({ filter: artifactSourcePathPattern }, (args) => ({
               path: args.path,
               namespace: 'artifact-source',
@@ -41,8 +72,8 @@ export async function compileReactArtifact(source: string): Promise<ReactArtifac
             build.onResolve(
               { filter: anyImportPathPattern, namespace: 'artifact-source' },
               (args) => {
-                if (allowedArtifactImports.has(args.path)) {
-                  return { path: require.resolve(args.path) }
+                if (previewRuntimeImports.has(args.path)) {
+                  return { path: requireFromHere.resolve(args.path) }
                 }
 
                 return {
@@ -55,7 +86,7 @@ export async function compileReactArtifact(source: string): Promise<ReactArtifac
               },
             )
             build.onLoad({ filter: anyImportPathPattern, namespace: 'artifact-source' }, () => ({
-              contents: source,
+              contents: normalizedSource,
               loader: 'tsx',
             }))
           },

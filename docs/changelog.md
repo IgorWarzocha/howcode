@@ -1,12 +1,11 @@
-### 0.1.62
-
-- Hotfix: unpack runtime host dependencies for external Node.
-
-Snapshot: May 7, 2026.
-
-### 0.1.61
+### 0.1.61-6x hotfixes
 
 - ASAR is back. And then it disappeared. And it's back again.
+- Repaired launcher installs missing `app.asar`.
+- Unpacked runtime host dependencies for external Node.
+- Fixed HTML and React artifact previews.
+- Isolated markdown editor dependencies from HTML and React artifacts.
+- Fixed React artifact hooks and import handling.
 
 Snapshot: May 7, 2026.
 

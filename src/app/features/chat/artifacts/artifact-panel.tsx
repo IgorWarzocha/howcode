@@ -1,5 +1,3 @@
-import { MDXEditor, type MDXEditorMethods } from '@mdxeditor/editor'
-import '@mdxeditor/editor/style.css'
 import {
   Download,
   FileCode2,
@@ -10,13 +8,22 @@ import {
   Play,
   Save,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { lazy, Suspense } from 'react'
 import { Tooltip } from '../../../components/common/tooltip'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { createMarkdownEditorPlugins, HistoricalMarkdownPreview } from './artifact-markdown'
+import { HistoricalMarkdownPreview } from './artifact-markdown-preview'
 import { formatArtifactSlug } from './artifactFormat'
 import { useArtifactPanelState } from './useArtifactPanelState'
+
+const ArtifactMarkdownEditor = lazy(async () => {
+  const { default: Prism } = await import('prismjs')
+  // @mdxeditor/@lexical code highlighting expects Prism on the browser global.
+  // Install it only on the markdown editor path so HTML/React previews stay isolated.
+  globalThis.Prism = Prism
+  const module = await import('./artifact-markdown-editor')
+  return { default: module.ArtifactMarkdownEditor }
+})
 
 type ArtifactPanelProps = {
   conversationId: string | null
@@ -27,12 +34,10 @@ type ArtifactPanelProps = {
 }
 
 function ArtifactPanelBody({
-  markdownEditorPlugins,
-  markdownEditorRef,
+  fullscreen,
   panel,
 }: {
-  markdownEditorPlugins: ReturnType<typeof createMarkdownEditorPlugins>
-  markdownEditorRef: React.RefObject<MDXEditorMethods | null>
+  fullscreen: boolean
   panel: ReturnType<typeof useArtifactPanelState>
 }) {
   const {
@@ -98,21 +103,22 @@ function ArtifactPanelBody({
     )
   if (markdownPreviewEditable) {
     return (
-      <div className="artifact-markdown-editor h-full min-h-0 overflow-hidden bg-[color:var(--sidebar)]">
-        <MDXEditor
-          key={`${selectedArtifact?.slug}:${selectedArtifact?.version}`}
-          ref={markdownEditorRef}
-          markdown={draft}
-          plugins={markdownEditorPlugins}
-          spellCheck={true}
-          className="h-full min-h-0"
-          contentEditableClassName="artifact-markdown-editor-content"
-          onChange={(markdown, initialMarkdownNormalize) => {
-            if (!initialMarkdownNormalize) setDraft(markdown)
-          }}
-          onError={({ error }) => setPreviewError(error)}
+      <Suspense
+        fallback={
+          <div className="grid h-full place-items-center text-[12px] text-[color:var(--muted)]">
+            Loading markdown editor…
+          </div>
+        }
+      >
+        <ArtifactMarkdownEditor
+          artifactKey={`${selectedArtifact?.slug}:${selectedArtifact?.version}`}
+          content={draft}
+          diffMarkdown={selectedArtifact?.content ?? ''}
+          fullscreen={fullscreen}
+          onChange={setDraft}
+          onError={setPreviewError}
         />
-      </div>
+      </Suspense>
     )
   }
   if (view === 'preview' && selectedArtifact?.kind === 'markdown' && showingHistoricalVersion)
@@ -129,7 +135,7 @@ function ArtifactPanelBody({
           <iframe
             ref={(node) => setPreviewSource(node?.contentWindow ?? null)}
             key={`${selectedArtifact?.slug}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}:${previewRevision}`}
-            sandbox="allow-scripts allow-forms allow-modals"
+            sandbox="allow-scripts allow-forms allow-modals allow-popups"
             srcDoc={previewHtml}
             className="h-full w-full border-0"
             title={
@@ -307,19 +313,7 @@ export function ArtifactPanel({
   onToggleFullscreen,
   onClose,
 }: ArtifactPanelProps) {
-  const markdownEditorRef = useRef<MDXEditorMethods>(null)
   const panel = useArtifactPanelState(conversationId)
-  const { displayedContent, selectedArtifact, view } = panel
-  const markdownEditorPlugins = useMemo(
-    () => createMarkdownEditorPlugins(fullscreen, selectedArtifact?.content ?? ''),
-    [fullscreen, selectedArtifact?.content],
-  )
-
-  useEffect(() => {
-    if (view !== 'preview' || selectedArtifact?.kind !== 'markdown') return
-    if (markdownEditorRef.current?.getMarkdown() === displayedContent) return
-    markdownEditorRef.current?.setMarkdown(displayedContent)
-  }, [displayedContent, selectedArtifact?.kind, view])
 
   if (!(visible && conversationId)) return null
 
@@ -336,11 +330,7 @@ export function ArtifactPanel({
       />
 
       <div className="relative min-h-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
-        <ArtifactPanelBody
-          markdownEditorPlugins={markdownEditorPlugins}
-          markdownEditorRef={markdownEditorRef}
-          panel={panel}
-        />
+        <ArtifactPanelBody fullscreen={fullscreen} panel={panel} />
       </div>
     </section>
   )

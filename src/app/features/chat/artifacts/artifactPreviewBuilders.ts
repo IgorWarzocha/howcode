@@ -6,6 +6,7 @@ const artifactScrollbarCss = `
 </style>`
 
 const htmlHeadOpenRegex = /<head([^>]*)>/i
+const htmlDocumentPattern = /<!doctype html|<html[\s>]/i
 
 const artifactDarkPreviewCss = `
     html { background: #262936; }
@@ -35,7 +36,24 @@ console.error = function(...args) {
   originalError.apply(console, args);
 };
 </script>`
-  return content.includes('<head')
+  if (!htmlDocumentPattern.test(content)) {
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  ${capture}
+  <style>
+    html, body { min-height: 100%; margin: 0; }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    ${artifactDarkPreviewCss}
+  </style>
+</head>
+<body>${content}</body>
+</html>`
+  }
+
+  return htmlHeadOpenRegex.test(content)
     ? content.replace(htmlHeadOpenRegex, `<head$1>${capture}`)
     : `${capture}${content}`
 }
