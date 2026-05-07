@@ -145,7 +145,7 @@ export function LandingView({ className }: LandingViewProps) {
   return (
     <section
       className={cn(
-        'relative mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(2rem,10vh,7rem)] pb-6',
+        'relative mx-auto flex h-full min-h-0 w-full justify-center overflow-hidden px-6 pt-[clamp(4rem,20vh,14rem)] pb-0',
         className,
       )}
     >
@@ -191,7 +191,7 @@ export function LandingView({ className }: LandingViewProps) {
 
           <div
             id={activePanelId}
-            className="min-h-0 overflow-y-auto pt-4 pr-2 text-left [scrollbar-gutter:stable]"
+            className="min-h-0 overflow-y-auto pt-4 pr-2 pb-6 text-left [scrollbar-gutter:stable]"
             role="tabpanel"
             aria-labelledby={`landing-section-${activeSectionIndex}-tab`}
           >

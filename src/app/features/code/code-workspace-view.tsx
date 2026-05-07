@@ -40,6 +40,7 @@ type CodeWorkspaceViewProps = {
 }
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
+const NEW_THREAD_COMPOSER_TOP = '60%'
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,
   chatThinkingLevel: null,
@@ -715,7 +716,7 @@ export function CodeWorkspaceView({
   const threadFooterStyle = showThreadFooter
     ? {
         ...terminalDrawerInsetStyle,
-        top: centerThreadFooter ? '50%' : `calc(100% - ${footerHeight}px)`,
+        top: centerThreadFooter ? NEW_THREAD_COMPOSER_TOP : `calc(100% - ${footerHeight}px)`,
       }
     : terminalDrawerInsetStyle
   const threadTimelineLoading = state.activeView === 'thread' && controller.activeThreadLoading

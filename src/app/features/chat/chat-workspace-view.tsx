@@ -39,6 +39,7 @@ type ChatWorkspaceViewProps = {
 }
 
 const ARTIFACT_DRAWER_WIDTH = 'clamp(320px, calc(100% - 820px), 760px)'
+const NEW_CHAT_COMPOSER_TOP = '60%'
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,
   chatThinkingLevel: null,
@@ -351,8 +352,9 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
           'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
           hasConversationLayout
             ? 'bottom-0 translate-y-0'
-            : 'top-1/2 -translate-y-1/2 transition-[top,transform] duration-300 ease-out',
+            : '-translate-y-1/2 transition-[top,transform] duration-300 ease-out',
         )}
+        style={hasConversationLayout ? undefined : { top: NEW_CHAT_COMPOSER_TOP }}
       >
         <div className="pointer-events-auto grid gap-2.5">
           <ChatComposerDock {...props} />
