@@ -160,17 +160,33 @@ function handleRuntimeSessionEvent(
       return
     case 'tool_execution_start':
     case 'tool_execution_update':
-    case 'tool_execution_end':
-      rememberRuntimeToolProgress(runtime, {
+    case 'tool_execution_end': {
+      const toolEntry = {
         toolCallId: event.toolCallId,
         toolName: event.toolName,
         args: 'args' in event ? event.args : undefined,
         partialResult: getRuntimeToolProgressPartial(event),
         isError: event.type === 'tool_execution_end' ? event.isError : false,
         terminal: event.type === 'tool_execution_end',
+      }
+      rememberRuntimeToolProgress(runtime, toolEntry, (entry) => {
+        emitDesktopEvent({
+          type: 'runtime-diagnostic',
+          severity: 'warning',
+          message:
+            'Pi sent a bash tool call with an empty command. This may indicate the agent planned but did not execute.',
+          details: {
+            toolCallId: entry.toolCallId,
+            toolName: entry.toolName,
+            args: entry.args,
+          },
+          sessionPath: runtime.session?.sessionFile,
+          projectId: runtime.cwd,
+        })
       })
       scheduleLiveThreadUpdate(runtime)
       return
+    }
     case 'queue_update':
       void publishRuntimeComposerState(
         runtime,

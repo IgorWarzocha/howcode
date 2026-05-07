@@ -1,6 +1,14 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { PiRuntime } from '../runtime/types.ts'
 
+type BashToolArgs = { command?: string; cwd?: string }
+
+function isEmptyBashCommand(entry: RuntimeToolProgress): boolean {
+  if (entry.toolName !== 'bash') return false
+  const args = entry.args as BashToolArgs | undefined
+  return !args?.command || args.command.trim().length === 0
+}
+
 export type RuntimeToolProgress = {
   toolCallId: string
   toolName: string
@@ -60,7 +68,14 @@ export function getLiveToolProgressMessages(runtime: PiRuntime) {
   })
 }
 
-export function rememberRuntimeToolProgress(runtime: PiRuntime, entry: RuntimeToolProgress) {
+export function rememberRuntimeToolProgress(
+  runtime: PiRuntime,
+  entry: RuntimeToolProgress,
+  onEmptyBashCommand?: (entry: RuntimeToolProgress) => void,
+) {
+  if (isEmptyBashCommand(entry)) {
+    onEmptyBashCommand?.(entry)
+  }
   getLiveToolProgress(runtime).set(entry.toolCallId, entry)
 }
 
