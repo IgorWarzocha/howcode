@@ -41,6 +41,7 @@ type ComposerGitOpsSurfaceProps = {
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
+  onActionErrorMessageChange?: (message: string | null) => void
 }
 
 export function ComposerGitOpsSurface({
@@ -67,6 +68,7 @@ export function ComposerGitOpsSurface({
   onAction,
   onLayoutChange,
   onBack,
+  onActionErrorMessageChange,
 }: ComposerGitOpsSurfaceProps) {
   void diffCommentCount
 
@@ -130,6 +132,10 @@ export function ComposerGitOpsSurface({
     setErrorMessage: setActionErrorMessage,
   })
   const dictationTranscribing = dictationInterimText.length > 0
+
+  useEffect(() => {
+    onActionErrorMessageChange?.(actionErrorMessage)
+  }, [actionErrorMessage, onActionErrorMessageChange])
 
   useEffect(() => {
     if (!(dictationActive || dictationTranscribing)) {
@@ -209,7 +215,7 @@ export function ComposerGitOpsSurface({
         ) : null}
         {hasDiffComments ? null : (
           <ComposerGitOpsMessageField
-            actionErrorMessage={actionErrorMessage}
+            actionErrorMessage={null}
             actionStatusMessage={actionStatusMessage}
             commitFocused={commitFocused}
             diffCommentError={diffCommentError ?? diffLoadError}
@@ -241,7 +247,7 @@ export function ComposerGitOpsSurface({
 
       {hasDiffComments ? (
         <ComposerGitOpsMessageField
-          actionErrorMessage={actionErrorMessage}
+          actionErrorMessage={null}
           actionStatusMessage={actionStatusMessage}
           commitFocused={commitFocused}
           diffCommentError={diffCommentError ?? diffLoadError}

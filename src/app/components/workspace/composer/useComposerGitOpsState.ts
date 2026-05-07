@@ -213,6 +213,7 @@ export function useComposerGitOpsState({
             ? appSettings.gitOpsDefaultMode === 'commit-push'
             : mode === 'commit-push'),
       )
+      setActionErrorMessage(null)
 
       try {
         const result = await onAction('workspace.commit-options', { gitOpsMode: mode })
@@ -252,6 +253,8 @@ export function useComposerGitOpsState({
     if (!isGitRepo || nextRepoUrl.length === 0) {
       return
     }
+
+    setActionErrorMessage(null)
 
     try {
       const result = await onAction('workspace.commit-options', { repoUrl: nextRepoUrl })
