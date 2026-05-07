@@ -1,37 +1,34 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from 'react'
 import type {
   AppSettings,
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   InboxThread,
   ProjectGitState,
   ThreadData,
-} from "../desktop/types";
-import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
-import type { Project } from "../types";
-import { getVisibleDesktopSessionPath, shouldAutoOpenStartedThread } from "./desktop-event-sync";
-import { useComposerGitStateSync } from "./useComposerGitStateSync";
-import { useDesktopEventSync } from "./useDesktopEventSync";
-import { useProjectShellSync } from "./useProjectShellSync";
-import { useTakeoverVisibilitySync } from "./useTakeoverVisibilitySync";
-import { useTerminalGitStateSync } from "./useTerminalGitStateSync";
+} from '../desktop/types'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import type { Project } from '../types'
+import { getVisibleDesktopSessionPath, shouldAutoOpenStartedThread } from './desktop-event-sync'
+import { useComposerGitStateSync } from './useComposerGitStateSync'
+import { useDesktopEventSync } from './useDesktopEventSync'
+import { useProjectShellSync } from './useProjectShellSync'
+import { useTakeoverVisibilitySync } from './useTakeoverVisibilitySync'
+import { useTerminalGitStateSync } from './useTerminalGitStateSync'
 import {
   shouldCloseUtilityViewOnEscape,
   useUtilityViewEscape,
   useWatchedSessionSync,
-} from "./useWindowShellSync";
+} from './useWindowShellSync'
 
-export {
-  getVisibleDesktopSessionPath,
-  shouldAutoOpenStartedThread,
-  shouldCloseUtilityViewOnEscape,
-};
+export { getVisibleDesktopSessionPath, shouldAutoOpenStartedThread, shouldCloseUtilityViewOnEscape }
 
 type QueryClientLike = {
-  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void;
-  setQueriesData: (filters: { queryKey: readonly unknown[] }, updater: unknown) => void;
-  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown;
-};
+  setQueryData: (queryKey: readonly unknown[], updater: unknown) => void
+  setQueriesData: (filters: { queryKey: readonly unknown[] }, updater: unknown) => void
+  invalidateQueries: (filters: { queryKey: readonly unknown[] }) => Promise<unknown> | unknown
+}
 
 export function useAppShellEffects({
   projects,
@@ -51,36 +48,41 @@ export function useAppShellEffects({
   dispatch,
   setArchivedThreads,
   setComposerState,
+  setChatSidebarState,
   setLiveThreadData,
   setProjectGitState,
   setProjectGitLoading,
   setThreadHistoryCompactions,
 }: {
-  projects: Project[];
-  collapsedProjectIds: Record<string, boolean>;
-  workspaceState: WorkspaceState;
-  selectedInboxThread: InboxThread | null;
-  composerProjectId: string;
-  shellComposerState: ComposerState | null | undefined;
-  shellAppSettings: AppSettings | null | undefined;
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>;
-  loadArchivedThreads: () => Promise<ArchivedThread[]>;
+  projects: Project[]
+  collapsedProjectIds: Record<string, boolean>
+  workspaceState: WorkspaceState
+  selectedInboxThread: InboxThread | null
+  composerProjectId: string
+  shellComposerState: ComposerState | null | undefined
+  shellAppSettings: AppSettings | null | undefined
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean | undefined },
+  ) => Promise<unknown>
+  loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
-    projectId?: string | null;
-    sessionPath?: string | null;
-    composerMode?: "chat" | "code" | null;
-  }) => Promise<ComposerState | null>;
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  scheduleShellStateRefresh: () => void;
-  refreshChatSidebarState: () => Promise<unknown>;
-  queryClient: QueryClientLike;
-  dispatch: Dispatch<WorkspaceAction>;
-  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>;
-  setComposerState: Dispatch<SetStateAction<ComposerState | null>>;
-  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>;
-  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>;
-  setProjectGitLoading: Dispatch<SetStateAction<boolean>>;
-  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>;
+    projectId?: string | null
+    sessionPath?: string | null
+    composerMode?: 'chat' | 'code' | null
+  }) => Promise<ComposerState | null>
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  scheduleShellStateRefresh: () => void
+  refreshChatSidebarState: () => Promise<unknown>
+  queryClient: QueryClientLike
+  dispatch: Dispatch<WorkspaceAction>
+  setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
+  setComposerState: Dispatch<SetStateAction<ComposerState | null>>
+  setChatSidebarState: Dispatch<SetStateAction<ChatSidebarState | null>>
+  setLiveThreadData: Dispatch<SetStateAction<ThreadData | null>>
+  setProjectGitState: Dispatch<SetStateAction<ProjectGitState | null>>
+  setProjectGitLoading: Dispatch<SetStateAction<boolean>>
+  setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
 }) {
   useProjectShellSync({
     projects,
@@ -90,9 +92,9 @@ export function useAppShellEffects({
     loadArchivedThreads,
     dispatch,
     setArchivedThreads,
-  });
+  })
 
-  useTakeoverVisibilitySync({ shellAppSettings, workspaceState, dispatch });
+  useTakeoverVisibilitySync({ shellAppSettings, workspaceState, dispatch })
 
   useComposerGitStateSync({
     workspaceState,
@@ -105,11 +107,11 @@ export function useAppShellEffects({
     setComposerState,
     setProjectGitState,
     setProjectGitLoading,
-  });
+  })
 
-  useWatchedSessionSync(workspaceState);
-  useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch });
-  useTerminalGitStateSync({ composerProjectId, loadProjectGitState, setProjectGitState });
+  useWatchedSessionSync(workspaceState)
+  useUtilityViewEscape({ activeView: workspaceState.activeView, dispatch })
+  useTerminalGitStateSync({ composerProjectId, loadProjectGitState, setProjectGitState })
 
   useDesktopEventSync({
     composerProjectId,
@@ -121,8 +123,9 @@ export function useAppShellEffects({
     queryClient,
     dispatch,
     setComposerState,
+    setChatSidebarState,
     setLiveThreadData,
     setProjectGitState,
     setThreadHistoryCompactions,
-  });
+  })
 }

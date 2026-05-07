@@ -1,37 +1,38 @@
-import { getDesktopWorkingDirectory } from "../../../../../shared/desktop-working-directory";
-import type { DesktopRequestHandlerMap } from "../../../../../shared/desktop-ipc";
-import type { PiThreadsModule } from "../../runtime/desktop-runtime-contracts";
+import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
+import { getDesktopWorkingDirectory } from '../../../../../shared/desktop-working-directory'
+import type { PiThreadsModule } from '../../runtime/desktop-runtime-contracts'
 
 type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  | "getShellState"
-  | "getProjectGitState"
-  | "getProjectDiff"
-  | "getProjectDiffStats"
-  | "captureProjectDiffBaseline"
-  | "listProjectCommits"
-  | "getComposerState"
-  | "getComposerSlashCommands"
-  | "getDictationState"
-  | "listDictationModels"
-  | "installDictationModel"
-  | "removeDictationModel"
-  | "transcribeDictation"
-  | "getProjectThreads"
-  | "getChatSidebarState"
-  | "createChatGroup"
-  | "listArtifacts"
-  | "getArtifact"
-  | "updateArtifact"
-  | "editArtifact"
-  | "listArtifactVersions"
-  | "compileReactArtifact"
-  | "getInboxThreads"
-  | "getArchivedThreads"
-  | "getThread"
-  | "watchSession"
-  | "invokeAction"
->;
+  | 'getShellState'
+  | 'getProjectGitState'
+  | 'getProjectDiff'
+  | 'getProjectDiffStats'
+  | 'captureProjectDiffBaseline'
+  | 'listProjectCommits'
+  | 'getComposerState'
+  | 'getComposerSlashCommands'
+  | 'getComposerSkills'
+  | 'getDictationState'
+  | 'listDictationModels'
+  | 'installDictationModel'
+  | 'removeDictationModel'
+  | 'transcribeDictation'
+  | 'getProjectThreads'
+  | 'getChatSidebarState'
+  | 'createChatGroup'
+  | 'listArtifacts'
+  | 'getArtifact'
+  | 'updateArtifact'
+  | 'editArtifact'
+  | 'listArtifactVersions'
+  | 'compileReactArtifact'
+  | 'getInboxThreads'
+  | 'getArchivedThreads'
+  | 'getThread'
+  | 'watchSession'
+  | 'invokeAction'
+>
 
 export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRequestHandlers {
   return {
@@ -46,16 +47,21 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
       piThreads.listProjectCommits(projectId, limit ?? null),
     getComposerState: (request) => piThreads.loadComposerState(request),
     getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
+    getComposerSkills: (request) => piThreads.loadComposerSkills(request),
     getDictationState: () => piThreads.getDictationState(),
     listDictationModels: () => piThreads.listDictationModels(),
     installDictationModel: (request) => piThreads.installDictationModel(request),
     removeDictationModel: (request) => piThreads.removeDictationModel(request),
     transcribeDictation: (request) => piThreads.transcribeDictation(request),
-    getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
-    getChatSidebarState: ({ selectedGroupId }) =>
-      piThreads.loadChatSidebarState(selectedGroupId ?? null),
+    getProjectThreads: (request) =>
+      piThreads.loadProjectThreads(
+        request?.projectId ?? '',
+        request?.chat === undefined ? {} : { chat: request.chat },
+      ),
+    getChatSidebarState: (request) =>
+      piThreads.loadChatSidebarState(request?.selectedGroupId ?? null),
     createChatGroup: ({ name }) => piThreads.createChatGroup(name),
-    listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
+    listArtifacts: (request) => piThreads.listArtifacts(request?.conversationId ?? null),
     getArtifact: ({ artifactSlug, conversationId }) =>
       piThreads.getArtifact(artifactSlug, conversationId ?? null),
     updateArtifact: ({ artifactSlug, content, conversationId }) =>
@@ -73,29 +79,29 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     getThread: ({ sessionPath, historyCompactions = 0 }) =>
       piThreads.loadThread(sessionPath, { historyCompactions }),
     watchSession: async ({ sessionPath }) => {
-      await piThreads.setWatchedSessionPath(sessionPath);
-      return { ok: true };
+      await piThreads.setWatchedSessionPath(sessionPath)
+      return { ok: true }
     },
     invokeAction: async ({ action, payload = {} }) => {
       try {
-        const result = await piThreads.handleDesktopAction(action, payload);
+        const result = await piThreads.handleDesktopAction(action, payload)
         return {
           ok: true,
           at: new Date().toISOString(),
           payload: { action, payload },
           result: result ?? null,
-        };
+        }
       } catch (error) {
-        console.error("invokeAction failed", { action, payload, error });
+        console.error('invokeAction failed', { action, payload, error })
         return {
           ok: false,
           at: new Date().toISOString(),
           payload: { action, payload },
           result: {
-            error: error instanceof Error ? error.message : "Desktop action failed unexpectedly.",
+            error: error instanceof Error ? error.message : 'Desktop action failed unexpectedly.',
           },
-        };
+        }
       }
     },
-  };
+  }
 }

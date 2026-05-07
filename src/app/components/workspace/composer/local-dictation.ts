@@ -1,91 +1,91 @@
-import { DEFAULT_DICTATION_MAX_DURATION_SECONDS } from "../../../../../shared/dictation-settings";
+import { DEFAULT_DICTATION_MAX_DURATION_SECONDS } from '../../../../../shared/dictation-settings'
 
 export type LocalDictationCaptureResult = {
-  audioBase64: string;
-  sampleRate: number;
-};
+  audioBase64: string
+  sampleRate: number
+}
 
 export type LocalDictationCaptureSession = {
-  stop: () => Promise<LocalDictationCaptureResult>;
-  abort: () => Promise<void>;
-};
+  stop: () => Promise<LocalDictationCaptureResult>
+  abort: () => Promise<void>
+}
 
-const TARGET_SAMPLE_RATE = 16_000;
+const TARGET_SAMPLE_RATE = 16_000
 
 function getAudioContextConstructor() {
   return (
     window.AudioContext ??
     (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ??
     null
-  );
+  )
 }
 
 function concatFloat32Arrays(chunks: Float32Array[]) {
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const output = new Float32Array(totalLength);
-  let offset = 0;
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+  const output = new Float32Array(totalLength)
+  let offset = 0
 
   for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.length;
+    output.set(chunk, offset)
+    offset += chunk.length
   }
 
-  return output;
+  return output
 }
 
 function downsampleBuffer(input: Float32Array, inputSampleRate: number, outputSampleRate: number) {
   if (inputSampleRate === outputSampleRate) {
-    return input.slice();
+    return input.slice()
   }
 
   if (inputSampleRate < outputSampleRate) {
-    throw new Error("The microphone sample rate is lower than the dictation target sample rate.");
+    throw new Error('The microphone sample rate is lower than the dictation target sample rate.')
   }
 
-  const sampleRateRatio = inputSampleRate / outputSampleRate;
-  const outputLength = Math.round(input.length / sampleRateRatio);
-  const output = new Float32Array(outputLength);
-  let outputIndex = 0;
-  let inputIndex = 0;
+  const sampleRateRatio = inputSampleRate / outputSampleRate
+  const outputLength = Math.round(input.length / sampleRateRatio)
+  const output = new Float32Array(outputLength)
+  let outputIndex = 0
+  let inputIndex = 0
 
   while (outputIndex < outputLength) {
-    const nextInputIndex = Math.round((outputIndex + 1) * sampleRateRatio);
-    let accumulatedSample = 0;
-    let count = 0;
+    const nextInputIndex = Math.round((outputIndex + 1) * sampleRateRatio)
+    let accumulatedSample = 0
+    let count = 0
 
     for (let index = inputIndex; index < nextInputIndex && index < input.length; index += 1) {
-      accumulatedSample += input[index] ?? 0;
-      count += 1;
+      accumulatedSample += input[index] ?? 0
+      count += 1
     }
 
-    output[outputIndex] = count > 0 ? accumulatedSample / count : 0;
-    outputIndex += 1;
-    inputIndex = nextInputIndex;
+    output[outputIndex] = count > 0 ? accumulatedSample / count : 0
+    outputIndex += 1
+    inputIndex = nextInputIndex
   }
 
-  return output;
+  return output
 }
 
 function encodePcm16Base64(samples: Float32Array) {
-  const pcmBytes = new Uint8Array(samples.length * 2);
+  const pcmBytes = new Uint8Array(samples.length * 2)
 
   for (let index = 0; index < samples.length; index += 1) {
-    const clamped = Math.max(-1, Math.min(1, samples[index] ?? 0));
-    const sample = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
-    const value = Math.round(sample);
-    pcmBytes[index * 2] = value & 0xff;
-    pcmBytes[index * 2 + 1] = (value >> 8) & 0xff;
+    const clamped = Math.max(-1, Math.min(1, samples[index] ?? 0))
+    const sample = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff
+    const value = Math.round(sample)
+    pcmBytes[index * 2] = value & 0xff
+    pcmBytes[index * 2 + 1] = (value >> 8) & 0xff
   }
 
-  let binary = "";
-  const chunkSize = 0x8000;
+  let binary = ''
+  const chunkSize = 0x8000
 
   for (let index = 0; index < pcmBytes.length; index += chunkSize) {
-    const chunk = pcmBytes.subarray(index, index + chunkSize);
-    binary += String.fromCharCode(...chunk);
+    const chunk = pcmBytes.subarray(index, index + chunkSize)
+    binary += String.fromCharCode(...chunk)
   }
 
-  return btoa(binary);
+  return btoa(binary)
 }
 
 async function disposeCaptureResources({
@@ -95,43 +95,84 @@ async function disposeCaptureResources({
   source,
   stream,
 }: {
-  audioContext: AudioContext;
-  processor: ScriptProcessorNode;
-  mutedDestination: GainNode;
-  source: MediaStreamAudioSourceNode;
-  stream: MediaStream;
+  audioContext: AudioContext
+  processor: ScriptProcessorNode
+  mutedDestination: GainNode
+  source: MediaStreamAudioSourceNode
+  stream: MediaStream
 }) {
-  processor.onaudioprocess = null;
-  source.disconnect();
-  processor.disconnect();
-  mutedDestination.disconnect();
+  processor.onaudioprocess = null
+  source.disconnect()
+  processor.disconnect()
+  mutedDestination.disconnect()
 
   for (const track of stream.getTracks()) {
-    track.stop();
+    track.stop()
   }
 
-  await audioContext.close();
+  await audioContext.close()
 }
 
 async function stopMediaStreamTracks(stream: MediaStream) {
   for (const track of stream.getTracks()) {
-    track.stop();
+    track.stop()
+  }
+}
+
+function appendDownsampledAudioChunk(input: {
+  audioContext: AudioContext
+  captureLimitReached: boolean
+  event: AudioProcessingEvent
+  maxCaptureSampleCount: number
+  recordedChunks: Float32Array[]
+  recordedSampleCount: number
+}) {
+  if (input.captureLimitReached)
+    return { captureLimitReached: true, recordedSampleCount: input.recordedSampleCount }
+  const inputChannel = input.event.inputBuffer.getChannelData(0)
+  const downsampled = downsampleBuffer(
+    inputChannel,
+    input.audioContext.sampleRate,
+    TARGET_SAMPLE_RATE,
+  )
+  if (downsampled.length === 0) {
+    return {
+      captureLimitReached: input.captureLimitReached,
+      recordedSampleCount: input.recordedSampleCount,
+    }
+  }
+  const remainingSampleCapacity = input.maxCaptureSampleCount - input.recordedSampleCount
+  if (remainingSampleCapacity <= 0)
+    return { captureLimitReached: true, recordedSampleCount: input.recordedSampleCount }
+  const chunkToStore =
+    downsampled.length > remainingSampleCapacity
+      ? downsampled.subarray(0, remainingSampleCapacity)
+      : downsampled
+  if (chunkToStore.length === 0)
+    return { captureLimitReached: true, recordedSampleCount: input.recordedSampleCount }
+  input.recordedChunks.push(chunkToStore.slice())
+  const recordedSampleCount = input.recordedSampleCount + chunkToStore.length
+  return {
+    captureLimitReached:
+      chunkToStore.length < downsampled.length ||
+      recordedSampleCount >= input.maxCaptureSampleCount,
+    recordedSampleCount,
   }
 }
 
 export function canUseLocalDictationCapture() {
   return (
-    typeof navigator !== "undefined" &&
-    typeof navigator.mediaDevices?.getUserMedia === "function" &&
+    typeof navigator !== 'undefined' &&
+    typeof navigator.mediaDevices?.getUserMedia === 'function' &&
     getAudioContextConstructor() !== null
-  );
+  )
 }
 
 export async function startLocalDictationCapture(
   maxDurationSeconds = DEFAULT_DICTATION_MAX_DURATION_SECONDS,
 ): Promise<LocalDictationCaptureSession> {
   if (!canUseLocalDictationCapture()) {
-    throw new Error("Local microphone capture is unavailable in this runtime.");
+    throw new Error('Local microphone capture is unavailable in this runtime.')
   }
 
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -140,129 +181,103 @@ export async function startLocalDictationCapture(
       echoCancellation: true,
       noiseSuppression: true,
     },
-  });
-  const AudioContextConstructor = getAudioContextConstructor();
+  })
+  const AudioContextConstructor = getAudioContextConstructor()
   if (!AudioContextConstructor) {
-    await stopMediaStreamTracks(stream);
+    await stopMediaStreamTracks(stream)
 
-    throw new Error("AudioContext is unavailable in this runtime.");
+    throw new Error('AudioContext is unavailable in this runtime.')
   }
 
-  const audioContext = new AudioContextConstructor();
+  const audioContext = new AudioContextConstructor()
   try {
-    if (audioContext.state === "suspended") {
-      await audioContext.resume();
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume()
     }
   } catch (error) {
-    await stopMediaStreamTracks(stream);
-    await audioContext.close().catch(() => undefined);
-    throw error;
+    await stopMediaStreamTracks(stream)
+    await audioContext.close().catch(() => undefined)
+    throw error
   }
 
   if (audioContext.sampleRate < TARGET_SAMPLE_RATE) {
-    await stopMediaStreamTracks(stream);
+    await stopMediaStreamTracks(stream)
 
-    await audioContext.close();
-    throw new Error("The microphone sample rate is lower than the dictation target sample rate.");
+    await audioContext.close()
+    throw new Error('The microphone sample rate is lower than the dictation target sample rate.')
   }
 
-  const source = audioContext.createMediaStreamSource(stream);
-  const processor = audioContext.createScriptProcessor(4_096, 1, 1);
-  const mutedDestination = audioContext.createGain();
-  mutedDestination.gain.value = 0;
+  const source = audioContext.createMediaStreamSource(stream)
+  const processor = audioContext.createScriptProcessor(4_096, 1, 1)
+  const mutedDestination = audioContext.createGain()
+  mutedDestination.gain.value = 0
 
-  const maxCaptureSampleCount = TARGET_SAMPLE_RATE * Math.max(1, Math.floor(maxDurationSeconds));
-  const recordedChunks: Float32Array[] = [];
-  let recordedSampleCount = 0;
-  let captureLimitReached = false;
-  let settled = false;
-  let settlePromise: Promise<void> | null = null;
+  const maxCaptureSampleCount = TARGET_SAMPLE_RATE * Math.max(1, Math.floor(maxDurationSeconds))
+  const recordedChunks: Float32Array[] = []
+  let recordedSampleCount = 0
+  let captureLimitReached = false
+  let settled = false
+  let settlePromise: Promise<void> | null = null
 
   processor.onaudioprocess = (event) => {
-    if (settled) {
-      return;
-    }
+    if (settled) return
+    const nextCaptureState = appendDownsampledAudioChunk({
+      audioContext,
+      captureLimitReached,
+      event,
+      maxCaptureSampleCount,
+      recordedChunks,
+      recordedSampleCount,
+    })
+    captureLimitReached = nextCaptureState.captureLimitReached
+    recordedSampleCount = nextCaptureState.recordedSampleCount
+  }
 
-    const inputChannel = event.inputBuffer.getChannelData(0);
-    const downsampled = downsampleBuffer(inputChannel, audioContext.sampleRate, TARGET_SAMPLE_RATE);
-    if (downsampled.length > 0) {
-      if (captureLimitReached) {
-        return;
-      }
-
-      const remainingSampleCapacity = maxCaptureSampleCount - recordedSampleCount;
-      if (remainingSampleCapacity <= 0) {
-        captureLimitReached = true;
-        return;
-      }
-
-      const chunkToStore =
-        downsampled.length > remainingSampleCapacity
-          ? downsampled.subarray(0, remainingSampleCapacity)
-          : downsampled;
-
-      if (chunkToStore.length === 0) {
-        captureLimitReached = true;
-        return;
-      }
-
-      recordedChunks.push(chunkToStore.slice());
-      recordedSampleCount += chunkToStore.length;
-
-      if (
-        chunkToStore.length < downsampled.length ||
-        recordedSampleCount >= maxCaptureSampleCount
-      ) {
-        captureLimitReached = true;
-      }
-    }
-  };
-
-  source.connect(processor);
-  processor.connect(mutedDestination);
-  mutedDestination.connect(audioContext.destination);
+  source.connect(processor)
+  processor.connect(mutedDestination)
+  mutedDestination.connect(audioContext.destination)
 
   const settleCapture = async () => {
     if (!settlePromise) {
-      settled = true;
+      settled = true
       settlePromise = disposeCaptureResources({
         audioContext,
         processor,
         mutedDestination,
         source,
         stream,
-      });
+      })
     }
 
-    await settlePromise;
-  };
+    await settlePromise
+  }
 
   return {
     stop: async () => {
-      await settleCapture();
+      await settleCapture()
 
-      const samples = concatFloat32Arrays(recordedChunks);
+      const samples = concatFloat32Arrays(recordedChunks)
 
       return {
         audioBase64: encodePcm16Base64(samples),
         sampleRate: TARGET_SAMPLE_RATE,
-      };
+      }
     },
     abort: async () => {
-      await settleCapture();
+      await settleCapture()
     },
-  };
+  }
 }
 
 export function appendDictatedText(current: string, dictated: string) {
-  const normalized = dictated.trim().replace(/\s+/g, " ");
+  const normalized = dictated.trim().replace(/\s+/g, ' ')
   if (!normalized) {
-    return current;
+    return current
   }
 
   if (!current.trim()) {
-    return normalized;
+    return normalized
   }
 
-  return `${current.trimEnd()} ${normalized}`;
+  return `${current.trimEnd()} ${normalized}`
 }

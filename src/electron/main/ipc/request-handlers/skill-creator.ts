@@ -1,10 +1,10 @@
-import type { DesktopRequestHandlerMap } from "../../../../../shared/desktop-ipc";
-import type { SkillCreatorModule } from "../../runtime/desktop-runtime-contracts";
+import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
+import type { SkillCreatorModule } from '../../runtime/desktop-runtime-contracts'
 
 type SkillCreatorRequestHandlers = Pick<
   DesktopRequestHandlerMap,
-  "startSkillCreatorSession" | "continueSkillCreatorSession" | "closeSkillCreatorSession"
->;
+  'startSkillCreatorSession' | 'continueSkillCreatorSession' | 'closeSkillCreatorSession'
+>
 
 export function createSkillCreatorHandlers(
   skillCreator: SkillCreatorModule,
@@ -13,5 +13,5 @@ export function createSkillCreatorHandlers(
     startSkillCreatorSession: (request) => skillCreator.startSkillCreatorSession(request),
     continueSkillCreatorSession: (request) => skillCreator.continueSkillCreatorSession(request),
     closeSkillCreatorSession: (request) => skillCreator.closeSkillCreatorSession(request),
-  };
+  }
 }

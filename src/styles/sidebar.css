@@ -28,7 +28,10 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.25rem;
-  transition: background-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    box-shadow 150ms ease-out;
 }
 
 .sidebar-nav-button:hover {
@@ -85,6 +88,7 @@
 .sidebar-footer {
   position: relative;
   margin-top: auto;
+  padding-bottom: 0.75rem;
 }
 
 .sidebar-settings-button {
@@ -98,7 +102,9 @@
   padding: 0 0.625rem;
   color: var(--muted);
   font-size: 14px;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 
 .sidebar-settings-button:hover {
@@ -144,7 +150,10 @@
   color: var(--text);
   font-size: 14px;
   text-align: left;
-  transition: background-color 150ms ease-out, color 150ms ease-out, opacity 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out;
 }
 
 .sidebar-settings-menu-item:hover {
@@ -203,7 +212,9 @@
   color: var(--text);
   font-size: 13px;
   text-align: left;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 
 .sidebar-project-menu-item:hover {
@@ -277,7 +288,10 @@
   justify-content: center;
   border: 1px solid transparent;
   border-radius: 0.5rem;
-  transition: background-color 150ms ease-out, color 150ms ease-out, opacity 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out;
 }
 
 .sidebar-project-create-submit[data-enabled="true"] {
@@ -369,7 +383,9 @@
   padding: 0 0.625rem;
   color: var(--muted);
   font-size: 13px;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 
 .sidebar-search-field:hover {
@@ -426,7 +442,10 @@
 
 .sidebar-row-surface {
   border-radius: 0.75rem;
-  transition: background-color 150ms ease-out, color 150ms ease-out, opacity 150ms ease-out,
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out,
     box-shadow 150ms ease-out;
 }
 
@@ -658,7 +677,9 @@
   border-radius: 0.375rem;
   color: var(--muted);
   opacity: 0;
-  transition: color 150ms ease-out, opacity 150ms ease-out;
+  transition:
+    color 150ms ease-out,
+    opacity 150ms ease-out;
 }
 
 .sidebar-thread-pin:hover {
@@ -750,7 +771,9 @@
 .sidebar-inbox-row[data-selected="true"] {
   background: var(--accent-bg);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--accent-border), 0 10px 28px rgba(6, 7, 13, 0.12);
+  box-shadow:
+    inset 0 0 0 1px var(--accent-border),
+    0 10px 28px rgba(6, 7, 13, 0.12);
 }
 
 .sidebar-inbox-leading {

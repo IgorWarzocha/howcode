@@ -3,14 +3,14 @@ import type {
   DesktopActionResult,
   DesktopSettingsUpdatePayload,
   ModelSelection,
-} from "../../desktop/types";
+} from '../../desktop/types'
 
 export function getActionError(result: DesktopActionResult | null) {
-  return typeof result?.result?.error === "string" ? result.result.error : null;
+  return typeof result?.result?.error === 'string' ? result.result.error : null
 }
 
 export function getModelSettingValue(selection: ModelSelection | null) {
-  return selection ? `${selection.provider}/${selection.id}` : "Use composer model";
+  return selection ? `${selection.provider}/${selection.id}` : 'Use composer model'
 }
 
 export function buildModelMenuItems(
@@ -20,11 +20,11 @@ export function buildModelMenuItems(
 ) {
   return [
     {
-      id: "composer-default",
-      label: "Use composer model",
+      id: 'composer-default',
+      label: 'Use composer model',
       description: currentModel
         ? `${currentModel.provider}/${currentModel.id}`
-        : "No active composer model",
+        : 'No active composer model',
       selected: !selectedModel,
     },
     ...availableModels.map((model) => ({
@@ -33,58 +33,62 @@ export function buildModelMenuItems(
       description: `${model.provider}/${model.id}`,
       selected: selectedModel?.provider === model.provider && selectedModel.id === model.id,
     })),
-  ];
+  ]
 }
 
 export function buildModelSelectionPayload(
-  key: "chatModel" | "codeModel" | "gitCommitMessageModel" | "skillCreatorModel",
+  key: 'chatModel' | 'codeModel' | 'gitCommitMessageModel' | 'skillCreatorModel',
   id: string,
 ): DesktopSettingsUpdatePayload {
-  if (id === "composer-default") {
-    return { key, reset: true };
+  if (id === 'composer-default') {
+    return { key, reset: true }
   }
 
-  const [provider, ...modelIdParts] = id.split("/");
-  const modelId = modelIdParts.join("/");
+  const [provider, ...modelIdParts] = id.split('/')
+  const modelId = modelIdParts.join('/')
 
-  if (key === "chatModel") {
+  if (!provider) {
+    return { key, reset: true }
+  }
+
+  if (key === 'chatModel') {
     return {
       key,
       provider,
       modelId,
-    };
+    }
   }
 
-  if (key === "codeModel") {
+  if (key === 'codeModel') {
     return {
       key,
       provider,
       modelId,
-    };
+    }
   }
 
-  if (key === "gitCommitMessageModel") {
+  if (key === 'gitCommitMessageModel') {
     return {
       key,
       provider,
       modelId,
-    };
+    }
   }
 
   return {
     key,
     provider,
     modelId,
-  };
+  }
 }
 
 export function getProjectImportSummaryMessage(result: DesktopActionResult | null) {
   const checkedProjectCount =
-    typeof result?.result?.checkedProjectCount === "number" ? result.result.checkedProjectCount : 0;
+    typeof result?.result?.checkedProjectCount === 'number' ? result.result.checkedProjectCount : 0
   const originProjectCount =
-    typeof result?.result?.originProjectCount === "number" ? result.result.originProjectCount : 0;
+    typeof result?.result?.originProjectCount === 'number' ? result.result.originProjectCount : 0
 
   return checkedProjectCount > 0
     ? `Scanned ${checkedProjectCount} · Found ${originProjectCount} origins`
-    : "Nothing to scan";
+    : 'Nothing to scan'
 }

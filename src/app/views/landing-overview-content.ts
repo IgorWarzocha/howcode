@@ -1,35 +1,35 @@
-import releaseMarkdown from "../../../release.md?raw";
-import changelogMarkdown from "../../../docs/changelog.md?raw";
-import roadmapMarkdown from "../../../docs/roadmap.md?raw";
+import changelogMarkdown from '../../../docs/changelog.md?raw'
+import roadmapMarkdown from '../../../docs/roadmap.md?raw'
+import releaseMarkdown from '../../../release.md?raw'
 
 type LandingOverviewSection = {
-  title: string;
-  markdown: string;
-};
+  title: string
+  markdown: string
+}
 
 type LandingOverviewContent = {
-  title: string;
-  sections: readonly LandingOverviewSection[];
-};
+  title: string
+  sections: readonly LandingOverviewSection[]
+}
 
 const landingOverviewContent: LandingOverviewContent = {
-  title: "Howcode overview",
+  title: 'Howcode overview',
   sections: [
     {
-      title: "About",
+      title: 'About',
       markdown: releaseMarkdown,
     },
     {
-      title: "Roadmap",
+      title: 'Roadmap',
       markdown: roadmapMarkdown,
     },
     {
-      title: "Changelog",
+      title: 'Changelog',
       markdown: changelogMarkdown,
     },
   ],
-};
+}
 
 export function getLandingOverviewContent() {
-  return landingOverviewContent;
+  return landingOverviewContent
 }

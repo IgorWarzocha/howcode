@@ -1,67 +1,67 @@
-import type { Message } from "../../../types";
+import type { Message } from '../../../types'
 
-export type ToolCallMessage = Extract<Message, { role: "toolResult" | "bashExecution" }>;
+export type ToolCallMessage = Extract<Message, { role: 'toolResult' | 'bashExecution' }>
 
 export type TimelineTurnItem =
   | {
-      kind: "tool-group";
-      id: string;
-      messages: ToolCallMessage[];
+      kind: 'tool-group'
+      id: string
+      messages: ToolCallMessage[]
     }
   | {
-      kind: "message";
-      id: string;
-      message: Message;
-    };
+      kind: 'message'
+      id: string
+      message: Message
+    }
 
 export type TimelineRow =
   | {
-      kind: "history-divider";
-      id: string;
-      hiddenCount: number;
+      kind: 'history-divider'
+      id: string
+      hiddenCount: number
     }
   | {
-      kind: "turn";
-      id: string;
-      userMessage: Extract<Message, { role: "assistant" | "user" }> | null;
-      items: TimelineTurnItem[];
+      kind: 'turn'
+      id: string
+      userMessage: Extract<Message, { role: 'assistant' | 'user' }> | null
+      items: TimelineTurnItem[]
     }
   | {
-      kind: "summary";
-      id: string;
-      message: Extract<Message, { role: "branchSummary" | "compactionSummary" }>;
+      kind: 'summary'
+      id: string
+      message: Extract<Message, { role: 'branchSummary' | 'compactionSummary' }>
     }
-  | TimelineTurnItem;
+  | TimelineTurnItem
 
 export function isToolCallMessage(message: Message): message is ToolCallMessage {
-  return message.role === "toolResult" || message.role === "bashExecution";
+  return message.role === 'toolResult' || message.role === 'bashExecution'
 }
 
-export function isTurnRowCollapsible(row: Extract<TimelineRow, { kind: "turn" }>) {
+export function isTurnRowCollapsible(row: Extract<TimelineRow, { kind: 'turn' }>) {
   if (row.userMessage) {
-    return row.items.length > 0;
+    return row.items.length > 0
   }
 
   if (row.items.length === 0) {
-    return false;
+    return false
   }
 
   if (row.items.length > 1) {
-    return true;
+    return true
   }
 
-  const [onlyItem] = row.items;
+  const [onlyItem] = row.items
   if (!onlyItem) {
-    return false;
+    return false
   }
 
-  if (onlyItem.kind === "tool-group") {
-    return true;
+  if (onlyItem.kind === 'tool-group') {
+    return true
   }
 
-  if (onlyItem.message.role !== "assistant") {
-    return true;
+  if (onlyItem.message.role !== 'assistant') {
+    return true
   }
 
-  return Boolean(onlyItem.message.thinkingContent?.length);
+  return (onlyItem.message.thinkingContent?.length ?? 0) > 0
 }

@@ -3,14 +3,14 @@ export async function withComposerSendLock<T>(
   task: () => Promise<T>,
 ): Promise<T | undefined> {
   if (lock.current) {
-    return undefined;
+    return undefined
   }
 
-  lock.current = true;
+  lock.current = true
 
   try {
-    return await task();
+    return await task()
   } finally {
-    lock.current = false;
+    lock.current = false
   }
 }

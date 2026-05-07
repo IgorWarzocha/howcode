@@ -1,21 +1,23 @@
+const trailingWhitespacePattern = /\s+$/u
+
 export function mergeDraftWithRestoredQueuedPrompt(
   currentDraft: string,
   restoredQueuedPrompt: string,
 ) {
-  const currentText = currentDraft.trim();
-  const restoredText = restoredQueuedPrompt.trim();
+  const currentText = currentDraft.trim()
+  const restoredText = restoredQueuedPrompt.trim()
 
   if (!restoredText) {
-    return currentDraft;
+    return currentDraft
   }
 
   if (!currentText) {
-    return restoredQueuedPrompt;
+    return restoredQueuedPrompt
   }
 
   if (currentText === restoredText) {
-    return currentDraft;
+    return currentDraft
   }
 
-  return `${currentDraft.replace(/\s+$/u, "")}\n\n${restoredQueuedPrompt}`;
+  return `${currentDraft.replace(trailingWhitespacePattern, '')}\n\n${restoredQueuedPrompt}`
 }

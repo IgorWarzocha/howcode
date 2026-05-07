@@ -6,7 +6,6 @@
 - External terminal control for agents, probably via a small tool.
 - Background-mode, the minute we get a Pi server.
 - Remote sessions via SSH. Unsure how. Could depend on Pi server.
-- Better responsive UI.
 
 ## Coming Soon™
 - Claw: a version of Openclaw. Your sidekick for managing everything in the app.

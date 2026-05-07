@@ -1,23 +1,19 @@
-import type { QueryClient } from "@tanstack/react-query";
-import type { Dispatch } from "react";
-import type { DesktopAction } from "../desktop/actions";
+import type { QueryClient } from '@tanstack/react-query'
+import type { Dispatch } from 'react'
+import type { DesktopAction } from '../desktop/actions'
 import type {
   ArchivedThread,
+  ChatSidebarState,
   ComposerState,
   DesktopActionResult,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
   ThreadData,
-} from "../desktop/types";
-import { isLocalSessionPath } from "../../../shared/session-paths";
-import { desktopQueryKeys } from "../query/desktop-query";
-import {
-  applyProjectThreadToShellState,
-  removeProjectThreadFromShellState,
-} from "./project-thread-cache";
-import type { WorkspaceAction, WorkspaceState } from "../state/workspace";
-import { refreshArchivedThreadsIfOpen } from "./controller-action-helpers";
+} from '../desktop/types'
+import { desktopQueryKeys } from '../query/desktop-query'
+import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
+import { refreshArchivedThreadsIfOpen } from './controller-action-helpers'
 import {
   type ActionPayload,
   buildLocalThreadFallback,
@@ -28,476 +24,414 @@ import {
   hasActionError,
   hasDesktopBridge,
   isThreadList,
-} from "./controller-action-utils";
+} from './controller-action-utils'
+import { applyProjectThreadToShellState } from './project-thread-cache'
+import { reconcileComposerThreadResult } from './sidebar-thread-sync'
 
 export {
   applyOptimisticPinUpdate,
   applyOptimisticPiSettingsUpdate,
   applyOptimisticProjectRename,
   applyOptimisticSettingsUpdate,
-  getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyPinnedShellState,
   getOptimisticallyRenamedShellState,
+  getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyUpdatedShellState,
-} from "./controller-optimistic-updates";
+} from './controller-optimistic-updates'
 
 type RunPostDesktopActionEffectsInput = {
-  action: DesktopAction;
-  contextualPayload: ActionPayload;
-  actionResult: DesktopActionResult | null;
-  workspaceState: WorkspaceState;
-  composerProjectId: string;
-  dispatch: Dispatch<WorkspaceAction>;
-  loadArchivedThreads: () => Promise<ArchivedThread[]>;
+  action: DesktopAction
+  contextualPayload: ActionPayload
+  actionResult: DesktopActionResult | null
+  workspaceState: WorkspaceState
+  composerProjectId: string
+  dispatch: Dispatch<WorkspaceAction>
+  loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
-    projectId?: string | null;
-    composerMode?: "chat" | "code" | null;
-  }) => Promise<ComposerState | null>;
-  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>;
-  loadProjectThreads: (projectId: string) => Promise<unknown>;
-  refreshShellState: () => Promise<unknown>;
-  setArchivedThreads: (threads: ArchivedThread[]) => void;
-  setComposerState: (state: ComposerState | null) => void;
-  setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void;
-  setProjectGitState: (state: ProjectGitState | null) => void;
-  queryClient: QueryClient;
-};
+    projectId?: string | null
+    composerMode?: 'chat' | 'code' | null
+  }) => Promise<ComposerState | null>
+  loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  refreshShellState: () => Promise<unknown>
+  setArchivedThreads: (threads: ArchivedThread[]) => void
+  setChatSidebarState: (
+    updater: (state: ChatSidebarState | null) => ChatSidebarState | null,
+  ) => void
+  setComposerState: (state: ComposerState | null) => void
+  setLiveThreadData: (updater: (state: ThreadData | null) => ThreadData | null) => void
+  setProjectGitState: (state: ProjectGitState | null) => void
+  queryClient: QueryClient
+}
 
-export async function runPostDesktopActionEffects({
-  action,
-  contextualPayload,
-  actionResult,
-  workspaceState,
-  composerProjectId,
-  dispatch,
-  loadArchivedThreads,
-  loadComposerState,
-  loadProjectGitState,
-  loadProjectThreads,
-  refreshShellState,
-  setArchivedThreads,
-  setComposerState,
-  setLiveThreadData,
-  setProjectGitState,
-  queryClient,
-}: RunPostDesktopActionEffectsInput) {
-  const invalidateInboxThreads = () =>
-    queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.inboxThreads(),
-    });
+type PostEffectsContext = RunPostDesktopActionEffectsInput & {
+  invalidateInboxThreads: () => Promise<unknown>
+}
 
-  if (action === "thread.pin" || action === "thread.archive" || action === "thread.archive-many") {
-    const projectId = getPayloadProjectId(contextualPayload);
-    if (projectId) {
-      await loadProjectThreads(projectId);
-    }
+function getPayloadThreadId(payload: ActionPayload) {
+  return typeof payload.threadId === 'string' ? payload.threadId : null
+}
 
-    if (action === "thread.archive" || action === "thread.archive-many") {
-      await refreshArchivedThreadsIfOpen({
-        archivedThreadsVisible: workspaceState.activeView === "archived",
-        loadArchivedThreads,
-        setArchivedThreads,
-      });
-    }
+function clearSelectedThreadIfIncluded(ctx: PostEffectsContext, threadIds: string[]) {
+  const selectedThreadId = ctx.workspaceState.selectedThreadId
+  if (!(selectedThreadId && new Set(threadIds).has(selectedThreadId))) return
+  ctx.dispatch({ type: 'clear-thread-selection' })
+  ctx.dispatch({
+    type: 'show-view',
+    view: ctx.workspaceState.activeView === 'chat' ? 'chat' : 'code',
+  })
+}
 
-    const archivedThreadIds =
-      action === "thread.archive"
-        ? [contextualPayload.threadId]
-        : action === "thread.archive-many"
-          ? getPayloadThreadIds(contextualPayload)
-          : [];
-
-    const selectedThreadId = workspaceState.selectedThreadId;
-    if (selectedThreadId && new Set(archivedThreadIds).has(selectedThreadId)) {
-      dispatch({ type: "clear-thread-selection" });
-      dispatch({
-        type: "show-view",
-        view: workspaceState.activeView === "chat" ? "chat" : "code",
-      });
-    }
-
-    await invalidateInboxThreads();
+async function handleArchivedThreadEffects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (projectId) await ctx.loadProjectThreads(projectId)
+  if (ctx.action === 'thread.archive' || ctx.action === 'thread.archive-many') {
+    await refreshArchivedThreadsIfOpen({
+      archivedThreadsVisible: ctx.workspaceState.activeView === 'archived',
+      loadArchivedThreads: ctx.loadArchivedThreads,
+      setArchivedThreads: ctx.setArchivedThreads,
+    })
   }
+  const archivedThreadIds =
+    ctx.action === 'thread.archive'
+      ? [getPayloadThreadId(ctx.contextualPayload)].filter((threadId) => threadId !== null)
+      : ctx.action === 'thread.archive-many'
+        ? getPayloadThreadIds(ctx.contextualPayload)
+        : []
+  clearSelectedThreadIfIncluded(ctx, archivedThreadIds)
+  await ctx.invalidateInboxThreads()
+}
 
+async function refreshMutatedThreadProjects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (ctx.action === 'thread.restore-many' || ctx.action === 'thread.delete-many') {
+    await ctx.refreshShellState()
+    const projectIds = [...new Set(getPayloadProjectIds(ctx.contextualPayload))]
+    if (projectIds.length > 0) await Promise.all(projectIds.map((id) => ctx.loadProjectThreads(id)))
+    return
+  }
+  if (projectId) await ctx.loadProjectThreads(projectId)
+}
+
+function getDeletedThreadIds(ctx: PostEffectsContext) {
+  if (ctx.action === 'thread.delete')
+    return [getPayloadThreadId(ctx.contextualPayload)].filter((threadId) => threadId !== null)
+  if (ctx.action !== 'thread.delete-many') return []
+  const deletedBatchThreadIds = getResultThreadIds(ctx.actionResult?.result?.deletedThreadIds)
+  return deletedBatchThreadIds.length > 0
+    ? deletedBatchThreadIds
+    : getPayloadThreadIds(ctx.contextualPayload)
+}
+
+async function handleRestoreOrDeleteThreadEffects(ctx: PostEffectsContext) {
+  await refreshMutatedThreadProjects(ctx)
+  ctx.setArchivedThreads(await ctx.loadArchivedThreads())
+  clearSelectedThreadIfIncluded(ctx, getDeletedThreadIds(ctx))
+  await ctx.invalidateInboxThreads()
+}
+
+async function handleThreadOpenOrInboxEffects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (projectId) await ctx.loadProjectThreads(projectId)
+  await ctx.invalidateInboxThreads()
+}
+
+async function refreshArchivedIfVisible(ctx: PostEffectsContext) {
+  await refreshArchivedThreadsIfOpen({
+    archivedThreadsVisible: ctx.workspaceState.activeView === 'archived',
+    loadArchivedThreads: ctx.loadArchivedThreads,
+    setArchivedThreads: ctx.setArchivedThreads,
+  })
+}
+
+async function handleProjectArchiveThreadsEffects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (projectId) await ctx.loadProjectThreads(projectId)
+  await ctx.refreshShellState()
+  await refreshArchivedIfVisible(ctx)
+  if (ctx.contextualPayload.projectId === ctx.workspaceState.selectedProjectId)
+    ctx.dispatch({ type: 'show-view', view: 'code' })
+  await ctx.invalidateInboxThreads()
+}
+
+async function handleErroredProjectRemoval(ctx: PostEffectsContext) {
+  if (ctx.actionResult?.result?.didMutate !== true) return false
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  await ctx.refreshShellState()
+  const refreshedThreads = projectId ? await ctx.loadProjectThreads(projectId) : null
+  const selectedThreadId = ctx.workspaceState.selectedThreadId
   if (
-    action === "thread.restore" ||
-    action === "thread.restore-many" ||
-    action === "thread.delete" ||
-    action === "thread.delete-many"
+    projectId === ctx.workspaceState.selectedProjectId &&
+    selectedThreadId &&
+    isThreadList(refreshedThreads) &&
+    !refreshedThreads.some((thread) => thread.id === selectedThreadId)
   ) {
-    const isBatchThreadMutation =
-      action === "thread.restore-many" || action === "thread.delete-many";
+    ctx.dispatch({ type: 'show-view', view: 'code' })
+  }
+  await refreshArchivedIfVisible(ctx)
+  await ctx.invalidateInboxThreads()
+  return true
+}
 
-    const projectId = getPayloadProjectId(contextualPayload);
-    if (isBatchThreadMutation) {
-      await refreshShellState();
-      const projectIds = [...new Set(getPayloadProjectIds(contextualPayload))];
+async function handleProjectRemoveEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult)) {
+    await handleErroredProjectRemoval(ctx)
+    return
+  }
+  if (ctx.contextualPayload.projectId === ctx.workspaceState.selectedProjectId)
+    ctx.dispatch({ type: 'show-view', view: 'code' })
+  await ctx.refreshShellState()
+  await refreshArchivedIfVisible(ctx)
+  await ctx.invalidateInboxThreads()
+}
 
-      if (projectIds.length > 0) {
-        await Promise.all(projectIds.map((batchProjectId) => loadProjectThreads(batchProjectId)));
-      }
-    } else if (projectId) {
-      await loadProjectThreads(projectId);
-    }
+function getNewThreadResult(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload) ?? ctx.composerProjectId
+  const resultProjectId =
+    typeof ctx.actionResult?.result?.projectId === 'string'
+      ? ctx.actionResult.result.projectId
+      : null
+  const sessionPath =
+    typeof ctx.actionResult?.result?.sessionPath === 'string'
+      ? ctx.actionResult.result.sessionPath
+      : null
+  const threadId =
+    typeof ctx.actionResult?.result?.threadId === 'string' ? ctx.actionResult.result.threadId : null
+  const localFallback =
+    !(threadId || sessionPath) && projectId && !hasDesktopBridge()
+      ? buildLocalThreadFallback(projectId)
+      : null
+  return { projectId, resultProjectId, sessionPath, threadId, localFallback }
+}
 
-    setArchivedThreads(await loadArchivedThreads());
+function applyAndOpenOptimisticThread(
+  ctx: PostEffectsContext,
+  input: { projectId: string; threadId: string; sessionPath: string },
+) {
+  const optimisticThread = {
+    id: input.threadId,
+    title: 'New thread',
+    age: 'Now',
+    lastModifiedMs: Date.now(),
+    sessionPath: input.sessionPath,
+  }
+  applyProjectThreadToShellState(ctx.queryClient, input.projectId, optimisticThread, {
+    revealProject: true,
+  })
+  ctx.dispatch({
+    type: 'open-thread',
+    projectId: input.projectId,
+    threadId: input.threadId,
+    sessionPath: input.sessionPath,
+  })
+  return optimisticThread
+}
 
-    const deletedBatchThreadIds = getResultThreadIds(actionResult?.result?.deletedThreadIds);
+async function handleNewThreadBridgeResult(
+  ctx: PostEffectsContext,
+  result: ReturnType<typeof getNewThreadResult>,
+) {
+  const nextProjectId = result.resultProjectId ?? result.projectId
+  if (!(nextProjectId && result.threadId && result.sessionPath)) return false
+  const optimisticThread = applyAndOpenOptimisticThread(ctx, {
+    projectId: nextProjectId,
+    threadId: result.threadId,
+    sessionPath: result.sessionPath,
+  })
+  await ctx.loadProjectThreads(nextProjectId, { chat: ctx.workspaceState.activeView === 'chat' })
+  applyProjectThreadToShellState(ctx.queryClient, nextProjectId, optimisticThread, {
+    revealProject: true,
+  })
+  return true
+}
 
-    const deletedThreadIds =
-      action === "thread.delete"
-        ? [contextualPayload.threadId]
-        : action === "thread.delete-many"
-          ? deletedBatchThreadIds.length > 0
-            ? deletedBatchThreadIds
-            : getPayloadThreadIds(contextualPayload)
-          : [];
+async function handleNewThreadNavigation(
+  ctx: PostEffectsContext,
+  result: ReturnType<typeof getNewThreadResult>,
+) {
+  if (await handleNewThreadBridgeResult(ctx, result)) return
+  if (result.localFallback) {
+    applyAndOpenOptimisticThread(ctx, {
+      projectId: result.localFallback.projectId,
+      threadId: result.localFallback.threadId,
+      sessionPath: result.localFallback.sessionPath,
+    })
+    return
+  }
+  const nextProjectId = result.resultProjectId ?? result.projectId
+  if (nextProjectId) {
+    ctx.dispatch({ type: 'select-project', projectId: nextProjectId })
+    await ctx.loadProjectThreads(nextProjectId)
+    return
+  }
+  ctx.dispatch({ type: 'show-view', view: 'code' })
+}
 
-    const selectedThreadId = workspaceState.selectedThreadId;
-    if (selectedThreadId && new Set(deletedThreadIds).has(selectedThreadId)) {
-      dispatch({ type: "clear-thread-selection" });
-      dispatch({
-        type: "show-view",
-        view: workspaceState.activeView === "chat" ? "chat" : "code",
-      });
-    }
+async function handleNewThreadOrProjectEffects(ctx: PostEffectsContext) {
+  const result = getNewThreadResult(ctx)
+  if (ctx.action === 'project.add') await ctx.refreshShellState()
+  await handleNewThreadNavigation(ctx, result)
+  if (result.localFallback) return
+  const nextComposerState = await ctx.loadComposerState({
+    projectId: result.resultProjectId ?? result.projectId,
+    composerMode: ctx.workspaceState.activeView === 'chat' ? 'chat' : 'code',
+  })
+  if (nextComposerState) ctx.setComposerState(nextComposerState)
+}
 
-    await invalidateInboxThreads();
+function applyDiffPreferencesToThread(
+  current: ThreadData | null | undefined,
+  input: {
+    hasBaseline: boolean
+    hasRenderMode: boolean
+    nextBaseline: ProjectDiffBaseline | null
+    nextRenderMode: ProjectDiffRenderMode | null
+  },
+) {
+  if (!current) return current
+  return {
+    ...current,
+    diffPreferences: {
+      baseline: input.hasBaseline
+        ? input.nextBaseline
+        : (current.diffPreferences?.baseline ?? null),
+      renderMode: input.hasRenderMode
+        ? input.nextRenderMode
+        : (current.diffPreferences?.renderMode ?? null),
+    },
+  }
+}
+
+async function handleDiffPreferencesEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult)) return
+  const sessionPath =
+    typeof ctx.contextualPayload.sessionPath === 'string' ? ctx.contextualPayload.sessionPath : null
+  if (!sessionPath) return
+  const input = {
+    hasBaseline: 'diffBaseline' in ctx.contextualPayload,
+    hasRenderMode: 'diffRenderMode' in ctx.contextualPayload,
+    nextBaseline: (ctx.contextualPayload.diffBaseline ?? null) as ProjectDiffBaseline | null,
+    nextRenderMode: (ctx.contextualPayload.diffRenderMode ?? null) as ProjectDiffRenderMode | null,
+  }
+  ctx.queryClient.setQueryData(desktopQueryKeys.thread(sessionPath), (current: unknown) =>
+    applyDiffPreferencesToThread(current as ThreadData | null | undefined, input),
+  )
+  ctx.setLiveThreadData((current) =>
+    current?.sessionPath === sessionPath
+      ? (applyDiffPreferencesToThread(current, input) ?? null)
+      : current,
+  )
+  await ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.threadPrefix(sessionPath) })
+}
+
+async function handleWorkspaceCommitEffects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (!projectId || ctx.actionResult?.result?.committed !== true) return
+  await Promise.all([
+    ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectDiffPrefix(projectId) }),
+    ctx.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
+    }),
+    ctx.queryClient.invalidateQueries({
+      queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
+    }),
+  ])
+  ctx.setProjectGitState(await ctx.loadProjectGitState(projectId))
+}
+
+async function handleCommitOptionsEffects(ctx: PostEffectsContext) {
+  const projectId = getPayloadProjectId(ctx.contextualPayload)
+  if (projectId) ctx.setProjectGitState(await ctx.loadProjectGitState(projectId))
+  await ctx.refreshShellState()
+}
+
+type PostEffectHandler = {
+  matches: (ctx: PostEffectsContext) => boolean
+  run: (ctx: PostEffectsContext) => Promise<void> | void
+}
+
+const postEffectHandlers: PostEffectHandler[] = [
+  {
+    matches: (ctx) =>
+      ctx.action === 'thread.pin' ||
+      ctx.action === 'thread.archive' ||
+      ctx.action === 'thread.archive-many',
+    run: handleArchivedThreadEffects,
+  },
+  {
+    matches: (ctx) =>
+      ctx.action === 'thread.restore' ||
+      ctx.action === 'thread.restore-many' ||
+      ctx.action === 'thread.delete' ||
+      ctx.action === 'thread.delete-many',
+    run: handleRestoreOrDeleteThreadEffects,
+  },
+  {
+    matches: (ctx) =>
+      ctx.action === 'thread.open' ||
+      ctx.action === 'inbox.mark-read' ||
+      ctx.action === 'inbox.dismiss',
+    run: handleThreadOpenOrInboxEffects,
+  },
+  {
+    matches: (ctx) => ctx.action === 'project.edit-name',
+    run: async (ctx) => {
+      await ctx.refreshShellState()
+      await refreshArchivedIfVisible(ctx)
+    },
+  },
+  {
+    matches: (ctx) => ctx.action === 'project.refresh-repo-origin',
+    run: (ctx) => ctx.refreshShellState(),
+  },
+  {
+    matches: (ctx) =>
+      ctx.action === 'pi-settings.update' && ctx.contextualPayload.piSettingsKey === 'theme',
+    run: (ctx) => ctx.refreshShellState(),
+  },
+  { matches: (ctx) => ctx.action === 'project.pin', run: (ctx) => ctx.refreshShellState() },
+  {
+    matches: (ctx) => ctx.action === 'project.archive-threads',
+    run: handleProjectArchiveThreadsEffects,
+  },
+  { matches: (ctx) => ctx.action === 'project.remove-project', run: handleProjectRemoveEffects },
+  {
+    matches: (ctx) => ctx.action === 'composer.send',
+    run: (ctx) =>
+      reconcileComposerThreadResult({
+        contextualPayload: ctx.contextualPayload,
+        actionResult: ctx.actionResult,
+        workspaceState: ctx.workspaceState,
+        queryClient: ctx.queryClient,
+        dispatch: ctx.dispatch,
+        setChatSidebarState: ctx.setChatSidebarState,
+        setLiveThreadData: ctx.setLiveThreadData,
+      }),
+  },
+  {
+    matches: (ctx) => ctx.action === 'thread.new' || ctx.action === 'project.add',
+    run: handleNewThreadOrProjectEffects,
+  },
+  { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
+  {
+    matches: (ctx) => ctx.action === 'workspace.diff-preferences',
+    run: handleDiffPreferencesEffects,
+  },
+  { matches: (ctx) => ctx.action === 'workspace.commit', run: handleWorkspaceCommitEffects },
+  {
+    matches: (ctx) => ctx.action === 'projects.import.apply',
+    run: (ctx) => ctx.refreshShellState(),
+  },
+]
+
+export async function runPostDesktopActionEffects(input: RunPostDesktopActionEffectsInput) {
+  const ctx: PostEffectsContext = {
+    ...input,
+    invalidateInboxThreads: () =>
+      input.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.inboxThreads() }),
   }
 
-  if (action === "thread.open" || action === "inbox.mark-read" || action === "inbox.dismiss") {
-    const projectId = getPayloadProjectId(contextualPayload);
-
-    if (projectId) {
-      await loadProjectThreads(projectId);
-    }
-
-    await invalidateInboxThreads();
-  }
-
-  if (action === "project.edit-name") {
-    await refreshShellState();
-    await refreshArchivedThreadsIfOpen({
-      archivedThreadsVisible: workspaceState.activeView === "archived",
-      loadArchivedThreads,
-      setArchivedThreads,
-    });
-  }
-
-  if (action === "project.refresh-repo-origin") {
-    await refreshShellState();
-  }
-
-  if (action === "pi-settings.update" && contextualPayload.piSettingsKey === "theme") {
-    await refreshShellState();
-  }
-
-  if (action === "project.pin") {
-    await refreshShellState();
-  }
-
-  if (action === "project.archive-threads") {
-    const projectId = getPayloadProjectId(contextualPayload);
-
-    if (projectId) {
-      await loadProjectThreads(projectId);
-    }
-
-    await refreshShellState();
-    await refreshArchivedThreadsIfOpen({
-      archivedThreadsVisible: workspaceState.activeView === "archived",
-      loadArchivedThreads,
-      setArchivedThreads,
-    });
-
-    if (contextualPayload.projectId === workspaceState.selectedProjectId) {
-      dispatch({ type: "show-view", view: "code" });
-    }
-
-    await invalidateInboxThreads();
-  }
-
-  if (action === "project.remove-project") {
-    if (hasActionError(actionResult)) {
-      if (actionResult?.result?.didMutate !== true) {
-        return;
-      }
-
-      const projectId = getPayloadProjectId(contextualPayload);
-      await refreshShellState();
-      const refreshedThreads = projectId ? await loadProjectThreads(projectId) : null;
-
-      if (
-        projectId === workspaceState.selectedProjectId &&
-        workspaceState.selectedThreadId &&
-        isThreadList(refreshedThreads) &&
-        !refreshedThreads.some((thread) => thread.id === workspaceState.selectedThreadId)
-      ) {
-        dispatch({ type: "show-view", view: "code" });
-      }
-
-      await refreshArchivedThreadsIfOpen({
-        archivedThreadsVisible: workspaceState.activeView === "archived",
-        loadArchivedThreads,
-        setArchivedThreads,
-      });
-
-      await invalidateInboxThreads();
-      return;
-    }
-
-    if (contextualPayload.projectId === workspaceState.selectedProjectId) {
-      dispatch({ type: "show-view", view: "code" });
-    }
-
-    await refreshShellState();
-    await refreshArchivedThreadsIfOpen({
-      archivedThreadsVisible: workspaceState.activeView === "archived",
-      loadArchivedThreads,
-      setArchivedThreads,
-    });
-
-    await invalidateInboxThreads();
-  }
-
-  if (action === "composer.send" && hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const sessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-
-    if (projectId && sessionPath && isLocalSessionPath(sessionPath)) {
-      removeProjectThreadFromShellState(queryClient, projectId, sessionPath);
-    }
-  }
-
-  if (action === "composer.send" && !hasActionError(actionResult)) {
-    const projectId = getPayloadProjectId(contextualPayload);
-    const submittedSessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-    const resultSessionPath =
-      typeof actionResult?.result?.composerSendSessionPath === "string"
-        ? actionResult.result.composerSendSessionPath
-        : null;
-    const resultThreadId =
-      typeof actionResult?.result?.composerSendThreadId === "string"
-        ? actionResult.result.composerSendThreadId
-        : null;
-
-    if (
-      projectId &&
-      (!submittedSessionPath || isLocalSessionPath(submittedSessionPath)) &&
-      resultSessionPath &&
-      resultThreadId
-    ) {
-      const shellState = (
-        queryClient as {
-          getQueryData?: (queryKey: readonly unknown[]) => unknown;
-        }
-      ).getQueryData?.(["desktop", "shellState"]) as
-        | {
-            projects?: Array<{
-              id: string;
-              threads: Array<{
-                id: string;
-                sessionPath?: string | null;
-                title?: string;
-              }>;
-            }>;
-          }
-        | null
-        | undefined;
-      const existingThreadTitle =
-        shellState?.projects
-          ?.find((candidate) => candidate.id === projectId)
-          ?.threads.find(
-            (candidate) =>
-              candidate.id === resultThreadId || candidate.sessionPath === resultSessionPath,
-          )?.title ?? null;
-
-      applyProjectThreadToShellState(
-        queryClient,
-        projectId,
-        {
-          id: resultThreadId,
-          title: existingThreadTitle ?? "New thread",
-          age: "Now",
-          lastModifiedMs: Date.now(),
-          sessionPath: resultSessionPath,
-        },
-        {
-          replaceSessionPath: isLocalSessionPath(submittedSessionPath)
-            ? submittedSessionPath
-            : null,
-          revealProject: true,
-        },
-      );
-      dispatch({
-        type: "open-thread",
-        projectId,
-        threadId: resultThreadId,
-        sessionPath: resultSessionPath,
-        view: workspaceState.activeView === "chat" ? "chat" : "thread",
-      });
-    }
-  }
-
-  // Settings writes are local and already applied optimistically in the renderer.
-  // Refreshing shell state here can race against that optimistic update and briefly
-  // snap controls back to stale values before the next state load lands.
-
-  if (action === "thread.new" || action === "project.add") {
-    const projectId = getPayloadProjectId(contextualPayload) ?? composerProjectId;
-    const resultProjectId =
-      typeof actionResult?.result?.projectId === "string" ? actionResult.result.projectId : null;
-    const sessionPath =
-      typeof actionResult?.result?.sessionPath === "string"
-        ? actionResult.result.sessionPath
-        : null;
-    const threadId =
-      typeof actionResult?.result?.threadId === "string" ? actionResult.result.threadId : null;
-    const localFallback =
-      !threadId && !sessionPath && projectId && !hasDesktopBridge()
-        ? buildLocalThreadFallback(projectId)
-        : null;
-
-    if (action === "project.add") {
-      await refreshShellState();
-    }
-
-    if ((resultProjectId ?? projectId) && threadId && sessionPath) {
-      const nextProjectId = resultProjectId ?? projectId;
-      const optimisticThread = {
-        id: threadId,
-        title: "New thread",
-        age: "Now",
-        lastModifiedMs: Date.now(),
-        sessionPath,
-      };
-      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
-        revealProject: true,
-      });
-      dispatch({
-        type: "open-thread",
-        projectId: nextProjectId,
-        threadId,
-        sessionPath,
-      });
-      await loadProjectThreads(nextProjectId);
-      applyProjectThreadToShellState(queryClient, nextProjectId, optimisticThread, {
-        revealProject: true,
-      });
-    } else if (localFallback) {
-      const optimisticThread = {
-        id: localFallback.threadId,
-        title: "New thread",
-        age: "Now",
-        lastModifiedMs: Date.now(),
-        sessionPath: localFallback.sessionPath,
-      };
-      applyProjectThreadToShellState(queryClient, localFallback.projectId, optimisticThread, {
-        revealProject: true,
-      });
-      dispatch({
-        type: "open-thread",
-        projectId: localFallback.projectId,
-        threadId: localFallback.threadId,
-        sessionPath: localFallback.sessionPath,
-      });
-    } else if (resultProjectId ?? projectId) {
-      const nextProjectId = resultProjectId ?? projectId;
-      dispatch({ type: "select-project", projectId: nextProjectId });
-      await loadProjectThreads(nextProjectId);
-    } else {
-      dispatch({ type: "show-view", view: "code" });
-    }
-
-    if (!localFallback) {
-      const nextComposerState = await loadComposerState({
-        projectId: resultProjectId ?? projectId,
-        composerMode: workspaceState.activeView === "chat" ? "chat" : "code",
-      });
-      if (nextComposerState) {
-        setComposerState(nextComposerState);
-      }
-    }
-  }
-
-  if (action === "workspace.commit-options") {
-    const projectId = getPayloadProjectId(contextualPayload);
-
-    if (projectId) {
-      setProjectGitState(await loadProjectGitState(projectId));
-    }
-
-    await refreshShellState();
-  }
-
-  if (action === "workspace.diff-preferences" && !hasActionError(actionResult)) {
-    const sessionPath =
-      typeof contextualPayload.sessionPath === "string" ? contextualPayload.sessionPath : null;
-    if (sessionPath) {
-      const hasBaseline = "diffBaseline" in contextualPayload;
-      const hasRenderMode = "diffRenderMode" in contextualPayload;
-      const nextBaseline = (contextualPayload.diffBaseline ?? null) as ProjectDiffBaseline | null;
-      const nextRenderMode = (contextualPayload.diffRenderMode ??
-        null) as ProjectDiffRenderMode | null;
-      queryClient.setQueryData(desktopQueryKeys.thread(sessionPath), (current: unknown) => {
-        const currentThread = current as ThreadData | null | undefined;
-        if (!currentThread) {
-          return currentThread;
-        }
-
-        return {
-          ...currentThread,
-          diffPreferences: {
-            baseline: hasBaseline
-              ? nextBaseline
-              : (currentThread.diffPreferences?.baseline ?? null),
-            renderMode: hasRenderMode
-              ? nextRenderMode
-              : (currentThread.diffPreferences?.renderMode ?? null),
-          },
-        };
-      });
-      setLiveThreadData((current) =>
-        current?.sessionPath === sessionPath
-          ? {
-              ...current,
-              diffPreferences: {
-                baseline: hasBaseline ? nextBaseline : (current.diffPreferences?.baseline ?? null),
-                renderMode: hasRenderMode
-                  ? nextRenderMode
-                  : (current.diffPreferences?.renderMode ?? null),
-              },
-            }
-          : current,
-      );
-      await queryClient.invalidateQueries({
-        queryKey: desktopQueryKeys.threadPrefix(sessionPath),
-      });
-    }
-  }
-
-  if (action === "workspace.commit") {
-    const projectId = getPayloadProjectId(contextualPayload);
-
-    if (projectId && actionResult?.result?.committed === true) {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-        }),
-      ]);
-      setProjectGitState(await loadProjectGitState(projectId));
-    }
-  }
-
-  if (action === "projects.import.apply") {
-    await refreshShellState();
+  for (const handler of postEffectHandlers) {
+    if (handler.matches(ctx)) await handler.run(ctx)
   }
 }

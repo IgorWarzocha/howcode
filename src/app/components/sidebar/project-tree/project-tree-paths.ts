@@ -1,11 +1,15 @@
-function normalizeProjectPathForComparison(projectId: string) {
-  const normalized = projectId.replace(/\\/g, "/").replace(/\/+$/, "");
+const backslashPattern = /\\/g
+const trailingSlashPattern = /\/+$/
+const windowsDrivePrefixPattern = /^[A-Za-z]:/
 
-  if (/^[A-Za-z]:/.test(normalized)) {
-    return normalized.toLowerCase();
+function normalizeProjectPathForComparison(projectId: string) {
+  const normalized = projectId.replace(backslashPattern, '/').replace(trailingSlashPattern, '')
+
+  if (windowsDrivePrefixPattern.test(normalized)) {
+    return normalized.toLowerCase()
   }
 
-  return normalized || "/";
+  return normalized || '/'
 }
 
 export function isProtectedProjectDeletionTarget(
@@ -13,19 +17,19 @@ export function isProtectedProjectDeletionTarget(
   protectedProjectId: string | null | undefined,
 ) {
   if (!protectedProjectId) {
-    return false;
+    return false
   }
 
-  const normalizedProjectId = normalizeProjectPathForComparison(projectId);
-  const normalizedProtectedProjectId = normalizeProjectPathForComparison(protectedProjectId);
+  const normalizedProjectId = normalizeProjectPathForComparison(projectId)
+  const normalizedProtectedProjectId = normalizeProjectPathForComparison(protectedProjectId)
 
   if (normalizedProjectId === normalizedProtectedProjectId) {
-    return true;
+    return true
   }
 
-  if (normalizedProjectId === "/") {
-    return normalizedProtectedProjectId.startsWith("/");
+  if (normalizedProjectId === '/') {
+    return normalizedProtectedProjectId.startsWith('/')
   }
 
-  return normalizedProtectedProjectId.startsWith(`${normalizedProjectId}/`);
+  return normalizedProtectedProjectId.startsWith(`${normalizedProjectId}/`)
 }

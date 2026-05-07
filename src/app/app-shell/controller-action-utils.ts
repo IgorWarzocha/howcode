@@ -1,81 +1,88 @@
-import { createLocalThreadDraft } from "../../../shared/session-paths";
-import type { DesktopAction } from "../desktop/actions";
-import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from "../desktop/types";
+import { createLocalThreadDraft } from '../../../shared/session-paths'
+import type { DesktopAction } from '../desktop/actions'
+import type { AnyDesktopActionPayload, DesktopActionResult, Thread } from '../desktop/types'
 
-export type ActionPayload = AnyDesktopActionPayload;
+export type ActionPayload = AnyDesktopActionPayload
 
 export function getPayloadProjectId(payload: ActionPayload) {
-  return typeof payload.projectId === "string" ? payload.projectId : null;
+  return typeof payload.projectId === 'string' ? payload.projectId : null
 }
 
 export function getPayloadThreadId(payload: ActionPayload) {
-  return typeof payload.threadId === "string" ? payload.threadId : null;
+  return typeof payload.threadId === 'string' ? payload.threadId : null
 }
 
 export function getPayloadThreadIds(payload: ActionPayload) {
   return Array.isArray(payload.threadIds)
-    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === "string")
-    : [];
+    ? payload.threadIds.filter((threadId): threadId is string => typeof threadId === 'string')
+    : []
 }
 
 export function getPayloadProjectIds(payload: ActionPayload) {
   return Array.isArray(payload.projectIds)
-    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === "string")
-    : [];
+    ? payload.projectIds.filter((projectId): projectId is string => typeof projectId === 'string')
+    : []
 }
 
 export function getResultThreadIds(threadIds: unknown) {
   return Array.isArray(threadIds)
-    ? threadIds.filter((threadId): threadId is string => typeof threadId === "string")
-    : [];
+    ? threadIds.filter((threadId): threadId is string => typeof threadId === 'string')
+    : []
 }
 
 export function isThreadList(value: unknown): value is Thread[] {
-  return Array.isArray(value);
+  return Array.isArray(value)
 }
 
 export function hasActionError(actionResult: DesktopActionResult | null | undefined) {
-  return actionResult?.ok === false || typeof actionResult?.result?.error === "string";
+  return actionResult?.ok === false || typeof actionResult?.result?.error === 'string'
 }
 
-export function sortPinnedThreads<T extends { id: string; pinned?: boolean }>(threads: T[]) {
+export function sortPinnedThreads<T extends { id: string; pinned?: boolean | undefined }>(
+  threads: T[],
+) {
   return [...threads].sort((left, right) => {
-    const leftPinned = Boolean(left.pinned);
-    const rightPinned = Boolean(right.pinned);
+    const leftPinned = Boolean(left.pinned)
+    const rightPinned = Boolean(right.pinned)
 
     if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
+      return leftPinned ? -1 : 1
     }
 
-    return 0;
-  });
+    return 0
+  })
 }
 
-export function sortPinnedProjects<T extends { id: string; pinned?: boolean }>(projects: T[]) {
+export function sortPinnedProjects<T extends { id: string; pinned?: boolean | undefined }>(
+  projects: T[],
+) {
   return [...projects].sort((left, right) => {
-    const leftPinned = Boolean(left.pinned);
-    const rightPinned = Boolean(right.pinned);
+    const leftPinned = Boolean(left.pinned)
+    const rightPinned = Boolean(right.pinned)
 
     if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
+      return leftPinned ? -1 : 1
     }
 
-    return 0;
-  });
+    return 0
+  })
 }
 
 export function hasDesktopBridge() {
-  if (typeof window === "undefined") {
-    return false;
+  if (typeof window === 'undefined') {
+    return false
   }
 
-  return typeof window.piDesktop?.invokeAction === "function";
+  return typeof window.piDesktop?.invokeAction === 'function'
 }
 
-export function buildLocalThreadFallback(projectId: string) {
-  return createLocalThreadDraft(projectId);
+export function buildLocalThreadFallback(
+  projectId: string,
+  options: { chatGroupId?: string | null } = {},
+) {
+  return createLocalThreadDraft(projectId, undefined, options)
 }
 
 export function isThreadPinAction(action: DesktopAction) {
-  return action === "thread.pin";
+  return action === 'thread.pin'
 }

@@ -3,8 +3,11 @@
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);
-  transition: grid-template-rows 180ms ease, opacity 180ms ease, transform 180ms ease, margin-top
-    180ms ease;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease,
+    margin-top 180ms ease;
 }
 
 .motion-collapse-panel[data-open="true"] {
@@ -23,8 +26,9 @@
   pointer-events: none;
   transform: translateY(var(--motion-slide-y-sm)) scale(0.985);
   transform-origin: bottom left;
-  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard), transform
-    var(--motion-duration-fast) var(--motion-ease-standard);
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .motion-popover[data-open="true"] {
@@ -37,13 +41,17 @@
   0%,
   100% {
     opacity: 1;
-    box-shadow: inset 0 0 0 1px var(--accent-bg), inset 0 0 14px var(--accent-bg-subtle);
+    box-shadow:
+      inset 0 0 0 1px var(--accent-bg),
+      inset 0 0 14px var(--accent-bg-subtle);
   }
 
   50% {
     opacity: 1;
-    box-shadow: inset 0 0 0 1px var(--accent-border), inset 0 0 26px var(--accent-bg), inset 0 0
-      42px var(--accent-bg-subtle);
+    box-shadow:
+      inset 0 0 0 1px var(--accent-border),
+      inset 0 0 26px var(--accent-bg),
+      inset 0 0 42px var(--accent-bg-subtle);
   }
 }
 
@@ -81,8 +89,9 @@
 .motion-overlay-panel {
   opacity: 0;
   transform: translateY(var(--motion-slide-y-md));
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
-    var(--motion-duration-standard) var(--motion-ease-standard);
+  transition:
+    opacity var(--motion-duration-standard) var(--motion-ease-standard),
+    transform var(--motion-duration-standard) var(--motion-ease-standard);
 }
 
 .motion-overlay-panel[data-open="true"] {
@@ -91,14 +100,17 @@
 }
 
 .motion-terminal-drawer-offset {
-  transition: padding-right 180ms var(--motion-ease-standard), right 180ms
-    var(--motion-ease-standard);
+  transition:
+    padding-right 180ms var(--motion-ease-standard),
+    right 180ms var(--motion-ease-standard);
 }
 
 .motion-terminal-drawer {
   opacity: 0;
   transform: translateX(12px);
-  transition: opacity 180ms var(--motion-ease-standard), transform 180ms var(--motion-ease-standard);
+  transition:
+    opacity 180ms var(--motion-ease-standard),
+    transform 180ms var(--motion-ease-standard);
 }
 
 .motion-terminal-drawer[data-open="true"] {
@@ -108,8 +120,9 @@
 
 .motion-desktop-workspace,
 .motion-takeover-panel {
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform
-    var(--motion-duration-standard) var(--motion-ease-standard);
+  transition:
+    opacity var(--motion-duration-standard) var(--motion-ease-standard),
+    transform var(--motion-duration-standard) var(--motion-ease-standard);
 }
 
 .motion-desktop-workspace {

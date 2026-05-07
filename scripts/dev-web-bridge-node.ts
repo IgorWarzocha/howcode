@@ -1,84 +1,92 @@
-import { mkdir, open, stat } from "node:fs/promises";
-import http from "node:http";
-import os from "node:os";
-import path from "node:path";
+const leadingDotsPattern = /^\.+/
 
-import { getAttachmentKind } from "../shared/composer-attachments";
-import { getDesktopWorkingDirectory } from "../shared/desktop-working-directory";
-import { getSafeExternalUrl } from "../shared/external-url";
-import packageJson from "../package.json";
+import { mkdir, open, stat } from 'node:fs/promises'
+import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
+import * as piSkills from '../desktop/pi-skills.ts'
+import * as piThreads from '../desktop/pi-threads.ts'
+import * as skillCreator from '../desktop/skill-creator-session.ts'
+import { openPathWithSystem } from '../desktop/system-open-path.ts'
+import * as terminalManager from '../desktop/terminal/manager.ts'
+import packageJson from '../package.json'
+import { getAttachmentKind } from '../shared/composer-attachments'
 import type {
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestHandlerMap,
-} from "../shared/desktop-ipc";
-import { listComposerAttachmentEntries } from "../src/desktop-host/composer-attachments";
-import * as piThreads from "../desktop/pi-threads.cts";
-import * as piSkills from "../desktop/pi-skills.cts";
-import * as skillCreator from "../desktop/skill-creator-session.cts";
-import * as terminalManager from "../desktop/terminal/manager.cts";
-import { openPathWithSystem } from "../desktop/system-open-path.cts";
+} from '../shared/desktop-ipc'
+import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
+import { getSafeExternalUrl } from '../shared/external-url'
+import {
+  listComposerAttachmentEntries,
+  searchComposerAttachmentEntries,
+} from '../src/desktop-host/composer-attachments'
 
-const host = process.env.HOWCODE_DEV_WEB_BRIDGE_HOST || "127.0.0.1";
-const port = Number(process.env.HOWCODE_DEV_WEB_BRIDGE_PORT || 0);
-const bridgeToken = process.env.HOWCODE_DEV_WEB_BRIDGE_TOKEN || "";
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
 
-const desktopEventClients = new Set<http.ServerResponse>();
-const terminalEventClients = new Set<http.ServerResponse>();
-const sseClients = new Set<http.ServerResponse>();
+const host = getProcessEnvironmentVariable('HOWCODE_DEV_WEB_BRIDGE_HOST') || '127.0.0.1'
+const port = Number(getProcessEnvironmentVariable('HOWCODE_DEV_WEB_BRIDGE_PORT') || 0)
+const bridgeToken = getProcessEnvironmentVariable('HOWCODE_DEV_WEB_BRIDGE_TOKEN') || ''
+
+const desktopEventClients = new Set<http.ServerResponse>()
+const terminalEventClients = new Set<http.ServerResponse>()
+const sseClients = new Set<http.ServerResponse>()
 const devAppUpdateState = {
-  status: "up-to-date" as const,
+  status: 'up-to-date' as const,
   currentVersion: packageJson.version,
   latestVersion: packageJson.version,
   error: null,
-};
+}
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,
   channel: TChannel,
   event: DesktopEventMap[TChannel],
 ) {
-  const payload = JSON.stringify({ channel, event });
+  const payload = JSON.stringify({ channel, event })
   for (const client of clients) {
-    client.write(`event: ${channel}\n`);
-    client.write(`data: ${payload}\n\n`);
+    client.write(`event: ${channel}\n`)
+    client.write(`data: ${payload}\n\n`)
   }
 }
 
 async function writeUniqueTextFile(directoryPath: string, fileName: string, content: string) {
-  const parsed = path.parse(fileName);
+  const parsed = path.parse(fileName)
   for (let index = 0; index < 100; index += 1) {
-    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`;
-    const candidatePath = path.join(directoryPath, candidateName);
+    const candidateName = index === 0 ? fileName : `${parsed.name}-${index + 1}${parsed.ext}`
+    const candidatePath = path.join(directoryPath, candidateName)
     try {
-      const file = await open(candidatePath, "wx", 0o600);
+      const file = await open(candidatePath, 'wx', 0o600)
       try {
-        await file.writeFile(content, "utf8");
+        await file.writeFile(content, 'utf8')
       } finally {
-        await file.close();
+        await file.close()
       }
-      return candidatePath;
+      return candidatePath
     } catch (error) {
       if (
-        typeof error === "object" &&
+        typeof error === 'object' &&
         error !== null &&
-        "code" in error &&
-        error.code === "EEXIST"
+        'code' in error &&
+        error.code === 'EEXIST'
       ) {
-        continue;
+        continue
       }
-      throw error;
+      throw error
     }
   }
-  throw new Error("Could not find an unused file name in Downloads.");
+  throw new Error('Could not find an unused file name in Downloads.')
 }
 
 piThreads.subscribeDesktopEvents((event) => {
-  sendSseEvent(desktopEventClients, "desktopEvent", event);
-});
+  sendSseEvent(desktopEventClients, 'desktopEvent', event)
+})
 terminalManager.subscribeTerminalEvents((event) => {
-  sendSseEvent(terminalEventClients, "terminalEvent", event);
-});
+  sendSseEvent(terminalEventClients, 'terminalEvent', event)
+})
 
 const handlers: DesktopRequestHandlerMap = {
   getAppUpdateState: () => devAppUpdateState,
@@ -112,36 +120,42 @@ const handlers: DesktopRequestHandlerMap = {
   readClipboardImage: () => null,
   getAttachmentKindsForPaths: async ({ paths }) => {
     const uniquePaths = [...new Set(Array.isArray(paths) ? paths : [])].filter(
-      (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0,
-    );
+      (candidate): candidate is string => typeof candidate === 'string' && candidate.length > 0,
+    )
     const entries = await Promise.all(
       uniquePaths.map(async (candidate) => {
         try {
-          const stats = await stat(candidate);
+          const stats = await stat(candidate)
           return [
             candidate,
-            stats.isDirectory() ? "directory" : getAttachmentKind(candidate),
-          ] as const;
+            stats.isDirectory() ? 'directory' : getAttachmentKind(candidate),
+          ] as const
         } catch {
-          return [candidate, null] as const;
+          return [candidate, null] as const
         }
       }),
-    );
-    return Object.fromEntries(entries);
+    )
+    return Object.fromEntries(entries)
   },
   listComposerAttachmentEntries: (request) => listComposerAttachmentEntries(request),
+  searchComposerAttachmentEntries: (request) => searchComposerAttachmentEntries(request),
   getComposerState: (request) => piThreads.loadComposerState(request),
   getComposerSlashCommands: (request) => piThreads.loadComposerSlashCommands(request),
+  getComposerSkills: (request) => piThreads.loadComposerSkills(request),
   getDictationState: () => piThreads.getDictationState(),
   listDictationModels: () => piThreads.listDictationModels(),
   installDictationModel: (request) => piThreads.installDictationModel(request),
   removeDictationModel: (request) => piThreads.removeDictationModel(request),
   transcribeDictation: (request) => piThreads.transcribeDictation(request),
-  getProjectThreads: ({ projectId, chat }) => piThreads.loadProjectThreads(projectId, { chat }),
-  getChatSidebarState: ({ selectedGroupId }) =>
-    piThreads.loadChatSidebarState(selectedGroupId ?? null),
+  getProjectThreads: (request) =>
+    piThreads.loadProjectThreads(
+      request?.projectId ?? '',
+      request?.chat === undefined ? {} : { chat: request.chat },
+    ),
+  getChatSidebarState: (request) =>
+    piThreads.loadChatSidebarState(request?.selectedGroupId ?? null),
   createChatGroup: ({ name }) => piThreads.createChatGroup(name),
-  listArtifacts: ({ conversationId }) => piThreads.listArtifacts(conversationId ?? null),
+  listArtifacts: (request) => piThreads.listArtifacts(request?.conversationId ?? null),
   getArtifact: ({ artifactSlug, conversationId }) =>
     piThreads.getArtifact(artifactSlug, conversationId ?? null),
   updateArtifact: ({ artifactSlug, content, conversationId }) =>
@@ -159,85 +173,85 @@ const handlers: DesktopRequestHandlerMap = {
   getThread: ({ sessionPath, historyCompactions = 0 }) =>
     piThreads.loadThread(sessionPath, { historyCompactions }),
   watchSession: async ({ sessionPath }) => {
-    await piThreads.setWatchedSessionPath(sessionPath);
-    return { ok: true };
+    await piThreads.setWatchedSessionPath(sessionPath)
+    return { ok: true }
   },
   invokeAction: async ({ action, payload = {} }) => {
     try {
-      const result = await piThreads.handleDesktopAction(action, payload);
+      const result = await piThreads.handleDesktopAction(action, payload)
       return {
         ok: true,
         at: new Date().toISOString(),
         payload: { action, payload },
         result: result ?? null,
-      };
+      }
     } catch (error) {
-      console.error("dev:web invokeAction failed", { action, payload, error });
+      console.error('dev:web invokeAction failed', { action, payload, error })
       return {
         ok: false,
         at: new Date().toISOString(),
         payload: { action, payload },
         result: {
-          error: error instanceof Error ? error.message : "Desktop action failed unexpectedly.",
+          error: error instanceof Error ? error.message : 'Desktop action failed unexpectedly.',
         },
-      };
+      }
     }
   },
   listTerminals: () => terminalManager.listTerminals(),
   terminalOpen: (request) => terminalManager.openTerminal(request),
   terminalWrite: async ({ sessionId, data }) => {
-    await terminalManager.writeTerminal(sessionId, data);
-    return { ok: true };
+    await terminalManager.writeTerminal(sessionId, data)
+    return { ok: true }
   },
   terminalResize: async ({ sessionId, cols, rows }) => {
-    await terminalManager.resizeTerminal(sessionId, cols, rows);
-    return { ok: true };
+    await terminalManager.resizeTerminal(sessionId, cols, rows)
+    return { ok: true }
   },
   terminalClose: async (request) => {
-    await terminalManager.closeTerminal(request);
-    return { ok: true };
+    await terminalManager.closeTerminal(request)
+    return { ok: true }
   },
   terminalSessionFileStat: ({ sessionId }) => terminalManager.statSessionFile(sessionId),
   terminalStatus: ({ sessionId }) => terminalManager.getTerminalStatus(sessionId),
   openExternal: async ({ url }) => {
-    const safeUrl = getSafeExternalUrl(url);
-    return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) };
+    const safeUrl = getSafeExternalUrl(url)
+    return { ok: Boolean(safeUrl && (await openPathWithSystem(safeUrl))) }
   },
   openPath: async ({ path: targetPath }) => ({ ok: await openPathWithSystem(targetPath) }),
   saveTextToDownloads: async ({ fileName, content }) => {
     const safeFileName = fileName
-      .replace(/[\\/:*?"<>|]/g, "-")
-      .replace(/^\.+/, "")
-      .trim();
-    if (!safeFileName) return { ok: false, error: "Invalid file name." };
-    const downloadsPath = path.join(os.homedir(), "Downloads");
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(leadingDotsPattern, '')
+      .trim()
+    if (!safeFileName) return { ok: false, error: 'Invalid file name.' }
+    const downloadsPath = path.join(os.homedir(), 'Downloads')
     try {
-      await mkdir(downloadsPath, { recursive: true });
-      const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content);
-      return { ok: true, path: filePath };
+      await mkdir(downloadsPath, { recursive: true })
+      const filePath = await writeUniqueTextFile(downloadsPath, safeFileName, content)
+      return { ok: true, path: filePath }
     } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
     }
   },
-};
+}
 
 async function readJsonBody(request: http.IncomingMessage) {
-  const chunks: Buffer[] = [];
+  const chunks: Buffer[] = []
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
   }
 
   if (chunks.length === 0) {
-    return {};
+    return {}
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
 }
 
 function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown) {
-  response.statusCode = statusCode;
-  response.setHeader("content-type", "application/json; charset=utf-8");
-  response.end(JSON.stringify(payload));
+  response.statusCode = statusCode
+  response.setHeader('content-type', 'application/json; charset=utf-8')
+  response.end(JSON.stringify(payload))
 }
 
 async function handleBridgeRequest(
@@ -245,28 +259,26 @@ async function handleBridgeRequest(
   request: http.IncomingMessage,
   response: http.ServerResponse,
 ) {
-  const handler = handlers[channel];
+  const handler = handlers[channel]
   if (!handler) {
-    sendJson(response, 404, { error: `Unknown desktop request channel: ${channel}` });
-    return;
+    sendJson(response, 404, { error: `Unknown desktop request channel: ${channel}` })
+    return
   }
 
   try {
-    const params = await readJsonBody(request);
-    const result = await (handler as (params: unknown) => Promise<unknown> | unknown)(params);
-    sendJson(response, 200, result ?? null);
+    const params = await readJsonBody(request)
+    const result = await (handler as (params: unknown) => Promise<unknown> | unknown)(params)
+    sendJson(response, 200, result ?? null)
   } catch (error) {
-    console.error("dev:web bridge request failed", { channel, error });
+    console.error('dev:web bridge request failed', { channel, error })
     sendJson(response, 500, {
-      error: error instanceof Error ? error.message : "Desktop bridge request failed.",
-    });
+      error: error instanceof Error ? error.message : 'Desktop bridge request failed.',
+    })
   }
 }
 
 function hasValidBridgeToken(request: http.IncomingMessage) {
-  return (
-    bridgeToken.length > 0 && request.headers["x-howcode-dev-web-bridge-token"] === bridgeToken
-  );
+  return bridgeToken.length > 0 && request.headers['x-howcode-dev-web-bridge-token'] === bridgeToken
 }
 
 function handleBridgeEvents(
@@ -275,76 +287,76 @@ function handleBridgeEvents(
   response: http.ServerResponse,
 ) {
   response.writeHead(200, {
-    "content-type": "text/event-stream; charset=utf-8",
-    "cache-control": "no-cache, no-transform",
-    connection: "keep-alive",
-  });
-  response.write("retry: 1000\n\n");
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-cache, no-transform',
+    connection: 'keep-alive',
+  })
+  response.write('retry: 1000\n\n')
 
-  const clients = channel === "terminalEvent" ? terminalEventClients : desktopEventClients;
-  clients.add(response);
-  sseClients.add(response);
-  request.on("close", () => {
-    clients.delete(response);
-    sseClients.delete(response);
-  });
+  const clients = channel === 'terminalEvent' ? terminalEventClients : desktopEventClients
+  clients.add(response)
+  sseClients.add(response)
+  request.on('close', () => {
+    clients.delete(response)
+    sseClients.delete(response)
+  })
 }
 
 const server = http.createServer((request, response) => {
-  const requestUrl = new URL(request.url ?? "/", `http://${host}`);
+  const requestUrl = new URL(request.url ?? '/', `http://${host}`)
 
   if (!hasValidBridgeToken(request)) {
-    sendJson(response, 403, { error: "Invalid dev:web bridge token." });
-    return;
+    sendJson(response, 403, { error: 'Invalid dev:web bridge token.' })
+    return
   }
 
-  if (requestUrl.pathname.startsWith("/__howcode/events/")) {
-    const channel = requestUrl.pathname.slice("/__howcode/events/".length);
-    if (channel !== "desktopEvent" && channel !== "terminalEvent") {
-      sendJson(response, 404, { error: `Unknown desktop event channel: ${channel}` });
-      return;
+  if (requestUrl.pathname.startsWith('/__howcode/events/')) {
+    const channel = requestUrl.pathname.slice('/__howcode/events/'.length)
+    if (channel !== 'desktopEvent' && channel !== 'terminalEvent') {
+      sendJson(response, 404, { error: `Unknown desktop event channel: ${channel}` })
+      return
     }
 
-    handleBridgeEvents(channel, request, response);
-    return;
+    handleBridgeEvents(channel, request, response)
+    return
   }
 
-  if (requestUrl.pathname.startsWith("/__howcode/request/")) {
-    if (request.method !== "POST") {
-      sendJson(response, 405, { error: "Desktop bridge requests must use POST." });
-      return;
+  if (requestUrl.pathname.startsWith('/__howcode/request/')) {
+    if (request.method !== 'POST') {
+      sendJson(response, 405, { error: 'Desktop bridge requests must use POST.' })
+      return
     }
 
-    const channel = requestUrl.pathname.slice("/__howcode/request/".length);
-    void handleBridgeRequest(channel as DesktopRequestChannel, request, response);
-    return;
+    const channel = requestUrl.pathname.slice('/__howcode/request/'.length)
+    void handleBridgeRequest(channel as DesktopRequestChannel, request, response)
+    return
   }
 
-  sendJson(response, 404, { error: "Unknown dev:web bridge endpoint." });
-});
+  sendJson(response, 404, { error: 'Unknown dev:web bridge endpoint.' })
+})
 
 server.listen(port, host, () => {
-  const address = server.address();
-  if (!address || typeof address === "string") {
-    throw new Error("dev:web bridge did not expose a numeric port.");
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('dev:web bridge did not expose a numeric port.')
   }
 
-  console.log(`HOWCODE_DEV_WEB_BRIDGE_READY ${JSON.stringify({ host, port: address.port })}`);
-});
+  console.log(`HOWCODE_DEV_WEB_BRIDGE_READY ${JSON.stringify({ host, port: address.port })}`)
+})
 
 function shutdown() {
   for (const client of sseClients) {
-    client.end();
-    client.destroy();
+    client.end()
+    client.destroy()
   }
-  sseClients.clear();
-  desktopEventClients.clear();
-  terminalEventClients.clear();
+  sseClients.clear()
+  desktopEventClients.clear()
+  terminalEventClients.clear()
 
-  server.close(() => process.exit(0));
-  server.closeAllConnections();
-  setTimeout(() => process.exit(0), 750).unref();
+  server.close(() => process.exit(0))
+  server.closeAllConnections()
+  setTimeout(() => process.exit(0), 750).unref()
 }
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+process.once('SIGINT', shutdown)
+process.once('SIGTERM', shutdown)

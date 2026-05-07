@@ -1,7 +1,7 @@
-declare module "@pierre/diffs/worker/worker.js?worker" {
+declare module '@pierre/diffs/worker/worker.js?worker' {
   const DiffWorker: {
-    new (): Worker;
-  };
+    new (): Worker
+  }
 
-  export default DiffWorker;
+  export default DiffWorker
 }

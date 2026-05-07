@@ -10,7 +10,7 @@ files:
   - package.json
   - "!node_modules/**/*.map"
   - "!node_modules/lucide-react/**"
-asar: false
+asar: true
 extraResources:
   - from: desktop/resources
     to: resources
@@ -36,6 +36,9 @@ nsis:
   createDesktopShortcut: false
   createStartMenuShortcut: true
 asarUnpack:
+  - build/desktop/**
+  - node_modules/bindings/**
+  - node_modules/file-uri-to-path/**
   - node_modules/**/*.node
   - node_modules/node-pty/build/Release/**
   - node_modules/node-pty/prebuilds/**

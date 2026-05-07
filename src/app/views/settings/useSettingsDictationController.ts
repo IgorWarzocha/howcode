@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { getDesktopActionErrorMessage } from "../../desktop/action-results";
+import { useCallback, useEffect, useState } from 'react'
+import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 import type {
   AppSettings,
   DesktopActionInvoker,
@@ -7,36 +7,67 @@ import type {
   DictationModelId,
   DictationModelSummary,
   DictationState,
-} from "../../desktop/types";
+} from '../../desktop/types'
 
 export type DictationPendingAction = {
-  modelId: DictationModelId;
-  kind: "download" | "switch" | "delete";
-};
+  modelId: DictationModelId
+  kind: 'download' | 'switch' | 'delete'
+}
 
 function normalizeManagedDictationModelId(
   modelId: string | null | undefined,
 ): DictationModelId | null {
-  return modelId === "tiny.en" || modelId === "base.en" || modelId === "small.en" ? modelId : null;
+  return modelId === 'tiny.en' || modelId === 'base.en' || modelId === 'small.en' ? modelId : null
+}
+
+async function refreshAfterDictationError(input: {
+  error: unknown
+  fallbackMessage: string
+  refreshDictationState: () => Promise<unknown>
+  setDictationInstallError: (message: string | null) => void
+}) {
+  input.setDictationInstallError(
+    input.error instanceof Error ? input.error.message : input.fallbackMessage,
+  )
+  await input.refreshDictationState()
+}
+
+async function clearSelectedDictationModelIfDeleted(input: {
+  activeModelId: DictationModelId | null
+  modelId: DictationModelId
+  refreshDictationState: () => Promise<{ dictationModels: DictationModelSummary[] }>
+  updateDictationModelSetting: (
+    modelId: DictationModelId | null,
+    fallbackMessage: string,
+  ) => Promise<void>
+}) {
+  if (input.activeModelId !== input.modelId) return
+  const refreshedState = await input.refreshDictationState()
+  const modelStillInstalled = refreshedState.dictationModels.some(
+    (model) => model.id === input.modelId && model.installed,
+  )
+  if (!modelStillInstalled) {
+    await input.updateDictationModelSetting(null, 'Could not clear dictation model selection.')
+  }
 }
 
 export function useSettingsDictationController({
   appSettings,
   onAction,
 }: {
-  appSettings: AppSettings;
-  onAction: DesktopActionInvoker;
+  appSettings: AppSettings
+  onAction: DesktopActionInvoker
 }) {
-  const [dictationState, setDictationState] = useState<DictationState | null>(null);
-  const [dictationModels, setDictationModels] = useState<DictationModelSummary[]>([]);
+  const [dictationState, setDictationState] = useState<DictationState | null>(null)
+  const [dictationModels, setDictationModels] = useState<DictationModelSummary[]>([])
   const [dictationPendingAction, setDictationPendingAction] =
-    useState<DictationPendingAction | null>(null);
-  const [dictationInstallError, setDictationInstallError] = useState<string | null>(null);
-  const [dictationDownloadLogLines, setDictationDownloadLogLines] = useState<string[]>([]);
+    useState<DictationPendingAction | null>(null)
+  const [dictationInstallError, setDictationInstallError] = useState<string | null>(null)
+  const [dictationDownloadLogLines, setDictationDownloadLogLines] = useState<string[]>([])
 
   useEffect(() => {
     if (!appSettings.dictationModelId) {
-      return;
+      return
     }
 
     setDictationModels((current) =>
@@ -44,67 +75,67 @@ export function useSettingsDictationController({
         ...model,
         selected: model.installed && model.id === appSettings.dictationModelId,
       })),
-    );
-  }, [appSettings.dictationModelId]);
+    )
+  }, [appSettings.dictationModelId])
 
   const refreshDictationState = useCallback(async () => {
     const [nextDictationState, nextDictationModels] = await Promise.all([
       window.piDesktop?.getDictationState?.().catch(() => null) ?? Promise.resolve(null),
       window.piDesktop?.listDictationModels?.().catch(() => []) ?? Promise.resolve([]),
-    ]);
+    ])
 
-    setDictationState(nextDictationState);
-    setDictationModels(nextDictationModels);
+    setDictationState(nextDictationState)
+    setDictationModels(nextDictationModels)
 
     return {
       dictationState: nextDictationState,
       dictationModels: nextDictationModels,
-    };
-  }, []);
+    }
+  }, [])
 
   useEffect(() => {
-    void refreshDictationState();
-  }, [refreshDictationState]);
+    void refreshDictationState()
+  }, [refreshDictationState])
 
   useEffect(() => {
     if (!window.piDesktop?.subscribe) {
-      return;
+      return
     }
 
     return window.piDesktop.subscribe((event: DesktopEvent) => {
-      if (event.type !== "dictation-download-log") {
-        return;
+      if (event.type !== 'dictation-download-log') {
+        return
       }
 
       setDictationDownloadLogLines((current) => {
-        const nextLines = [...current, `${event.modelId}: ${event.message}`];
-        return nextLines.slice(-12);
-      });
+        const nextLines = [...current, `${event.modelId}: ${event.message}`]
+        return nextLines.slice(-12)
+      })
 
       if (event.done) {
-        void refreshDictationState();
+        void refreshDictationState()
       }
-    });
-  }, [refreshDictationState]);
+    })
+  }, [refreshDictationState])
 
   const appendDictationDownloadLogLine = useCallback((line: string) => {
-    setDictationDownloadLogLines((current) => [...current, line].slice(-12));
-  }, []);
+    setDictationDownloadLogLines((current) => [...current, line].slice(-12))
+  }, [])
 
   const updateDictationModelSetting = useCallback(
     async (modelId: DictationModelId | null, fallbackMessage: string) => {
-      const actionResult = await onAction("settings.update", {
-        key: "dictationModelId",
+      const actionResult = await onAction('settings.update', {
+        key: 'dictationModelId',
         value: modelId,
-      });
+      })
 
-      const actionErrorMessage = getDesktopActionErrorMessage(actionResult, fallbackMessage);
+      const actionErrorMessage = getDesktopActionErrorMessage(actionResult, fallbackMessage)
       if (actionErrorMessage) {
-        throw new Error(actionErrorMessage);
+        throw new Error(actionErrorMessage)
       }
     },
     [onAction],
-  );
+  )
 
   const getActiveDictationModelId = useCallback(() => {
     return (
@@ -112,35 +143,33 @@ export function useSettingsDictationController({
       normalizeManagedDictationModelId(dictationState?.modelId) ??
       normalizeManagedDictationModelId(appSettings.dictationModelId) ??
       null
-    );
-  }, [appSettings.dictationModelId, dictationModels, dictationState?.modelId]);
+    )
+  }, [appSettings.dictationModelId, dictationModels, dictationState?.modelId])
 
   const installDictationModel = async (modelId: DictationModelId) => {
     if (!window.piDesktop?.installDictationModel) {
-      setDictationInstallError("Dictation model installs are unavailable in this runtime.");
-      return;
+      setDictationInstallError('Dictation model installs are unavailable in this runtime.')
+      return
     }
 
-    setDictationPendingAction({ modelId, kind: "download" });
-    setDictationInstallError(null);
-    setDictationDownloadLogLines([]);
-    appendDictationDownloadLogLine(`ui ${modelId}: install requested`);
+    setDictationPendingAction({ modelId, kind: 'download' })
+    setDictationInstallError(null)
+    setDictationDownloadLogLines([])
+    appendDictationDownloadLogLine(`ui ${modelId}: install requested`)
 
     try {
-      appendDictationDownloadLogLine(`ui ${modelId}: calling desktop RPC…`);
-      const result = await window.piDesktop.installDictationModel(modelId);
-      appendDictationDownloadLogLine(
-        `ui ${modelId}: RPC resolved (ok=${result.ok ? "yes" : "no"})`,
-      );
+      appendDictationDownloadLogLine(`ui ${modelId}: calling desktop RPC…`)
+      const result = await window.piDesktop.installDictationModel(modelId)
+      appendDictationDownloadLogLine(`ui ${modelId}: RPC resolved (ok=${result.ok ? 'yes' : 'no'})`)
 
       if (!result.ok) {
-        setDictationInstallError(result.error ?? "Could not download dictation model.");
-        await refreshDictationState();
-        return;
+        setDictationInstallError(result.error ?? 'Could not download dictation model.')
+        await refreshDictationState()
+        return
       }
 
-      setDictationPendingAction({ modelId, kind: "switch" });
-      await updateDictationModelSetting(modelId, "Could not switch dictation model.");
+      setDictationPendingAction({ modelId, kind: 'switch' })
+      await updateDictationModelSetting(modelId, 'Could not switch dictation model.')
 
       setDictationModels((current) =>
         current.map((model) => ({
@@ -148,89 +177,82 @@ export function useSettingsDictationController({
           installed: model.id === modelId || model.installed,
           selected: model.id === modelId,
         })),
-      );
+      )
 
-      await refreshDictationState();
+      await refreshDictationState()
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not download dictation model.";
-      appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`);
-      setDictationInstallError(message);
-      await refreshDictationState();
+      const message = error instanceof Error ? error.message : 'Could not download dictation model.'
+      appendDictationDownloadLogLine(`ui ${modelId}: RPC threw ${message}`)
+      setDictationInstallError(message)
+      await refreshDictationState()
     } finally {
-      setDictationPendingAction(null);
+      setDictationPendingAction(null)
     }
-  };
+  }
 
   const selectDictationModel = async (modelId: DictationModelId) => {
-    setDictationPendingAction({ modelId, kind: "switch" });
-    setDictationInstallError(null);
+    setDictationPendingAction({ modelId, kind: 'switch' })
+    setDictationInstallError(null)
     setDictationModels((current) =>
       current.map((model) => ({
         ...model,
         selected: model.id === modelId,
       })),
-    );
+    )
 
     try {
-      await updateDictationModelSetting(modelId, "Could not switch dictation model.");
+      await updateDictationModelSetting(modelId, 'Could not switch dictation model.')
 
-      await refreshDictationState();
+      await refreshDictationState()
     } catch (error) {
       setDictationInstallError(
-        error instanceof Error ? error.message : "Could not switch dictation model.",
-      );
-      await refreshDictationState();
+        error instanceof Error ? error.message : 'Could not switch dictation model.',
+      )
+      await refreshDictationState()
     } finally {
-      setDictationPendingAction(null);
+      setDictationPendingAction(null)
     }
-  };
+  }
 
   const deleteDictationModel = async (modelId: DictationModelId) => {
     if (!window.piDesktop?.removeDictationModel) {
-      setDictationInstallError("Dictation model removal is unavailable in this runtime.");
-      return;
+      setDictationInstallError('Dictation model removal is unavailable in this runtime.')
+      return
     }
 
-    const activeModelId = getActiveDictationModelId();
-
-    setDictationPendingAction({ modelId, kind: "delete" });
-    setDictationInstallError(null);
-    appendDictationDownloadLogLine(`ui ${modelId}: delete requested`);
+    const activeModelId = getActiveDictationModelId()
+    setDictationPendingAction({ modelId, kind: 'delete' })
+    setDictationInstallError(null)
+    appendDictationDownloadLogLine(`ui ${modelId}: delete requested`)
 
     try {
-      const result = await window.piDesktop.removeDictationModel(modelId);
+      const result = await window.piDesktop.removeDictationModel(modelId)
       appendDictationDownloadLogLine(
-        `ui ${modelId}: delete resolved (ok=${result.ok ? "yes" : "no"})`,
-      );
-
+        `ui ${modelId}: delete resolved (ok=${result.ok ? 'yes' : 'no'})`,
+      )
       if (!result.ok) {
-        setDictationInstallError(result.error ?? "Could not remove dictation model.");
-        await refreshDictationState();
-        return;
+        setDictationInstallError(result.error ?? 'Could not remove dictation model.')
+        await refreshDictationState()
+        return
       }
-
-      if (activeModelId === modelId) {
-        const refreshedState = await refreshDictationState();
-        const modelStillInstalled = refreshedState.dictationModels.some(
-          (model) => model.id === modelId && model.installed,
-        );
-
-        if (!modelStillInstalled) {
-          await updateDictationModelSetting(null, "Could not clear dictation model selection.");
-        }
-      }
-
-      await refreshDictationState();
+      await clearSelectedDictationModelIfDeleted({
+        activeModelId,
+        modelId,
+        refreshDictationState,
+        updateDictationModelSetting,
+      })
+      await refreshDictationState()
     } catch (error) {
-      setDictationInstallError(
-        error instanceof Error ? error.message : "Could not remove dictation model.",
-      );
-      await refreshDictationState();
+      await refreshAfterDictationError({
+        error,
+        fallbackMessage: 'Could not remove dictation model.',
+        refreshDictationState,
+        setDictationInstallError,
+      })
     } finally {
-      setDictationPendingAction(null);
+      setDictationPendingAction(null)
     }
-  };
+  }
 
   return {
     deleteDictationModel,
@@ -242,5 +264,5 @@ export function useSettingsDictationController({
     installDictationModel,
     refreshDictationState,
     selectDictationModel,
-  };
+  }
 }

@@ -1,94 +1,94 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import type { PiConfiguredSkill } from "../../../desktop/types";
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import type { PiConfiguredSkill } from '../../../desktop/types'
 import {
   desktopQueryKeys,
   getConfiguredPiSkillsQuery,
   installPiSkillQuery,
   removePiSkillQuery,
-} from "../../../query/desktop-query";
-import type { InstallScope, PendingAction } from "../types";
+} from '../../../query/desktop-query'
+import type { InstallScope, PendingAction } from '../types'
 import {
   getActionError,
   getInstalledSkillSlugs,
   isDesktopSkillsAvailable,
   isSkillCreatorCandidate,
-} from "../utils";
+} from '../utils'
 
 export function useSkillsController({
   projectPath,
   onSetProjectScopeActive,
 }: {
-  projectPath: string | null;
-  onSetProjectScopeActive: (active: boolean) => void;
+  projectPath: string | null
+  onSetProjectScopeActive: (active: boolean) => void
 }) {
-  const queryClient = useQueryClient();
-  const normalizedProjectPath = projectPath?.trim() ? projectPath : null;
-  const [installScope, setInstallScope] = useState<InstallScope>("global");
-  const [installedOpen, setInstalledOpen] = useState(true);
-  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const desktopSkillsAvailable = isDesktopSkillsAvailable();
-  const projectScopeAvailable = normalizedProjectPath !== null;
+  const queryClient = useQueryClient()
+  const normalizedProjectPath = projectPath?.trim() ? projectPath : null
+  const [installScope, setInstallScope] = useState<InstallScope>('global')
+  const [installedOpen, setInstalledOpen] = useState(true)
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
+  const [actionError, setActionError] = useState<string | null>(null)
+  const desktopSkillsAvailable = isDesktopSkillsAvailable()
+  const projectScopeAvailable = normalizedProjectPath !== null
 
   const configuredSkillsQuery = useQuery({
     queryKey: desktopQueryKeys.configuredPiSkills(projectPath, true),
     queryFn: () => getConfiguredPiSkillsQuery({ projectPath, chat: true }),
     staleTime: 30_000,
     enabled: desktopSkillsAvailable,
-  });
+  })
 
-  const configuredSkills = configuredSkillsQuery.data ?? [];
+  const configuredSkills = configuredSkillsQuery.data ?? []
   const activeScope =
-    installScope === "chat" ? "chat" : installScope === "project" ? "project" : "user";
-  const globalSkillCount = configuredSkills.filter((skill) => skill.scope === "user").length;
-  const projectSkillCount = configuredSkills.filter((skill) => skill.scope === "project").length;
-  const chatSkillCount = configuredSkills.filter((skill) => skill.scope === "chat").length;
+    installScope === 'chat' ? 'chat' : installScope === 'project' ? 'project' : 'user'
+  const globalSkillCount = configuredSkills.filter((skill) => skill.scope === 'user').length
+  const projectSkillCount = configuredSkills.filter((skill) => skill.scope === 'project').length
+  const chatSkillCount = configuredSkills.filter((skill) => skill.scope === 'chat').length
   const skillCreatorDetected = configuredSkills.some(
     (skill) =>
       isSkillCreatorCandidate(skill) &&
-      (skill.scope === "user" ||
-        (installScope === "project" && skill.scope === "project") ||
-        (installScope === "chat" && skill.scope === "chat")),
-  );
+      (skill.scope === 'user' ||
+        (installScope === 'project' && skill.scope === 'project') ||
+        (installScope === 'chat' && skill.scope === 'chat')),
+  )
   const visibleConfiguredSkills = useMemo(
     () => configuredSkills.filter((skill) => skill.scope === activeScope),
     [activeScope, configuredSkills],
-  );
+  )
   const installedSkillSlugs = useMemo(
     () => getInstalledSkillSlugs(visibleConfiguredSkills),
     [visibleConfiguredSkills],
-  );
+  )
 
   useEffect(() => {
-    if (!projectScopeAvailable && installScope === "project") {
-      setInstallScope("global");
+    if (!projectScopeAvailable && installScope === 'project') {
+      setInstallScope('global')
     }
-  }, [installScope, projectScopeAvailable]);
+  }, [installScope, projectScopeAvailable])
 
   useEffect(() => {
     onSetProjectScopeActive(
-      (projectScopeAvailable && installScope === "project") || installScope === "chat",
-    );
+      (projectScopeAvailable && installScope === 'project') || installScope === 'chat',
+    )
 
     return () => {
-      onSetProjectScopeActive(false);
-    };
-  }, [installScope, onSetProjectScopeActive, projectScopeAvailable]);
+      onSetProjectScopeActive(false)
+    }
+  }, [installScope, onSetProjectScopeActive, projectScopeAvailable])
 
   const invalidateConfiguredSkillsCaches = (skills?: PiConfiguredSkill[]) => {
     if (skills) {
-      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath, true), skills);
+      queryClient.setQueryData(desktopQueryKeys.configuredPiSkills(projectPath, true), skills)
     }
 
     void queryClient.invalidateQueries({
-      queryKey: ["desktop", "piSkills", "configured"],
-    });
-  };
+      queryKey: ['desktop', 'piSkills', 'configured'],
+    })
+  }
 
   const addPendingAction = (action: PendingAction) => {
-    setPendingActions((current) => [...current, action]);
-  };
+    setPendingActions((current) => [...current, action])
+  }
 
   const removePendingAction = (action: PendingAction) => {
     setPendingActions((current) =>
@@ -96,75 +96,75 @@ export function useSkillsController({
         (currentAction) =>
           currentAction.kind !== action.kind || currentAction.source !== action.source,
       ),
-    );
-  };
+    )
+  }
 
-  const isPending = (kind: PendingAction["kind"], source: string) => {
-    const normalizedSource = source.trim().toLowerCase();
+  const isPending = (kind: PendingAction['kind'], source: string) => {
+    const normalizedSource = source.trim().toLowerCase()
     return pendingActions.some(
       (action) => action.kind === kind && action.source.trim().toLowerCase() === normalizedSource,
-    );
-  };
+    )
+  }
 
   const handleInstall = async (source: string) => {
-    if (installScope === "project" && !normalizedProjectPath) {
-      setActionError("Select a project first.");
-      return false;
+    if (installScope === 'project' && !normalizedProjectPath) {
+      setActionError('Select a project first.')
+      return false
     }
 
-    const normalizedSource = source.trim();
-    const pendingAction = { kind: "install" as const, source: normalizedSource };
+    const normalizedSource = source.trim()
+    const pendingAction = { kind: 'install' as const, source: normalizedSource }
 
-    addPendingAction(pendingAction);
-    setActionError(null);
+    addPendingAction(pendingAction)
+    setActionError(null)
 
     try {
       const result = await installPiSkillQuery({
         source: normalizedSource,
-        local: installScope === "project" || installScope === "chat",
+        local: installScope === 'project' || installScope === 'chat',
         projectPath: normalizedProjectPath,
-        chat: installScope === "chat",
-      });
+        chat: installScope === 'chat',
+      })
 
-      if (installScope === "chat" && result?.configuredSkills) {
-        invalidateConfiguredSkillsCaches(result.configuredSkills);
+      if (installScope === 'chat' && result?.configuredSkills) {
+        invalidateConfiguredSkillsCaches(result.configuredSkills)
       } else {
-        invalidateConfiguredSkillsCaches();
+        invalidateConfiguredSkillsCaches()
       }
 
-      return true;
+      return true
     } catch (error) {
-      setActionError(getActionError(error));
-      return false;
+      setActionError(getActionError(error))
+      return false
     } finally {
-      removePendingAction(pendingAction);
+      removePendingAction(pendingAction)
     }
-  };
+  }
 
   const handleRemove = async (configuredSkill: PiConfiguredSkill) => {
-    const pendingAction = { kind: "remove" as const, source: configuredSkill.installedPath };
+    const pendingAction = { kind: 'remove' as const, source: configuredSkill.installedPath }
 
-    addPendingAction(pendingAction);
-    setActionError(null);
+    addPendingAction(pendingAction)
+    setActionError(null)
 
     try {
       const result = await removePiSkillQuery({
         installedPath: configuredSkill.installedPath,
         projectPath,
-        chat: configuredSkill.scope === "chat",
-      });
+        chat: configuredSkill.scope === 'chat',
+      })
 
-      if (configuredSkill.scope === "chat" && result?.configuredSkills) {
-        invalidateConfiguredSkillsCaches(result.configuredSkills);
+      if (configuredSkill.scope === 'chat' && result?.configuredSkills) {
+        invalidateConfiguredSkillsCaches(result.configuredSkills)
       } else {
-        invalidateConfiguredSkillsCaches();
+        invalidateConfiguredSkillsCaches()
       }
     } catch (error) {
-      setActionError(getActionError(error));
+      setActionError(getActionError(error))
     } finally {
-      removePendingAction(pendingAction);
+      removePendingAction(pendingAction)
     }
-  };
+  }
 
   return {
     actionError,
@@ -174,13 +174,13 @@ export function useSkillsController({
     chatSkillCount,
     handleInstall,
     handleRemove,
-    hasPendingInstall: pendingActions.some((action) => action.kind === "install"),
+    hasPendingInstall: pendingActions.some((action) => action.kind === 'install'),
     installScope,
     installedOpen,
     installedSkillSlugs,
     invalidateConfiguredSkillsCaches,
-    isPendingInstall: (source: string) => isPending("install", source),
-    isPendingRemove: (installedPath: string) => isPending("remove", installedPath),
+    isPendingInstall: (source: string) => isPending('install', source),
+    isPendingRemove: (installedPath: string) => isPending('remove', installedPath),
     projectScopeAvailable,
     projectSkillCount,
     setActionError,
@@ -188,5 +188,5 @@ export function useSkillsController({
     setInstalledOpen,
     skillCreatorDetected,
     visibleConfiguredSkills,
-  };
+  }
 }

@@ -1,33 +1,33 @@
-import type { ComposerSlashCommand } from "./desktop-contracts";
+import type { ComposerSlashCommand } from './desktop-contracts'
 
-const compactCommandPattern = /^\/compact(?:\s+([\s\S]*))?$/;
+const compactCommandPattern = /^\/compact(?:\s+([\s\S]*))?$/
 
 export function parseCompactSlashCommand(text: string) {
-  const match = compactCommandPattern.exec(text.trim());
+  const match = compactCommandPattern.exec(text.trim())
   if (!match) {
-    return null;
+    return null
   }
 
-  return match[1]?.trim() ?? "";
+  return match[1]?.trim() ?? ''
 }
 
 export function isCompactSlashCommand(text: string) {
-  return parseCompactSlashCommand(text) !== null;
+  return parseCompactSlashCommand(text) !== null
 }
 
 export const appSettingsSlashCommand: ComposerSlashCommand = {
-  name: "settings",
-  description: "Open howcode app settings",
-  source: "app",
-};
+  name: 'settings',
+  description: 'Open howcode app settings',
+  source: 'app',
+}
 
 export const compactSlashCommand: ComposerSlashCommand = {
-  name: "compact",
-  description: "Manually compact the session context",
-  source: "builtin",
-};
+  name: 'compact',
+  description: 'Manually compact the session context',
+  source: 'builtin',
+}
 
 export const fallbackAppSlashCommands: ComposerSlashCommand[] = [
   appSettingsSlashCommand,
   compactSlashCommand,
-];
+]

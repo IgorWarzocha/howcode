@@ -16,6 +16,7 @@ Use this whenever publishing a Howcode desktop release.
   - push tag `v*` = actual release artifacts + GitHub release
 - Pushing release prep to `dev` first wastes CI. The release tag rebuilds artifacts anyway.
 - Always inspect `.github/workflows/release-artifacts.yml` before changing the release flow.
+- Do **not** globally disable Bun/GitHub dependency caches for release builds. If install cache corruption happens, use a targeted `bun pm cache rm` retry in the install step.
 
 ## Correct order
 

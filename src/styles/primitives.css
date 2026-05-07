@@ -119,7 +119,9 @@ button[data-tooltip]::after {
   line-height: 16px;
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 button[data-tooltip]:is(:hover, :focus-visible)::after {
@@ -163,9 +165,48 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   transform: translate(-2px, -50%);
 }
 
+button[data-tooltip][data-tooltip-size="wide"]::after {
+  max-width: 320px;
+  white-space: normal;
+}
+
+[data-setting-tooltip] {
+  position: relative;
+}
+
+[data-setting-tooltip]::after {
+  pointer-events: none;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  z-index: 1000;
+  width: max-content;
+  max-width: 280px;
+  transform: translate(-50%, calc(-100% + 4px));
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 6px 10px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  content: attr(data-setting-tooltip);
+  font-size: 11.5px;
+  line-height: 16px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transition:
+    opacity 150ms ease-out 1s,
+    transform 150ms ease-out 1s;
+}
+
+[data-setting-tooltip]:is(:hover, :focus-within)::after {
+  transform: translate(-50%, calc(-100% - 2px));
+  opacity: 1;
+}
+
 .tooltip-anchor {
   position: relative;
-  display: inline-flex;
   min-width: 0;
 }
 
@@ -186,7 +227,9 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
   white-space: normal;
   overflow-wrap: anywhere;
   opacity: 0;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 .tooltip-content[data-placement="top"] {
@@ -219,6 +262,41 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 .composer-footer-text {
   font-size: 12px;
   line-height: 1;
+}
+
+.composer-footer-row {
+  container-type: inline-size;
+}
+
+.composer-expand-button {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.composer-expand-button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.composer-textarea-scroll-above-button::-webkit-scrollbar-track {
+  margin-bottom: 1.25rem;
+}
+
+@container (max-width: 38rem) {
+  .composer-diff-summary {
+    display: none;
+  }
+
+  .composer-baseline-compact-trigger {
+    display: inline-flex;
+  }
+}
+
+@container (max-width: 32rem) {
+  .composer-branch-chip {
+    display: none;
+  }
 }
 
 .artifact-markdown-editor .mdxeditor {
@@ -396,7 +474,7 @@ button[data-tooltip][data-tooltip-placement="left"]:is(:hover, :focus-visible)::
 
 .artifact-markdown-editor .cm-selectionBackground,
 .artifact-markdown-editor .cm-focused .cm-selectionBackground {
-  background: var(--accent-bg-strong) !important;
+  background: var(--accent-bg-strong);
 }
 
 .artifact-markdown-editor .cm-panels,

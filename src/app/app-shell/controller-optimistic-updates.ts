@@ -1,314 +1,308 @@
-import type { QueryClient } from "@tanstack/react-query";
-import type { DesktopAction } from "../desktop/actions";
+import type { QueryClient } from '@tanstack/react-query'
+import type { DesktopAction } from '../desktop/actions'
 import type {
   ComposerThinkingLevel,
+  ModelSelection,
   PiSettings,
   ProjectDiffDefaultBaseline,
   ShellState,
-} from "../desktop/types";
-import { desktopQueryKeys } from "../query/desktop-query";
+} from '../desktop/types'
+import { desktopQueryKeys } from '../query/desktop-query'
 import {
   type ActionPayload,
   getPayloadProjectId,
   getPayloadThreadId,
   sortPinnedProjects,
   sortPinnedThreads,
-} from "./controller-action-utils";
+} from './controller-action-utils'
+
+const optimisticSettingKeys = new Set([
+  'chatModel',
+  'chatThinkingLevel',
+  'codeModel',
+  'codeThinkingLevel',
+  'gitCommitMessageModel',
+  'gitCommitMessageThinkingLevel',
+  'skillCreatorModel',
+  'skillCreatorThinkingLevel',
+  'composerStreamingBehavior',
+  'dictationModelId',
+  'dictationMaxDurationSeconds',
+  'showDictationButton',
+  'favoriteFolders',
+  'projectImportState',
+  'preferredProjectLocation',
+  'initializeGitOnProjectCreate',
+  'gitOpsDefaultMode',
+  'gitDiffBaselineDefault',
+  'gitDiffRenderModeDefault',
+  'gitDiffFileTreeDefaultVisible',
+  'projectDeletionMode',
+  'useAgentsSkillsPaths',
+  'howcodeNativeAskQuestions',
+  'piTuiTakeover',
+  'hoverToFocus',
+  'hoverToBlur',
+])
+
+const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
+  value === 'off' ||
+  value === 'minimal' ||
+  value === 'low' ||
+  value === 'medium' ||
+  value === 'high' ||
+  value === 'xhigh'
+
+function getOptimisticModelSelection(
+  payload: ActionPayload,
+  fallback: ModelSelection | null,
+): ModelSelection | null {
+  if (payload.reset === true) return null
+  return typeof payload.provider === 'string' && typeof payload.modelId === 'string'
+    ? { provider: payload.provider, id: payload.modelId }
+    : fallback
+}
+
+function getOptimisticFavoriteFolders(payload: ActionPayload, fallback: string[]) {
+  return Array.isArray(payload.folders)
+    ? [
+        ...new Set(
+          payload.folders
+            .filter((folder): folder is string => typeof folder === 'string')
+            .map((folder) => folder.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : fallback
+}
+
+function getOptimisticDiffBaselineDefault(
+  payload: ActionPayload,
+  fallback: ProjectDiffDefaultBaseline,
+) {
+  if (!(payload.value && typeof payload.value === 'object')) return fallback
+  const baseline = payload.value as { kind?: unknown }
+  return baseline.kind === 'head' ||
+    baseline.kind === 'previous' ||
+    baseline.kind === 'yesterday' ||
+    baseline.kind === 'main-branch' ||
+    baseline.kind === 'dev-branch'
+    ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
+    : fallback
+}
+
+function applyOptimisticModelSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (payload.key === 'chatModel')
+    nextSettings.chatModel = getOptimisticModelSelection(payload, nextSettings.chatModel)
+  if (payload.key === 'codeModel')
+    nextSettings.codeModel = getOptimisticModelSelection(payload, nextSettings.codeModel)
+  if (payload.key === 'gitCommitMessageModel') {
+    nextSettings.gitCommitMessageModel = getOptimisticModelSelection(
+      payload,
+      nextSettings.gitCommitMessageModel,
+    )
+  }
+  if (payload.key === 'skillCreatorModel') {
+    nextSettings.skillCreatorModel = getOptimisticModelSelection(
+      payload,
+      nextSettings.skillCreatorModel,
+    )
+  }
+}
+
+function getResettableThinkingLevel(
+  payload: ActionPayload,
+  fallback: ComposerThinkingLevel | null,
+) {
+  if (payload.reset === true) return null
+  return isThinkingLevel(payload.value) ? payload.value : fallback
+}
+
+function applyOptimisticThinkingSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (payload.key === 'chatThinkingLevel') {
+    nextSettings.chatThinkingLevel = getResettableThinkingLevel(
+      payload,
+      nextSettings.chatThinkingLevel,
+    )
+  }
+  if (payload.key === 'codeThinkingLevel') {
+    nextSettings.codeThinkingLevel = getResettableThinkingLevel(
+      payload,
+      nextSettings.codeThinkingLevel,
+    )
+  }
+  if (payload.key === 'gitCommitMessageThinkingLevel' && isThinkingLevel(payload.value)) {
+    nextSettings.gitCommitMessageThinkingLevel = payload.value
+  }
+  if (payload.key === 'skillCreatorThinkingLevel' && isThinkingLevel(payload.value)) {
+    nextSettings.skillCreatorThinkingLevel = payload.value
+  }
+}
+
+function applyOptimisticBooleanSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (typeof payload.value !== 'boolean') return
+  if (payload.key === 'showDictationButton') nextSettings.showDictationButton = payload.value
+  if (payload.key === 'initializeGitOnProjectCreate')
+    nextSettings.initializeGitOnProjectCreate = payload.value
+  if (payload.key === 'gitDiffFileTreeDefaultVisible')
+    nextSettings.gitDiffFileTreeDefaultVisible = payload.value
+  if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value
+  if (payload.key === 'howcodeNativeAskQuestions')
+    nextSettings.howcodeNativeAskQuestions = payload.value
+  if (payload.key === 'piTuiTakeover') nextSettings.piTuiTakeover = payload.value
+  if (payload.key === 'hoverToFocus') nextSettings.hoverToFocus = payload.value
+  if (payload.key === 'hoverToBlur') nextSettings.hoverToBlur = payload.value
+}
+
+function applyOptimisticComposerSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (
+    payload.key === 'composerStreamingBehavior' &&
+    (payload.value === 'steer' || payload.value === 'followUp' || payload.value === 'stop')
+  )
+    nextSettings.composerStreamingBehavior = payload.value
+}
+
+function applyOptimisticDictationSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (payload.key === 'dictationMaxDurationSeconds' && typeof payload.value === 'number')
+    nextSettings.dictationMaxDurationSeconds = payload.value
+  if (
+    payload.key === 'dictationModelId' &&
+    (payload.value === null ||
+      payload.value === 'tiny.en' ||
+      payload.value === 'base.en' ||
+      payload.value === 'small.en')
+  )
+    nextSettings.dictationModelId = payload.value
+}
+
+function applyOptimisticScalarSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  applyOptimisticComposerSetting(nextSettings, payload)
+  applyOptimisticDictationSetting(nextSettings, payload)
+  if (payload.key === 'favoriteFolders')
+    nextSettings.favoriteFolders = getOptimisticFavoriteFolders(
+      payload,
+      nextSettings.favoriteFolders,
+    )
+  if (
+    payload.key === 'projectImportState' &&
+    (payload.imported === null || typeof payload.imported === 'boolean')
+  )
+    nextSettings.projectImportState = payload.imported
+  if (payload.key === 'preferredProjectLocation')
+    nextSettings.preferredProjectLocation =
+      typeof payload.value === 'string' ? payload.value.trim() || null : null
+}
+
+function applyOptimisticGitSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (
+    payload.key === 'gitOpsDefaultMode' &&
+    (payload.value === 'commit' || payload.value === 'commit-push')
+  )
+    nextSettings.gitOpsDefaultMode = payload.value
+  if (payload.key === 'gitDiffBaselineDefault')
+    nextSettings.gitDiffBaselineDefault = getOptimisticDiffBaselineDefault(
+      payload,
+      nextSettings.gitDiffBaselineDefault,
+    )
+  if (
+    payload.key === 'gitDiffRenderModeDefault' &&
+    (payload.value === 'stacked' || payload.value === 'split')
+  )
+    nextSettings.gitDiffRenderModeDefault = payload.value
+  if (
+    payload.key === 'projectDeletionMode' &&
+    (payload.value === 'pi-only' || payload.value === 'full-clean')
+  )
+    nextSettings.projectDeletionMode = payload.value
+}
 
 export function getOptimisticallyUpdatedShellState(
   currentState: ShellState | null,
   payload: ActionPayload,
 ) {
-  if (!currentState) {
-    return null;
-  }
+  if (!(currentState && optimisticSettingKeys.has(String(payload.key)))) return currentState
 
-  if (
-    payload.key !== "chatModel" &&
-    payload.key !== "chatThinkingLevel" &&
-    payload.key !== "codeModel" &&
-    payload.key !== "codeThinkingLevel" &&
-    payload.key !== "gitCommitMessageModel" &&
-    payload.key !== "gitCommitMessageThinkingLevel" &&
-    payload.key !== "skillCreatorModel" &&
-    payload.key !== "skillCreatorThinkingLevel" &&
-    payload.key !== "composerStreamingBehavior" &&
-    payload.key !== "dictationModelId" &&
-    payload.key !== "dictationMaxDurationSeconds" &&
-    payload.key !== "showDictationButton" &&
-    payload.key !== "favoriteFolders" &&
-    payload.key !== "projectImportState" &&
-    payload.key !== "preferredProjectLocation" &&
-    payload.key !== "initializeGitOnProjectCreate" &&
-    payload.key !== "gitOpsDefaultMode" &&
-    payload.key !== "gitDiffBaselineDefault" &&
-    payload.key !== "gitDiffRenderModeDefault" &&
-    payload.key !== "gitDiffFileTreeDefaultVisible" &&
-    payload.key !== "projectDeletionMode" &&
-    payload.key !== "useAgentsSkillsPaths" &&
-    payload.key !== "howcodeNativeAskQuestions" &&
-    payload.key !== "piTuiTakeover" &&
-    payload.key !== "hoverToFocus" &&
-    payload.key !== "hoverToBlur"
-  ) {
-    return currentState;
-  }
+  const appSettings = { ...currentState.appSettings }
+  applyOptimisticModelSetting(appSettings, payload)
+  applyOptimisticThinkingSetting(appSettings, payload)
+  applyOptimisticBooleanSetting(appSettings, payload)
+  applyOptimisticScalarSetting(appSettings, payload)
+  applyOptimisticGitSetting(appSettings, payload)
 
-  const nextSelection =
-    payload.key === "gitCommitMessageModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.gitCommitMessageModel
-      : currentState.appSettings.gitCommitMessageModel;
-
-  const nextChatSelection =
-    payload.key === "chatModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.chatModel
-      : currentState.appSettings.chatModel;
-
-  const nextCodeSelection =
-    payload.key === "codeModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.codeModel
-      : currentState.appSettings.codeModel;
-
-  const nextSkillCreatorSelection =
-    payload.key === "skillCreatorModel"
-      ? payload.reset === true
-        ? null
-        : typeof payload.provider === "string" && typeof payload.modelId === "string"
-          ? { provider: payload.provider, id: payload.modelId }
-          : currentState.appSettings.skillCreatorModel
-      : currentState.appSettings.skillCreatorModel;
-
-  const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
-    value === "off" ||
-    value === "minimal" ||
-    value === "low" ||
-    value === "medium" ||
-    value === "high" ||
-    value === "xhigh";
-
-  const nextGitCommitThinkingLevel =
-    payload.key === "gitCommitMessageThinkingLevel" && isThinkingLevel(payload.value)
-      ? payload.value
-      : currentState.appSettings.gitCommitMessageThinkingLevel;
-
-  const nextChatThinkingLevel =
-    payload.key === "chatThinkingLevel"
-      ? payload.reset === true
-        ? null
-        : isThinkingLevel(payload.value)
-          ? payload.value
-          : currentState.appSettings.chatThinkingLevel
-      : currentState.appSettings.chatThinkingLevel;
-
-  const nextCodeThinkingLevel =
-    payload.key === "codeThinkingLevel"
-      ? payload.reset === true
-        ? null
-        : isThinkingLevel(payload.value)
-          ? payload.value
-          : currentState.appSettings.codeThinkingLevel
-      : currentState.appSettings.codeThinkingLevel;
-
-  const nextSkillCreatorThinkingLevel =
-    payload.key === "skillCreatorThinkingLevel" && isThinkingLevel(payload.value)
-      ? payload.value
-      : currentState.appSettings.skillCreatorThinkingLevel;
-
-  const nextComposerStreamingBehavior =
-    payload.key === "composerStreamingBehavior" &&
-    (payload.value === "steer" || payload.value === "followUp" || payload.value === "stop")
-      ? payload.value
-      : currentState.appSettings.composerStreamingBehavior;
-
-  const nextDictationModelId =
-    payload.key === "dictationModelId" &&
-    (payload.value === null ||
-      payload.value === "tiny.en" ||
-      payload.value === "base.en" ||
-      payload.value === "small.en")
-      ? payload.value
-      : currentState.appSettings.dictationModelId;
-
-  const nextDictationMaxDurationSeconds =
-    payload.key === "dictationMaxDurationSeconds" && typeof payload.value === "number"
-      ? payload.value
-      : currentState.appSettings.dictationMaxDurationSeconds;
-
-  const nextShowDictationButton =
-    payload.key === "showDictationButton" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.showDictationButton;
-
-  const nextFavoriteFolders =
-    payload.key === "favoriteFolders" && Array.isArray(payload.folders)
-      ? [
-          ...new Set(
-            payload.folders
-              .filter((folder): folder is string => typeof folder === "string")
-              .map((folder) => folder.trim())
-              .filter(Boolean),
-          ),
-        ]
-      : currentState.appSettings.favoriteFolders;
-
-  const nextProjectImportState =
-    payload.key === "projectImportState" &&
-    (payload.imported === null || typeof payload.imported === "boolean")
-      ? payload.imported
-      : currentState.appSettings.projectImportState;
-
-  const nextPreferredProjectLocation =
-    payload.key === "preferredProjectLocation"
-      ? typeof payload.value === "string"
-        ? payload.value.trim() || null
-        : null
-      : currentState.appSettings.preferredProjectLocation;
-
-  const nextInitializeGitOnProjectCreate =
-    payload.key === "initializeGitOnProjectCreate" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.initializeGitOnProjectCreate;
-
-  const nextProjectDeletionMode =
-    payload.key === "projectDeletionMode" &&
-    (payload.value === "pi-only" || payload.value === "full-clean")
-      ? payload.value
-      : currentState.appSettings.projectDeletionMode;
-
-  const nextGitOpsDefaultMode =
-    payload.key === "gitOpsDefaultMode" &&
-    (payload.value === "commit" || payload.value === "commit-push")
-      ? payload.value
-      : currentState.appSettings.gitOpsDefaultMode;
-
-  const nextGitDiffBaselineDefault =
-    payload.key === "gitDiffBaselineDefault" && payload.value && typeof payload.value === "object"
-      ? (() => {
-          const baseline = payload.value as { kind?: unknown };
-          return baseline.kind === "head" ||
-            baseline.kind === "previous" ||
-            baseline.kind === "yesterday" ||
-            baseline.kind === "main-branch" ||
-            baseline.kind === "dev-branch"
-            ? ({ kind: baseline.kind } as ProjectDiffDefaultBaseline)
-            : currentState.appSettings.gitDiffBaselineDefault;
-        })()
-      : currentState.appSettings.gitDiffBaselineDefault;
-
-  const nextGitDiffRenderModeDefault =
-    payload.key === "gitDiffRenderModeDefault" &&
-    (payload.value === "stacked" || payload.value === "split")
-      ? payload.value
-      : currentState.appSettings.gitDiffRenderModeDefault;
-
-  const nextGitDiffFileTreeDefaultVisible =
-    payload.key === "gitDiffFileTreeDefaultVisible" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.gitDiffFileTreeDefaultVisible;
-
-  const nextUseAgentsSkillsPaths =
-    payload.key === "useAgentsSkillsPaths" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.useAgentsSkillsPaths;
-
-  const nextHowcodeNativeAskQuestions =
-    payload.key === "howcodeNativeAskQuestions" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.howcodeNativeAskQuestions;
-
-  const nextPiTuiTakeover =
-    payload.key === "piTuiTakeover" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.piTuiTakeover;
-
-  const nextHoverToFocus =
-    payload.key === "hoverToFocus" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.hoverToFocus;
-
-  const nextHoverToBlur =
-    payload.key === "hoverToBlur" && typeof payload.value === "boolean"
-      ? payload.value
-      : currentState.appSettings.hoverToBlur;
-
-  return {
-    ...currentState,
-    appSettings: {
-      ...currentState.appSettings,
-      chatModel: nextChatSelection,
-      chatThinkingLevel: nextChatThinkingLevel,
-      codeModel: nextCodeSelection,
-      codeThinkingLevel: nextCodeThinkingLevel,
-      gitCommitMessageModel: nextSelection,
-      gitCommitMessageThinkingLevel: nextGitCommitThinkingLevel,
-      skillCreatorModel: nextSkillCreatorSelection,
-      skillCreatorThinkingLevel: nextSkillCreatorThinkingLevel,
-      composerStreamingBehavior: nextComposerStreamingBehavior,
-      dictationModelId: nextDictationModelId,
-      dictationMaxDurationSeconds: nextDictationMaxDurationSeconds,
-      showDictationButton: nextShowDictationButton,
-      favoriteFolders: nextFavoriteFolders,
-      projectImportState: nextProjectImportState,
-      preferredProjectLocation: nextPreferredProjectLocation,
-      initializeGitOnProjectCreate: nextInitializeGitOnProjectCreate,
-      gitOpsDefaultMode: nextGitOpsDefaultMode,
-      gitDiffBaselineDefault: nextGitDiffBaselineDefault,
-      gitDiffRenderModeDefault: nextGitDiffRenderModeDefault,
-      gitDiffFileTreeDefaultVisible: nextGitDiffFileTreeDefaultVisible,
-      projectDeletionMode: nextProjectDeletionMode,
-      useAgentsSkillsPaths: nextUseAgentsSkillsPaths,
-      howcodeNativeAskQuestions: nextHowcodeNativeAskQuestions,
-      piTuiTakeover: nextPiTuiTakeover,
-      hoverToFocus: nextHoverToFocus,
-      hoverToBlur: nextHoverToBlur,
-    },
-  } satisfies ShellState;
+  return { ...currentState, appSettings } satisfies ShellState
 }
 
 export function applyOptimisticSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyUpdatedShellState(currentState ?? null, payload),
-  );
+  )
 }
 
 function isPiSettingsKey(value: unknown): value is keyof PiSettings {
   return (
-    typeof value === "string" &&
+    typeof value === 'string' &&
     [
-      "theme",
-      "autoCompact",
-      "enableSkillCommands",
-      "hideThinkingBlock",
-      "quietStartup",
-      "showImages",
-      "autoResizeImages",
-      "blockImages",
-      "collapseChangelog",
-      "enableInstallTelemetry",
-      "showHardwareCursor",
-      "clearOnShrink",
-      "transport",
-      "steeringMode",
-      "followUpMode",
-      "doubleEscapeAction",
-      "treeFilterMode",
-      "editorPaddingX",
-      "autocompleteMaxVisible",
-      "imageWidthCells",
+      'theme',
+      'autoCompact',
+      'enableSkillCommands',
+      'hideThinkingBlock',
+      'quietStartup',
+      'showImages',
+      'autoResizeImages',
+      'blockImages',
+      'collapseChangelog',
+      'enableInstallTelemetry',
+      'showHardwareCursor',
+      'clearOnShrink',
+      'transport',
+      'steeringMode',
+      'followUpMode',
+      'doubleEscapeAction',
+      'treeFilterMode',
+      'editorPaddingX',
+      'autocompleteMaxVisible',
+      'imageWidthCells',
     ].includes(value)
-  );
+  )
+}
+
+function getNumericPiSettingsValue<Key extends keyof PiSettings>(key: Key, value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  const [min, max] =
+    key === 'editorPaddingX' ? [0, 3] : key === 'autocompleteMaxVisible' ? [3, 20] : [1, 200]
+  return Math.max(min, Math.min(max, Math.floor(value))) as PiSettings[Key]
+}
+
+function isValidPiSettingsStringValue(key: keyof PiSettings, value: unknown) {
+  if (key === 'theme') return typeof value === 'string' && value.trim().length > 0
+  if (key === 'transport') return value === 'sse' || value === 'websocket' || value === 'auto'
+  if (key === 'steeringMode' || key === 'followUpMode')
+    return value === 'all' || value === 'one-at-a-time'
+  if (key === 'doubleEscapeAction') return value === 'fork' || value === 'tree' || value === 'none'
+  if (key === 'treeFilterMode')
+    return ['default', 'no-tools', 'user-only', 'labeled-only', 'all'].includes(String(value))
+  return true
 }
 
 function getOptimisticPiSettingsValue<Key extends keyof PiSettings>(
@@ -316,72 +310,26 @@ function getOptimisticPiSettingsValue<Key extends keyof PiSettings>(
   value: unknown,
   currentValue: PiSettings[Key],
 ): PiSettings[Key] | null {
-  if (typeof value !== typeof currentValue) {
-    return null;
+  if (typeof value !== typeof currentValue) return null
+  if (key === 'editorPaddingX' || key === 'autocompleteMaxVisible' || key === 'imageWidthCells') {
+    return getNumericPiSettingsValue(key, value)
   }
-
-  if (key === "editorPaddingX" || key === "autocompleteMaxVisible" || key === "imageWidthCells") {
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-      return null;
-    }
-
-    const [min, max] =
-      key === "editorPaddingX" ? [0, 3] : key === "autocompleteMaxVisible" ? [3, 20] : [1, 200];
-    return Math.max(min, Math.min(max, Math.floor(value))) as PiSettings[Key];
-  }
-
-  if (key === "theme") {
-    return typeof value === "string" && value.trim().length > 0
-      ? (value.trim() as PiSettings[Key])
-      : null;
-  }
-
-  if (key === "transport" && value !== "sse" && value !== "websocket" && value !== "auto") {
-    return null;
-  }
-
-  if (
-    (key === "steeringMode" || key === "followUpMode") &&
-    value !== "all" &&
-    value !== "one-at-a-time"
-  ) {
-    return null;
-  }
-
-  if (key === "doubleEscapeAction" && value !== "fork" && value !== "tree" && value !== "none") {
-    return null;
-  }
-
-  if (
-    key === "treeFilterMode" &&
-    value !== "default" &&
-    value !== "no-tools" &&
-    value !== "user-only" &&
-    value !== "labeled-only" &&
-    value !== "all"
-  ) {
-    return null;
-  }
-
-  return value as PiSettings[Key];
+  if (!isValidPiSettingsStringValue(key, value)) return null
+  return key === 'theme' ? (String(value).trim() as PiSettings[Key]) : (value as PiSettings[Key])
 }
 
 export function getOptimisticallyUpdatedPiSettingsState(
   currentState: ShellState | null,
   payload: ActionPayload,
 ) {
-  if (!currentState || !isPiSettingsKey(payload.piSettingsKey)) {
-    return currentState;
+  if (!(currentState && isPiSettingsKey(payload.piSettingsKey))) {
+    return currentState
   }
 
-  const currentValue = currentState.piSettings[payload.piSettingsKey];
-  const nextValue = getOptimisticPiSettingsValue(
-    payload.piSettingsKey,
-    payload.value,
-    currentValue,
-  );
+  const currentValue = currentState.piSettings[payload.piSettingsKey]
+  const nextValue = getOptimisticPiSettingsValue(payload.piSettingsKey, payload.value, currentValue)
   if (nextValue === null) {
-    return currentState;
+    return currentState
   }
 
   return {
@@ -390,13 +338,13 @@ export function getOptimisticallyUpdatedPiSettingsState(
       ...currentState.piSettings,
       [payload.piSettingsKey]: nextValue,
     },
-  } satisfies ShellState;
+  } satisfies ShellState
 }
 
 export function applyOptimisticPiSettingsUpdate(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyUpdatedPiSettingsState(currentState ?? null, payload),
-  );
+  )
 }
 
 export function getOptimisticallyRenamedShellState(
@@ -404,14 +352,14 @@ export function getOptimisticallyRenamedShellState(
   payload: ActionPayload,
 ) {
   if (!currentState) {
-    return null;
+    return null
   }
 
-  const projectId = getPayloadProjectId(payload);
-  const projectName = typeof payload.projectName === "string" ? payload.projectName.trim() : "";
+  const projectId = getPayloadProjectId(payload)
+  const projectName = typeof payload.projectName === 'string' ? payload.projectName.trim() : ''
 
   if (!projectId || projectName.length === 0) {
-    return currentState;
+    return currentState
   }
 
   return {
@@ -419,13 +367,13 @@ export function getOptimisticallyRenamedShellState(
     projects: currentState.projects.map((project) =>
       project.id === projectId ? { ...project, name: projectName } : project,
     ),
-  } satisfies ShellState;
+  } satisfies ShellState
 }
 
 export function applyOptimisticProjectRename(queryClient: QueryClient, payload: ActionPayload) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyRenamedShellState(currentState ?? null, payload),
-  );
+  )
 }
 
 export function getOptimisticallyPinnedShellState(
@@ -434,43 +382,43 @@ export function getOptimisticallyPinnedShellState(
   payload: ActionPayload,
 ) {
   if (!currentState) {
-    return null;
+    return null
   }
 
-  if (action === "thread.pin") {
-    const projectId = getPayloadProjectId(payload);
-    const threadId = getPayloadThreadId(payload);
+  if (action === 'thread.pin') {
+    const projectId = getPayloadProjectId(payload)
+    const threadId = getPayloadThreadId(payload)
 
-    if (!projectId || !threadId) {
-      return currentState;
+    if (!(projectId && threadId)) {
+      return currentState
     }
 
     return {
       ...currentState,
       projects: currentState.projects.map((project) => {
         if (project.id !== projectId) {
-          return project;
+          return project
         }
 
         const nextThreads = sortPinnedThreads(
           project.threads.map((thread) =>
             thread.id === threadId ? { ...thread, pinned: !thread.pinned } : thread,
           ),
-        );
+        )
 
         return {
           ...project,
           threads: nextThreads,
-        };
+        }
       }),
-    } satisfies ShellState;
+    } satisfies ShellState
   }
 
-  if (action === "project.pin") {
-    const projectId = getPayloadProjectId(payload);
+  if (action === 'project.pin') {
+    const projectId = getPayloadProjectId(payload)
 
     if (!projectId) {
-      return currentState;
+      return currentState
     }
 
     return {
@@ -480,10 +428,10 @@ export function getOptimisticallyPinnedShellState(
           project.id === projectId ? { ...project, pinned: !project.pinned } : project,
         ),
       ),
-    } satisfies ShellState;
+    } satisfies ShellState
   }
 
-  return currentState;
+  return currentState
 }
 
 export function applyOptimisticPinUpdate(
@@ -493,5 +441,5 @@ export function applyOptimisticPinUpdate(
 ) {
   queryClient.setQueryData<ShellState | null>(desktopQueryKeys.shellState(), (currentState) =>
     getOptimisticallyPinnedShellState(currentState ?? null, action, payload),
-  );
+  )
 }
