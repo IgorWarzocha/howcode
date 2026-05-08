@@ -3,13 +3,13 @@ import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
 } from '../../../../shared/howcode-server-contracts'
-import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
+import { composerTextActionButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingDescriptor } from './settingsTypes'
 
 type Draft = {
   kind: 'direct' | 'ssh'
-  name: string
+  label: string
   serverUrl: string
   token: string
   sshHost: string
@@ -18,15 +18,47 @@ type Draft = {
   remoteCommand: string
 }
 
+type RemoteStore = {
+  draft: Draft
+  environments: HowcodeRemoteEnvironment[]
+  status: string | null
+  version: number
+}
+
 const defaultDraft: Draft = {
   kind: 'ssh',
+  label: '',
   localPort: '49317',
-  name: '',
   remoteCommand: '',
   remotePort: '39317',
   serverUrl: '',
   sshHost: '',
   token: '',
+}
+
+const remoteStore: RemoteStore = {
+  draft: defaultDraft,
+  environments: [],
+  status: null,
+  version: 0,
+}
+
+const listeners = new Set<() => void>()
+let didLoadRemoteEnvironments = false
+
+function emitRemoteStoreChange() {
+  remoteStore.version += 1
+  for (const listener of listeners) listener()
+}
+
+function updateDraft(patch: Partial<Draft>) {
+  remoteStore.draft = { ...remoteStore.draft, ...patch }
+  emitRemoteStoreChange()
+}
+
+function setStatus(status: string | null) {
+  remoteStore.status = status
+  emitRemoteStoreChange()
 }
 
 function parsePort(value: string) {
@@ -38,7 +70,7 @@ function toInput(draft: Draft): HowcodeRemoteEnvironmentInput {
   return {
     kind: draft.kind,
     localPort: draft.kind === 'ssh' ? parsePort(draft.localPort) : null,
-    name: draft.name.trim() || (draft.kind === 'ssh' ? draft.sshHost : draft.serverUrl),
+    name: draft.label.trim() || (draft.kind === 'ssh' ? draft.sshHost : draft.serverUrl),
     remoteCommand: draft.kind === 'ssh' ? draft.remoteCommand : null,
     remotePort: draft.kind === 'ssh' ? parsePort(draft.remotePort) : null,
     serverUrl: draft.kind === 'direct' ? draft.serverUrl : null,
@@ -47,145 +79,142 @@ function toInput(draft: Draft): HowcodeRemoteEnvironmentInput {
   }
 }
 
-function RemoteEnvironmentSettings() {
-  const [environments, setEnvironments] = useState<HowcodeRemoteEnvironment[]>([])
-  const [draft, setDraft] = useState<Draft>(defaultDraft)
-  const [status, setStatus] = useState<string | null>(null)
+function refreshRemoteEnvironments() {
+  void window.piDesktop?.listHowcodeRemoteEnvironments?.().then((environments) => {
+    remoteStore.environments = environments
+    emitRemoteStoreChange()
+  })
+}
 
-  const refresh = () => {
-    void window.piDesktop?.listHowcodeRemoteEnvironments?.().then(setEnvironments)
-  }
+function useRemoteSettingsStore() {
+  const [, setVersion] = useState(remoteStore.version)
 
-  useEffect(refresh, [])
+  useEffect(() => {
+    const listener = () => setVersion(remoteStore.version)
+    listeners.add(listener)
+    if (!didLoadRemoteEnvironments) {
+      didLoadRemoteEnvironments = true
+      refreshRemoteEnvironments()
+    }
+    return () => {
+      listeners.delete(listener)
+    }
+  }, [])
 
+  return remoteStore
+}
+
+function RemoteKindControl() {
+  const { draft } = useRemoteSettingsStore()
+  return (
+    <div className="flex justify-end gap-2">
+      {(['ssh', 'direct'] as const).map((kind) => (
+        <button
+          key={kind}
+          type="button"
+          className={cn(
+            composerTextActionButtonClass,
+            draft.kind === kind && 'border-[color:var(--accent-border)] text-[color:var(--text)]',
+          )}
+          onClick={() => updateDraft({ kind })}
+        >
+          {kind === 'ssh' ? 'SSH' : 'Direct URL'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function RemoteTextInput({
+  field,
+  placeholder,
+  type = 'text',
+}: {
+  field: keyof Draft
+  placeholder: string
+  type?: 'password' | 'text'
+}) {
+  const { draft } = useRemoteSettingsStore()
+  return (
+    <input
+      className="h-8 w-[22rem] max-w-full rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.045)] px-3 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
+      placeholder={placeholder}
+      type={type}
+      value={draft[field]}
+      onChange={(event) => updateDraft({ [field]: event.target.value })}
+    />
+  )
+}
+
+function ConditionalRemoteTextInput(
+  props: Parameters<typeof RemoteTextInput>[0] & { kind: Draft['kind'] },
+) {
+  const { draft } = useRemoteSettingsStore()
+  if (draft.kind !== props.kind) return null
+  return <RemoteTextInput {...props} />
+}
+
+function SaveRemoteControl() {
+  const { draft, status } = useRemoteSettingsStore()
   const save = async () => {
     setStatus(null)
     try {
       const saved = await window.piDesktop?.saveHowcodeRemoteEnvironment?.(toInput(draft))
-      if (saved) {
-        setStatus(`Saved ${saved.name}.`)
-        setDraft(defaultDraft)
-        refresh()
-      }
+      if (!saved) return
+      remoteStore.draft = defaultDraft
+      setStatus(`Saved ${saved.name}.`)
+      refreshRemoteEnvironments()
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save remote environment.')
     }
   }
 
-  const remove = async (id: string) => {
-    await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
-    refresh()
-  }
-
   return (
-    <div className="w-[34rem] max-w-full space-y-4 text-[12px] text-[color:var(--muted)]">
-      <div className="flex gap-2">
-        {(['ssh', 'direct'] as const).map((kind) => (
-          <button
-            key={kind}
-            type="button"
-            className={cn(
-              composerTextActionButtonClass,
-              draft.kind === kind && 'border-[color:var(--accent-border)] text-[color:var(--text)]',
-            )}
-            onClick={() => setDraft((current) => ({ ...current, kind }))}
-          >
-            {kind === 'ssh' ? 'SSH' : 'Direct URL'}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input
-          className={settingsInputClass}
-          placeholder="Label (optional)"
-          value={draft.name}
-          onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-        />
-        <input
-          className={settingsInputClass}
-          placeholder="Server token"
-          type="password"
-          value={draft.token}
-          onChange={(event) => setDraft((current) => ({ ...current, token: event.target.value }))}
-        />
-        {draft.kind === 'ssh' ? (
-          <>
-            <input
-              className={settingsInputClass}
-              placeholder="SSH host alias, e.g. lanbox"
-              value={draft.sshHost}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, sshHost: event.target.value }))
-              }
-            />
-            <input
-              className={settingsInputClass}
-              placeholder="Local port"
-              value={draft.localPort}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, localPort: event.target.value }))
-              }
-            />
-            <input
-              className={settingsInputClass}
-              placeholder="Remote port"
-              value={draft.remotePort}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, remotePort: event.target.value }))
-              }
-            />
-            <input
-              className={settingsInputClass}
-              placeholder="Remote command override (optional)"
-              value={draft.remoteCommand}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, remoteCommand: event.target.value }))
-              }
-            />
-          </>
-        ) : (
-          <input
-            className={cn(settingsInputClass, 'sm:col-span-2')}
-            placeholder="http://127.0.0.1:39317"
-            value={draft.serverUrl}
-            onChange={(event) =>
-              setDraft((current) => ({ ...current, serverUrl: event.target.value }))
-            }
-          />
-        )}
-      </div>
-
+    <div className="grid justify-end gap-2 text-right text-[12px] text-[color:var(--muted)]">
       <button type="button" className={composerTextActionButtonClass} onClick={save}>
         Save remote
       </button>
-      {status ? <div>{status}</div> : null}
+      {status ? <span>{status}</span> : null}
+    </div>
+  )
+}
 
-      <div className="space-y-2">
-        {environments.map((environment) => (
-          <div
-            key={environment.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-[color:var(--border)] px-3 py-2"
-          >
-            <div className="min-w-0">
-              <div className="truncate text-[color:var(--text)]">{environment.name}</div>
-              <div className="truncate">
-                {environment.kind === 'ssh'
-                  ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
-                  : environment.serverUrl}
-                {environment.hasToken ? ' · token saved' : ' · no token'}
-              </div>
+function SavedRemoteEnvironmentsControl() {
+  const { environments } = useRemoteSettingsStore()
+  const remove = async (id: string) => {
+    await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
+    refreshRemoteEnvironments()
+  }
+
+  if (environments.length === 0) {
+    return <span className="text-[12px] text-[color:var(--muted)]">No remotes saved.</span>
+  }
+
+  return (
+    <div className="grid w-[28rem] max-w-full gap-2">
+      {environments.map((environment) => (
+        <div
+          key={environment.id}
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] px-3 py-2 text-[12px]"
+        >
+          <div className="min-w-0">
+            <div className="truncate text-[color:var(--text)]">{environment.name}</div>
+            <div className="truncate text-[color:var(--muted)]">
+              {environment.kind === 'ssh'
+                ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
+                : environment.serverUrl}
+              {environment.hasToken ? ' · token saved' : ' · no token'}
             </div>
-            <button
-              type="button"
-              className={composerTextActionButtonClass}
-              onClick={() => void remove(environment.id)}
-            >
-              Delete
-            </button>
           </div>
-        ))}
-      </div>
+          <button
+            type="button"
+            className={composerTextActionButtonClass}
+            onClick={() => void remove(environment.id)}
+          >
+            Delete
+          </button>
+        </div>
+      ))}
     </div>
   )
 }
@@ -194,12 +223,102 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
   return [
     {
       category: 'remote',
+      description: 'Choose whether this remote is reached directly by URL or via OpenSSH.',
+      id: 'remote.kind',
+      keywords: 'remote ssh server lan environment',
+      render: () => <RemoteKindControl />,
+      title: 'Remote type',
+    },
+    {
+      category: 'remote',
       description:
-        'Configure direct or SSH-managed remote servers. Howcode uses your existing SSH config and ssh-agent; it does not store SSH keys or passwords.',
-      id: 'remote.environments',
-      keywords: 'remote ssh server lan environment token',
-      render: () => <RemoteEnvironmentSettings />,
-      title: 'Remote environments',
+        'Optional display name. If blank, Howcode uses the SSH host alias or server URL.',
+      id: 'remote.label',
+      keywords: 'remote name label alias',
+      render: () => <RemoteTextInput field="label" placeholder="Label (optional)" />,
+      title: 'Label',
+    },
+    {
+      category: 'remote',
+      description: 'Server bearer token. The token is write-only in the UI and saved encrypted.',
+      id: 'remote.token',
+      keywords: 'remote token secret auth',
+      render: () => <RemoteTextInput field="token" placeholder="Server token" type="password" />,
+      title: 'Token',
+    },
+    {
+      category: 'remote',
+      description:
+        'SSH config host alias, e.g. “lanbox”. Howcode uses your existing SSH config and ssh-agent; it never stores SSH keys or passwords.',
+      id: 'remote.ssh-host',
+      keywords: 'remote ssh host alias config agent key',
+      render: () => (
+        <ConditionalRemoteTextInput kind="ssh" field="sshHost" placeholder="SSH host alias" />
+      ),
+      title: 'SSH host alias',
+    },
+    {
+      category: 'remote',
+      description: 'Local forwarded port used by the desktop to reach the remote server.',
+      id: 'remote.local-port',
+      keywords: 'remote ssh local port tunnel forward',
+      render: () => <ConditionalRemoteTextInput kind="ssh" field="localPort" placeholder="49317" />,
+      title: 'Local port',
+    },
+    {
+      category: 'remote',
+      description: 'Port where howcode serve listens on the remote machine.',
+      id: 'remote.remote-port',
+      keywords: 'remote ssh remote port serve',
+      render: () => (
+        <ConditionalRemoteTextInput kind="ssh" field="remotePort" placeholder="39317" />
+      ),
+      title: 'Remote port',
+    },
+    {
+      category: 'remote',
+      description:
+        'Optional command override. Leave blank to use howcode serve on the remote host.',
+      id: 'remote.command',
+      keywords: 'remote ssh command serve override',
+      render: () => (
+        <ConditionalRemoteTextInput
+          kind="ssh"
+          field="remoteCommand"
+          placeholder="Remote command override (optional)"
+        />
+      ),
+      title: 'Remote command',
+    },
+    {
+      category: 'remote',
+      description: 'Direct HTTP URL for a server you start yourself.',
+      id: 'remote.url',
+      keywords: 'remote direct url server http',
+      render: () => (
+        <ConditionalRemoteTextInput
+          kind="direct"
+          field="serverUrl"
+          placeholder="http://127.0.0.1:39317"
+        />
+      ),
+      title: 'Server URL',
+    },
+    {
+      category: 'remote',
+      description: 'Save the remote environment metadata and encrypted token.',
+      id: 'remote.save',
+      keywords: 'remote save add environment',
+      render: () => <SaveRemoteControl />,
+      title: 'Save remote',
+    },
+    {
+      category: 'remote',
+      description: 'Remote environments saved on this machine.',
+      id: 'remote.saved',
+      keywords: 'remote saved environments delete',
+      render: () => <SavedRemoteEnvironmentsControl />,
+      title: 'Saved remotes',
     },
   ]
 }
