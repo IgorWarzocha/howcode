@@ -65,3 +65,26 @@ export type HowcodeServerConnectionState = {
   descriptor: HowcodeServerDescriptor | null
   error: string | null
 }
+
+export type HowcodeRemoteEnvironmentKind = 'direct' | 'ssh'
+
+export type HowcodeRemoteEnvironment = {
+  id: string
+  name: string
+  kind: HowcodeRemoteEnvironmentKind
+  serverUrl?: string | null
+  sshHost?: string | null
+  localPort?: number | null
+  remotePort?: number | null
+  remoteCommand?: string | null
+  tokenRef: string
+  hasToken: boolean
+}
+
+export type HowcodeRemoteEnvironmentInput = Omit<
+  HowcodeRemoteEnvironment,
+  'id' | 'tokenRef' | 'hasToken'
+> & {
+  id?: string | null
+  token?: string | null
+}

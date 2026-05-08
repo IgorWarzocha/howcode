@@ -2,6 +2,7 @@ import type { SettingDescriptor, SettingsCategory, SettingsCategoryId } from './
 
 export const settingsCategories: SettingsCategory[] = [
   { id: 'projects', label: 'Projects' },
+  { id: 'remote', label: 'Remote' },
   { id: 'models', label: 'Models' },
   { id: 'pi-runtime', label: 'Pi Runtime' },
   { id: 'pi-tui', label: 'Pi TUI' },

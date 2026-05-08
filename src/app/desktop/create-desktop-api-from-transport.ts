@@ -20,6 +20,12 @@ export function createDesktopApiFromTransport(
     clearClipboardImages: () => request('clearClipboardImages', {}),
     getHowcodeServerState: () => request('getHowcodeServerState', {}),
     refreshHowcodeServerState: () => request('refreshHowcodeServerState', {}),
+    listHowcodeRemoteEnvironments: () => request('listHowcodeRemoteEnvironments', {}),
+    saveHowcodeRemoteEnvironment: (
+      environment: DesktopRequestMap['saveHowcodeRemoteEnvironment']['params'],
+    ) => request('saveHowcodeRemoteEnvironment', environment),
+    deleteHowcodeRemoteEnvironment: (id: string) =>
+      request('deleteHowcodeRemoteEnvironment', { id }),
     getShellState: () => request('getShellState', {}),
     getProjectGitState: (projectId: string) => request('getProjectGitState', { projectId }),
     getProjectDiff: (

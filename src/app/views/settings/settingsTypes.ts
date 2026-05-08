@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react'
 
-export type SettingsCategoryId = 'models' | 'pi-runtime' | 'pi-tui' | 'projects' | 'dictation'
+export type SettingsCategoryId =
+  | 'models'
+  | 'pi-runtime'
+  | 'pi-tui'
+  | 'projects'
+  | 'remote'
+  | 'dictation'
 
 export type SettingDescriptor = {
   id: string

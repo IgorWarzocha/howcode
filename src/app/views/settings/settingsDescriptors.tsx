@@ -13,6 +13,7 @@ import { buildDictationSettingsDescriptors } from './settingsDescriptorDictation
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
 import { buildProjectsSettingsDescriptors } from './settingsDescriptorProjects'
+import { buildRemoteSettingsDescriptors } from './settingsDescriptorRemote'
 import type { SetDraftPiSetting, SettingsController } from './settingsDescriptorTypes'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -49,6 +50,7 @@ export function buildSettingsDescriptors({
 }): SettingDescriptor[] {
   return [
     ...buildProjectsSettingsDescriptors({ appSettings, controller }),
+    ...buildRemoteSettingsDescriptors(),
     ...buildCommonSettingsDescriptors({ appSettings, controller }),
     ...buildModelSettingsDescriptors({
       appSettings,

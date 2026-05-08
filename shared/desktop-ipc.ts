@@ -43,7 +43,11 @@ import type {
   Thread,
   ThreadData,
 } from './desktop-contracts'
-import type { HowcodeServerConnectionState } from './howcode-server-contracts'
+import type {
+  HowcodeRemoteEnvironment,
+  HowcodeRemoteEnvironmentInput,
+  HowcodeServerConnectionState,
+} from './howcode-server-contracts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
@@ -70,6 +74,18 @@ export type DesktopRequestMap = {
   refreshHowcodeServerState: {
     params: Record<string, never>
     response: HowcodeServerConnectionState
+  }
+  listHowcodeRemoteEnvironments: {
+    params: Record<string, never>
+    response: HowcodeRemoteEnvironment[]
+  }
+  saveHowcodeRemoteEnvironment: {
+    params: HowcodeRemoteEnvironmentInput
+    response: HowcodeRemoteEnvironment
+  }
+  deleteHowcodeRemoteEnvironment: {
+    params: { id: string }
+    response: { ok: boolean }
   }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }

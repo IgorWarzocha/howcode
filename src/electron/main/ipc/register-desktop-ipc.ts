@@ -21,6 +21,7 @@ import { createAppUpdateHandlers } from './request-handlers/app-update'
 import { createPiPackagesHandlers } from './request-handlers/pi-packages'
 import { createPiSkillsHandlers } from './request-handlers/pi-skills'
 import { createPiThreadsHandlers } from './request-handlers/pi-threads'
+import { createRemoteEnvironmentHandlers } from './request-handlers/remote-environments'
 import { createSkillCreatorHandlers } from './request-handlers/skill-creator'
 import { createSystemHandlers } from './request-handlers/system'
 import { createTerminalHandlers } from './request-handlers/terminal'
@@ -103,6 +104,7 @@ export function createDesktopRequestHandlers(
       error: null,
       mode: 'disabled',
     }),
+    ...createRemoteEnvironmentHandlers(),
     refreshHowcodeServerState: () => ({
       baseUrl: null,
       connected: false,
@@ -124,6 +126,7 @@ export function createDesktopRequestHandlers(
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),
     ...createSkillCreatorHandlers(runtime.skillCreator),
+    ...createRemoteEnvironmentHandlers(),
     ...createTerminalHandlers(runtime.terminalManager),
     ...createSystemHandlers(),
   }

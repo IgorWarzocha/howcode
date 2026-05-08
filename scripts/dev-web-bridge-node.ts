@@ -105,6 +105,11 @@ const handlers: DesktopRequestHandlerMap = {
     error: null,
     mode: 'local',
   }),
+  listHowcodeRemoteEnvironments: () => [],
+  saveHowcodeRemoteEnvironment: () => {
+    throw new Error('Remote environments are unavailable in dev web bridge mode.')
+  },
+  deleteHowcodeRemoteEnvironment: () => ({ ok: true }),
   refreshHowcodeServerState: () => ({
     baseUrl: null,
     connected: true,

@@ -1,4 +1,8 @@
-import type { HowcodeServerConnectionState } from '../shared/howcode-server-contracts'
+import type {
+  HowcodeRemoteEnvironment,
+  HowcodeRemoteEnvironmentInput,
+  HowcodeServerConnectionState,
+} from '../shared/howcode-server-contracts'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
@@ -66,6 +70,11 @@ declare global {
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       refreshHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
+      listHowcodeRemoteEnvironments?: () => Promise<HowcodeRemoteEnvironment[]>
+      saveHowcodeRemoteEnvironment?: (
+        environment: HowcodeRemoteEnvironmentInput,
+      ) => Promise<HowcodeRemoteEnvironment>
+      deleteHowcodeRemoteEnvironment?: (id: string) => Promise<{ ok: boolean }>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (
