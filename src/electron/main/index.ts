@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron'
+import { createHowcodeServerTransport } from '../../../desktop/server/howcode-server-transport'
 import {
   type LocalHowcodeServer,
   startLocalHowcodeServer,
@@ -19,6 +20,26 @@ let localHowcodeServer: LocalHowcodeServer | null = null
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 app.setName('howcode')
+
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
+function resolveExternalServerTransport(): ReturnType<typeof createHowcodeServerTransport> | null {
+  const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
+  const authToken = getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN')?.trim()
+  if (!baseUrl) {
+    return null
+  }
+  if (!authToken) {
+    throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
+  }
+  return createHowcodeServerTransport({ authToken, baseUrl })
+}
+
+function shouldDisableLocalServer() {
+  return getProcessEnvironmentVariable('HOWCODE_DISABLE_LOCAL_SERVER') === '1'
+}
 
 async function openMainWindow() {
   const mainWindow = createMainWindow()
@@ -59,7 +80,9 @@ async function bootstrap() {
 
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater()
-  const serverTransport = await startDesktopLocalServer(runtime, appUpdater)
+  const serverTransport = shouldDisableLocalServer()
+    ? resolveExternalServerTransport()
+    : (resolveExternalServerTransport() ?? (await startDesktopLocalServer(runtime, appUpdater)))
   registerDesktopRuntimeShutdown(runtime)
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, serverTransport)
   await openMainWindow()

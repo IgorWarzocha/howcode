@@ -61,7 +61,10 @@ function registerRequestHandlers(
   for (const channel of Object.keys(handlers) as DesktopRequestChannel[]) {
     ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
-      if (serverTransport && getDesktopRequestChannelOwner(channel) === 'howcode-server') {
+      if (getDesktopRequestChannelOwner(channel) === 'howcode-server') {
+        if (!serverTransport) {
+          throw new Error('Howcode server is required for this operation but is not connected.')
+        }
         return serverTransport.request(channel, params)
       }
       return handlers[channel](params)
