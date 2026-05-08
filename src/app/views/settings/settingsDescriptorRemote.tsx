@@ -3,7 +3,7 @@ import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
 } from '../../../../shared/howcode-server-contracts'
-import { composerTextActionButtonClass } from '../../ui/classes'
+import { composerTextActionButtonClass, settingsCompactInputClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -137,7 +137,7 @@ function RemoteTextInput({
   const { draft } = useRemoteSettingsStore()
   return (
     <input
-      className="remote-settings-input h-7 w-[18rem] max-w-full rounded-md border border-[color:var(--border)] bg-[rgba(255,255,255,0.035)] px-2.5 text-[11.5px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
+      className={cn(settingsCompactInputClass, 'h-7 w-[18rem] max-w-full')}
       placeholder={placeholder}
       type={type}
       value={draft[field]}
