@@ -36,9 +36,24 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
 
+export type HowcodeEnvironmentKind = 'local-desktop' | 'external-server' | 'disabled'
+export type HowcodeEnvironmentScope = 'global' | 'project'
+
+export type HowcodeEnvironment = {
+  id: string
+  name: string
+  kind: HowcodeEnvironmentKind
+  scope: HowcodeEnvironmentScope
+  serverUrl: string | null
+  projectId?: string | null
+}
+
 export type HowcodeServerConnectionMode = 'local' | 'external' | 'disabled'
 
 export type HowcodeServerConnectionState = {
+  environment: HowcodeEnvironment
+  environmentId: string
+  environmentName: string
   mode: HowcodeServerConnectionMode
   connected: boolean
   baseUrl: string | null

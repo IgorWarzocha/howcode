@@ -5,7 +5,10 @@ import {
   startLocalHowcodeServer,
   stopLocalHowcodeServer,
 } from '../../../desktop/server/local-howcode-server'
-import type { HowcodeServerConnectionState } from '../../../shared/howcode-server-contracts'
+import type {
+  HowcodeEnvironment,
+  HowcodeServerConnectionState,
+} from '../../../shared/howcode-server-contracts'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register-desktop-ipc'
@@ -14,23 +17,51 @@ import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './
 import { configureDesktopEnvironment } from './runtime/environment'
 import { loadDesktopRuntimeModules } from './runtime/load-desktop-runtime'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
+import {
+  createExternalServerEnvironment,
+  disabledEnvironment,
+  getConnectionModeForEnvironment,
+  localDesktopEnvironment,
+  resolveHowcodeEnvironmentForRequest,
+} from './server-environments'
 import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null
 let localHowcodeServer: LocalHowcodeServer | null = null
-let howcodeServerState: HowcodeServerConnectionState = {
-  baseUrl: null,
+let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
+let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
-  descriptor: null,
-  error: null,
-  mode: 'disabled',
-}
+  environment: disabledEnvironment,
+})
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 app.setName('howcode')
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
+}
+
+function createHowcodeServerConnectionState({
+  connected,
+  descriptor = null,
+  environment,
+  error = null,
+}: {
+  connected: boolean
+  descriptor?: HowcodeServerConnectionState['descriptor']
+  environment: HowcodeEnvironment
+  error?: string | null
+}): HowcodeServerConnectionState {
+  return {
+    baseUrl: environment.serverUrl,
+    connected,
+    descriptor,
+    environment,
+    environmentId: environment.id,
+    environmentName: environment.name,
+    error,
+    mode: getConnectionModeForEnvironment(environment),
+  }
 }
 
 async function fetchServerDescriptor(baseUrl: string) {
@@ -44,34 +75,31 @@ async function fetchServerDescriptor(baseUrl: string) {
 async function refreshExternalServerState() {
   const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
   if (!baseUrl) {
-    howcodeServerState = {
-      baseUrl: null,
+    activeHowcodeEnvironment = disabledEnvironment
+    howcodeServerState = createHowcodeServerConnectionState({
       connected: false,
-      descriptor: null,
+      environment: disabledEnvironment,
       error: shouldDisableLocalServer()
         ? 'Local Howcode server is disabled and no external server is configured.'
         : null,
-      mode: 'disabled',
-    }
+    })
     return howcodeServerState
   }
 
   try {
-    howcodeServerState = {
-      baseUrl,
+    activeHowcodeEnvironment = createExternalServerEnvironment(baseUrl)
+    howcodeServerState = createHowcodeServerConnectionState({
       connected: true,
       descriptor: await fetchServerDescriptor(baseUrl),
-      error: null,
-      mode: 'external',
-    }
+      environment: activeHowcodeEnvironment,
+    })
   } catch (error) {
-    howcodeServerState = {
-      baseUrl,
+    activeHowcodeEnvironment = createExternalServerEnvironment(baseUrl)
+    howcodeServerState = createHowcodeServerConnectionState({
       connected: false,
-      descriptor: null,
+      environment: activeHowcodeEnvironment,
       error: error instanceof Error ? error.message : 'Failed to connect to Howcode server.',
-      mode: 'external',
-    }
+    })
   }
   return howcodeServerState
 }
@@ -124,13 +152,15 @@ async function startDesktopLocalServer(
       },
     },
   })
-  howcodeServerState = {
-    baseUrl: localHowcodeServer.baseUrl,
+  activeHowcodeEnvironment = {
+    ...localDesktopEnvironment,
+    serverUrl: localHowcodeServer.baseUrl,
+  }
+  howcodeServerState = createHowcodeServerConnectionState({
     connected: true,
     descriptor: await fetchServerDescriptor(localHowcodeServer.baseUrl),
-    error: null,
-    mode: 'local',
-  }
+    environment: activeHowcodeEnvironment,
+  })
   return localHowcodeServer.transport
 }
 
@@ -146,13 +176,12 @@ async function bootstrap() {
     ? externalServerTransport
     : (externalServerTransport ?? (await startDesktopLocalServer(runtime, appUpdater)))
   if (!serverTransport && shouldDisableLocalServer()) {
-    howcodeServerState = {
-      baseUrl: null,
+    activeHowcodeEnvironment = disabledEnvironment
+    howcodeServerState = createHowcodeServerConnectionState({
       connected: false,
-      descriptor: null,
+      environment: disabledEnvironment,
       error: 'Local Howcode server is disabled and no external server is configured.',
-      mode: 'disabled',
-    }
+    })
   }
   registerDesktopRuntimeShutdown(runtime)
   registerDesktopIpc(
@@ -162,6 +191,8 @@ async function bootstrap() {
     serverTransport,
     () => howcodeServerState,
     refreshExternalServerState,
+    (channel, params) =>
+      resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params),
   )
   await openMainWindow()
   void appUpdater.checkForUpdate()

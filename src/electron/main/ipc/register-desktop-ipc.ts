@@ -4,11 +4,15 @@ import { getDesktopRequestChannelOwner } from '../../../../shared/app-transport-
 import {
   type DesktopRequestChannel,
   type DesktopRequestHandlerMap,
+  type DesktopRequestMap,
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
 } from '../../../../shared/desktop-ipc'
 import { resolveConfiguredDevServerUrl } from '../../../../shared/dev-server'
-import type { HowcodeServerConnectionState } from '../../../../shared/howcode-server-contracts'
+import type {
+  HowcodeEnvironment,
+  HowcodeServerConnectionState,
+} from '../../../../shared/howcode-server-contracts'
 import { isTrustedRendererUrl } from '../app/navigation-security'
 import { getRendererDistDirectory } from '../runtime/app-paths'
 import type { DesktopRuntimeModules } from '../runtime/desktop-runtime-contracts'
@@ -58,11 +62,16 @@ function registerRequestHandlers(
   handlers: DesktopRequestHandlerMap,
   getMainWindow: () => BrowserWindow | null,
   serverTransport: AppTransport | null,
+  resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
+    channel: K,
+    params: DesktopRequestMap[K]['params'],
+  ) => HowcodeEnvironment,
 ) {
   for (const channel of Object.keys(handlers) as DesktopRequestChannel[]) {
     ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
       if (getDesktopRequestChannelOwner(channel) === 'howcode-server') {
+        resolveEnvironmentForRequest(channel, params)
         if (!serverTransport) {
           throw new Error('Howcode server is required for this operation but is not connected.')
         }
@@ -82,6 +91,15 @@ export function createDesktopRequestHandlers(
       baseUrl: null,
       connected: false,
       descriptor: null,
+      environment: {
+        id: 'disabled',
+        kind: 'disabled',
+        name: 'No Howcode server',
+        scope: 'global',
+        serverUrl: null,
+      },
+      environmentId: 'disabled',
+      environmentName: 'No Howcode server',
       error: null,
       mode: 'disabled',
     }),
@@ -89,6 +107,15 @@ export function createDesktopRequestHandlers(
       baseUrl: null,
       connected: false,
       descriptor: null,
+      environment: {
+        id: 'disabled',
+        kind: 'disabled',
+        name: 'No Howcode server',
+        scope: 'global',
+        serverUrl: null,
+      },
+      environmentId: 'disabled',
+      environmentName: 'No Howcode server',
       error: null,
       mode: 'disabled',
     }),
@@ -111,12 +138,31 @@ export function registerDesktopIpc(
     baseUrl: null,
     connected: false,
     descriptor: null,
+    environment: {
+      id: 'disabled',
+      kind: 'disabled',
+      name: 'No Howcode server',
+      scope: 'global',
+      serverUrl: null,
+    },
+    environmentId: 'disabled',
+    environmentName: 'No Howcode server',
     error: null,
     mode: 'disabled',
   }),
   refreshHowcodeServerState: () =>
     | Promise<HowcodeServerConnectionState>
     | HowcodeServerConnectionState = getHowcodeServerState,
+  resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
+    channel: K,
+    params: DesktopRequestMap[K]['params'],
+  ) => HowcodeEnvironment = () => ({
+    id: 'disabled',
+    kind: 'disabled',
+    name: 'No Howcode server',
+    scope: 'global',
+    serverUrl: null,
+  }),
 ) {
   const handlers: DesktopRequestHandlerMap = {
     ...createDesktopRequestHandlers(runtime, appUpdater),
@@ -124,7 +170,7 @@ export function registerDesktopIpc(
     refreshHowcodeServerState,
   }
 
-  registerRequestHandlers(handlers, getMainWindow, serverTransport)
+  registerRequestHandlers(handlers, getMainWindow, serverTransport, resolveEnvironmentForRequest)
 
   runtime.piThreads.subscribeDesktopEvents((event) => {
     const mainWindow = getMainWindow()
