@@ -3,7 +3,7 @@ import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
 } from '../../../../shared/howcode-server-contracts'
-import { composerTextActionButtonClass, settingsCompactInputClass } from '../../ui/classes'
+import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingDescriptor } from './settingsTypes'
 
@@ -137,7 +137,7 @@ function RemoteTextInput({
   const { draft } = useRemoteSettingsStore()
   return (
     <input
-      className={cn(settingsCompactInputClass, 'h-7 w-[18rem] max-w-full')}
+      className={cn(settingsInputClass, 'w-[18rem] max-w-full flex-none')}
       placeholder={placeholder}
       type={type}
       value={draft[field]}
@@ -151,7 +151,7 @@ function ConditionalRemoteTextInput(
 ) {
   const { draft } = useRemoteSettingsStore()
   if (draft.kind !== props.kind) {
-    return <div className="invisible h-7 w-[18rem] max-w-full" aria-hidden="true" />
+    return <div className="invisible min-h-10 w-[18rem] max-w-full" aria-hidden="true" />
   }
   return <RemoteTextInput {...props} />
 }

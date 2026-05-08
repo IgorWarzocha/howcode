@@ -111,10 +111,7 @@ export const settingsSelectButtonClass =
   'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]'
 
 export const settingsInputClass =
-  'settings-control-text min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]'
-
-export const settingsCompactInputClass =
-  'settings-compact-input min-w-0 rounded-md border border-[color:var(--border)] bg-[rgba(255,255,255,0.035)] px-2.5 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]'
+  'settings-control-text min-w-0 flex-1 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]'
 
 export const settingsListRowClass =
   'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-3 py-2'
