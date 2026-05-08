@@ -17,6 +17,12 @@ export type SshHowcodeEnvironmentConnection = {
   close: () => void
 }
 
+type ManagedSshProcess = {
+  child: ChildProcess
+  label: string
+  recentOutput: () => string
+}
+
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
@@ -30,23 +36,50 @@ function parsePort(value: string | undefined, fallback: number) {
   return port
 }
 
-function spawnManaged(command: string, args: string[], label: string) {
+function appendRecentOutput(lines: string[], chunk: unknown) {
+  const text = String(chunk)
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed) lines.push(trimmed)
+  }
+  lines.splice(0, Math.max(0, lines.length - 8))
+}
+
+function formatRecentOutput(lines: string[]) {
+  return lines.length > 0 ? `: ${lines.join(' · ')}` : ''
+}
+
+function spawnManaged(command: string, args: string[], label: string): ManagedSshProcess {
+  const recentLines: string[] = []
   const child = spawn(command, args, {
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   child.stderr?.on('data', (chunk) => {
+    appendRecentOutput(recentLines, chunk)
     process.stderr.write(`[${label}] ${chunk}`)
   })
   child.stdout?.on('data', (chunk) => {
+    appendRecentOutput(recentLines, chunk)
     process.stdout.write(`[${label}] ${chunk}`)
   })
-  return child
+  child.on('error', (error) => {
+    appendRecentOutput(recentLines, error.message)
+  })
+  return {
+    child,
+    label,
+    recentOutput: () => formatRecentOutput(recentLines),
+  }
 }
 
 function closeChild(child: ChildProcess | null) {
   if (!child || child.killed) return
   child.kill('SIGTERM')
+}
+
+function shellQuote(value: string) {
+  return `'${value.replaceAll("'", `'\\''`)}'`
 }
 
 function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
@@ -56,10 +89,49 @@ function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
     '--host',
     '127.0.0.1',
     '--port',
-    String(config.remotePort),
+    shellQuote(String(config.remotePort)),
     '--token',
-    config.token,
+    shellQuote(config.token),
   ].join(' ')
+}
+
+async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeoutMs: number) {
+  const exitResult = await new Promise<{
+    code: number | null
+    signal: NodeJS.Signals | null
+  } | null>((resolve) => {
+    let settled = false
+    const timeout = setTimeout(() => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve(null)
+    }, timeoutMs)
+    const cleanup = () => {
+      clearTimeout(timeout)
+      process.child.off('exit', onExit)
+      process.child.off('error', onError)
+    }
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve({ code, signal })
+    }
+    const onError = () => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve({ code: null, signal: null })
+    }
+    process.child.once('exit', onExit)
+    process.child.once('error', onError)
+  })
+
+  if (!exitResult) return
+  throw new Error(
+    `${process.label} exited before it was ready (${exitResult.code ?? exitResult.signal ?? 'error'})${process.recentOutput()}`,
+  )
 }
 
 export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentConfig | null {
@@ -78,12 +150,37 @@ export async function ensureSshHowcodeServer(
   config: SshHowcodeEnvironmentConfig,
 ): Promise<SshHowcodeEnvironmentConnection> {
   const remoteCommand = config.remoteCommand ?? defaultRemoteServeCommand(config)
-  const remoteServerProcess = spawnManaged('ssh', [config.host, remoteCommand], 'howcode-ssh-serve')
+  const remoteServerProcess = spawnManaged(
+    'ssh',
+    ['-o', 'BatchMode=yes', config.host, remoteCommand],
+    'howcode-ssh-serve',
+  )
   const tunnelProcess = spawnManaged(
     'ssh',
-    ['-N', '-L', `127.0.0.1:${config.localPort}:127.0.0.1:${config.remotePort}`, config.host],
+    [
+      '-o',
+      'BatchMode=yes',
+      '-o',
+      'ExitOnForwardFailure=yes',
+      '-N',
+      '-L',
+      `127.0.0.1:${config.localPort}:127.0.0.1:${config.remotePort}`,
+      config.host,
+    ],
     'howcode-ssh-tunnel',
   )
+
+  try {
+    await Promise.all([
+      assertProcessDoesNotExitEarly(remoteServerProcess, 750),
+      assertProcessDoesNotExitEarly(tunnelProcess, 750),
+    ])
+  } catch (error) {
+    closeChild(tunnelProcess.child)
+    closeChild(remoteServerProcess.child)
+    throw error
+  }
+
   const baseUrl = `http://127.0.0.1:${config.localPort}`
   const environment: HowcodeEnvironment = {
     id: `ssh:${config.host}`,
@@ -103,8 +200,8 @@ export async function ensureSshHowcodeServer(
     environment,
     token: config.token,
     close: () => {
-      closeChild(tunnelProcess)
-      closeChild(remoteServerProcess)
+      closeChild(tunnelProcess.child)
+      closeChild(remoteServerProcess.child)
     },
   }
 }
