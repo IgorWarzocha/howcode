@@ -137,7 +137,7 @@ function RemoteTextInput({
   const { draft } = useRemoteSettingsStore()
   return (
     <input
-      className="h-7 w-[18rem] max-w-full rounded-md border border-[color:var(--border)] bg-[rgba(255,255,255,0.035)] px-2.5 text-[11.5px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
+      className="remote-settings-input h-7 w-[18rem] max-w-full rounded-md border border-[color:var(--border)] bg-[rgba(255,255,255,0.035)] px-2.5 text-[11.5px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
       placeholder={placeholder}
       type={type}
       value={draft[field]}
