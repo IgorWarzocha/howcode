@@ -34,7 +34,7 @@ export function getConnectionModeForEnvironment(
   environment: HowcodeEnvironment,
 ): HowcodeServerConnectionMode {
   if (environment.kind === 'local-desktop') return 'local'
-  if (environment.kind === 'external-server') return 'external'
+  if (environment.kind === 'external-server' || environment.kind === 'ssh-server') return 'external'
   return 'disabled'
 }
 

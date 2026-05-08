@@ -24,10 +24,16 @@ import {
   localDesktopEnvironment,
   resolveHowcodeEnvironmentForRequest,
 } from './server-environments'
+import {
+  ensureSshHowcodeServer,
+  readSshHowcodeEnvironmentConfigFromEnv,
+  type SshHowcodeEnvironmentConnection,
+} from './ssh-howcode-environments'
 import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null
 let localHowcodeServer: LocalHowcodeServer | null = null
+let sshHowcodeServer: SshHowcodeEnvironmentConnection | null = null
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
@@ -70,6 +76,38 @@ async function fetchServerDescriptor(baseUrl: string) {
     throw new Error(`Howcode server descriptor request failed (${response.status}).`)
   }
   return (await response.json()) as HowcodeServerConnectionState['descriptor']
+}
+
+async function refreshConnectedServerState(environment: HowcodeEnvironment, baseUrl: string) {
+  activeHowcodeEnvironment = environment
+  try {
+    howcodeServerState = createHowcodeServerConnectionState({
+      connected: true,
+      descriptor: await fetchServerDescriptor(baseUrl),
+      environment,
+    })
+  } catch (error) {
+    howcodeServerState = createHowcodeServerConnectionState({
+      connected: false,
+      environment,
+      error: error instanceof Error ? error.message : 'Failed to connect to Howcode server.',
+    })
+  }
+  return howcodeServerState
+}
+
+async function resolveSshServerTransport(): Promise<ReturnType<
+  typeof createHowcodeServerTransport
+> | null> {
+  const config = readSshHowcodeEnvironmentConfigFromEnv()
+  if (!config) return null
+
+  sshHowcodeServer = await ensureSshHowcodeServer(config)
+  await refreshConnectedServerState(sshHowcodeServer.environment, sshHowcodeServer.baseUrl)
+  return createHowcodeServerTransport({
+    authToken: sshHowcodeServer.token,
+    baseUrl: sshHowcodeServer.baseUrl,
+  })
 }
 
 async function refreshExternalServerState() {
@@ -171,7 +209,8 @@ async function bootstrap() {
 
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater()
-  const externalServerTransport = await resolveExternalServerTransport()
+  const sshServerTransport = await resolveSshServerTransport()
+  const externalServerTransport = sshServerTransport ?? (await resolveExternalServerTransport())
   const serverTransport = shouldDisableLocalServer()
     ? externalServerTransport
     : (externalServerTransport ?? (await startDesktopLocalServer(runtime, appUpdater)))
@@ -205,6 +244,7 @@ async function bootstrap() {
 }
 
 app.on('before-quit', () => {
+  sshHowcodeServer?.close()
   void stopLocalHowcodeServer(localHowcodeServer)
 })
 

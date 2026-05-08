@@ -36,7 +36,7 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
 
-export type HowcodeEnvironmentKind = 'local-desktop' | 'external-server' | 'disabled'
+export type HowcodeEnvironmentKind = 'local-desktop' | 'external-server' | 'ssh-server' | 'disabled'
 export type HowcodeEnvironmentScope = 'global' | 'project'
 
 export type HowcodeEnvironment = {
@@ -46,6 +46,11 @@ export type HowcodeEnvironment = {
   scope: HowcodeEnvironmentScope
   serverUrl: string | null
   projectId?: string | null
+  ssh?: {
+    host: string
+    localPort: number
+    remotePort: number
+  } | null
 }
 
 export type HowcodeServerConnectionMode = 'local' | 'external' | 'disabled'
