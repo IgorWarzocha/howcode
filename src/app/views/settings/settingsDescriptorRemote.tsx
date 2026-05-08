@@ -202,13 +202,25 @@ function SavedRemoteEnvironmentsControl() {
     await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
     refreshRemoteEnvironments()
   }
-  const test = async (id: string) => {
-    setTestStatus(id, 'testing')
+  const test = async (environment: HowcodeRemoteEnvironment) => {
+    if (!environment.hasToken) {
+      setTestStatus(environment.id, 'failed', 'Add token, save, then test.')
+      return
+    }
+    setTestStatus(environment.id, 'testing')
     try {
-      const result = await window.piDesktop?.testHowcodeRemoteEnvironment?.(id)
-      setTestStatus(id, result?.ok ? 'ok' : 'failed', result?.error ?? 'Connection failed.')
+      const result = await window.piDesktop?.testHowcodeRemoteEnvironment?.(environment.id)
+      setTestStatus(
+        environment.id,
+        result?.ok ? 'ok' : 'failed',
+        result?.error ?? 'Connection failed.',
+      )
     } catch (error) {
-      setTestStatus(id, 'failed', error instanceof Error ? error.message : 'Connection failed.')
+      setTestStatus(
+        environment.id,
+        'failed',
+        error instanceof Error ? error.message : 'Connection failed.',
+      )
     }
   }
 
@@ -221,7 +233,7 @@ function SavedRemoteEnvironmentsControl() {
       {environments.map((environment) => (
         <div
           key={environment.id}
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[color:var(--border)] px-2.5 py-1.5 text-[11.5px]"
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-[color:var(--border)] px-2.5 py-1.5 text-[11.5px]"
         >
           <div className="min-w-0">
             <div className="truncate text-[color:var(--text)]">{environment.name}</div>
@@ -231,18 +243,24 @@ function SavedRemoteEnvironmentsControl() {
                 : environment.serverUrl}
               {environment.hasToken ? ' · token saved' : ' · no token'}
             </div>
+            {testErrorById[environment.id] ? (
+              <div className="truncate text-[color:var(--danger)]">
+                {testErrorById[environment.id]}
+              </div>
+            ) : null}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               className={cn(
                 composerTextActionButtonClass,
+                'h-7 w-7 px-0',
                 testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
                 testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
               )}
-              onClick={() => void test(environment.id)}
+              onClick={() => void test(environment)}
               aria-label={`Test ${environment.name}`}
-              data-tooltip={testErrorById[environment.id] || `Test ${environment.name}`}
+              title={`Test ${environment.name}`}
             >
               {testStatusById[environment.id] === 'testing' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -252,7 +270,7 @@ function SavedRemoteEnvironmentsControl() {
             </button>
             <button
               type="button"
-              className={composerTextActionButtonClass}
+              className={cn(composerTextActionButtonClass, 'px-2')}
               onClick={() => void remove(environment.id)}
             >
               Delete
