@@ -26,6 +26,7 @@ const buildTargets = [
       path.join(projectRoot, 'desktop', 'pi-skills.ts'),
       path.join(projectRoot, 'desktop', 'skill-creator-session.ts'),
       path.join(projectRoot, 'desktop', 'runtime-host', 'worker.ts'),
+      path.join(projectRoot, 'desktop', 'server', 'standalone-howcode-server.ts'),
     ],
     outdir: path.join(buildRoot, 'desktop'),
     root: path.join(projectRoot, 'desktop'),

@@ -27,5 +27,10 @@
     "stableTypeOrdering": true,
     "libReplacement": false
   },
-  "include": ["desktop/**/*.ts", "shared/**/*.ts"]
+  "include": [
+    "desktop/**/*.ts",
+    "shared/**/*.ts",
+    "src/electron/main/ipc/request-handlers/**/*.ts",
+    "src/electron/main/runtime/desktop-runtime-contracts.ts"
+  ]
 }

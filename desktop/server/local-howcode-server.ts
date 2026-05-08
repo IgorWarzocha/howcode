@@ -15,6 +15,7 @@ export type LocalHowcodeServer = {
 export type LocalHowcodeServerConfig = {
   host?: string
   port?: number
+  token?: string
 }
 
 export function createDirectHandlerTransport(
@@ -32,7 +33,7 @@ export async function startLocalHowcodeServer(input: {
   eventTransport: Pick<AppTransport, 'subscribe'>
   config?: LocalHowcodeServerConfig
 }): Promise<LocalHowcodeServer> {
-  const authToken = randomUUID()
+  const authToken = input.config?.token ?? randomUUID()
   const handle = await Effect.runPromise(
     startHowcodeServer(
       {
