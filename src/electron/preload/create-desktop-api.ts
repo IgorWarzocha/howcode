@@ -8,7 +8,7 @@ import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
 } from '../../../shared/desktop-ipc'
-import { createDesktopApiFromTransport } from '../../app/desktop/create-desktop-api'
+import { createDesktopApiFromTransport } from '../../app/desktop/create-desktop-api-from-transport'
 
 const electronIpcTransport: AppTransport = {
   request: <K extends DesktopRequestChannel>(channel: K, params: DesktopRequestMap[K]['params']) =>

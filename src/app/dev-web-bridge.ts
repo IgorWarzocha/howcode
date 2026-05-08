@@ -5,7 +5,7 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../../shared/desktop-ipc'
-import { createDesktopApiFromTransport } from './desktop/create-desktop-api'
+import { createDesktopApiFromTransport } from './desktop/create-desktop-api-from-transport'
 
 let bridgeTokenPromise: Promise<string> | null = null
 
