@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AppTransport } from '../../shared/app-transport'
+import type { DesktopEvent } from '../../shared/desktop-contracts'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   howcodeServerDescriptor,
@@ -69,6 +70,40 @@ describe('Howcode server', () => {
 
     expect(response.status).toBe(401)
     expect(request).not.toHaveBeenCalled()
+  })
+
+  it('streams app transport events over SSE', async () => {
+    const listeners = new Set<(event: DesktopEvent) => void>()
+    const { baseUrl } = await startTestServer({
+      request: vi.fn(),
+      subscribe: vi.fn((_channel, listener) => {
+        listeners.add(listener as (event: DesktopEvent) => void)
+        return () => listeners.delete(listener as (event: DesktopEvent) => void)
+      }),
+    })
+
+    const response = await fetch(new URL('/api/app/events/desktopEvent?token=test-token', baseUrl))
+    expect(response.status).toBe(200)
+    const reader = response.body?.getReader()
+    expect(reader).toBeDefined()
+
+    for (const listener of listeners) {
+      listener({ type: 'shell-state-refresh' })
+    }
+
+    const decoder = new TextDecoder()
+    let body = ''
+    while (!body.includes('shell-state-refresh')) {
+      const read = await reader!.read()
+      if (read.done) {
+        break
+      }
+      body += decoder.decode(read.value)
+    }
+    await reader!.cancel()
+
+    expect(body).toContain('event: desktopEvent')
+    expect(body).toContain('shell-state-refresh')
   })
 
   it('dispatches typed app transport requests over HTTP', async () => {

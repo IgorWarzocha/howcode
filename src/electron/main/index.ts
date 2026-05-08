@@ -1,12 +1,9 @@
-import { randomUUID } from 'node:crypto'
-import { Effect } from 'effect'
 import { app, BrowserWindow } from 'electron'
 import {
-  type HowcodeServerHandle,
-  startHowcodeServer,
-} from '../../../desktop/server/howcode-server'
-import { createHowcodeServerTransport } from '../../../desktop/server/howcode-server-transport'
-import type { AppTransport } from '../../../shared/app-transport'
+  type LocalHowcodeServer,
+  startLocalHowcodeServer,
+  stopLocalHowcodeServer,
+} from '../../../desktop/server/local-howcode-server'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register-desktop-ipc'
@@ -18,7 +15,7 @@ import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null
-let localHowcodeServer: HowcodeServerHandle | null = null
+let localHowcodeServer: LocalHowcodeServer | null = null
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 app.setName('howcode')
@@ -37,46 +34,22 @@ async function openMainWindow() {
   return mainWindow
 }
 
-function createDirectHandlerTransport(
-  handlers: ReturnType<typeof createDesktopRequestHandlers>,
-): AppTransport {
-  return {
-    request: async (channel, params) => await handlers[channel](params),
-    subscribe: () => {
-      throw new Error('Direct Howcode server event subscriptions are not implemented yet.')
-    },
-  }
-}
-
-async function startLocalHowcodeServer(
+async function startDesktopLocalServer(
   runtime: Awaited<ReturnType<typeof loadDesktopRuntimeModules>>,
   appUpdater: AppUpdater,
 ) {
-  const handlers = createDesktopRequestHandlers(runtime, appUpdater)
-  const handle = await Effect.runPromise(
-    startHowcodeServer(
-      {
-        host: '127.0.0.1',
-        port: 0,
-        authToken: randomUUID(),
+  localHowcodeServer = await startLocalHowcodeServer({
+    handlers: createDesktopRequestHandlers(runtime, appUpdater),
+    eventTransport: {
+      subscribe: (channel, listener) => {
+        if (channel === 'desktopEvent') {
+          return runtime.piThreads.subscribeDesktopEvents((event) => listener(event as never))
+        }
+        return runtime.terminalManager.subscribeTerminalEvents((event) => listener(event as never))
       },
-      createDirectHandlerTransport(handlers),
-    ),
-  )
-  localHowcodeServer = handle
-  return createHowcodeServerTransport({
-    authToken: handle.authToken,
-    baseUrl: `http://${handle.address.host}:${handle.address.port}`,
+    },
   })
-}
-
-async function stopLocalHowcodeServer() {
-  const handle = localHowcodeServer
-  localHowcodeServer = null
-  if (!handle) {
-    return
-  }
-  await Effect.runPromise(Effect.catch(handle.close, () => Effect.void))
+  return localHowcodeServer.transport
 }
 
 async function bootstrap() {
@@ -86,7 +59,7 @@ async function bootstrap() {
 
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater()
-  const serverTransport = await startLocalHowcodeServer(runtime, appUpdater)
+  const serverTransport = await startDesktopLocalServer(runtime, appUpdater)
   registerDesktopRuntimeShutdown(runtime)
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, serverTransport)
   await openMainWindow()
@@ -100,7 +73,7 @@ async function bootstrap() {
 }
 
 app.on('before-quit', () => {
-  void stopLocalHowcodeServer()
+  void stopLocalHowcodeServer(localHowcodeServer)
 })
 
 app.on('window-all-closed', () => {

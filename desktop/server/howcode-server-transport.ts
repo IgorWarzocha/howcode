@@ -5,7 +5,10 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../../shared/desktop-ipc'
-import { HOWCODE_SERVER_REQUEST_PREFIX } from '../../shared/howcode-server-contracts'
+import {
+  HOWCODE_SERVER_EVENTS_PREFIX,
+  HOWCODE_SERVER_REQUEST_PREFIX,
+} from '../../shared/howcode-server-contracts'
 
 export type HowcodeServerTransportConfig = {
   baseUrl: string
@@ -13,7 +16,12 @@ export type HowcodeServerTransportConfig = {
 }
 
 function resolveRequestUrl(baseUrl: string, channel: DesktopRequestChannel) {
-  const url = new URL(HOWCODE_SERVER_REQUEST_PREFIX + channel, baseUrl)
+  return new URL(HOWCODE_SERVER_REQUEST_PREFIX + channel, baseUrl).toString()
+}
+
+function resolveEventUrl(baseUrl: string, channel: DesktopEventChannel, authToken: string) {
+  const url = new URL(HOWCODE_SERVER_EVENTS_PREFIX + channel, baseUrl)
+  url.searchParams.set('token', authToken)
   return url.toString()
 }
 
@@ -46,10 +54,21 @@ export function createHowcodeServerTransport(config: HowcodeServerTransportConfi
       return (await response.json()) as DesktopRequestMap[K]['response']
     },
     subscribe: <K extends DesktopEventChannel>(
-      _channel: K,
-      _listener: (event: DesktopEventMap[K]) => void,
+      channel: K,
+      listener: (event: DesktopEventMap[K]) => void,
     ) => {
-      throw new Error('Howcode server event transport is not implemented yet.')
+      const eventSource = new EventSource(
+        resolveEventUrl(config.baseUrl, channel, config.authToken),
+      )
+      const wrappedListener = (event: MessageEvent<string>) => {
+        const payload = JSON.parse(event.data) as { channel: K; event: DesktopEventMap[K] }
+        listener(payload.event)
+      }
+      eventSource.addEventListener(channel, wrappedListener)
+      return () => {
+        eventSource.removeEventListener(channel, wrappedListener)
+        eventSource.close()
+      }
     },
   }
 }

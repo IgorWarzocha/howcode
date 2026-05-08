@@ -1,7 +1,9 @@
 export const HOWCODE_SERVER_DESCRIPTOR_PATH = '/.well-known/howcode/server'
 export const HOWCODE_SERVER_REQUEST_PREFIX = '/api/app/request/'
+export const HOWCODE_SERVER_EVENTS_PREFIX = '/api/app/events/'
 
 export type HowcodeServerCapability =
+  | 'app-events'
   | 'app-transport'
   | 'projects'
   | 'git'
@@ -30,6 +32,6 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
     required: true,
     methods: ['bearer-token'],
   },
-  capabilities: ['app-transport'],
+  capabilities: ['app-transport', 'app-events'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }

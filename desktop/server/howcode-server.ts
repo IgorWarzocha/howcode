@@ -2,9 +2,15 @@ import { timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { Data, Effect } from 'effect'
 import type { AppTransport } from '../../shared/app-transport'
-import type { DesktopRequestChannel, DesktopRequestMap } from '../../shared/desktop-ipc'
+import type {
+  DesktopEventChannel,
+  DesktopEventMap,
+  DesktopRequestChannel,
+  DesktopRequestMap,
+} from '../../shared/desktop-ipc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
+  HOWCODE_SERVER_EVENTS_PREFIX,
   HOWCODE_SERVER_REQUEST_PREFIX,
   howcodeServerDescriptor,
 } from '../../shared/howcode-server-contracts'
@@ -35,20 +41,22 @@ function sendJson(response: ServerResponse, statusCode: number, payload: unknown
   response.end(JSON.stringify(payload))
 }
 
-function hasValidAuthToken(request: IncomingMessage, expectedToken: string) {
-  const header = request.headers.authorization
-  const prefix = 'Bearer '
-  if (!header?.startsWith(prefix) || expectedToken.length === 0) {
-    return false
-  }
-
-  const candidate = header.slice(prefix.length)
+function isMatchingToken(candidate: string, expectedToken: string) {
   const candidateBuffer = Buffer.from(candidate)
   const expectedBuffer = Buffer.from(expectedToken)
   return (
+    expectedToken.length > 0 &&
     candidateBuffer.length === expectedBuffer.length &&
     timingSafeEqual(candidateBuffer, expectedBuffer)
   )
+}
+
+function hasValidAuthToken(request: IncomingMessage, expectedToken: string) {
+  const header = request.headers.authorization
+  const prefix = 'Bearer '
+  return header?.startsWith(prefix)
+    ? isMatchingToken(header.slice(prefix.length), expectedToken)
+    : false
 }
 
 function readJsonBody(request: IncomingMessage) {
@@ -71,6 +79,50 @@ function readJsonBody(request: IncomingMessage) {
   })
 }
 
+function writeSseEvent<K extends DesktopEventChannel>(
+  response: ServerResponse,
+  channel: K,
+  event: DesktopEventMap[K],
+) {
+  response.write(`event: ${channel}\n`)
+  response.write(`data: ${JSON.stringify({ channel, event })}\n\n`)
+}
+
+function handleEventStream(
+  config: HowcodeServerConfig,
+  transport: AppTransport,
+  channel: DesktopEventChannel,
+  request: IncomingMessage,
+  response: ServerResponse,
+) {
+  const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
+  const token = requestUrl.searchParams.get('token')
+  if (
+    !(token
+      ? isMatchingToken(token, config.authToken)
+      : hasValidAuthToken(request, config.authToken))
+  ) {
+    sendJson(response, 401, { error: 'Unauthorized.' })
+    return
+  }
+  if (channel !== 'desktopEvent' && channel !== 'terminalEvent') {
+    sendJson(response, 404, { error: `Unknown event channel: ${channel}` })
+    return
+  }
+
+  response.writeHead(200, {
+    'cache-control': 'no-cache, no-transform',
+    connection: 'keep-alive',
+    'content-type': 'text/event-stream; charset=utf-8',
+  })
+  response.write('retry: 1000\n\n')
+
+  const unsubscribe = transport.subscribe(channel, (event) => {
+    writeSseEvent(response, channel, event)
+  })
+  request.on('close', unsubscribe)
+}
+
 function handleRequest(
   config: HowcodeServerConfig,
   transport: AppTransport,
@@ -86,6 +138,17 @@ function handleRequest(
 
   if (request.method === 'GET' && requestUrl.pathname === HOWCODE_SERVER_DESCRIPTOR_PATH) {
     sendJson(response, 200, howcodeServerDescriptor)
+    return
+  }
+
+  if (request.method === 'GET' && requestUrl.pathname.startsWith(HOWCODE_SERVER_EVENTS_PREFIX)) {
+    handleEventStream(
+      config,
+      transport,
+      requestUrl.pathname.slice(HOWCODE_SERVER_EVENTS_PREFIX.length) as DesktopEventChannel,
+      request,
+      response,
+    )
     return
   }
 
