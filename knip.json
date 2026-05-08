@@ -1,0 +1,39 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/electron/main/index.ts",
+    "src/electron/preload/index.ts",
+    "desktop/pi-threads.ts",
+    "desktop/pi-skills.ts",
+    "desktop/skill-creator-session.ts",
+    "desktop/runtime-host/worker.ts",
+    "desktop/terminal/manager.ts",
+    "scripts/*.ts",
+    "pages/src/main.tsx",
+    "packages/howcode/bin/howcode.js",
+    "packages/howcode/lib/howcode.js",
+    "desktop/native-extensions/howcode-native-ask-questions.mjs"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "desktop/**/*.{ts,mjs}",
+    "shared/**/*.{ts,d.ts}",
+    "scripts/**/*.ts",
+    "pages/**/*.{ts,tsx}",
+    "packages/howcode/**/*.{js,cjs,mjs}"
+  ],
+  "ignore": ["build/**", "dist/**", "dist-pages/**", "artifacts/**", "node_modules/**"],
+  "ignoreDependencies": [
+    "@earendil-works/pi-ai",
+    "@earendil-works/pi-tui",
+    "bindings",
+    "clip-filepaths",
+    "file-uri-to-path",
+    "node-pty",
+    "sherpa-onnx-node",
+    "tar",
+    "@types/three",
+    "tailwindcss"
+  ]
+}
