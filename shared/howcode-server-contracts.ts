@@ -98,3 +98,18 @@ export type HowcodeProjectRemoteEnvironmentAssignment = {
   projectId: string
   remoteEnvironmentId: string | null
 }
+
+export type HowcodeInstanceProjectSummary = {
+  id: string
+  name: string
+  repoOriginUrl?: string | null
+  threadCount?: number | null
+  latestModifiedMs?: number | null
+}
+
+export type HowcodeInstanceManifest = {
+  instanceId: string
+  instanceName: string
+  serverUrl: string | null
+  projects: HowcodeInstanceProjectSummary[]
+}

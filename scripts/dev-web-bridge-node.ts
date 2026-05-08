@@ -107,6 +107,12 @@ const getDevServerState = () => ({
 
 const handlers: DesktopRequestHandlerMap = {
   getHowcodeServerState: getDevServerState,
+  getHowcodeInstanceManifest: () => ({
+    instanceId: 'dev-web-bridge',
+    instanceName: 'Dev web bridge',
+    projects: [],
+    serverUrl: null,
+  }),
   listHowcodeRemoteEnvironments: () => [],
   saveHowcodeRemoteEnvironment: () => {
     throw new Error('Remote environments are unavailable in dev web bridge mode.')

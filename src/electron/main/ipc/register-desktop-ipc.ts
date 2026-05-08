@@ -18,6 +18,7 @@ import { getRendererDistDirectory } from '../runtime/app-paths'
 import type { DesktopRuntimeModules } from '../runtime/desktop-runtime-contracts'
 import type { AppUpdater } from '../updater/app-updater'
 import { createAppUpdateHandlers } from './request-handlers/app-update'
+import { createInstanceManifestHandlers } from './request-handlers/instance-manifest'
 import { createPiPackagesHandlers } from './request-handlers/pi-packages'
 import { createPiSkillsHandlers } from './request-handlers/pi-skills'
 import { createPiThreadsHandlers } from './request-handlers/pi-threads'
@@ -134,6 +135,7 @@ export function createDesktopRequestHandlers(
       mode: 'disabled',
     }),
     ...createAppUpdateHandlers(appUpdater),
+    ...createInstanceManifestHandlers(runtime.piThreads),
     ...createPiThreadsHandlers(runtime.piThreads),
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),

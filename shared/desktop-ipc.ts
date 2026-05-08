@@ -44,6 +44,7 @@ import type {
   ThreadData,
 } from './desktop-contracts'
 import type {
+  HowcodeInstanceManifest,
   HowcodeProjectRemoteEnvironmentAssignment,
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
@@ -73,6 +74,7 @@ export type DesktopRequestMap = {
     response: { clearedCount: number; clearFailedCount: number }
   }
   getHowcodeServerState: { params: Record<string, never>; response: HowcodeServerConnectionState }
+  getHowcodeInstanceManifest: { params: Record<string, never>; response: HowcodeInstanceManifest }
   refreshHowcodeServerState: {
     params: Record<string, never>
     response: HowcodeServerConnectionState

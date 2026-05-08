@@ -19,6 +19,7 @@ export function createDesktopApiFromTransport(
     restartAppUpdate: () => request('restartAppUpdate', {}),
     clearClipboardImages: () => request('clearClipboardImages', {}),
     getHowcodeServerState: () => request('getHowcodeServerState', {}),
+    getHowcodeInstanceManifest: () => request('getHowcodeInstanceManifest', {}),
     refreshHowcodeServerState: () => request('refreshHowcodeServerState', {}),
     listHowcodeRemoteEnvironments: () => request('listHowcodeRemoteEnvironments', {}),
     saveHowcodeRemoteEnvironment: (

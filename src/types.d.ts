@@ -1,4 +1,5 @@
 import type {
+  HowcodeInstanceManifest,
   HowcodeProjectRemoteEnvironmentAssignment,
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
@@ -71,6 +72,7 @@ declare global {
       restartAppUpdate?: () => Promise<AppUpdateState>
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
+      getHowcodeInstanceManifest?: () => Promise<HowcodeInstanceManifest>
       refreshHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       listHowcodeRemoteEnvironments?: () => Promise<HowcodeRemoteEnvironment[]>
       saveHowcodeRemoteEnvironment?: (

@@ -80,6 +80,7 @@ function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): Deskto
   }
   return {
     getHowcodeServerState: unsupportedDesktopHandler,
+    getHowcodeInstanceManifest: unsupportedDesktopHandler,
     refreshHowcodeServerState: unsupportedDesktopHandler,
     listHowcodeRemoteEnvironments: unsupportedDesktopHandler,
     saveHowcodeRemoteEnvironment: unsupportedDesktopHandler,
