@@ -48,8 +48,7 @@
     "pages:dev": "vite --config pages/vite.config.ts",
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",
-    "deadcode": "knip",
-    "dev:server-mode": "bun ./scripts/dev-server-mode.ts"
+    "deadcode": "knip"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [

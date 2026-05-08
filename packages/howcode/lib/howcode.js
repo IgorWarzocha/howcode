@@ -359,7 +359,7 @@ async function pruneOldVersions(cacheRoot, keepDir) {
   )
 }
 
-function spawnLauncherProcess(executablePath, options = {}) {
+function spawnLauncherProcess(executablePath, args = [], options = {}) {
   const env = {
     ...process.env,
     HOWCODE_REPO_ROOT: process.env.HOWCODE_REPO_ROOT || process.cwd(),
@@ -367,12 +367,73 @@ function spawnLauncherProcess(executablePath, options = {}) {
   }
   Reflect.deleteProperty(env, 'NODE_TLS_REJECT_UNAUTHORIZED')
 
-  return spawn(executablePath, [], {
-    detached: true,
+  return spawn(executablePath, args, {
+    detached: options.detached ?? true,
     stdio: options.stdio || 'ignore',
     windowsHide: true,
     cwd: path.dirname(executablePath),
     env,
+  })
+}
+
+function getStandaloneServerEntry(installDir, target) {
+  const resourcesPath = getAppResourcesPath(installDir, target)
+  return path.join(
+    resourcesPath,
+    'app.asar.unpacked',
+    'build',
+    'desktop',
+    'standalone-howcode-server.mjs',
+  )
+}
+
+function getRuntimeRoot(installDir, target) {
+  return path.join(getAppResourcesPath(installDir, target), 'app.asar.unpacked')
+}
+
+function hasStandaloneServer(installDir, target) {
+  return fs.existsSync(getStandaloneServerEntry(installDir, target))
+}
+
+function getServeArgs(args) {
+  const serveArgs = args.slice(1)
+  const hasRepoRoot = serveArgs.some(
+    (arg) => arg === '--repo-root' || arg.startsWith('--repo-root='),
+  )
+  if (!hasRepoRoot) {
+    serveArgs.push('--repo-root', process.cwd())
+  }
+  return serveArgs
+}
+
+function serve(executablePath, paths, target, args) {
+  const serverEntry = getStandaloneServerEntry(paths.installDir, target)
+  if (!fs.existsSync(serverEntry)) {
+    throw new Error('Installed app does not include the standalone server runtime.')
+  }
+
+  const child = spawnLauncherProcess(executablePath, [serverEntry, ...getServeArgs(args)], {
+    detached: false,
+    stdio: 'inherit',
+    env: {
+      ELECTRON_RUN_AS_NODE: '1',
+      HOWCODE_RUNTIME_ROOT: getRuntimeRoot(paths.installDir, target),
+    },
+  })
+
+  return new Promise((resolve, reject) => {
+    child.on('error', reject)
+    child.on('exit', (code, signal) => {
+      if (signal) {
+        resolve()
+        return
+      }
+      if (code === 0) {
+        resolve()
+        return
+      }
+      reject(new Error(`howcode serve exited with code ${code}.`))
+    })
   })
 }
 
@@ -382,8 +443,45 @@ async function launch(executablePath) {
   child.unref()
 }
 
-async function main() {
+function getCurrentPaths(cacheRoot, current) {
+  return {
+    cacheRoot,
+    currentFile: path.join(cacheRoot, 'current.json'),
+    windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
+    installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
+    launcherWorkingDirectory: path.dirname(current.executablePath),
+    executablePath: current.executablePath,
+  }
+}
+
+async function runInstalledCommand(paths, target, command, args) {
+  if (command === 'serve') {
+    await serve(paths.executablePath, paths, target, args)
+    return
+  }
+
+  await launch(paths.executablePath)
+}
+
+async function runCurrentInstallOrThrow(cacheRoot, current, target, command, args, error) {
+  if (!current?.executablePath) {
+    throw error
+  }
+
+  const currentPaths = getCurrentPaths(cacheRoot, current)
+  if (!isValidInstall(currentPaths, target)) {
+    throw error
+  }
+
+  await ensureWindowsLaunchIntegration(target, {
+    ...currentPaths,
+  })
+  await runInstalledCommand(currentPaths, target, command, args)
+}
+
+async function main(args = process.argv.slice(2)) {
   const target = getTarget()
+  const command = args[0]
   const cacheRoot = getCacheRoot()
   await fsp.mkdir(cacheRoot, { recursive: true })
 
@@ -393,26 +491,8 @@ async function main() {
   try {
     releaseInfo = await resolveLatestRelease(target)
   } catch (error) {
-    if (current?.executablePath) {
-      const currentPaths = {
-        cacheRoot,
-        currentFile: path.join(cacheRoot, 'current.json'),
-        windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
-        installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
-        launcherWorkingDirectory: path.dirname(current.executablePath),
-        executablePath: current.executablePath,
-      }
-      if (!isValidInstall(currentPaths, target)) {
-        throw error
-      }
-      await ensureWindowsLaunchIntegration(target, {
-        ...currentPaths,
-      })
-      await launch(current.executablePath)
-      return
-    }
-
-    throw error
+    await runCurrentInstallOrThrow(cacheRoot, current, target, command, args, error)
+    return
   }
 
   const paths = getPaths(target, releaseInfo)
@@ -421,18 +501,22 @@ async function main() {
     await installRelease(target, releaseInfo, paths)
   }
 
+  if (command === 'serve' && !hasStandaloneServer(paths.installDir, target)) {
+    throw new Error('Installed app does not include the standalone server runtime.')
+  }
+
   const launchIntegrationReady = await ensureWindowsLaunchIntegration(target, paths)
   if (target.os === 'win' && didInstall && launchIntegrationReady) {
     console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`)
   }
   await pruneOldVersions(cacheRoot, paths.installDir)
-  await launch(paths.executablePath)
+  await runInstalledCommand(paths, target, command, args)
 }
 
 module.exports = {
   main: async () => {
     try {
-      await main()
+      await main(process.argv.slice(2))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       console.error(`howcode: ${message}`)

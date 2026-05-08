@@ -28,6 +28,7 @@ type CliOptions = {
   port: number
   token: string
   repoRoot: string
+  runtimeRoot: string
 }
 
 function readFlag(args: string[], name: string) {
@@ -53,11 +54,15 @@ function parseOptions(args = process.argv.slice(2)): CliOptions {
     readFlag(args, '--repo-root') ??
     getProcessEnvironmentVariable('HOWCODE_REPO_ROOT') ??
     process.cwd()
+  const runtimeRoot =
+    readFlag(args, '--runtime-root') ??
+    getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ??
+    repoRoot
   const port = Number.parseInt(portText, 10)
   if (!Number.isInteger(port) || port < 0 || port > 65_535) {
     throw new Error(`Invalid --port value: ${portText}`)
   }
-  return { host, port, token, repoRoot }
+  return { host, port, repoRoot, runtimeRoot, token }
 }
 
 async function importDesktopModule<TModule>(repoRoot: string, fileName: string) {
@@ -124,7 +129,7 @@ function createRuntimeEventTransport(
 async function main() {
   const options = parseOptions()
   setProcessEnvironmentVariable('HOWCODE_REPO_ROOT', options.repoRoot)
-  const runtime = await loadRuntime(options.repoRoot)
+  const runtime = await loadRuntime(options.runtimeRoot)
   const server = await startLocalHowcodeServer({
     config: {
       host: options.host,
