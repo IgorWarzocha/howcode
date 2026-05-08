@@ -26,6 +26,7 @@ export function createDesktopApiFromTransport(
     ) => request('saveHowcodeRemoteEnvironment', environment),
     deleteHowcodeRemoteEnvironment: (id: string) =>
       request('deleteHowcodeRemoteEnvironment', { id }),
+    testHowcodeRemoteEnvironment: (id: string) => request('testHowcodeRemoteEnvironment', { id }),
     getShellState: () => request('getShellState', {}),
     getProjectGitState: (projectId: string) => request('getProjectGitState', { projectId }),
     getProjectDiff: (

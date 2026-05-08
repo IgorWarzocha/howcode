@@ -46,6 +46,7 @@ import type {
 import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
+  HowcodeRemoteEnvironmentTestResult,
   HowcodeServerConnectionState,
 } from './howcode-server-contracts'
 import type {
@@ -86,6 +87,10 @@ export type DesktopRequestMap = {
   deleteHowcodeRemoteEnvironment: {
     params: { id: string }
     response: { ok: boolean }
+  }
+  testHowcodeRemoteEnvironment: {
+    params: { id: string }
+    response: HowcodeRemoteEnvironmentTestResult
   }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }

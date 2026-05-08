@@ -1,3 +1,4 @@
+import { Loader2, PlugZap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type {
   HowcodeRemoteEnvironment,
@@ -22,6 +23,8 @@ type RemoteStore = {
   draft: Draft
   environments: HowcodeRemoteEnvironment[]
   status: string | null
+  testStatusById: Record<string, 'failed' | 'testing' | 'ok'>
+  testErrorById: Record<string, string>
   version: number
 }
 
@@ -40,6 +43,8 @@ const remoteStore: RemoteStore = {
   draft: defaultDraft,
   environments: [],
   status: null,
+  testErrorById: {},
+  testStatusById: {},
   version: 0,
 }
 
@@ -58,6 +63,16 @@ function updateDraft(patch: Partial<Draft>) {
 
 function setStatus(status: string | null) {
   remoteStore.status = status
+  emitRemoteStoreChange()
+}
+
+function setTestStatus(
+  id: string,
+  status: 'failed' | 'testing' | 'ok',
+  error: string | null = null,
+) {
+  remoteStore.testStatusById = { ...remoteStore.testStatusById, [id]: status }
+  remoteStore.testErrorById = { ...remoteStore.testErrorById, [id]: error ?? '' }
   emitRemoteStoreChange()
 }
 
@@ -182,10 +197,19 @@ function SaveRemoteControl() {
 }
 
 function SavedRemoteEnvironmentsControl() {
-  const { environments } = useRemoteSettingsStore()
+  const { environments, testErrorById, testStatusById } = useRemoteSettingsStore()
   const remove = async (id: string) => {
     await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
     refreshRemoteEnvironments()
+  }
+  const test = async (id: string) => {
+    setTestStatus(id, 'testing')
+    try {
+      const result = await window.piDesktop?.testHowcodeRemoteEnvironment?.(id)
+      setTestStatus(id, result?.ok ? 'ok' : 'failed', result?.error ?? 'Connection failed.')
+    } catch (error) {
+      setTestStatus(id, 'failed', error instanceof Error ? error.message : 'Connection failed.')
+    }
   }
 
   if (environments.length === 0) {
@@ -208,13 +232,32 @@ function SavedRemoteEnvironmentsControl() {
               {environment.hasToken ? ' · token saved' : ' · no token'}
             </div>
           </div>
-          <button
-            type="button"
-            className={composerTextActionButtonClass}
-            onClick={() => void remove(environment.id)}
-          >
-            Delete
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              className={cn(
+                composerTextActionButtonClass,
+                testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
+                testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
+              )}
+              onClick={() => void test(environment.id)}
+              aria-label={`Test ${environment.name}`}
+              data-tooltip={testErrorById[environment.id] || `Test ${environment.name}`}
+            >
+              {testStatusById[environment.id] === 'testing' ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <PlugZap size={12} />
+              )}
+            </button>
+            <button
+              type="button"
+              className={composerTextActionButtonClass}
+              onClick={() => void remove(environment.id)}
+            >
+              Delete
+            </button>
+          </div>
         </div>
       ))}
     </div>

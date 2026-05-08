@@ -7,12 +7,17 @@ import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
 } from '../../../../../shared/howcode-server-contracts'
+import {
+  HOWCODE_SERVER_DESCRIPTOR_PATH,
+  HOWCODE_SERVER_REQUEST_PREFIX,
+} from '../../../../../shared/howcode-server-contracts'
 
 type RemoteEnvironmentHandlers = Pick<
   DesktopRequestHandlerMap,
   | 'listHowcodeRemoteEnvironments'
   | 'saveHowcodeRemoteEnvironment'
   | 'deleteHowcodeRemoteEnvironment'
+  | 'testHowcodeRemoteEnvironment'
 >
 
 type PreferenceRow = { valueJson?: string }
@@ -101,6 +106,16 @@ function encryptToken(token: string) {
     : `base64:${Buffer.from(token, 'utf8').toString('base64')}`
 }
 
+function decryptToken(value: string) {
+  if (value.startsWith('safe:')) {
+    return safeStorage.decryptString(Buffer.from(value.slice('safe:'.length), 'base64'))
+  }
+  if (value.startsWith('base64:')) {
+    return Buffer.from(value.slice('base64:'.length), 'base64').toString('utf8')
+  }
+  return null
+}
+
 function persistToken(
   database: RemoteEnvironmentDatabase,
   tokenRef: string,
@@ -118,6 +133,11 @@ function hasToken(database: RemoteEnvironmentDatabase, tokenRef: string) {
 
 function deleteToken(database: RemoteEnvironmentDatabase, tokenRef: string) {
   deletePreference(database, getCredentialPreferenceKey(tokenRef))
+}
+
+function readToken(database: RemoteEnvironmentDatabase, tokenRef: string) {
+  const value = readPreference(database, getCredentialPreferenceKey(tokenRef))?.valueJson
+  return value ? decryptToken(value) : null
 }
 
 function normalizePort(value: number | null | undefined) {
@@ -171,13 +191,53 @@ function normalizeEnvironment(input: HowcodeRemoteEnvironmentInput): HowcodeRemo
     : normalizeDirectEnvironment(input, id)
 }
 
+function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnvironment) {
+  if (environment.kind === 'direct') return environment.serverUrl
+  const localPort = normalizePort(environment.localPort) ?? 49317
+  return `http://127.0.0.1:${localPort}`
+}
+
+async function testRemoteEnvironmentConnection(
+  environment: HowcodeRemoteEnvironment,
+  token: string | null,
+) {
+  const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
+  if (!baseUrl) return { error: 'Missing server URL.', ok: false }
+  if (!token) return { error: 'Missing server token.', ok: false }
+
+  try {
+    const descriptorResponse = await fetch(new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, baseUrl))
+    if (!descriptorResponse.ok) {
+      return { error: `Descriptor failed (${descriptorResponse.status}).`, ok: false }
+    }
+
+    const authResponse = await fetch(
+      new URL(`${HOWCODE_SERVER_REQUEST_PREFIX}getShellState`, baseUrl),
+      {
+        body: JSON.stringify({}),
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      },
+    )
+    if (!authResponse.ok) {
+      return { error: `Auth failed (${authResponse.status}).`, ok: false }
+    }
+    return { error: null, ok: true }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Connection failed.', ok: false }
+  }
+}
+
 export function createRemoteEnvironmentHandlers(): RemoteEnvironmentHandlers {
   return {
     deleteHowcodeRemoteEnvironment: ({ id }) => {
       const database = getDatabase()
       try {
         const currentEnvironment = readRemoteEnvironments(database).find(
-          (environment) => environment.id === id,
+          (remoteEnvironment) => remoteEnvironment.id === id,
         )
         if (currentEnvironment) deleteToken(database, currentEnvironment.tokenRef)
         writeRemoteEnvironments(
@@ -193,6 +253,21 @@ export function createRemoteEnvironmentHandlers(): RemoteEnvironmentHandlers {
       const database = getDatabase()
       try {
         return readRemoteEnvironments(database)
+      } finally {
+        closeDatabase(database)
+      }
+    },
+    testHowcodeRemoteEnvironment: async ({ id }) => {
+      const database = getDatabase()
+      try {
+        const environment = readRemoteEnvironments(database).find(
+          (remoteEnvironment) => remoteEnvironment.id === id,
+        )
+        if (!environment) return { error: 'Remote not found.', ok: false }
+        return await testRemoteEnvironmentConnection(
+          environment,
+          readToken(database, environment.tokenRef),
+        )
       } finally {
         closeDatabase(database)
       }

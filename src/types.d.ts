@@ -1,6 +1,7 @@
 import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
+  HowcodeRemoteEnvironmentTestResult,
   HowcodeServerConnectionState,
 } from '../shared/howcode-server-contracts'
 import type { DesktopAction } from './app/desktop/actions'
@@ -75,6 +76,7 @@ declare global {
         environment: HowcodeRemoteEnvironmentInput,
       ) => Promise<HowcodeRemoteEnvironment>
       deleteHowcodeRemoteEnvironment?: (id: string) => Promise<{ ok: boolean }>
+      testHowcodeRemoteEnvironment?: (id: string) => Promise<HowcodeRemoteEnvironmentTestResult>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (

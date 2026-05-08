@@ -88,3 +88,8 @@ export type HowcodeRemoteEnvironmentInput = Omit<
   id?: string | null
   token?: string | null
 }
+
+export type HowcodeRemoteEnvironmentTestResult = {
+  ok: boolean
+  error: string | null
+}
