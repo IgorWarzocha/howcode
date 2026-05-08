@@ -83,6 +83,7 @@ function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): Deskto
     throw new Error('This desktop-only operation is unavailable in standalone server mode.')
   }
   return {
+    getHowcodeServerState: unsupportedDesktopHandler,
     getAppUpdateState: unsupportedDesktopHandler,
     checkAppUpdate: unsupportedDesktopHandler,
     installAppUpdate: unsupportedDesktopHandler,

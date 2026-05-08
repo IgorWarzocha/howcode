@@ -35,3 +35,13 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   capabilities: ['app-transport', 'app-websocket-events'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
+
+export type HowcodeServerConnectionMode = 'local' | 'external' | 'disabled'
+
+export type HowcodeServerConnectionState = {
+  mode: HowcodeServerConnectionMode
+  connected: boolean
+  baseUrl: string | null
+  descriptor: HowcodeServerDescriptor | null
+  error: string | null
+}

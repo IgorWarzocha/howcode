@@ -89,6 +89,13 @@ terminalManager.subscribeTerminalEvents((event) => {
 })
 
 const handlers: DesktopRequestHandlerMap = {
+  getHowcodeServerState: () => ({
+    baseUrl: null,
+    connected: true,
+    descriptor: null,
+    error: null,
+    mode: 'local',
+  }),
   getAppUpdateState: () => devAppUpdateState,
   checkAppUpdate: () => devAppUpdateState,
   installAppUpdate: () => devAppUpdateState,

@@ -18,6 +18,7 @@ export function createDesktopApiFromTransport(
     installAppUpdate: () => request('installAppUpdate', {}),
     restartAppUpdate: () => request('restartAppUpdate', {}),
     clearClipboardImages: () => request('clearClipboardImages', {}),
+    getHowcodeServerState: () => request('getHowcodeServerState', {}),
     getShellState: () => request('getShellState', {}),
     getProjectGitState: (projectId: string) => request('getProjectGitState', { projectId }),
     getProjectDiff: (

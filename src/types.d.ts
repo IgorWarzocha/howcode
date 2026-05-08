@@ -1,3 +1,4 @@
+import type { HowcodeServerConnectionState } from '../shared/howcode-server-contracts'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
@@ -63,6 +64,7 @@ declare global {
       installAppUpdate?: () => Promise<AppUpdateState>
       restartAppUpdate?: () => Promise<AppUpdateState>
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
+      getHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (

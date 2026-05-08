@@ -1,6 +1,7 @@
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { HowcodeServerConnectionState } from '../../../shared/howcode-server-contracts'
 import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
 import { Sidebar } from '../components/sidebar/sidebar'
 import { defaultDiffBaseline } from '../components/workspace/composer/diff-baseline'
@@ -578,6 +579,7 @@ function AppShellLayoutView(props: AppShellLayoutViewProps) {
   return (
     <>
       <div className={appShellRootClass}>
+        <ServerConnectionBanner />
         <DesktopSidebarFrame {...props} />
         <CompactSidebarOverlay {...props} />
         <CompactUtilitySidebarButton {...props} />
@@ -721,6 +723,37 @@ function getEffectiveDiffRenderMode(options: {
   )
     return options.diffRenderModeState.renderMode
   return getNextDiffRenderMode(options.controller)
+}
+
+function ServerConnectionBanner() {
+  const [serverState, setServerState] = useState<HowcodeServerConnectionState | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const refresh = () => {
+      void window.piDesktop?.getHowcodeServerState?.().then((nextState) => {
+        if (!cancelled) {
+          setServerState(nextState)
+        }
+      })
+    }
+    refresh()
+    const interval = window.setInterval(refresh, 3000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  if (!serverState || serverState.connected) {
+    return null
+  }
+
+  return (
+    <div className="border-b border-amber-400/30 bg-amber-950/40 px-3 py-2 text-xs text-amber-100">
+      Howcode server disconnected. {serverState.error ?? 'Server-owned actions are unavailable.'}
+    </div>
+  )
 }
 
 type AppShellLayoutProps = {

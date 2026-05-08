@@ -43,6 +43,7 @@ import type {
   Thread,
   ThreadData,
 } from './desktop-contracts'
+import type { HowcodeServerConnectionState } from './howcode-server-contracts'
 import type {
   TerminalCloseRequest,
   TerminalEvent,
@@ -65,6 +66,7 @@ export type DesktopRequestMap = {
     params: Record<string, never>
     response: { clearedCount: number; clearFailedCount: number }
   }
+  getHowcodeServerState: { params: Record<string, never>; response: HowcodeServerConnectionState }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectDiff: {

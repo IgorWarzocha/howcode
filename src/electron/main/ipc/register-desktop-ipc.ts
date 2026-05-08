@@ -8,6 +8,7 @@ import {
   getDesktopRequestIpcChannel,
 } from '../../../../shared/desktop-ipc'
 import { resolveConfiguredDevServerUrl } from '../../../../shared/dev-server'
+import type { HowcodeServerConnectionState } from '../../../../shared/howcode-server-contracts'
 import { isTrustedRendererUrl } from '../app/navigation-security'
 import { getRendererDistDirectory } from '../runtime/app-paths'
 import type { DesktopRuntimeModules } from '../runtime/desktop-runtime-contracts'
@@ -77,6 +78,13 @@ export function createDesktopRequestHandlers(
   appUpdater: AppUpdater,
 ): DesktopRequestHandlerMap {
   return {
+    getHowcodeServerState: () => ({
+      baseUrl: null,
+      connected: false,
+      descriptor: null,
+      error: null,
+      mode: 'disabled',
+    }),
     ...createAppUpdateHandlers(appUpdater),
     ...createPiThreadsHandlers(runtime.piThreads),
     ...createPiPackagesHandlers(runtime.piThreads),
@@ -92,8 +100,18 @@ export function registerDesktopIpc(
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
   serverTransport: AppTransport | null = null,
+  getHowcodeServerState: () => HowcodeServerConnectionState = () => ({
+    baseUrl: null,
+    connected: false,
+    descriptor: null,
+    error: null,
+    mode: 'disabled',
+  }),
 ) {
-  const handlers = createDesktopRequestHandlers(runtime, appUpdater)
+  const handlers: DesktopRequestHandlerMap = {
+    ...createDesktopRequestHandlers(runtime, appUpdater),
+    getHowcodeServerState,
+  }
 
   registerRequestHandlers(handlers, getMainWindow, serverTransport)
 

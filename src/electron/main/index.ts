@@ -5,6 +5,7 @@ import {
   startLocalHowcodeServer,
   stopLocalHowcodeServer,
 } from '../../../desktop/server/local-howcode-server'
+import type { HowcodeServerConnectionState } from '../../../shared/howcode-server-contracts'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register-desktop-ipc'
@@ -17,6 +18,13 @@ import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null
 let localHowcodeServer: LocalHowcodeServer | null = null
+let howcodeServerState: HowcodeServerConnectionState = {
+  baseUrl: null,
+  connected: false,
+  descriptor: null,
+  error: null,
+  mode: 'disabled',
+}
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 app.setName('howcode')
@@ -25,7 +33,17 @@ function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
 
-function resolveExternalServerTransport(): ReturnType<typeof createHowcodeServerTransport> | null {
+async function fetchServerDescriptor(baseUrl: string) {
+  const response = await fetch(new URL('/.well-known/howcode/server', baseUrl))
+  if (!response.ok) {
+    throw new Error(`Howcode server descriptor request failed (${response.status}).`)
+  }
+  return (await response.json()) as HowcodeServerConnectionState['descriptor']
+}
+
+async function resolveExternalServerTransport(): Promise<ReturnType<
+  typeof createHowcodeServerTransport
+> | null> {
   const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
   const authToken = getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN')?.trim()
   if (!baseUrl) {
@@ -33,6 +51,23 @@ function resolveExternalServerTransport(): ReturnType<typeof createHowcodeServer
   }
   if (!authToken) {
     throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
+  }
+  try {
+    howcodeServerState = {
+      baseUrl,
+      connected: true,
+      descriptor: await fetchServerDescriptor(baseUrl),
+      error: null,
+      mode: 'external',
+    }
+  } catch (error) {
+    howcodeServerState = {
+      baseUrl,
+      connected: false,
+      descriptor: null,
+      error: error instanceof Error ? error.message : 'Failed to connect to Howcode server.',
+      mode: 'external',
+    }
   }
   return createHowcodeServerTransport({ authToken, baseUrl })
 }
@@ -70,6 +105,13 @@ async function startDesktopLocalServer(
       },
     },
   })
+  howcodeServerState = {
+    baseUrl: localHowcodeServer.baseUrl,
+    connected: true,
+    descriptor: await fetchServerDescriptor(localHowcodeServer.baseUrl),
+    error: null,
+    mode: 'local',
+  }
   return localHowcodeServer.transport
 }
 
@@ -80,11 +122,27 @@ async function bootstrap() {
 
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater()
+  const externalServerTransport = await resolveExternalServerTransport()
   const serverTransport = shouldDisableLocalServer()
-    ? resolveExternalServerTransport()
-    : (resolveExternalServerTransport() ?? (await startDesktopLocalServer(runtime, appUpdater)))
+    ? externalServerTransport
+    : (externalServerTransport ?? (await startDesktopLocalServer(runtime, appUpdater)))
+  if (!serverTransport && shouldDisableLocalServer()) {
+    howcodeServerState = {
+      baseUrl: null,
+      connected: false,
+      descriptor: null,
+      error: 'Local Howcode server is disabled and no external server is configured.',
+      mode: 'disabled',
+    }
+  }
   registerDesktopRuntimeShutdown(runtime)
-  registerDesktopIpc(() => currentMainWindow, runtime, appUpdater, serverTransport)
+  registerDesktopIpc(
+    () => currentMainWindow,
+    runtime,
+    appUpdater,
+    serverTransport,
+    () => howcodeServerState,
+  )
   await openMainWindow()
   void appUpdater.checkForUpdate()
 
