@@ -4,6 +4,7 @@ import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
 } from '../../../../shared/howcode-server-contracts'
+import { Tooltip } from '../../components/common/tooltip'
 import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import type { SettingDescriptor } from './settingsTypes'
@@ -244,23 +245,29 @@ function SavedRemoteEnvironmentsControl() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className={cn(
-                'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] p-0 text-[color:var(--text)] transition-colors hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)]',
-                testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
-                testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
-              )}
-              onClick={() => void test(environment)}
-              aria-label={`Test ${environment.name}`}
-              title={testErrorById[environment.id] || `Test ${environment.name}`}
+            <Tooltip
+              content={testErrorById[environment.id] || `Test ${environment.name}`}
+              placement="left"
+              className="inline-flex"
+              contentClassName="max-w-[18rem] whitespace-normal text-left"
             >
-              {testStatusById[environment.id] === 'testing' ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <PlugZap size={12} />
-              )}
-            </button>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] p-0 text-[color:var(--text)] transition-colors hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)]',
+                  testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
+                  testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
+                )}
+                onClick={() => void test(environment)}
+                aria-label={`Test ${environment.name}`}
+              >
+                {testStatusById[environment.id] === 'testing' ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <PlugZap size={12} />
+                )}
+              </button>
+            </Tooltip>
             <button
               type="button"
               className={cn(composerTextActionButtonClass, 'px-2')}
