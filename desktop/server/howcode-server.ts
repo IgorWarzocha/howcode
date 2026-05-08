@@ -1,19 +1,23 @@
 import { timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { Data, Effect } from 'effect'
+import { WebSocketServer } from 'ws'
 import type { AppTransport } from '../../shared/app-transport'
 import type {
   DesktopEventChannel,
-  DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../../shared/desktop-ipc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
-  HOWCODE_SERVER_EVENTS_PREFIX,
   HOWCODE_SERVER_REQUEST_PREFIX,
+  HOWCODE_SERVER_WS_PATH,
   howcodeServerDescriptor,
 } from '../../shared/howcode-server-contracts'
+import type {
+  HowcodeServerWsClientMessage,
+  HowcodeServerWsServerMessage,
+} from '../../shared/howcode-server-ws'
 
 export type HowcodeServerConfig = {
   host: string
@@ -79,48 +83,91 @@ function readJsonBody(request: IncomingMessage) {
   })
 }
 
-function writeSseEvent<K extends DesktopEventChannel>(
-  response: ServerResponse,
-  channel: K,
-  event: DesktopEventMap[K],
-) {
-  response.write(`event: ${channel}\n`)
-  response.write(`data: ${JSON.stringify({ channel, event })}\n\n`)
-}
-
-function handleEventStream(
+function installWebSocketEvents(
+  server: Server,
   config: HowcodeServerConfig,
   transport: AppTransport,
-  channel: DesktopEventChannel,
-  request: IncomingMessage,
-  response: ServerResponse,
 ) {
-  const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
-  const token = requestUrl.searchParams.get('token')
-  if (
-    !(token
-      ? isMatchingToken(token, config.authToken)
-      : hasValidAuthToken(request, config.authToken))
-  ) {
-    sendJson(response, 401, { error: 'Unauthorized.' })
-    return
-  }
-  if (channel !== 'desktopEvent' && channel !== 'terminalEvent') {
-    sendJson(response, 404, { error: `Unknown event channel: ${channel}` })
-    return
-  }
+  const webSocketServer = new WebSocketServer({ noServer: true })
+  const clients = new Set<Parameters<Parameters<typeof webSocketServer.on>[1]>[0]>()
 
-  response.writeHead(200, {
-    'cache-control': 'no-cache, no-transform',
-    connection: 'keep-alive',
-    'content-type': 'text/event-stream; charset=utf-8',
-  })
-  response.write('retry: 1000\n\n')
+  server.on('upgrade', (request, socket, head) => {
+    const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
+    if (requestUrl.pathname !== HOWCODE_SERVER_WS_PATH) {
+      return
+    }
 
-  const unsubscribe = transport.subscribe(channel, (event) => {
-    writeSseEvent(response, channel, event)
+    const token = requestUrl.searchParams.get('token')
+    if (
+      !(token
+        ? isMatchingToken(token, config.authToken)
+        : hasValidAuthToken(request, config.authToken))
+    ) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
+      socket.destroy()
+      return
+    }
+
+    webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+      webSocketServer.emit('connection', webSocket, request)
+    })
   })
-  request.on('close', unsubscribe)
+
+  webSocketServer.on('connection', (webSocket) => {
+    clients.add(webSocket)
+    webSocket.on('close', () => clients.delete(webSocket))
+    const subscriptions = new Map<DesktopEventChannel, () => void>()
+
+    webSocket.on('message', (data) => {
+      let message: HowcodeServerWsClientMessage
+      try {
+        message = JSON.parse(data.toString()) as HowcodeServerWsClientMessage
+      } catch {
+        return
+      }
+
+      if (message.channel !== 'desktopEvent' && message.channel !== 'terminalEvent') {
+        return
+      }
+
+      if (message.type === 'unsubscribe') {
+        subscriptions.get(message.channel)?.()
+        subscriptions.delete(message.channel)
+        return
+      }
+
+      if (message.type !== 'subscribe' || subscriptions.has(message.channel)) {
+        return
+      }
+
+      const unsubscribe = transport.subscribe(message.channel, (event) => {
+        if (webSocket.readyState !== webSocket.OPEN) {
+          return
+        }
+        const payload: HowcodeServerWsServerMessage = {
+          type: 'event',
+          channel: message.channel,
+          event,
+        }
+        webSocket.send(JSON.stringify(payload))
+      })
+      subscriptions.set(message.channel, unsubscribe)
+    })
+
+    webSocket.on('close', () => {
+      for (const unsubscribe of subscriptions.values()) {
+        unsubscribe()
+      }
+      subscriptions.clear()
+    })
+  })
+
+  return () => {
+    for (const client of clients) {
+      client.terminate()
+    }
+    webSocketServer.close()
+  }
 }
 
 function handleRequest(
@@ -138,17 +185,6 @@ function handleRequest(
 
   if (request.method === 'GET' && requestUrl.pathname === HOWCODE_SERVER_DESCRIPTOR_PATH) {
     sendJson(response, 200, howcodeServerDescriptor)
-    return
-  }
-
-  if (request.method === 'GET' && requestUrl.pathname.startsWith(HOWCODE_SERVER_EVENTS_PREFIX)) {
-    handleEventStream(
-      config,
-      transport,
-      requestUrl.pathname.slice(HOWCODE_SERVER_EVENTS_PREFIX.length) as DesktopEventChannel,
-      request,
-      response,
-    )
     return
   }
 
@@ -215,6 +251,7 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
     const server = createServer((request, response) =>
       handleRequest(config, transport, request, response),
     )
+    const closeWebSocketServer = installWebSocketEvents(server, config, transport)
 
     server.once('error', (cause) => {
       resume(
@@ -237,7 +274,7 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
             port,
           },
           authToken: config.authToken,
-          close: closeServer(server),
+          close: Effect.sync(closeWebSocketServer).pipe(Effect.andThen(closeServer(server))),
         }),
       )
     })

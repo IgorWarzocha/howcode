@@ -1,10 +1,10 @@
 export const HOWCODE_SERVER_DESCRIPTOR_PATH = '/.well-known/howcode/server'
 export const HOWCODE_SERVER_REQUEST_PREFIX = '/api/app/request/'
-export const HOWCODE_SERVER_EVENTS_PREFIX = '/api/app/events/'
+export const HOWCODE_SERVER_WS_PATH = '/api/app/ws'
 
 export type HowcodeServerCapability =
-  | 'app-events'
   | 'app-transport'
+  | 'app-websocket-events'
   | 'projects'
   | 'git'
   | 'artifacts'
@@ -32,6 +32,6 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
     required: true,
     methods: ['bearer-token'],
   },
-  capabilities: ['app-transport', 'app-events'],
+  capabilities: ['app-transport', 'app-websocket-events'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }

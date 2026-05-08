@@ -6,9 +6,10 @@ import type {
   DesktopRequestMap,
 } from '../../shared/desktop-ipc'
 import {
-  HOWCODE_SERVER_EVENTS_PREFIX,
   HOWCODE_SERVER_REQUEST_PREFIX,
+  HOWCODE_SERVER_WS_PATH,
 } from '../../shared/howcode-server-contracts'
+import type { HowcodeServerWsServerMessage } from '../../shared/howcode-server-ws'
 
 export type HowcodeServerTransportConfig = {
   baseUrl: string
@@ -19,8 +20,9 @@ function resolveRequestUrl(baseUrl: string, channel: DesktopRequestChannel) {
   return new URL(HOWCODE_SERVER_REQUEST_PREFIX + channel, baseUrl).toString()
 }
 
-function resolveEventUrl(baseUrl: string, channel: DesktopEventChannel, authToken: string) {
-  const url = new URL(HOWCODE_SERVER_EVENTS_PREFIX + channel, baseUrl)
+function resolveWebSocketUrl(baseUrl: string, authToken: string) {
+  const url = new URL(HOWCODE_SERVER_WS_PATH, baseUrl)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   url.searchParams.set('token', authToken)
   return url.toString()
 }
@@ -57,17 +59,25 @@ export function createHowcodeServerTransport(config: HowcodeServerTransportConfi
       channel: K,
       listener: (event: DesktopEventMap[K]) => void,
     ) => {
-      const eventSource = new EventSource(
-        resolveEventUrl(config.baseUrl, channel, config.authToken),
-      )
-      const wrappedListener = (event: MessageEvent<string>) => {
-        const payload = JSON.parse(event.data) as { channel: K; event: DesktopEventMap[K] }
-        listener(payload.event)
+      const webSocket = new WebSocket(resolveWebSocketUrl(config.baseUrl, config.authToken))
+      const handleOpen = () => {
+        webSocket.send(JSON.stringify({ type: 'subscribe', channel }))
       }
-      eventSource.addEventListener(channel, wrappedListener)
+      const handleMessage = (message: MessageEvent) => {
+        const payload = JSON.parse(String(message.data)) as HowcodeServerWsServerMessage<K>
+        if (payload.type === 'event' && payload.channel === channel) {
+          listener(payload.event)
+        }
+      }
+      webSocket.addEventListener('open', handleOpen)
+      webSocket.addEventListener('message', handleMessage)
       return () => {
-        eventSource.removeEventListener(channel, wrappedListener)
-        eventSource.close()
+        webSocket.removeEventListener('open', handleOpen)
+        webSocket.removeEventListener('message', handleMessage)
+        if (webSocket.readyState === WebSocket.OPEN) {
+          webSocket.send(JSON.stringify({ type: 'unsubscribe', channel }))
+        }
+        webSocket.close()
       }
     },
   }

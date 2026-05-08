@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import WebSocket from 'ws'
 import type { AppTransport } from '../../shared/app-transport'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import {
@@ -72,7 +73,7 @@ describe('Howcode server', () => {
     expect(request).not.toHaveBeenCalled()
   })
 
-  it('streams app transport events over SSE', async () => {
+  it('streams app transport events over WebSocket', async () => {
     const listeners = new Set<(event: DesktopEvent) => void>()
     const { baseUrl } = await startTestServer({
       request: vi.fn(),
@@ -82,28 +83,33 @@ describe('Howcode server', () => {
       }),
     })
 
-    const response = await fetch(new URL('/api/app/events/desktopEvent?token=test-token', baseUrl))
-    expect(response.status).toBe(200)
-    const reader = response.body?.getReader()
-    expect(reader).toBeDefined()
-
-    for (const listener of listeners) {
-      listener({ type: 'shell-state-refresh' })
-    }
-
-    const decoder = new TextDecoder()
-    let body = ''
-    while (!body.includes('shell-state-refresh')) {
-      const read = await reader!.read()
-      if (read.done) {
-        break
+    const response = new Promise<unknown>((resolve, reject) => {
+      const webSocket = new WebSocket(new URL('/api/app/ws?token=test-token', baseUrl))
+      webSocket.on('open', () => {
+        webSocket.send(JSON.stringify({ type: 'subscribe', channel: 'desktopEvent' }))
+      })
+      webSocket.on('message', (data) => {
+        webSocket.close()
+        resolve(JSON.parse(data.toString()))
+      })
+      webSocket.on('error', reject)
+      const emitWhenSubscribed = () => {
+        if (listeners.size === 0) {
+          setTimeout(emitWhenSubscribed, 5)
+          return
+        }
+        for (const listener of listeners) {
+          listener({ type: 'shell-state-refresh' })
+        }
       }
-      body += decoder.decode(read.value)
-    }
-    await reader!.cancel()
+      emitWhenSubscribed()
+    })
 
-    expect(body).toContain('event: desktopEvent')
-    expect(body).toContain('shell-state-refresh')
+    await expect(response).resolves.toMatchObject({
+      type: 'event',
+      channel: 'desktopEvent',
+      event: { type: 'shell-state-refresh' },
+    })
   })
 
   it('dispatches typed app transport requests over HTTP', async () => {
