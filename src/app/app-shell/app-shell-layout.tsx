@@ -750,8 +750,9 @@ function ServerConnectionBanner() {
   }
 
   return (
-    <div className="border-b border-amber-400/30 bg-amber-950/40 px-3 py-2 text-xs text-amber-100">
-      Howcode server disconnected. {serverState.error ?? 'Server-owned actions are unavailable.'}
+    <div className="pointer-events-none fixed top-3 left-1/2 z-[80] max-w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-amber-400/40 bg-amber-950/90 px-4 py-2 text-center text-xs text-amber-100 shadow-[0_16px_48px_rgba(0,0,0,0.38)] backdrop-blur-sm">
+      <span className="font-medium">Howcode server disconnected.</span>{' '}
+      {serverState.error ?? 'Server-owned actions are unavailable.'}
     </div>
   )
 }
