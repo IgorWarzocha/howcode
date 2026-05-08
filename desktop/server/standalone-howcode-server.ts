@@ -24,6 +24,7 @@ type CliOptions = {
   port: number
   token: string
   runtimeRoot: string
+  webRoot: string | null
 }
 
 function readFlag(args: string[], name: string) {
@@ -46,11 +47,13 @@ function parseOptions(args = process.argv.slice(2)): CliOptions {
     getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN') ??
     randomUUID()
   const runtimeRoot = getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ?? process.cwd()
+  const webRoot =
+    readFlag(args, '--web-root') ?? getProcessEnvironmentVariable('HOWCODE_WEB_ROOT') ?? null
   const port = Number.parseInt(portText, 10)
   if (!Number.isInteger(port) || port < 0 || port > 65_535) {
     throw new Error(`Invalid --port value: ${portText}`)
   }
-  return { host, port, runtimeRoot, token }
+  return { host, port, runtimeRoot, token, webRoot }
 }
 
 async function importDesktopModule<TModule>(repoRoot: string, fileName: string) {
@@ -122,6 +125,7 @@ async function main() {
       host: options.host,
       port: options.port,
       token: options.token,
+      webRoot: options.webRoot,
     },
     eventTransport: createRuntimeEventTransport(runtime),
     handlers: createStandaloneRequestHandlers(runtime),
@@ -137,6 +141,7 @@ async function main() {
       baseUrl: server.baseUrl,
       descriptorUrl,
       webSocketUrl: webSocketUrl.toString(),
+      webUrl: options.webRoot ? server.baseUrl : undefined,
     }),
   )
 

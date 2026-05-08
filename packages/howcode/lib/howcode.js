@@ -395,8 +395,16 @@ function hasStandaloneServer(installDir, target) {
   return fs.existsSync(getStandaloneServerEntry(installDir, target))
 }
 
-function getServeArgs(args) {
-  return args.slice(1)
+function getWebRoot(installDir, target) {
+  return path.join(getAppResourcesPath(installDir, target), 'app.asar.unpacked', 'dist')
+}
+
+function getServeArgs(args, paths, target) {
+  const serveArgs = args.slice(1)
+  if (args[0] === 'web') {
+    serveArgs.push('--web-root', getWebRoot(paths.installDir, target))
+  }
+  return serveArgs
 }
 
 function serve(executablePath, paths, target, args) {
@@ -405,14 +413,18 @@ function serve(executablePath, paths, target, args) {
     throw new Error('Installed app does not include the standalone server runtime.')
   }
 
-  const child = spawnLauncherProcess(executablePath, [serverEntry, ...getServeArgs(args)], {
-    detached: false,
-    stdio: 'inherit',
-    env: {
-      ELECTRON_RUN_AS_NODE: '1',
-      HOWCODE_RUNTIME_ROOT: getRuntimeRoot(paths.installDir, target),
+  const child = spawnLauncherProcess(
+    executablePath,
+    [serverEntry, ...getServeArgs(args, paths, target)],
+    {
+      detached: false,
+      stdio: 'inherit',
+      env: {
+        ELECTRON_RUN_AS_NODE: '1',
+        HOWCODE_RUNTIME_ROOT: getRuntimeRoot(paths.installDir, target),
+      },
     },
-  })
+  )
 
   return new Promise((resolve, reject) => {
     child.on('error', reject)
@@ -448,7 +460,7 @@ function getCurrentPaths(cacheRoot, current) {
 }
 
 async function runInstalledCommand(paths, target, command, args) {
-  if (command === 'serve') {
+  if (command === 'serve' || command === 'web') {
     await serve(paths.executablePath, paths, target, args)
     return
   }
@@ -494,7 +506,10 @@ async function main(args = process.argv.slice(2)) {
     await installRelease(target, releaseInfo, paths)
   }
 
-  if (command === 'serve' && !hasStandaloneServer(paths.installDir, target)) {
+  if (
+    (command === 'serve' || command === 'web') &&
+    !hasStandaloneServer(paths.installDir, target)
+  ) {
     throw new Error('Installed app does not include the standalone server runtime.')
   }
 

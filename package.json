@@ -48,7 +48,8 @@
     "pages:dev": "vite --config pages/vite.config.ts",
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",
-    "deadcode": "knip"
+    "deadcode": "knip",
+    "server:web:dev": "vite build && bun run build:runtime && HOWCODE_RUNTIME_ROOT=. ELECTRON_RUN_AS_NODE=1 electron build/desktop/standalone-howcode-server.mjs --web-root dist"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [

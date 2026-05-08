@@ -7,11 +7,14 @@ import './styles.css'
 import App from './app'
 import { applyStoredPiGuiTheme } from './app/app-shell/usePiGuiTheme'
 import { installDevWebDesktopBridge } from './app/dev-web-bridge'
+import { installHowcodeWebBridge } from './app/howcode-web-bridge'
 import { queryClient } from './app/query/query-client'
 
 if (import.meta.env.DEV) {
   void import('react-grab')
   installDevWebDesktopBridge()
+} else {
+  installHowcodeWebBridge()
 }
 
 try {

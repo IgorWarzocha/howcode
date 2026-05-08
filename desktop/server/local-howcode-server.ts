@@ -16,6 +16,7 @@ export type LocalHowcodeServerConfig = {
   host?: string
   port?: number
   token?: string
+  webRoot?: string | null
 }
 
 export function createDirectHandlerTransport(
@@ -40,6 +41,7 @@ export async function startLocalHowcodeServer(input: {
         authToken,
         host: input.config?.host ?? '127.0.0.1',
         port: input.config?.port ?? 0,
+        webRoot: input.config?.webRoot ?? null,
       },
       createDirectHandlerTransport(input.handlers, input.eventTransport),
     ),

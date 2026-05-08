@@ -1,5 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
+import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import path from 'node:path'
 import { Data, Effect } from 'effect'
 import { WebSocketServer } from 'ws'
 import type { AppTransport } from '../../shared/app-transport'
@@ -23,6 +25,7 @@ export type HowcodeServerConfig = {
   host: string
   port: number
   authToken: string
+  webRoot?: string | null
 }
 
 export type HowcodeServerHandle = {
@@ -38,6 +41,61 @@ export class HowcodeServerError extends Data.TaggedError('HowcodeServerError')<{
   message: string
   cause?: unknown
 }> {}
+
+const leadingSlashesPattern = /^\/+/
+
+const contentTypes: Record<string, string> = {
+  '.css': 'text/css; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
+  '.ico': 'image/x-icon',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.txt': 'text/plain; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+}
+
+function sendFile(response: ServerResponse, filePath: string) {
+  response.statusCode = 200
+  response.setHeader(
+    'content-type',
+    contentTypes[path.extname(filePath)] ?? 'application/octet-stream',
+  )
+  createReadStream(filePath).pipe(response)
+}
+
+function resolveStaticFile(webRoot: string, requestPath: string) {
+  const decodedPath = decodeURIComponent(requestPath)
+  const relativePath =
+    decodedPath === '/' ? 'index.html' : decodedPath.replace(leadingSlashesPattern, '')
+  const candidatePath = path.resolve(webRoot, relativePath)
+  const resolvedRoot = path.resolve(webRoot)
+  if (!(candidatePath === resolvedRoot || candidatePath.startsWith(`${resolvedRoot}${path.sep}`))) {
+    return null
+  }
+  if (existsSync(candidatePath) && statSync(candidatePath).isFile()) {
+    return candidatePath
+  }
+  const fallbackPath = path.join(resolvedRoot, 'index.html')
+  return existsSync(fallbackPath) ? fallbackPath : null
+}
+
+function handleStaticWeb(
+  config: HowcodeServerConfig,
+  request: IncomingMessage,
+  response: ServerResponse,
+) {
+  if (request.method !== 'GET' || !config.webRoot) return false
+  const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
+  if (requestUrl.pathname.startsWith('/api/') || requestUrl.pathname === '/healthz') return false
+  const filePath = resolveStaticFile(config.webRoot, requestUrl.pathname)
+  if (!filePath) return false
+  sendFile(response, filePath)
+  return true
+}
 
 function sendJson(response: ServerResponse, statusCode: number, payload: unknown) {
   response.statusCode = statusCode
@@ -183,6 +241,11 @@ function handleRequest(
     return
   }
 
+  if (request.method === 'GET' && requestUrl.pathname === '/api/web/config' && config.webRoot) {
+    sendJson(response, 200, { authToken: config.authToken })
+    return
+  }
+
   if (request.method === 'GET' && requestUrl.pathname === HOWCODE_SERVER_DESCRIPTOR_PATH) {
     sendJson(response, 200, howcodeServerDescriptor)
     return
@@ -227,6 +290,10 @@ function handleRequest(
         })
       },
     )
+    return
+  }
+
+  if (handleStaticWeb(config, request, response)) {
     return
   }
 
