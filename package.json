@@ -22,7 +22,7 @@
     "dev:desktop": "bun ./scripts/dev-electron.ts",
     "dev:desktop:no-server": "HOWCODE_DISABLE_LOCAL_SERVER=1 bun ./scripts/dev-electron.ts",
     "dev:desktop:external-server": "bun ./scripts/dev-electron.ts",
-    "server:dev": "bun run build:runtime && node build/desktop/standalone-howcode-server.mjs --port 39317",
+    "server:dev": "bun run build:runtime && node build/desktop/standalone-howcode-server.mjs --repo-root . --port 39317",
     "build:runtime": "bun ./scripts/build-electron-runtime.ts",
     "build": "vite build && bun run build:runtime && electron-builder --dir --config electron-builder.yml",
     "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",

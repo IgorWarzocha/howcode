@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { once } from 'node:events'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AppTransport } from '../../shared/app-transport'
@@ -12,7 +11,6 @@ import { createPiPackagesHandlers } from '../../src/electron/main/ipc/request-ha
 import { createPiSkillsHandlers } from '../../src/electron/main/ipc/request-handlers/pi-skills'
 import { createPiThreadsHandlers } from '../../src/electron/main/ipc/request-handlers/pi-threads'
 import { createSkillCreatorHandlers } from '../../src/electron/main/ipc/request-handlers/skill-creator'
-import { createSystemHandlers } from '../../src/electron/main/ipc/request-handlers/system'
 import { createTerminalHandlers } from '../../src/electron/main/ipc/request-handlers/terminal'
 import type { DesktopRuntimeModules } from '../../src/electron/main/runtime/desktop-runtime-contracts'
 import { startLocalHowcodeServer, stopLocalHowcodeServer } from './local-howcode-server'
@@ -94,7 +92,17 @@ function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): Deskto
     ...createPiSkillsHandlers(runtime.piSkills),
     ...createSkillCreatorHandlers(runtime.skillCreator),
     ...createTerminalHandlers(runtime.terminalManager),
-    ...createSystemHandlers(),
+    clearClipboardImages: unsupportedDesktopHandler,
+    getAttachmentKindsForPaths: unsupportedDesktopHandler,
+    listComposerAttachmentEntries: unsupportedDesktopHandler,
+    openExternal: unsupportedDesktopHandler,
+    openPath: unsupportedDesktopHandler,
+    pickComposerAttachments: unsupportedDesktopHandler,
+    readClipboardFilePaths: unsupportedDesktopHandler,
+    readClipboardImage: unsupportedDesktopHandler,
+    readClipboardSnapshot: unsupportedDesktopHandler,
+    saveTextToDownloads: unsupportedDesktopHandler,
+    searchComposerAttachmentEntries: unsupportedDesktopHandler,
   }
 }
 
@@ -151,7 +159,9 @@ async function main() {
     void shutdown().finally(() => process.exit(0))
   })
 
-  await once(process, 'beforeExit')
+  await new Promise(() => {
+    // Keep standalone server alive until a signal shuts it down.
+  })
 }
 
 if (import.meta.main) {
