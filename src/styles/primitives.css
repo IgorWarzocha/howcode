@@ -192,8 +192,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   content: attr(data-setting-tooltip);
   font-size: 11.5px;
   line-height: 16px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: var(--tooltip-white-space, normal);
+  overflow-wrap: var(--tooltip-overflow-wrap, anywhere);
   opacity: 0;
   transition:
     opacity 150ms ease-out 1s,
@@ -214,8 +214,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   pointer-events: none;
   position: fixed;
   z-index: 1000;
-  width: max-content;
-  max-width: 360px;
+  width: var(--tooltip-width, max-content);
+  max-width: var(--tooltip-max-width, 360px);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--panel);
@@ -224,8 +224,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   box-shadow: var(--shadow);
   font-size: 11.5px;
   line-height: 16px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: var(--tooltip-white-space, normal);
+  overflow-wrap: var(--tooltip-overflow-wrap, anywhere);
   opacity: 0;
   transition:
     opacity 150ms ease-out,

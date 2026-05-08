@@ -196,6 +196,10 @@ function SaveRemoteControl() {
   )
 }
 
+function getRemoteTestTooltip(environment: HowcodeRemoteEnvironment, error: string) {
+  return error || `Test ${environment.name}`
+}
+
 function SavedRemoteEnvironmentsControl() {
   const { environments, testErrorById, testStatusById } = useRemoteSettingsStore()
   const remove = async (id: string) => {
@@ -246,10 +250,10 @@ function SavedRemoteEnvironmentsControl() {
           </div>
           <div className="flex items-center gap-1">
             <Tooltip
-              content={testErrorById[environment.id] || `Test ${environment.name}`}
+              content={getRemoteTestTooltip(environment, testErrorById[environment.id] ?? '')}
               placement="left"
               className="inline-flex"
-              contentClassName="max-w-[24rem] whitespace-pre-line text-left"
+              contentClassName="[--tooltip-width:max-content] [--tooltip-max-width:min(90vw,44rem)] [--tooltip-white-space:nowrap] [--tooltip-overflow-wrap:normal] text-left"
             >
               <button
                 type="button"
