@@ -223,7 +223,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
   return [
     {
       category: 'remote',
-      description: 'Choose whether this remote is reached directly by URL or via OpenSSH.',
+      description: 'SSH tunnel or direct URL.',
       id: 'remote.kind',
       keywords: 'remote ssh server lan environment',
       render: () => <RemoteKindControl />,
@@ -231,8 +231,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description:
-        'Optional display name. If blank, Howcode uses the SSH host alias or server URL.',
+      description: 'Optional. Falls back to host or URL.',
       id: 'remote.label',
       keywords: 'remote name label alias',
       render: () => <RemoteTextInput field="label" placeholder="Label (optional)" />,
@@ -240,7 +239,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Server bearer token. The token is write-only in the UI and saved encrypted.',
+      description: 'Server token. Stored encrypted.',
       id: 'remote.token',
       keywords: 'remote token secret auth',
       render: () => <RemoteTextInput field="token" placeholder="Server token" type="password" />,
@@ -248,8 +247,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description:
-        'SSH config host alias, e.g. “lanbox”. Howcode uses your existing SSH config and ssh-agent; it never stores SSH keys or passwords.',
+      description: 'Host from ~/.ssh/config, e.g. lanbox.',
       id: 'remote.ssh-host',
       keywords: 'remote ssh host alias config agent key',
       render: () => (
@@ -259,7 +257,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Local forwarded port used by the desktop to reach the remote server.',
+      description: 'Local tunnel port.',
       id: 'remote.local-port',
       keywords: 'remote ssh local port tunnel forward',
       render: () => <ConditionalRemoteTextInput kind="ssh" field="localPort" placeholder="49317" />,
@@ -267,7 +265,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Port where howcode serve listens on the remote machine.',
+      description: 'Remote howcode serve port.',
       id: 'remote.remote-port',
       keywords: 'remote ssh remote port serve',
       render: () => (
@@ -277,8 +275,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description:
-        'Optional command override. Leave blank to use howcode serve on the remote host.',
+      description: 'Optional remote startup command.',
       id: 'remote.command',
       keywords: 'remote ssh command serve override',
       render: () => (
@@ -292,7 +289,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Direct HTTP URL for a server you start yourself.',
+      description: 'Server URL.',
       id: 'remote.url',
       keywords: 'remote direct url server http',
       render: () => (
@@ -306,7 +303,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Save the remote environment metadata and encrypted token.',
+      description: 'Save this remote.',
       id: 'remote.save',
       keywords: 'remote save add environment',
       render: () => <SaveRemoteControl />,
@@ -314,7 +311,7 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
     },
     {
       category: 'remote',
-      description: 'Remote environments saved on this machine.',
+      description: 'Saved remotes.',
       id: 'remote.saved',
       keywords: 'remote saved environments delete',
       render: () => <SavedRemoteEnvironmentsControl />,
