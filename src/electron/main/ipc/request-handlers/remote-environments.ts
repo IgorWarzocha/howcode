@@ -27,6 +27,8 @@ type RemoteEnvironmentHandlers = Pick<
   | 'testHowcodeRemoteEnvironment'
   | 'setActiveHowcodeRemoteEnvironment'
   | 'clearActiveHowcodeRemoteEnvironment'
+  | 'getProjectRemoteEnvironmentAssignment'
+  | 'setProjectRemoteEnvironmentAssignment'
 >
 
 type RemoteEnvironmentHandlerOptions = {
@@ -87,6 +89,55 @@ function deletePreference(database: RemoteEnvironmentDatabase, key: string) {
 }
 
 const remoteEnvironmentsPreferenceKey = 'remoteEnvironments'
+const projectRemoteAssignmentsPreferenceKey = 'projectRemoteEnvironmentAssignments'
+
+function readProjectRemoteAssignments(database: RemoteEnvironmentDatabase) {
+  const row = readPreference(database, projectRemoteAssignmentsPreferenceKey)
+  if (!row?.valueJson) return {} as Record<string, string>
+  try {
+    const value = JSON.parse(row.valueJson) as unknown
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, string>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeProjectRemoteAssignments(
+  database: RemoteEnvironmentDatabase,
+  assignments: Record<string, string>,
+) {
+  if (Object.keys(assignments).length === 0) {
+    deletePreference(database, projectRemoteAssignmentsPreferenceKey)
+    return
+  }
+  writePreference(database, projectRemoteAssignmentsPreferenceKey, assignments)
+}
+
+export function getProjectRemoteEnvironmentAssignment(projectId: string) {
+  const database = getDatabase()
+  try {
+    return readProjectRemoteAssignments(database)[projectId] ?? null
+  } finally {
+    closeDatabase(database)
+  }
+}
+
+function setProjectRemoteAssignment(
+  database: RemoteEnvironmentDatabase,
+  projectId: string,
+  remoteEnvironmentId: string | null,
+) {
+  const assignments = readProjectRemoteAssignments(database)
+  if (remoteEnvironmentId) {
+    assignments[projectId] = remoteEnvironmentId
+  } else {
+    delete assignments[projectId]
+  }
+  writeProjectRemoteAssignments(database, assignments)
+  return { projectId, remoteEnvironmentId }
+}
 
 function readRemoteEnvironments(database: RemoteEnvironmentDatabase) {
   const row = readPreference(database, remoteEnvironmentsPreferenceKey)
@@ -335,6 +386,31 @@ export function createRemoteEnvironmentHandlers(
         throw new Error('Remote activation is unavailable in this runtime.')
       }
       return await options.clearActiveRemoteEnvironment()
+    },
+    getProjectRemoteEnvironmentAssignment: ({ projectId }) => {
+      const database = getDatabase()
+      try {
+        return {
+          projectId,
+          remoteEnvironmentId: readProjectRemoteAssignments(database)[projectId] ?? null,
+        }
+      } finally {
+        closeDatabase(database)
+      }
+    },
+    setProjectRemoteEnvironmentAssignment: ({ projectId, remoteEnvironmentId }) => {
+      const database = getDatabase()
+      try {
+        if (remoteEnvironmentId) {
+          const remoteExists = readRemoteEnvironments(database).some(
+            (environment) => environment.id === remoteEnvironmentId,
+          )
+          if (!remoteExists) throw new Error('Remote not found.')
+        }
+        return setProjectRemoteAssignment(database, projectId, remoteEnvironmentId)
+      } finally {
+        closeDatabase(database)
+      }
     },
     saveHowcodeRemoteEnvironment: (input) => {
       const database = getDatabase()

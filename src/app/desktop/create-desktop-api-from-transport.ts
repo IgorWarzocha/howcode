@@ -30,6 +30,12 @@ export function createDesktopApiFromTransport(
     setActiveHowcodeRemoteEnvironment: (id: string) =>
       request('setActiveHowcodeRemoteEnvironment', { id }),
     clearActiveHowcodeRemoteEnvironment: () => request('clearActiveHowcodeRemoteEnvironment', {}),
+    getProjectRemoteEnvironmentAssignment: (projectId: string) =>
+      request('getProjectRemoteEnvironmentAssignment', { projectId }),
+    setProjectRemoteEnvironmentAssignment: (
+      projectId: string,
+      remoteEnvironmentId: string | null,
+    ) => request('setProjectRemoteEnvironmentAssignment', { projectId, remoteEnvironmentId }),
     getShellState: () => request('getShellState', {}),
     getProjectGitState: (projectId: string) => request('getProjectGitState', { projectId }),
     getProjectDiff: (

@@ -93,3 +93,8 @@ export type HowcodeRemoteEnvironmentTestResult = {
   ok: boolean
   error: string | null
 }
+
+export type HowcodeProjectRemoteEnvironmentAssignment = {
+  projectId: string
+  remoteEnvironmentId: string | null
+}

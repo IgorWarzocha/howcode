@@ -44,6 +44,7 @@ import type {
   ThreadData,
 } from './desktop-contracts'
 import type {
+  HowcodeProjectRemoteEnvironmentAssignment,
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
   HowcodeRemoteEnvironmentTestResult,
@@ -99,6 +100,14 @@ export type DesktopRequestMap = {
   clearActiveHowcodeRemoteEnvironment: {
     params: Record<string, never>
     response: HowcodeServerConnectionState
+  }
+  getProjectRemoteEnvironmentAssignment: {
+    params: { projectId: string }
+    response: HowcodeProjectRemoteEnvironmentAssignment
+  }
+  setProjectRemoteEnvironmentAssignment: {
+    params: HowcodeProjectRemoteEnvironmentAssignment
+    response: HowcodeProjectRemoteEnvironmentAssignment
   }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }

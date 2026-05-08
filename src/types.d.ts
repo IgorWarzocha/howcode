@@ -1,4 +1,5 @@
 import type {
+  HowcodeProjectRemoteEnvironmentAssignment,
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
   HowcodeRemoteEnvironmentTestResult,
@@ -79,6 +80,13 @@ declare global {
       testHowcodeRemoteEnvironment?: (id: string) => Promise<HowcodeRemoteEnvironmentTestResult>
       setActiveHowcodeRemoteEnvironment?: (id: string) => Promise<HowcodeServerConnectionState>
       clearActiveHowcodeRemoteEnvironment?: () => Promise<HowcodeServerConnectionState>
+      getProjectRemoteEnvironmentAssignment?: (
+        projectId: string,
+      ) => Promise<HowcodeProjectRemoteEnvironmentAssignment>
+      setProjectRemoteEnvironmentAssignment?: (
+        projectId: string,
+        remoteEnvironmentId: string | null,
+      ) => Promise<HowcodeProjectRemoteEnvironmentAssignment>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (

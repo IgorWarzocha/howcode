@@ -115,6 +115,14 @@ const handlers: DesktopRequestHandlerMap = {
   testHowcodeRemoteEnvironment: () => ({ error: null, ok: true }),
   setActiveHowcodeRemoteEnvironment: getDevServerState,
   clearActiveHowcodeRemoteEnvironment: getDevServerState,
+  getProjectRemoteEnvironmentAssignment: ({ projectId }) => ({
+    projectId,
+    remoteEnvironmentId: null,
+  }),
+  setProjectRemoteEnvironmentAssignment: ({ projectId, remoteEnvironmentId }) => ({
+    projectId,
+    remoteEnvironmentId,
+  }),
   refreshHowcodeServerState: getDevServerState,
   getAppUpdateState: () => devAppUpdateState,
   checkAppUpdate: () => devAppUpdateState,

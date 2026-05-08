@@ -16,6 +16,8 @@ export const desktopRequestChannelOwners = {
   testHowcodeRemoteEnvironment: 'desktop',
   setActiveHowcodeRemoteEnvironment: 'desktop',
   clearActiveHowcodeRemoteEnvironment: 'desktop',
+  getProjectRemoteEnvironmentAssignment: 'desktop',
+  setProjectRemoteEnvironmentAssignment: 'desktop',
   getShellState: 'howcode-server',
   getProjectGitState: 'howcode-server',
   getProjectDiff: 'howcode-server',

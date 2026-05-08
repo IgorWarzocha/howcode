@@ -14,6 +14,7 @@ import type {
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register-desktop-ipc'
+import { getProjectRemoteEnvironmentAssignment } from './ipc/request-handlers/remote-environments'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
 import { configureDesktopEnvironment } from './runtime/environment'
@@ -37,7 +38,11 @@ let currentMainWindow: BrowserWindow | null = null
 let localHowcodeServer: LocalHowcodeServer | null = null
 let sshHowcodeServer: SshHowcodeEnvironmentConnection | null = null
 let activeServerTransport: AppTransport | null = null
-let activeRemoteServer: { baseUrl: string; environment: HowcodeEnvironment } | null = null
+let activeRemoteServer: {
+  baseUrl: string
+  environment: HowcodeEnvironment
+  remoteEnvironmentId: string
+} | null = null
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
@@ -237,7 +242,7 @@ async function setActiveRemoteEnvironment(config: {
   const baseUrl = connection?.baseUrl ?? config.baseUrl
   const environment =
     connection?.environment ?? createEnvironmentFromSavedRemote(config.environment, baseUrl)
-  activeRemoteServer = { baseUrl, environment }
+  activeRemoteServer = { baseUrl, environment, remoteEnvironmentId: config.environment.id }
   activeServerTransport = createHowcodeServerTransport({
     authToken: config.token,
     baseUrl,
@@ -327,6 +332,28 @@ async function startDesktopLocalServer(
   return localHowcodeServer.transport
 }
 
+function getProjectIdFromRequestParams(params: unknown) {
+  return params &&
+    typeof params === 'object' &&
+    'projectId' in params &&
+    typeof params.projectId === 'string'
+    ? params.projectId
+    : null
+}
+
+function resolveEnvironmentForDesktopRequest<
+  K extends import('../../../shared/desktop-ipc').DesktopRequestChannel,
+>(channel: K, params: import('../../../shared/desktop-ipc').DesktopRequestMap[K]['params']) {
+  const projectId = getProjectIdFromRequestParams(params)
+  if (projectId) {
+    const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
+    if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId !== assignedRemoteId) {
+      throw new Error('Project is assigned to a remote environment that is not active yet.')
+    }
+  }
+  return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
+}
+
 async function bootstrap() {
   await app.whenReady()
   configureDesktopEnvironment()
@@ -359,8 +386,7 @@ async function bootstrap() {
       clearActiveRemoteEnvironment,
       setActiveRemoteEnvironment,
     },
-    (channel, params) =>
-      resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params),
+    resolveEnvironmentForDesktopRequest,
   )
   await openMainWindow()
   void appUpdater.checkForUpdate()
