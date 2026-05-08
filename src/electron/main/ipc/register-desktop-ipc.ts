@@ -21,7 +21,10 @@ import { createAppUpdateHandlers } from './request-handlers/app-update'
 import { createPiPackagesHandlers } from './request-handlers/pi-packages'
 import { createPiSkillsHandlers } from './request-handlers/pi-skills'
 import { createPiThreadsHandlers } from './request-handlers/pi-threads'
-import { createRemoteEnvironmentHandlers } from './request-handlers/remote-environments'
+import {
+  createRemoteEnvironmentHandlers,
+  type SavedRemoteEnvironmentConnectionConfig,
+} from './request-handlers/remote-environments'
 import { createSkillCreatorHandlers } from './request-handlers/skill-creator'
 import { createSystemHandlers } from './request-handlers/system'
 import { createTerminalHandlers } from './request-handlers/terminal'
@@ -62,7 +65,7 @@ function assertTrustedDesktopIpcEvent(
 function registerRequestHandlers(
   handlers: DesktopRequestHandlerMap,
   getMainWindow: () => BrowserWindow | null,
-  serverTransport: AppTransport | null,
+  getServerTransport: () => AppTransport | null,
   resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
     channel: K,
     params: DesktopRequestMap[K]['params'],
@@ -73,6 +76,7 @@ function registerRequestHandlers(
       assertTrustedDesktopIpcEvent(event, getMainWindow)
       if (getDesktopRequestChannelOwner(channel) === 'howcode-server') {
         resolveEnvironmentForRequest(channel, params)
+        const serverTransport = getServerTransport()
         if (!serverTransport) {
           throw new Error('Howcode server is required for this operation but is not connected.')
         }
@@ -86,6 +90,14 @@ function registerRequestHandlers(
 export function createDesktopRequestHandlers(
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
+  remoteEnvironmentOptions: {
+    setActiveRemoteEnvironment?: (
+      config: SavedRemoteEnvironmentConnectionConfig,
+    ) => Promise<HowcodeServerConnectionState> | HowcodeServerConnectionState
+    clearActiveRemoteEnvironment?: () =>
+      | Promise<HowcodeServerConnectionState>
+      | HowcodeServerConnectionState
+  } = {},
 ): DesktopRequestHandlerMap {
   return {
     getHowcodeServerState: () => ({
@@ -104,7 +116,7 @@ export function createDesktopRequestHandlers(
       error: null,
       mode: 'disabled',
     }),
-    ...createRemoteEnvironmentHandlers(),
+    ...createRemoteEnvironmentHandlers(remoteEnvironmentOptions),
     refreshHowcodeServerState: () => ({
       baseUrl: null,
       connected: false,
@@ -126,7 +138,6 @@ export function createDesktopRequestHandlers(
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),
     ...createSkillCreatorHandlers(runtime.skillCreator),
-    ...createRemoteEnvironmentHandlers(),
     ...createTerminalHandlers(runtime.terminalManager),
     ...createSystemHandlers(),
   }
@@ -136,7 +147,7 @@ export function registerDesktopIpc(
   getMainWindow: () => BrowserWindow | null,
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
-  serverTransport: AppTransport | null = null,
+  getServerTransport: () => AppTransport | null = () => null,
   getHowcodeServerState: () => HowcodeServerConnectionState = () => ({
     baseUrl: null,
     connected: false,
@@ -156,6 +167,14 @@ export function registerDesktopIpc(
   refreshHowcodeServerState: () =>
     | Promise<HowcodeServerConnectionState>
     | HowcodeServerConnectionState = getHowcodeServerState,
+  remoteEnvironmentOptions: {
+    setActiveRemoteEnvironment?: (
+      config: SavedRemoteEnvironmentConnectionConfig,
+    ) => Promise<HowcodeServerConnectionState> | HowcodeServerConnectionState
+    clearActiveRemoteEnvironment?: () =>
+      | Promise<HowcodeServerConnectionState>
+      | HowcodeServerConnectionState
+  } = {},
   resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
     channel: K,
     params: DesktopRequestMap[K]['params'],
@@ -168,12 +187,12 @@ export function registerDesktopIpc(
   }),
 ) {
   const handlers: DesktopRequestHandlerMap = {
-    ...createDesktopRequestHandlers(runtime, appUpdater),
+    ...createDesktopRequestHandlers(runtime, appUpdater, remoteEnvironmentOptions),
     getHowcodeServerState,
     refreshHowcodeServerState,
   }
 
-  registerRequestHandlers(handlers, getMainWindow, serverTransport, resolveEnvironmentForRequest)
+  registerRequestHandlers(handlers, getMainWindow, getServerTransport, resolveEnvironmentForRequest)
 
   runtime.piThreads.subscribeDesktopEvents((event) => {
     const mainWindow = getMainWindow()

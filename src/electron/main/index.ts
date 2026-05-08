@@ -5,8 +5,10 @@ import {
   startLocalHowcodeServer,
   stopLocalHowcodeServer,
 } from '../../../desktop/server/local-howcode-server'
+import type { AppTransport } from '../../../shared/app-transport'
 import type {
   HowcodeEnvironment,
+  HowcodeRemoteEnvironment,
   HowcodeServerConnectionState,
 } from '../../../shared/howcode-server-contracts'
 import { createMainWindow } from './app/create-main-window'
@@ -34,6 +36,8 @@ import { AppUpdater } from './updater/app-updater'
 let currentMainWindow: BrowserWindow | null = null
 let localHowcodeServer: LocalHowcodeServer | null = null
 let sshHowcodeServer: SshHowcodeEnvironmentConnection | null = null
+let activeServerTransport: AppTransport | null = null
+let activeRemoteServer: { baseUrl: string; environment: HowcodeEnvironment } | null = null
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
@@ -96,9 +100,7 @@ async function refreshConnectedServerState(environment: HowcodeEnvironment, base
   return howcodeServerState
 }
 
-async function resolveSshServerTransport(): Promise<ReturnType<
-  typeof createHowcodeServerTransport
-> | null> {
+async function resolveSshServerTransport(): Promise<AppTransport | null> {
   const config = readSshHowcodeEnvironmentConfigFromEnv()
   if (!config) return null
 
@@ -110,7 +112,17 @@ async function resolveSshServerTransport(): Promise<ReturnType<
   })
 }
 
-async function refreshExternalServerState() {
+async function refreshActiveServerState() {
+  if (activeRemoteServer) {
+    return await refreshConnectedServerState(
+      activeRemoteServer.environment,
+      activeRemoteServer.baseUrl,
+    )
+  }
+  return await refreshConfiguredExternalServerState()
+}
+
+async function refreshConfiguredExternalServerState() {
   const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
   if (!baseUrl) {
     activeHowcodeEnvironment = disabledEnvironment
@@ -142,9 +154,7 @@ async function refreshExternalServerState() {
   return howcodeServerState
 }
 
-async function resolveExternalServerTransport(): Promise<ReturnType<
-  typeof createHowcodeServerTransport
-> | null> {
+async function resolveExternalServerTransport(): Promise<AppTransport | null> {
   const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
   const authToken = getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN')?.trim()
   if (!baseUrl) {
@@ -153,8 +163,69 @@ async function resolveExternalServerTransport(): Promise<ReturnType<
   if (!authToken) {
     throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
   }
-  await refreshExternalServerState()
+  await refreshConfiguredExternalServerState()
   return createHowcodeServerTransport({ authToken, baseUrl })
+}
+
+function createEnvironmentFromSavedRemote(
+  remoteEnvironment: HowcodeRemoteEnvironment,
+  baseUrl: string,
+): HowcodeEnvironment {
+  if (remoteEnvironment.kind === 'ssh') {
+    return {
+      id: `remote:${remoteEnvironment.id}`,
+      kind: 'ssh-server',
+      name: remoteEnvironment.name,
+      scope: 'global',
+      serverUrl: baseUrl,
+      ssh: {
+        host: remoteEnvironment.sshHost ?? remoteEnvironment.name,
+        localPort: remoteEnvironment.localPort ?? 49317,
+        remotePort: remoteEnvironment.remotePort ?? 39317,
+      },
+    }
+  }
+
+  return {
+    id: `remote:${remoteEnvironment.id}`,
+    kind: 'external-server',
+    name: remoteEnvironment.name,
+    scope: 'global',
+    serverUrl: baseUrl,
+  }
+}
+
+async function setActiveRemoteEnvironment(config: {
+  environment: HowcodeRemoteEnvironment
+  baseUrl: string
+  token: string
+}) {
+  const environment = createEnvironmentFromSavedRemote(config.environment, config.baseUrl)
+  activeRemoteServer = { baseUrl: config.baseUrl, environment }
+  activeServerTransport = createHowcodeServerTransport({
+    authToken: config.token,
+    baseUrl: config.baseUrl,
+  })
+  return await refreshConnectedServerState(environment, config.baseUrl)
+}
+
+async function clearActiveRemoteEnvironment() {
+  activeRemoteServer = null
+  activeServerTransport = localHowcodeServer?.transport ?? null
+  if (localHowcodeServer) {
+    activeHowcodeEnvironment = {
+      ...localDesktopEnvironment,
+      serverUrl: localHowcodeServer.baseUrl,
+    }
+    return await refreshConnectedServerState(activeHowcodeEnvironment, localHowcodeServer.baseUrl)
+  }
+  activeHowcodeEnvironment = disabledEnvironment
+  howcodeServerState = createHowcodeServerConnectionState({
+    connected: false,
+    environment: disabledEnvironment,
+    error: shouldDisableLocalServer() ? 'No active Howcode server.' : null,
+  })
+  return howcodeServerState
 }
 
 function shouldDisableLocalServer() {
@@ -211,10 +282,10 @@ async function bootstrap() {
   const appUpdater = new AppUpdater()
   const sshServerTransport = await resolveSshServerTransport()
   const externalServerTransport = sshServerTransport ?? (await resolveExternalServerTransport())
-  const serverTransport = shouldDisableLocalServer()
+  activeServerTransport = shouldDisableLocalServer()
     ? externalServerTransport
     : (externalServerTransport ?? (await startDesktopLocalServer(runtime, appUpdater)))
-  if (!serverTransport && shouldDisableLocalServer()) {
+  if (!activeServerTransport && shouldDisableLocalServer()) {
     activeHowcodeEnvironment = disabledEnvironment
     howcodeServerState = createHowcodeServerConnectionState({
       connected: false,
@@ -227,9 +298,13 @@ async function bootstrap() {
     () => currentMainWindow,
     runtime,
     appUpdater,
-    serverTransport,
+    () => activeServerTransport,
     () => howcodeServerState,
-    refreshExternalServerState,
+    refreshActiveServerState,
+    {
+      clearActiveRemoteEnvironment,
+      setActiveRemoteEnvironment,
+    },
     (channel, params) =>
       resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params),
   )

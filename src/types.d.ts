@@ -77,6 +77,8 @@ declare global {
       ) => Promise<HowcodeRemoteEnvironment>
       deleteHowcodeRemoteEnvironment?: (id: string) => Promise<{ ok: boolean }>
       testHowcodeRemoteEnvironment?: (id: string) => Promise<HowcodeRemoteEnvironmentTestResult>
+      setActiveHowcodeRemoteEnvironment?: (id: string) => Promise<HowcodeServerConnectionState>
+      clearActiveHowcodeRemoteEnvironment?: () => Promise<HowcodeServerConnectionState>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (

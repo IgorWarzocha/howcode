@@ -6,11 +6,18 @@ import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc
 import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
+  HowcodeServerConnectionState,
 } from '../../../../../shared/howcode-server-contracts'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_REQUEST_PREFIX,
 } from '../../../../../shared/howcode-server-contracts'
+
+export type SavedRemoteEnvironmentConnectionConfig = {
+  environment: HowcodeRemoteEnvironment
+  baseUrl: string
+  token: string
+}
 
 type RemoteEnvironmentHandlers = Pick<
   DesktopRequestHandlerMap,
@@ -18,7 +25,18 @@ type RemoteEnvironmentHandlers = Pick<
   | 'saveHowcodeRemoteEnvironment'
   | 'deleteHowcodeRemoteEnvironment'
   | 'testHowcodeRemoteEnvironment'
+  | 'setActiveHowcodeRemoteEnvironment'
+  | 'clearActiveHowcodeRemoteEnvironment'
 >
+
+type RemoteEnvironmentHandlerOptions = {
+  setActiveRemoteEnvironment?: (
+    config: SavedRemoteEnvironmentConnectionConfig,
+  ) => Promise<HowcodeServerConnectionState> | HowcodeServerConnectionState
+  clearActiveRemoteEnvironment?: () =>
+    | Promise<HowcodeServerConnectionState>
+    | HowcodeServerConnectionState
+}
 
 type PreferenceRow = { valueJson?: string }
 
@@ -197,7 +215,7 @@ function normalizeEnvironment(input: HowcodeRemoteEnvironmentInput): HowcodeRemo
     : normalizeDirectEnvironment(input, id)
 }
 
-function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnvironment) {
+export function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnvironment) {
   if (environment.kind === 'direct') return environment.serverUrl
   const localPort = normalizePort(environment.localPort) ?? 49317
   return `http://127.0.0.1:${localPort}`
@@ -241,7 +259,24 @@ async function testRemoteEnvironmentConnection(
   }
 }
 
-export function createRemoteEnvironmentHandlers(): RemoteEnvironmentHandlers {
+function getSavedRemoteEnvironmentConnectionConfig(
+  database: RemoteEnvironmentDatabase,
+  id: string,
+): SavedRemoteEnvironmentConnectionConfig | { error: string } {
+  const environment = readRemoteEnvironments(database).find(
+    (remoteEnvironment) => remoteEnvironment.id === id,
+  )
+  if (!environment) return { error: 'Remote not found.' }
+  const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
+  if (!baseUrl) return { error: 'Missing server URL.' }
+  const token = readToken(database, environment.tokenRef)
+  if (!token) return { error: 'Add token, save, then test.' }
+  return { baseUrl, environment, token }
+}
+
+export function createRemoteEnvironmentHandlers(
+  options: RemoteEnvironmentHandlerOptions = {},
+): RemoteEnvironmentHandlers {
   return {
     deleteHowcodeRemoteEnvironment: ({ id }) => {
       const database = getDatabase()
@@ -281,6 +316,25 @@ export function createRemoteEnvironmentHandlers(): RemoteEnvironmentHandlers {
       } finally {
         closeDatabase(database)
       }
+    },
+    setActiveHowcodeRemoteEnvironment: async ({ id }) => {
+      if (!options.setActiveRemoteEnvironment) {
+        throw new Error('Remote activation is unavailable in this runtime.')
+      }
+      const database = getDatabase()
+      try {
+        const config = getSavedRemoteEnvironmentConnectionConfig(database, id)
+        if ('error' in config) throw new Error(config.error)
+        return await options.setActiveRemoteEnvironment(config)
+      } finally {
+        closeDatabase(database)
+      }
+    },
+    clearActiveHowcodeRemoteEnvironment: async () => {
+      if (!options.clearActiveRemoteEnvironment) {
+        throw new Error('Remote activation is unavailable in this runtime.')
+      }
+      return await options.clearActiveRemoteEnvironment()
     },
     saveHowcodeRemoteEnvironment: (input) => {
       const database = getDatabase()

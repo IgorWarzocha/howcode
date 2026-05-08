@@ -85,6 +85,8 @@ function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): Deskto
     saveHowcodeRemoteEnvironment: unsupportedDesktopHandler,
     deleteHowcodeRemoteEnvironment: unsupportedDesktopHandler,
     testHowcodeRemoteEnvironment: unsupportedDesktopHandler,
+    setActiveHowcodeRemoteEnvironment: unsupportedDesktopHandler,
+    clearActiveHowcodeRemoteEnvironment: unsupportedDesktopHandler,
     getAppUpdateState: unsupportedDesktopHandler,
     checkAppUpdate: unsupportedDesktopHandler,
     installAppUpdate: unsupportedDesktopHandler,

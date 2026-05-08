@@ -92,6 +92,14 @@ export type DesktopRequestMap = {
     params: { id: string }
     response: HowcodeRemoteEnvironmentTestResult
   }
+  setActiveHowcodeRemoteEnvironment: {
+    params: { id: string }
+    response: HowcodeServerConnectionState
+  }
+  clearActiveHowcodeRemoteEnvironment: {
+    params: Record<string, never>
+    response: HowcodeServerConnectionState
+  }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectDiff: {

@@ -88,45 +88,34 @@ terminalManager.subscribeTerminalEvents((event) => {
   sendSseEvent(terminalEventClients, 'terminalEvent', event)
 })
 
+const getDevServerState = () => ({
+  baseUrl: null,
+  connected: true,
+  descriptor: null,
+  environment: {
+    id: 'dev-web-bridge',
+    kind: 'local-desktop' as const,
+    name: 'Dev web bridge',
+    scope: 'global' as const,
+    serverUrl: null,
+  },
+  environmentId: 'dev-web-bridge',
+  environmentName: 'Dev web bridge',
+  error: null,
+  mode: 'local' as const,
+})
+
 const handlers: DesktopRequestHandlerMap = {
-  getHowcodeServerState: () => ({
-    baseUrl: null,
-    connected: true,
-    descriptor: null,
-    environment: {
-      id: 'dev-web-bridge',
-      kind: 'local-desktop',
-      name: 'Dev web bridge',
-      scope: 'global',
-      serverUrl: null,
-    },
-    environmentId: 'dev-web-bridge',
-    environmentName: 'Dev web bridge',
-    error: null,
-    mode: 'local',
-  }),
+  getHowcodeServerState: getDevServerState,
   listHowcodeRemoteEnvironments: () => [],
   saveHowcodeRemoteEnvironment: () => {
     throw new Error('Remote environments are unavailable in dev web bridge mode.')
   },
   deleteHowcodeRemoteEnvironment: () => ({ ok: true }),
   testHowcodeRemoteEnvironment: () => ({ error: null, ok: true }),
-  refreshHowcodeServerState: () => ({
-    baseUrl: null,
-    connected: true,
-    descriptor: null,
-    environment: {
-      id: 'dev-web-bridge',
-      kind: 'local-desktop',
-      name: 'Dev web bridge',
-      scope: 'global',
-      serverUrl: null,
-    },
-    environmentId: 'dev-web-bridge',
-    environmentName: 'Dev web bridge',
-    error: null,
-    mode: 'local',
-  }),
+  setActiveHowcodeRemoteEnvironment: getDevServerState,
+  clearActiveHowcodeRemoteEnvironment: getDevServerState,
+  refreshHowcodeServerState: getDevServerState,
   getAppUpdateState: () => devAppUpdateState,
   checkAppUpdate: () => devAppUpdateState,
   installAppUpdate: () => devAppUpdateState,
