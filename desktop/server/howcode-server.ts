@@ -124,37 +124,32 @@ function closeServer(server: Server) {
 }
 
 export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTransport) {
-  return Effect.acquireRelease(
-    Effect.callback<HowcodeServerHandle, HowcodeServerError>((resume) => {
-      const server = createServer((request, response) =>
-        handleRequest(transport, request, response),
-      )
+  return Effect.callback<HowcodeServerHandle, HowcodeServerError>((resume) => {
+    const server = createServer((request, response) => handleRequest(transport, request, response))
 
-      server.once('error', (cause) => {
-        resume(
-          Effect.fail(
-            new HowcodeServerError({
-              message: 'Failed to start Howcode server.',
-              cause,
-            }),
-          ),
-        )
-      })
-
-      server.listen(config.port, config.host, () => {
-        const address = server.address()
-        const port = typeof address === 'object' && address ? address.port : config.port
-        resume(
-          Effect.succeed({
-            address: {
-              host: config.host,
-              port,
-            },
-            close: closeServer(server),
+    server.once('error', (cause) => {
+      resume(
+        Effect.fail(
+          new HowcodeServerError({
+            message: 'Failed to start Howcode server.',
+            cause,
           }),
-        )
-      })
-    }),
-    (handle) => Effect.catch(handle.close, () => Effect.void),
-  )
+        ),
+      )
+    })
+
+    server.listen(config.port, config.host, () => {
+      const address = server.address()
+      const port = typeof address === 'object' && address ? address.port : config.port
+      resume(
+        Effect.succeed({
+          address: {
+            host: config.host,
+            port,
+          },
+          close: closeServer(server),
+        }),
+      )
+    })
+  })
 }
