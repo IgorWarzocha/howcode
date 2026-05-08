@@ -203,6 +203,10 @@ function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnvironment) 
   return `http://127.0.0.1:${localPort}`
 }
 
+// TODO(server-mode): This is only an endpoint smoke check. Once remotes are attached
+// to projects, make this diagnose the useful setup failures: start/ensure the SSH tunnel,
+// check whether howcode serve is reachable on the remote, distinguish invalid token from
+// wrong port/host, and report settings mismatches instead of just "is a server running".
 async function testRemoteEnvironmentConnection(
   environment: HowcodeRemoteEnvironment,
   token: string | null,
