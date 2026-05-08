@@ -217,8 +217,14 @@ function handleRequest(
     ).then(
       (result) => sendJson(response, 200, result ?? null),
       (error: unknown) => {
+        console.error('Howcode server request failed', error)
         const message = error instanceof Error ? error.message : 'Howcode server request failed.'
-        sendJson(response, 500, { error: message })
+        const cause =
+          typeof error === 'object' && error !== null && 'cause' in error ? error.cause : undefined
+        sendJson(response, 500, {
+          error: message,
+          cause: cause instanceof Error ? cause.message : undefined,
+        })
       },
     )
     return
