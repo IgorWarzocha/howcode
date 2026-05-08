@@ -136,8 +136,14 @@ function deleteToken(database: RemoteEnvironmentDatabase, tokenRef: string) {
 }
 
 function readToken(database: RemoteEnvironmentDatabase, tokenRef: string) {
-  const value = readPreference(database, getCredentialPreferenceKey(tokenRef))?.valueJson
-  return value ? decryptToken(value) : null
+  const valueJson = readPreference(database, getCredentialPreferenceKey(tokenRef))?.valueJson
+  if (!valueJson) return null
+  try {
+    const value = JSON.parse(valueJson) as unknown
+    return typeof value === 'string' ? decryptToken(value) : null
+  } catch {
+    return decryptToken(valueJson)
+  }
 }
 
 function normalizePort(value: number | null | undefined) {
