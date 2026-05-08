@@ -137,7 +137,7 @@ function RemoteTextInput({
   const { draft } = useRemoteSettingsStore()
   return (
     <input
-      className={cn(settingsInputClass, 'w-[18rem] max-w-full flex-none')}
+      className={cn(settingsInputClass, 'h-8 w-[18rem] max-w-full flex-none py-0')}
       placeholder={placeholder}
       type={type}
       value={draft[field]}
@@ -151,7 +151,7 @@ function ConditionalRemoteTextInput(
 ) {
   const { draft } = useRemoteSettingsStore()
   if (draft.kind !== props.kind) {
-    return <div className="invisible min-h-10 w-[18rem] max-w-full" aria-hidden="true" />
+    return <div className="invisible h-8 w-[18rem] max-w-full" aria-hidden="true" />
   }
   return <RemoteTextInput {...props} />
 }
