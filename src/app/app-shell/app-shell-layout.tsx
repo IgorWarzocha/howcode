@@ -277,7 +277,6 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       inboxLoading={controller.inboxLoading}
       chatSidebarLoading={controller.chatSidebarLoading}
       projectsLoading={controller.shellLoading}
-      serverDisconnectedMessage={controller.shellError}
       appLaunchedAtMs={controller.appLaunchedAtMs}
       appSettings={controller.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
       chatSidebarState={controller.chatSidebarState}

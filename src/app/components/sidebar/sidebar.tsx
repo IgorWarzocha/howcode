@@ -35,7 +35,6 @@ type SidebarProps = {
   chatSidebarState: ChatSidebarState | null
   chatSidebarLoading?: boolean
   projectsLoading?: boolean
-  serverDisconnectedMessage?: string | null
   appLaunchedAtMs: number
   appSettings: AppSettings
   protectedProjectId?: string | null
@@ -198,7 +197,6 @@ export function Sidebar({
   chatSidebarState,
   chatSidebarLoading = false,
   projectsLoading = false,
-  serverDisconnectedMessage = null,
   appLaunchedAtMs,
   appSettings,
   protectedProjectId = null,
@@ -259,7 +257,6 @@ export function Sidebar({
     chatSidebarState,
     chatSidebarLoading,
     projectsLoading,
-    serverDisconnectedMessage,
     appLaunchedAtMs,
     appSettings,
     protectedProjectId,
@@ -302,13 +299,6 @@ export function Sidebar({
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
-      {serverDisconnectedMessage ? (
-        <div className="mx-3 mb-3 rounded-xl border border-amber-400/40 bg-amber-950/70 p-3 text-[12px] leading-5 text-amber-100">
-          <div className="font-medium">Server disconnected</div>
-          <div className="mt-1 text-amber-100/80">{serverDisconnectedMessage}</div>
-        </div>
-      ) : null}
-
       {showModeSelection ? (
         <SidebarModeNav
           activeView={activeView}
