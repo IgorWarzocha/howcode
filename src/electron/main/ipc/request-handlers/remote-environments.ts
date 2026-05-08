@@ -203,7 +203,7 @@ async function testRemoteEnvironmentConnection(
 ) {
   const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
   if (!baseUrl) return { error: 'Missing server URL.', ok: false }
-  if (!token) return { error: 'Missing server token.', ok: false }
+  if (!token) return { error: 'Enter the token used by howcode serve, then save again.', ok: false }
 
   try {
     const descriptorResponse = await fetch(new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, baseUrl))
