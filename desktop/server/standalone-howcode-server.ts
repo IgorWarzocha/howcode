@@ -45,10 +45,7 @@ function parseOptions(args = process.argv.slice(2)): CliOptions {
     readFlag(args, '--token') ??
     getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN') ??
     randomUUID()
-  const runtimeRoot =
-    readFlag(args, '--runtime-root') ??
-    getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ??
-    process.cwd()
+  const runtimeRoot = getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ?? process.cwd()
   const port = Number.parseInt(portText, 10)
   if (!Number.isInteger(port) || port < 0 || port > 65_535) {
     throw new Error(`Invalid --port value: ${portText}`)
