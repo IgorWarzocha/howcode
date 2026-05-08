@@ -253,14 +253,13 @@ function SavedRemoteEnvironmentsControl() {
             <button
               type="button"
               className={cn(
-                composerTextActionButtonClass,
-                'h-7 w-7 px-0',
+                'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] p-0 text-[color:var(--text)] transition-colors hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)]',
                 testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
                 testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
               )}
               onClick={() => void test(environment)}
               aria-label={`Test ${environment.name}`}
-              title={`Test ${environment.name}`}
+              title={testErrorById[environment.id] || `Test ${environment.name}`}
             >
               {testStatusById[environment.id] === 'testing' ? (
                 <Loader2 size={12} className="animate-spin" />

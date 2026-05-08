@@ -232,8 +232,8 @@ async function testRemoteEnvironmentConnection(
       return { error: `Auth failed (${authResponse.status}).`, ok: false }
     }
     return { error: null, ok: true }
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Connection failed.', ok: false }
+  } catch {
+    return { error: `No server at ${baseUrl}. Start howcode serve or the SSH tunnel.`, ok: false }
   }
 }
 
