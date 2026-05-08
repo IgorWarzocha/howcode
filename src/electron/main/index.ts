@@ -82,6 +82,19 @@ async function fetchServerDescriptor(baseUrl: string) {
   return (await response.json()) as HowcodeServerConnectionState['descriptor']
 }
 
+async function fetchServerDescriptorWithRetry(baseUrl: string, attempts = 20) {
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await fetchServerDescriptor(baseUrl)
+    } catch (error) {
+      lastError = error
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Howcode server did not become ready.')
+}
+
 async function refreshConnectedServerState(environment: HowcodeEnvironment, baseUrl: string) {
   activeHowcodeEnvironment = environment
   try {
@@ -195,18 +208,59 @@ function createEnvironmentFromSavedRemote(
   }
 }
 
+async function ensureSavedSshRemoteEnvironment(config: {
+  environment: HowcodeRemoteEnvironment
+  token: string
+}) {
+  if (!config.environment.sshHost) {
+    throw new Error('SSH host alias is required.')
+  }
+
+  sshHowcodeServer?.close()
+  sshHowcodeServer = await ensureSshHowcodeServer({
+    host: config.environment.sshHost,
+    localPort: config.environment.localPort ?? 49317,
+    remoteCommand: config.environment.remoteCommand ?? null,
+    remotePort: config.environment.remotePort ?? 39317,
+    token: config.token,
+  })
+  return sshHowcodeServer
+}
+
 async function setActiveRemoteEnvironment(config: {
   environment: HowcodeRemoteEnvironment
   baseUrl: string
   token: string
 }) {
-  const environment = createEnvironmentFromSavedRemote(config.environment, config.baseUrl)
-  activeRemoteServer = { baseUrl: config.baseUrl, environment }
+  const connection =
+    config.environment.kind === 'ssh' ? await ensureSavedSshRemoteEnvironment(config) : null
+  const baseUrl = connection?.baseUrl ?? config.baseUrl
+  const environment =
+    connection?.environment ?? createEnvironmentFromSavedRemote(config.environment, baseUrl)
+  activeRemoteServer = { baseUrl, environment }
   activeServerTransport = createHowcodeServerTransport({
     authToken: config.token,
-    baseUrl: config.baseUrl,
+    baseUrl,
   })
-  return await refreshConnectedServerState(environment, config.baseUrl)
+
+  try {
+    howcodeServerState = createHowcodeServerConnectionState({
+      connected: true,
+      descriptor:
+        config.environment.kind === 'ssh'
+          ? await fetchServerDescriptorWithRetry(baseUrl)
+          : await fetchServerDescriptor(baseUrl),
+      environment,
+    })
+  } catch (error) {
+    howcodeServerState = createHowcodeServerConnectionState({
+      connected: false,
+      environment,
+      error: error instanceof Error ? error.message : 'Failed to connect to Howcode server.',
+    })
+  }
+  activeHowcodeEnvironment = environment
+  return howcodeServerState
 }
 
 async function clearActiveRemoteEnvironment() {
