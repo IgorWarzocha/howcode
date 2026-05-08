@@ -137,7 +137,7 @@ function RemoteTextInput({
   const { draft } = useRemoteSettingsStore()
   return (
     <input
-      className="h-8 w-[22rem] max-w-full rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.045)] px-3 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
+      className="h-7 w-[18rem] max-w-full rounded-md border border-[color:var(--border)] bg-[rgba(255,255,255,0.035)] px-2.5 text-[11.5px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent-border)]"
       placeholder={placeholder}
       type={type}
       value={draft[field]}
@@ -150,7 +150,9 @@ function ConditionalRemoteTextInput(
   props: Parameters<typeof RemoteTextInput>[0] & { kind: Draft['kind'] },
 ) {
   const { draft } = useRemoteSettingsStore()
-  if (draft.kind !== props.kind) return null
+  if (draft.kind !== props.kind) {
+    return <div className="invisible h-7 w-[18rem] max-w-full" aria-hidden="true" />
+  }
   return <RemoteTextInput {...props} />
 }
 
@@ -191,11 +193,11 @@ function SavedRemoteEnvironmentsControl() {
   }
 
   return (
-    <div className="grid w-[28rem] max-w-full gap-2">
+    <div className="grid w-[24rem] max-w-full gap-1.5">
       {environments.map((environment) => (
         <div
           key={environment.id}
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[color:var(--border)] px-3 py-2 text-[12px]"
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[color:var(--border)] px-2.5 py-1.5 text-[11.5px]"
         >
           <div className="min-w-0">
             <div className="truncate text-[color:var(--text)]">{environment.name}</div>
