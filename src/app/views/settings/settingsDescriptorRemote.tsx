@@ -229,7 +229,7 @@ function SavedRemoteEnvironmentsControl() {
   }
 
   return (
-    <div className="grid w-[24rem] max-w-full gap-1.5">
+    <div className="grid w-[32rem] max-w-full gap-1.5">
       {environments.map((environment) => (
         <div
           key={environment.id}
@@ -237,7 +237,7 @@ function SavedRemoteEnvironmentsControl() {
         >
           <div className="min-w-0">
             <div className="truncate text-[color:var(--text)]">{environment.name}</div>
-            <div className="break-all text-[color:var(--muted)]">
+            <div className="truncate text-[color:var(--muted)]">
               {environment.kind === 'ssh'
                 ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
                 : environment.serverUrl}
