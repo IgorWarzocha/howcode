@@ -1,4 +1,6 @@
 import { app, type BrowserWindow, type IpcMainInvokeEvent, ipcMain } from 'electron'
+import type { AppTransport } from '../../../../shared/app-transport'
+import { getDesktopRequestChannelOwner } from '../../../../shared/app-transport-ownership'
 import {
   type DesktopRequestChannel,
   type DesktopRequestHandlerMap,
@@ -54,21 +56,24 @@ function assertTrustedDesktopIpcEvent(
 function registerRequestHandlers(
   handlers: DesktopRequestHandlerMap,
   getMainWindow: () => BrowserWindow | null,
+  serverTransport: AppTransport | null,
 ) {
   for (const channel of Object.keys(handlers) as DesktopRequestChannel[]) {
     ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
+      if (serverTransport && getDesktopRequestChannelOwner(channel) === 'howcode-server') {
+        return serverTransport.request(channel, params)
+      }
       return handlers[channel](params)
     })
   }
 }
 
-export function registerDesktopIpc(
-  getMainWindow: () => BrowserWindow | null,
+export function createDesktopRequestHandlers(
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
-) {
-  const handlers: DesktopRequestHandlerMap = {
+): DesktopRequestHandlerMap {
+  return {
     ...createAppUpdateHandlers(appUpdater),
     ...createPiThreadsHandlers(runtime.piThreads),
     ...createPiPackagesHandlers(runtime.piThreads),
@@ -77,8 +82,17 @@ export function registerDesktopIpc(
     ...createTerminalHandlers(runtime.terminalManager),
     ...createSystemHandlers(),
   }
+}
 
-  registerRequestHandlers(handlers, getMainWindow)
+export function registerDesktopIpc(
+  getMainWindow: () => BrowserWindow | null,
+  runtime: DesktopRuntimeModules,
+  appUpdater: AppUpdater,
+  serverTransport: AppTransport | null = null,
+) {
+  const handlers = createDesktopRequestHandlers(runtime, appUpdater)
+
+  registerRequestHandlers(handlers, getMainWindow, serverTransport)
 
   runtime.piThreads.subscribeDesktopEvents((event) => {
     const mainWindow = getMainWindow()
