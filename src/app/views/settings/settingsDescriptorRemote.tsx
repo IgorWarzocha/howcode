@@ -172,7 +172,7 @@ function ConditionalRemoteTextInput(
 }
 
 function SaveRemoteControl() {
-  const { draft, status } = useRemoteSettingsStore()
+  const { draft } = useRemoteSettingsStore()
   const save = async () => {
     setStatus(null)
     try {
@@ -191,7 +191,6 @@ function SaveRemoteControl() {
       <button type="button" className={composerTextActionButtonClass} onClick={save}>
         Save remote
       </button>
-      {status ? <span>{status}</span> : null}
     </div>
   )
 }
@@ -243,11 +242,6 @@ function SavedRemoteEnvironmentsControl() {
                 : environment.serverUrl}
               {environment.hasToken ? ' · token saved' : ' · no token'}
             </div>
-            {testErrorById[environment.id] ? (
-              <div className="truncate text-[color:var(--danger)]">
-                {testErrorById[environment.id]}
-              </div>
-            ) : null}
           </div>
           <div className="flex items-center gap-1">
             <button
