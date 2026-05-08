@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { Data, Effect } from 'effect'
 import type { AppTransport } from '../../shared/app-transport'
@@ -11,6 +12,7 @@ import {
 export type HowcodeServerConfig = {
   host: string
   port: number
+  authToken: string
 }
 
 export type HowcodeServerHandle = {
@@ -18,6 +20,7 @@ export type HowcodeServerHandle = {
     host: string
     port: number
   }
+  authToken: string
   close: Effect.Effect<void, HowcodeServerError>
 }
 
@@ -30,6 +33,22 @@ function sendJson(response: ServerResponse, statusCode: number, payload: unknown
   response.statusCode = statusCode
   response.setHeader('content-type', 'application/json; charset=utf-8')
   response.end(JSON.stringify(payload))
+}
+
+function hasValidAuthToken(request: IncomingMessage, expectedToken: string) {
+  const header = request.headers.authorization
+  const prefix = 'Bearer '
+  if (!header?.startsWith(prefix) || expectedToken.length === 0) {
+    return false
+  }
+
+  const candidate = header.slice(prefix.length)
+  const candidateBuffer = Buffer.from(candidate)
+  const expectedBuffer = Buffer.from(expectedToken)
+  return (
+    candidateBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(candidateBuffer, expectedBuffer)
+  )
 }
 
 function readJsonBody(request: IncomingMessage) {
@@ -53,6 +72,7 @@ function readJsonBody(request: IncomingMessage) {
 }
 
 function handleRequest(
+  config: HowcodeServerConfig,
   transport: AppTransport,
   request: IncomingMessage,
   response: ServerResponse,
@@ -70,6 +90,10 @@ function handleRequest(
   }
 
   if (request.method === 'POST' && requestUrl.pathname.startsWith(HOWCODE_SERVER_REQUEST_PREFIX)) {
+    if (!hasValidAuthToken(request, config.authToken)) {
+      sendJson(response, 401, { error: 'Unauthorized.' })
+      return
+    }
     const channel = requestUrl.pathname.slice(
       HOWCODE_SERVER_REQUEST_PREFIX.length,
     ) as DesktopRequestChannel
@@ -125,7 +149,9 @@ function closeServer(server: Server) {
 
 export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTransport) {
   return Effect.callback<HowcodeServerHandle, HowcodeServerError>((resume) => {
-    const server = createServer((request, response) => handleRequest(transport, request, response))
+    const server = createServer((request, response) =>
+      handleRequest(config, transport, request, response),
+    )
 
     server.once('error', (cause) => {
       resume(
@@ -147,6 +173,7 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
             host: config.host,
             port,
           },
+          authToken: config.authToken,
           close: closeServer(server),
         }),
       )

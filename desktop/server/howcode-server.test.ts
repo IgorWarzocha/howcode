@@ -25,6 +25,7 @@ async function startTestServer(transport: AppTransport) {
       {
         host: '127.0.0.1',
         port: 0,
+        authToken: 'test-token',
       },
       transport,
     ),
@@ -53,13 +54,30 @@ describe('Howcode server', () => {
     ).resolves.toEqual(howcodeServerDescriptor)
   })
 
+  it('rejects unauthenticated app transport requests', async () => {
+    const request = vi.fn(async () => ({ ok: true }))
+    const { baseUrl } = await startTestServer({
+      request,
+      subscribe: vi.fn(),
+    })
+
+    const response = await fetch(new URL('/api/app/request/terminalWrite', baseUrl), {
+      body: JSON.stringify({ sessionId: 'terminal-1', data: 'hello' }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    })
+
+    expect(response.status).toBe(401)
+    expect(request).not.toHaveBeenCalled()
+  })
+
   it('dispatches typed app transport requests over HTTP', async () => {
     const request = vi.fn(async () => ({ ok: true }))
     const { baseUrl } = await startTestServer({
       request,
       subscribe: vi.fn(),
     })
-    const client = createHowcodeServerTransport({ baseUrl })
+    const client = createHowcodeServerTransport({ authToken: 'test-token', baseUrl })
 
     await expect(
       client.request('terminalWrite', { sessionId: 'terminal-1', data: 'hello' }),

@@ -10,9 +10,15 @@ export type HowcodeServerCapability =
   | 'settings'
   | 'pi-runtime-delegation'
 
+export type HowcodeServerAuthDescriptor = {
+  required: boolean
+  methods: 'bearer-token'[]
+}
+
 export type HowcodeServerDescriptor = {
   name: 'howcode-server'
   protocolVersion: 1
+  auth: HowcodeServerAuthDescriptor
   capabilities: HowcodeServerCapability[]
   delegatedCapabilities: HowcodeServerCapability[]
 }
@@ -20,6 +26,10 @@ export type HowcodeServerDescriptor = {
 export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   name: 'howcode-server',
   protocolVersion: 1,
+  auth: {
+    required: true,
+    methods: ['bearer-token'],
+  },
   capabilities: ['app-transport'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }

@@ -9,6 +9,7 @@ import { HOWCODE_SERVER_REQUEST_PREFIX } from '../../shared/howcode-server-contr
 
 export type HowcodeServerTransportConfig = {
   baseUrl: string
+  authToken: string
 }
 
 function resolveRequestUrl(baseUrl: string, channel: DesktopRequestChannel) {
@@ -30,6 +31,7 @@ export function createHowcodeServerTransport(config: HowcodeServerTransportConfi
       const response = await fetch(resolveRequestUrl(config.baseUrl, channel), {
         method: 'POST',
         headers: {
+          authorization: `Bearer ${config.authToken}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify(params),

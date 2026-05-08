@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { Effect } from 'effect'
 import { app, BrowserWindow } from 'electron'
 import {
@@ -57,12 +58,14 @@ async function startLocalHowcodeServer(
       {
         host: '127.0.0.1',
         port: 0,
+        authToken: randomUUID(),
       },
       createDirectHandlerTransport(handlers),
     ),
   )
   localHowcodeServer = handle
   return createHowcodeServerTransport({
+    authToken: handle.authToken,
     baseUrl: `http://${handle.address.host}:${handle.address.port}`,
   })
 }
