@@ -15,3 +15,6 @@ coverage/
 !src/app/features/chat/artifacts/**
 
 dist-pages/
+
+# Local framework research clones
+Frameworks/
