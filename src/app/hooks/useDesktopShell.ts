@@ -221,6 +221,7 @@ export function useDesktopShell() {
   return {
     shellState: shellStateQuery.data ?? null,
     shellLoading: shellStateQuery.isLoading,
+    shellError: shellStateQuery.error instanceof Error ? shellStateQuery.error.message : null,
     refreshShellState,
     scheduleShellStateRefresh,
     loadProjectThreads,

@@ -39,6 +39,7 @@ export function useAppShellController() {
   const {
     shellState,
     shellLoading,
+    shellError,
     loadArchivedThreads,
     loadComposerState,
     listComposerAttachmentEntries,
@@ -245,6 +246,7 @@ export function useAppShellController() {
     projectGitLoading,
     shellState,
     shellLoading,
+    shellError,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,
