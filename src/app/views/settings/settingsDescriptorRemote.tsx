@@ -237,7 +237,7 @@ function SavedRemoteEnvironmentsControl() {
         >
           <div className="min-w-0">
             <div className="truncate text-[color:var(--text)]">{environment.name}</div>
-            <div className="truncate text-[color:var(--muted)]">
+            <div className="break-all text-[color:var(--muted)]">
               {environment.kind === 'ssh'
                 ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
                 : environment.serverUrl}
@@ -249,7 +249,7 @@ function SavedRemoteEnvironmentsControl() {
               content={testErrorById[environment.id] || `Test ${environment.name}`}
               placement="left"
               className="inline-flex"
-              contentClassName="max-w-[18rem] whitespace-normal text-left"
+              contentClassName="max-w-[24rem] whitespace-pre-line text-left"
             >
               <button
                 type="button"

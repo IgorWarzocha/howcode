@@ -233,7 +233,7 @@ async function testRemoteEnvironmentConnection(
     }
     return { error: null, ok: true }
   } catch {
-    return { error: `No server at ${baseUrl}. Start howcode serve or the SSH tunnel.`, ok: false }
+    return { error: `No server at ${baseUrl}.\nStart howcode serve or the SSH tunnel.`, ok: false }
   }
 }
 
