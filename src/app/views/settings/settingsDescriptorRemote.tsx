@@ -1,8 +1,9 @@
-import { Loader2, PlugZap } from 'lucide-react'
+import { Loader2, PlugZap, Power } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type {
   HowcodeRemoteEnvironment,
   HowcodeRemoteEnvironmentInput,
+  HowcodeServerConnectionState,
 } from '../../../../shared/howcode-server-contracts'
 import { Tooltip } from '../../components/common/tooltip'
 import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
@@ -26,6 +27,9 @@ type RemoteStore = {
   status: string | null
   testStatusById: Record<string, 'failed' | 'testing' | 'ok'>
   testErrorById: Record<string, string>
+  activationStatusById: Record<string, 'activating' | 'failed' | 'ok'>
+  activationErrorById: Record<string, string>
+  serverState: HowcodeServerConnectionState | null
   version: number
 }
 
@@ -44,6 +48,9 @@ const remoteStore: RemoteStore = {
   draft: defaultDraft,
   environments: [],
   status: null,
+  activationErrorById: {},
+  activationStatusById: {},
+  serverState: null,
   testErrorById: {},
   testStatusById: {},
   version: 0,
@@ -77,6 +84,21 @@ function setTestStatus(
   emitRemoteStoreChange()
 }
 
+function setActivationStatus(
+  id: string,
+  status: 'activating' | 'failed' | 'ok',
+  error: string | null = null,
+) {
+  remoteStore.activationStatusById = { ...remoteStore.activationStatusById, [id]: status }
+  remoteStore.activationErrorById = { ...remoteStore.activationErrorById, [id]: error ?? '' }
+  emitRemoteStoreChange()
+}
+
+function setServerState(serverState: HowcodeServerConnectionState | null) {
+  remoteStore.serverState = serverState
+  emitRemoteStoreChange()
+}
+
 function parsePort(value: string) {
   const port = Number.parseInt(value, 10)
   return Number.isInteger(port) ? port : null
@@ -100,6 +122,7 @@ function refreshRemoteEnvironments() {
     remoteStore.environments = environments
     emitRemoteStoreChange()
   })
+  void window.piDesktop?.getHowcodeServerState?.().then(setServerState)
 }
 
 function useRemoteSettingsStore() {
@@ -197,14 +220,148 @@ function SaveRemoteControl() {
 }
 
 function getRemoteTestTooltip(environment: HowcodeRemoteEnvironment, error: string) {
-  return error || `Test ${environment.name}`
+  return error || `Check ${environment.name}`
+}
+
+function getRemoteActivationTooltip(environment: HowcodeRemoteEnvironment, error: string) {
+  return error || `Use ${environment.name}`
+}
+
+const remoteIconButtonClass =
+  'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] p-0 text-[color:var(--text)] transition-colors hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)]'
+
+type SavedRemoteEnvironmentRowProps = {
+  activationError: string
+  activationStatus: 'activating' | 'failed' | 'ok' | undefined
+  environment: HowcodeRemoteEnvironment
+  isActive: boolean
+  isConnected: boolean
+  testError: string
+  testStatus: 'failed' | 'testing' | 'ok' | undefined
+  onActivate: (environment: HowcodeRemoteEnvironment) => void
+  onDelete: (id: string) => void
+  onTest: (environment: HowcodeRemoteEnvironment) => void
+}
+
+function SavedRemoteEnvironmentRow({
+  activationError,
+  activationStatus,
+  environment,
+  isActive,
+  isConnected,
+  testError,
+  testStatus,
+  onActivate,
+  onDelete,
+  onTest,
+}: SavedRemoteEnvironmentRowProps) {
+  return (
+    <div
+      className={cn(
+        'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-[color:var(--border)] px-2.5 py-1.5 text-[11.5px]',
+        isActive && isConnected && 'border-[color:var(--success)]',
+        isActive && !isConnected && 'border-[color:var(--danger)]',
+      )}
+    >
+      <div className="min-w-0">
+        <div className="truncate text-[color:var(--text)]">{environment.name}</div>
+        <div className="truncate text-[color:var(--muted)]">
+          {environment.kind === 'ssh'
+            ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
+            : environment.serverUrl}
+          {environment.hasToken ? ' · token saved' : ' · no token'}
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <Tooltip
+          content={getRemoteActivationTooltip(environment, activationError)}
+          placement="left"
+          className="inline-flex"
+          contentClassName="[--tooltip-width:max-content] [--tooltip-max-width:min(90vw,44rem)] [--tooltip-white-space:nowrap] [--tooltip-overflow-wrap:normal] text-left"
+        >
+          <button
+            type="button"
+            className={cn(
+              remoteIconButtonClass,
+              (isActive || activationStatus === 'ok') && 'border-[color:var(--success)]',
+              activationStatus === 'failed' && 'border-[color:var(--danger)]',
+            )}
+            onClick={() => onActivate(environment)}
+            aria-label={`Use ${environment.name}`}
+          >
+            {activationStatus === 'activating' ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Power size={12} />
+            )}
+          </button>
+        </Tooltip>
+        <Tooltip
+          content={getRemoteTestTooltip(environment, testError)}
+          placement="left"
+          className="inline-flex"
+          contentClassName="[--tooltip-width:max-content] [--tooltip-max-width:min(90vw,44rem)] [--tooltip-white-space:nowrap] [--tooltip-overflow-wrap:normal] text-left"
+        >
+          <button
+            type="button"
+            className={cn(
+              remoteIconButtonClass,
+              testStatus === 'ok' && 'border-[color:var(--success)]',
+              testStatus === 'failed' && 'border-[color:var(--danger)]',
+            )}
+            onClick={() => onTest(environment)}
+            aria-label={`Test ${environment.name}`}
+          >
+            {testStatus === 'testing' ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <PlugZap size={12} />
+            )}
+          </button>
+        </Tooltip>
+        <button
+          type="button"
+          className={cn(composerTextActionButtonClass, 'px-2')}
+          onClick={() => onDelete(environment.id)}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function SavedRemoteEnvironmentsControl() {
-  const { environments, testErrorById, testStatusById } = useRemoteSettingsStore()
+  const {
+    activationErrorById,
+    activationStatusById,
+    environments,
+    serverState,
+    testErrorById,
+    testStatusById,
+  } = useRemoteSettingsStore()
   const remove = async (id: string) => {
     await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
     refreshRemoteEnvironments()
+  }
+  const activate = async (environment: HowcodeRemoteEnvironment) => {
+    if (!environment.hasToken) {
+      setActivationStatus(environment.id, 'failed', 'Add token, save, then activate.')
+      return
+    }
+    setActivationStatus(environment.id, 'activating')
+    try {
+      const state = await window.piDesktop?.setActiveHowcodeRemoteEnvironment?.(environment.id)
+      if (!state) throw new Error('Remote activation is unavailable.')
+      setServerState(state)
+      setActivationStatus(environment.id, state.connected ? 'ok' : 'failed', state.error)
+    } catch (error) {
+      setActivationStatus(
+        environment.id,
+        'failed',
+        error instanceof Error ? error.message : 'Activation failed.',
+      )
+    }
   }
   const test = async (environment: HowcodeRemoteEnvironment) => {
     if (!environment.hasToken) {
@@ -234,58 +391,27 @@ function SavedRemoteEnvironmentsControl() {
 
   return (
     <div className="grid w-[32rem] max-w-full gap-1.5">
-      {environments.map((environment) => (
-        <div
-          key={environment.id}
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-[color:var(--border)] px-2.5 py-1.5 text-[11.5px]"
-        >
-          <div className="min-w-0">
-            <div className="truncate text-[color:var(--text)]">{environment.name}</div>
-            <div className="truncate text-[color:var(--muted)]">
-              {environment.kind === 'ssh'
-                ? `ssh ${environment.sshHost ?? ''} → 127.0.0.1:${environment.localPort ?? ''}`
-                : environment.serverUrl}
-              {environment.hasToken ? ' · token saved' : ' · no token'}
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Tooltip
-              content={getRemoteTestTooltip(environment, testErrorById[environment.id] ?? '')}
-              placement="left"
-              className="inline-flex"
-              contentClassName="[--tooltip-width:max-content] [--tooltip-max-width:min(90vw,44rem)] [--tooltip-white-space:nowrap] [--tooltip-overflow-wrap:normal] text-left"
-            >
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] p-0 text-[color:var(--text)] transition-colors hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)]',
-                  testStatusById[environment.id] === 'ok' && 'border-[color:var(--success)]',
-                  testStatusById[environment.id] === 'failed' && 'border-[color:var(--danger)]',
-                )}
-                onClick={() => void test(environment)}
-                aria-label={`Test ${environment.name}`}
-              >
-                {testStatusById[environment.id] === 'testing' ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <PlugZap size={12} />
-                )}
-              </button>
-            </Tooltip>
-            <button
-              type="button"
-              className={cn(composerTextActionButtonClass, 'px-2')}
-              onClick={() => void remove(environment.id)}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ))}
+      {environments.map((environment) => {
+        const isActive = serverState?.environmentId === `remote:${environment.id}`
+        return (
+          <SavedRemoteEnvironmentRow
+            key={environment.id}
+            activationError={activationErrorById[environment.id] ?? ''}
+            activationStatus={activationStatusById[environment.id]}
+            environment={environment}
+            isActive={isActive}
+            isConnected={serverState?.connected === true}
+            testError={testErrorById[environment.id] ?? ''}
+            testStatus={testStatusById[environment.id]}
+            onActivate={(remoteEnvironment) => void activate(remoteEnvironment)}
+            onDelete={(id) => void remove(id)}
+            onTest={(remoteEnvironment) => void test(remoteEnvironment)}
+          />
+        )
+      })}
     </div>
   )
 }
-
 export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
   return [
     {
