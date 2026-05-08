@@ -11,6 +11,7 @@ import type {
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_REQUEST_PREFIX,
+  type HowcodeInstanceManifest,
 } from '../../../../../shared/howcode-server-contracts'
 
 export type SavedRemoteEnvironmentConnectionConfig = {
@@ -276,7 +277,23 @@ export function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnviro
 // to projects, make this diagnose the useful setup failures: start/ensure the SSH tunnel,
 // check whether howcode serve is reachable on the remote, distinguish invalid token from
 // wrong port/host, and report settings mismatches instead of just "is a server running".
-async function testRemoteEnvironmentConnection(
+async function requestRemoteInstanceManifest(baseUrl: string, token: string) {
+  const response = await fetch(
+    new URL(`${HOWCODE_SERVER_REQUEST_PREFIX}getHowcodeInstanceManifest`, baseUrl),
+    {
+      body: JSON.stringify({}),
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+    },
+  )
+  if (!response.ok) throw new Error(`Auth failed (${response.status}).`)
+  return (await response.json()) as HowcodeInstanceManifest
+}
+
+async function discoverRemoteEnvironmentConnection(
   environment: HowcodeRemoteEnvironment,
   token: string | null,
 ) {
@@ -290,22 +307,18 @@ async function testRemoteEnvironmentConnection(
       return { error: `Descriptor failed (${descriptorResponse.status}).`, ok: false }
     }
 
-    const authResponse = await fetch(
-      new URL(`${HOWCODE_SERVER_REQUEST_PREFIX}getShellState`, baseUrl),
-      {
-        body: JSON.stringify({}),
-        headers: {
-          authorization: `Bearer ${token}`,
-          'content-type': 'application/json',
-        },
-        method: 'POST',
-      },
-    )
-    if (!authResponse.ok) {
-      return { error: `Auth failed (${authResponse.status}).`, ok: false }
+    const manifest = await requestRemoteInstanceManifest(baseUrl, token)
+    return {
+      error: null,
+      instanceId: manifest.instanceId,
+      instanceName: manifest.instanceName,
+      ok: true,
+      projectCount: manifest.projects.length,
     }
-    return { error: null, ok: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Auth failed')) {
+      return { error: error.message, ok: false }
+    }
     return { error: `No server at ${baseUrl}. Start howcode serve or the SSH tunnel.`, ok: false }
   }
 }
@@ -360,7 +373,7 @@ export function createRemoteEnvironmentHandlers(
           (remoteEnvironment) => remoteEnvironment.id === id,
         )
         if (!environment) return { error: 'Remote not found.', ok: false }
-        return await testRemoteEnvironmentConnection(
+        return await discoverRemoteEnvironmentConnection(
           environment,
           readToken(database, environment.tokenRef),
         )

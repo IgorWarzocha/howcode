@@ -92,6 +92,9 @@ export type HowcodeRemoteEnvironmentInput = Omit<
 export type HowcodeRemoteEnvironmentTestResult = {
   ok: boolean
   error: string | null
+  instanceId?: string | null
+  instanceName?: string | null
+  projectCount?: number | null
 }
 
 export type HowcodeProjectRemoteEnvironmentAssignment = {

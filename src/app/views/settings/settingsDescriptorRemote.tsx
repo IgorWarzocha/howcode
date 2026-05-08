@@ -26,6 +26,7 @@ type RemoteStore = {
   status: string | null
   testStatusById: Record<string, 'failed' | 'testing' | 'ok'>
   testErrorById: Record<string, string>
+  testSuccessById: Record<string, string>
   version: number
 }
 
@@ -46,6 +47,7 @@ const remoteStore: RemoteStore = {
   status: null,
   testErrorById: {},
   testStatusById: {},
+  testSuccessById: {},
   version: 0,
 }
 
@@ -71,9 +73,11 @@ function setTestStatus(
   id: string,
   status: 'failed' | 'testing' | 'ok',
   error: string | null = null,
+  success: string | null = null,
 ) {
   remoteStore.testStatusById = { ...remoteStore.testStatusById, [id]: status }
   remoteStore.testErrorById = { ...remoteStore.testErrorById, [id]: error ?? '' }
+  remoteStore.testSuccessById = { ...remoteStore.testSuccessById, [id]: success ?? '' }
   emitRemoteStoreChange()
 }
 
@@ -196,12 +200,16 @@ function SaveRemoteControl() {
   )
 }
 
-function getRemoteTestTooltip(environment: HowcodeRemoteEnvironment, error: string) {
-  return error || `Test ${environment.name}`
+function getRemoteTestTooltip(
+  environment: HowcodeRemoteEnvironment,
+  error: string,
+  success: string,
+) {
+  return error || success || `Check ${environment.name}`
 }
 
 function SavedRemoteEnvironmentsControl() {
-  const { environments, testErrorById, testStatusById } = useRemoteSettingsStore()
+  const { environments, testErrorById, testStatusById, testSuccessById } = useRemoteSettingsStore()
   const remove = async (id: string) => {
     await window.piDesktop?.deleteHowcodeRemoteEnvironment?.(id)
     refreshRemoteEnvironments()
@@ -218,6 +226,9 @@ function SavedRemoteEnvironmentsControl() {
         environment.id,
         result?.ok ? 'ok' : 'failed',
         result?.error ?? 'Connection failed.',
+        result?.ok
+          ? `Connected to ${result.instanceName ?? environment.name} · ${result.projectCount ?? 0} projects`
+          : null,
       )
     } catch (error) {
       setTestStatus(
@@ -250,7 +261,11 @@ function SavedRemoteEnvironmentsControl() {
           </div>
           <div className="flex items-center gap-1">
             <Tooltip
-              content={getRemoteTestTooltip(environment, testErrorById[environment.id] ?? '')}
+              content={getRemoteTestTooltip(
+                environment,
+                testErrorById[environment.id] ?? '',
+                testSuccessById[environment.id] ?? '',
+              )}
               placement="left"
               className="inline-flex"
               contentClassName="[--tooltip-width:max-content] [--tooltip-max-width:min(90vw,44rem)] [--tooltip-white-space:nowrap] [--tooltip-overflow-wrap:normal] text-left"
