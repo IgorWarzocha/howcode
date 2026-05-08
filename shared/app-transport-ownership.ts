@@ -9,6 +9,7 @@ export const desktopRequestChannelOwners = {
   restartAppUpdate: 'desktop',
   clearClipboardImages: 'desktop',
   getHowcodeServerState: 'desktop',
+  refreshHowcodeServerState: 'desktop',
   getShellState: 'howcode-server',
   getProjectGitState: 'howcode-server',
   getProjectDiff: 'howcode-server',

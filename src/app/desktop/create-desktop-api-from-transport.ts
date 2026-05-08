@@ -19,6 +19,7 @@ export function createDesktopApiFromTransport(
     restartAppUpdate: () => request('restartAppUpdate', {}),
     clearClipboardImages: () => request('clearClipboardImages', {}),
     getHowcodeServerState: () => request('getHowcodeServerState', {}),
+    refreshHowcodeServerState: () => request('refreshHowcodeServerState', {}),
     getShellState: () => request('getShellState', {}),
     getProjectGitState: (projectId: string) => request('getProjectGitState', { projectId }),
     getProjectDiff: (

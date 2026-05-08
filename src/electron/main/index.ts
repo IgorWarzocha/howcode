@@ -41,17 +41,21 @@ async function fetchServerDescriptor(baseUrl: string) {
   return (await response.json()) as HowcodeServerConnectionState['descriptor']
 }
 
-async function resolveExternalServerTransport(): Promise<ReturnType<
-  typeof createHowcodeServerTransport
-> | null> {
+async function refreshExternalServerState() {
   const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
-  const authToken = getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN')?.trim()
   if (!baseUrl) {
-    return null
+    howcodeServerState = {
+      baseUrl: null,
+      connected: false,
+      descriptor: null,
+      error: shouldDisableLocalServer()
+        ? 'Local Howcode server is disabled and no external server is configured.'
+        : null,
+      mode: 'disabled',
+    }
+    return howcodeServerState
   }
-  if (!authToken) {
-    throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
-  }
+
   try {
     howcodeServerState = {
       baseUrl,
@@ -69,6 +73,21 @@ async function resolveExternalServerTransport(): Promise<ReturnType<
       mode: 'external',
     }
   }
+  return howcodeServerState
+}
+
+async function resolveExternalServerTransport(): Promise<ReturnType<
+  typeof createHowcodeServerTransport
+> | null> {
+  const baseUrl = getProcessEnvironmentVariable('HOWCODE_SERVER_URL')?.trim()
+  const authToken = getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN')?.trim()
+  if (!baseUrl) {
+    return null
+  }
+  if (!authToken) {
+    throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
+  }
+  await refreshExternalServerState()
   return createHowcodeServerTransport({ authToken, baseUrl })
 }
 
@@ -142,6 +161,7 @@ async function bootstrap() {
     appUpdater,
     serverTransport,
     () => howcodeServerState,
+    refreshExternalServerState,
   )
   await openMainWindow()
   void appUpdater.checkForUpdate()

@@ -67,6 +67,10 @@ export type DesktopRequestMap = {
     response: { clearedCount: number; clearFailedCount: number }
   }
   getHowcodeServerState: { params: Record<string, never>; response: HowcodeServerConnectionState }
+  refreshHowcodeServerState: {
+    params: Record<string, never>
+    response: HowcodeServerConnectionState
+  }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
   getProjectDiff: {

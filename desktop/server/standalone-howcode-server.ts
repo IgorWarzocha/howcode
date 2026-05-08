@@ -84,6 +84,7 @@ function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): Deskto
   }
   return {
     getHowcodeServerState: unsupportedDesktopHandler,
+    refreshHowcodeServerState: unsupportedDesktopHandler,
     getAppUpdateState: unsupportedDesktopHandler,
     checkAppUpdate: unsupportedDesktopHandler,
     installAppUpdate: unsupportedDesktopHandler,

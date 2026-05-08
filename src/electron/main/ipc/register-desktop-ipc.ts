@@ -85,6 +85,13 @@ export function createDesktopRequestHandlers(
       error: null,
       mode: 'disabled',
     }),
+    refreshHowcodeServerState: () => ({
+      baseUrl: null,
+      connected: false,
+      descriptor: null,
+      error: null,
+      mode: 'disabled',
+    }),
     ...createAppUpdateHandlers(appUpdater),
     ...createPiThreadsHandlers(runtime.piThreads),
     ...createPiPackagesHandlers(runtime.piThreads),
@@ -107,10 +114,14 @@ export function registerDesktopIpc(
     error: null,
     mode: 'disabled',
   }),
+  refreshHowcodeServerState: () =>
+    | Promise<HowcodeServerConnectionState>
+    | HowcodeServerConnectionState = getHowcodeServerState,
 ) {
   const handlers: DesktopRequestHandlerMap = {
     ...createDesktopRequestHandlers(runtime, appUpdater),
     getHowcodeServerState,
+    refreshHowcodeServerState,
   }
 
   registerRequestHandlers(handlers, getMainWindow, serverTransport)

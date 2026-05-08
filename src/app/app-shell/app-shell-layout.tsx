@@ -727,6 +727,7 @@ function getEffectiveDiffRenderMode(options: {
 
 function ServerConnectionBanner() {
   const [serverState, setServerState] = useState<HowcodeServerConnectionState | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -745,14 +746,36 @@ function ServerConnectionBanner() {
     }
   }, [])
 
+  const handleRetry = () => {
+    setRefreshing(true)
+    void window.piDesktop
+      ?.refreshHowcodeServerState?.()
+      .then((nextState) => setServerState(nextState))
+      .finally(() => setRefreshing(false))
+  }
+
   if (!serverState || serverState.connected) {
     return null
   }
 
   return (
-    <div className="pointer-events-none fixed top-3 left-1/2 z-[80] max-w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-amber-400/40 bg-amber-950/90 px-4 py-2 text-center text-xs text-amber-100 shadow-[0_16px_48px_rgba(0,0,0,0.38)] backdrop-blur-sm">
-      <span className="font-medium">Howcode server disconnected.</span>{' '}
-      {serverState.error ?? 'Server-owned actions are unavailable.'}
+    <div className="fixed top-3 left-1/2 z-[80] flex max-w-[min(840px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-950/90 px-4 py-2 text-xs text-amber-100 shadow-[0_16px_48px_rgba(0,0,0,0.38)] backdrop-blur-sm">
+      <div className="min-w-0">
+        <span className="font-medium">Howcode server disconnected.</span>{' '}
+        <span className="text-amber-100/85">
+          {serverState.error ?? 'Server-owned actions are unavailable.'}
+        </span>
+      </div>
+      {serverState.mode === 'external' ? (
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-amber-300/30 px-2 py-1 font-medium text-amber-50 transition hover:bg-amber-300/15 disabled:opacity-60"
+          disabled={refreshing}
+          onClick={handleRetry}
+        >
+          {refreshing ? 'Checking…' : 'Retry'}
+        </button>
+      ) : null}
     </div>
   )
 }

@@ -96,6 +96,13 @@ const handlers: DesktopRequestHandlerMap = {
     error: null,
     mode: 'local',
   }),
+  refreshHowcodeServerState: () => ({
+    baseUrl: null,
+    connected: true,
+    descriptor: null,
+    error: null,
+    mode: 'local',
+  }),
   getAppUpdateState: () => devAppUpdateState,
   checkAppUpdate: () => devAppUpdateState,
   installAppUpdate: () => devAppUpdateState,

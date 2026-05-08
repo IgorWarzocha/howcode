@@ -65,6 +65,7 @@ declare global {
       restartAppUpdate?: () => Promise<AppUpdateState>
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
+      refreshHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
       getProjectDiff?: (
