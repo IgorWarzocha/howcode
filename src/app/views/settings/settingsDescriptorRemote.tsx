@@ -79,12 +79,6 @@ function RemoteEnvironmentSettings() {
 
   return (
     <div className="w-[34rem] max-w-full space-y-4 text-[12px] text-[color:var(--muted)]">
-      <p>
-        Howcode uses your existing SSH config and ssh-agent. It stores host aliases and server
-        metadata, but never stores SSH keys or passwords. Server tokens are stored separately as
-        encrypted credentials.
-      </p>
-
       <div className="flex gap-2">
         {(['ssh', 'direct'] as const).map((kind) => (
           <button
@@ -104,7 +98,7 @@ function RemoteEnvironmentSettings() {
       <div className="grid gap-2 sm:grid-cols-2">
         <input
           className={settingsInputClass}
-          placeholder="Name"
+          placeholder="Label (optional)"
           value={draft.name}
           onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
         />
@@ -200,7 +194,8 @@ export function buildRemoteSettingsDescriptors(): SettingDescriptor[] {
   return [
     {
       category: 'remote',
-      description: 'Remote Howcode servers and SSH-managed environments.',
+      description:
+        'Configure direct or SSH-managed remote servers. Howcode uses your existing SSH config and ssh-agent; it does not store SSH keys or passwords.',
       id: 'remote.environments',
       keywords: 'remote ssh server lan environment token',
       render: () => <RemoteEnvironmentSettings />,
