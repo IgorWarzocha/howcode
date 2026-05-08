@@ -396,14 +396,7 @@ function hasStandaloneServer(installDir, target) {
 }
 
 function getServeArgs(args) {
-  const serveArgs = args.slice(1)
-  const hasRepoRoot = serveArgs.some(
-    (arg) => arg === '--repo-root' || arg.startsWith('--repo-root='),
-  )
-  if (!hasRepoRoot) {
-    serveArgs.push('--repo-root', process.cwd())
-  }
-  return serveArgs
+  return args.slice(1)
 }
 
 function serve(executablePath, paths, target, args) {
