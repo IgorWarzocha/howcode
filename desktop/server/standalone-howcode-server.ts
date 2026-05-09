@@ -1,8 +1,12 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AppTransport } from '../../shared/app-transport'
+import type { Project } from '../../shared/desktop-contracts'
 import type { DesktopRequestHandlerMap } from '../../shared/desktop-ipc'
+import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory'
+import type { HowcodeInstanceManifest } from '../../shared/howcode-server-contracts'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_WS_PATH,
@@ -56,6 +60,64 @@ function parseOptions(args = process.argv.slice(2)): CliOptions {
   return { host, port, runtimeRoot, token, webRoot }
 }
 
+type StandaloneInstanceIdentity = {
+  instanceId: string
+}
+
+function getStandaloneIdentityPath(runtimeRoot: string) {
+  return resolve(runtimeRoot, '.howcode', 'howcode-instance.json')
+}
+
+async function getStandaloneInstanceId(runtimeRoot: string) {
+  const identityPath = getStandaloneIdentityPath(runtimeRoot)
+  const identity = (await readFile(identityPath, 'utf8')
+    .then((content) => JSON.parse(content) as StandaloneInstanceIdentity)
+    .catch(() => null)) as StandaloneInstanceIdentity | null
+  if (identity?.instanceId) return identity.instanceId
+
+  const instanceId = randomUUID()
+  await mkdir(resolve(identityPath, '..'), { recursive: true })
+  await writeFile(
+    identityPath,
+    `${JSON.stringify({ instanceId }, null, 2)}
+`,
+  )
+  return instanceId
+}
+
+function getStandaloneFallbackInstanceId(runtimeRoot: string) {
+  return `howcode:${createHash('sha256').update(runtimeRoot).digest('hex').slice(0, 16)}`
+}
+
+function mapStandaloneProject(project: Project) {
+  return {
+    id: project.resolvedId ?? project.id,
+    latestModifiedMs: project.latestModifiedMs ?? null,
+    name: project.name,
+    repoOriginUrl: project.repoOriginUrl ?? null,
+    threadCount: project.threadCount ?? project.threads.length,
+  }
+}
+
+function createStandaloneInstanceManifestHandler(input: {
+  runtime: DesktopRuntimeModules
+  runtimeRoot: string
+  serverUrl: string | null
+}) {
+  return async (): Promise<HowcodeInstanceManifest> => {
+    const shellState = await input.runtime.piThreads.loadShellState(getDesktopWorkingDirectory())
+    const instanceId = await getStandaloneInstanceId(input.runtimeRoot).catch(() =>
+      getStandaloneFallbackInstanceId(input.runtimeRoot),
+    )
+    return {
+      instanceId,
+      instanceName: process.env['HOWCODE_INSTANCE_NAME'] ?? 'Howcode',
+      projects: shellState.projects.map(mapStandaloneProject),
+      serverUrl: input.serverUrl,
+    }
+  }
+}
+
 async function importDesktopModule<TModule>(repoRoot: string, fileName: string) {
   const modulePath = resolve(repoRoot, 'build', 'desktop', fileName)
   return (await import(pathToFileURL(modulePath).href)) as TModule
@@ -74,13 +136,18 @@ async function loadRuntime(repoRoot: string): Promise<DesktopRuntimeModules> {
   return { piThreads, piSkills, skillCreator, terminalManager }
 }
 
-function createStandaloneRequestHandlers(runtime: DesktopRuntimeModules): DesktopRequestHandlerMap {
+function createStandaloneRequestHandlers(input: {
+  runtime: DesktopRuntimeModules
+  runtimeRoot: string
+  serverUrl: string | null
+}): DesktopRequestHandlerMap {
+  const { runtime } = input
   const unsupportedDesktopHandler = () => {
     throw new Error('This desktop-only operation is unavailable in standalone server mode.')
   }
   return {
     getHowcodeServerState: unsupportedDesktopHandler,
-    getHowcodeInstanceManifest: unsupportedDesktopHandler,
+    getHowcodeInstanceManifest: createStandaloneInstanceManifestHandler(input),
     refreshHowcodeServerState: unsupportedDesktopHandler,
     listHowcodeRemoteEnvironments: unsupportedDesktopHandler,
     saveHowcodeRemoteEnvironment: unsupportedDesktopHandler,
@@ -137,7 +204,11 @@ async function main() {
       webRoot: options.webRoot,
     },
     eventTransport: createRuntimeEventTransport(runtime),
-    handlers: createStandaloneRequestHandlers(runtime),
+    handlers: createStandaloneRequestHandlers({
+      runtime,
+      runtimeRoot: options.runtimeRoot,
+      serverUrl: null,
+    }),
   })
 
   const descriptorUrl = new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, server.baseUrl).toString()
