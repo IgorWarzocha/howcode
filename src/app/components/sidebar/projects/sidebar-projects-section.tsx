@@ -256,6 +256,7 @@ function useSidebarRemoteProjects(input: {
   const [remoteProjects, setRemoteProjects] = useState<Project[]>([])
   const [activeRemoteEnvironmentId, setActiveRemoteEnvironmentId] = useState<string | null>(null)
   const [showRemoteProjects, setShowRemoteProjects] = useState(true)
+  const remoteHydratedRef = useRef(false)
 
   const refreshRemoteEnvironments = useCallback(async () => {
     const remotes = (await window.piDesktop?.listHowcodeRemoteEnvironments?.()) ?? []
@@ -311,6 +312,8 @@ function useSidebarRemoteProjects(input: {
   )
 
   useEffect(() => {
+    if (remoteHydratedRef.current) return
+    remoteHydratedRef.current = true
     let cancelled = false
     void refreshRemoteEnvironments()
     void window.piDesktop?.getHowcodeServerState?.().then((serverState) => {
@@ -322,13 +325,13 @@ function useSidebarRemoteProjects(input: {
       if (serverState?.connected && remoteEnvironmentId) {
         setActiveRemoteEnvironmentId(remoteEnvironmentId)
         setRemoteStatus('connected')
-        void connectRemoteEnvironment(remoteEnvironmentId)
+        setShowRemoteProjects(true)
       }
     })
     return () => {
       cancelled = true
     }
-  }, [connectRemoteEnvironment, refreshRemoteEnvironments])
+  }, [refreshRemoteEnvironments])
 
   const disconnectRemoteEnvironment = async () => {
     setRemoteStatus(null)

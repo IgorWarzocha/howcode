@@ -329,14 +329,18 @@ async function ensureSavedSshRemoteEnvironment(config: {
     throw new Error('SSH host alias is required.')
   }
 
-  sshHowcodeServer?.close()
-  sshHowcodeServer = await ensureSshHowcodeEnvironmentPromise({
+  const previousConnection = sshHowcodeServer
+  const nextConnection = await ensureSshHowcodeEnvironmentPromise({
     host: config.environment.sshHost,
     localPort: 0,
     remoteCommand: config.environment.remoteCommand ?? null,
     remotePort: config.environment.remotePort ?? 39317,
     token: config.token,
   })
+  sshHowcodeServer = nextConnection
+  if (previousConnection && previousConnection.baseUrl !== nextConnection.baseUrl) {
+    previousConnection.close()
+  }
   return sshHowcodeServer
 }
 
@@ -396,11 +400,24 @@ function createResilientSshServerTransport(config: {
   }
 }
 
+async function refreshAlreadyActiveRemoteEnvironment(remoteEnvironmentId: string) {
+  if (activeRemoteServer?.remoteEnvironmentId !== remoteEnvironmentId || !activeServerTransport) {
+    return null
+  }
+  return await refreshConnectedServerState(
+    activeRemoteServer.environment,
+    activeRemoteServer.baseUrl,
+  )
+}
+
 async function setActiveRemoteEnvironment(config: {
   environment: HowcodeRemoteEnvironment
   baseUrl: string
   token: string
 }) {
+  const alreadyActiveState = await refreshAlreadyActiveRemoteEnvironment(config.environment.id)
+  if (alreadyActiveState) return alreadyActiveState
+
   const connection =
     config.environment.kind === 'ssh' ? await ensureSavedSshRemoteEnvironment(config) : null
   const baseUrl = connection?.baseUrl ?? config.baseUrl
