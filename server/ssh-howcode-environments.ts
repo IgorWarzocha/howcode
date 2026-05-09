@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:net'
 import type { HowcodeEnvironment } from '../shared/howcode-server-contracts'
 
 export type SshHowcodeEnvironmentConfig = {
@@ -22,6 +23,15 @@ type ManagedSshProcess = {
   label: string
   recentOutput: () => string
 }
+
+type RemoteServerKind = 'external' | 'managed'
+
+type RemoteLaunchResult = {
+  remotePort: number
+  serverKind: RemoteServerKind
+}
+
+const remotePortScanWindow = 200
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -82,28 +92,181 @@ function shellQuote(value: string) {
   return `'${value.replaceAll("'", `'\\''`)}'`
 }
 
-function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
-  const serveArgs = [
-    'serve',
-    '--host',
-    '127.0.0.1',
-    '--port',
-    shellQuote(String(config.remotePort)),
-    '--token',
-    shellQuote(config.token),
-  ].join(' ')
-  const serveArgsWithoutCommand = serveArgs.slice('serve '.length)
-  const command = [
+function remoteStateKey(host: string) {
+  return Buffer.from(host).toString('base64url').slice(0, 80)
+}
+
+function buildRemoteRunnerScript(config: SshHowcodeEnvironmentConfig) {
+  if (config.remoteCommand?.trim()) {
+    const template = config.remoteCommand.trim()
+    return [
+      '#!/bin/sh',
+      'set -eu',
+      `REMOTE_PORT="$1"`,
+      `TOKEN="$2"`,
+      template.replaceAll('@@PORT@@', '"$REMOTE_PORT"').replaceAll('@@TOKEN@@', '"$TOKEN"'),
+    ].join('\n')
+  }
+
+  return [
+    '#!/bin/sh',
+    'set -eu',
+    'REMOTE_PORT="$1"',
+    'TOKEN="$2"',
     'export PATH="$HOME/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH"',
-    `if [ -z "\${SHELL:-}" ] || [ ! -x "\${SHELL:-}" ]; then if command -v bash >/dev/null 2>&1; then SHELL="$(command -v bash)"; else SHELL="/bin/sh"; fi; fi`,
+    [
+      'if [ -z "$',
+      '{SHELL:-}" ] || [ ! -x "$',
+      '{SHELL:-}" ]; then if command -v bash >/dev/null 2>&1; then SHELL="$(command -v bash)"; else SHELL="/bin/sh"; fi; fi',
+    ].join(''),
     'export SHELL',
     'if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode"; fi',
-    `if command -v howcode >/dev/null 2>&1; then exec howcode ${serveArgs}; fi`,
-    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && git fetch origin issue-226-server-mode-research && git reset --hard origin/issue-226-server-mode-research && bun install --frozen-lockfile && bun run build:runtime && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=${shellQuote(config.host)} && exec bun run server:dev -- ${serveArgsWithoutCommand}; fi`,
+    'if command -v howcode >/dev/null 2>&1; then exec howcode serve --host 127.0.0.1 --port "$REMOTE_PORT" --token "$TOKEN"; fi',
+    'if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && git fetch origin issue-226-server-mode-research && git reset --hard origin/issue-226-server-mode-research && bun install --frozen-lockfile && bun run build:runtime && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=' +
+      shellQuote(config.host) +
+      ' && exec env HOWCODE_RUNTIME_ROOT=. ELECTRON_RUN_AS_NODE=1 electron build/desktop/standalone-howcode-server.mjs --port "$REMOTE_PORT" --token "$TOKEN"; fi',
     'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
     'exit 127',
-  ].join('; ')
-  return `bash -lc ${shellQuote(command)}`
+  ].join('\n')
+}
+
+function buildRemoteLaunchScript(config: SshHowcodeEnvironmentConfig) {
+  const runnerScript = buildRemoteRunnerScript(config)
+  return `set -eu
+STATE_KEY="$1"
+DEFAULT_REMOTE_PORT="$2"
+SCAN_WINDOW="$3"
+TOKEN="$4"
+STATE_DIR="$HOME/.howcode/ssh-launch/$STATE_KEY"
+PORT_FILE="$STATE_DIR/port"
+PID_FILE="$STATE_DIR/pid"
+MANAGED_FILE="$STATE_DIR/managed"
+LOG_FILE="$STATE_DIR/server.log"
+RUNNER_FILE="$STATE_DIR/run-howcode.sh"
+RUNNER_NEXT="$STATE_DIR/run-howcode.next.$$"
+mkdir -p "$STATE_DIR"
+cleanup_runner_next() { rm -f "$RUNNER_NEXT"; }
+trap cleanup_runner_next EXIT
+cat >"$RUNNER_NEXT" <<'HOWCODE_RUNNER'
+${runnerScript}
+HOWCODE_RUNNER
+RUNNER_CHANGED=0
+if [ ! -f "$RUNNER_FILE" ] || ! cmp -s "$RUNNER_NEXT" "$RUNNER_FILE"; then RUNNER_CHANGED=1; fi
+mv "$RUNNER_NEXT" "$RUNNER_FILE"
+chmod 700 "$RUNNER_FILE"
+pick_port() {
+  node - "$PORT_FILE" "$DEFAULT_REMOTE_PORT" "$SCAN_WINDOW" <<'NODE'
+const fs = require('node:fs')
+const net = require('node:net')
+const filePath = process.argv[2] || ''
+const defaultPort = Number.parseInt(process.argv[3] || '', 10)
+const scanWindow = Number.parseInt(process.argv[4] || '', 10)
+const raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8').trim() : ''
+const preferred = Number.parseInt(raw, 10)
+const start = Number.isInteger(preferred) ? preferred : defaultPort
+const end = start + scanWindow
+function tryPort(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+    server.unref()
+    server.once('error', () => resolve(false))
+    server.listen(port, '127.0.0.1', () => server.close((error) => resolve(error ? false : port)))
+  })
+}
+;(async () => {
+  for (let port = start; port < end; port += 1) {
+    const available = await tryPort(port)
+    if (available) {
+      process.stdout.write(String(port))
+      return
+    }
+  }
+  process.exit(1)
+})().catch(() => process.exit(1))
+NODE
+}
+wait_ready() {
+  node - "$REMOTE_PORT" "$1" <<'NODE'
+const http = require('node:http')
+const port = Number.parseInt(process.argv[2] || '', 10)
+const timeoutMs = Number.parseInt(process.argv[3] || '', 10)
+const deadline = Date.now() + timeoutMs
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)) }
+function probe() {
+  return new Promise((resolve) => {
+    const req = http.get({ hostname: '127.0.0.1', port, path: '/healthz', timeout: 1000 }, (res) => {
+      res.resume()
+      res.once('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300))
+    })
+    req.once('timeout', () => { req.destroy(); resolve(false) })
+    req.once('error', () => resolve(false))
+  })
+}
+;(async () => {
+  while (Date.now() < deadline) {
+    if (await probe()) process.exit(0)
+    await sleep(100)
+  }
+  process.exit(1)
+})().catch(() => process.exit(1))
+NODE
+}
+wait_for_pid_exit() {
+  PID_TO_WAIT="$1"
+  WAIT_COUNT=0
+  while kill -0 "$PID_TO_WAIT" 2>/dev/null && [ "$WAIT_COUNT" -lt 20 ]; do WAIT_COUNT=$((WAIT_COUNT + 1)); sleep 0.1; done
+}
+REMOTE_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+REMOTE_PORT="$(cat "$PORT_FILE" 2>/dev/null || true)"
+REMOTE_MANAGED="$(cat "$MANAGED_FILE" 2>/dev/null || true)"
+if [ "$REMOTE_MANAGED" = "managed" ] && [ -n "$REMOTE_PID" ] && [ -n "$REMOTE_PORT" ] && kill -0 "$REMOTE_PID" 2>/dev/null; then
+  if [ "$RUNNER_CHANGED" -eq 1 ] || ! wait_ready 2000; then
+    kill "$REMOTE_PID" 2>/dev/null || true
+    wait_for_pid_exit "$REMOTE_PID"
+    REMOTE_PID=""
+    REMOTE_PORT=""
+    REMOTE_MANAGED=""
+  fi
+else
+  REMOTE_PID=""
+  REMOTE_PORT=""
+  REMOTE_MANAGED=""
+fi
+if [ -z "$REMOTE_PID" ] || [ -z "$REMOTE_PORT" ]; then
+  REMOTE_PORT="$(pick_port)" || true
+  if [ -z "$REMOTE_PORT" ]; then echo 'Failed to find an available remote port.' >&2; exit 1; fi
+  nohup "$RUNNER_FILE" "$REMOTE_PORT" "$TOKEN" >>"$LOG_FILE" 2>&1 < /dev/null &
+  REMOTE_PID="$!"
+  printf '%s\n' "$REMOTE_PID" >"$PID_FILE"
+  printf '%s\n' "$REMOTE_PORT" >"$PORT_FILE"
+  printf 'managed\n' >"$MANAGED_FILE"
+  REMOTE_MANAGED="managed"
+  if ! wait_ready 15000; then
+    echo "Remote Howcode server did not become ready on 127.0.0.1:$REMOTE_PORT." >&2
+    tail -n 80 "$LOG_FILE" >&2 2>/dev/null || true
+    kill "$REMOTE_PID" 2>/dev/null || true
+    wait_for_pid_exit "$REMOTE_PID"
+    rm -f "$PID_FILE" "$PORT_FILE" "$MANAGED_FILE"
+    exit 1
+  fi
+fi
+printf '{"remotePort":%s,"serverKind":"%s"}\n' "$REMOTE_PORT" "\${REMOTE_MANAGED:-managed}"
+`
+}
+
+function buildRemoteStopScript(config: SshHowcodeEnvironmentConfig) {
+  return `set -eu
+STATE_DIR="$HOME/.howcode/ssh-launch/${remoteStateKey(config.host)}"
+PID_FILE="$STATE_DIR/pid"
+MANAGED_FILE="$STATE_DIR/managed"
+REMOTE_MANAGED="$(cat "$MANAGED_FILE" 2>/dev/null || true)"
+REMOTE_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+if [ "$REMOTE_MANAGED" = "managed" ] && [ -n "$REMOTE_PID" ] && kill -0 "$REMOTE_PID" 2>/dev/null; then
+  kill "$REMOTE_PID" 2>/dev/null || true
+fi
+rm -f "$PID_FILE" "$STATE_DIR/port" "$MANAGED_FILE"
+printf '{"stopped":true}\n'
+`
 }
 
 async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeoutMs: number) {
@@ -145,15 +308,102 @@ async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeout
   )
 }
 
-async function canReachAuthenticatedServer(baseUrl: string, token: string) {
-  const descriptor = await fetch(`${baseUrl}/.well-known/howcode/server`).catch(() => null)
-  if (descriptor?.ok !== true) return false
-  const response = await fetch(`${baseUrl}/api/app/request/getHowcodeInstanceManifest`, {
-    body: '{}',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    method: 'POST',
-  }).catch(() => null)
-  return response?.ok === true
+async function waitForAuthenticatedServer(baseUrl: string, token: string, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs
+  let lastError: unknown = null
+  while (Date.now() < deadline) {
+    try {
+      const descriptor = await fetch(`${baseUrl}/.well-known/howcode/server`)
+      if (descriptor.ok) {
+        const response = await fetch(`${baseUrl}/api/app/request/getHowcodeInstanceManifest`, {
+          body: '{}',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          method: 'POST',
+        })
+        if (response.ok) return
+        lastError = new Error(`manifest probe failed (${response.status})`)
+      }
+    } catch (error) {
+      lastError = error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150))
+  }
+  throw new Error(
+    `Timed out waiting for authenticated Howcode server at ${baseUrl}${lastError instanceof Error ? `: ${lastError.message}` : ''}`,
+  )
+}
+
+async function runSshScript(config: SshHowcodeEnvironmentConfig, script: string, args: string[]) {
+  const child = spawn('ssh', ['-o', 'BatchMode=yes', config.host, 'sh', '-s', '--', ...args], {
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  let stdout = ''
+  let stderr = ''
+  child.stdout?.on('data', (chunk) => {
+    stdout += String(chunk)
+  })
+  child.stderr?.on('data', (chunk) => {
+    stderr += String(chunk)
+    process.stderr.write(`[howcode-ssh-script] ${chunk}`)
+  })
+  child.stdin?.end(script)
+  const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
+    (resolve, reject) => {
+      child.once('error', reject)
+      child.once('exit', (code, signal) => resolve({ code, signal }))
+    },
+  )
+  if (exit.code !== 0) {
+    throw new Error(
+      `SSH script failed (${exit.code ?? exit.signal ?? 'error'}): ${stderr.trim() || stdout.trim()}`,
+    )
+  }
+  return stdout
+}
+
+function parseRemoteLaunchResult(stdout: string): RemoteLaunchResult {
+  const line = stdout
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .at(-1)
+  if (!line) throw new Error('SSH launch did not return a remote port.')
+  const parsed = JSON.parse(line) as Partial<RemoteLaunchResult>
+  const remotePort = parsed.remotePort
+  if (typeof remotePort !== 'number' || !Number.isInteger(remotePort) || remotePort <= 0) {
+    throw new Error(`SSH launch returned an invalid remote port: ${String(remotePort)}.`)
+  }
+  return {
+    remotePort,
+    serverKind: parsed.serverKind === 'external' ? 'external' : 'managed',
+  }
+}
+
+async function launchOrReuseRemoteServer(config: SshHowcodeEnvironmentConfig) {
+  const stdout = await runSshScript(config, buildRemoteLaunchScript(config), [
+    remoteStateKey(config.host),
+    String(config.remotePort),
+    String(remotePortScanWindow),
+    config.token,
+  ])
+  return parseRemoteLaunchResult(stdout)
+}
+
+async function reserveLoopbackPort() {
+  return await new Promise<number>((resolve, reject) => {
+    const server = createServer()
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+      const port = typeof address === 'object' && address ? address.port : null
+      server.close((error) => {
+        if (error) reject(error)
+        else if (port) resolve(port)
+        else reject(new Error('Failed to reserve loopback port.'))
+      })
+    })
+  })
 }
 
 export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentConfig | null {
@@ -161,7 +411,7 @@ export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentC
   if (!host) return null
   return {
     host,
-    localPort: parsePort(getProcessEnvironmentVariable('HOWCODE_SSH_LOCAL_PORT'), 49317),
+    localPort: parsePort(getProcessEnvironmentVariable('HOWCODE_SSH_LOCAL_PORT'), 0),
     remoteCommand: getProcessEnvironmentVariable('HOWCODE_SSH_REMOTE_COMMAND')?.trim() || null,
     remotePort: parsePort(getProcessEnvironmentVariable('HOWCODE_SSH_REMOTE_PORT'), 39317),
     token: getProcessEnvironmentVariable('HOWCODE_SSH_SERVER_TOKEN')?.trim() || randomUUID(),
@@ -171,6 +421,8 @@ export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentC
 export async function ensureSshHowcodeServer(
   config: SshHowcodeEnvironmentConfig,
 ): Promise<SshHowcodeEnvironmentConnection> {
+  const remoteServer = await launchOrReuseRemoteServer(config)
+  const localPort = config.localPort || (await reserveLoopbackPort())
   const tunnelProcess = spawnManaged(
     'ssh',
     [
@@ -178,9 +430,14 @@ export async function ensureSshHowcodeServer(
       'BatchMode=yes',
       '-o',
       'ExitOnForwardFailure=yes',
+      '-o',
+      'ServerAliveInterval=15',
+      '-o',
+      'ServerAliveCountMax=3',
+      '-n',
       '-N',
       '-L',
-      `127.0.0.1:${config.localPort}:127.0.0.1:${config.remotePort}`,
+      `127.0.0.1:${localPort}:127.0.0.1:${remoteServer.remotePort}`,
       config.host,
     ],
     'howcode-ssh-tunnel',
@@ -193,27 +450,14 @@ export async function ensureSshHowcodeServer(
     throw error
   }
 
-  const baseUrl = `http://127.0.0.1:${config.localPort}`
-  let remoteServerProcess: ManagedSshProcess | null = null
-
-  const shouldStartManagedServer = !(await canReachAuthenticatedServer(baseUrl, config.token))
-
-  if (shouldStartManagedServer) {
-    const remoteCommand = config.remoteCommand ?? defaultRemoteServeCommand(config)
-    remoteServerProcess = spawnManaged(
-      'ssh',
-      ['-o', 'BatchMode=yes', config.host, remoteCommand],
-      'howcode-ssh-serve',
-    )
-
-    try {
-      await assertProcessDoesNotExitEarly(remoteServerProcess, 750)
-    } catch (error) {
-      closeChild(tunnelProcess.child)
-      closeChild(remoteServerProcess?.child ?? null)
-      throw error
-    }
+  const baseUrl = `http://127.0.0.1:${localPort}`
+  try {
+    await waitForAuthenticatedServer(baseUrl, config.token, 20_000)
+  } catch (error) {
+    closeChild(tunnelProcess.child)
+    throw error
   }
+
   const environment: HowcodeEnvironment = {
     id: `ssh:${config.host}`,
     kind: 'ssh-server',
@@ -222,8 +466,8 @@ export async function ensureSshHowcodeServer(
     serverUrl: baseUrl,
     ssh: {
       host: config.host,
-      localPort: config.localPort,
-      remotePort: config.remotePort,
+      localPort,
+      remotePort: remoteServer.remotePort,
     },
   }
 
@@ -233,7 +477,18 @@ export async function ensureSshHowcodeServer(
     token: config.token,
     close: () => {
       closeChild(tunnelProcess.child)
-      closeChild(remoteServerProcess?.child ?? null)
+      if (remoteServer.serverKind === 'managed') {
+        void runSshScript(config, buildRemoteStopScript(config), []).catch((error) => {
+          console.warn('Failed to stop managed remote Howcode server', error)
+        })
+      }
     },
   }
+}
+
+export const sshHowcodeEnvironmentInternals = {
+  buildRemoteLaunchScript,
+  buildRemoteRunnerScript,
+  parseRemoteLaunchResult,
+  remoteStateKey,
 }

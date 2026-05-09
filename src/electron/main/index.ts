@@ -268,7 +268,7 @@ function createEnvironmentFromSavedRemote(
       serverUrl: baseUrl,
       ssh: {
         host: remoteEnvironment.sshHost ?? remoteEnvironment.name,
-        localPort: remoteEnvironment.localPort ?? 49317,
+        localPort: remoteEnvironment.localPort ?? 0,
         remotePort: remoteEnvironment.remotePort ?? 39317,
       },
     }
@@ -294,7 +294,7 @@ async function ensureSavedSshRemoteEnvironment(config: {
   sshHowcodeServer?.close()
   sshHowcodeServer = await ensureSshHowcodeServer({
     host: config.environment.sshHost,
-    localPort: config.environment.localPort ?? 49317,
+    localPort: config.environment.localPort ?? 0,
     remoteCommand: config.environment.remoteCommand ?? null,
     remotePort: config.environment.remotePort ?? 39317,
     token: config.token,
@@ -323,9 +323,10 @@ function createResilientSshServerTransport(config: {
       remoteEnvironmentId: config.environment.id,
       sshConfig: {
         host: config.environment.sshHost ?? config.environment.name,
-        localPort: config.environment.localPort ?? 49317,
+        localPort: connection.environment.ssh?.localPort ?? config.environment.localPort ?? 0,
         remoteCommand: config.environment.remoteCommand ?? null,
-        remotePort: config.environment.remotePort ?? 39317,
+        remotePort:
+          connection.environment.ssh?.remotePort ?? config.environment.remotePort ?? 39317,
         token: config.token,
       },
     }
@@ -369,7 +370,7 @@ async function setActiveRemoteEnvironment(config: {
   if (config.environment.kind === 'ssh') {
     activeRemoteServer.sshConfig = {
       host: config.environment.sshHost ?? config.environment.name,
-      localPort: config.environment.localPort ?? 49317,
+      localPort: environment.ssh?.localPort ?? config.environment.localPort ?? 0,
       remoteCommand: config.environment.remoteCommand ?? null,
       remotePort: config.environment.remotePort ?? 39317,
       token: config.token,

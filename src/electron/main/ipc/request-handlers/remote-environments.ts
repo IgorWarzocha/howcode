@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 import { app, safeStorage } from 'electron'
+import {
+  ensureSshHowcodeServer,
+  type SshHowcodeEnvironmentConnection,
+} from '../../../../../server/ssh-howcode-environments'
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
 import type {
   HowcodeRemoteEnvironment,
@@ -231,7 +235,7 @@ function normalizeSshEnvironment(
     hasToken: Boolean(input.token?.trim()),
     id,
     kind: 'ssh',
-    localPort: normalizePort(input.localPort) ?? 49317,
+    localPort: normalizePort(input.localPort),
     name: input.name.trim() || sshHost || 'SSH server',
     remoteCommand: input.remoteCommand?.trim() || null,
     remotePort: normalizePort(input.remotePort) ?? 39317,
@@ -269,8 +273,8 @@ function normalizeEnvironment(input: HowcodeRemoteEnvironmentInput): HowcodeRemo
 
 export function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnvironment) {
   if (environment.kind === 'direct') return environment.serverUrl
-  const localPort = normalizePort(environment.localPort) ?? 49317
-  return `http://127.0.0.1:${localPort}`
+  const localPort = normalizePort(environment.localPort)
+  return localPort ? `http://127.0.0.1:${localPort}` : null
 }
 
 // TODO(server-mode): This is only an endpoint smoke check. Once remotes are attached
@@ -297,9 +301,25 @@ async function discoverRemoteEnvironmentConnection(
   environment: HowcodeRemoteEnvironment,
   token: string | null,
 ) {
-  const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
-  if (!baseUrl) return { error: 'Missing server URL.', ok: false }
   if (!token) return { error: 'Enter the token used by howcode serve, then save again.', ok: false }
+
+  const cleanup: Array<() => void> = []
+  const baseUrl =
+    environment.kind === 'ssh'
+      ? await (async () => {
+          if (!environment.sshHost) throw new Error('SSH host alias is required.')
+          const sshConnection: SshHowcodeEnvironmentConnection = await ensureSshHowcodeServer({
+            host: environment.sshHost,
+            localPort: environment.localPort ?? 0,
+            remoteCommand: environment.remoteCommand ?? null,
+            remotePort: environment.remotePort ?? 39317,
+            token,
+          })
+          cleanup.push(sshConnection.close)
+          return sshConnection.baseUrl
+        })()
+      : resolveRemoteEnvironmentBaseUrl(environment)
+  if (!baseUrl) return { error: 'Missing server URL.', ok: false }
 
   try {
     const descriptorResponse = await fetch(new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, baseUrl))
@@ -320,6 +340,8 @@ async function discoverRemoteEnvironmentConnection(
       return { error: error.message, ok: false }
     }
     return { error: `No server at ${baseUrl}. Start howcode serve or the SSH tunnel.`, ok: false }
+  } finally {
+    for (const close of cleanup) close()
   }
 }
 
