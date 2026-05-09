@@ -113,6 +113,10 @@ function remoteStateKey(host: string) {
 }
 
 function buildRemoteRunnerScript(config: SshHowcodeEnvironmentConfig) {
+  const remoteRepoDir = getProcessEnvironmentVariable('HOWCODE_SSH_REMOTE_REPO_DIR')?.trim()
+  const remoteRepoBranch =
+    getProcessEnvironmentVariable('HOWCODE_SSH_REMOTE_REPO_BRANCH')?.trim() ??
+    'issue-226-server-mode-research'
   if (config.remoteCommand?.trim()) {
     const template = config.remoteCommand.trim()
     return [
@@ -130,17 +134,19 @@ function buildRemoteRunnerScript(config: SshHowcodeEnvironmentConfig) {
     'REMOTE_PORT="$1"',
     'TOKEN="$2"',
     'export PATH="$HOME/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH"',
+    `HOWCODE_REPO_DIR=${remoteRepoDir ? shellQuote(remoteRepoDir) : '"$HOME/howcode"'}`,
+    `HOWCODE_REPO_BRANCH=${shellQuote(remoteRepoBranch)}`,
     [
       'if [ -z "$',
       '{SHELL:-}" ] || [ ! -x "$',
       '{SHELL:-}" ]; then if command -v bash >/dev/null 2>&1; then SHELL="$(command -v bash)"; else SHELL="/bin/sh"; fi; fi',
     ].join(''),
     'export SHELL',
-    'if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && git fetch origin issue-226-server-mode-research && git reset --hard origin/issue-226-server-mode-research && bun install --frozen-lockfile && bun run build:runtime && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=' +
+    'if [ -d "$HOWCODE_REPO_DIR" ]; then cd "$HOWCODE_REPO_DIR" && git fetch origin "$HOWCODE_REPO_BRANCH" && git reset --hard "origin/$HOWCODE_REPO_BRANCH" && bun install --frozen-lockfile && bun run build:runtime && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=' +
       shellQuote(config.host) +
       ' && exec env HOWCODE_RUNTIME_ROOT=. ELECTRON_RUN_AS_NODE=1 electron build/desktop/standalone-howcode-server.mjs --port "$REMOTE_PORT" --token "$TOKEN"; fi',
     'if command -v howcode >/dev/null 2>&1; then exec howcode serve --host 127.0.0.1 --port "$REMOTE_PORT" --token "$TOKEN"; fi',
-    'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
+    'echo "Unable to find howcode. Install the howcode CLI or set HOWCODE_SSH_REMOTE_REPO_DIR to a repo checkout." >&2',
     'exit 127',
   ].join('\n')
 }

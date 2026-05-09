@@ -27,6 +27,8 @@ describe('ssh howcode environment internals', () => {
     expect(script).toContain('pick_port()')
     expect(script).toContain('serverKind":"external')
     expect(script).toContain('server.log')
+    expect(script).toContain('HOWCODE_REPO_DIR="$HOME/howcode"')
+    expect(script).toContain('HOWCODE_REPO_BRANCH=')
     expect(script).toContain('"serverKind":"%s"')
   })
 
