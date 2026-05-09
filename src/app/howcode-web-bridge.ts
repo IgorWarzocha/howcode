@@ -5,11 +5,7 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../../shared/desktop-ipc'
-import {
-  HOWCODE_SERVER_REQUEST_PREFIX,
-  HOWCODE_SERVER_WS_PATH,
-} from '../../shared/howcode-server-contracts'
-import type { HowcodeServerWsServerMessage } from '../../shared/howcode-server-ws'
+import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH } from '../../shared/howcode-rpc'
 import { createDesktopApiFromTransport } from './desktop/create-desktop-api-from-transport'
 
 type WebConfig = {
@@ -32,8 +28,11 @@ function getWebConfig() {
   return configPromise
 }
 
-function resolveUrl(baseUrl: string | undefined, path: string) {
-  return new URL(path, baseUrl ?? window.location.origin).toString()
+function resolveRpcWebSocketUrl(config: WebConfig) {
+  const url = new URL(HOWCODE_RPC_WS_PATH, config.baseUrl ?? window.location.origin)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+  url.searchParams.set('token', config.authToken)
+  return url.toString()
 }
 
 async function invokeRequest<K extends DesktopRequestChannel>(
@@ -41,58 +40,76 @@ async function invokeRequest<K extends DesktopRequestChannel>(
   params: DesktopRequestMap[K]['params'],
 ) {
   const config = await getWebConfig()
-  const response = await fetch(
-    resolveUrl(config.baseUrl, HOWCODE_SERVER_REQUEST_PREFIX + channel),
-    {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${config.authToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    },
-  )
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null
-    throw new Error(payload?.error ?? `Howcode server request failed: ${channel}`)
-  }
-
-  return (await response.json()) as DesktopRequestMap[K]['response']
-}
-
-function resolveWebSocketUrl(config: WebConfig) {
-  const url = new URL(HOWCODE_SERVER_WS_PATH, config.baseUrl ?? window.location.origin)
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-  url.searchParams.set('token', config.authToken)
-  return url.toString()
+  return await new Promise<DesktopRequestMap[K]['response']>((resolve, reject) => {
+    const requestId = crypto.randomUUID()
+    const webSocket = new WebSocket(resolveRpcWebSocketUrl(config))
+    const cleanup = () => {
+      webSocket.removeEventListener('open', onOpen)
+      webSocket.removeEventListener('message', onMessage)
+      webSocket.removeEventListener('error', onError)
+    }
+    const onOpen = () => {
+      webSocket.send(
+        JSON.stringify({ id: requestId, type: HOWCODE_RPC_METHODS.appRequest, channel, params }),
+      )
+    }
+    const onMessage = (message: MessageEvent) => {
+      const payload = JSON.parse(String(message.data)) as {
+        id?: string
+        ok?: boolean
+        result?: DesktopRequestMap[K]['response']
+        error?: string
+      }
+      if (payload.id !== requestId) return
+      cleanup()
+      webSocket.close(1000)
+      if (payload.ok) {
+        resolve(payload.result as DesktopRequestMap[K]['response'])
+      } else {
+        reject(new Error(payload.error ?? `Howcode server request failed: ${channel}`))
+      }
+    }
+    const onError = () => {
+      cleanup()
+      reject(new Error(`Howcode server request failed: ${channel}`))
+    }
+    webSocket.addEventListener('open', onOpen)
+    webSocket.addEventListener('message', onMessage)
+    webSocket.addEventListener('error', onError)
+  })
 }
 
 function subscribeToEvent<K extends DesktopEventChannel>(
   channel: K,
   listener: (event: DesktopEventMap[K]) => void,
 ) {
+  const subscriptionId = crypto.randomUUID()
   let webSocket: WebSocket | null = null
   let closed = false
 
   void getWebConfig().then((config) => {
     if (closed) return
-    webSocket = new WebSocket(resolveWebSocketUrl(config))
+    webSocket = new WebSocket(resolveRpcWebSocketUrl(config))
     webSocket.addEventListener('open', () => {
-      webSocket?.send(JSON.stringify({ type: 'subscribe', channel }))
+      webSocket?.send(
+        JSON.stringify({ id: subscriptionId, type: HOWCODE_RPC_METHODS.eventsSubscribe, channel }),
+      )
     })
     webSocket.addEventListener('message', (message) => {
-      const payload = JSON.parse(String(message.data)) as HowcodeServerWsServerMessage<K>
-      if (payload.type === 'event' && payload.channel === channel) listener(payload.event)
+      const payload = JSON.parse(String(message.data)) as {
+        id?: string
+        type?: string
+        event?: DesktopEventMap[K]
+      }
+      if (payload.id === subscriptionId && payload.type === 'event') {
+        listener(payload.event as DesktopEventMap[K])
+      }
     })
   })
 
   return () => {
     closed = true
-    if (webSocket?.readyState === WebSocket.OPEN) {
-      webSocket.send(JSON.stringify({ type: 'unsubscribe', channel }))
-    }
-    webSocket?.close()
+    webSocket?.close(1000)
   }
 }
 
@@ -101,7 +118,9 @@ const webTransport: AppTransport = {
   subscribe: subscribeToEvent,
 }
 
+export const webDesktopApi = createDesktopApiFromTransport(webTransport)
+
 export function installHowcodeWebBridge() {
   if (window.piDesktop) return
-  window.piDesktop = createDesktopApiFromTransport(webTransport)
+  window.piDesktop = webDesktopApi
 }
