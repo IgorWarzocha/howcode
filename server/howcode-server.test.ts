@@ -56,6 +56,24 @@ describe('Howcode server', () => {
     ).resolves.toEqual({ ...howcodeServerDescriptor, runtimeKind: 'desktop-local' })
   })
 
+  it('requires auth token when binding outside loopback', async () => {
+    await expect(
+      Effect.runPromise(
+        startHowcodeServer(
+          {
+            authToken: '',
+            host: '0.0.0.0',
+            port: 0,
+          },
+          {
+            request: vi.fn(),
+            subscribe: vi.fn(),
+          },
+        ),
+      ),
+    ).rejects.toThrow('auth token is required')
+  })
+
   it('rejects unauthenticated app transport requests', async () => {
     const request = vi.fn(async () => ({ ok: true }))
     const { baseUrl } = await startTestServer({

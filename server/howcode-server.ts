@@ -123,6 +123,14 @@ function hasValidAuthToken(request: IncomingMessage, expectedToken: string) {
     : false
 }
 
+function isLoopbackHost(hostname: string) {
+  return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1'
+}
+
+function isExposedWithoutToken(config: HowcodeServerConfig) {
+  return config.authToken.length === 0 && !isLoopbackHost(config.host)
+}
+
 function readJsonBody(request: IncomingMessage) {
   return Effect.tryPromise({
     try: async () => {
@@ -404,6 +412,14 @@ function closeServer(server: Server) {
 }
 
 export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTransport) {
+  if (isExposedWithoutToken(config)) {
+    return Effect.fail(
+      new HowcodeServerError({
+        message: 'HOWCODE server auth token is required when binding outside loopback.',
+      }),
+    )
+  }
+
   return Effect.callback<HowcodeServerHandle, HowcodeServerError>((resume) => {
     const server = createServer((request, response) =>
       handleRequest(config, transport, request, response),
