@@ -10,11 +10,9 @@ import type { AppTransport } from '../shared/app-transport'
 import type { Project } from '../shared/desktop-contracts'
 import type { DesktopRequestHandlerMap } from '../shared/desktop-ipc'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
+import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import type { HowcodeInstanceManifest } from '../shared/howcode-server-contracts'
-import {
-  HOWCODE_SERVER_DESCRIPTOR_PATH,
-  HOWCODE_SERVER_WS_PATH,
-} from '../shared/howcode-server-contracts'
+import { HOWCODE_SERVER_DESCRIPTOR_PATH } from '../shared/howcode-server-contracts'
 import { createPiPackagesHandlers } from '../src/electron/main/ipc/request-handlers/pi-packages'
 import { createPiSkillsHandlers } from '../src/electron/main/ipc/request-handlers/pi-skills'
 import { createPiThreadsHandlers } from '../src/electron/main/ipc/request-handlers/pi-threads'
@@ -304,7 +302,7 @@ async function main() {
   })
 
   const descriptorUrl = new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, server.baseUrl).toString()
-  const webSocketUrl = new URL(HOWCODE_SERVER_WS_PATH, server.baseUrl)
+  const webSocketUrl = new URL(HOWCODE_RPC_WS_PATH, server.baseUrl)
   webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:'
 
   console.log(
