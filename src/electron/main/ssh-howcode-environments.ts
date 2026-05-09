@@ -83,8 +83,7 @@ function shellQuote(value: string) {
 }
 
 function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
-  return [
-    'howcode',
+  const serveArgs = [
     'serve',
     '--host',
     '127.0.0.1',
@@ -93,6 +92,14 @@ function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
     '--token',
     shellQuote(config.token),
   ].join(' ')
+  const command = [
+    'export PATH="$HOME/.bun/bin:$PATH"',
+    `if command -v howcode >/dev/null 2>&1; then exec howcode ${serveArgs}; fi`,
+    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && exec bun run server:dev -- ${serveArgs.slice('serve '.length)}; fi`,
+    'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
+    'exit 127',
+  ].join('; ')
+  return `bash -lc ${shellQuote(command)}`
 }
 
 async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeoutMs: number) {

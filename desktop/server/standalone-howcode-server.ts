@@ -111,7 +111,7 @@ function createStandaloneInstanceManifestHandler(input: {
     )
     return {
       instanceId,
-      instanceName: process.env['HOWCODE_INSTANCE_NAME'] ?? 'Howcode',
+      instanceName: getProcessEnvironmentVariable('HOWCODE_INSTANCE_NAME') ?? 'Howcode',
       projects: shellState.projects.map(mapStandaloneProject),
       serverUrl: input.serverUrl,
     }
