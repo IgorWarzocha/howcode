@@ -428,7 +428,13 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
     )
     const closeWebSocketServer = installWebSocketEvents(server, config, transport)
     const closeRpcWebSocketServer = installHowcodeRpcWebSocketServer({
-      isAuthorized: (request) => hasValidAuthToken(request, config.authToken),
+      isAuthorized: (request) => {
+        const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
+        const token = requestUrl.searchParams.get('token')
+        return token
+          ? isMatchingToken(token, config.authToken)
+          : hasValidAuthToken(request, config.authToken)
+      },
       path: HOWCODE_RPC_WS_PATH,
       server,
       transport,

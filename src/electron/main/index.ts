@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { createHowcodeServerTransport } from '../../../server/howcode-server-transport'
+import { createHowcodeRpcClientTransport } from '../../../server/howcode-rpc-client-transport'
 import {
   type LocalHowcodeServer,
   startLocalHowcodeServer,
@@ -229,7 +229,7 @@ async function resolveSshServerTransport(): Promise<AppTransport | null> {
 
   sshHowcodeServer = await ensureSshHowcodeServer(config)
   await refreshConnectedServerState(sshHowcodeServer.environment, sshHowcodeServer.baseUrl)
-  return createHowcodeServerTransport({
+  return createHowcodeRpcClientTransport({
     authToken: sshHowcodeServer.token,
     baseUrl: sshHowcodeServer.baseUrl,
   })
@@ -287,7 +287,7 @@ async function resolveExternalServerTransport(): Promise<AppTransport | null> {
     throw new Error('HOWCODE_SERVER_TOKEN is required when HOWCODE_SERVER_URL is set.')
   }
   await refreshConfiguredExternalServerState()
-  return createHowcodeServerTransport({ authToken, baseUrl })
+  return createHowcodeRpcClientTransport({ authToken, baseUrl })
 }
 
 function createEnvironmentFromSavedRemote(
@@ -342,7 +342,7 @@ function createResilientSshServerTransport(config: {
   token: string
   initialBaseUrl: string
 }): AppTransport {
-  let transport = createHowcodeServerTransport({
+  let transport = createHowcodeRpcClientTransport({
     authToken: config.token,
     baseUrl: config.initialBaseUrl,
   })
@@ -366,7 +366,7 @@ function createResilientSshServerTransport(config: {
       },
     }
     activeHowcodeEnvironment = connection.environment
-    transport = createHowcodeServerTransport({
+    transport = createHowcodeRpcClientTransport({
       authToken: config.token,
       baseUrl: connection.baseUrl,
     })
@@ -418,7 +418,7 @@ async function setActiveRemoteEnvironment(config: {
           initialBaseUrl: baseUrl,
           token: config.token,
         })
-      : createHowcodeServerTransport({
+      : createHowcodeRpcClientTransport({
           authToken: config.token,
           baseUrl,
         })
