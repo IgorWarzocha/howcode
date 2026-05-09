@@ -696,6 +696,16 @@ function isLocalPath(value: string) {
   return !isAbsolutePath(value) || existsSync(value)
 }
 
+function getProjectPathFromPersistedSessionPath(sessionPath: string | null) {
+  if (!sessionPath) return null
+  const marker = '/sessions/--'
+  const markerIndex = sessionPath.indexOf(marker)
+  if (markerIndex < 0) return null
+  const encodedProjectPath = sessionPath.slice(markerIndex + marker.length).split('--')[0]
+  if (!encodedProjectPath) return null
+  return `/${encodedProjectPath.replaceAll('-', '/')}`
+}
+
 function getLocalRequestEnvironment() {
   return localHowcodeServer
     ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
@@ -770,6 +780,21 @@ async function resolveEnvironmentForDesktopRequest<
   if (environmentId) {
     return resolveHowcodeEnvironmentForRequest(
       await resolveExplicitEnvironment(environmentId),
+      channel,
+      params,
+    )
+  }
+  const sessionProjectPath = getProjectPathFromPersistedSessionPath(sessionPath)
+  if (sessionProjectPath && isActiveRemotePath(sessionProjectPath)) {
+    return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
+  }
+  if (
+    sessionProjectPath &&
+    isAbsolutePath(sessionProjectPath) &&
+    !isLocalPath(sessionProjectPath)
+  ) {
+    return resolveHowcodeEnvironmentForRequest(
+      await activateSingleSavedRemoteForPath('Session'),
       channel,
       params,
     )
