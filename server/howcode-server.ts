@@ -3,26 +3,15 @@ import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import path from 'node:path'
 import { Data, Effect } from 'effect'
-import { WebSocketServer } from 'ws'
 import type { AppTransport } from '../shared/app-transport'
-import type {
-  DesktopEventChannel,
-  DesktopRequestChannel,
-  DesktopRequestMap,
-} from '../shared/desktop-ipc'
+import type { DesktopRequestChannel, DesktopRequestMap } from '../shared/desktop-ipc'
 import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
-  HOWCODE_LEGACY_SERVER_REQUEST_PREFIX,
-  HOWCODE_LEGACY_SERVER_WS_PATH,
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH,
   type HowcodeProgrammaticPromptRequest,
   howcodeServerDescriptor,
 } from '../shared/howcode-server-contracts'
-import type {
-  HowcodeServerWsClientMessage,
-  HowcodeServerWsServerMessage,
-} from '../shared/howcode-server-ws'
 import { installHowcodeRpcWebSocketServer } from './rpc-howcode-server'
 
 export type HowcodeServerConfig = {
@@ -241,93 +230,6 @@ function handleProgrammaticPromptRequest(
   )
 }
 
-function installWebSocketEvents(
-  server: Server,
-  config: HowcodeServerConfig,
-  transport: AppTransport,
-) {
-  const webSocketServer = new WebSocketServer({ noServer: true })
-  const clients = new Set<Parameters<Parameters<typeof webSocketServer.on>[1]>[0]>()
-
-  server.on('upgrade', (request, socket, head) => {
-    const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
-    if (requestUrl.pathname !== HOWCODE_LEGACY_SERVER_WS_PATH) {
-      return
-    }
-
-    const token = requestUrl.searchParams.get('token')
-    if (
-      !(token
-        ? isMatchingToken(token, config.authToken)
-        : hasValidAuthToken(request, config.authToken))
-    ) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
-      socket.destroy()
-      return
-    }
-
-    webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-      webSocketServer.emit('connection', webSocket, request)
-    })
-  })
-
-  webSocketServer.on('connection', (webSocket) => {
-    clients.add(webSocket)
-    webSocket.on('close', () => clients.delete(webSocket))
-    const subscriptions = new Map<DesktopEventChannel, () => void>()
-
-    webSocket.on('message', (data) => {
-      let message: HowcodeServerWsClientMessage
-      try {
-        message = JSON.parse(data.toString()) as HowcodeServerWsClientMessage
-      } catch {
-        return
-      }
-
-      if (message.channel !== 'desktopEvent' && message.channel !== 'terminalEvent') {
-        return
-      }
-
-      if (message.type === 'unsubscribe') {
-        subscriptions.get(message.channel)?.()
-        subscriptions.delete(message.channel)
-        return
-      }
-
-      if (message.type !== 'subscribe' || subscriptions.has(message.channel)) {
-        return
-      }
-
-      const unsubscribe = transport.subscribe(message.channel, (event) => {
-        if (webSocket.readyState !== webSocket.OPEN) {
-          return
-        }
-        const payload: HowcodeServerWsServerMessage = {
-          type: 'event',
-          channel: message.channel,
-          event,
-        }
-        webSocket.send(JSON.stringify(payload))
-      })
-      subscriptions.set(message.channel, unsubscribe)
-    })
-
-    webSocket.on('close', () => {
-      for (const unsubscribe of subscriptions.values()) {
-        unsubscribe()
-      }
-      subscriptions.clear()
-    })
-  })
-
-  return () => {
-    for (const client of clients) {
-      client.terminate()
-    }
-    webSocketServer.close()
-  }
-}
-
 function resolveRuntimeKind(config: HowcodeServerConfig) {
   return config.webRoot ? 'standalone' : 'desktop-local'
 }
@@ -352,33 +254,6 @@ function handleRequest(
 
   if (request.method === 'GET' && requestUrl.pathname === HOWCODE_SERVER_DESCRIPTOR_PATH) {
     sendJson(response, 200, { ...howcodeServerDescriptor, runtimeKind: resolveRuntimeKind(config) })
-    return
-  }
-
-  if (
-    request.method === 'POST' &&
-    requestUrl.pathname.startsWith(HOWCODE_LEGACY_SERVER_REQUEST_PREFIX)
-  ) {
-    if (!hasValidAuthToken(request, config.authToken)) {
-      sendJson(response, 401, { error: 'Unauthorized.' })
-      return
-    }
-    const channel = requestUrl.pathname.slice(
-      HOWCODE_LEGACY_SERVER_REQUEST_PREFIX.length,
-    ) as DesktopRequestChannel
-
-    runServerAction(
-      readJsonBody(request).pipe(
-        Effect.flatMap((params) =>
-          dispatchTransportRequest(
-            transport,
-            channel,
-            params as DesktopRequestMap[typeof channel]['params'],
-          ),
-        ),
-      ),
-      response,
-    )
     return
   }
 
@@ -429,7 +304,6 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
     const server = createServer((request, response) =>
       handleRequest(config, transport, request, response),
     )
-    const closeWebSocketServer = installWebSocketEvents(server, config, transport)
     const closeRpcWebSocketServer = installHowcodeRpcWebSocketServer({
       isAuthorized: (request) => {
         const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
@@ -465,7 +339,6 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
           },
           authToken: config.authToken,
           close: Effect.sync(() => {
-            closeWebSocketServer()
             closeRpcWebSocketServer()
           }).pipe(Effect.andThen(closeServer(server))),
         }),

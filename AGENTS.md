@@ -28,4 +28,4 @@
 - Remote server state belongs under `~/.howcode/ssh-launch/<state-key>/`; treat stale pid/port/fingerprint files as normal and restart managed servers when readiness, runner, or fingerprint checks fail.
 - SSH activation should not require a saved local tunnel port. Let the SSH launcher allocate a dynamic loopback port and propagate the resulting `baseUrl`/environment back into connection state.
 - Never log bearer tokens from SSH launch scripts, tunnel diagnostics, HTTP failures, or WebSocket/RPC URLs; redact before writing stderr or surfacing errors.
-- New server-owned capabilities should use `shared/howcode-rpc.ts`/`HOWCODE_RPC_WS_PATH`; `HOWCODE_SERVER_REQUEST_PREFIX` and `shared/howcode-server-ws.ts` are legacy compatibility shims until RPC requests and streams fully replace them.
+- New server-owned capabilities should use `shared/howcode-rpc.ts`/`HOWCODE_RPC_WS_PATH`; the legacy HTTP request and ad-hoc event WebSocket shims were removed, so do not reintroduce `/api/app/request/*` or `/api/app/ws` paths.
