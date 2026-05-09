@@ -199,9 +199,8 @@ export function createHowcodeRpcClientTransport(
         reconnectPhase: 'attempting',
       }
       try {
-        await legacyEventsTransport.request('getHowcodeInstanceManifest', {})
+        await requestViaRpcWebSocket(config, 'getHowcodeInstanceManifest', {})
         markConnected()
-        status = { ...status, lastTransport: 'legacy-http' }
       } catch (error) {
         markDisconnected(error)
         throw error

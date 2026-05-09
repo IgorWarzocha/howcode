@@ -66,7 +66,7 @@ describe('Howcode RPC client transport', () => {
     await expect(transport.reconnect()).resolves.toBeUndefined()
     expect(transport.getStatus()).toMatchObject({
       hasConnected: true,
-      lastTransport: 'legacy-http',
+      lastTransport: 'rpc',
       phase: 'connected',
       reconnectPhase: 'idle',
     })
