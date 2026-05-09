@@ -51,6 +51,25 @@ describe('Howcode RPC client transport', () => {
     })
   })
 
+  it('updates status on manual reconnect', async () => {
+    const request = vi.fn(async () => ({
+      instanceId: 'test',
+      instanceName: 'Test',
+      projects: [],
+      serverUrl: null,
+    }))
+    const baseUrl = await startTestServer({ request, subscribe: vi.fn() })
+    const transport = createHowcodeRpcClientTransport({ authToken: 'test-token', baseUrl })
+
+    await expect(transport.reconnect()).resolves.toBeUndefined()
+    expect(transport.getStatus()).toMatchObject({
+      hasConnected: true,
+      phase: 'connected',
+      reconnectPhase: 'idle',
+    })
+    expect(request).toHaveBeenCalledWith('getHowcodeInstanceManifest', {})
+  })
+
   it('builds an authenticated websocket URL', () => {
     const url = new URL(
       howcodeRpcClientTransportInternals.resolveRpcWebSocketUrl('http://127.0.0.1:39317', 'secret'),

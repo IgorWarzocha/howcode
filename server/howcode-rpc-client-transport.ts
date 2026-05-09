@@ -168,8 +168,16 @@ export function createHowcodeRpcClientTransport(
     reconnect: async () => {
       status = {
         ...status,
+        intentionalClose: false,
         reconnectAttemptCount: status.reconnectAttemptCount + 1,
         reconnectPhase: 'attempting',
+      }
+      try {
+        await legacyEventsTransport.request('getHowcodeInstanceManifest', {})
+        markConnected()
+      } catch (error) {
+        markDisconnected(error)
+        throw error
       }
     },
     subscribe: <TChannel extends DesktopEventChannel>(
