@@ -1,15 +1,14 @@
 export const HOWCODE_SERVER_DESCRIPTOR_PATH = '/.well-known/howcode/server'
 export const HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH = '/api/programmatic/prompt'
-export const HOWCODE_SERVER_REQUEST_PREFIX = '/api/app/request/'
-export const HOWCODE_SERVER_WS_PATH = '/api/app/ws'
+export const HOWCODE_LEGACY_SERVER_REQUEST_PREFIX = '/api/app/request/'
+export const HOWCODE_LEGACY_SERVER_WS_PATH = '/api/app/ws'
 
 export const HOWCODE_SERVER_PROTOCOL_VERSION = 2
 export const HOWCODE_SERVER_APP_VERSION = '0.1.63'
 export const HOWCODE_SERVER_FINGERPRINT = `${HOWCODE_SERVER_APP_VERSION}:protocol-${HOWCODE_SERVER_PROTOCOL_VERSION}`
 
 export type HowcodeServerCapability =
-  | 'app-transport'
-  | 'app-websocket-events'
+  | 'legacy-app-transport'
   | 'effect-rpc'
   | 'projects'
   | 'git'
@@ -44,7 +43,7 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
     required: true,
     methods: ['bearer-token'],
   },
-  capabilities: ['app-transport', 'app-websocket-events', 'effect-rpc'],
+  capabilities: ['effect-rpc'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
 
@@ -57,8 +56,8 @@ export function assertCompatibleHowcodeServerDescriptor(descriptor: HowcodeServe
       `Incompatible Howcode server protocol ${descriptor.protocolVersion}; expected ${HOWCODE_SERVER_PROTOCOL_VERSION}.`,
     )
   }
-  if (!descriptor.capabilities.includes('app-transport')) {
-    throw new Error('Howcode server is missing app transport capability.')
+  if (!descriptor.capabilities.includes('effect-rpc')) {
+    throw new Error('Howcode server is missing Effect RPC capability.')
   }
 }
 

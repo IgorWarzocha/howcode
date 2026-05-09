@@ -12,10 +12,10 @@ import type {
 } from '../shared/desktop-ipc'
 import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
+  HOWCODE_LEGACY_SERVER_REQUEST_PREFIX,
+  HOWCODE_LEGACY_SERVER_WS_PATH,
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH,
-  HOWCODE_SERVER_REQUEST_PREFIX,
-  HOWCODE_SERVER_WS_PATH,
   type HowcodeProgrammaticPromptRequest,
   howcodeServerDescriptor,
 } from '../shared/howcode-server-contracts'
@@ -251,7 +251,7 @@ function installWebSocketEvents(
 
   server.on('upgrade', (request, socket, head) => {
     const requestUrl = new URL(request.url ?? '/', 'http://howcode.local')
-    if (requestUrl.pathname !== HOWCODE_SERVER_WS_PATH) {
+    if (requestUrl.pathname !== HOWCODE_LEGACY_SERVER_WS_PATH) {
       return
     }
 
@@ -355,13 +355,16 @@ function handleRequest(
     return
   }
 
-  if (request.method === 'POST' && requestUrl.pathname.startsWith(HOWCODE_SERVER_REQUEST_PREFIX)) {
+  if (
+    request.method === 'POST' &&
+    requestUrl.pathname.startsWith(HOWCODE_LEGACY_SERVER_REQUEST_PREFIX)
+  ) {
     if (!hasValidAuthToken(request, config.authToken)) {
       sendJson(response, 401, { error: 'Unauthorized.' })
       return
     }
     const channel = requestUrl.pathname.slice(
-      HOWCODE_SERVER_REQUEST_PREFIX.length,
+      HOWCODE_LEGACY_SERVER_REQUEST_PREFIX.length,
     ) as DesktopRequestChannel
 
     runServerAction(

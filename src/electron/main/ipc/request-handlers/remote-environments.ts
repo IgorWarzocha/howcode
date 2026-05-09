@@ -14,8 +14,8 @@ import type {
 } from '../../../../../shared/howcode-server-contracts'
 import {
   assertCompatibleHowcodeServerDescriptor,
+  HOWCODE_LEGACY_SERVER_REQUEST_PREFIX,
   HOWCODE_SERVER_DESCRIPTOR_PATH,
-  HOWCODE_SERVER_REQUEST_PREFIX,
   type HowcodeInstanceManifest,
   type HowcodeServerDescriptor,
 } from '../../../../../shared/howcode-server-contracts'
@@ -294,7 +294,7 @@ export function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnviro
 // wrong port/host, and report settings mismatches instead of just "is a server running".
 async function requestRemoteInstanceManifest(baseUrl: string, token: string) {
   const response = await fetch(
-    new URL(`${HOWCODE_SERVER_REQUEST_PREFIX}getHowcodeInstanceManifest`, baseUrl),
+    new URL(`${HOWCODE_LEGACY_SERVER_REQUEST_PREFIX}getHowcodeInstanceManifest`, baseUrl),
     {
       body: JSON.stringify({}),
       headers: {

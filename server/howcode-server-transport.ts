@@ -6,8 +6,8 @@ import type {
   DesktopRequestMap,
 } from '../shared/desktop-ipc'
 import {
-  HOWCODE_SERVER_REQUEST_PREFIX,
-  HOWCODE_SERVER_WS_PATH,
+  HOWCODE_LEGACY_SERVER_REQUEST_PREFIX,
+  HOWCODE_LEGACY_SERVER_WS_PATH,
 } from '../shared/howcode-server-contracts'
 import type { HowcodeServerWsServerMessage } from '../shared/howcode-server-ws'
 
@@ -21,11 +21,11 @@ const reconnectMaxDelayMs = 8_000
 const connectionFailurePattern = /fetch failed|ECONNREFUSED|ECONNRESET|socket|network|terminated/i
 
 function resolveRequestUrl(baseUrl: string, channel: DesktopRequestChannel) {
-  return new URL(HOWCODE_SERVER_REQUEST_PREFIX + channel, baseUrl).toString()
+  return new URL(HOWCODE_LEGACY_SERVER_REQUEST_PREFIX + channel, baseUrl).toString()
 }
 
 function resolveWebSocketUrl(baseUrl: string, authToken: string) {
-  const url = new URL(HOWCODE_SERVER_WS_PATH, baseUrl)
+  const url = new URL(HOWCODE_LEGACY_SERVER_WS_PATH, baseUrl)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   url.searchParams.set('token', authToken)
   return url.toString()
