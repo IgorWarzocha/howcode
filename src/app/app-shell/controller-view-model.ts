@@ -67,7 +67,7 @@ export function deriveControllerViewModel({
         ? (activeThreadData?.title ?? selectedThread?.title ?? 'New thread')
         : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getProjectName(selectedProject),
-    composerProjectId: selectedProject?.id ?? shellCwd ?? '',
+    composerProjectId: workspaceState.selectedProjectId || selectedProject?.id || shellCwd || '',
     activeComposerState: composerState ?? shellComposerState ?? null,
   }
 }
