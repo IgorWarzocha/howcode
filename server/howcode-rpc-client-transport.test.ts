@@ -44,7 +44,6 @@ describe('Howcode RPC client transport', () => {
     ).resolves.toEqual({ ok: true })
     expect(transport.getStatus()).toMatchObject({
       attemptCount: 1,
-      fallbackRequestCount: 0,
       lastTransport: 'rpc',
       phase: 'connected',
     })

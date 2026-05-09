@@ -1,6 +1,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
+import WebSocket from 'ws'
+import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
   HOWCODE_SERVER_FINGERPRINT,
   type HowcodeEnvironment,
@@ -330,6 +332,52 @@ async function canReachAuthenticatedServer(baseUrl: string, token: string) {
   }
 }
 
+async function probeAuthenticatedServerRpc(baseUrl: string, token: string) {
+  await new Promise<void>((resolve, reject) => {
+    const requestId = randomUUID()
+    const url = new URL(HOWCODE_RPC_WS_PATH, baseUrl)
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    url.searchParams.set('token', token)
+    const webSocket = new WebSocket(url)
+    const timeout = setTimeout(() => {
+      cleanup()
+      webSocket.close()
+      reject(new Error('RPC probe timed out.'))
+    }, 1000)
+    const cleanup = () => {
+      clearTimeout(timeout)
+      webSocket.off('open', onOpen)
+      webSocket.off('message', onMessage)
+      webSocket.off('error', onError)
+    }
+    const onOpen = () => {
+      webSocket.send(
+        JSON.stringify({
+          id: requestId,
+          type: HOWCODE_RPC_METHODS.appRequest,
+          channel: 'getHowcodeInstanceManifest',
+          params: {},
+        }),
+      )
+    }
+    const onMessage = (data: WebSocket.RawData) => {
+      const message = JSON.parse(data.toString()) as { id?: string; ok?: boolean; error?: string }
+      if (message.id !== requestId) return
+      cleanup()
+      webSocket.close(1000)
+      if (message.ok) resolve()
+      else reject(new Error(message.error ?? 'RPC manifest probe failed.'))
+    }
+    const onError = (error: Error) => {
+      cleanup()
+      reject(error)
+    }
+    webSocket.on('open', onOpen)
+    webSocket.on('message', onMessage)
+    webSocket.on('error', onError)
+  })
+}
+
 async function waitForAuthenticatedServer(baseUrl: string, token: string, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs
   let lastError: unknown = null
@@ -337,13 +385,8 @@ async function waitForAuthenticatedServer(baseUrl: string, token: string, timeou
     try {
       const descriptor = await fetch(`${baseUrl}/.well-known/howcode/server`)
       if (descriptor.ok) {
-        const response = await fetch(`${baseUrl}/api/app/request/getHowcodeInstanceManifest`, {
-          body: '{}',
-          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          method: 'POST',
-        })
-        if (response.ok) return
-        lastError = new Error(`manifest probe failed (${response.status})`)
+        await probeAuthenticatedServerRpc(baseUrl, token)
+        return
       }
     } catch (error) {
       lastError = error

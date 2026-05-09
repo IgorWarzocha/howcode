@@ -7,7 +7,6 @@ import type {
   DesktopRequestMap,
 } from '../shared/desktop-ipc'
 import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
-import { createHowcodeServerTransport } from './howcode-server-transport'
 
 type HowcodeRpcClientTransportConfig = {
   baseUrl: string
@@ -26,8 +25,7 @@ export type HowcodeRpcClientConnectionStatus = {
   nextRetryAt: string | null
   hasConnected: boolean
   intentionalClose: boolean
-  fallbackRequestCount: number
-  lastTransport: 'rpc' | 'legacy-http' | null
+  lastTransport: 'rpc' | null
 }
 
 export type HowcodeRpcClientTransport = AppTransport & {
@@ -42,7 +40,6 @@ function createInitialStatus(): HowcodeRpcClientConnectionStatus {
     connectedAt: null,
     disconnectedAt: null,
     hasConnected: false,
-    fallbackRequestCount: 0,
     intentionalClose: false,
     lastError: null,
     lastErrorAt: null,
@@ -169,7 +166,6 @@ function subscribeViaRpcWebSocket<TChannel extends DesktopEventChannel>(
 export function createHowcodeRpcClientTransport(
   config: HowcodeRpcClientTransportConfig,
 ): HowcodeRpcClientTransport {
-  const legacyEventsTransport = createHowcodeServerTransport(config)
   let status = createInitialStatus()
 
   const markConnecting = () => {
@@ -229,13 +225,7 @@ export function createHowcodeRpcClientTransport(
         return result
       } catch (error) {
         markDisconnected(error)
-        const result = await legacyEventsTransport.request(channel, params)
-        status = {
-          ...status,
-          fallbackRequestCount: status.fallbackRequestCount + 1,
-          lastTransport: 'legacy-http',
-        }
-        return result
+        throw error
       }
     },
     dispose: () => {
