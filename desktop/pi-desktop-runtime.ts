@@ -34,23 +34,25 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
 ): TRequest {
   const appSettings = loadAppSettings()
   const projectBackedChat = request.composerMode === 'chat' && Boolean(request.projectId)
+  const runtimeComposerMode = projectBackedChat ? 'code' : request.composerMode
   const composerModelSelection =
-    request.composerMode === 'chat'
+    runtimeComposerMode === 'chat'
       ? appSettings.chatModel
-      : request.composerMode === 'code'
+      : runtimeComposerMode === 'code'
         ? appSettings.codeModel
         : null
   const composerThinkingLevel =
-    request.composerMode === 'chat'
+    runtimeComposerMode === 'chat'
       ? appSettings.chatThinkingLevel
-      : request.composerMode === 'code'
+      : runtimeComposerMode === 'code'
         ? appSettings.codeThinkingLevel
         : null
 
   return {
     ...request,
+    composerMode: runtimeComposerMode,
     composerModelSelection,
-    composerUseDefaultModel: Boolean(request.composerMode) && composerModelSelection === null,
+    composerUseDefaultModel: Boolean(runtimeComposerMode) && composerModelSelection === null,
     composerThinkingLevel,
     composerStreamingBehavior: appSettings.composerStreamingBehavior,
     composerSessionDir:

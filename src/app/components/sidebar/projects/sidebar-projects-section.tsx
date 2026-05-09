@@ -260,7 +260,7 @@ function useSidebarRemoteProjects(input: {
       const remoteProjectsWithoutThreads: Project[] = manifest.projects.map((project) => ({
         id: project.id,
         latestModifiedMs: project.latestModifiedMs ?? undefined,
-        name: `${project.name} · ${manifest.instanceName}`,
+        name: project.name,
         repoOriginUrl: project.repoOriginUrl ?? null,
         threadCount: project.threadCount ?? undefined,
         threads: [],
@@ -470,10 +470,19 @@ export function SidebarProjectsSection({
     [remoteProjects],
   )
   const [showLocalProjects, setShowLocalProjects] = useState(true)
-  const combinedProjects = useMemo(
-    () => [...(showLocalProjects ? projects : []), ...(showRemoteProjects ? remoteProjects : [])],
-    [projects, remoteProjects, showLocalProjects, showRemoteProjects],
-  )
+  const combinedProjects = useMemo(() => {
+    const nextProjects = [...(showLocalProjects ? projects : [])]
+    const existingProjectIds = new Set(nextProjects.map((project) => project.id))
+    if (showRemoteProjects) {
+      for (const project of remoteProjects) {
+        if (!existingProjectIds.has(project.id)) {
+          nextProjects.push(project)
+          existingProjectIds.add(project.id)
+        }
+      }
+    }
+    return nextProjects
+  }, [projects, remoteProjects, showLocalProjects, showRemoteProjects])
 
   const { projects: visibleProjects, autoExpandedProjectIds } = useMemo(
     () =>
