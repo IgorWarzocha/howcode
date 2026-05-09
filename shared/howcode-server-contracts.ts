@@ -56,6 +56,8 @@ export type HowcodeEnvironment = {
 }
 
 export type HowcodeServerConnectionMode = 'local' | 'external' | 'disabled'
+export type HowcodeServerConnectionPhase = 'idle' | 'connecting' | 'connected' | 'disconnected'
+export type HowcodeServerReconnectPhase = 'idle' | 'attempting' | 'waiting' | 'exhausted'
 
 export type HowcodeServerConnectionState = {
   environment: HowcodeEnvironment
@@ -63,6 +65,15 @@ export type HowcodeServerConnectionState = {
   environmentName: string
   mode: HowcodeServerConnectionMode
   connected: boolean
+  phase: HowcodeServerConnectionPhase
+  reconnectPhase: HowcodeServerReconnectPhase
+  attemptCount: number
+  reconnectAttemptCount: number
+  connectedAt: string | null
+  disconnectedAt: string | null
+  lastError: string | null
+  lastErrorAt: string | null
+  nextRetryAt: string | null
   baseUrl: string | null
   descriptor: HowcodeServerDescriptor | null
   error: string | null

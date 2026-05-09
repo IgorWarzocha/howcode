@@ -85,25 +85,41 @@ function isActiveRemotePath(filePath: string | null) {
 }
 
 function createHowcodeServerConnectionState({
+  attemptCount = 1,
   connected,
   descriptor = null,
   environment,
   error = null,
+  reconnectAttemptCount = 0,
+  reconnectPhase = 'idle',
 }: {
+  attemptCount?: number
   connected: boolean
   descriptor?: HowcodeServerConnectionState['descriptor']
   environment: HowcodeEnvironment
   error?: string | null
+  reconnectAttemptCount?: number
+  reconnectPhase?: HowcodeServerConnectionState['reconnectPhase']
 }): HowcodeServerConnectionState {
+  const now = new Date().toISOString()
   return {
+    attemptCount,
     baseUrl: environment.serverUrl,
     connected,
+    connectedAt: connected ? now : null,
     descriptor,
+    disconnectedAt: connected ? null : now,
     environment,
     environmentId: environment.id,
     environmentName: environment.name,
     error,
+    lastError: error,
+    lastErrorAt: error ? now : null,
     mode: getConnectionModeForEnvironment(environment),
+    nextRetryAt: null,
+    phase: connected ? 'connected' : 'disconnected',
+    reconnectAttemptCount,
+    reconnectPhase,
   }
 }
 

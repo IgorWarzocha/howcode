@@ -89,9 +89,12 @@ terminalManager.subscribeTerminalEvents((event) => {
 })
 
 const getDevServerState = () => ({
+  attemptCount: 1,
   baseUrl: null,
   connected: true,
+  connectedAt: new Date().toISOString(),
   descriptor: null,
+  disconnectedAt: null,
   environment: {
     id: 'dev-web-bridge',
     kind: 'local-desktop' as const,
@@ -102,7 +105,13 @@ const getDevServerState = () => ({
   environmentId: 'dev-web-bridge',
   environmentName: 'Dev web bridge',
   error: null,
+  lastError: null,
+  lastErrorAt: null,
   mode: 'local' as const,
+  nextRetryAt: null,
+  phase: 'connected' as const,
+  reconnectAttemptCount: 0,
+  reconnectPhase: 'idle' as const,
 })
 
 const handlers: DesktopRequestHandlerMap = {

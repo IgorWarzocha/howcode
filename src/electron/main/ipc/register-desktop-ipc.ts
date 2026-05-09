@@ -30,6 +30,34 @@ import { createSkillCreatorHandlers } from './request-handlers/skill-creator'
 import { createSystemHandlers } from './request-handlers/system'
 import { createTerminalHandlers } from './request-handlers/terminal'
 
+function createDisabledHowcodeServerState(): HowcodeServerConnectionState {
+  return {
+    attemptCount: 0,
+    baseUrl: null,
+    connected: false,
+    connectedAt: null,
+    descriptor: null,
+    disconnectedAt: new Date().toISOString(),
+    environment: {
+      id: 'disabled',
+      kind: 'disabled',
+      name: 'No Howcode server',
+      scope: 'global',
+      serverUrl: null,
+    },
+    environmentId: 'disabled',
+    environmentName: 'No Howcode server',
+    error: null,
+    lastError: null,
+    lastErrorAt: null,
+    mode: 'disabled',
+    nextRetryAt: null,
+    phase: 'disconnected',
+    reconnectAttemptCount: 0,
+    reconnectPhase: 'idle',
+  }
+}
+
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
@@ -103,39 +131,9 @@ export function createDesktopRequestHandlers(
   } = {},
 ): DesktopRequestHandlerMap {
   return {
-    getHowcodeServerState: () => ({
-      baseUrl: null,
-      connected: false,
-      descriptor: null,
-      environment: {
-        id: 'disabled',
-        kind: 'disabled',
-        name: 'No Howcode server',
-        scope: 'global',
-        serverUrl: null,
-      },
-      environmentId: 'disabled',
-      environmentName: 'No Howcode server',
-      error: null,
-      mode: 'disabled',
-    }),
+    getHowcodeServerState: createDisabledHowcodeServerState,
     ...createRemoteEnvironmentHandlers(remoteEnvironmentOptions),
-    refreshHowcodeServerState: () => ({
-      baseUrl: null,
-      connected: false,
-      descriptor: null,
-      environment: {
-        id: 'disabled',
-        kind: 'disabled',
-        name: 'No Howcode server',
-        scope: 'global',
-        serverUrl: null,
-      },
-      environmentId: 'disabled',
-      environmentName: 'No Howcode server',
-      error: null,
-      mode: 'disabled',
-    }),
+    refreshHowcodeServerState: createDisabledHowcodeServerState,
     ...createAppUpdateHandlers(appUpdater),
     ...createInstanceManifestHandlers(runtime.piThreads),
     ...createPiThreadsHandlers(runtime.piThreads),
@@ -152,22 +150,7 @@ export function registerDesktopIpc(
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
   getServerTransport: (environment: HowcodeEnvironment) => AppTransport | null = () => null,
-  getHowcodeServerState: () => HowcodeServerConnectionState = () => ({
-    baseUrl: null,
-    connected: false,
-    descriptor: null,
-    environment: {
-      id: 'disabled',
-      kind: 'disabled',
-      name: 'No Howcode server',
-      scope: 'global',
-      serverUrl: null,
-    },
-    environmentId: 'disabled',
-    environmentName: 'No Howcode server',
-    error: null,
-    mode: 'disabled',
-  }),
+  getHowcodeServerState: () => HowcodeServerConnectionState = createDisabledHowcodeServerState,
   refreshHowcodeServerState: () =>
     | Promise<HowcodeServerConnectionState>
     | HowcodeServerConnectionState = getHowcodeServerState,
