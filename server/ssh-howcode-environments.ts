@@ -233,6 +233,30 @@ wait_for_pid_exit() {
   WAIT_COUNT=0
   while kill -0 "$PID_TO_WAIT" 2>/dev/null && [ "$WAIT_COUNT" -lt 20 ]; do WAIT_COUNT=$((WAIT_COUNT + 1)); sleep 0.1; done
 }
+wait_authenticated_ready() {
+  node - "$REMOTE_PORT" "$TOKEN" <<'NODE'
+const port = Number.parseInt(process.argv[2] || '', 10)
+const token = process.argv[3] || ''
+const WebSocketCtor = globalThis.WebSocket
+if (!WebSocketCtor) process.exit(1)
+const url = 'ws://127.0.0.1:' + port + '/api/app/rpc?token=' + encodeURIComponent(token)
+const requestId = 'probe-' + Math.random().toString(36).slice(2)
+const timeout = setTimeout(() => process.exit(1), 1500)
+const ws = new WebSocketCtor(url)
+ws.addEventListener('open', () => {
+  ws.send(JSON.stringify({ id: requestId, type: 'app.request', channel: 'getHowcodeInstanceManifest', params: {} }))
+})
+ws.addEventListener('message', (event) => {
+  try {
+    const message = JSON.parse(String(event.data))
+    if (message.id !== requestId) return
+    clearTimeout(timeout)
+    process.exit(message.ok ? 0 : 1)
+  } catch { process.exit(1) }
+})
+ws.addEventListener('error', () => process.exit(1))
+NODE
+}
 REMOTE_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
 REMOTE_PORT="$(cat "$PORT_FILE" 2>/dev/null || true)"
 REMOTE_MANAGED="$(cat "$MANAGED_FILE" 2>/dev/null || true)"
@@ -252,7 +276,7 @@ else
 fi
 if [ -z "$REMOTE_PID" ] || [ -z "$REMOTE_PORT" ]; then
   REMOTE_PORT="$DEFAULT_REMOTE_PORT"
-  if wait_ready 1000; then
+  if wait_ready 1000 && wait_authenticated_ready; then
     printf '%s
 ' "$REMOTE_PORT" >"$PORT_FILE"
     printf 'external

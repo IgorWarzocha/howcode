@@ -294,7 +294,7 @@ export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) 
     Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(`${label} timed out after 5000ms`)), 5000),
+        setTimeout(() => reject(new Error(`${label} timed out after 30000ms`)), 30_000),
       ),
     ])
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)

@@ -228,7 +228,7 @@ export function createHowcodeRpcClientTransport(
         const result = (await Promise.race([
           rpcRequest,
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Howcode RPC request timed out.')), 5000),
+            setTimeout(() => reject(new Error('Howcode RPC request timed out.')), 30_000),
           ),
         ])) as DesktopRequestMap[K]['response']
         markConnected()
