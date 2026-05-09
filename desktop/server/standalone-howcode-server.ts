@@ -1,7 +1,10 @@
+import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { promisify } from 'node:util'
 import type { AppTransport } from '../../shared/app-transport'
 import type { Project } from '../../shared/desktop-contracts'
 import type { DesktopRequestHandlerMap } from '../../shared/desktop-ipc'
@@ -19,8 +22,20 @@ import { createTerminalHandlers } from '../../src/electron/main/ipc/request-hand
 import type { DesktopRuntimeModules } from '../../src/electron/main/runtime/desktop-runtime-contracts'
 import { startLocalHowcodeServer, stopLocalHowcodeServer } from './local-howcode-server'
 
+const execFileAsync = promisify(execFile)
+
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
+}
+
+function setProcessEnvironmentVariable(name: string, value: string) {
+  process.env[name] = value
+}
+
+function setDefaultProcessEnvironmentVariable(name: string, value: string) {
+  if (!getProcessEnvironmentVariable(name)) {
+    setProcessEnvironmentVariable(name, value)
+  }
 }
 
 type CliOptions = {
@@ -50,7 +65,9 @@ function parseOptions(args = process.argv.slice(2)): CliOptions {
     readFlag(args, '--token') ??
     getProcessEnvironmentVariable('HOWCODE_SERVER_TOKEN') ??
     randomUUID()
-  const runtimeRoot = getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ?? process.cwd()
+  const runtimeRoot = resolve(
+    getProcessEnvironmentVariable('HOWCODE_RUNTIME_ROOT') ?? process.cwd(),
+  )
   const webRoot =
     readFlag(args, '--web-root') ?? getProcessEnvironmentVariable('HOWCODE_WEB_ROOT') ?? null
   const port = Number.parseInt(portText, 10)
@@ -131,14 +148,52 @@ function createStandaloneInstanceManifestHandler(input: {
 }
 
 function configureStandalonePiEnvironment(runtimeRoot: string) {
-  process.env['PATH'] =
-    `${resolve(runtimeRoot, 'node_modules', '.bin')}:${process.env['PATH'] ?? ''}`
-  process.env['PI_PACKAGE_DIR'] ??= resolve(
-    runtimeRoot,
-    'node_modules',
-    '@earendil-works',
-    'pi-coding-agent',
+  setDefaultProcessEnvironmentVariable('HOWCODE_REPO_ROOT', runtimeRoot)
+  setDefaultProcessEnvironmentVariable(
+    'HOWCODE_USER_DATA_PATH',
+    resolve(homedir(), '.config', 'howcode'),
   )
+  setProcessEnvironmentVariable(
+    'PATH',
+    `${resolve(runtimeRoot, 'node_modules', '.bin')}:${getProcessEnvironmentVariable('PATH') ?? ''}`,
+  )
+  setDefaultProcessEnvironmentVariable(
+    'PI_PACKAGE_DIR',
+    resolve(runtimeRoot, 'node_modules', '@earendil-works', 'pi-coding-agent'),
+  )
+}
+
+async function assertExecutable(name: string, command: string, args: string[]) {
+  try {
+    await execFileAsync(command, args, { cwd: getDesktopWorkingDirectory(), timeout: 5_000 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Standalone Howcode backend parity check failed for ${name}: ${message}`)
+  }
+}
+
+async function verifyStandaloneBackendParity(runtime: DesktopRuntimeModules) {
+  const cwd = getDesktopWorkingDirectory()
+  await access(cwd).catch(() => {
+    throw new Error(`Standalone Howcode backend cwd does not exist: ${cwd}`)
+  })
+  const piPackageDir = getProcessEnvironmentVariable('PI_PACKAGE_DIR') ?? ''
+  await access(resolve(piPackageDir, 'package.json')).catch(() => {
+    throw new Error(`Standalone Howcode backend PI_PACKAGE_DIR is invalid: ${piPackageDir}`)
+  })
+
+  if (process.platform !== 'win32') {
+    const shell = getProcessEnvironmentVariable('SHELL')
+    await assertExecutable('shell', shell && shell.length > 0 ? shell : '/bin/bash', [
+      '-lc',
+      'true',
+    ])
+  }
+  await assertExecutable('pi executable', process.platform === 'win32' ? 'pi.cmd' : 'pi', [
+    '--version',
+  ])
+  await runtime.piThreads.loadShellState(cwd)
+  await runtime.piThreads.loadComposerState({ projectId: cwd, sessionPath: null })
 }
 
 async function importDesktopModule<TModule>(repoRoot: string, fileName: string) {
@@ -220,6 +275,7 @@ async function main() {
   const options = parseOptions()
   configureStandalonePiEnvironment(options.runtimeRoot)
   const runtime = await loadRuntime(options.runtimeRoot)
+  await verifyStandaloneBackendParity(runtime)
   const server = await startLocalHowcodeServer({
     config: {
       host: options.host,
