@@ -357,6 +357,17 @@ export function readSavedRemoteEnvironmentConnectionConfig(
   }
 }
 
+export function readSavedRemoteEnvironmentConnectionConfigs(): SavedRemoteEnvironmentConnectionConfig[] {
+  const database = getDatabase()
+  try {
+    return readRemoteEnvironments(database)
+      .map((environment) => getSavedRemoteEnvironmentConnectionConfig(database, environment.id))
+      .filter((config): config is SavedRemoteEnvironmentConnectionConfig => !('error' in config))
+  } finally {
+    closeDatabase(database)
+  }
+}
+
 function getSavedRemoteEnvironmentConnectionConfig(
   database: RemoteEnvironmentDatabase,
   id: string,

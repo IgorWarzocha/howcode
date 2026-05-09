@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { app, BrowserWindow } from 'electron'
 import { createHowcodeRpcClientTransport } from '../../../server/howcode-rpc-client-transport'
 import {
@@ -30,6 +31,7 @@ import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register
 import {
   getProjectRemoteEnvironmentAssignment,
   readSavedRemoteEnvironmentConnectionConfig,
+  readSavedRemoteEnvironmentConnectionConfigs,
 } from './ipc/request-handlers/remote-environments'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
@@ -63,6 +65,7 @@ let howcodeServerState = createHowcodeServerConnectionState({
   environment: disabledEnvironment,
 })
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
+const windowsAbsolutePathPattern = /^[A-Za-z]:[/]/
 
 app.setName('howcode')
 
@@ -609,6 +612,14 @@ function getEnvironmentIdFromRequestParams(params: unknown) {
       : null
 }
 
+function isAbsolutePath(value: string) {
+  return value.startsWith('/') || windowsAbsolutePathPattern.test(value)
+}
+
+function isLocalPath(value: string) {
+  return !isAbsolutePath(value) || existsSync(value)
+}
+
 function getLocalRequestEnvironment() {
   return localHowcodeServer
     ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
@@ -630,6 +641,23 @@ async function activateSavedRemoteEnvironment(environmentId: string) {
   return activeHowcodeEnvironment
 }
 
+async function activateSingleSavedRemoteForPath(pathKind: 'Project' | 'Session') {
+  if (activeRemoteServer) return activeHowcodeEnvironment
+  const savedRemotes = readSavedRemoteEnvironmentConnectionConfigs()
+  const onlySavedRemote = savedRemotes[0] ?? null
+  if (onlySavedRemote && savedRemotes.length === 1) {
+    return await activateSavedRemoteEnvironment(onlySavedRemote.environment.id)
+  }
+  if (savedRemotes.length > 1) {
+    throw new Error(
+      `${pathKind} belongs to a non-local path. Assign the project to a remote environment before running it.`,
+    )
+  }
+  throw new Error(
+    `${pathKind} belongs to a non-local path, but no remote environment is configured.`,
+  )
+}
+
 async function resolveExplicitEnvironment(environmentId: string) {
   const normalizedEnvironmentId = normalizeRemoteEnvironmentId(environmentId)
   if (activeRemoteServer?.remoteEnvironmentId === normalizedEnvironmentId)
@@ -640,6 +668,9 @@ async function resolveExplicitEnvironment(environmentId: string) {
 async function resolveProjectEnvironment(projectId: string) {
   if (activeRemoteProjectIds.has(projectId) || isActiveRemotePath(projectId)) {
     return activeHowcodeEnvironment
+  }
+  if (isAbsolutePath(projectId) && !isLocalPath(projectId)) {
+    return await activateSingleSavedRemoteForPath('Project')
   }
   const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
   if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId === assignedRemoteId) {
@@ -669,6 +700,13 @@ async function resolveEnvironmentForDesktopRequest<
   }
   if (sessionPath && isActiveRemotePath(sessionPath)) {
     return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
+  }
+  if (sessionPath && isAbsolutePath(sessionPath) && !isLocalPath(sessionPath)) {
+    return resolveHowcodeEnvironmentForRequest(
+      await activateSingleSavedRemoteForPath('Session'),
+      channel,
+      params,
+    )
   }
   if (sessionPath && !isActiveRemotePath(sessionPath)) {
     return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
