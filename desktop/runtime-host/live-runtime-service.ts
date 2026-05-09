@@ -1,6 +1,7 @@
 const whitespaceRunPattern = /\s+/
 const dollarSkillTokenPattern = /(^|\s)\$([\w./-]+)/g
 
+import { spawnSync } from 'node:child_process'
 import { parseCompactSlashCommand } from '../../shared/composer-slash-commands.ts'
 import type {
   ComposerAttachment,
@@ -275,33 +276,70 @@ export async function getComposerState(request: ComposerStateRequest = {}) {
 }
 
 export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) {
+  const directShell = spawnSync('/bin/bash', ['-lc', 'pwd && command -v bash && command -v sh'], {
+    cwd: request.projectId ?? process.cwd(),
+    encoding: 'utf8',
+  })
+  const timeout = <T>(promise: Promise<T>, label: string) =>
+    Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after 5000ms`)), 5000),
+      ),
+    ])
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
-  const runtime = persistedSessionPath
-    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-        suspendDisposal: true,
-        settingsCwd: request.composerSessionDir ?? null,
-        chatGroupId: request.chatGroupId ?? null,
-      })
-    : await createRuntimeForNewSession(
-        request.projectId ?? getDesktopWorkingDirectory(),
-        request.composerSessionDir,
-        { chatGroupId: request.chatGroupId ?? null },
-      )
+  const runtime = await timeout(
+    persistedSessionPath
+      ? getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+          suspendDisposal: true,
+          settingsCwd: request.composerSessionDir ?? null,
+          chatGroupId: request.chatGroupId ?? null,
+        })
+      : createRuntimeForNewSession(
+          request.projectId ?? getDesktopWorkingDirectory(),
+          request.composerSessionDir,
+          { chatGroupId: request.chatGroupId ?? null },
+        ),
+    'runtime creation',
+  )
 
   try {
     const chunks: Buffer[] = []
-    await runtime.session.executeBash('pwd && command -v bash && command -v sh', (chunk) =>
-      chunks.push(Buffer.from(chunk)),
+    await timeout(
+      runtime.session.executeBash('pwd && command -v bash && command -v sh', (chunk) =>
+        chunks.push(Buffer.from(chunk)),
+      ),
+      'runtime shell',
     )
     return {
       activeTools: runtime.session.getActiveToolNames(),
       cwd: runtime.cwd,
+      directShell: {
+        ok: directShell.status === 0,
+        output: directShell.stdout,
+        error: directShell.stderr || directShell.error?.message,
+      },
+      env: {
+        PATH: process.env['PATH'],
+        PI_PACKAGE_DIR: process.env['PI_PACKAGE_DIR'],
+        SHELL: process.env['SHELL'],
+      },
       shell: { ok: true, output: Buffer.concat(chunks).toString('utf8') },
     }
   } catch (error) {
     return {
       activeTools: runtime.session.getActiveToolNames(),
       cwd: runtime.cwd,
+      directShell: {
+        ok: directShell.status === 0,
+        output: directShell.stdout,
+        error: directShell.stderr || directShell.error?.message,
+      },
+      env: {
+        PATH: process.env['PATH'],
+        PI_PACKAGE_DIR: process.env['PI_PACKAGE_DIR'],
+        SHELL: process.env['SHELL'],
+      },
       shell: { ok: false, error: error instanceof Error ? error.message : String(error) },
     }
   } finally {
