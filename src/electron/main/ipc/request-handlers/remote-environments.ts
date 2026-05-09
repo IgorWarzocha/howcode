@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 import { app, safeStorage } from 'electron'
+import { createHowcodeRpcClientTransport } from '../../../../../server/howcode-rpc-client-transport'
 import {
   ensureSshHowcodeServer,
   type SshHowcodeEnvironmentConnection,
@@ -14,9 +15,7 @@ import type {
 } from '../../../../../shared/howcode-server-contracts'
 import {
   assertCompatibleHowcodeServerDescriptor,
-  HOWCODE_LEGACY_SERVER_REQUEST_PREFIX,
   HOWCODE_SERVER_DESCRIPTOR_PATH,
-  type HowcodeInstanceManifest,
   type HowcodeServerDescriptor,
 } from '../../../../../shared/howcode-server-contracts'
 
@@ -293,19 +292,8 @@ export function resolveRemoteEnvironmentBaseUrl(environment: HowcodeRemoteEnviro
 // check whether howcode serve is reachable on the remote, distinguish invalid token from
 // wrong port/host, and report settings mismatches instead of just "is a server running".
 async function requestRemoteInstanceManifest(baseUrl: string, token: string) {
-  const response = await fetch(
-    new URL(`${HOWCODE_LEGACY_SERVER_REQUEST_PREFIX}getHowcodeInstanceManifest`, baseUrl),
-    {
-      body: JSON.stringify({}),
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      method: 'POST',
-    },
-  )
-  if (!response.ok) throw new Error(`Auth failed (${response.status}).`)
-  return (await response.json()) as HowcodeInstanceManifest
+  const transport = createHowcodeRpcClientTransport({ authToken: token, baseUrl })
+  return await transport.request('getHowcodeInstanceManifest', {})
 }
 
 async function discoverRemoteEnvironmentConnection(
