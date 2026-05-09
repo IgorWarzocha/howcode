@@ -130,6 +130,17 @@ function createStandaloneInstanceManifestHandler(input: {
   }
 }
 
+function configureStandalonePiEnvironment(runtimeRoot: string) {
+  process.env['PATH'] =
+    `${resolve(runtimeRoot, 'node_modules', '.bin')}:${process.env['PATH'] ?? ''}`
+  process.env['PI_PACKAGE_DIR'] ??= resolve(
+    runtimeRoot,
+    'node_modules',
+    '@earendil-works',
+    'pi-coding-agent',
+  )
+}
+
 async function importDesktopModule<TModule>(repoRoot: string, fileName: string) {
   const modulePath = resolve(repoRoot, 'build', 'desktop', fileName)
   return (await import(pathToFileURL(modulePath).href)) as TModule
@@ -207,6 +218,7 @@ function createRuntimeEventTransport(
 
 async function main() {
   const options = parseOptions()
+  configureStandalonePiEnvironment(options.runtimeRoot)
   const runtime = await loadRuntime(options.runtimeRoot)
   const server = await startLocalHowcodeServer({
     config: {

@@ -95,7 +95,7 @@ function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
   const command = [
     'export PATH="$HOME/.bun/bin:$PATH"',
     `if command -v howcode >/dev/null 2>&1; then exec howcode ${serveArgs}; fi`,
-    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && exec bun run server:dev -- ${serveArgs.slice('serve '.length)}; fi`,
+    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && exec bun run server:dev -- ${serveArgs.slice('serve '.length)}; fi`,
     'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
     'exit 127',
   ].join('; ')
