@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { app, BrowserWindow } from 'electron'
+import type { HowcodeRpcClientTransport } from '../../../server/howcode-rpc-client-transport'
 import { createHowcodeRpcClientTransport } from '../../../server/howcode-rpc-client-transport'
 import {
   type LocalHowcodeServer,
@@ -143,6 +144,34 @@ function createHowcodeServerConnectionState({
     reconnectPhase,
     serverKind: serverKind ?? getServerKindForEnvironment(environment),
   }
+}
+
+function isHowcodeRpcClientTransport(
+  transport: AppTransport | null,
+): transport is HowcodeRpcClientTransport {
+  return Boolean(
+    transport &&
+      'getStatus' in transport &&
+      typeof (transport as { getStatus?: unknown }).getStatus === 'function',
+  )
+}
+
+function getCurrentHowcodeServerState() {
+  if (!isHowcodeRpcClientTransport(activeServerTransport)) return howcodeServerState
+  const transportStatus = activeServerTransport.getStatus()
+  return {
+    ...howcodeServerState,
+    attemptCount: transportStatus.attemptCount,
+    connected: transportStatus.phase === 'connected' && howcodeServerState.connected,
+    connectedAt: transportStatus.connectedAt ?? howcodeServerState.connectedAt,
+    disconnectedAt: transportStatus.disconnectedAt ?? howcodeServerState.disconnectedAt,
+    lastError: transportStatus.lastError ?? howcodeServerState.lastError,
+    lastErrorAt: transportStatus.lastErrorAt ?? howcodeServerState.lastErrorAt,
+    nextRetryAt: transportStatus.nextRetryAt,
+    phase: transportStatus.phase,
+    reconnectAttemptCount: transportStatus.reconnectAttemptCount,
+    reconnectPhase: transportStatus.reconnectPhase,
+  } satisfies HowcodeServerConnectionState
 }
 
 function sendDesktopEventToRenderer(event: unknown) {
@@ -801,7 +830,7 @@ async function bootstrap() {
         ? activeServerTransport
         : null
     },
-    () => howcodeServerState,
+    getCurrentHowcodeServerState,
     refreshActiveServerState,
     {
       clearActiveRemoteEnvironment,
