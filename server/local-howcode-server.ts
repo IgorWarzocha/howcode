@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { Effect } from 'effect'
 import type { AppTransport } from '../shared/app-transport'
 import type { DesktopRequestHandlerMap } from '../shared/desktop-ipc'
+import { createHowcodeRpcClientTransport } from './howcode-rpc-client-transport'
 import { type HowcodeServerHandle, startHowcodeServer } from './howcode-server'
-import { createHowcodeServerTransport } from './howcode-server-transport'
 
 export type LocalHowcodeServer = {
   handle: HowcodeServerHandle
@@ -51,7 +51,7 @@ export async function startLocalHowcodeServer(input: {
     authToken,
     baseUrl,
     handle,
-    transport: createHowcodeServerTransport({ authToken, baseUrl }),
+    transport: createHowcodeRpcClientTransport({ authToken, baseUrl }),
   }
 }
 
