@@ -109,6 +109,31 @@ function requestViaRpcWebSocket<K extends DesktopRequestChannel>(
   })
 }
 
+function subscribeViaRpcWebSocket<TChannel extends DesktopEventChannel>(
+  config: HowcodeRpcClientTransportConfig,
+  channel: TChannel,
+  listener: (event: DesktopEventMap[TChannel]) => void,
+) {
+  const subscriptionId = crypto.randomUUID()
+  const webSocket = new WebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken))
+  webSocket.on('open', () => {
+    webSocket.send(
+      JSON.stringify({ id: subscriptionId, type: HOWCODE_RPC_METHODS.eventsSubscribe, channel }),
+    )
+  })
+  webSocket.on('message', (data) => {
+    const message = JSON.parse(data.toString()) as {
+      id?: string
+      type?: string
+      event?: DesktopEventMap[TChannel]
+    }
+    if (message.id === subscriptionId && message.type === 'event') {
+      listener(message.event as DesktopEventMap[TChannel])
+    }
+  })
+  return () => webSocket.close(1000)
+}
+
 export function createHowcodeRpcClientTransport(
   config: HowcodeRpcClientTransportConfig,
 ): HowcodeRpcClientTransport {
@@ -209,7 +234,7 @@ export function createHowcodeRpcClientTransport(
     subscribe: <TChannel extends DesktopEventChannel>(
       channel: TChannel,
       listener: (event: DesktopEventMap[TChannel]) => void,
-    ) => legacyEventsTransport.subscribe(channel, listener),
+    ) => subscribeViaRpcWebSocket(config, channel, listener),
   }
 }
 

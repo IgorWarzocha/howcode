@@ -167,6 +167,36 @@ function installRawRpcCompatibilityHandler(webSocket: WebSocket, transport: AppT
   })
 }
 
+function installRawRpcEventHandler(webSocket: WebSocket, transport: AppTransport) {
+  const unsubscribers = new Map<string, () => void>()
+  webSocket.on('close', () => {
+    for (const unsubscribe of unsubscribers.values()) unsubscribe()
+    unsubscribers.clear()
+  })
+  webSocket.on('message', (data) => {
+    void (async () => {
+      let message: { id?: unknown; type?: unknown; channel?: unknown }
+      try {
+        message = JSON.parse(data.toString())
+      } catch {
+        return
+      }
+      if (message.type !== 'events.subscribe') return
+      if (typeof message.id !== 'string') return
+      const channel = message.channel as DesktopEventChannel
+      unsubscribers.get(message.id)?.()
+      const unsubscribe = transport.subscribe(
+        channel,
+        (event: DesktopEventMap[DesktopEventChannel]) => {
+          webSocket.send(JSON.stringify({ id: message.id, channel, event, type: 'event' }))
+        },
+      )
+      unsubscribers.set(message.id, unsubscribe)
+      webSocket.send(JSON.stringify({ id: message.id, ok: true, type: 'subscribed' }))
+    })()
+  })
+}
+
 export function installHowcodeRpcWebSocketServer(options: {
   server: Server
   path: string
@@ -193,6 +223,7 @@ export function installHowcodeRpcWebSocketServer(options: {
     }
     webSocketServer.handleUpgrade(request, networkSocket, head, (webSocket) => {
       installRawRpcCompatibilityHandler(webSocket, options.transport)
+      installRawRpcEventHandler(webSocket, options.transport)
       Queue.offerUnsafe(queue, makeWsSocket(webSocket))
     })
   })

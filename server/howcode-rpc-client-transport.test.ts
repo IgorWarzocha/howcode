@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AppTransport } from '../shared/app-transport'
+import type { DesktopEvent } from '../shared/desktop-contracts'
 import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
   createHowcodeRpcClientTransport,
@@ -51,6 +52,35 @@ describe('Howcode RPC client transport', () => {
       data: 'hello',
       sessionId: 'terminal-1',
     })
+  })
+
+  it('streams events over the RPC websocket', async () => {
+    const listeners = new Set<(event: DesktopEvent) => void>()
+    const baseUrl = await startTestServer({
+      request: vi.fn(),
+      subscribe: vi.fn((_channel, listener) => {
+        listeners.add(listener as (event: DesktopEvent) => void)
+        return () => listeners.delete(listener as (event: DesktopEvent) => void)
+      }),
+    })
+    const transport = createHowcodeRpcClientTransport({ authToken: 'test-token', baseUrl })
+
+    const event = new Promise<DesktopEvent>((resolve) => {
+      const unsubscribe = transport.subscribe('desktopEvent', (desktopEvent) => {
+        unsubscribe()
+        resolve(desktopEvent as DesktopEvent)
+      })
+      const emitWhenSubscribed = () => {
+        if (listeners.size === 0) {
+          setTimeout(emitWhenSubscribed, 5)
+          return
+        }
+        for (const listener of listeners) listener({ type: 'shell-state-refresh' })
+      }
+      emitWhenSubscribed()
+    })
+
+    await expect(event).resolves.toEqual({ type: 'shell-state-refresh' })
   })
 
   it('updates status on manual reconnect', async () => {
