@@ -10,6 +10,7 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../shared/desktop-ipc'
+import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH,
@@ -22,6 +23,7 @@ import type {
   HowcodeServerWsClientMessage,
   HowcodeServerWsServerMessage,
 } from '../shared/howcode-server-ws'
+import { installHowcodeRpcWebSocketServer } from './rpc-howcode-server'
 
 export type HowcodeServerConfig = {
   host: string
@@ -425,6 +427,12 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
       handleRequest(config, transport, request, response),
     )
     const closeWebSocketServer = installWebSocketEvents(server, config, transport)
+    const closeRpcWebSocketServer = installHowcodeRpcWebSocketServer({
+      isAuthorized: (request) => hasValidAuthToken(request, config.authToken),
+      path: HOWCODE_RPC_WS_PATH,
+      server,
+      transport,
+    })
 
     server.once('error', (cause) => {
       resume(
@@ -447,7 +455,10 @@ export function startHowcodeServer(config: HowcodeServerConfig, transport: AppTr
             port,
           },
           authToken: config.authToken,
-          close: Effect.sync(closeWebSocketServer).pipe(Effect.andThen(closeServer(server))),
+          close: Effect.sync(() => {
+            closeWebSocketServer()
+            closeRpcWebSocketServer()
+          }).pipe(Effect.andThen(closeServer(server))),
         }),
       )
     })

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 import type { AppTransport } from '../shared/app-transport'
 import type { DesktopEvent } from '../shared/desktop-contracts'
+import { HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   howcodeServerDescriptor,
@@ -127,6 +128,22 @@ describe('Howcode server', () => {
       type: 'event',
       channel: 'desktopEvent',
       event: { type: 'shell-state-refresh' },
+    })
+  })
+
+  it('rejects unauthenticated Effect RPC WebSocket upgrades', async () => {
+    const { baseUrl } = await startTestServer({
+      request: vi.fn(),
+      subscribe: vi.fn(),
+    })
+
+    const failure = new Promise<Error>((resolve) => {
+      const webSocket = new WebSocket(new URL(HOWCODE_RPC_WS_PATH, baseUrl))
+      webSocket.on('error', resolve)
+    })
+
+    await expect(failure).resolves.toMatchObject({
+      message: 'Unexpected server response: 401',
     })
   })
 
