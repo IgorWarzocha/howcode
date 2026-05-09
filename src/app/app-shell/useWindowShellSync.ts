@@ -24,10 +24,16 @@ export function useWatchedSessionSync(workspaceState: WorkspaceState) {
         ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : null
 
-    void window.piDesktop.watchSession(watchedSessionPath).catch((error) => {
-      console.warn('Failed to update watched Pi session.', error)
-    })
-  }, [workspaceState.activeView, workspaceState.selectedSessionPath])
+    void window.piDesktop
+      .watchSession(watchedSessionPath, workspaceState.selectedProjectEnvironmentId)
+      .catch((error) => {
+        console.warn('Failed to update watched Pi session.', error)
+      })
+  }, [
+    workspaceState.activeView,
+    workspaceState.selectedProjectEnvironmentId,
+    workspaceState.selectedSessionPath,
+  ])
 }
 
 export function useUtilityViewEscape({

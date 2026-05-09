@@ -130,8 +130,8 @@ export function createDesktopApiFromTransport(
     getArchivedThreads: () => request('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
       request('getThread', { sessionPath, historyCompactions }),
-    watchSession: async (sessionPath: string | null) => {
-      await request('watchSession', { sessionPath })
+    watchSession: async (sessionPath: string | null, environmentId: string | null = null) => {
+      await request('watchSession', { environmentId, sessionPath })
     },
     invokeAction: (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
       request('invokeAction', { action, payload }),

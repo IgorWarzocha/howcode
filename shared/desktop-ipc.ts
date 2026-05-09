@@ -307,7 +307,10 @@ export type DesktopRequestMap = {
     params: { sessionPath: string; historyCompactions?: number | undefined }
     response: ThreadData | null
   }
-  watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } }
+  watchSession: {
+    params: { environmentId?: string | null | undefined; sessionPath: string | null }
+    response: { ok: boolean }
+  }
   invokeAction: {
     params: { action: DesktopAction; payload?: AnyDesktopActionPayload | undefined }
     response: DesktopActionResult

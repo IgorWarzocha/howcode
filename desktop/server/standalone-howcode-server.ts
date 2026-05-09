@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
@@ -150,7 +151,7 @@ function createStandaloneInstanceManifestHandler(input: {
 function configureStandalonePiEnvironment(runtimeRoot: string) {
   setDefaultProcessEnvironmentVariable('HOWCODE_REPO_ROOT', runtimeRoot)
   if (process.platform !== 'win32') {
-    setDefaultProcessEnvironmentVariable('SHELL', '/bin/bash')
+    setProcessEnvironmentVariable('SHELL', resolveStandaloneShell())
   }
   setDefaultProcessEnvironmentVariable(
     'HOWCODE_USER_DATA_PATH',
@@ -164,6 +165,14 @@ function configureStandalonePiEnvironment(runtimeRoot: string) {
     'PI_PACKAGE_DIR',
     resolve(runtimeRoot, 'node_modules', '@earendil-works', 'pi-coding-agent'),
   )
+}
+
+function resolveStandaloneShell() {
+  const configuredShell = getProcessEnvironmentVariable('SHELL')
+  for (const candidate of [configuredShell, '/bin/bash', '/usr/bin/bash', '/bin/sh']) {
+    if (candidate && existsSync(candidate)) return candidate
+  }
+  return '/bin/sh'
 }
 
 async function assertExecutable(name: string, command: string, args: string[]) {

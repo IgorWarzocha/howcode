@@ -226,7 +226,7 @@ declare global {
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>
-      watchSession?: (sessionPath: string | null) => Promise<void>
+      watchSession?: (sessionPath: string | null, environmentId?: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
       writeTerminal?: (sessionId: string, data: string) => Promise<void>

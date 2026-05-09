@@ -148,6 +148,7 @@ export function applyOptimisticComposerThread({
   if (
     activeView === 'inbox' ||
     typeof contextualPayload.projectId !== 'string' ||
+    typeof contextualPayload.environmentId === 'string' ||
     contextualPayload.sessionPath
   ) {
     return { contextualPayload }
@@ -252,10 +253,7 @@ export function reconcileComposerThreadResult({
       : null
   const sendOutcome = actionResult?.result?.composerSendOutcome
 
-  if (
-    !(projectId && resultSessionPath && resultThreadId) ||
-    (submittedSessionPath && !isLocalSessionPath(submittedSessionPath))
-  ) {
+  if (!(projectId && resultSessionPath && resultThreadId)) {
     if (sendOutcome === 'stopped') {
       removeFailedOptimisticComposerThread({
         contextualPayload,
@@ -296,6 +294,8 @@ export function reconcileComposerThreadResult({
   )
   dispatch({
     type: 'open-thread',
+    environmentId:
+      typeof contextualPayload.environmentId === 'string' ? contextualPayload.environmentId : null,
     projectId,
     threadId: resultThreadId,
     sessionPath: resultSessionPath,

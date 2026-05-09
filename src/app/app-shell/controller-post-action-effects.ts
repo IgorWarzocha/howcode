@@ -206,7 +206,12 @@ function getNewThreadResult(ctx: PostEffectsContext) {
 
 function applyAndOpenOptimisticThread(
   ctx: PostEffectsContext,
-  input: { projectId: string; threadId: string; sessionPath: string },
+  input: {
+    environmentId?: string | null
+    projectId: string
+    threadId: string
+    sessionPath: string
+  },
 ) {
   const optimisticThread = {
     id: input.threadId,
@@ -220,6 +225,7 @@ function applyAndOpenOptimisticThread(
   })
   ctx.dispatch({
     type: 'open-thread',
+    environmentId: input.environmentId ?? null,
     projectId: input.projectId,
     threadId: input.threadId,
     sessionPath: input.sessionPath,
@@ -234,6 +240,10 @@ async function handleNewThreadBridgeResult(
   const nextProjectId = result.resultProjectId ?? result.projectId
   if (!(nextProjectId && result.threadId && result.sessionPath)) return false
   const optimisticThread = applyAndOpenOptimisticThread(ctx, {
+    environmentId:
+      typeof ctx.contextualPayload.environmentId === 'string'
+        ? ctx.contextualPayload.environmentId
+        : null,
     projectId: nextProjectId,
     threadId: result.threadId,
     sessionPath: result.sessionPath,
@@ -252,6 +262,10 @@ async function handleNewThreadNavigation(
   if (await handleNewThreadBridgeResult(ctx, result)) return
   if (result.localFallback) {
     applyAndOpenOptimisticThread(ctx, {
+      environmentId:
+        typeof ctx.contextualPayload.environmentId === 'string'
+          ? ctx.contextualPayload.environmentId
+          : null,
       projectId: result.localFallback.projectId,
       threadId: result.localFallback.threadId,
       sessionPath: result.localFallback.sessionPath,
@@ -260,7 +274,14 @@ async function handleNewThreadNavigation(
   }
   const nextProjectId = result.resultProjectId ?? result.projectId
   if (nextProjectId) {
-    ctx.dispatch({ type: 'select-project', projectId: nextProjectId })
+    ctx.dispatch({
+      type: 'select-project',
+      environmentId:
+        typeof ctx.contextualPayload.environmentId === 'string'
+          ? ctx.contextualPayload.environmentId
+          : null,
+      projectId: nextProjectId,
+    })
     await ctx.loadProjectThreads(nextProjectId)
     return
   }

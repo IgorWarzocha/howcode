@@ -48,6 +48,10 @@ function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
 }
 
+function getDiagnosticShell() {
+  return getProcessEnvironmentVariable('SHELL') || '/bin/bash'
+}
+
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   const runtimePromise = persistedSessionPath
@@ -280,7 +284,9 @@ export async function getComposerState(request: ComposerStateRequest = {}) {
 }
 
 export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) {
-  const directShell = spawnSync('/bin/bash', ['-lc', 'pwd && command -v bash && command -v sh'], {
+  const diagnosticShell = getDiagnosticShell()
+  const diagnosticCommand = 'pwd && (command -v bash || command -v sh)'
+  const directShell = spawnSync(diagnosticShell, ['-c', diagnosticCommand], {
     cwd: request.projectId ?? process.cwd(),
     encoding: 'utf8',
   })
@@ -310,9 +316,7 @@ export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) 
   try {
     const chunks: Buffer[] = []
     await timeout(
-      runtime.session.executeBash('pwd && command -v bash && command -v sh', (chunk) =>
-        chunks.push(Buffer.from(chunk)),
-      ),
+      runtime.session.executeBash(diagnosticCommand, (chunk) => chunks.push(Buffer.from(chunk))),
       'runtime shell',
     )
     return {
