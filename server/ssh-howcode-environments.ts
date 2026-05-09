@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { createServer } from 'node:net'
+import { createServer, Socket } from 'node:net'
 import WebSocket from 'ws'
 import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import {
@@ -104,8 +104,12 @@ function shellQuote(value: string) {
   return `'${value.replaceAll("'", `'\\''`)}'`
 }
 
+function normalizeSshTarget(host: string) {
+  return host.trim().toLowerCase()
+}
+
 function remoteStateKey(host: string) {
-  return Buffer.from(host).toString('base64url').slice(0, 80)
+  return Buffer.from(normalizeSshTarget(host)).toString('base64url').slice(0, 80)
 }
 
 function buildRemoteRunnerScript(config: SshHowcodeEnvironmentConfig) {
@@ -247,6 +251,16 @@ else
   REMOTE_MANAGED=""
 fi
 if [ -z "$REMOTE_PID" ] || [ -z "$REMOTE_PORT" ]; then
+  REMOTE_PORT="$DEFAULT_REMOTE_PORT"
+  if wait_ready 1000; then
+    printf '%s
+' "$REMOTE_PORT" >"$PORT_FILE"
+    printf 'external
+' >"$MANAGED_FILE"
+    printf '{"remotePort":%s,"serverKind":"external"}
+' "$REMOTE_PORT"
+    exit 0
+  fi
   REMOTE_PORT="$(pick_port)" || true
   if [ -z "$REMOTE_PORT" ]; then echo 'Failed to find an available remote port.' >&2; exit 1; fi
   nohup "$RUNNER_FILE" "$REMOTE_PORT" "$TOKEN" >>"$LOG_FILE" 2>&1 < /dev/null &
@@ -447,7 +461,12 @@ function parseRemoteLaunchResult(stdout: string): RemoteLaunchResult {
 }
 
 function connectionKey(config: SshHowcodeEnvironmentConfig) {
-  return [config.host, config.token, config.remotePort, config.remoteCommand ?? ''].join('\0')
+  return [
+    normalizeSshTarget(config.host),
+    config.token,
+    config.remotePort,
+    config.remoteCommand ?? '',
+  ].join('\0')
 }
 
 async function launchOrReuseRemoteServer(config: SshHowcodeEnvironmentConfig) {
@@ -474,6 +493,64 @@ async function reserveLoopbackPort() {
       })
     })
   })
+}
+
+async function isLoopbackPortListening(port: number) {
+  return await new Promise<boolean>((resolve) => {
+    const socket = new Socket()
+    socket.setTimeout(250)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once('timeout', () => {
+      socket.destroy()
+      resolve(false)
+    })
+    socket.once('error', () => resolve(false))
+    socket.connect(port, '127.0.0.1')
+  })
+}
+
+async function waitForTunnelAuthenticatedServer(options: {
+  baseUrl: string
+  token: string
+  localPort: number
+  remotePort: number
+  tunnelProcess: ManagedSshProcess
+}) {
+  let exitResult: { code: number | null; signal: NodeJS.Signals | null } | null = null
+  const tunnelExit = new Promise<never>((_resolve, reject) => {
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      exitResult = { code, signal }
+      reject(
+        new Error(
+          `SSH tunnel exited during readiness (${code ?? signal ?? 'error'})${options.tunnelProcess.recentOutput()}`,
+        ),
+      )
+    }
+    options.tunnelProcess.child.once('exit', onExit)
+  })
+
+  try {
+    await Promise.race([
+      waitForAuthenticatedServer(options.baseUrl, options.token, 20_000),
+      tunnelExit,
+    ])
+  } catch (error) {
+    const listening = await isLoopbackPortListening(options.localPort)
+    const running = !options.tunnelProcess.child.killed && exitResult === null
+    throw new Error(
+      [
+        `SSH tunnel readiness failed for ${options.baseUrl}.`,
+        `localPort=${options.localPort}`,
+        `remotePort=${options.remotePort}`,
+        `tunnelRunning=${running}`,
+        `localPortListening=${listening}`,
+        error instanceof Error ? error.message : String(error),
+      ].join(' '),
+    )
+  }
 }
 
 export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentConfig | null {
@@ -523,7 +600,13 @@ async function createSshHowcodeServerConnection(
 
   const baseUrl = `http://127.0.0.1:${localPort}`
   try {
-    await waitForAuthenticatedServer(baseUrl, config.token, 20_000)
+    await waitForTunnelAuthenticatedServer({
+      baseUrl,
+      localPort,
+      remotePort: remoteServer.remotePort,
+      token: config.token,
+      tunnelProcess,
+    })
   } catch (error) {
     closeChild(tunnelProcess.child)
     throw error
@@ -591,11 +674,17 @@ export async function ensureSshHowcodeServer(
   }
 }
 
+export function disconnectSshHowcodeServer(config: SshHowcodeEnvironmentConfig) {
+  const connection = activeConnections.get(connectionKey(config)) ?? null
+  connection?.close()
+}
+
 export const sshHowcodeEnvironmentInternals = {
   buildRemoteLaunchScript,
   buildRemoteRunnerScript,
   connectionKey,
   parseRemoteLaunchResult,
   redactSensitiveText,
+  normalizeSshTarget,
   remoteStateKey,
 }

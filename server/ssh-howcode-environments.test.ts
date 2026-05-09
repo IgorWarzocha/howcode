@@ -25,6 +25,7 @@ describe('ssh howcode environment internals', () => {
 
     expect(script).toContain('$HOME/.howcode/ssh-launch/$STATE_KEY')
     expect(script).toContain('pick_port()')
+    expect(script).toContain('serverKind":"external')
     expect(script).toContain('server.log')
     expect(script).toContain('"serverKind":"%s"')
   })
@@ -56,6 +57,12 @@ describe('ssh howcode environment internals', () => {
   it('keys managed connections by target and launch inputs', () => {
     expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).toBe(
       sshHowcodeEnvironmentInternals.connectionKey({ ...baseConfig }),
+    )
+    expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).toBe(
+      sshHowcodeEnvironmentInternals.connectionKey({
+        ...baseConfig,
+        host: baseConfig.host.toUpperCase(),
+      }),
     )
     expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).not.toBe(
       sshHowcodeEnvironmentInternals.connectionKey({ ...baseConfig, token: 'other-token' }),

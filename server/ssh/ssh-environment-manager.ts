@@ -3,7 +3,10 @@ import type {
   SshHowcodeEnvironmentConfig,
   SshHowcodeEnvironmentConnection,
 } from '../ssh-howcode-environments'
-import { ensureSshHowcodeServer as ensureLegacySshHowcodeServer } from '../ssh-howcode-environments'
+import {
+  disconnectSshHowcodeServer,
+  ensureSshHowcodeServer as ensureLegacySshHowcodeServer,
+} from '../ssh-howcode-environments'
 
 export class SshEnvironmentError extends Data.TaggedError('SshEnvironmentError')<{
   message: string
@@ -14,7 +17,9 @@ export type SshHowcodeEnvironmentManager = {
   ensureEnvironment: (
     config: SshHowcodeEnvironmentConfig,
   ) => Effect.Effect<SshHowcodeEnvironmentConnection, SshEnvironmentError>
-  disconnectEnvironment: (connection: SshHowcodeEnvironmentConnection) => Effect.Effect<void, never>
+  disconnectEnvironment: (
+    config: SshHowcodeEnvironmentConfig,
+  ) => Effect.Effect<void, SshEnvironmentError>
 }
 
 export const sshHowcodeEnvironmentManager: SshHowcodeEnvironmentManager = {
@@ -27,9 +32,15 @@ export const sshHowcodeEnvironmentManager: SshHowcodeEnvironmentManager = {
           cause,
         }),
     }),
-  disconnectEnvironment: (connection) =>
-    Effect.sync(() => {
-      connection.close()
+  disconnectEnvironment: (config) =>
+    Effect.try({
+      try: () => disconnectSshHowcodeServer(config),
+      catch: (cause) =>
+        new SshEnvironmentError({
+          message:
+            cause instanceof Error ? cause.message : 'Failed to disconnect SSH Howcode server.',
+          cause,
+        }),
     }),
 }
 
