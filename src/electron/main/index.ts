@@ -44,6 +44,7 @@ let activeRemoteServer: {
   remoteEnvironmentId: string
 } | null = null
 let activeRemoteProjectIds = new Set<string>()
+let activeRemotePathRoots = new Set<string>()
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
@@ -55,6 +56,24 @@ app.setName('howcode')
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
+}
+
+function getPathOwnerRoot(filePath: string) {
+  if (!filePath.startsWith('/')) return null
+  const parts = filePath.split('/').filter(Boolean)
+  if (parts.length === 0) return null
+  if ((parts[0] === 'home' || parts[0] === 'Users') && parts[1]) {
+    return `/${parts[0]}/${parts[1]}`
+  }
+  return `/${parts[0]}`
+}
+
+function isActiveRemotePath(filePath: string | null) {
+  if (!filePath) return false
+  for (const root of activeRemotePathRoots) {
+    if (filePath === root || filePath.startsWith(`${root}/`)) return true
+  }
+  return false
 }
 
 function createHowcodeServerConnectionState({
@@ -249,6 +268,7 @@ async function setActiveRemoteEnvironment(config: {
     baseUrl,
   })
   activeRemoteProjectIds = new Set()
+  activeRemotePathRoots = new Set()
 
   try {
     const descriptor =
@@ -257,6 +277,11 @@ async function setActiveRemoteEnvironment(config: {
         : await fetchServerDescriptor(baseUrl)
     const manifest = await activeServerTransport.request('getHowcodeInstanceManifest', {})
     activeRemoteProjectIds = new Set(manifest.projects.map((project) => project.id))
+    activeRemotePathRoots = new Set(
+      manifest.projects
+        .map((project) => getPathOwnerRoot(project.id))
+        .filter((root) => root !== null),
+    )
     howcodeServerState = createHowcodeServerConnectionState({
       connected: true,
       descriptor,
@@ -277,6 +302,7 @@ async function clearActiveRemoteEnvironment() {
   sshHowcodeServer?.close()
   sshHowcodeServer = null
   activeRemoteProjectIds = new Set()
+  activeRemotePathRoots = new Set()
   activeRemoteServer = null
   activeServerTransport = localHowcodeServer?.transport ?? null
   if (localHowcodeServer) {
@@ -357,10 +383,43 @@ function getProjectIdFromRequestParams(params: unknown) {
       : null
 }
 
+function getSessionPathFromRequestParams(params: unknown) {
+  return params &&
+    typeof params === 'object' &&
+    'sessionPath' in params &&
+    typeof params.sessionPath === 'string'
+    ? params.sessionPath
+    : params &&
+        typeof params === 'object' &&
+        'payload' in params &&
+        params.payload &&
+        typeof params.payload === 'object' &&
+        'sessionPath' in params.payload &&
+        typeof params.payload.sessionPath === 'string'
+      ? params.payload.sessionPath
+      : null
+}
+
+function getLocalRequestEnvironment() {
+  return localHowcodeServer
+    ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
+    : disabledEnvironment
+}
+
 function resolveEnvironmentForDesktopRequest<
   K extends import('../../../shared/desktop-ipc').DesktopRequestChannel,
 >(channel: K, params: import('../../../shared/desktop-ipc').DesktopRequestMap[K]['params']) {
+  if (channel === 'getShellState' && localHowcodeServer) {
+    return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
+  }
   const projectId = getProjectIdFromRequestParams(params)
+  const sessionPath = getSessionPathFromRequestParams(params)
+  if (sessionPath && isActiveRemotePath(sessionPath)) {
+    return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
+  }
+  if (sessionPath && !isActiveRemotePath(sessionPath)) {
+    return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
+  }
   if (projectId) {
     if (activeRemoteProjectIds.has(projectId)) {
       return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
@@ -369,13 +428,7 @@ function resolveEnvironmentForDesktopRequest<
     if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId !== assignedRemoteId) {
       throw new Error('Project is assigned to a remote environment that is not active yet.')
     }
-    return resolveHowcodeEnvironmentForRequest(
-      localHowcodeServer
-        ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
-        : disabledEnvironment,
-      channel,
-      params,
-    )
+    return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
   }
   return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
 }
