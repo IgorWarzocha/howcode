@@ -1,4 +1,13 @@
-import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from 'lucide-react'
+import {
+  Clock3,
+  FolderPlus,
+  Github,
+  ListFilter,
+  RadioTower,
+  Search,
+  SquareTerminal,
+  Star,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
@@ -430,6 +439,12 @@ export function SidebarProjectsSection({
                 icon={<FolderPlus size={15} />}
               />
             ) : null}
+            <IconButton
+              label="Remotes"
+              tooltipPlacement="right"
+              onClick={onOpenSettingsPanel}
+              icon={<RadioTower size={15} />}
+            />
           </div>
         ) : null}
 
