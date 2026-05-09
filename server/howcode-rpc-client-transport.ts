@@ -30,6 +30,8 @@ export type HowcodeRpcClientConnectionStatus = {
   nextRetryAt: string | null
   hasConnected: boolean
   intentionalClose: boolean
+  fallbackRequestCount: number
+  lastTransport: 'rpc' | 'legacy-http' | null
 }
 
 export type HowcodeRpcClientTransport = AppTransport & {
@@ -44,10 +46,12 @@ function createInitialStatus(): HowcodeRpcClientConnectionStatus {
     connectedAt: null,
     disconnectedAt: null,
     hasConnected: false,
+    fallbackRequestCount: 0,
     intentionalClose: false,
     lastError: null,
     lastErrorAt: null,
     nextRetryAt: null,
+    lastTransport: null,
     phase: 'idle',
     reconnectAttemptCount: 0,
     reconnectPhase: 'idle',
@@ -114,6 +118,7 @@ export function createHowcodeRpcClientTransport(
       lastError: null,
       lastErrorAt: null,
       nextRetryAt: null,
+      lastTransport: 'rpc',
       phase: 'connected',
       reconnectPhase: 'idle',
     }
@@ -160,7 +165,13 @@ export function createHowcodeRpcClientTransport(
         return result
       } catch (error) {
         markDisconnected(error)
-        return await legacyEventsTransport.request(channel, params)
+        const result = await legacyEventsTransport.request(channel, params)
+        status = {
+          ...status,
+          fallbackRequestCount: status.fallbackRequestCount + 1,
+          lastTransport: 'legacy-http',
+        }
+        return result
       }
     },
     dispose: () => {
@@ -183,6 +194,7 @@ export function createHowcodeRpcClientTransport(
       try {
         await legacyEventsTransport.request('getHowcodeInstanceManifest', {})
         markConnected()
+        status = { ...status, lastTransport: 'legacy-http' }
       } catch (error) {
         markDisconnected(error)
         throw error

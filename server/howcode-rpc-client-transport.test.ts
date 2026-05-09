@@ -43,6 +43,8 @@ describe('Howcode RPC client transport', () => {
     ).resolves.toEqual({ ok: true })
     expect(transport.getStatus()).toMatchObject({
       attemptCount: 1,
+      fallbackRequestCount: 1,
+      lastTransport: 'legacy-http',
       phase: 'disconnected',
     })
     expect(request).toHaveBeenCalledWith('terminalWrite', {
@@ -64,6 +66,7 @@ describe('Howcode RPC client transport', () => {
     await expect(transport.reconnect()).resolves.toBeUndefined()
     expect(transport.getStatus()).toMatchObject({
       hasConnected: true,
+      lastTransport: 'legacy-http',
       phase: 'connected',
       reconnectPhase: 'idle',
     })
