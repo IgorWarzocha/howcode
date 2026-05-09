@@ -6,6 +6,7 @@ export const HOWCODE_SERVER_WS_PATH = '/api/app/ws'
 export type HowcodeServerCapability =
   | 'app-transport'
   | 'app-websocket-events'
+  | 'effect-rpc'
   | 'projects'
   | 'git'
   | 'artifacts'
@@ -33,7 +34,7 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
     required: true,
     methods: ['bearer-token'],
   },
-  capabilities: ['app-transport', 'app-websocket-events'],
+  capabilities: ['app-transport', 'app-websocket-events', 'effect-rpc'],
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
 

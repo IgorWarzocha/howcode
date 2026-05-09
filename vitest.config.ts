@@ -8,6 +8,7 @@ export default defineConfig({
       'src/**/*.test.tsx',
       'desktop/**/*.test.ts',
       'server/**/*.test.ts',
+      'shared/**/*.test.ts',
     ],
   },
 })
