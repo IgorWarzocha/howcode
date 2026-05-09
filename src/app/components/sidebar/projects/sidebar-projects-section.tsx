@@ -10,10 +10,11 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
+import type { HowcodeRemoteEnvironment } from '../../../../../shared/howcode-server-contracts'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import type { Project, View } from '../../../types'
+import type { Project, Thread, View } from '../../../types'
 import { cn } from '../../../utils/cn'
 import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
@@ -28,6 +29,8 @@ type PendingProject = {
   key: string
   name: string
 }
+
+type RemoteStatus = 'connecting' | 'failed' | 'connected' | null
 
 type SidebarProjectsSectionProps = {
   activeView: View
@@ -228,6 +231,124 @@ function SidebarProjectsContent({
   )
 }
 
+function useSidebarRemoteProjects(input: {
+  activeView: View
+  onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+}) {
+  const [remoteStatus, setRemoteStatus] = useState<RemoteStatus>(null)
+  const [remoteError, setRemoteError] = useState<string | null>(null)
+  const [remoteEnvironments, setRemoteEnvironments] = useState<HowcodeRemoteEnvironment[]>([])
+  const [remoteProjects, setRemoteProjects] = useState<Project[]>([])
+
+  const refreshRemoteEnvironments = async () => {
+    const remotes = (await window.piDesktop?.listHowcodeRemoteEnvironments?.()) ?? []
+    setRemoteEnvironments(remotes)
+  }
+
+  const connectRemoteEnvironment = async (remoteEnvironmentId: string) => {
+    setRemoteStatus('connecting')
+    setRemoteError(null)
+    try {
+      await window.piDesktop?.setActiveHowcodeRemoteEnvironment?.(remoteEnvironmentId)
+      const manifest = await window.piDesktop?.getHowcodeInstanceManifest?.()
+      if (!manifest) throw new Error('Could not read remote instance.')
+      const remoteProjectsWithoutThreads: Project[] = manifest.projects.map((project) => ({
+        id: project.id,
+        latestModifiedMs: project.latestModifiedMs ?? undefined,
+        name: `${project.name} · ${manifest.instanceName}`,
+        repoOriginUrl: project.repoOriginUrl ?? null,
+        threadCount: project.threadCount ?? undefined,
+        threads: [],
+      }))
+      const remoteProjectsWithThreads = await Promise.all(
+        remoteProjectsWithoutThreads.map(async (project) => {
+          const threads = (await input.onLoadProjectThreads(project.id, {
+            chat: input.activeView === 'chat',
+          })) as Thread[] | unknown
+          return Array.isArray(threads)
+            ? {
+                ...project,
+                threadCount: threads.length,
+                threads,
+                threadsLoaded: true,
+                threadsScope: input.activeView === 'chat' ? ('chat' as const) : ('code' as const),
+              }
+            : project
+        }),
+      )
+      setRemoteProjects(remoteProjectsWithThreads)
+      setRemoteStatus('connected')
+      return true
+    } catch (error) {
+      setRemoteStatus('failed')
+      setRemoteError(error instanceof Error ? error.message : 'Could not connect remote.')
+      return false
+    }
+  }
+
+  return {
+    connectRemoteEnvironment,
+    refreshRemoteEnvironments,
+    remoteEnvironments,
+    remoteError,
+    remoteProjects,
+    remoteStatus,
+  }
+}
+
+function SidebarRemotesPopover({
+  connectRemoteEnvironment,
+  panelRef,
+  remoteEnvironments,
+  remoteError,
+  remoteStatus,
+  setRemotesOpen,
+}: {
+  connectRemoteEnvironment: (remoteEnvironmentId: string) => Promise<boolean>
+  panelRef: React.RefObject<HTMLDivElement | null>
+  remoteEnvironments: HowcodeRemoteEnvironment[]
+  remoteError: string | null
+  remoteStatus: RemoteStatus
+  setRemotesOpen: (open: boolean) => void
+}) {
+  return (
+    <div
+      ref={panelRef}
+      className="absolute top-[calc(100%+0.375rem)] right-0 z-30 grid w-64 gap-1 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 text-[12px] shadow-[var(--shadow)]"
+    >
+      {remoteEnvironments.length > 0 ? (
+        remoteEnvironments.map((environment) => (
+          <button
+            key={environment.id}
+            type="button"
+            className="grid rounded-lg px-2 py-1.5 text-left hover:bg-[color:var(--surface-hover)]"
+            onClick={async () => {
+              if (await connectRemoteEnvironment(environment.id)) setRemotesOpen(false)
+            }}
+          >
+            <span className="truncate text-[color:var(--text)]">{environment.name}</span>
+            <span className="truncate text-[11px] text-[color:var(--muted)]">
+              {environment.kind === 'ssh'
+                ? `ssh ${environment.sshHost ?? ''}`
+                : environment.serverUrl}
+            </span>
+          </button>
+        ))
+      ) : (
+        <div className="px-2 py-1.5 text-[color:var(--muted)]">No remotes saved</div>
+      )}
+      {remoteStatus === 'connecting' ? (
+        <div className="px-2 py-1 text-[color:var(--muted)]">Connecting…</div>
+      ) : null}
+      {remoteError ? (
+        <div className="truncate px-2 py-1 text-[color:var(--danger)]" title={remoteError}>
+          {remoteError}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function SidebarProjectsSection({
   activeView,
   appLaunchedAtMs,
@@ -265,11 +386,27 @@ export function SidebarProjectsSection({
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const createPanelRef = useRef<HTMLDialogElement>(null)
+  const remotesButtonRef = useRef<HTMLButtonElement>(null)
+  const remotesPanelRef = useRef<HTMLDivElement>(null)
+  const [remotesOpen, setRemotesOpen] = useState(false)
+  const {
+    connectRemoteEnvironment,
+    refreshRemoteEnvironments,
+    remoteEnvironments,
+    remoteError,
+    remoteProjects,
+    remoteStatus,
+  } = useSidebarRemoteProjects({ activeView, onLoadProjectThreads })
+
+  const combinedProjects = useMemo(
+    () => [...projects, ...remoteProjects],
+    [projects, remoteProjects],
+  )
 
   const { projects: visibleProjects, autoExpandedProjectIds } = useMemo(
     () =>
       getSidebarVisibleProjects({
-        projects,
+        projects: combinedProjects,
         searchQuery,
         filterMode,
         terminalRunningProjectIds,
@@ -281,7 +418,7 @@ export function SidebarProjectsSection({
       appLaunchedAtMs,
       createdProjectIds,
       filterMode,
-      projects,
+      combinedProjects,
       searchQuery,
       terminalRunningProjectIds,
       terminalRunningSessionPaths,
@@ -294,7 +431,7 @@ export function SidebarProjectsSection({
     }
 
     for (const project of visibleProjects) {
-      const sourceProject = projects.find((candidate) => candidate.id === project.id)
+      const sourceProject = combinedProjects.find((candidate) => candidate.id === project.id)
 
       const shouldLoadSearchedProject = searchQuery.trim().length > 0
       const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0
@@ -309,7 +446,7 @@ export function SidebarProjectsSection({
 
       void onLoadProjectThreads(project.id, { chat: activeView === 'chat' })
     }
-  }, [activeView, filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects])
+  }, [activeView, combinedProjects, filterMode, onLoadProjectThreads, searchQuery, visibleProjects])
 
   const effectiveCollapsedProjectIds = useMemo(() => {
     if (searchQuery.trim().length === 0) {
@@ -354,6 +491,12 @@ export function SidebarProjectsSection({
     open: createOpen,
     onDismiss: dismissCreate,
     refs: [createButtonRef, createPanelRef],
+  })
+
+  useDismissibleLayer({
+    open: remotesOpen,
+    onDismiss: () => setRemotesOpen(false),
+    refs: [remotesButtonRef, remotesPanelRef],
   })
 
   const handleCreateProject = async () => {
@@ -440,12 +583,28 @@ export function SidebarProjectsSection({
               />
             ) : null}
             <IconButton
+              ref={remotesButtonRef}
               label="Remotes"
               tooltipPlacement="right"
-              onClick={onOpenSettingsPanel}
+              onClick={() => {
+                setRemotesOpen((open) => !open)
+                void refreshRemoteEnvironments()
+              }}
               icon={<RadioTower size={15} />}
+              active={remoteProjects.length > 0 || remoteStatus === 'connected'}
             />
           </div>
+        ) : null}
+
+        {remotesOpen ? (
+          <SidebarRemotesPopover
+            connectRemoteEnvironment={connectRemoteEnvironment}
+            panelRef={remotesPanelRef}
+            remoteEnvironments={remoteEnvironments}
+            remoteError={remoteError}
+            remoteStatus={remoteStatus}
+            setRemotesOpen={setRemotesOpen}
+          />
         ) : null}
 
         {createOpen ? (
