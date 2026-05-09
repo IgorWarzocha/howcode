@@ -92,10 +92,13 @@ function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
     '--token',
     shellQuote(config.token),
   ].join(' ')
+  const serveArgsWithoutCommand = serveArgs.slice('serve '.length)
   const command = [
     'export PATH="$HOME/.bun/bin:$PATH"',
+    'pkill -f "standalone-howcode-server.mjs" >/dev/null 2>&1 || true',
+    'pkill -f "bun run server:dev" >/dev/null 2>&1 || true',
     `if command -v howcode >/dev/null 2>&1; then exec howcode ${serveArgs}; fi`,
-    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=${shellQuote(config.host)} && exec bun run server:dev -- ${serveArgs.slice('serve '.length)}; fi`,
+    `if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && git fetch origin issue-226-server-mode-research >/dev/null 2>&1 && git reset --hard origin/issue-226-server-mode-research >/dev/null 2>&1 && bun install --frozen-lockfile >/dev/null 2>&1 && bun run build:runtime >/dev/null 2>&1 && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=${shellQuote(config.host)} && exec bun run server:dev -- ${serveArgsWithoutCommand}; fi`,
     'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
     'exit 127',
   ].join('; ')
@@ -186,7 +189,10 @@ export async function ensureSshHowcodeServer(
   const baseUrl = `http://127.0.0.1:${config.localPort}`
   let remoteServerProcess: ManagedSshProcess | null = null
 
-  if (!(await canReachServerDescriptor(baseUrl))) {
+  const shouldStartManagedServer =
+    config.remoteCommand === null || !(await canReachServerDescriptor(baseUrl))
+
+  if (shouldStartManagedServer) {
     const remoteCommand = config.remoteCommand ?? defaultRemoteServeCommand(config)
     remoteServerProcess = spawnManaged(
       'ssh',
