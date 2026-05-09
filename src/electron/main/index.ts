@@ -43,6 +43,7 @@ let activeRemoteServer: {
   environment: HowcodeEnvironment
   remoteEnvironmentId: string
 } | null = null
+let activeRemoteProjectIds = new Set<string>()
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
@@ -247,14 +248,18 @@ async function setActiveRemoteEnvironment(config: {
     authToken: config.token,
     baseUrl,
   })
+  activeRemoteProjectIds = new Set()
 
   try {
+    const descriptor =
+      config.environment.kind === 'ssh'
+        ? await fetchServerDescriptorWithRetry(baseUrl)
+        : await fetchServerDescriptor(baseUrl)
+    const manifest = await activeServerTransport.request('getHowcodeInstanceManifest', {})
+    activeRemoteProjectIds = new Set(manifest.projects.map((project) => project.id))
     howcodeServerState = createHowcodeServerConnectionState({
       connected: true,
-      descriptor:
-        config.environment.kind === 'ssh'
-          ? await fetchServerDescriptorWithRetry(baseUrl)
-          : await fetchServerDescriptor(baseUrl),
+      descriptor,
       environment,
     })
   } catch (error) {
@@ -271,6 +276,7 @@ async function setActiveRemoteEnvironment(config: {
 async function clearActiveRemoteEnvironment() {
   sshHowcodeServer?.close()
   sshHowcodeServer = null
+  activeRemoteProjectIds = new Set()
   activeRemoteServer = null
   activeServerTransport = localHowcodeServer?.transport ?? null
   if (localHowcodeServer) {
@@ -340,7 +346,15 @@ function getProjectIdFromRequestParams(params: unknown) {
     'projectId' in params &&
     typeof params.projectId === 'string'
     ? params.projectId
-    : null
+    : params &&
+        typeof params === 'object' &&
+        'payload' in params &&
+        params.payload &&
+        typeof params.payload === 'object' &&
+        'projectId' in params.payload &&
+        typeof params.payload.projectId === 'string'
+      ? params.payload.projectId
+      : null
 }
 
 function resolveEnvironmentForDesktopRequest<
@@ -348,10 +362,20 @@ function resolveEnvironmentForDesktopRequest<
 >(channel: K, params: import('../../../shared/desktop-ipc').DesktopRequestMap[K]['params']) {
   const projectId = getProjectIdFromRequestParams(params)
   if (projectId) {
+    if (activeRemoteProjectIds.has(projectId)) {
+      return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
+    }
     const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
     if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId !== assignedRemoteId) {
       throw new Error('Project is assigned to a remote environment that is not active yet.')
     }
+    return resolveHowcodeEnvironmentForRequest(
+      localHowcodeServer
+        ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
+        : disabledEnvironment,
+      channel,
+      params,
+    )
   }
   return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
 }
@@ -381,7 +405,10 @@ async function bootstrap() {
     () => currentMainWindow,
     runtime,
     appUpdater,
-    () => activeServerTransport,
+    (environment) =>
+      environment.kind === 'local-desktop'
+        ? (localHowcodeServer?.transport ?? null)
+        : activeServerTransport,
     () => howcodeServerState,
     refreshActiveServerState,
     {

@@ -66,7 +66,7 @@ function assertTrustedDesktopIpcEvent(
 function registerRequestHandlers(
   handlers: DesktopRequestHandlerMap,
   getMainWindow: () => BrowserWindow | null,
-  getServerTransport: () => AppTransport | null,
+  getServerTransport: (environment: HowcodeEnvironment) => AppTransport | null,
   resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
     channel: K,
     params: DesktopRequestMap[K]['params'],
@@ -75,9 +75,12 @@ function registerRequestHandlers(
   for (const channel of Object.keys(handlers) as DesktopRequestChannel[]) {
     ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
-      if (getDesktopRequestChannelOwner(channel) === 'howcode-server') {
-        resolveEnvironmentForRequest(channel, params)
-        const serverTransport = getServerTransport()
+      const environment = resolveEnvironmentForRequest(channel, params)
+      const routeToServer =
+        getDesktopRequestChannelOwner(channel) === 'howcode-server' ||
+        (channel === 'invokeAction' && environment.kind !== 'local-desktop')
+      if (routeToServer) {
+        const serverTransport = getServerTransport(environment)
         if (!serverTransport) {
           throw new Error('Howcode server is required for this operation but is not connected.')
         }
@@ -149,7 +152,7 @@ export function registerDesktopIpc(
   getMainWindow: () => BrowserWindow | null,
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
-  getServerTransport: () => AppTransport | null = () => null,
+  getServerTransport: (environment: HowcodeEnvironment) => AppTransport | null = () => null,
   getHowcodeServerState: () => HowcodeServerConnectionState = () => ({
     baseUrl: null,
     connected: false,

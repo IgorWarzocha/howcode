@@ -141,6 +141,11 @@ async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeout
   )
 }
 
+async function canReachServerDescriptor(baseUrl: string) {
+  const response = await fetch(`${baseUrl}/.well-known/howcode/server`).catch(() => null)
+  return response?.ok === true
+}
+
 export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentConfig | null {
   const host = getProcessEnvironmentVariable('HOWCODE_SSH_SERVER_HOST')?.trim()
   if (!host) return null
@@ -156,12 +161,6 @@ export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentC
 export async function ensureSshHowcodeServer(
   config: SshHowcodeEnvironmentConfig,
 ): Promise<SshHowcodeEnvironmentConnection> {
-  const remoteCommand = config.remoteCommand ?? defaultRemoteServeCommand(config)
-  const remoteServerProcess = spawnManaged(
-    'ssh',
-    ['-o', 'BatchMode=yes', config.host, remoteCommand],
-    'howcode-ssh-serve',
-  )
   const tunnelProcess = spawnManaged(
     'ssh',
     [
@@ -178,17 +177,31 @@ export async function ensureSshHowcodeServer(
   )
 
   try {
-    await Promise.all([
-      assertProcessDoesNotExitEarly(remoteServerProcess, 750),
-      assertProcessDoesNotExitEarly(tunnelProcess, 750),
-    ])
+    await assertProcessDoesNotExitEarly(tunnelProcess, 750)
   } catch (error) {
     closeChild(tunnelProcess.child)
-    closeChild(remoteServerProcess.child)
     throw error
   }
 
   const baseUrl = `http://127.0.0.1:${config.localPort}`
+  let remoteServerProcess: ManagedSshProcess | null = null
+
+  if (!(await canReachServerDescriptor(baseUrl))) {
+    const remoteCommand = config.remoteCommand ?? defaultRemoteServeCommand(config)
+    remoteServerProcess = spawnManaged(
+      'ssh',
+      ['-o', 'BatchMode=yes', config.host, remoteCommand],
+      'howcode-ssh-serve',
+    )
+
+    try {
+      await assertProcessDoesNotExitEarly(remoteServerProcess, 750)
+    } catch (error) {
+      closeChild(tunnelProcess.child)
+      closeChild(remoteServerProcess?.child ?? null)
+      throw error
+    }
+  }
   const environment: HowcodeEnvironment = {
     id: `ssh:${config.host}`,
     kind: 'ssh-server',
@@ -208,7 +221,7 @@ export async function ensureSshHowcodeServer(
     token: config.token,
     close: () => {
       closeChild(tunnelProcess.child)
-      closeChild(remoteServerProcess.child)
+      closeChild(remoteServerProcess?.child ?? null)
     },
   }
 }
