@@ -60,12 +60,18 @@ type SidebarProps = {
   onSelectChatGroup: (groupId: string | null) => void
   onNewChat: (groupId: string | null) => void
   onRefreshChatSidebar: () => Promise<unknown>
-  onProjectSelect: (projectId: string) => void
+  onProjectSelect: (projectId: string, environmentId?: string | null) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onSelectInboxThread: (thread: InboxThread) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
+  ) => void
   onToggleProjectCollapse: (projectId: string) => void
   compactMode?: boolean
   onCloseCompactSidebar?: () => void

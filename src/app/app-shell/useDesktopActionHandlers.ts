@@ -44,6 +44,7 @@ type UseDesktopActionHandlersArgs = {
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
+  selectedProjectEnvironmentId: string | null
   selectedSessionPath: string | null
   setArchivedThreads: Dispatch<SetStateAction<ArchivedThread[]>>
   setComposerState: Dispatch<SetStateAction<ComposerState | null>>
@@ -88,6 +89,7 @@ export function useDesktopActionHandlers({
   loadProjectGitState,
   loadProjectThreads,
   refreshShellState,
+  selectedProjectEnvironmentId,
   selectedSessionPath,
   setArchivedThreads,
   setComposerState,
@@ -111,6 +113,7 @@ export function useDesktopActionHandlers({
         payload,
         composerProjectId,
         activeView,
+        selectedProjectEnvironmentId,
         selectedSessionPath,
       })
       const { contextualPayload } =
@@ -177,6 +180,7 @@ export function useDesktopActionHandlers({
       loadProjectGitState,
       loadProjectThreads,
       refreshShellState,
+      selectedProjectEnvironmentId,
       selectedSessionPath,
       setArchivedThreads,
       setComposerState,

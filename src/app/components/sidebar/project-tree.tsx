@@ -38,7 +38,7 @@ type ProjectTreeProps = {
   revealOldThreads?: boolean
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
-  onProjectSelect: (projectId: string) => void
+  onProjectSelect: (projectId: string, environmentId?: string | null) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
   onThreadOpen: (
@@ -46,6 +46,7 @@ type ProjectTreeProps = {
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
   ) => void
   onToggleProjectCollapse: (projectId: string) => void
 }
@@ -218,9 +219,12 @@ export function ProjectTree({
                         onChangeRenameDraft={setRenameDraft}
                         onEdit={() => handleStartEdit(project.id, project.name)}
                         onSelect={() => {
-                          onProjectSelect(project.id)
+                          onProjectSelect(project.id, project.remoteEnvironmentId ?? null)
                           if (activeView !== 'extensions' && activeView !== 'skills') {
-                            void onAction('project.select', { projectId: project.id })
+                            void onAction('project.select', {
+                              environmentId: project.remoteEnvironmentId ?? null,
+                              projectId: project.id,
+                            })
                           }
                           setOpenProjectMenuId(null)
                         }}

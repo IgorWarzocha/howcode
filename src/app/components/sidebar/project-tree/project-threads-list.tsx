@@ -21,7 +21,13 @@ type ProjectThreadsListProps = {
   threadGroupId: string
   onAction: DesktopActionInvoker
   onCloseProjectMenu: () => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
+  ) => void
   onToggleOldThreads: (currentlyExpanded: boolean) => void
 }
 
@@ -166,7 +172,13 @@ export function ProjectThreadsList({
             return
           }
 
-          onThreadOpen(project.id, thread.id, thread.sessionPath)
+          onThreadOpen(
+            project.id,
+            thread.id,
+            thread.sessionPath,
+            activeView === 'chat' ? 'chat' : 'thread',
+            project.remoteEnvironmentId ?? null,
+          )
           onCloseProjectMenu()
         }}
         onPin={() =>

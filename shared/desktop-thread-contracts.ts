@@ -31,6 +31,7 @@ export type InboxThread = {
 export type Project = {
   id: string
   resolvedId?: string | undefined
+  remoteEnvironmentId?: string | undefined | null
   name: string
   threads: Thread[]
   latestModifiedMs?: number | undefined

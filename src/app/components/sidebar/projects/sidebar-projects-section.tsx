@@ -48,10 +48,16 @@ type SidebarProjectsSectionProps = {
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
   onOpenSettingsPanel: () => void
-  onProjectSelect: (projectId: string) => void
+  onProjectSelect: (projectId: string, environmentId?: string | null) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
+  ) => void
   onToggleProjectCollapse: (projectId: string) => void
 }
 
@@ -176,8 +182,14 @@ function SidebarProjectsContent({
   onAction: DesktopActionInvoker
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
-  onProjectSelect: (projectId: string) => void
-  onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
+  onProjectSelect: (projectId: string, environmentId?: string | null) => void
+  onThreadOpen: (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
+  ) => void
   onToggleProjectCollapse: (projectId: string) => void
   pendingProject: PendingProject | null
   protectedProjectId: string | null
@@ -261,6 +273,7 @@ function useSidebarRemoteProjects(input: {
         id: project.id,
         latestModifiedMs: project.latestModifiedMs ?? undefined,
         name: project.name,
+        remoteEnvironmentId,
         repoOriginUrl: project.repoOriginUrl ?? null,
         threadCount: project.threadCount ?? undefined,
         threads: [],

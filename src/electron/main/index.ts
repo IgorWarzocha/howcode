@@ -506,10 +506,46 @@ function getSessionPathFromRequestParams(params: unknown) {
       : null
 }
 
+function getEnvironmentIdFromRequestParams(params: unknown) {
+  return params &&
+    typeof params === 'object' &&
+    'environmentId' in params &&
+    typeof params.environmentId === 'string'
+    ? params.environmentId
+    : params &&
+        typeof params === 'object' &&
+        'payload' in params &&
+        params.payload &&
+        typeof params.payload === 'object' &&
+        'environmentId' in params.payload &&
+        typeof params.payload.environmentId === 'string'
+      ? params.payload.environmentId
+      : null
+}
+
 function getLocalRequestEnvironment() {
   return localHowcodeServer
     ? { ...localDesktopEnvironment, serverUrl: localHowcodeServer.baseUrl }
     : disabledEnvironment
+}
+
+function resolveExplicitEnvironment(environmentId: string) {
+  if (activeRemoteServer?.remoteEnvironmentId === environmentId) return activeHowcodeEnvironment
+  throw new Error('Remote environment is not active for this operation.')
+}
+
+function resolveProjectEnvironment(projectId: string) {
+  if (activeRemoteProjectIds.has(projectId) || isActiveRemotePath(projectId)) {
+    return activeHowcodeEnvironment
+  }
+  const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
+  if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId === assignedRemoteId) {
+    return activeHowcodeEnvironment
+  }
+  if (assignedRemoteId) {
+    throw new Error('Project is assigned to a remote environment that is not active yet.')
+  }
+  return getLocalRequestEnvironment()
 }
 
 function resolveEnvironmentForDesktopRequest<
@@ -520,6 +556,14 @@ function resolveEnvironmentForDesktopRequest<
   }
   const projectId = getProjectIdFromRequestParams(params)
   const sessionPath = getSessionPathFromRequestParams(params)
+  const environmentId = getEnvironmentIdFromRequestParams(params)
+  if (environmentId) {
+    return resolveHowcodeEnvironmentForRequest(
+      resolveExplicitEnvironment(environmentId),
+      channel,
+      params,
+    )
+  }
   if (sessionPath && isActiveRemotePath(sessionPath)) {
     return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
   }
@@ -527,14 +571,11 @@ function resolveEnvironmentForDesktopRequest<
     return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
   }
   if (projectId) {
-    if (activeRemoteProjectIds.has(projectId) || isActiveRemotePath(projectId)) {
-      return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
-    }
-    const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
-    if (assignedRemoteId && activeRemoteServer?.remoteEnvironmentId !== assignedRemoteId) {
-      throw new Error('Project is assigned to a remote environment that is not active yet.')
-    }
-    return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
+    return resolveHowcodeEnvironmentForRequest(
+      resolveProjectEnvironment(projectId),
+      channel,
+      params,
+    )
   }
   return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
 }

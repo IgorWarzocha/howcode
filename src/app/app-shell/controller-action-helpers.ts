@@ -8,12 +8,14 @@ export function buildContextualActionPayload({
   composerProjectId,
   activeView,
   selectedSessionPath,
+  selectedProjectEnvironmentId,
 }: {
   action: DesktopAction
   payload: AnyDesktopActionPayload
   composerProjectId: string
   activeView: WorkspaceState['activeView']
   selectedSessionPath: string | null
+  selectedProjectEnvironmentId: string | null
 }) {
   return action === 'composer.model' ||
     action === 'composer.dequeue' ||
@@ -27,6 +29,7 @@ export function buildContextualActionPayload({
     action === 'workspace.diff-preferences'
     ? {
         projectId: composerProjectId,
+        environmentId: selectedProjectEnvironmentId,
         sessionPath:
           action === 'thread.new'
             ? null

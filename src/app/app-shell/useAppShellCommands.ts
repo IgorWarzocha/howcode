@@ -95,10 +95,12 @@ export function useAppShellCommands({
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
+    environmentId?: string | null,
   ) => {
     setThreadHistoryCompactions(0)
-    dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
+    dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view, environmentId })
     void handleAction('thread.open', {
+      environmentId,
       projectId,
       threadId,
       sessionPath,
@@ -210,10 +212,14 @@ export function useAppShellCommands({
     handleOpenSettingsPanel: () => dispatch({ type: 'set-settings-panel-open', open: true }),
     handleOpenWorktreeDiffFile,
     handleProjectReorder,
-    handleProjectSelect: (projectId: string) =>
-      dispatch({ type: getProjectSelectionAction(workspaceState.activeView), projectId }),
-    handleSetSelectedProject: (projectId: string) =>
-      dispatch({ type: 'set-selected-project', projectId }),
+    handleProjectSelect: (projectId: string, environmentId?: string | null) =>
+      dispatch({
+        type: getProjectSelectionAction(workspaceState.activeView),
+        projectId,
+        environmentId,
+      }),
+    handleSetSelectedProject: (projectId: string, environmentId?: string | null) =>
+      dispatch({ type: 'set-selected-project', projectId, environmentId }),
     handleReturnToDesktopFromTakeover,
     handleSelectInboxThread,
     handleShowTakeoverTerminal,

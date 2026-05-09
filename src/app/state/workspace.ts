@@ -7,6 +7,7 @@ export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills'>
 type UtilityViewReturnState = {
   activeView: View
   selectedProjectId: string
+  selectedProjectEnvironmentId: string | null
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -20,6 +21,7 @@ type UtilityViewReturnState = {
 export type WorkspaceState = {
   activeView: View
   selectedProjectId: string
+  selectedProjectEnvironmentId: string | null
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -42,11 +44,12 @@ export type WorkspaceAction =
   | { type: 'close-utility-view' }
   | { type: 'select-inbox-thread'; sessionPath: string | null }
   | { type: 'clear-thread-selection' }
-  | { type: 'select-project'; projectId: string }
-  | { type: 'set-selected-project'; projectId: string }
+  | { type: 'select-project'; projectId: string; environmentId?: string | null | undefined }
+  | { type: 'set-selected-project'; projectId: string; environmentId?: string | null | undefined }
   | {
       type: 'open-thread'
       projectId: string
+      environmentId?: string | null | undefined
       threadId: string
       sessionPath: string
       view?: 'chat' | 'thread' | undefined
@@ -76,6 +79,7 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
   return {
     activeView: state.activeView,
     selectedProjectId: state.selectedProjectId,
+    selectedProjectEnvironmentId: state.selectedProjectEnvironmentId,
     selectedInboxSessionPath: state.selectedInboxSessionPath,
     selectedThreadId: state.selectedThreadId,
     selectedSessionPath: state.selectedSessionPath,
@@ -180,6 +184,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
   return {
     activeView: 'code',
     selectedProjectId: firstProject?.id ?? '',
+    selectedProjectEnvironmentId: firstProject?.remoteEnvironmentId ?? null,
     selectedInboxSessionPath: null,
     selectedThreadId: null,
     selectedSessionPath: null,
@@ -250,6 +255,9 @@ function syncProjectsState(
   const selectedProjectId = hasSelectedProject
     ? state.selectedProjectId
     : action.projects[0]?.id || ''
+  const selectedProjectEnvironmentId = hasSelectedProject
+    ? state.selectedProjectEnvironmentId
+    : (action.projects[0]?.remoteEnvironmentId ?? null)
   const selectedThreadProject = findProjectContainingThread(action.projects, state)
   const shouldPreserveSelectedThread =
     (state.activeView === 'chat' || state.activeView === 'thread') && Boolean(selectedThreadProject)
@@ -276,6 +284,11 @@ function syncProjectsState(
       : shouldPreserveProjectSelection
         ? state.selectedProjectId
         : selectedProjectId,
+    selectedProjectEnvironmentId: selectedThreadProject
+      ? (selectedThreadProject.remoteEnvironmentId ?? null)
+      : shouldPreserveProjectSelection
+        ? state.selectedProjectEnvironmentId
+        : selectedProjectEnvironmentId,
     selectedThreadId: getPreservedThreadValue(
       state,
       shouldPreserveProjectSelection,
@@ -350,6 +363,7 @@ function openThreadState(
     ...state,
     activeView: action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread'),
     selectedProjectId: action.projectId,
+    selectedProjectEnvironmentId: action.environmentId ?? null,
     selectedThreadId: action.threadId,
     selectedSessionPath: action.sessionPath,
     terminalVisible: getTerminalVisibilityForSession(
@@ -466,6 +480,7 @@ const workspaceActionHandlers = {
     ...getTerminalStateForNextView(state, 'code'),
     activeView: 'code',
     selectedProjectId: action.projectId,
+    selectedProjectEnvironmentId: action.environmentId ?? null,
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
@@ -477,7 +492,11 @@ const workspaceActionHandlers = {
   'set-selected-project': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-selected-project' }>,
-  ) => ({ ...state, selectedProjectId: action.projectId }),
+  ) => ({
+    ...state,
+    selectedProjectId: action.projectId,
+    selectedProjectEnvironmentId: action.environmentId ?? null,
+  }),
   'open-thread': openThreadState,
   'open-gitops': openGitOpsState,
   'close-gitops': closeGitOpsState,

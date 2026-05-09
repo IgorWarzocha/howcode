@@ -171,6 +171,7 @@ export function useAppShellController() {
     loadProjectGitState,
     loadProjectThreads,
     refreshShellState,
+    selectedProjectEnvironmentId: state.selectedProjectEnvironmentId,
     selectedSessionPath: state.selectedSessionPath,
     setArchivedThreads,
     setChatSidebarState,

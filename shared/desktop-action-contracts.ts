@@ -24,6 +24,7 @@ export type DesktopActionPayloadFields = {
   chatGroupIds?: string[] | undefined
   folders?: string[] | undefined
   imported?: boolean | undefined | null
+  environmentId?: string | undefined | null
   gitOpsMode?: GitOpsMode | null
   diffBaseline?: ProjectDiffBaseline | null
   diffRenderMode?: ProjectDiffRenderMode | null
@@ -100,6 +101,7 @@ export type DesktopActionPayloadMap = {
     repoUrl?: string | undefined | null | undefined
   }
   'project.select': {
+    environmentId?: string | undefined | null | undefined
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
@@ -173,6 +175,7 @@ export type DesktopActionPayloadMap = {
     level: ComposerThinkingLevel
   }
   'composer.send': {
+    environmentId?: string | undefined | null | undefined
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
     chatGroupId?: string | undefined | null | undefined
@@ -181,6 +184,7 @@ export type DesktopActionPayloadMap = {
     streamingBehavior?: ComposerStreamingBehavior
   }
   'composer.stop': {
+    environmentId?: string | undefined | null | undefined
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined
   }
