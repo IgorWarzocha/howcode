@@ -257,55 +257,78 @@ function useSidebarRemoteProjects(input: {
   const [activeRemoteEnvironmentId, setActiveRemoteEnvironmentId] = useState<string | null>(null)
   const [showRemoteProjects, setShowRemoteProjects] = useState(true)
 
-  const refreshRemoteEnvironments = async () => {
+  const refreshRemoteEnvironments = useCallback(async () => {
     const remotes = (await window.piDesktop?.listHowcodeRemoteEnvironments?.()) ?? []
     setRemoteEnvironments(remotes)
-  }
+  }, [])
 
-  const connectRemoteEnvironment = async (remoteEnvironmentId: string) => {
-    setRemoteStatus('connecting')
-    setRemoteError(null)
-    try {
-      await window.piDesktop?.setActiveHowcodeRemoteEnvironment?.(remoteEnvironmentId)
-      const manifest = await window.piDesktop?.getHowcodeInstanceManifest?.()
-      if (!manifest) throw new Error('Could not read remote instance.')
-      const remoteProjectsWithoutThreads: Project[] = manifest.projects.map((project) => ({
-        id: project.id,
-        latestModifiedMs: project.latestModifiedMs ?? undefined,
-        name: project.name,
-        remoteEnvironmentId,
-        repoOriginUrl: project.repoOriginUrl ?? null,
-        threadCount: project.threadCount ?? undefined,
-        threads: [],
-      }))
-      const remoteProjectsWithThreads = await Promise.all(
-        remoteProjectsWithoutThreads.map(async (project) => {
-          const threads = (await input.onLoadProjectThreads(project.id, {
-            chat: input.activeView === 'chat',
-          })) as Thread[] | unknown
-          return Array.isArray(threads)
-            ? {
-                ...project,
-                threadCount: threads.length,
-                threads,
-                threadsLoaded: true,
-                threadsScope: input.activeView === 'chat' ? ('chat' as const) : ('code' as const),
-              }
-            : project
-        }),
-      )
-      setRemoteProjects(remoteProjectsWithThreads)
-      setActiveRemoteEnvironmentId(remoteEnvironmentId)
-      setShowRemoteProjects(true)
-      setRemoteStatus('connected')
-      return true
-    } catch (error) {
-      setActiveRemoteEnvironmentId(null)
-      setRemoteStatus('failed')
-      setRemoteError(error instanceof Error ? error.message : 'Could not connect remote.')
-      return false
+  const connectRemoteEnvironment = useCallback(
+    async (remoteEnvironmentId: string) => {
+      setRemoteStatus('connecting')
+      setRemoteError(null)
+      try {
+        await window.piDesktop?.setActiveHowcodeRemoteEnvironment?.(remoteEnvironmentId)
+        const manifest = await window.piDesktop?.getHowcodeInstanceManifest?.()
+        if (!manifest) throw new Error('Could not read remote instance.')
+        const remoteProjectsWithoutThreads: Project[] = manifest.projects.map((project) => ({
+          id: project.id,
+          latestModifiedMs: project.latestModifiedMs ?? undefined,
+          name: project.name,
+          remoteEnvironmentId,
+          repoOriginUrl: project.repoOriginUrl ?? null,
+          threadCount: project.threadCount ?? undefined,
+          threads: [],
+        }))
+        const remoteProjectsWithThreads = await Promise.all(
+          remoteProjectsWithoutThreads.map(async (project) => {
+            const threads = (await input.onLoadProjectThreads(project.id, {
+              chat: input.activeView === 'chat',
+            })) as Thread[] | unknown
+            return Array.isArray(threads)
+              ? {
+                  ...project,
+                  threadCount: threads.length,
+                  threads,
+                  threadsLoaded: true,
+                  threadsScope: input.activeView === 'chat' ? ('chat' as const) : ('code' as const),
+                }
+              : project
+          }),
+        )
+        setRemoteProjects(remoteProjectsWithThreads)
+        setActiveRemoteEnvironmentId(remoteEnvironmentId)
+        setShowRemoteProjects(true)
+        setRemoteStatus('connected')
+        return true
+      } catch (error) {
+        setActiveRemoteEnvironmentId(null)
+        setRemoteStatus('failed')
+        setRemoteError(error instanceof Error ? error.message : 'Could not connect remote.')
+        return false
+      }
+    },
+    [input.activeView, input.onLoadProjectThreads],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    void refreshRemoteEnvironments()
+    void window.piDesktop?.getHowcodeServerState?.().then((serverState) => {
+      if (cancelled) return
+      const environmentId = serverState?.environmentId ?? null
+      const remoteEnvironmentId = environmentId?.startsWith('remote:')
+        ? environmentId.slice('remote:'.length)
+        : null
+      if (serverState?.connected && remoteEnvironmentId) {
+        setActiveRemoteEnvironmentId(remoteEnvironmentId)
+        setRemoteStatus('connected')
+        void connectRemoteEnvironment(remoteEnvironmentId)
+      }
+    })
+    return () => {
+      cancelled = true
     }
-  }
+  }, [connectRemoteEnvironment, refreshRemoteEnvironments])
 
   const disconnectRemoteEnvironment = async () => {
     setRemoteStatus(null)

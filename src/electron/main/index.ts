@@ -355,9 +355,15 @@ function createResilientSshServerTransport(config: {
       environment: config.environment,
       token: config.token,
     })
+    const environment = {
+      ...connection.environment,
+      id: `remote:${config.environment.id}`,
+      name: config.environment.name,
+      serverUrl: connection.baseUrl,
+    }
     activeRemoteServer = {
       baseUrl: connection.baseUrl,
-      environment: connection.environment,
+      environment,
       remoteEnvironmentId: config.environment.id,
       sshConfig: {
         host: config.environment.sshHost ?? config.environment.name,
@@ -368,12 +374,12 @@ function createResilientSshServerTransport(config: {
         token: config.token,
       },
     }
-    activeHowcodeEnvironment = connection.environment
+    activeHowcodeEnvironment = environment
     transport = createHowcodeRpcClientTransport({
       authToken: config.token,
       baseUrl: connection.baseUrl,
     })
-    await refreshConnectedServerState(connection.environment, connection.baseUrl)
+    await refreshConnectedServerState(environment, connection.baseUrl)
     return transport
   }
 
@@ -398,8 +404,14 @@ async function setActiveRemoteEnvironment(config: {
   const connection =
     config.environment.kind === 'ssh' ? await ensureSavedSshRemoteEnvironment(config) : null
   const baseUrl = connection?.baseUrl ?? config.baseUrl
-  const environment =
-    connection?.environment ?? createEnvironmentFromSavedRemote(config.environment, baseUrl)
+  const environment = connection
+    ? {
+        ...connection.environment,
+        id: `remote:${config.environment.id}`,
+        name: config.environment.name,
+        serverUrl: baseUrl,
+      }
+    : createEnvironmentFromSavedRemote(config.environment, baseUrl)
   activeRemoteServer = {
     baseUrl,
     environment,
