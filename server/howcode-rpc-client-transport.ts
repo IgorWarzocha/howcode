@@ -110,7 +110,7 @@ function subscribeViaRpcWebSocket<TChannel extends DesktopEventChannel>(
   config: HowcodeRpcClientTransportConfig,
   channel: TChannel,
   listener: (event: DesktopEventMap[TChannel]) => void,
-) {
+): { reconnect: () => void; unsubscribe: () => void } {
   const subscriptionId = crypto.randomUUID()
   let webSocket: WebSocket | null = null
   let closed = false
@@ -156,17 +156,27 @@ function subscribeViaRpcWebSocket<TChannel extends DesktopEventChannel>(
 
   connect()
 
-  return () => {
+  const unsubscribe = () => {
     closed = true
     clearReconnectTimer()
     webSocket?.close(1000)
   }
+
+  const reconnect = () => {
+    if (closed) return
+    clearReconnectTimer()
+    webSocket?.close(1000)
+    connect()
+  }
+
+  return { reconnect, unsubscribe }
 }
 
 export function createHowcodeRpcClientTransport(
   config: HowcodeRpcClientTransportConfig,
 ): HowcodeRpcClientTransport {
   let status = createInitialStatus()
+  const activeSubscriptions = new Set<{ reconnect: () => void; unsubscribe: () => void }>()
 
   const markConnecting = () => {
     status = {
@@ -229,6 +239,8 @@ export function createHowcodeRpcClientTransport(
       }
     },
     dispose: () => {
+      for (const subscription of activeSubscriptions) subscription.unsubscribe()
+      activeSubscriptions.clear()
       status = {
         ...status,
         disconnectedAt: nowIso(),
@@ -248,6 +260,7 @@ export function createHowcodeRpcClientTransport(
       try {
         await requestViaRpcWebSocket(config, 'getHowcodeInstanceManifest', {})
         markConnected()
+        for (const subscription of activeSubscriptions) subscription.reconnect()
       } catch (error) {
         markDisconnected(error)
         throw error
@@ -256,7 +269,14 @@ export function createHowcodeRpcClientTransport(
     subscribe: <TChannel extends DesktopEventChannel>(
       channel: TChannel,
       listener: (event: DesktopEventMap[TChannel]) => void,
-    ) => subscribeViaRpcWebSocket(config, channel, listener),
+    ) => {
+      const subscription = subscribeViaRpcWebSocket(config, channel, listener)
+      activeSubscriptions.add(subscription)
+      return () => {
+        activeSubscriptions.delete(subscription)
+        subscription.unsubscribe()
+      }
+    },
   }
 }
 

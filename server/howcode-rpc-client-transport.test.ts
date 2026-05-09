@@ -102,6 +102,28 @@ describe('Howcode RPC client transport', () => {
     expect(request).toHaveBeenCalledWith('getHowcodeInstanceManifest', {})
   })
 
+  it('disposes active RPC subscriptions', async () => {
+    const listeners = new Set<(event: DesktopEvent) => void>()
+    const baseUrl = await startTestServer({
+      request: vi.fn(),
+      subscribe: vi.fn((_channel, listener) => {
+        listeners.add(listener as (event: DesktopEvent) => void)
+        return () => listeners.delete(listener as (event: DesktopEvent) => void)
+      }),
+    })
+    const transport = createHowcodeRpcClientTransport({ authToken: 'test-token', baseUrl })
+
+    transport.subscribe('desktopEvent', vi.fn())
+    await vi.waitFor(() => expect(listeners.size).toBe(1))
+
+    transport.dispose()
+    await vi.waitFor(() => expect(listeners.size).toBe(0))
+    expect(transport.getStatus()).toMatchObject({
+      intentionalClose: true,
+      phase: 'disconnected',
+    })
+  })
+
   it('builds an authenticated websocket URL', () => {
     const url = new URL(
       howcodeRpcClientTransportInternals.resolveRpcWebSocketUrl('http://127.0.0.1:39317', 'secret'),
