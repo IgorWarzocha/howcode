@@ -44,6 +44,10 @@ import {
 import { publishComposerUpdate, publishThreadUpdate } from './live-thread-publisher.ts'
 import { mapSessionCommands } from './slash-command-service.ts'
 
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   const runtimePromise = persistedSessionPath
@@ -320,9 +324,9 @@ export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) 
         error: directShell.stderr || directShell.error?.message,
       },
       env: {
-        PATH: process.env['PATH'],
-        PI_PACKAGE_DIR: process.env['PI_PACKAGE_DIR'],
-        SHELL: process.env['SHELL'],
+        PATH: getProcessEnvironmentVariable('PATH'),
+        PI_PACKAGE_DIR: getProcessEnvironmentVariable('PI_PACKAGE_DIR'),
+        SHELL: getProcessEnvironmentVariable('SHELL'),
       },
       shell: { ok: true, output: Buffer.concat(chunks).toString('utf8') },
     }
@@ -336,9 +340,9 @@ export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) 
         error: directShell.stderr || directShell.error?.message,
       },
       env: {
-        PATH: process.env['PATH'],
-        PI_PACKAGE_DIR: process.env['PI_PACKAGE_DIR'],
-        SHELL: process.env['SHELL'],
+        PATH: getProcessEnvironmentVariable('PATH'),
+        PI_PACKAGE_DIR: getProcessEnvironmentVariable('PI_PACKAGE_DIR'),
+        SHELL: getProcessEnvironmentVariable('SHELL'),
       },
       shell: { ok: false, error: error instanceof Error ? error.message : String(error) },
     }

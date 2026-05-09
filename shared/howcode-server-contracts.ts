@@ -1,4 +1,5 @@
 export const HOWCODE_SERVER_DESCRIPTOR_PATH = '/.well-known/howcode/server'
+export const HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH = '/api/programmatic/prompt'
 export const HOWCODE_SERVER_REQUEST_PREFIX = '/api/app/request/'
 export const HOWCODE_SERVER_WS_PATH = '/api/app/ws'
 
@@ -115,4 +116,11 @@ export type HowcodeInstanceManifest = {
   instanceName: string
   serverUrl: string | null
   projects: HowcodeInstanceProjectSummary[]
+}
+
+export type HowcodeProgrammaticPromptRequest = {
+  text: string
+  projectId?: string | null
+  sessionPath?: string | null
+  chatGroupId?: string | null
 }

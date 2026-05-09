@@ -76,9 +76,8 @@ function registerRequestHandlers(
     ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
       const environment = resolveEnvironmentForRequest(channel, params)
-      const routeToServer =
-        getDesktopRequestChannelOwner(channel) === 'howcode-server' ||
-        (channel === 'invokeAction' && environment.kind !== 'local-desktop')
+      const owner = getDesktopRequestChannelOwner(channel)
+      const routeToServer = owner === 'howcode-server' || owner === 'pi-runtime'
       if (routeToServer) {
         const serverTransport = getServerTransport(environment)
         if (!serverTransport) {

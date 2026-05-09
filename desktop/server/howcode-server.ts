@@ -12,8 +12,10 @@ import type {
 } from '../../shared/desktop-ipc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
+  HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH,
   HOWCODE_SERVER_REQUEST_PREFIX,
   HOWCODE_SERVER_WS_PATH,
+  type HowcodeProgrammaticPromptRequest,
   howcodeServerDescriptor,
 } from '../../shared/howcode-server-contracts'
 import type {
@@ -141,6 +143,94 @@ function readJsonBody(request: IncomingMessage) {
   })
 }
 
+function dispatchTransportRequest<K extends DesktopRequestChannel>(
+  transport: AppTransport,
+  channel: K,
+  params: DesktopRequestMap[K]['params'],
+) {
+  return Effect.tryPromise({
+    try: () => transport.request(channel, params),
+    catch: (cause) =>
+      new HowcodeServerError({
+        message: `Howcode server request failed: ${channel}`,
+        cause,
+      }),
+  })
+}
+
+function validateProgrammaticPrompt(payload: unknown): HowcodeProgrammaticPromptRequest {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Programmatic prompt body must be an object.')
+  }
+  const input = payload as {
+    chatGroupId?: unknown
+    projectId?: unknown
+    sessionPath?: unknown
+    text?: unknown
+  }
+  if (typeof input.text !== 'string' || input.text.trim().length === 0) {
+    throw new Error('Programmatic prompt body requires a non-empty text field.')
+  }
+  return {
+    chatGroupId: typeof input.chatGroupId === 'string' ? input.chatGroupId : null,
+    projectId: typeof input.projectId === 'string' ? input.projectId : null,
+    sessionPath: typeof input.sessionPath === 'string' ? input.sessionPath : null,
+    text: input.text,
+  }
+}
+
+function runServerAction(
+  action: Effect.Effect<unknown, HowcodeServerError>,
+  response: ServerResponse,
+) {
+  void Effect.runPromise(action).then(
+    (result) => sendJson(response, 200, result ?? null),
+    (error: unknown) => {
+      console.error('Howcode server request failed', error)
+      const message = error instanceof Error ? error.message : 'Howcode server request failed.'
+      const cause =
+        typeof error === 'object' && error !== null && 'cause' in error ? error.cause : undefined
+      sendJson(response, 500, {
+        error: message,
+        cause: cause instanceof Error ? cause.message : undefined,
+      })
+    },
+  )
+}
+
+function handleProgrammaticPromptRequest(
+  config: HowcodeServerConfig,
+  transport: AppTransport,
+  request: IncomingMessage,
+  response: ServerResponse,
+) {
+  if (!hasValidAuthToken(request, config.authToken)) {
+    sendJson(response, 401, { error: 'Unauthorized.' })
+    return
+  }
+  runServerAction(
+    readJsonBody(request).pipe(
+      Effect.flatMap((payload) =>
+        Effect.try({
+          try: () => validateProgrammaticPrompt(payload),
+          catch: (cause) =>
+            new HowcodeServerError({
+              message: cause instanceof Error ? cause.message : 'Invalid programmatic prompt.',
+              cause,
+            }),
+        }),
+      ),
+      Effect.flatMap((payload) =>
+        dispatchTransportRequest(transport, 'invokeAction', {
+          action: 'composer.send',
+          payload,
+        }),
+      ),
+    ),
+    response,
+  )
+}
+
 function installWebSocketEvents(
   server: Server,
   config: HowcodeServerConfig,
@@ -260,36 +350,26 @@ function handleRequest(
       HOWCODE_SERVER_REQUEST_PREFIX.length,
     ) as DesktopRequestChannel
 
-    void Effect.runPromise(
+    runServerAction(
       readJsonBody(request).pipe(
         Effect.flatMap((params) =>
-          Effect.tryPromise({
-            try: () =>
-              transport.request(
-                channel,
-                params as DesktopRequestMap[typeof channel]['params'],
-              ) as Promise<unknown>,
-            catch: (cause) =>
-              new HowcodeServerError({
-                message: `Howcode server request failed: ${channel}`,
-                cause,
-              }),
-          }),
+          dispatchTransportRequest(
+            transport,
+            channel,
+            params as DesktopRequestMap[typeof channel]['params'],
+          ),
         ),
       ),
-    ).then(
-      (result) => sendJson(response, 200, result ?? null),
-      (error: unknown) => {
-        console.error('Howcode server request failed', error)
-        const message = error instanceof Error ? error.message : 'Howcode server request failed.'
-        const cause =
-          typeof error === 'object' && error !== null && 'cause' in error ? error.cause : undefined
-        sendJson(response, 500, {
-          error: message,
-          cause: cause instanceof Error ? cause.message : undefined,
-        })
-      },
+      response,
     )
+    return
+  }
+
+  if (
+    request.method === 'POST' &&
+    requestUrl.pathname === HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH
+  ) {
+    handleProgrammaticPromptRequest(config, transport, request, response)
     return
   }
 

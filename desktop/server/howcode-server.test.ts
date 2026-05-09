@@ -130,4 +130,29 @@ describe('Howcode server', () => {
       data: 'hello',
     })
   })
+
+  it('accepts programmatic prompts over the remote API', async () => {
+    const request = vi.fn(async () => ({ ok: true }))
+    const { baseUrl } = await startTestServer({
+      request,
+      subscribe: vi.fn(),
+    })
+
+    const response = await fetch(new URL('/api/programmatic/prompt', baseUrl), {
+      body: JSON.stringify({ projectId: '/remote/project', text: 'hello remote' }),
+      headers: { authorization: 'Bearer test-token', 'content-type': 'application/json' },
+      method: 'POST',
+    })
+
+    await expect(response.json()).resolves.toEqual({ ok: true })
+    expect(request).toHaveBeenCalledWith('invokeAction', {
+      action: 'composer.send',
+      payload: {
+        chatGroupId: null,
+        projectId: '/remote/project',
+        sessionPath: null,
+        text: 'hello remote',
+      },
+    })
+  })
 })

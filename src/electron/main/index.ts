@@ -587,11 +587,12 @@ async function bootstrap() {
 
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater()
+  if (!shouldDisableLocalServer()) {
+    await startDesktopLocalServer(runtime, appUpdater)
+  }
   const sshServerTransport = await resolveSshServerTransport()
   const externalServerTransport = sshServerTransport ?? (await resolveExternalServerTransport())
-  activeServerTransport = shouldDisableLocalServer()
-    ? externalServerTransport
-    : (externalServerTransport ?? (await startDesktopLocalServer(runtime, appUpdater)))
+  activeServerTransport = externalServerTransport ?? localHowcodeServer?.transport ?? null
   if (!activeServerTransport && shouldDisableLocalServer()) {
     activeHowcodeEnvironment = disabledEnvironment
     howcodeServerState = createHowcodeServerConnectionState({
@@ -605,10 +606,13 @@ async function bootstrap() {
     () => currentMainWindow,
     runtime,
     appUpdater,
-    (environment) =>
-      environment.kind === 'local-desktop'
-        ? (localHowcodeServer?.transport ?? null)
-        : activeServerTransport,
+    (environment) => {
+      if (environment.kind === 'local-desktop') return localHowcodeServer?.transport ?? null
+      return environment.id === activeRemoteServer?.environment.id ||
+        environment.id === activeHowcodeEnvironment.id
+        ? activeServerTransport
+        : null
+    },
     () => howcodeServerState,
     refreshActiveServerState,
     {

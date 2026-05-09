@@ -65,7 +65,7 @@ export const desktopRequestChannelOwners = {
   getArchivedThreads: 'howcode-server',
   getThread: 'howcode-server',
   watchSession: 'howcode-server',
-  invokeAction: 'desktop',
+  invokeAction: 'pi-runtime',
   listTerminals: 'howcode-server',
   terminalOpen: 'howcode-server',
   terminalWrite: 'howcode-server',

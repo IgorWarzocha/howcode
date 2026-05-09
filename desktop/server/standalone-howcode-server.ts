@@ -149,6 +149,9 @@ function createStandaloneInstanceManifestHandler(input: {
 
 function configureStandalonePiEnvironment(runtimeRoot: string) {
   setDefaultProcessEnvironmentVariable('HOWCODE_REPO_ROOT', runtimeRoot)
+  if (process.platform !== 'win32') {
+    setDefaultProcessEnvironmentVariable('SHELL', '/bin/bash')
+  }
   setDefaultProcessEnvironmentVariable(
     'HOWCODE_USER_DATA_PATH',
     resolve(homedir(), '.config', 'howcode'),
