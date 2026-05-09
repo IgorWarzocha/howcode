@@ -53,6 +53,7 @@ let activeRemoteServer: {
 let activeRemoteProjectIds = new Set<string>()
 let activeRemotePathRoots = new Set<string>()
 let activeHowcodeEnvironment: HowcodeEnvironment = disabledEnvironment
+let activeRemoteEventUnsubscribers: Array<() => void> = []
 let howcodeServerState = createHowcodeServerConnectionState({
   connected: false,
   environment: disabledEnvironment,
@@ -104,6 +105,33 @@ function createHowcodeServerConnectionState({
     error,
     mode: getConnectionModeForEnvironment(environment),
   }
+}
+
+function sendDesktopEventToRenderer(event: unknown) {
+  if (currentMainWindow && !currentMainWindow.isDestroyed()) {
+    currentMainWindow.webContents.send('howcode:event:desktopEvent', event)
+  }
+}
+
+function sendTerminalEventToRenderer(event: unknown) {
+  if (currentMainWindow && !currentMainWindow.isDestroyed()) {
+    currentMainWindow.webContents.send('howcode:event:terminalEvent', event)
+  }
+}
+
+function stopActiveRemoteEventForwarding() {
+  for (const unsubscribe of activeRemoteEventUnsubscribers) {
+    unsubscribe()
+  }
+  activeRemoteEventUnsubscribers = []
+}
+
+function startActiveRemoteEventForwarding(transport: AppTransport) {
+  stopActiveRemoteEventForwarding()
+  activeRemoteEventUnsubscribers = [
+    transport.subscribe('desktopEvent', sendDesktopEventToRenderer),
+    transport.subscribe('terminalEvent', sendTerminalEventToRenderer),
+  ]
 }
 
 async function fetchServerDescriptor(baseUrl: string) {
@@ -343,6 +371,7 @@ async function setActiveRemoteEnvironment(config: {
           authToken: config.token,
           baseUrl,
         })
+  startActiveRemoteEventForwarding(activeServerTransport)
   activeRemoteProjectIds = new Set()
   activeRemotePathRoots = new Set()
 
@@ -375,6 +404,7 @@ async function setActiveRemoteEnvironment(config: {
 }
 
 async function clearActiveRemoteEnvironment() {
+  stopActiveRemoteEventForwarding()
   sshHowcodeServer?.close()
   sshHowcodeServer = null
   activeRemoteProjectIds = new Set()
