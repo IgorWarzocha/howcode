@@ -42,6 +42,13 @@ let activeRemoteServer: {
   baseUrl: string
   environment: HowcodeEnvironment
   remoteEnvironmentId: string
+  sshConfig?: {
+    host: string
+    localPort: number
+    remoteCommand: string | null
+    remotePort: number
+    token: string
+  }
 } | null = null
 let activeRemoteProjectIds = new Set<string>()
 let activeRemotePathRoots = new Set<string>()
@@ -252,6 +259,55 @@ async function ensureSavedSshRemoteEnvironment(config: {
   return sshHowcodeServer
 }
 
+function createResilientSshServerTransport(config: {
+  environment: HowcodeRemoteEnvironment
+  token: string
+  initialBaseUrl: string
+}): AppTransport {
+  let transport = createHowcodeServerTransport({
+    authToken: config.token,
+    baseUrl: config.initialBaseUrl,
+  })
+
+  async function reconnect() {
+    const connection = await ensureSavedSshRemoteEnvironment({
+      environment: config.environment,
+      token: config.token,
+    })
+    activeRemoteServer = {
+      baseUrl: connection.baseUrl,
+      environment: connection.environment,
+      remoteEnvironmentId: config.environment.id,
+      sshConfig: {
+        host: config.environment.sshHost ?? config.environment.name,
+        localPort: config.environment.localPort ?? 49317,
+        remoteCommand: config.environment.remoteCommand ?? null,
+        remotePort: config.environment.remotePort ?? 39317,
+        token: config.token,
+      },
+    }
+    activeHowcodeEnvironment = connection.environment
+    transport = createHowcodeServerTransport({
+      authToken: config.token,
+      baseUrl: connection.baseUrl,
+    })
+    await refreshConnectedServerState(connection.environment, connection.baseUrl)
+    return transport
+  }
+
+  return {
+    request: async (channel, params) => {
+      try {
+        return await transport.request(channel, params)
+      } catch (error) {
+        if (!activeRemoteServer?.sshConfig) throw error
+        return await (await reconnect()).request(channel, params)
+      }
+    },
+    subscribe: (channel, listener) => transport.subscribe(channel, listener),
+  }
+}
+
 async function setActiveRemoteEnvironment(config: {
   environment: HowcodeRemoteEnvironment
   baseUrl: string
@@ -262,11 +318,31 @@ async function setActiveRemoteEnvironment(config: {
   const baseUrl = connection?.baseUrl ?? config.baseUrl
   const environment =
     connection?.environment ?? createEnvironmentFromSavedRemote(config.environment, baseUrl)
-  activeRemoteServer = { baseUrl, environment, remoteEnvironmentId: config.environment.id }
-  activeServerTransport = createHowcodeServerTransport({
-    authToken: config.token,
+  activeRemoteServer = {
     baseUrl,
-  })
+    environment,
+    remoteEnvironmentId: config.environment.id,
+  }
+  if (config.environment.kind === 'ssh') {
+    activeRemoteServer.sshConfig = {
+      host: config.environment.sshHost ?? config.environment.name,
+      localPort: config.environment.localPort ?? 49317,
+      remoteCommand: config.environment.remoteCommand ?? null,
+      remotePort: config.environment.remotePort ?? 39317,
+      token: config.token,
+    }
+  }
+  activeServerTransport =
+    config.environment.kind === 'ssh'
+      ? createResilientSshServerTransport({
+          environment: config.environment,
+          initialBaseUrl: baseUrl,
+          token: config.token,
+        })
+      : createHowcodeServerTransport({
+          authToken: config.token,
+          baseUrl,
+        })
   activeRemoteProjectIds = new Set()
   activeRemotePathRoots = new Set()
 
