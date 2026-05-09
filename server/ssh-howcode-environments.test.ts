@@ -46,4 +46,13 @@ describe('ssh howcode environment internals', () => {
       sshHowcodeEnvironmentInternals.remoteStateKey(baseConfig.host),
     )
   })
+
+  it('keys managed connections by target and launch inputs', () => {
+    expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).toBe(
+      sshHowcodeEnvironmentInternals.connectionKey({ ...baseConfig }),
+    )
+    expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).not.toBe(
+      sshHowcodeEnvironmentInternals.connectionKey({ ...baseConfig, token: 'other-token' }),
+    )
+  })
 })

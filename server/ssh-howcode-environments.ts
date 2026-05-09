@@ -32,6 +32,8 @@ type RemoteLaunchResult = {
 }
 
 const remotePortScanWindow = 200
+const activeConnections = new Map<string, SshHowcodeEnvironmentConnection>()
+const pendingConnections = new Map<string, Promise<SshHowcodeEnvironmentConnection>>()
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -308,6 +310,15 @@ async function assertProcessDoesNotExitEarly(process: ManagedSshProcess, timeout
   )
 }
 
+async function canReachAuthenticatedServer(baseUrl: string, token: string) {
+  try {
+    await waitForAuthenticatedServer(baseUrl, token, 750)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function waitForAuthenticatedServer(baseUrl: string, token: string, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs
   let lastError: unknown = null
@@ -380,6 +391,10 @@ function parseRemoteLaunchResult(stdout: string): RemoteLaunchResult {
   }
 }
 
+function connectionKey(config: SshHowcodeEnvironmentConfig) {
+  return [config.host, config.token, config.remotePort, config.remoteCommand ?? ''].join('\0')
+}
+
 async function launchOrReuseRemoteServer(config: SshHowcodeEnvironmentConfig) {
   const stdout = await runSshScript(config, buildRemoteLaunchScript(config), [
     remoteStateKey(config.host),
@@ -418,7 +433,8 @@ export function readSshHowcodeEnvironmentConfigFromEnv(): SshHowcodeEnvironmentC
   }
 }
 
-export async function ensureSshHowcodeServer(
+async function createSshHowcodeServerConnection(
+  key: string,
   config: SshHowcodeEnvironmentConfig,
 ): Promise<SshHowcodeEnvironmentConnection> {
   const remoteServer = await launchOrReuseRemoteServer(config)
@@ -471,11 +487,17 @@ export async function ensureSshHowcodeServer(
     },
   }
 
+  let closed = false
   return {
     baseUrl,
     environment,
     token: config.token,
     close: () => {
+      if (closed) return
+      closed = true
+      if (activeConnections.get(key)?.baseUrl === baseUrl) {
+        activeConnections.delete(key)
+      }
       closeChild(tunnelProcess.child)
       if (remoteServer.serverKind === 'managed') {
         void runSshScript(config, buildRemoteStopScript(config), []).catch((error) => {
@@ -486,9 +508,36 @@ export async function ensureSshHowcodeServer(
   }
 }
 
+export async function ensureSshHowcodeServer(
+  config: SshHowcodeEnvironmentConfig,
+): Promise<SshHowcodeEnvironmentConnection> {
+  const key = connectionKey(config)
+  const active = activeConnections.get(key) ?? null
+  if (active && (await canReachAuthenticatedServer(active.baseUrl, active.token))) {
+    return active
+  }
+  if (active) {
+    active.close()
+  }
+
+  const pending = pendingConnections.get(key)
+  if (pending) return pending
+
+  const next = createSshHowcodeServerConnection(key, config)
+  pendingConnections.set(key, next)
+  try {
+    const connection = await next
+    activeConnections.set(key, connection)
+    return connection
+  } finally {
+    pendingConnections.delete(key)
+  }
+}
+
 export const sshHowcodeEnvironmentInternals = {
   buildRemoteLaunchScript,
   buildRemoteRunnerScript,
+  connectionKey,
   parseRemoteLaunchResult,
   remoteStateKey,
 }
