@@ -94,7 +94,7 @@ function defaultRemoteServeCommand(config: SshHowcodeEnvironmentConfig) {
   ].join(' ')
   const serveArgsWithoutCommand = serveArgs.slice('serve '.length)
   const command = [
-    'export PATH="$HOME/.bun/bin:/home/linuxbrew/.linuxbrew/bin:/opt/homebrew/bin:$PATH"',
+    'export PATH="$HOME/.bun/bin:$PATH"',
     'pkill -f "standalone-howcode-server.mjs" >/dev/null 2>&1 || true',
     'pkill -f "bun run server:dev" >/dev/null 2>&1 || true',
     `if command -v howcode >/dev/null 2>&1; then exec howcode ${serveArgs}; fi`,
