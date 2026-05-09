@@ -367,10 +367,15 @@ function getSavedRemoteEnvironmentConnectionConfig(
     (remoteEnvironment) => remoteEnvironment.id === id,
   )
   if (!environment) return { error: 'Remote not found.' }
+  const token = readToken(database, environment.tokenRef)
+  if (environment.kind === 'ssh') {
+    if (!token) return { error: 'Add token, save, then test.' }
+    return { baseUrl: '', environment, token }
+  }
+
   const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
   if (!baseUrl) return { error: 'Missing server URL.' }
-  const token = readToken(database, environment.tokenRef)
-  if (!token && (environment.kind === 'ssh' || !isLoopbackServerUrl(baseUrl))) {
+  if (!(token || isLoopbackServerUrl(baseUrl))) {
     return { error: 'Add token, save, then test.' }
   }
   return { baseUrl, environment, token: token ?? '' }
