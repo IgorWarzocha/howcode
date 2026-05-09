@@ -34,6 +34,16 @@ type PiThreadsRequestHandlers = Pick<
   | 'invokeAction'
 >
 
+async function nullableProjectDiffStats<T>(operation: () => Promise<T>) {
+  try {
+    return await operation()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('Could not find dev branch')) return null
+    throw error
+  }
+}
+
 export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRequestHandlers {
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
@@ -41,7 +51,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     getProjectDiff: ({ projectId, baseline }) =>
       piThreads.loadProjectDiff(projectId, baseline ?? null),
     getProjectDiffStats: ({ projectId, baseline }) =>
-      piThreads.loadProjectDiffStats(projectId, baseline ?? null),
+      nullableProjectDiffStats(() => piThreads.loadProjectDiffStats(projectId, baseline ?? null)),
     captureProjectDiffBaseline: ({ projectId }) => piThreads.captureProjectDiffBaseline(projectId),
     listProjectCommits: ({ projectId, limit }) =>
       piThreads.listProjectCommits(projectId, limit ?? null),
