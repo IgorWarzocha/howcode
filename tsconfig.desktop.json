@@ -29,6 +29,7 @@
   },
   "include": [
     "desktop/**/*.ts",
+    "server/**/*.ts",
     "shared/**/*.ts",
     "src/electron/main/ipc/request-handlers/**/*.ts",
     "src/electron/main/runtime/desktop-runtime-contracts.ts"

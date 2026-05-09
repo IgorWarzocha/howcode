@@ -26,5 +26,10 @@
     "stableTypeOrdering": true,
     "libReplacement": false
   },
-  "include": ["src/electron/**/*.ts", "shared/**/*.ts", "src/desktop-host/**/*.ts"]
+  "include": [
+    "src/electron/**/*.ts",
+    "server/**/*.ts",
+    "shared/**/*.ts",
+    "src/desktop-host/**/*.ts"
+  ]
 }

@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import type { HowcodeEnvironment } from '../../../shared/howcode-server-contracts'
+import type { HowcodeEnvironment } from '../shared/howcode-server-contracts'
 
 export type SshHowcodeEnvironmentConfig = {
   host: string

@@ -1,12 +1,12 @@
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
-import type { AppTransport } from '../../shared/app-transport'
-import type { DesktopEvent } from '../../shared/desktop-contracts'
+import type { AppTransport } from '../shared/app-transport'
+import type { DesktopEvent } from '../shared/desktop-contracts'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   howcodeServerDescriptor,
-} from '../../shared/howcode-server-contracts'
+} from '../shared/howcode-server-contracts'
 import { startHowcodeServer } from './howcode-server'
 import { createHowcodeServerTransport } from './howcode-server-transport'
 

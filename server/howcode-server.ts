@@ -4,12 +4,12 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import path from 'node:path'
 import { Data, Effect } from 'effect'
 import { WebSocketServer } from 'ws'
-import type { AppTransport } from '../../shared/app-transport'
+import type { AppTransport } from '../shared/app-transport'
 import type {
   DesktopEventChannel,
   DesktopRequestChannel,
   DesktopRequestMap,
-} from '../../shared/desktop-ipc'
+} from '../shared/desktop-ipc'
 import {
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH,
@@ -17,11 +17,11 @@ import {
   HOWCODE_SERVER_WS_PATH,
   type HowcodeProgrammaticPromptRequest,
   howcodeServerDescriptor,
-} from '../../shared/howcode-server-contracts'
+} from '../shared/howcode-server-contracts'
 import type {
   HowcodeServerWsClientMessage,
   HowcodeServerWsServerMessage,
-} from '../../shared/howcode-server-ws'
+} from '../shared/howcode-server-ws'
 
 export type HowcodeServerConfig = {
   host: string

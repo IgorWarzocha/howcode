@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Effect } from 'effect'
-import type { AppTransport } from '../../shared/app-transport'
-import type { DesktopRequestHandlerMap } from '../../shared/desktop-ipc'
+import type { AppTransport } from '../shared/app-transport'
+import type { DesktopRequestHandlerMap } from '../shared/desktop-ipc'
 import { type HowcodeServerHandle, startHowcodeServer } from './howcode-server'
 import { createHowcodeServerTransport } from './howcode-server-transport'
 

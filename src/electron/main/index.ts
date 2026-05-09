@@ -1,10 +1,22 @@
 import { app, BrowserWindow } from 'electron'
-import { createHowcodeServerTransport } from '../../../desktop/server/howcode-server-transport'
+import { createHowcodeServerTransport } from '../../../server/howcode-server-transport'
 import {
   type LocalHowcodeServer,
   startLocalHowcodeServer,
   stopLocalHowcodeServer,
-} from '../../../desktop/server/local-howcode-server'
+} from '../../../server/local-howcode-server'
+import {
+  createExternalServerEnvironment,
+  disabledEnvironment,
+  getConnectionModeForEnvironment,
+  localDesktopEnvironment,
+  resolveHowcodeEnvironmentForRequest,
+} from '../../../server/server-environments'
+import {
+  ensureSshHowcodeServer,
+  readSshHowcodeEnvironmentConfigFromEnv,
+  type SshHowcodeEnvironmentConnection,
+} from '../../../server/ssh-howcode-environments'
 import type { AppTransport } from '../../../shared/app-transport'
 import type {
   HowcodeEnvironment,
@@ -20,18 +32,6 @@ import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './
 import { configureDesktopEnvironment } from './runtime/environment'
 import { loadDesktopRuntimeModules } from './runtime/load-desktop-runtime'
 import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
-import {
-  createExternalServerEnvironment,
-  disabledEnvironment,
-  getConnectionModeForEnvironment,
-  localDesktopEnvironment,
-  resolveHowcodeEnvironmentForRequest,
-} from './server-environments'
-import {
-  ensureSshHowcodeServer,
-  readSshHowcodeEnvironmentConfigFromEnv,
-  type SshHowcodeEnvironmentConnection,
-} from './ssh-howcode-environments'
 import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null

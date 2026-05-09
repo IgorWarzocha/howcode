@@ -1,15 +1,15 @@
-import type { AppTransport } from '../../shared/app-transport'
+import type { AppTransport } from '../shared/app-transport'
 import type {
   DesktopEventChannel,
   DesktopEventMap,
   DesktopRequestChannel,
   DesktopRequestMap,
-} from '../../shared/desktop-ipc'
+} from '../shared/desktop-ipc'
 import {
   HOWCODE_SERVER_REQUEST_PREFIX,
   HOWCODE_SERVER_WS_PATH,
-} from '../../shared/howcode-server-contracts'
-import type { HowcodeServerWsServerMessage } from '../../shared/howcode-server-ws'
+} from '../shared/howcode-server-contracts'
+import type { HowcodeServerWsServerMessage } from '../shared/howcode-server-ws'
 
 export type HowcodeServerTransportConfig = {
   baseUrl: string

@@ -1,0 +1,2 @@
+- `server/` owns Howcode HTTP/WebSocket serving, local/standalone launch, SSH remote launch, and server environment routing.
+- SSH server launches are non-interactive: set PATH/SHELL/repo cwd explicitly and restart stale remote servers when validating runtime fixes.

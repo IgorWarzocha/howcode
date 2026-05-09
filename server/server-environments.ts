@@ -1,8 +1,8 @@
-import type { DesktopRequestChannel, DesktopRequestMap } from '../../../shared/desktop-ipc'
+import type { DesktopRequestChannel, DesktopRequestMap } from '../shared/desktop-ipc'
 import type {
   HowcodeEnvironment,
   HowcodeServerConnectionMode,
-} from '../../../shared/howcode-server-contracts'
+} from '../shared/howcode-server-contracts'
 
 export const localDesktopEnvironment: HowcodeEnvironment = {
   id: 'local-desktop',
