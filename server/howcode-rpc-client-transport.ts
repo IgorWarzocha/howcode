@@ -2,6 +2,7 @@ import { Effect, Layer } from 'effect'
 import * as RpcClient from 'effect/unstable/rpc/RpcClient'
 import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization'
 import * as Socket from 'effect/unstable/socket/Socket'
+import WebSocket from 'ws'
 import type { AppTransport } from '../shared/app-transport'
 import type {
   DesktopEventChannel,
@@ -70,7 +71,14 @@ function createRpcClientEffect(config: HowcodeRpcClientTransportConfig) {
     Socket.makeWebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken), {
       closeCodeIsError: (code) => code !== 1000,
     }),
-  ).pipe(Layer.provide(Socket.layerWebSocketConstructorGlobal))
+  ).pipe(
+    Layer.provide(
+      Layer.succeed(
+        Socket.WebSocketConstructor,
+        (url, protocols) => new WebSocket(url, protocols) as unknown as globalThis.WebSocket,
+      ),
+    ),
+  )
 
   return RpcClient.make(HowcodeRpcGroup, { flatten: true }).pipe(
     Effect.provide(RpcClient.layerProtocolSocket()),
