@@ -17,6 +17,46 @@ type HowcodeRpcClientTransportConfig = {
   authToken: string
 }
 
+export type HowcodeRpcClientConnectionStatus = {
+  phase: 'idle' | 'connecting' | 'connected' | 'disconnected'
+  reconnectPhase: 'idle' | 'attempting' | 'waiting' | 'exhausted'
+  attemptCount: number
+  reconnectAttemptCount: number
+  connectedAt: string | null
+  disconnectedAt: string | null
+  lastError: string | null
+  lastErrorAt: string | null
+  nextRetryAt: string | null
+  hasConnected: boolean
+  intentionalClose: boolean
+}
+
+export type HowcodeRpcClientTransport = AppTransport & {
+  getStatus: () => HowcodeRpcClientConnectionStatus
+  reconnect: () => Promise<void>
+  dispose: () => void
+}
+
+function createInitialStatus(): HowcodeRpcClientConnectionStatus {
+  return {
+    attemptCount: 0,
+    connectedAt: null,
+    disconnectedAt: null,
+    hasConnected: false,
+    intentionalClose: false,
+    lastError: null,
+    lastErrorAt: null,
+    nextRetryAt: null,
+    phase: 'idle',
+    reconnectAttemptCount: 0,
+    reconnectPhase: 'idle',
+  }
+}
+
+function nowIso() {
+  return new Date().toISOString()
+}
+
 function resolveRpcWebSocketUrl(baseUrl: string, authToken: string) {
   const url = new URL(HOWCODE_RPC_WS_PATH, baseUrl)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -41,14 +81,54 @@ function createRpcClientEffect(config: HowcodeRpcClientTransportConfig) {
 
 export function createHowcodeRpcClientTransport(
   config: HowcodeRpcClientTransportConfig,
-): AppTransport {
+): HowcodeRpcClientTransport {
   const legacyEventsTransport = createHowcodeServerTransport(config)
+  let status = createInitialStatus()
+
+  const markConnecting = () => {
+    status = {
+      ...status,
+      attemptCount: status.attemptCount + 1,
+      intentionalClose: false,
+      phase: status.hasConnected ? 'disconnected' : 'connecting',
+      reconnectAttemptCount: status.hasConnected
+        ? status.reconnectAttemptCount + 1
+        : status.reconnectAttemptCount,
+      reconnectPhase: status.hasConnected ? 'attempting' : 'idle',
+    }
+  }
+  const markConnected = () => {
+    status = {
+      ...status,
+      connectedAt: nowIso(),
+      disconnectedAt: null,
+      hasConnected: true,
+      lastError: null,
+      lastErrorAt: null,
+      nextRetryAt: null,
+      phase: 'connected',
+      reconnectPhase: 'idle',
+    }
+  }
+  const markDisconnected = (error: unknown) => {
+    const message = error instanceof Error ? error.message : 'Howcode RPC request failed.'
+    status = {
+      ...status,
+      disconnectedAt: nowIso(),
+      lastError: message,
+      lastErrorAt: nowIso(),
+      nextRetryAt: new Date(Date.now() + 500).toISOString(),
+      phase: 'disconnected',
+      reconnectPhase: status.hasConnected ? 'waiting' : 'idle',
+    }
+  }
 
   return {
     request: async <K extends DesktopRequestChannel>(
       channel: K,
       params: DesktopRequestMap[K]['params'],
     ): Promise<DesktopRequestMap[K]['response']> => {
+      markConnecting()
       const rpcRequest = Effect.runPromise(
         Effect.scoped(
           createRpcClientEffect(config).pipe(
@@ -62,14 +142,34 @@ export function createHowcodeRpcClientTransport(
         ),
       )
       try {
-        return (await Promise.race([
+        const result = (await Promise.race([
           rpcRequest,
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Howcode RPC request timed out.')), 500),
           ),
         ])) as DesktopRequestMap[K]['response']
-      } catch {
+        markConnected()
+        return result
+      } catch (error) {
+        markDisconnected(error)
         return await legacyEventsTransport.request(channel, params)
+      }
+    },
+    dispose: () => {
+      status = {
+        ...status,
+        disconnectedAt: nowIso(),
+        intentionalClose: true,
+        phase: 'disconnected',
+        reconnectPhase: 'idle',
+      }
+    },
+    getStatus: () => status,
+    reconnect: async () => {
+      status = {
+        ...status,
+        reconnectAttemptCount: status.reconnectAttemptCount + 1,
+        reconnectPhase: 'attempting',
       }
     },
     subscribe: <TChannel extends DesktopEventChannel>(

@@ -41,6 +41,10 @@ describe('Howcode RPC client transport', () => {
     await expect(
       transport.request('terminalWrite', { data: 'hello', sessionId: 'terminal-1' }),
     ).resolves.toEqual({ ok: true })
+    expect(transport.getStatus()).toMatchObject({
+      attemptCount: 1,
+      phase: 'disconnected',
+    })
     expect(request).toHaveBeenCalledWith('terminalWrite', {
       data: 'hello',
       sessionId: 'terminal-1',
