@@ -527,7 +527,7 @@ function resolveEnvironmentForDesktopRequest<
     return resolveHowcodeEnvironmentForRequest(getLocalRequestEnvironment(), channel, params)
   }
   if (projectId) {
-    if (activeRemoteProjectIds.has(projectId)) {
+    if (activeRemoteProjectIds.has(projectId) || isActiveRemotePath(projectId)) {
       return resolveHowcodeEnvironmentForRequest(activeHowcodeEnvironment, channel, params)
     }
     const assignedRemoteId = getProjectRemoteEnvironmentAssignment(projectId)
