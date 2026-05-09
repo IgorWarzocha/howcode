@@ -1,7 +1,3 @@
-import { Effect, Layer } from 'effect'
-import * as RpcClient from 'effect/unstable/rpc/RpcClient'
-import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization'
-import * as Socket from 'effect/unstable/socket/Socket'
 import WebSocket from 'ws'
 import type { AppTransport } from '../shared/app-transport'
 import type {
@@ -10,7 +6,7 @@ import type {
   DesktopRequestChannel,
   DesktopRequestMap,
 } from '../shared/desktop-ipc'
-import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH, HowcodeRpcGroup } from '../shared/howcode-rpc'
+import { HOWCODE_RPC_METHODS, HOWCODE_RPC_WS_PATH } from '../shared/howcode-rpc'
 import { createHowcodeServerTransport } from './howcode-server-transport'
 
 type HowcodeRpcClientTransportConfig = {
@@ -69,26 +65,48 @@ function resolveRpcWebSocketUrl(baseUrl: string, authToken: string) {
   return url.toString()
 }
 
-function createRpcClientEffect(config: HowcodeRpcClientTransportConfig) {
-  const socketLayer = Layer.effect(
-    Socket.Socket,
-    Socket.makeWebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken), {
-      closeCodeIsError: (code) => code !== 1000,
-    }),
-  ).pipe(
-    Layer.provide(
-      Layer.succeed(
-        Socket.WebSocketConstructor,
-        (url, protocols) => new WebSocket(url, protocols) as unknown as globalThis.WebSocket,
-      ),
-    ),
-  )
-
-  return RpcClient.make(HowcodeRpcGroup, { flatten: true }).pipe(
-    Effect.provide(RpcClient.layerProtocolSocket()),
-    Effect.provide(socketLayer),
-    Effect.provide(RpcSerialization.layerJson),
-  )
+function requestViaRpcWebSocket<K extends DesktopRequestChannel>(
+  config: HowcodeRpcClientTransportConfig,
+  channel: K,
+  params: DesktopRequestMap[K]['params'],
+): Promise<DesktopRequestMap[K]['response']> {
+  return new Promise((resolve, reject) => {
+    const requestId = crypto.randomUUID()
+    const webSocket = new WebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken))
+    const cleanup = () => {
+      webSocket.off('open', onOpen)
+      webSocket.off('message', onMessage)
+      webSocket.off('error', onError)
+    }
+    const onOpen = () => {
+      webSocket.send(
+        JSON.stringify({ id: requestId, type: HOWCODE_RPC_METHODS.appRequest, channel, params }),
+      )
+    }
+    const onMessage = (data: WebSocket.RawData) => {
+      const message = JSON.parse(data.toString()) as {
+        id?: string
+        ok?: boolean
+        result?: DesktopRequestMap[K]['response']
+        error?: string
+      }
+      if (message.id !== requestId) return
+      cleanup()
+      webSocket.close(1000)
+      if (message.ok) {
+        resolve(message.result as DesktopRequestMap[K]['response'])
+      } else {
+        reject(new Error(message.error ?? 'Howcode RPC request failed.'))
+      }
+    }
+    const onError = (error: Error) => {
+      cleanup()
+      reject(error)
+    }
+    webSocket.on('open', onOpen)
+    webSocket.on('message', onMessage)
+    webSocket.on('error', onError)
+  })
 }
 
 export function createHowcodeRpcClientTransport(
@@ -142,18 +160,7 @@ export function createHowcodeRpcClientTransport(
       params: DesktopRequestMap[K]['params'],
     ): Promise<DesktopRequestMap[K]['response']> => {
       markConnecting()
-      const rpcRequest = Effect.runPromise(
-        Effect.scoped(
-          createRpcClientEffect(config).pipe(
-            Effect.flatMap((client) =>
-              (client as unknown as (tag: string, payload: unknown) => Effect.Effect<unknown>)(
-                HOWCODE_RPC_METHODS.appRequest,
-                { channel, params },
-              ),
-            ),
-          ),
-        ),
-      )
+      const rpcRequest = requestViaRpcWebSocket(config, channel, params)
       try {
         const result = (await Promise.race([
           rpcRequest,

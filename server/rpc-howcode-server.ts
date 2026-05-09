@@ -53,15 +53,23 @@ export function createHowcodeRpcLayer(transport: AppTransport) {
   })
 }
 
+type EffectSocketMessageHandler = (data: string | Uint8Array) => unknown
+
+function handleEffectRpcSocketMessage(
+  data: WebSocket.RawData,
+  handler: EffectSocketMessageHandler,
+) {
+  if (isRawRpcRequest(data)) return
+  const payload = Array.isArray(data) ? Buffer.concat(data) : data
+  const result = handler(typeof payload === 'string' ? payload : new Uint8Array(payload))
+  if (Effect.isEffect(result)) void Effect.runFork(result as Effect.Effect<unknown, unknown>)
+}
+
 function makeWsSocket(webSocket: WebSocket): Socket.Socket {
   return Socket.make({
     runRaw: (handler, options) =>
       Effect.callback<void, Socket.SocketError>((resume) => {
-        const onMessage = (data: WebSocket.RawData) => {
-          const payload = Array.isArray(data) ? Buffer.concat(data) : data
-          const result = handler(typeof payload === 'string' ? payload : new Uint8Array(payload))
-          if (result) void Effect.runFork(result as Effect.Effect<unknown, unknown>)
-        }
+        const onMessage = (data: WebSocket.RawData) => handleEffectRpcSocketMessage(data, handler)
         const onClose = () => {
           cleanup()
           resume(Effect.void)
@@ -121,6 +129,44 @@ function createWebSocketSocketServerLayer(queue: Queue.Queue<Socket.Socket>) {
   })
 }
 
+function isRawRpcRequest(data: WebSocket.RawData) {
+  try {
+    const message = JSON.parse(data.toString()) as { type?: unknown }
+    return message.type === 'app.request'
+  } catch {
+    return false
+  }
+}
+
+function installRawRpcCompatibilityHandler(webSocket: WebSocket, transport: AppTransport) {
+  webSocket.on('message', (data) => {
+    void (async () => {
+      let message: { id?: unknown; type?: unknown; channel?: unknown; params?: unknown }
+      try {
+        message = JSON.parse(data.toString())
+      } catch {
+        return
+      }
+      if (message.type !== 'app.request' || typeof message.id !== 'string') return
+      try {
+        const result = await transport.request(
+          message.channel as DesktopRequestChannel,
+          message.params as DesktopRequestMap[DesktopRequestChannel]['params'],
+        )
+        webSocket.send(JSON.stringify({ id: message.id, ok: true, result }))
+      } catch (error) {
+        webSocket.send(
+          JSON.stringify({
+            id: message.id,
+            ok: false,
+            error: error instanceof Error ? error.message : 'Howcode RPC request failed.',
+          }),
+        )
+      }
+    })()
+  })
+}
+
 export function installHowcodeRpcWebSocketServer(options: {
   server: Server
   path: string
@@ -146,6 +192,7 @@ export function installHowcodeRpcWebSocketServer(options: {
       return
     }
     webSocketServer.handleUpgrade(request, networkSocket, head, (webSocket) => {
+      installRawRpcCompatibilityHandler(webSocket, options.transport)
       Queue.offerUnsafe(queue, makeWsSocket(webSocket))
     })
   })

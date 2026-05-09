@@ -33,7 +33,7 @@ async function startTestServer(transport: AppTransport) {
 }
 
 describe('Howcode RPC client transport', () => {
-  it('dispatches requests through the compatibility transport', async () => {
+  it('dispatches requests over the RPC websocket', async () => {
     const request = vi.fn(async () => ({ ok: true }))
     const baseUrl = await startTestServer({ request, subscribe: vi.fn() })
     const transport = createHowcodeRpcClientTransport({ authToken: 'test-token', baseUrl })
@@ -43,9 +43,9 @@ describe('Howcode RPC client transport', () => {
     ).resolves.toEqual({ ok: true })
     expect(transport.getStatus()).toMatchObject({
       attemptCount: 1,
-      fallbackRequestCount: 1,
-      lastTransport: 'legacy-http',
-      phase: 'disconnected',
+      fallbackRequestCount: 0,
+      lastTransport: 'rpc',
+      phase: 'connected',
     })
     expect(request).toHaveBeenCalledWith('terminalWrite', {
       data: 'hello',
