@@ -35,6 +35,8 @@ function createDisabledHowcodeServerState(): HowcodeServerConnectionState {
     attemptCount: 0,
     baseUrl: null,
     connected: false,
+    closeCode: null,
+    closeReason: null,
     connectedAt: null,
     descriptor: null,
     disconnectedAt: new Date().toISOString(),
@@ -48,6 +50,7 @@ function createDisabledHowcodeServerState(): HowcodeServerConnectionState {
     environmentId: 'disabled',
     environmentName: 'No Howcode server',
     error: null,
+    fingerprint: null,
     lastError: null,
     lastErrorAt: null,
     mode: 'disabled',
@@ -55,6 +58,7 @@ function createDisabledHowcodeServerState(): HowcodeServerConnectionState {
     phase: 'disconnected',
     reconnectAttemptCount: 0,
     reconnectPhase: 'idle',
+    serverKind: 'unknown',
   }
 }
 

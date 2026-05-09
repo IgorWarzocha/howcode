@@ -85,6 +85,15 @@ function isActiveRemotePath(filePath: string | null) {
   return false
 }
 
+function getServerKindForEnvironment(environment: HowcodeEnvironment) {
+  if (environment.kind === 'local-desktop') return 'local'
+  if (environment.kind === 'external-server') return 'direct'
+  if (environment.kind === 'ssh-server') {
+    return environment.ssh?.serverKind === 'external' ? 'ssh-external' : 'ssh-managed'
+  }
+  return 'unknown'
+}
+
 function createHowcodeServerConnectionState({
   attemptCount = 1,
   connected,
@@ -93,6 +102,7 @@ function createHowcodeServerConnectionState({
   error = null,
   reconnectAttemptCount = 0,
   reconnectPhase = 'idle',
+  serverKind,
 }: {
   attemptCount?: number
   connected: boolean
@@ -101,12 +111,15 @@ function createHowcodeServerConnectionState({
   error?: string | null
   reconnectAttemptCount?: number
   reconnectPhase?: HowcodeServerConnectionState['reconnectPhase']
+  serverKind?: HowcodeServerConnectionState['serverKind']
 }): HowcodeServerConnectionState {
   const now = new Date().toISOString()
   return {
     attemptCount,
     baseUrl: environment.serverUrl,
     connected,
+    closeCode: null,
+    closeReason: null,
     connectedAt: connected ? now : null,
     descriptor,
     disconnectedAt: connected ? null : now,
@@ -114,6 +127,7 @@ function createHowcodeServerConnectionState({
     environmentId: environment.id,
     environmentName: environment.name,
     error,
+    fingerprint: descriptor?.fingerprint ?? null,
     lastError: error,
     lastErrorAt: error ? now : null,
     mode: getConnectionModeForEnvironment(environment),
@@ -121,6 +135,7 @@ function createHowcodeServerConnectionState({
     phase: connected ? 'connected' : 'disconnected',
     reconnectAttemptCount,
     reconnectPhase,
+    serverKind: serverKind ?? getServerKindForEnvironment(environment),
   }
 }
 

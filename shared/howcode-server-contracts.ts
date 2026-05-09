@@ -76,10 +76,12 @@ export type HowcodeEnvironment = {
     host: string
     localPort: number
     remotePort: number
+    serverKind?: 'managed' | 'external'
   } | null
 }
 
 export type HowcodeServerConnectionMode = 'local' | 'external' | 'disabled'
+export type HowcodeServerKind = 'local' | 'direct' | 'ssh-managed' | 'ssh-external' | 'unknown'
 export type HowcodeServerConnectionPhase = 'idle' | 'connecting' | 'connected' | 'disconnected'
 export type HowcodeServerReconnectPhase = 'idle' | 'attempting' | 'waiting' | 'exhausted'
 
@@ -99,6 +101,10 @@ export type HowcodeServerConnectionState = {
   lastErrorAt: string | null
   nextRetryAt: string | null
   baseUrl: string | null
+  serverKind: HowcodeServerKind
+  closeCode: number | null
+  closeReason: string | null
+  fingerprint: string | null
   descriptor: HowcodeServerDescriptor | null
   error: string | null
 }

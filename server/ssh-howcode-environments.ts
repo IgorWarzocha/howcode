@@ -18,6 +18,7 @@ export type SshHowcodeEnvironmentConnection = {
   environment: HowcodeEnvironment
   baseUrl: string
   token: string
+  serverKind: RemoteServerKind
   close: () => void
 }
 
@@ -496,6 +497,7 @@ async function createSshHowcodeServerConnection(
       host: config.host,
       localPort,
       remotePort: remoteServer.remotePort,
+      serverKind: remoteServer.serverKind,
     },
   }
 
@@ -503,6 +505,7 @@ async function createSshHowcodeServerConnection(
   return {
     baseUrl,
     environment,
+    serverKind: remoteServer.serverKind,
     token: config.token,
     close: () => {
       if (closed) return

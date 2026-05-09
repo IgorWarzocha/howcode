@@ -92,6 +92,8 @@ const getDevServerState = () => ({
   attemptCount: 1,
   baseUrl: null,
   connected: true,
+  closeCode: null,
+  closeReason: null,
   connectedAt: new Date().toISOString(),
   descriptor: null,
   disconnectedAt: null,
@@ -105,6 +107,7 @@ const getDevServerState = () => ({
   environmentId: 'dev-web-bridge',
   environmentName: 'Dev web bridge',
   error: null,
+  fingerprint: null,
   lastError: null,
   lastErrorAt: null,
   mode: 'local' as const,
@@ -112,6 +115,7 @@ const getDevServerState = () => ({
   phase: 'connected' as const,
   reconnectAttemptCount: 0,
   reconnectPhase: 'idle' as const,
+  serverKind: 'local' as const,
 })
 
 const handlers: DesktopRequestHandlerMap = {
