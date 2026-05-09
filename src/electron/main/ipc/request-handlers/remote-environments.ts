@@ -3,10 +3,8 @@ import path from 'node:path'
 import Database from 'better-sqlite3'
 import { app, safeStorage } from 'electron'
 import { createHowcodeRpcClientTransport } from '../../../../../server/howcode-rpc-client-transport'
-import {
-  ensureSshHowcodeServer,
-  type SshHowcodeEnvironmentConnection,
-} from '../../../../../server/ssh-howcode-environments'
+import { ensureSshHowcodeEnvironmentPromise } from '../../../../../server/ssh/ssh-environment-manager'
+import type { SshHowcodeEnvironmentConnection } from '../../../../../server/ssh-howcode-environments'
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
 import type {
   HowcodeRemoteEnvironment,
@@ -307,13 +305,14 @@ async function discoverRemoteEnvironmentConnection(
     environment.kind === 'ssh'
       ? await (async () => {
           if (!environment.sshHost) throw new Error('SSH host alias is required.')
-          const sshConnection: SshHowcodeEnvironmentConnection = await ensureSshHowcodeServer({
-            host: environment.sshHost,
-            localPort: environment.localPort ?? 0,
-            remoteCommand: environment.remoteCommand ?? null,
-            remotePort: environment.remotePort ?? 39317,
-            token,
-          })
+          const sshConnection: SshHowcodeEnvironmentConnection =
+            await ensureSshHowcodeEnvironmentPromise({
+              host: environment.sshHost,
+              localPort: environment.localPort ?? 0,
+              remoteCommand: environment.remoteCommand ?? null,
+              remotePort: environment.remotePort ?? 39317,
+              token,
+            })
           cleanup.push(sshConnection.close)
           return sshConnection.baseUrl
         })()

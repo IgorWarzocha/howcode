@@ -12,8 +12,8 @@ import {
   localDesktopEnvironment,
   resolveHowcodeEnvironmentForRequest,
 } from '../../../server/server-environments'
+import { ensureSshHowcodeEnvironmentPromise } from '../../../server/ssh/ssh-environment-manager'
 import {
-  ensureSshHowcodeServer,
   readSshHowcodeEnvironmentConfigFromEnv,
   type SshHowcodeEnvironmentConnection,
 } from '../../../server/ssh-howcode-environments'
@@ -227,7 +227,7 @@ async function resolveSshServerTransport(): Promise<AppTransport | null> {
   const config = readSshHowcodeEnvironmentConfigFromEnv()
   if (!config) return null
 
-  sshHowcodeServer = await ensureSshHowcodeServer(config)
+  sshHowcodeServer = await ensureSshHowcodeEnvironmentPromise(config)
   await refreshConnectedServerState(sshHowcodeServer.environment, sshHowcodeServer.baseUrl)
   return createHowcodeRpcClientTransport({
     authToken: sshHowcodeServer.token,
@@ -327,7 +327,7 @@ async function ensureSavedSshRemoteEnvironment(config: {
   }
 
   sshHowcodeServer?.close()
-  sshHowcodeServer = await ensureSshHowcodeServer({
+  sshHowcodeServer = await ensureSshHowcodeEnvironmentPromise({
     host: config.environment.sshHost,
     localPort: config.environment.localPort ?? 0,
     remoteCommand: config.environment.remoteCommand ?? null,
