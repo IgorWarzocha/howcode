@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AppTransport } from '../../shared/app-transport'
@@ -89,6 +89,13 @@ function getStandaloneFallbackInstanceId(runtimeRoot: string) {
   return `howcode:${createHash('sha256').update(runtimeRoot).digest('hex').slice(0, 16)}`
 }
 
+async function projectExistsOnStandaloneHost(project: Project) {
+  const projectPath = project.resolvedId ?? project.id
+  return await access(projectPath)
+    .then(() => true)
+    .catch(() => false)
+}
+
 function mapStandaloneProject(project: Project) {
   return {
     id: project.resolvedId ?? project.id,
@@ -109,10 +116,15 @@ function createStandaloneInstanceManifestHandler(input: {
     const instanceId = await getStandaloneInstanceId(input.runtimeRoot).catch(() =>
       getStandaloneFallbackInstanceId(input.runtimeRoot),
     )
+    const projects = await Promise.all(
+      shellState.projects.map(async (project) =>
+        (await projectExistsOnStandaloneHost(project)) ? mapStandaloneProject(project) : null,
+      ),
+    )
     return {
       instanceId,
       instanceName: getProcessEnvironmentVariable('HOWCODE_INSTANCE_NAME') ?? 'Howcode',
-      projects: shellState.projects.map(mapStandaloneProject),
+      projects: projects.filter((project) => project !== null),
       serverUrl: input.serverUrl,
     }
   }
