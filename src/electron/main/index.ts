@@ -269,6 +269,8 @@ async function setActiveRemoteEnvironment(config: {
 }
 
 async function clearActiveRemoteEnvironment() {
+  sshHowcodeServer?.close()
+  sshHowcodeServer = null
   activeRemoteServer = null
   activeServerTransport = localHowcodeServer?.transport ?? null
   if (localHowcodeServer) {

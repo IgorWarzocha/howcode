@@ -239,6 +239,8 @@ function useSidebarRemoteProjects(input: {
   const [remoteError, setRemoteError] = useState<string | null>(null)
   const [remoteEnvironments, setRemoteEnvironments] = useState<HowcodeRemoteEnvironment[]>([])
   const [remoteProjects, setRemoteProjects] = useState<Project[]>([])
+  const [activeRemoteEnvironmentId, setActiveRemoteEnvironmentId] = useState<string | null>(null)
+  const [showRemoteProjects, setShowRemoteProjects] = useState(true)
 
   const refreshRemoteEnvironments = async () => {
     const remotes = (await window.piDesktop?.listHowcodeRemoteEnvironments?.()) ?? []
@@ -277,66 +279,124 @@ function useSidebarRemoteProjects(input: {
         }),
       )
       setRemoteProjects(remoteProjectsWithThreads)
+      setActiveRemoteEnvironmentId(remoteEnvironmentId)
+      setShowRemoteProjects(true)
       setRemoteStatus('connected')
       return true
     } catch (error) {
+      setActiveRemoteEnvironmentId(null)
       setRemoteStatus('failed')
       setRemoteError(error instanceof Error ? error.message : 'Could not connect remote.')
       return false
     }
   }
 
+  const disconnectRemoteEnvironment = async () => {
+    setRemoteStatus(null)
+    setRemoteError(null)
+    setRemoteProjects([])
+    setActiveRemoteEnvironmentId(null)
+    setShowRemoteProjects(true)
+    await window.piDesktop?.clearActiveHowcodeRemoteEnvironment?.()
+  }
+
   return {
+    activeRemoteEnvironmentId,
     connectRemoteEnvironment,
+    disconnectRemoteEnvironment,
     refreshRemoteEnvironments,
     remoteEnvironments,
     remoteError,
     remoteProjects,
     remoteStatus,
+    setShowRemoteProjects,
+    showRemoteProjects,
   }
 }
 
 function SidebarRemotesPopover({
+  activeRemoteEnvironmentId,
   connectRemoteEnvironment,
+  disconnectRemoteEnvironment,
   panelRef,
   remoteEnvironments,
   remoteError,
   remoteStatus,
   setRemotesOpen,
+  setShowLocalProjects,
+  setShowRemoteProjects,
+  showLocalProjects,
+  showRemoteProjects,
 }: {
+  activeRemoteEnvironmentId: string | null
   connectRemoteEnvironment: (remoteEnvironmentId: string) => Promise<boolean>
+  disconnectRemoteEnvironment: () => Promise<void>
   panelRef: React.RefObject<HTMLDivElement | null>
   remoteEnvironments: HowcodeRemoteEnvironment[]
   remoteError: string | null
   remoteStatus: RemoteStatus
   setRemotesOpen: (open: boolean) => void
+  setShowLocalProjects: (show: boolean) => void
+  setShowRemoteProjects: (show: boolean) => void
+  showLocalProjects: boolean
+  showRemoteProjects: boolean
 }) {
   return (
     <div
       ref={panelRef}
       className="absolute top-[calc(100%+0.375rem)] right-0 z-30 grid w-64 gap-1 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 text-[12px] shadow-[var(--shadow)]"
     >
+      <button
+        type="button"
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[color:var(--surface-hover)]"
+        onClick={() => setShowLocalProjects(!showLocalProjects)}
+      >
+        <span className="w-3 text-[color:var(--accent)]">{showLocalProjects ? '✓' : ''}</span>
+        <span className="min-w-0 flex-1 truncate text-[color:var(--text)]">Local</span>
+      </button>
+      <div className="my-1 h-px bg-[color:var(--border-subtle)]" />
       {remoteEnvironments.length > 0 ? (
         remoteEnvironments.map((environment) => (
           <button
             key={environment.id}
             type="button"
-            className="grid rounded-lg px-2 py-1.5 text-left hover:bg-[color:var(--surface-hover)]"
+            className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[color:var(--surface-hover)]"
             onClick={async () => {
-              if (await connectRemoteEnvironment(environment.id)) setRemotesOpen(false)
+              if (activeRemoteEnvironmentId === environment.id) {
+                setShowRemoteProjects(!showRemoteProjects)
+                return
+              }
+              await connectRemoteEnvironment(environment.id)
             }}
           >
-            <span className="truncate text-[color:var(--text)]">{environment.name}</span>
-            <span className="truncate text-[11px] text-[color:var(--muted)]">
-              {environment.kind === 'ssh'
-                ? `ssh ${environment.sshHost ?? ''}`
-                : environment.serverUrl}
+            <span className="w-3 pt-px text-[color:var(--accent)]">
+              {activeRemoteEnvironmentId === environment.id && showRemoteProjects ? '✓' : ''}
+            </span>
+            <span className="grid min-w-0 flex-1">
+              <span className="truncate text-[color:var(--text)]">{environment.name}</span>
+              <span className="truncate text-[11px] text-[color:var(--muted)]">
+                {environment.kind === 'ssh'
+                  ? `ssh ${environment.sshHost ?? ''}`
+                  : environment.serverUrl}
+              </span>
             </span>
           </button>
         ))
       ) : (
         <div className="px-2 py-1.5 text-[color:var(--muted)]">No remotes saved</div>
       )}
+      {activeRemoteEnvironmentId ? (
+        <button
+          type="button"
+          className="rounded-lg px-2 py-1.5 text-left text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+          onClick={async () => {
+            await disconnectRemoteEnvironment()
+            setRemotesOpen(false)
+          }}
+        >
+          Disconnect and stop server
+        </button>
+      ) : null}
       {remoteStatus === 'connecting' ? (
         <div className="px-2 py-1 text-[color:var(--muted)]">Connecting…</div>
       ) : null}
@@ -390,17 +450,22 @@ export function SidebarProjectsSection({
   const remotesPanelRef = useRef<HTMLDivElement>(null)
   const [remotesOpen, setRemotesOpen] = useState(false)
   const {
+    activeRemoteEnvironmentId,
     connectRemoteEnvironment,
+    disconnectRemoteEnvironment,
     refreshRemoteEnvironments,
     remoteEnvironments,
     remoteError,
     remoteProjects,
     remoteStatus,
+    setShowRemoteProjects,
+    showRemoteProjects,
   } = useSidebarRemoteProjects({ activeView, onLoadProjectThreads })
 
+  const [showLocalProjects, setShowLocalProjects] = useState(true)
   const combinedProjects = useMemo(
-    () => [...projects, ...remoteProjects],
-    [projects, remoteProjects],
+    () => [...(showLocalProjects ? projects : []), ...(showRemoteProjects ? remoteProjects : [])],
+    [projects, remoteProjects, showLocalProjects, showRemoteProjects],
   )
 
   const { projects: visibleProjects, autoExpandedProjectIds } = useMemo(
@@ -598,12 +663,18 @@ export function SidebarProjectsSection({
 
         {remotesOpen ? (
           <SidebarRemotesPopover
+            activeRemoteEnvironmentId={activeRemoteEnvironmentId}
             connectRemoteEnvironment={connectRemoteEnvironment}
+            disconnectRemoteEnvironment={disconnectRemoteEnvironment}
             panelRef={remotesPanelRef}
             remoteEnvironments={remoteEnvironments}
             remoteError={remoteError}
             remoteStatus={remoteStatus}
             setRemotesOpen={setRemotesOpen}
+            setShowLocalProjects={setShowLocalProjects}
+            setShowRemoteProjects={setShowRemoteProjects}
+            showLocalProjects={showLocalProjects}
+            showRemoteProjects={showRemoteProjects}
           />
         ) : null}
 
