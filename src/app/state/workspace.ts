@@ -245,7 +245,25 @@ function getPreservedThreadValue<T>(
   return shouldPreserveProjectSelection || !state.selectedProjectId ? value : null
 }
 
-function syncProjectsState(
+function syncRemoteProjectSelectionState(
+  state: WorkspaceState,
+  projects: Project[],
+): WorkspaceState {
+  return {
+    ...state,
+    collapsedProjectIds: {
+      ...Object.fromEntries(
+        projects.map((project) => [
+          project.id,
+          state.collapsedProjectIds[project.id] ?? project.collapsed ?? true,
+        ]),
+      ),
+      [state.selectedProjectId]: state.collapsedProjectIds[state.selectedProjectId] ?? false,
+    },
+  }
+}
+
+function syncLocalProjectsState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'sync-projects' }>,
 ): WorkspaceState {
@@ -314,6 +332,15 @@ function syncProjectsState(
     ),
     collapsedProjectIds,
   }
+}
+
+function syncProjectsState(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'sync-projects' }>,
+): WorkspaceState {
+  return state.selectedProjectEnvironmentId
+    ? syncRemoteProjectSelectionState(state, action.projects)
+    : syncLocalProjectsState(state, action)
 }
 
 function showViewState(

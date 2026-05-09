@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { app, BrowserWindow } from 'electron'
 import { createHowcodeServerTransport } from '../../../desktop/server/howcode-server-transport'
 import {
@@ -545,13 +544,6 @@ function resolveProjectEnvironment(projectId: string) {
   }
   if (assignedRemoteId) {
     throw new Error('Project is assigned to a remote environment that is not active yet.')
-  }
-  if (
-    activeHowcodeEnvironment.kind !== 'local-desktop' &&
-    projectId.startsWith('/') &&
-    !existsSync(projectId)
-  ) {
-    return activeHowcodeEnvironment
   }
   return getLocalRequestEnvironment()
 }
