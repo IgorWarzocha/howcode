@@ -155,6 +155,21 @@ async function fetchServerDescriptorWithRetry(baseUrl: string, attempts = 20) {
   throw lastError instanceof Error ? lastError : new Error('Howcode server did not become ready.')
 }
 
+async function requestRemoteInstanceManifestWithRetry(transport: AppTransport, attempts = 20) {
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await transport.request('getHowcodeInstanceManifest', {})
+    } catch (error) {
+      lastError = error
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Howcode server manifest did not become ready.')
+}
+
 async function refreshConnectedServerState(environment: HowcodeEnvironment, baseUrl: string) {
   activeHowcodeEnvironment = environment
   try {
@@ -380,7 +395,10 @@ async function setActiveRemoteEnvironment(config: {
       config.environment.kind === 'ssh'
         ? await fetchServerDescriptorWithRetry(baseUrl)
         : await fetchServerDescriptor(baseUrl)
-    const manifest = await activeServerTransport.request('getHowcodeInstanceManifest', {})
+    const manifest = await requestRemoteInstanceManifestWithRetry(
+      activeServerTransport,
+      config.environment.kind === 'ssh' ? 40 : 8,
+    )
     activeRemoteProjectIds = new Set(manifest.projects.map((project) => project.id))
     activeRemotePathRoots = new Set(
       manifest.projects
