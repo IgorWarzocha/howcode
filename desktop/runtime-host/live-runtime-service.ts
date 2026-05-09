@@ -274,6 +274,42 @@ export async function getComposerState(request: ComposerStateRequest = {}) {
   return await buildComposerStateSnapshot({ ...request, sessionPath: null })
 }
 
+export async function getRuntimeDiagnostics(request: ComposerStateRequest = {}) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  const runtime = persistedSessionPath
+    ? await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+        suspendDisposal: true,
+        settingsCwd: request.composerSessionDir ?? null,
+        chatGroupId: request.chatGroupId ?? null,
+      })
+    : await createRuntimeForNewSession(
+        request.projectId ?? getDesktopWorkingDirectory(),
+        request.composerSessionDir,
+        { chatGroupId: request.chatGroupId ?? null },
+      )
+
+  try {
+    const chunks: Buffer[] = []
+    await runtime.session.executeBash('pwd && command -v bash && command -v sh', (chunk) =>
+      chunks.push(Buffer.from(chunk)),
+    )
+    return {
+      activeTools: runtime.session.getActiveToolNames(),
+      cwd: runtime.cwd,
+      shell: { ok: true, output: Buffer.concat(chunks).toString('utf8') },
+    }
+  } catch (error) {
+    return {
+      activeTools: runtime.session.getActiveToolNames(),
+      cwd: runtime.cwd,
+      shell: { ok: false, error: error instanceof Error ? error.message : String(error) },
+    }
+  } finally {
+    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
+    if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
+  }
+}
+
 export async function setComposerModel(
   request: ComposerStateRequest,
   provider: string,

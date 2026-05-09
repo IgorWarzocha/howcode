@@ -20,6 +20,7 @@ import {
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
+  getRuntimeDiagnostics,
   subscribeDesktopEvents as subscribeRuntimeEvents,
 } from '../pi-desktop-runtime.ts'
 import {
@@ -41,6 +42,8 @@ export async function loadComposerState(
 ): Promise<ComposerState> {
   return getComposerState(request)
 }
+
+export { getRuntimeDiagnostics }
 
 export async function loadComposerSlashCommands(request: ComposerStateRequest = {}) {
   return getComposerSlashCommands(request)

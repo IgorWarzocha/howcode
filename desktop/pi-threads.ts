@@ -21,6 +21,7 @@ export {
   captureProjectDiffBaseline,
   disposeDesktopRuntime,
   getDictationState,
+  getRuntimeDiagnostics,
   installDictationModel,
   listDictationModels,
   listProjectCommits,

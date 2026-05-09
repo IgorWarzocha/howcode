@@ -20,6 +20,9 @@ export function createDesktopApiFromTransport(
     clearClipboardImages: () => request('clearClipboardImages', {}),
     getHowcodeServerState: () => request('getHowcodeServerState', {}),
     getHowcodeInstanceManifest: () => request('getHowcodeInstanceManifest', {}),
+    getHowcodeRuntimeDiagnostics: (
+      diagnosticsRequest: DesktopRequestMap['getHowcodeRuntimeDiagnostics']['params'] = {},
+    ) => request('getHowcodeRuntimeDiagnostics', diagnosticsRequest),
     refreshHowcodeServerState: () => request('refreshHowcodeServerState', {}),
     listHowcodeRemoteEnvironments: () => request('listHowcodeRemoteEnvironments', {}),
     saveHowcodeRemoteEnvironment: (

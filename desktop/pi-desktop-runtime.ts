@@ -207,6 +207,10 @@ export function getComposerState(request = {}) {
   return invokeRuntimeHost('getComposerState', { request: withComposerModeSettings(request) })
 }
 
+export function getRuntimeDiagnostics(request = {}) {
+  return invokeRuntimeHost('getRuntimeDiagnostics', { request: withComposerModeSettings(request) })
+}
+
 export function setComposerModel(request: ComposerStateRequest, provider: string, modelId: string) {
   return invokeRuntimeHost('setComposerModel', { request, provider, modelId })
 }

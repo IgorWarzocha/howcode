@@ -52,6 +52,11 @@ export type PiThreadsModule = {
   loadArchivedThreadList: () => Promise<ArchivedThread[]>
   loadInboxThreadList: () => Promise<InboxThread[]>
   loadComposerState: (request: ComposerStateRequest) => Promise<ComposerState>
+  getRuntimeDiagnostics: (request: ComposerStateRequest) => Promise<{
+    cwd: string
+    activeTools: string[]
+    shell: { ok: boolean; output?: string | undefined; error?: string | undefined }
+  }>
   loadComposerSlashCommands: (request: ComposerStateRequest) => Promise<ComposerSlashCommand[]>
   loadComposerSkills: (request: ComposerStateRequest) => Promise<ComposerSkillReference[]>
   getDictationState: () => Promise<DictationState>

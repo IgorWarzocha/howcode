@@ -113,6 +113,11 @@ const handlers: DesktopRequestHandlerMap = {
     projects: [],
     serverUrl: null,
   }),
+  getHowcodeRuntimeDiagnostics: () => ({
+    activeTools: [],
+    cwd: process.cwd(),
+    shell: { ok: false, error: 'Runtime diagnostics are unavailable in dev web bridge mode.' },
+  }),
   listHowcodeRemoteEnvironments: () => [],
   saveHowcodeRemoteEnvironment: () => {
     throw new Error('Remote environments are unavailable in dev web bridge mode.')

@@ -73,6 +73,14 @@ declare global {
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       getHowcodeInstanceManifest?: () => Promise<HowcodeInstanceManifest>
+      getHowcodeRuntimeDiagnostics?: (request?: {
+        projectId?: string | null | undefined
+        sessionPath?: string | null | undefined
+      }) => Promise<{
+        cwd: string
+        activeTools: string[]
+        shell: { ok: boolean; output?: string | undefined; error?: string | undefined }
+      }>
       refreshHowcodeServerState?: () => Promise<HowcodeServerConnectionState>
       listHowcodeRemoteEnvironments?: () => Promise<HowcodeRemoteEnvironment[]>
       saveHowcodeRemoteEnvironment?: (

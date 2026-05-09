@@ -10,6 +10,7 @@ export const desktopRequestChannelOwners = {
   clearClipboardImages: 'desktop',
   getHowcodeServerState: 'desktop',
   getHowcodeInstanceManifest: 'howcode-server',
+  getHowcodeRuntimeDiagnostics: 'howcode-server',
   refreshHowcodeServerState: 'desktop',
   listHowcodeRemoteEnvironments: 'desktop',
   saveHowcodeRemoteEnvironment: 'desktop',

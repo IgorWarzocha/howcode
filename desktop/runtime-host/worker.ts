@@ -9,6 +9,7 @@ import {
   getComposerSlashCommands,
   getComposerState,
   getPiSessionStorage,
+  getRuntimeDiagnostics,
   installPiPackage,
   installPiSkill,
   invalidateRuntimeSettings,
@@ -50,6 +51,13 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<'getComposerState'>['payload']
       return (await getComposerState(payload.request)) as RuntimeHostResponseMap[TName]
+    }
+    case 'getRuntimeDiagnostics': {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<'getRuntimeDiagnostics'>['payload']
+      return (await getRuntimeDiagnostics(
+        payload.request,
+      )) as unknown as RuntimeHostResponseMap[TName]
     }
     case 'getComposerSlashCommands': {
       const payload =

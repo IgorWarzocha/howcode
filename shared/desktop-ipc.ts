@@ -75,6 +75,14 @@ export type DesktopRequestMap = {
   }
   getHowcodeServerState: { params: Record<string, never>; response: HowcodeServerConnectionState }
   getHowcodeInstanceManifest: { params: Record<string, never>; response: HowcodeInstanceManifest }
+  getHowcodeRuntimeDiagnostics: {
+    params: { projectId?: string | null | undefined; sessionPath?: string | null | undefined }
+    response: {
+      cwd: string
+      activeTools: string[]
+      shell: { ok: boolean; output?: string | undefined; error?: string | undefined }
+    }
+  }
   refreshHowcodeServerState: {
     params: Record<string, never>
     response: HowcodeServerConnectionState

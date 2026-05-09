@@ -22,6 +22,7 @@ import type { CommitMessageContext } from '../project-git.ts'
 
 export type RuntimeHostRequestMap = {
   getComposerState: { request: ComposerStateRequest }
+  getRuntimeDiagnostics: { request: ComposerStateRequest }
   getComposerSlashCommands: { request: ComposerStateRequest }
   getComposerSkills: { request: ComposerStateRequest }
   startNewThread: { request: ComposerStateRequest }
@@ -123,6 +124,11 @@ export type RuntimeHostRequestMap = {
 
 export type RuntimeHostResponseMap = {
   getComposerState: ComposerState
+  getRuntimeDiagnostics: {
+    cwd: string
+    activeTools: string[]
+    shell: { ok: boolean; output?: string; error?: string }
+  }
   getComposerSlashCommands: ComposerSlashCommand[]
   getComposerSkills: ComposerSkillReference[]
   startNewThread: {

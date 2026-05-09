@@ -17,6 +17,7 @@ export {
   getComposerSkills,
   getComposerSlashCommands,
   getComposerState,
+  getRuntimeDiagnostics,
   openThreadRuntime,
   selectProjectRuntime,
   sendComposerPrompt,
