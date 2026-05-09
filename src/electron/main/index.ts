@@ -332,7 +332,7 @@ async function ensureSavedSshRemoteEnvironment(config: {
   sshHowcodeServer?.close()
   sshHowcodeServer = await ensureSshHowcodeEnvironmentPromise({
     host: config.environment.sshHost,
-    localPort: config.environment.localPort ?? 0,
+    localPort: 0,
     remoteCommand: config.environment.remoteCommand ?? null,
     remotePort: config.environment.remotePort ?? 39317,
     token: config.token,

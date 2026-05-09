@@ -308,7 +308,7 @@ async function discoverRemoteEnvironmentConnection(
           const sshConnection: SshHowcodeEnvironmentConnection =
             await ensureSshHowcodeEnvironmentPromise({
               host: environment.sshHost,
-              localPort: environment.localPort ?? 0,
+              localPort: 0,
               remoteCommand: environment.remoteCommand ?? null,
               remotePort: environment.remotePort ?? 39317,
               token,
