@@ -48,6 +48,20 @@ export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   delegatedCapabilities: ['pi-runtime-delegation'],
 }
 
+export function assertCompatibleHowcodeServerDescriptor(descriptor: HowcodeServerDescriptor) {
+  if (descriptor.name !== 'howcode-server') {
+    throw new Error('Remote endpoint is not a Howcode server.')
+  }
+  if (descriptor.protocolVersion !== HOWCODE_SERVER_PROTOCOL_VERSION) {
+    throw new Error(
+      `Incompatible Howcode server protocol ${descriptor.protocolVersion}; expected ${HOWCODE_SERVER_PROTOCOL_VERSION}.`,
+    )
+  }
+  if (!descriptor.capabilities.includes('app-transport')) {
+    throw new Error('Howcode server is missing app transport capability.')
+  }
+}
+
 export type HowcodeEnvironmentKind = 'local-desktop' | 'external-server' | 'ssh-server' | 'disabled'
 export type HowcodeEnvironmentScope = 'global' | 'project'
 

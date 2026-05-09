@@ -13,9 +13,11 @@ import type {
   HowcodeServerConnectionState,
 } from '../../../../../shared/howcode-server-contracts'
 import {
+  assertCompatibleHowcodeServerDescriptor,
   HOWCODE_SERVER_DESCRIPTOR_PATH,
   HOWCODE_SERVER_REQUEST_PREFIX,
   type HowcodeInstanceManifest,
+  type HowcodeServerDescriptor,
 } from '../../../../../shared/howcode-server-contracts'
 
 export type SavedRemoteEnvironmentConnectionConfig = {
@@ -335,6 +337,9 @@ async function discoverRemoteEnvironmentConnection(
     if (!descriptorResponse.ok) {
       return { error: `Descriptor failed (${descriptorResponse.status}).`, ok: false }
     }
+    assertCompatibleHowcodeServerDescriptor(
+      (await descriptorResponse.json()) as HowcodeServerDescriptor,
+    )
 
     const manifest = await requestRemoteInstanceManifest(baseUrl, token)
     return {

@@ -18,10 +18,11 @@ import {
   type SshHowcodeEnvironmentConnection,
 } from '../../../server/ssh-howcode-environments'
 import type { AppTransport } from '../../../shared/app-transport'
-import type {
-  HowcodeEnvironment,
-  HowcodeRemoteEnvironment,
-  HowcodeServerConnectionState,
+import {
+  assertCompatibleHowcodeServerDescriptor,
+  type HowcodeEnvironment,
+  type HowcodeRemoteEnvironment,
+  type HowcodeServerConnectionState,
 } from '../../../shared/howcode-server-contracts'
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
@@ -155,7 +156,10 @@ async function fetchServerDescriptor(baseUrl: string) {
   if (!response.ok) {
     throw new Error(`Howcode server descriptor request failed (${response.status}).`)
   }
-  return (await response.json()) as HowcodeServerConnectionState['descriptor']
+  const descriptor = (await response.json()) as HowcodeServerConnectionState['descriptor']
+  if (!descriptor) throw new Error('Howcode server descriptor is empty.')
+  assertCompatibleHowcodeServerDescriptor(descriptor)
+  return descriptor
 }
 
 async function fetchServerDescriptorWithRetry(baseUrl: string, attempts = 20) {
