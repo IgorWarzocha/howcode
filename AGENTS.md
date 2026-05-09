@@ -22,3 +22,10 @@
 - AGENTS.md files are here to help you - if they are confusing, they should be edited to suit.
 - Popovers, menus, and custom select dropdowns must close on Escape and when clicking outside, matching native control expectations. Escape handlers for nested popovers must run in capture phase and stop propagation so parent views/dialogs do not also close.
 - Keep ASAR enabled; anything run by external stock Node must live outside ASAR with its full dependency tree, and launcher smoke tests must validate `app.asar` plus unpacked runtime deps.
+
+## Server Mode Findings
+- SSH remotes run in non-login shells; remote launch scripts must set `PATH`, `SHELL`, repo/runtime roots, and auth env explicitly instead of relying on user shell startup files.
+- Remote server state belongs under `~/.howcode/ssh-launch/<state-key>/`; treat stale pid/port/fingerprint files as normal and restart managed servers when readiness, runner, or fingerprint checks fail.
+- SSH activation should not require a saved local tunnel port. Let the SSH launcher allocate a dynamic loopback port and propagate the resulting `baseUrl`/environment back into connection state.
+- Never log bearer tokens from SSH launch scripts, tunnel diagnostics, HTTP failures, or WebSocket/RPC URLs; redact before writing stderr or surfacing errors.
+- New server-owned capabilities should use `shared/howcode-rpc.ts`/`HOWCODE_RPC_WS_PATH`; `HOWCODE_SERVER_REQUEST_PREFIX` and `shared/howcode-server-ws.ts` are legacy compatibility shims until RPC requests and streams fully replace them.
