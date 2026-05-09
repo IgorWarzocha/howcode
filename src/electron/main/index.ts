@@ -356,8 +356,32 @@ function createResilientSshServerTransport(config: {
     authToken: config.token,
     baseUrl: config.initialBaseUrl,
   })
+  let reconnectPromise: Promise<AppTransport> | null = null
+  const subscriptions = new Map<
+    string,
+    {
+      channel: Parameters<AppTransport['subscribe']>[0]
+      listener: (event: never) => void
+      unsubscribe: () => void
+    }
+  >()
 
-  async function reconnect() {
+  function bindSubscription(id: string) {
+    const subscription = subscriptions.get(id)
+    if (!subscription) return
+    subscription.unsubscribe()
+    subscription.unsubscribe = transport.subscribe(
+      subscription.channel as never,
+      subscription.listener,
+    )
+  }
+
+  function rebindSubscriptions() {
+    for (const id of subscriptions.keys()) bindSubscription(id)
+    startActiveRemoteEventForwarding(transport)
+  }
+
+  async function createReplacementTransport() {
     const connection = await ensureSavedSshRemoteEnvironment({
       environment: config.environment,
       token: config.token,
@@ -387,7 +411,15 @@ function createResilientSshServerTransport(config: {
       baseUrl: connection.baseUrl,
     })
     await refreshConnectedServerState(environment, connection.baseUrl)
+    rebindSubscriptions()
     return transport
+  }
+
+  async function reconnect() {
+    reconnectPromise ??= createReplacementTransport().finally(() => {
+      reconnectPromise = null
+    })
+    return await reconnectPromise
   }
 
   return {
@@ -399,7 +431,22 @@ function createResilientSshServerTransport(config: {
         return await (await reconnect()).request(channel, params)
       }
     },
-    subscribe: (channel, listener) => transport.subscribe(channel, listener),
+    subscribe: (channel, listener) => {
+      const id = crypto.randomUUID()
+      const subscription = {
+        channel,
+        listener,
+        unsubscribe: () => {
+          // Assigned by bindSubscription immediately after registration.
+        },
+      }
+      subscriptions.set(id, subscription)
+      bindSubscription(id)
+      return () => {
+        subscriptions.get(id)?.unsubscribe()
+        subscriptions.delete(id)
+      }
+    },
   }
 }
 
