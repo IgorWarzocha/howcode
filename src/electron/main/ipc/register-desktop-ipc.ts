@@ -102,12 +102,12 @@ function registerRequestHandlers(
   resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
     channel: K,
     params: DesktopRequestMap[K]['params'],
-  ) => HowcodeEnvironment,
+  ) => HowcodeEnvironment | Promise<HowcodeEnvironment>,
 ) {
   for (const channel of Object.keys(handlers) as DesktopRequestChannel[]) {
-    ipcMain.handle(getDesktopRequestIpcChannel(channel), (event, params) => {
+    ipcMain.handle(getDesktopRequestIpcChannel(channel), async (event, params) => {
       assertTrustedDesktopIpcEvent(event, getMainWindow)
-      const environment = resolveEnvironmentForRequest(channel, params)
+      const environment = await resolveEnvironmentForRequest(channel, params)
       const owner = getDesktopRequestChannelOwner(channel)
       const routeToServer = owner === 'howcode-server' || owner === 'pi-runtime'
       if (routeToServer) {
@@ -169,7 +169,7 @@ export function registerDesktopIpc(
   resolveEnvironmentForRequest: <K extends DesktopRequestChannel>(
     channel: K,
     params: DesktopRequestMap[K]['params'],
-  ) => HowcodeEnvironment = () => ({
+  ) => HowcodeEnvironment | Promise<HowcodeEnvironment> = () => ({
     id: 'disabled',
     kind: 'disabled',
     name: 'No Howcode server',

@@ -346,6 +346,17 @@ async function discoverRemoteEnvironmentConnection(
   }
 }
 
+export function readSavedRemoteEnvironmentConnectionConfig(
+  id: string,
+): SavedRemoteEnvironmentConnectionConfig | { error: string } {
+  const database = getDatabase()
+  try {
+    return getSavedRemoteEnvironmentConnectionConfig(database, id)
+  } finally {
+    closeDatabase(database)
+  }
+}
+
 function getSavedRemoteEnvironmentConnectionConfig(
   database: RemoteEnvironmentDatabase,
   id: string,

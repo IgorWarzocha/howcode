@@ -27,7 +27,10 @@ import {
 import { createMainWindow } from './app/create-main-window'
 import { loadMainWindow } from './app/load-main-window'
 import { createDesktopRequestHandlers, registerDesktopIpc } from './ipc/register-desktop-ipc'
-import { getProjectRemoteEnvironmentAssignment } from './ipc/request-handlers/remote-environments'
+import {
+  getProjectRemoteEnvironmentAssignment,
+  readSavedRemoteEnvironmentConnectionConfig,
+} from './ipc/request-handlers/remote-environments'
 import { applyDevViewport } from './runtime/dev-viewport'
 import { configureDevtoolsRemoteDebugging, logDevtoolsRemoteDebugging } from './runtime/devtools'
 import { configureDesktopEnvironment } from './runtime/environment'
@@ -583,12 +586,22 @@ function getLocalRequestEnvironment() {
     : disabledEnvironment
 }
 
-function resolveExplicitEnvironment(environmentId: string) {
-  if (activeRemoteServer?.remoteEnvironmentId === environmentId) return activeHowcodeEnvironment
-  throw new Error('Remote environment is not active for this operation.')
+async function activateSavedRemoteEnvironment(environmentId: string) {
+  const config = readSavedRemoteEnvironmentConnectionConfig(environmentId)
+  if ('error' in config) throw new Error(config.error)
+  await setActiveRemoteEnvironment(config)
+  if (activeRemoteServer?.remoteEnvironmentId !== environmentId) {
+    throw new Error('Remote environment activation did not complete.')
+  }
+  return activeHowcodeEnvironment
 }
 
-function resolveProjectEnvironment(projectId: string) {
+async function resolveExplicitEnvironment(environmentId: string) {
+  if (activeRemoteServer?.remoteEnvironmentId === environmentId) return activeHowcodeEnvironment
+  return await activateSavedRemoteEnvironment(environmentId)
+}
+
+async function resolveProjectEnvironment(projectId: string) {
   if (activeRemoteProjectIds.has(projectId) || isActiveRemotePath(projectId)) {
     return activeHowcodeEnvironment
   }
@@ -597,12 +610,12 @@ function resolveProjectEnvironment(projectId: string) {
     return activeHowcodeEnvironment
   }
   if (assignedRemoteId) {
-    throw new Error('Project is assigned to a remote environment that is not active yet.')
+    return await activateSavedRemoteEnvironment(assignedRemoteId)
   }
   return getLocalRequestEnvironment()
 }
 
-function resolveEnvironmentForDesktopRequest<
+async function resolveEnvironmentForDesktopRequest<
   K extends import('../../../shared/desktop-ipc').DesktopRequestChannel,
 >(channel: K, params: import('../../../shared/desktop-ipc').DesktopRequestMap[K]['params']) {
   if (channel === 'getShellState' && localHowcodeServer) {
@@ -613,7 +626,7 @@ function resolveEnvironmentForDesktopRequest<
   const environmentId = getEnvironmentIdFromRequestParams(params)
   if (environmentId) {
     return resolveHowcodeEnvironmentForRequest(
-      resolveExplicitEnvironment(environmentId),
+      await resolveExplicitEnvironment(environmentId),
       channel,
       params,
     )
@@ -626,7 +639,7 @@ function resolveEnvironmentForDesktopRequest<
   }
   if (projectId) {
     return resolveHowcodeEnvironmentForRequest(
-      resolveProjectEnvironment(projectId),
+      await resolveProjectEnvironment(projectId),
       channel,
       params,
     )
