@@ -130,11 +130,10 @@ function buildRemoteRunnerScript(config: SshHowcodeEnvironmentConfig) {
       '{SHELL:-}" ]; then if command -v bash >/dev/null 2>&1; then SHELL="$(command -v bash)"; else SHELL="/bin/sh"; fi; fi',
     ].join(''),
     'export SHELL',
-    'if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode"; fi',
-    'if command -v howcode >/dev/null 2>&1; then exec howcode serve --host 127.0.0.1 --port "$REMOTE_PORT" --token "$TOKEN"; fi',
     'if [ -d "$HOME/howcode" ]; then cd "$HOME/howcode" && git fetch origin issue-226-server-mode-research && git reset --hard origin/issue-226-server-mode-research && bun install --frozen-lockfile && bun run build:runtime && export PATH="$PWD/node_modules/.bin:$PATH" && export PI_PACKAGE_DIR="$PWD/node_modules/@earendil-works/pi-coding-agent" && export HOWCODE_INSTANCE_NAME=' +
       shellQuote(config.host) +
       ' && exec env HOWCODE_RUNTIME_ROOT=. ELECTRON_RUN_AS_NODE=1 electron build/desktop/standalone-howcode-server.mjs --port "$REMOTE_PORT" --token "$TOKEN"; fi',
+    'if command -v howcode >/dev/null 2>&1; then exec howcode serve --host 127.0.0.1 --port "$REMOTE_PORT" --token "$TOKEN"; fi',
     'echo "Unable to find howcode. Install the howcode CLI or clone the repo to ~/howcode." >&2',
     'exit 127',
   ].join('\n')
