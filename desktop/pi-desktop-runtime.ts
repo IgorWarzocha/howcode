@@ -33,6 +33,7 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
   request: TRequest,
 ): TRequest {
   const appSettings = loadAppSettings()
+  const projectBackedChat = request.composerMode === 'chat' && Boolean(request.projectId)
   const composerModelSelection =
     request.composerMode === 'chat'
       ? appSettings.chatModel
@@ -52,7 +53,8 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
     composerUseDefaultModel: Boolean(request.composerMode) && composerModelSelection === null,
     composerThinkingLevel,
     composerStreamingBehavior: appSettings.composerStreamingBehavior,
-    composerSessionDir: request.composerMode === 'chat' ? getChatSessionDir() : null,
+    composerSessionDir:
+      request.composerMode === 'chat' && !projectBackedChat ? getChatSessionDir() : null,
   }
 }
 
