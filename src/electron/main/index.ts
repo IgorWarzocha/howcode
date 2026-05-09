@@ -615,19 +615,26 @@ function getLocalRequestEnvironment() {
     : disabledEnvironment
 }
 
+function normalizeRemoteEnvironmentId(environmentId: string) {
+  return environmentId.startsWith('remote:') ? environmentId.slice('remote:'.length) : environmentId
+}
+
 async function activateSavedRemoteEnvironment(environmentId: string) {
-  const config = readSavedRemoteEnvironmentConnectionConfig(environmentId)
+  const normalizedEnvironmentId = normalizeRemoteEnvironmentId(environmentId)
+  const config = readSavedRemoteEnvironmentConnectionConfig(normalizedEnvironmentId)
   if ('error' in config) throw new Error(config.error)
   await setActiveRemoteEnvironment(config)
-  if (activeRemoteServer?.remoteEnvironmentId !== environmentId) {
+  if (activeRemoteServer?.remoteEnvironmentId !== normalizedEnvironmentId) {
     throw new Error('Remote environment activation did not complete.')
   }
   return activeHowcodeEnvironment
 }
 
 async function resolveExplicitEnvironment(environmentId: string) {
-  if (activeRemoteServer?.remoteEnvironmentId === environmentId) return activeHowcodeEnvironment
-  return await activateSavedRemoteEnvironment(environmentId)
+  const normalizedEnvironmentId = normalizeRemoteEnvironmentId(environmentId)
+  if (activeRemoteServer?.remoteEnvironmentId === normalizedEnvironmentId)
+    return activeHowcodeEnvironment
+  return await activateSavedRemoteEnvironment(normalizedEnvironmentId)
 }
 
 async function resolveProjectEnvironment(projectId: string) {
