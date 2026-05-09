@@ -115,23 +115,55 @@ function subscribeViaRpcWebSocket<TChannel extends DesktopEventChannel>(
   listener: (event: DesktopEventMap[TChannel]) => void,
 ) {
   const subscriptionId = crypto.randomUUID()
-  const webSocket = new WebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken))
-  webSocket.on('open', () => {
-    webSocket.send(
-      JSON.stringify({ id: subscriptionId, type: HOWCODE_RPC_METHODS.eventsSubscribe, channel }),
-    )
-  })
-  webSocket.on('message', (data) => {
-    const message = JSON.parse(data.toString()) as {
-      id?: string
-      type?: string
-      event?: DesktopEventMap[TChannel]
-    }
-    if (message.id === subscriptionId && message.type === 'event') {
-      listener(message.event as DesktopEventMap[TChannel])
-    }
-  })
-  return () => webSocket.close(1000)
+  let webSocket: WebSocket | null = null
+  let closed = false
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let reconnectAttempt = 0
+
+  const clearReconnectTimer = () => {
+    if (!reconnectTimer) return
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  const connect = () => {
+    clearReconnectTimer()
+    if (closed) return
+    const socket = new WebSocket(resolveRpcWebSocketUrl(config.baseUrl, config.authToken))
+    webSocket = socket
+    socket.on('open', () => {
+      reconnectAttempt = 0
+      socket.send(
+        JSON.stringify({ id: subscriptionId, type: HOWCODE_RPC_METHODS.eventsSubscribe, channel }),
+      )
+    })
+    socket.on('message', (data) => {
+      const message = JSON.parse(data.toString()) as {
+        id?: string
+        type?: string
+        event?: DesktopEventMap[TChannel]
+      }
+      if (message.id === subscriptionId && message.type === 'event') {
+        listener(message.event as DesktopEventMap[TChannel])
+      }
+    })
+    socket.on('close', () => {
+      if (closed) return
+      const delay = Math.min(500 * 2 ** reconnectAttempt, 8000)
+      reconnectAttempt += 1
+      reconnectTimer = setTimeout(connect, delay)
+    })
+    socket.on('error', () => {
+      socket.close()
+    })
+  }
+
+  connect()
+
+  return () => {
+    closed = true
+    clearReconnectTimer()
+    webSocket?.close(1000)
+  }
 }
 
 export function createHowcodeRpcClientTransport(
