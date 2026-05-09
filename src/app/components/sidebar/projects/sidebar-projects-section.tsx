@@ -160,6 +160,7 @@ function SidebarProjectsContent({
   onToggleProjectCollapse,
   pendingProject,
   protectedProjectId,
+  remoteProjectIds,
   searchQuery,
   selectedProjectId,
   selectedThreadId,
@@ -180,6 +181,7 @@ function SidebarProjectsContent({
   onToggleProjectCollapse: (projectId: string) => void
   pendingProject: PendingProject | null
   protectedProjectId: string | null
+  remoteProjectIds?: ReadonlySet<string>
   searchQuery: string
   selectedProjectId: string
   selectedThreadId: string | null
@@ -195,6 +197,7 @@ function SidebarProjectsContent({
         {visibleProjects.length > 0 ? (
           <ProjectTree
             projects={visibleProjects}
+            remoteProjectIds={remoteProjectIds}
             protectedProjectId={protectedProjectId}
             selectedProjectId={selectedProjectId}
             selectedThreadId={selectedThreadId}
@@ -462,6 +465,10 @@ export function SidebarProjectsSection({
     showRemoteProjects,
   } = useSidebarRemoteProjects({ activeView, onLoadProjectThreads })
 
+  const remoteProjectIds = useMemo(
+    () => new Set(remoteProjects.map((project) => project.id)),
+    [remoteProjects],
+  )
   const [showLocalProjects, setShowLocalProjects] = useState(true)
   const combinedProjects = useMemo(
     () => [...(showLocalProjects ? projects : []), ...(showRemoteProjects ? remoteProjects : [])],
@@ -713,6 +720,7 @@ export function SidebarProjectsSection({
         onToggleProjectCollapse={onToggleProjectCollapse}
         pendingProject={pendingProject}
         protectedProjectId={protectedProjectId}
+        remoteProjectIds={remoteProjectIds}
         searchQuery={searchQuery}
         selectedProjectId={selectedProjectId}
         selectedThreadId={selectedThreadId}

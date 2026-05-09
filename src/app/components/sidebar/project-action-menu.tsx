@@ -22,6 +22,7 @@ type ProjectActionMenuProps = {
   projectId: string
   projectName: string
   canDelete?: boolean
+  canOpenInFileManager?: boolean
   pinned?: boolean
   panelRef?: RefObject<HTMLDivElement | null>
   onAction: DesktopActionInvoker
@@ -33,6 +34,7 @@ export function ProjectActionMenu({
   projectId,
   projectName,
   canDelete = true,
+  canOpenInFileManager = true,
   pinned = false,
   panelRef,
   onAction,
@@ -59,11 +61,15 @@ export function ProjectActionMenu({
   }
 
   const items: ProjectMenuEntry[] = [
-    {
-      icon: <FolderOpen size={14} />,
-      title: 'File Manager',
-      action: 'project.open-in-file-manager',
-    },
+    ...(canOpenInFileManager
+      ? [
+          {
+            icon: <FolderOpen size={14} />,
+            title: 'File Manager',
+            action: 'project.open-in-file-manager' as const,
+          },
+        ]
+      : []),
     {
       icon: <Star size={14} className={pinned ? 'fill-current' : undefined} />,
       title: pinned ? 'Unmark Favourite' : 'Mark Favourite',

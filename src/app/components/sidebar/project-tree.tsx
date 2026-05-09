@@ -28,6 +28,7 @@ import { useProjectMenuDismiss } from './project-tree/useProjectMenuDismiss'
 
 type ProjectTreeProps = {
   projects: Project[]
+  remoteProjectIds?: ReadonlySet<string> | undefined
   protectedProjectId?: string | null
   selectedProjectId: string
   selectedThreadId: string | null
@@ -88,6 +89,7 @@ function SortableProjectItem({ projectId, disabled = false, children }: Sortable
 
 export function ProjectTree({
   projects,
+  remoteProjectIds,
   protectedProjectId = null,
   selectedProjectId,
   selectedThreadId,
@@ -242,6 +244,7 @@ export function ProjectTree({
                       !selectionModeActive ? (
                         <ProjectActionMenu
                           menuId={actionMenuId}
+                          canOpenInFileManager={!remoteProjectIds?.has(project.id)}
                           canDelete={
                             !isProtectedProjectDeletionTarget(
                               project.resolvedId ?? project.id,
