@@ -47,6 +47,12 @@ describe('ssh howcode environment internals', () => {
     )
   })
 
+  it('redacts auth tokens from diagnostic text', () => {
+    expect(
+      sshHowcodeEnvironmentInternals.redactSensitiveText('token=secret-token', 'secret-token'),
+    ).toBe('token=[redacted-token]')
+  })
+
   it('keys managed connections by target and launch inputs', () => {
     expect(sshHowcodeEnvironmentInternals.connectionKey(baseConfig)).toBe(
       sshHowcodeEnvironmentInternals.connectionKey({ ...baseConfig }),

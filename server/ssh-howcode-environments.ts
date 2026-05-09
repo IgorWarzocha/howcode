@@ -64,6 +64,10 @@ function formatRecentOutput(lines: string[]) {
   return lines.length > 0 ? `: ${lines.join(' · ')}` : ''
 }
 
+function redactSensitiveText(text: string, token: string) {
+  return token ? text.replaceAll(token, '[redacted-token]') : text
+}
+
 function spawnManaged(command: string, args: string[], label: string): ManagedSshProcess {
   const recentLines: string[] = []
   const child = spawn(command, args, {
@@ -362,8 +366,9 @@ async function runSshScript(config: SshHowcodeEnvironmentConfig, script: string,
     stdout += String(chunk)
   })
   child.stderr?.on('data', (chunk) => {
-    stderr += String(chunk)
-    process.stderr.write(`[howcode-ssh-script] ${chunk}`)
+    const text = String(chunk)
+    stderr += text
+    process.stderr.write(`[howcode-ssh-script] ${redactSensitiveText(text, config.token)}`)
   })
   child.stdin?.end(script)
   const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
@@ -374,7 +379,7 @@ async function runSshScript(config: SshHowcodeEnvironmentConfig, script: string,
   )
   if (exit.code !== 0) {
     throw new Error(
-      `SSH script failed (${exit.code ?? exit.signal ?? 'error'}): ${stderr.trim() || stdout.trim()}`,
+      `SSH script failed (${exit.code ?? exit.signal ?? 'error'}): ${redactSensitiveText(stderr.trim() || stdout.trim(), config.token)}`,
     )
   }
   return stdout
@@ -546,5 +551,6 @@ export const sshHowcodeEnvironmentInternals = {
   buildRemoteRunnerScript,
   connectionKey,
   parseRemoteLaunchResult,
+  redactSensitiveText,
   remoteStateKey,
 }
