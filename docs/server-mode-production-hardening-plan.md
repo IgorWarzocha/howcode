@@ -59,7 +59,8 @@ The two biggest gaps:
 - SSH launch must be repeatable, observable, and cleanly disposable.
 - A stale remote process is a normal condition, not an exceptional mystery.
 - Use Effect where it improves lifecycle, resources, typed errors, retries, and diagnostics. Do not sprinkle Effect through React just for vibes.
-- Keep the current `AppTransport` facade stable while hardening the implementation under it.
+- Make the hard cut now: new server-owned work uses Effect RPC/WebSocket contracts, not ad-hoc HTTP + event WS.
+- Keep `AppTransport` only as a temporary compatibility adapter for old renderer call sites while they are moved over.
 - Keep Node/Electron packaging constraints in mind. T3 can use Bun more freely; Howcode must keep packaged runtime behavior solid with ASAR/unpacked deps.
 
 ## Phase 1: promote SSH into a real Effect service
@@ -241,47 +242,68 @@ Acceptance checks:
 - local port conflict is handled by picking a different port
 - tunnel process exiting during readiness fails immediately
 
-## Phase 4: make server transport resilient
+## Phase 4: hard cut to Effect RPC transport
 
-`server/howcode-server-transport.ts` currently opens one WebSocket per subscription and does not reconnect/resubscribe. This is not enough.
+This is not optional or later. The next server-owned transport should be Effect RPC over WebSocket, like T3. We have previous commits as history, so we do not need to preserve the ad-hoc HTTP + event WS design as the foundation.
 
-Introduce a resilient transport under the same `AppTransport` interface:
+Keep `AppTransport` only as a compatibility adapter while existing UI code is migrated. The real transport should be RPC-first.
+
+Add contracts and implementation:
 
 ```text
-server/howcode-server-resilient-transport.ts
+shared/howcode-rpc.ts
+server/rpc/howcode-rpc-server.ts
+src/app/desktop/howcode-rpc-client.ts
+src/app/desktop/create-desktop-api-from-rpc.ts
 ```
 
-Features:
+Target shape:
+
+- one `HowcodeRpcGroup` in shared contracts
+- Effect Schema for request/response/event payloads
+- server handlers installed via Effect RPC WebSocket server APIs
+- client transport with reconnect/backoff/request hooks
+- stream methods for desktop events and terminal events
+- one compatibility adapter that implements old `AppTransport` by calling RPC methods
+
+Features to implement in the RPC client from day one:
 
 - connection status object
-- request retry only for connection-ish failures, not all errors
-- WS reconnect with exponential backoff
-- subscription registry
+- protocol-level retry/backoff for transient connection failures
+- stream subscription registry
 - automatic resubscribe after reconnect
 - manual reconnect method for Electron main/UI
 - dispose method for cleanup
-- slow request tracking hooks later
+- request start/ack/exit hooks
+- slow request tracking hooks
+- heartbeat freshness
+- intentional vs unintentional close
 
-T3 concepts to copy:
+T3 concepts to copy directly in spirit:
 
 - `WsConnectionStatus`
 - reconnect phase: `idle | attempting | waiting | exhausted`
 - attempt counts
 - `nextRetryAt`
-- intentional vs unintentional close
 - `hasConnected`
 - subscription `onResubscribe`
-- heartbeat freshness
+- request hooks from `RpcClient.RequestHooks`
+- stream resubscription model from `WsTransport.subscribe`
 
-Howcode can keep HTTP POST for requests for now. Do not jump to full Effect RPC until the connection lifecycle is solid.
+Important rule:
+
+- Do not add more endpoints to `HOWCODE_SERVER_REQUEST_PREFIX` except as temporary compatibility shims.
+- New server-owned capabilities go into `HowcodeRpcGroup`.
+- Once an old request channel is migrated, remove its ad-hoc HTTP path rather than maintaining two real implementations.
 
 Acceptance checks:
 
 - kill SSH tunnel; UI/server state moves to reconnecting or disconnected
-- restore tunnel/server; subscriptions resume without reopening the app
+- restore tunnel/server; RPC streams resume without reopening the app
 - terminal events resume after reconnect
 - desktop events resume after reconnect
 - request retry does not duplicate non-idempotent actions blindly
+- a migrated method has one real handler, not one HTTP handler plus one RPC handler
 
 ## Phase 5: expose connection status to app state
 
@@ -382,28 +404,29 @@ Acceptance checks:
 - direct server mode refuses missing token when host is not loopback
 - logs redact auth material
 
-## Phase 8: optional Effect RPC migration
+## Phase 8: remove compatibility shims
 
-Do not block the SSH hardening on this.
+By this point the RPC path should already exist. This phase is cleanup, not migration.
 
-T3's full model is Effect RPC over WebSocket. That gives typed RPC, streaming, protocol retries, request hooks, and less ad-hoc event plumbing.
+Remove or shrink:
 
-For Howcode, a safe path is:
+- `HOWCODE_SERVER_REQUEST_PREFIX` request dispatch
+- ad-hoc event WebSocket protocol in `shared/howcode-server-ws.ts`
+- duplicate request handlers that only exist for old HTTP transport
+- old transport tests that encode behavior we no longer want
 
-1. Keep `AppTransport` public.
-2. Add Effect services behind server handlers.
-3. Move HTTP request dispatch and WS events to schema-validated contracts.
-4. Only then consider replacing HTTP POST + WS events with Effect RPC.
+Keep only what is needed for:
 
-Potential target:
+- health checks
+- descriptor/config bootstrap
+- static web hosting
+- auth/bootstrap endpoints if they remain HTTP by design
 
-```text
-shared/howcode-rpc.ts
-server/rpc-server.ts
-src/app/desktop/effect-rpc-transport.ts
-```
+Acceptance checks:
 
-But this is a later refactor. The immediate pain is lifecycle/reconnect, not transport fashion.
+- there is one primary runtime protocol: Effect RPC over WebSocket
+- old HTTP request dispatch is gone or explicitly marked legacy-only
+- adding a new server method means adding a schema/RPC method, not another stringly HTTP route
 
 ## Test plan
 
@@ -452,7 +475,7 @@ bun run ai:check
 5. Connection status contract and UI/state exposure.
 6. Server fingerprint/capability checks and managed restart policy.
 7. Auth hardening: loopback validation, token redaction, non-loopback token requirements.
-8. Optional Effect RPC design spike.
+8. Remove legacy HTTP/event-WS compatibility shims after RPC coverage is enough.
 
 ## Biggest risks
 
@@ -470,6 +493,6 @@ We are T3-like enough when this is true:
 - Stale remote server reuse is detected and fixed automatically.
 - Remote ports are dynamic and conflict-safe.
 - Tunnel readiness is probed through the actual forwarded URL.
-- WS subscriptions reconnect and resubscribe.
+- Effect RPC streams reconnect and resubscribe.
 - The UI/API can explain connection state without guessing.
 - Programmatic remote agent calls keep working after reconnect and still execute tools on the remote host.
