@@ -245,6 +245,15 @@ function normalizeSshEnvironment(
   }
 }
 
+function isLoopbackServerUrl(serverUrl: string) {
+  try {
+    const url = new URL(serverUrl)
+    return url.hostname === '127.0.0.1' || url.hostname === 'localhost' || url.hostname === '::1'
+  } catch {
+    return false
+  }
+}
+
 function normalizeDirectEnvironment(
   input: HowcodeRemoteEnvironmentInput,
   id: string,
@@ -356,8 +365,10 @@ function getSavedRemoteEnvironmentConnectionConfig(
   const baseUrl = resolveRemoteEnvironmentBaseUrl(environment)
   if (!baseUrl) return { error: 'Missing server URL.' }
   const token = readToken(database, environment.tokenRef)
-  if (!token) return { error: 'Add token, save, then test.' }
-  return { baseUrl, environment, token }
+  if (!token && (environment.kind === 'ssh' || !isLoopbackServerUrl(baseUrl))) {
+    return { error: 'Add token, save, then test.' }
+  }
+  return { baseUrl, environment, token: token ?? '' }
 }
 
 export function createRemoteEnvironmentHandlers(
