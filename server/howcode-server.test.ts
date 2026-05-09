@@ -53,7 +53,7 @@ describe('Howcode server', () => {
     })
     await expect(
       fetch(new URL(HOWCODE_SERVER_DESCRIPTOR_PATH, baseUrl)).then((response) => response.json()),
-    ).resolves.toEqual(howcodeServerDescriptor)
+    ).resolves.toEqual({ ...howcodeServerDescriptor, runtimeKind: 'desktop-local' })
   })
 
   it('rejects unauthenticated app transport requests', async () => {

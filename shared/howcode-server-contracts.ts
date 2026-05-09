@@ -3,6 +3,10 @@ export const HOWCODE_SERVER_PROGRAMMATIC_PROMPT_PATH = '/api/programmatic/prompt
 export const HOWCODE_SERVER_REQUEST_PREFIX = '/api/app/request/'
 export const HOWCODE_SERVER_WS_PATH = '/api/app/ws'
 
+export const HOWCODE_SERVER_PROTOCOL_VERSION = 2
+export const HOWCODE_SERVER_APP_VERSION = '0.1.63'
+export const HOWCODE_SERVER_FINGERPRINT = `${HOWCODE_SERVER_APP_VERSION}:protocol-${HOWCODE_SERVER_PROTOCOL_VERSION}`
+
 export type HowcodeServerCapability =
   | 'app-transport'
   | 'app-websocket-events'
@@ -21,7 +25,10 @@ export type HowcodeServerAuthDescriptor = {
 
 export type HowcodeServerDescriptor = {
   name: 'howcode-server'
-  protocolVersion: 1
+  protocolVersion: number
+  appVersion: string
+  runtimeKind: 'desktop-local' | 'standalone' | 'unknown'
+  fingerprint: string
   auth: HowcodeServerAuthDescriptor
   capabilities: HowcodeServerCapability[]
   delegatedCapabilities: HowcodeServerCapability[]
@@ -29,7 +36,10 @@ export type HowcodeServerDescriptor = {
 
 export const howcodeServerDescriptor: HowcodeServerDescriptor = {
   name: 'howcode-server',
-  protocolVersion: 1,
+  protocolVersion: HOWCODE_SERVER_PROTOCOL_VERSION,
+  appVersion: HOWCODE_SERVER_APP_VERSION,
+  runtimeKind: 'unknown',
+  fingerprint: HOWCODE_SERVER_FINGERPRINT,
   auth: {
     required: true,
     methods: ['bearer-token'],

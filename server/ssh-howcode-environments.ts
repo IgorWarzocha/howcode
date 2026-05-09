@@ -1,7 +1,10 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
-import type { HowcodeEnvironment } from '../shared/howcode-server-contracts'
+import {
+  HOWCODE_SERVER_FINGERPRINT,
+  type HowcodeEnvironment,
+} from '../shared/howcode-server-contracts'
 
 export type SshHowcodeEnvironmentConfig = {
   host: string
@@ -140,6 +143,8 @@ DEFAULT_REMOTE_PORT="$2"
 SCAN_WINDOW="$3"
 TOKEN="$4"
 STATE_DIR="$HOME/.howcode/ssh-launch/$STATE_KEY"
+FINGERPRINT="${HOWCODE_SERVER_FINGERPRINT}"
+FINGERPRINT_FILE="$STATE_DIR/fingerprint"
 PORT_FILE="$STATE_DIR/port"
 PID_FILE="$STATE_DIR/pid"
 MANAGED_FILE="$STATE_DIR/managed"
@@ -221,8 +226,9 @@ wait_for_pid_exit() {
 REMOTE_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
 REMOTE_PORT="$(cat "$PORT_FILE" 2>/dev/null || true)"
 REMOTE_MANAGED="$(cat "$MANAGED_FILE" 2>/dev/null || true)"
+REMOTE_FINGERPRINT="$(cat "$FINGERPRINT_FILE" 2>/dev/null || true)"
 if [ "$REMOTE_MANAGED" = "managed" ] && [ -n "$REMOTE_PID" ] && [ -n "$REMOTE_PORT" ] && kill -0 "$REMOTE_PID" 2>/dev/null; then
-  if [ "$RUNNER_CHANGED" -eq 1 ] || ! wait_ready 2000; then
+  if [ "$RUNNER_CHANGED" -eq 1 ] || [ "$REMOTE_FINGERPRINT" != "$FINGERPRINT" ] || ! wait_ready 2000; then
     kill "$REMOTE_PID" 2>/dev/null || true
     wait_for_pid_exit "$REMOTE_PID"
     REMOTE_PID=""
@@ -242,13 +248,14 @@ if [ -z "$REMOTE_PID" ] || [ -z "$REMOTE_PORT" ]; then
   printf '%s\n' "$REMOTE_PID" >"$PID_FILE"
   printf '%s\n' "$REMOTE_PORT" >"$PORT_FILE"
   printf 'managed\n' >"$MANAGED_FILE"
+  printf '%s\n' "$FINGERPRINT" >"$FINGERPRINT_FILE"
   REMOTE_MANAGED="managed"
   if ! wait_ready 15000; then
     echo "Remote Howcode server did not become ready on 127.0.0.1:$REMOTE_PORT." >&2
     tail -n 80 "$LOG_FILE" >&2 2>/dev/null || true
     kill "$REMOTE_PID" 2>/dev/null || true
     wait_for_pid_exit "$REMOTE_PID"
-    rm -f "$PID_FILE" "$PORT_FILE" "$MANAGED_FILE"
+    rm -f "$PID_FILE" "$PORT_FILE" "$MANAGED_FILE" "$FINGERPRINT_FILE"
     exit 1
   fi
 fi
@@ -266,7 +273,7 @@ REMOTE_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
 if [ "$REMOTE_MANAGED" = "managed" ] && [ -n "$REMOTE_PID" ] && kill -0 "$REMOTE_PID" 2>/dev/null; then
   kill "$REMOTE_PID" 2>/dev/null || true
 fi
-rm -f "$PID_FILE" "$STATE_DIR/port" "$MANAGED_FILE"
+rm -f "$PID_FILE" "$STATE_DIR/port" "$MANAGED_FILE" "$STATE_DIR/fingerprint"
 printf '{"stopped":true}\n'
 `
 }

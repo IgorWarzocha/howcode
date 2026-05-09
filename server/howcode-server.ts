@@ -318,6 +318,10 @@ function installWebSocketEvents(
   }
 }
 
+function resolveRuntimeKind(config: HowcodeServerConfig) {
+  return config.webRoot ? 'standalone' : 'desktop-local'
+}
+
 function handleRequest(
   config: HowcodeServerConfig,
   transport: AppTransport,
@@ -337,7 +341,7 @@ function handleRequest(
   }
 
   if (request.method === 'GET' && requestUrl.pathname === HOWCODE_SERVER_DESCRIPTOR_PATH) {
-    sendJson(response, 200, howcodeServerDescriptor)
+    sendJson(response, 200, { ...howcodeServerDescriptor, runtimeKind: resolveRuntimeKind(config) })
     return
   }
 
