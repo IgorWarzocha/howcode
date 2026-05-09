@@ -16,6 +16,10 @@ export type HowcodeServerTransportConfig = {
   authToken: string
 }
 
+const reconnectInitialDelayMs = 500
+const reconnectMaxDelayMs = 8_000
+const connectionFailurePattern = /fetch failed|ECONNREFUSED|ECONNRESET|socket|network|terminated/i
+
 function resolveRequestUrl(baseUrl: string, channel: DesktopRequestChannel) {
   return new URL(HOWCODE_SERVER_REQUEST_PREFIX + channel, baseUrl).toString()
 }
@@ -32,53 +36,137 @@ async function readErrorMessage(response: Response, fallback: string) {
   return typeof payload?.error === 'string' && payload.error.length > 0 ? payload.error : fallback
 }
 
+function isConnectionFailure(error: unknown) {
+  if (!(error instanceof Error)) return false
+  return connectionFailurePattern.test(error.message)
+}
+
+async function requestWithConnectionRetry<K extends DesktopRequestChannel>(
+  config: HowcodeServerTransportConfig,
+  channel: K,
+  params: DesktopRequestMap[K]['params'],
+) {
+  const send = async () => {
+    const response = await fetch(resolveRequestUrl(config.baseUrl, channel), {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${config.authToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    })
+
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response, `Howcode server request failed: ${channel}`))
+    }
+
+    return (await response.json()) as DesktopRequestMap[K]['response']
+  }
+
+  try {
+    return await send()
+  } catch (error) {
+    if (!isConnectionFailure(error)) throw error
+    return await send()
+  }
+}
+
+function createReconnectingSubscription<K extends DesktopEventChannel>(
+  config: HowcodeServerTransportConfig,
+  channel: K,
+  listener: (event: DesktopEventMap[K]) => void,
+) {
+  let active = true
+  let retryDelayMs = reconnectInitialDelayMs
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let webSocket: WebSocket | null = null
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+  }
+
+  const closeSocket = () => {
+    const current = webSocket
+    webSocket = null
+    if (!current) return
+    current.removeEventListener('open', handleOpen)
+    current.removeEventListener('message', handleMessage)
+    current.removeEventListener('close', handleClose)
+    current.removeEventListener('error', handleError)
+    current.close()
+  }
+
+  const scheduleReconnect = () => {
+    if (!active || reconnectTimer) return
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null
+      connect()
+    }, retryDelayMs)
+    retryDelayMs = Math.min(reconnectMaxDelayMs, retryDelayMs * 2)
+  }
+
+  const handleOpen = () => {
+    retryDelayMs = reconnectInitialDelayMs
+    webSocket?.send(JSON.stringify({ type: 'subscribe', channel }))
+  }
+
+  const handleMessage = (message: MessageEvent) => {
+    const payload = JSON.parse(String(message.data)) as HowcodeServerWsServerMessage<K>
+    if (payload.type === 'event' && payload.channel === channel) {
+      listener(payload.event)
+    }
+  }
+
+  const handleClose = () => {
+    if (webSocket) {
+      webSocket.removeEventListener('open', handleOpen)
+      webSocket.removeEventListener('message', handleMessage)
+      webSocket.removeEventListener('close', handleClose)
+      webSocket.removeEventListener('error', handleError)
+      webSocket = null
+    }
+    scheduleReconnect()
+  }
+
+  const handleError = () => {
+    scheduleReconnect()
+  }
+
+  const connect = () => {
+    if (!active) return
+    closeSocket()
+    webSocket = new WebSocket(resolveWebSocketUrl(config.baseUrl, config.authToken))
+    webSocket.addEventListener('open', handleOpen)
+    webSocket.addEventListener('message', handleMessage)
+    webSocket.addEventListener('close', handleClose)
+    webSocket.addEventListener('error', handleError)
+  }
+
+  connect()
+
+  return () => {
+    active = false
+    clearReconnectTimer()
+    const current = webSocket
+    if (current?.readyState === WebSocket.OPEN) {
+      current.send(JSON.stringify({ type: 'unsubscribe', channel }))
+    }
+    closeSocket()
+  }
+}
+
 export function createHowcodeServerTransport(config: HowcodeServerTransportConfig): AppTransport {
   return {
     request: async <K extends DesktopRequestChannel>(
       channel: K,
       params: DesktopRequestMap[K]['params'],
-    ) => {
-      const response = await fetch(resolveRequestUrl(config.baseUrl, channel), {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${config.authToken}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      })
-
-      if (!response.ok) {
-        throw new Error(
-          await readErrorMessage(response, `Howcode server request failed: ${channel}`),
-        )
-      }
-
-      return (await response.json()) as DesktopRequestMap[K]['response']
-    },
+    ) => await requestWithConnectionRetry(config, channel, params),
     subscribe: <K extends DesktopEventChannel>(
       channel: K,
       listener: (event: DesktopEventMap[K]) => void,
-    ) => {
-      const webSocket = new WebSocket(resolveWebSocketUrl(config.baseUrl, config.authToken))
-      const handleOpen = () => {
-        webSocket.send(JSON.stringify({ type: 'subscribe', channel }))
-      }
-      const handleMessage = (message: MessageEvent) => {
-        const payload = JSON.parse(String(message.data)) as HowcodeServerWsServerMessage<K>
-        if (payload.type === 'event' && payload.channel === channel) {
-          listener(payload.event)
-        }
-      }
-      webSocket.addEventListener('open', handleOpen)
-      webSocket.addEventListener('message', handleMessage)
-      return () => {
-        webSocket.removeEventListener('open', handleOpen)
-        webSocket.removeEventListener('message', handleMessage)
-        if (webSocket.readyState === WebSocket.OPEN) {
-          webSocket.send(JSON.stringify({ type: 'unsubscribe', channel }))
-        }
-        webSocket.close()
-      }
-    },
+    ) => createReconnectingSubscription(config, channel, listener),
   }
 }
