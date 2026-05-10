@@ -17,6 +17,7 @@ import { cn } from '../../../utils/cn'
 
 const COLLAPSED_VISIBLE_LINE_COUNT = 5
 const EXPANDED_VISIBLE_LINE_COUNT = 15
+const MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH = 180
 
 type ComposerTextFieldProps = {
   value: string
@@ -256,9 +257,13 @@ export function ComposerTextField({
     top: number
   } | null>(null)
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null)
+  const [textareaWidth, setTextareaWidth] = useState<number | null>(null)
   const [fieldExpanded, setFieldExpanded] = useState(false)
   const [canExpandField, setCanExpandField] = useState(false)
   const lineHeightRef = useRef(20)
+  const trailingAdornmentVisible =
+    trailingAdornmentEnabled &&
+    (textareaWidth === null || textareaWidth >= MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH)
 
   const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current
@@ -310,7 +315,24 @@ export function ComposerTextField({
   })
 
   useLayoutEffect(() => {
-    if (!trailingAdornmentEnabled) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const updateTextareaWidth = () => {
+      const nextWidth = Math.floor(textarea.clientWidth)
+      setTextareaWidth((current) => (current === nextWidth ? current : nextWidth))
+    }
+
+    updateTextareaWidth()
+
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(updateTextareaWidth)
+    observer.observe(textarea)
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!trailingAdornmentVisible) {
       setTrailingAdornmentPosition(null)
       setTrailingContainerHeight(null)
       return
@@ -323,7 +345,7 @@ export function ComposerTextField({
 
     const measureTrailingAdornmentPosition = () => {
       const markerPosition = measureTextareaMarkerPosition({
-        adornmentWidth: trailingAdornmentEnabled ? 30 : 0,
+        adornmentWidth: trailingAdornmentVisible ? 30 : 0,
         markerText: value,
         placeholder,
         textarea,
@@ -357,7 +379,7 @@ export function ComposerTextField({
     measureTrailingAdornmentPosition()
     window.addEventListener('resize', measureTrailingAdornmentPosition)
     return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
-  }, [placeholder, trailingAdornmentEnabled, value])
+  }, [placeholder, trailingAdornmentVisible, value])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -371,7 +393,7 @@ export function ComposerTextField({
     const measureInlinePopoverPosition = () => {
       const cursorPosition = textarea.selectionStart ?? value.length
       const markerPosition = measureTextareaMarkerPosition({
-        adornmentWidth: trailingAdornmentEnabled ? 30 : 0,
+        adornmentWidth: trailingAdornmentVisible ? 30 : 0,
         markerText: value.slice(0, cursorPosition),
         placeholder,
         textarea,
@@ -412,7 +434,7 @@ export function ComposerTextField({
       textarea.removeEventListener('click', measureInlinePopoverPosition)
       textarea.removeEventListener('input', measureInlinePopoverPosition)
     }
-  }, [inlinePopover, placeholder, trailingAdornmentEnabled, value])
+  }, [inlinePopover, placeholder, trailingAdornmentVisible, value])
 
   const inlinePopoverElement =
     inlinePopover && inlinePopoverPosition && typeof document !== 'undefined'
@@ -456,7 +478,8 @@ export function ComposerTextField({
           rows={1}
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
-            trailingAdornmentEnabled && 'pr-[1.875rem]',
+            trailingAdornmentVisible && 'pr-[1.875rem]',
+            '[hyphens:auto] [overflow-wrap:normal] [word-break:normal]',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             placeholderTone === 'error'
@@ -489,7 +512,7 @@ export function ComposerTextField({
           lineHeight={lineHeightRef.current}
           position={trailingAdornmentPosition}
           trailingAdornment={trailingAdornment}
-          visible={trailingAdornmentEnabled}
+          visible={trailingAdornmentVisible}
         />
       </div>
     </div>
