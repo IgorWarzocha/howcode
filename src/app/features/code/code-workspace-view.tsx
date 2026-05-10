@@ -512,7 +512,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       ref={footerRef}
       className={cn(
         'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
-        showThreadFooter ? 'transition-[top,transform] duration-300 ease-out' : 'bottom-0',
+        centerThreadFooter ? 'transition-[top,transform] duration-300 ease-out' : 'bottom-0',
         centerThreadFooter && '-translate-y-1/2',
         showThreadFooter && !centerThreadFooter && 'translate-y-0',
       )}
@@ -714,10 +714,9 @@ export function CodeWorkspaceView({
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined
   const threadFooterStyle = showThreadFooter
-    ? {
-        ...terminalDrawerInsetStyle,
-        top: centerThreadFooter ? NEW_THREAD_COMPOSER_TOP : `calc(100% - ${footerHeight}px)`,
-      }
+    ? centerThreadFooter
+      ? { ...terminalDrawerInsetStyle, top: NEW_THREAD_COMPOSER_TOP }
+      : { ...terminalDrawerInsetStyle, bottom: 0 }
     : terminalDrawerInsetStyle
   const threadTimelineLoading = state.activeView === 'thread' && controller.activeThreadLoading
 
