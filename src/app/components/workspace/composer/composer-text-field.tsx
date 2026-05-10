@@ -271,7 +271,7 @@ export function ComposerTextField({
     blurOnLeave: hoverToBlur,
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
     updateComposerTextareaHeight({
