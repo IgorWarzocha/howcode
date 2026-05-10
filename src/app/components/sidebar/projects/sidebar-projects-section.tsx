@@ -6,6 +6,7 @@ import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
@@ -36,7 +37,7 @@ type SidebarProjectsSectionProps = {
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  onOpenSettingsPanel: () => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
@@ -92,7 +93,7 @@ function prepareCreateProject(input: {
   appSettings: AppSettings
   createBusy: boolean
   parentPath?: string | null | undefined
-  onOpenSettingsPanel: () => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   projectNameDraft: string
   setCreateErrorMessage: (message: string | null) => void
   setCreateOpen: (open: boolean) => void
@@ -101,7 +102,7 @@ function prepareCreateProject(input: {
   input.setCreateErrorMessage(null)
   if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
     input.setCreateOpen(false)
-    input.onOpenSettingsPanel()
+    input.onOpenSettingsPanel({ category: 'projects', settingId: 'projects.default-location' })
     return null
   }
   const draft = input.projectNameDraft.trim()

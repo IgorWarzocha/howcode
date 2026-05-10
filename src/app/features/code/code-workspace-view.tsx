@@ -219,6 +219,7 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
               currentProjectName={currentProjectName}
               selectedInboxThread={controller.selectedInboxThread}
               projects={controller.projects}
+              settingsOpenTarget={controller.settingsOpenTarget}
               selectedProjectId={controller.state.selectedProjectId}
               workspaceContentClass={workspaceContentClass}
               threadData={activeThreadData}
@@ -229,7 +230,7 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
               onDismissInboxThread={controller.handleDismissInboxThread}
               onListAttachmentEntries={listComposerAttachmentEntries}
               onOpenThread={controller.handleThreadOpen}
-              onOpenSettingsView={() => controller.handleShowView('settings')}
+              onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
               sidebarCollapsed={sidebarCollapsed}
               sidebarCompactMode={sidebarCompactMode}
               onToggleSidebar={onToggleSidebar}
@@ -340,7 +341,7 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
         onAction={handleAction}
         onBack={handleCloseGitOpsView}
-        onOpenSettingsView={() => controller.handleShowView('settings')}
+        onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
       />
     </div>
   )
@@ -444,7 +445,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       workspaceFooterRef={footerRef}
       onOpenTakeoverTerminal={handleShowTakeoverTerminal}
       onOpenGitOpsView={handleOpenGitOpsView}
-      onOpenSettingsView={() => controller.handleShowView('settings')}
+      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       terminalVisible={state.terminalVisible}

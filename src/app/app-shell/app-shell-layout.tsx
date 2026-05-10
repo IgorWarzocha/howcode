@@ -295,7 +295,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onToggleSettings={handleToggleSettings}
       onOpenExtensionsView={() => handleShowView('extensions')}
       onOpenSkillsView={() => handleShowView('skills')}
-      onOpenSettingsPanel={() => handleShowView('settings')}
+      onOpenSettingsPanel={(target) => handleShowView('settings', target)}
       onOpenArchivedThreads={() => handleShowView('archived')}
       onDismissInboxThread={controller.handleDismissInboxThread}
       onCreateChatGroup={controller.handleCreateChatGroup}

@@ -12,6 +12,7 @@ import type {
   ProjectGitState,
 } from '../../desktop/types'
 import type { View } from '../../types'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerPromptSurface } from './composer/composer-prompt-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
 
@@ -52,7 +53,7 @@ export type ComposerProps = {
   promptResetKey: number
   onOpenTakeoverTerminal: () => void
   onOpenGitOpsView: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onRestoredQueuedPromptApplied: () => void
   onToggleTerminal: () => void
   onToggleArtifacts?: (() => void) | undefined
