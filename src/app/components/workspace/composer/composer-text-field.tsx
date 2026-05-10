@@ -257,13 +257,17 @@ export function ComposerTextField({
     top: number
   } | null>(null)
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null)
-  const [textareaWidth, setTextareaWidth] = useState<number | null>(null)
+  const [textareaMetrics, setTextareaMetrics] = useState<{ height: number; width: number } | null>(
+    null,
+  )
   const [fieldExpanded, setFieldExpanded] = useState(false)
   const [canExpandField, setCanExpandField] = useState(false)
   const lineHeightRef = useRef(20)
   const trailingAdornmentVisible =
     trailingAdornmentEnabled &&
-    (textareaWidth === null || textareaWidth >= MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH)
+    (textareaMetrics === null ||
+      (textareaMetrics.width >= MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH &&
+        textareaMetrics.height <= lineHeightRef.current * 1.8))
 
   const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current
@@ -318,15 +322,22 @@ export function ComposerTextField({
     const textarea = textareaRef.current
     if (!textarea) return
 
-    const updateTextareaWidth = () => {
-      const nextWidth = Math.floor(textarea.clientWidth)
-      setTextareaWidth((current) => (current === nextWidth ? current : nextWidth))
+    const updateTextareaMetrics = () => {
+      const nextMetrics = {
+        height: Math.floor(textarea.offsetHeight),
+        width: Math.floor(textarea.clientWidth),
+      }
+      setTextareaMetrics((current) =>
+        current?.height === nextMetrics.height && current.width === nextMetrics.width
+          ? current
+          : nextMetrics,
+      )
     }
 
-    updateTextareaWidth()
+    updateTextareaMetrics()
 
     if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(updateTextareaWidth)
+    const observer = new ResizeObserver(updateTextareaMetrics)
     observer.observe(textarea)
     return () => observer.disconnect()
   }, [])
@@ -345,7 +356,7 @@ export function ComposerTextField({
 
     const measureTrailingAdornmentPosition = () => {
       const markerPosition = measureTextareaMarkerPosition({
-        adornmentWidth: trailingAdornmentVisible ? 30 : 0,
+        adornmentWidth: 0,
         markerText: value,
         placeholder,
         textarea,
@@ -393,7 +404,7 @@ export function ComposerTextField({
     const measureInlinePopoverPosition = () => {
       const cursorPosition = textarea.selectionStart ?? value.length
       const markerPosition = measureTextareaMarkerPosition({
-        adornmentWidth: trailingAdornmentVisible ? 30 : 0,
+        adornmentWidth: 0,
         markerText: value.slice(0, cursorPosition),
         placeholder,
         textarea,
@@ -434,7 +445,7 @@ export function ComposerTextField({
       textarea.removeEventListener('click', measureInlinePopoverPosition)
       textarea.removeEventListener('input', measureInlinePopoverPosition)
     }
-  }, [inlinePopover, placeholder, trailingAdornmentVisible, value])
+  }, [inlinePopover, placeholder, value])
 
   const inlinePopoverElement =
     inlinePopover && inlinePopoverPosition && typeof document !== 'undefined'
@@ -478,7 +489,6 @@ export function ComposerTextField({
           rows={1}
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
-            trailingAdornmentVisible && 'pr-[1.875rem]',
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
