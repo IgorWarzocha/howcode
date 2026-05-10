@@ -434,6 +434,7 @@ export function ComposerPromptInputPanel({
                     />
                   ) : null
                 }
+                trailingAdornmentEnabled={showDictationButton}
                 trailingAdornment={
                   <ComposerDictationControls
                     dictationActive={dictationActive}

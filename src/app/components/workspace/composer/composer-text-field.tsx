@@ -30,6 +30,7 @@ type ComposerTextFieldProps = {
   reservedLineCount?: number
   inlinePopover?: ReactNode
   trailingAdornment?: ReactNode
+  trailingAdornmentEnabled?: boolean
   readOnly?: boolean
   hoverToFocus?: boolean
   hoverToBlur?: boolean
@@ -150,15 +151,20 @@ function TrailingAdornment({
   lineHeight,
   position,
   trailingAdornment,
+  visible,
 }: {
   lineHeight: number
   position: { left: number; top: number } | null
   trailingAdornment: ReactNode
+  visible: boolean
 }) {
   if (!(trailingAdornment && position)) return null
   return (
     <span
-      className="absolute z-10 inline-flex items-center"
+      className={cn(
+        'absolute z-10 inline-flex items-center',
+        !visible && 'pointer-events-none invisible',
+      )}
       style={{ left: `${position.left}px`, top: `${position.top}px`, height: `${lineHeight}px` }}
     >
       {trailingAdornment}
@@ -167,6 +173,7 @@ function TrailingAdornment({
 }
 
 function measureTextareaMarkerPosition(input: {
+  adornmentWidth: number
   markerText: string
   placeholder: string
   textarea: HTMLTextAreaElement
@@ -183,7 +190,7 @@ function measureTextareaMarkerPosition(input: {
   mirror.style.overflowWrap = 'break-word'
   mirror.style.wordBreak = 'break-word'
   mirror.style.boxSizing = computedStyle.boxSizing
-  mirror.style.width = `${input.textarea.clientWidth}px`
+  mirror.style.width = `${Math.max(1, input.textarea.clientWidth - input.adornmentWidth)}px`
   mirror.style.font = computedStyle.font
   mirror.style.fontFamily = computedStyle.fontFamily
   mirror.style.fontSize = computedStyle.fontSize
@@ -221,6 +228,7 @@ export function ComposerTextField({
   reservedLineCount = 4,
   inlinePopover = null,
   trailingAdornment = null,
+  trailingAdornmentEnabled = Boolean(trailingAdornment),
   readOnly = false,
   hoverToFocus = true,
   hoverToBlur = false,
@@ -302,7 +310,7 @@ export function ComposerTextField({
   })
 
   useLayoutEffect(() => {
-    if (!trailingAdornment) {
+    if (!trailingAdornmentEnabled) {
       setTrailingAdornmentPosition(null)
       setTrailingContainerHeight(null)
       return
@@ -315,6 +323,7 @@ export function ComposerTextField({
 
     const measureTrailingAdornmentPosition = () => {
       const markerPosition = measureTextareaMarkerPosition({
+        adornmentWidth: trailingAdornmentEnabled ? 30 : 0,
         markerText: value,
         placeholder,
         textarea,
@@ -324,7 +333,8 @@ export function ComposerTextField({
       const lineHeight = markerPosition.lineHeight || lineHeightRef.current
       const adornmentWidth = 24
       const adornmentGap = 6
-      const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth
+      const shouldWrapAdornment =
+        markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth && value.length > 0
       const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
       const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5)
       const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
@@ -347,7 +357,7 @@ export function ComposerTextField({
     measureTrailingAdornmentPosition()
     window.addEventListener('resize', measureTrailingAdornmentPosition)
     return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
-  }, [placeholder, trailingAdornment, value])
+  }, [placeholder, trailingAdornmentEnabled, value])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -361,6 +371,7 @@ export function ComposerTextField({
     const measureInlinePopoverPosition = () => {
       const cursorPosition = textarea.selectionStart ?? value.length
       const markerPosition = measureTextareaMarkerPosition({
+        adornmentWidth: trailingAdornmentEnabled ? 30 : 0,
         markerText: value.slice(0, cursorPosition),
         placeholder,
         textarea,
@@ -401,7 +412,7 @@ export function ComposerTextField({
       textarea.removeEventListener('click', measureInlinePopoverPosition)
       textarea.removeEventListener('input', measureInlinePopoverPosition)
     }
-  }, [inlinePopover, placeholder, value])
+  }, [inlinePopover, placeholder, trailingAdornmentEnabled, value])
 
   const inlinePopoverElement =
     inlinePopover && inlinePopoverPosition && typeof document !== 'undefined'
@@ -477,6 +488,7 @@ export function ComposerTextField({
           lineHeight={lineHeightRef.current}
           position={trailingAdornmentPosition}
           trailingAdornment={trailingAdornment}
+          visible={trailingAdornmentEnabled}
         />
       </div>
     </div>
