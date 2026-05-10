@@ -147,11 +147,9 @@ function ComposerExpandButton({
 }
 
 function TrailingAdornment({
-  lineHeight,
   position,
   trailingAdornment,
 }: {
-  lineHeight: number
   position: { left: number; top: number } | null
   trailingAdornment: ReactNode
 }) {
@@ -159,7 +157,7 @@ function TrailingAdornment({
   return (
     <span
       className="absolute z-10 inline-flex items-center"
-      style={{ left: `${position.left}px`, top: `${position.top}px`, height: `${lineHeight}px` }}
+      style={{ right: 0, top: `${position.top}px` }}
     >
       {trailingAdornment}
     </span>
@@ -319,20 +317,10 @@ export function ComposerTextField({
         placeholder,
         textarea,
       })
-      const markerLeft = markerPosition.left
       const markerTop = markerPosition.top
-      const lineHeight = markerPosition.lineHeight || lineHeightRef.current
-      const adornmentWidth = 24
-      const adornmentGap = 6
-      const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth
-      const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
-      const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5)
-      const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
-      const maxContainerHeight = textarea.offsetHeight + (canGrowForAdornment ? lineHeight : 0)
-      const nextContainerHeight = Math.min(
-        maxContainerHeight,
-        Math.max(textarea.offsetHeight, nextTop + lineHeight),
-      )
+      const nextLeft = 0
+      const nextTop = Math.max(0, markerTop - 1.5)
+      const nextContainerHeight = textarea.offsetHeight
 
       setTrailingAdornmentPosition((current) =>
         current?.left === nextLeft && current.top === nextTop
@@ -474,7 +462,6 @@ export function ComposerTextField({
         />
         {inlinePopoverElement}
         <TrailingAdornment
-          lineHeight={lineHeightRef.current}
           position={trailingAdornmentPosition}
           trailingAdornment={trailingAdornment}
         />

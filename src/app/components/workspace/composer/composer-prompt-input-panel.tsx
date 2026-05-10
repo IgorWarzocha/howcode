@@ -122,6 +122,42 @@ type ComposerKeyDownInput = {
   setDraft: (value: string) => void
 }
 
+function ComposerPromptDictationAdornment({
+  dictationActive,
+  dictationMissingModel,
+  dictationSupported,
+  dictationTranscribing,
+  onAction,
+  onOpenSettingsView,
+  showDictationButton,
+  toggleDictation,
+}: Pick<
+  ComposerPromptInputPanelProps,
+  | 'dictationActive'
+  | 'dictationMissingModel'
+  | 'dictationSupported'
+  | 'dictationTranscribing'
+  | 'onAction'
+  | 'onOpenSettingsView'
+  | 'showDictationButton'
+  | 'toggleDictation'
+>) {
+  if (!showDictationButton) return null
+  return (
+    <ComposerDictationControls
+      dictationActive={dictationActive}
+      dictationMissingModel={dictationMissingModel}
+      dictationSupported={dictationSupported}
+      dictationTranscribing={dictationTranscribing}
+      placement="trailing"
+      onAction={onAction}
+      onOpenSettingsView={onOpenSettingsView}
+      showDictationButton={showDictationButton}
+      toggleDictation={toggleDictation}
+    />
+  )
+}
+
 function isCursorAtStart(textarea: HTMLTextAreaElement) {
   return textarea.selectionStart === textarea.selectionEnd && textarea.selectionStart === 0
 }
@@ -435,12 +471,11 @@ export function ComposerPromptInputPanel({
                   ) : null
                 }
                 trailingAdornment={
-                  <ComposerDictationControls
+                  <ComposerPromptDictationAdornment
                     dictationActive={dictationActive}
                     dictationMissingModel={dictationMissingModel}
                     dictationSupported={dictationSupported}
                     dictationTranscribing={dictationTranscribing}
-                    placement="trailing"
                     onAction={onAction}
                     onOpenSettingsView={onOpenSettingsView}
                     showDictationButton={showDictationButton}
