@@ -456,6 +456,7 @@ export function ComposerTextField({
           rows={1}
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
+            trailingAdornmentEnabled && 'pr-[1.875rem]',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             placeholderTone === 'error'
