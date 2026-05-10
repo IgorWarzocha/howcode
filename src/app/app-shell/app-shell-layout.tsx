@@ -936,6 +936,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     if (!sidebarCompactMode) setSidebarOverlayOpen(false)
   }, [sidebarCompactMode])
 
+  const previousSidebarCompactModeRef = useRef(sidebarCompactMode)
+  useEffect(() => {
+    const wasSidebarCompactMode = previousSidebarCompactModeRef.current
+    previousSidebarCompactModeRef.current = sidebarCompactMode
+    if (!wasSidebarCompactMode && sidebarCompactMode && terminalDrawerVisible) {
+      controllerRef.current.handleCloseTerminalDrawer()
+    }
+  }, [sidebarCompactMode, terminalDrawerVisible])
+
   useEffect(() => {
     if (!sidebarOverlayOpen) return
     const handleKeyDown = (event: KeyboardEvent) => {
