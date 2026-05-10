@@ -80,7 +80,6 @@ export function ComposerPromptSurface({
   artifactsAvailable,
   onSetDiffBaseline,
   onOpenGitOps,
-  onLayoutChange,
   onOverlayHeightChange,
   showTerminalControls = true,
 }: ComposerPromptSurfaceProps) {
@@ -523,7 +522,6 @@ export function ComposerPromptSurface({
               hoverToBlur={hoverToBlur}
               hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
-              onLayoutChange={onLayoutChange}
               onOpenSettingsView={onOpenSettingsView}
               openPickerDirectory={openPickerDirectory}
               openPickerRoot={openPickerRoot}

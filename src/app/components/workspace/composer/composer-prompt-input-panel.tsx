@@ -269,7 +269,6 @@ type ComposerPromptInputPanelProps = {
     textarea: HTMLTextAreaElement
   }) => Promise<void>
   onAction: DesktopActionInvoker
-  onLayoutChange?: () => void
   onOpenSettingsView: () => void
   onArrowNavigationOverride?: ((direction: 'previous' | 'next') => boolean) | undefined
   onEscapeOverride?: (() => boolean) | undefined
@@ -316,7 +315,6 @@ export function ComposerPromptInputPanel({
   cancelDictation,
   handlePaste,
   onAction,
-  onLayoutChange,
   onOpenSettingsView,
   onArrowNavigationOverride,
   onEscapeOverride,
@@ -449,7 +447,6 @@ export function ComposerPromptInputPanel({
                     toggleDictation={toggleDictation}
                   />
                 }
-                onHeightChange={onLayoutChange}
               />
             </div>
           </div>
