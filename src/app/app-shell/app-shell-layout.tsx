@@ -376,7 +376,8 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
     closeArtifactDrawerOverlay,
     handleToggleSidebar,
   } = props
-  if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive)) return null
+  if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
+    return null
   const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
   const workspaceDockStyle = {
     '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',
@@ -533,7 +534,11 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           terminalDrawerVisible={terminalDrawerVisible}
           terminalSessionPath={terminalSessionPath}
           terminalDrawerOverlay={sidebarCompactMode}
+          sidebarCollapsed={sidebarCollapsed}
+          sidebarCompactMode={sidebarCompactMode}
+          sidebarOverlayOpen={props.sidebarOverlayOpen}
           workspaceContentClass={workspaceContentClass}
+          onToggleSidebar={handleToggleSidebar}
           onOpenGitOps={handleOpenGitOpsFromTakeover}
           onSetDiffBaseline={handleSetDiffBaseline}
           hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
