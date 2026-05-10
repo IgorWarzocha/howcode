@@ -1,5 +1,5 @@
 import { ChevronLeft, Folder, Home, Plus, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopRequestMap } from '../../../../../shared/desktop-ipc'
 import { listProjectDirectoryEntriesQuery } from '../../../query/desktop-query'
 
@@ -13,7 +13,26 @@ type SidebarProjectsFolderBrowserProps = {
   onSearchQueryChange: (query: string) => void
 }
 
+type DirectoryLoadResult =
+  | { state: ProjectDirectoryState; errorMessage: null }
+  | { state: null; errorMessage: string }
+
 const pathSegmentSeparatorPattern = /[\\/]/
+
+async function loadDirectory(path?: string | null): Promise<DirectoryLoadResult> {
+  try {
+    const state = await listProjectDirectoryEntriesQuery(path ? { path } : {})
+    if (!state) {
+      return { state: null, errorMessage: 'Unable to open folder.' }
+    }
+    return { state, errorMessage: null }
+  } catch (error) {
+    return {
+      state: null,
+      errorMessage: error instanceof Error ? error.message : 'Unable to open folder.',
+    }
+  }
+}
 
 function getPathTail(path: string) {
   return path.split(pathSegmentSeparatorPattern).filter(Boolean).pop() ?? path
@@ -35,20 +54,26 @@ export function SidebarProjectsFolderBrowser({
   const [state, setState] = useState<ProjectDirectoryState | null>(null)
   const [loadingPath, setLoadingPath] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
+  const loading = Boolean(loadingPath)
 
   const openDirectory = useCallback(
     async (path?: string | null) => {
+      const requestId = requestIdRef.current + 1
+      requestIdRef.current = requestId
       setLoadingPath(path ?? '__home__')
       setErrorMessage(null)
-      try {
-        const nextState = await listProjectDirectoryEntriesQuery(path ? { path } : {})
-        setState(nextState)
-        onCurrentPathChange(nextState?.currentPath ?? null)
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : 'Unable to open folder.')
-      } finally {
-        setLoadingPath(null)
+      const result = await loadDirectory(path)
+      if (requestIdRef.current !== requestId) {
+        return
       }
+      if (result.state) {
+        setState(result.state)
+        onCurrentPathChange(result.state.currentPath)
+      } else {
+        setErrorMessage(result.errorMessage)
+      }
+      setLoadingPath(null)
     },
     [onCurrentPathChange],
   )
@@ -74,7 +99,7 @@ export function SidebarProjectsFolderBrowser({
           type="button"
           className="sidebar-project-folder-icon-button"
           onClick={() => void openDirectory(state?.parentPath)}
-          disabled={!state?.parentPath || busy}
+          disabled={!state?.parentPath || busy || loading}
           aria-label="Go up"
         >
           <ChevronLeft size={13} />
@@ -83,7 +108,7 @@ export function SidebarProjectsFolderBrowser({
           type="button"
           className="sidebar-project-folder-icon-button"
           onClick={() => void openDirectory(state?.homePath)}
-          disabled={!state?.homePath || busy}
+          disabled={!state?.homePath || busy || loading}
           aria-label="Go home"
         >
           <Home size={13} />
@@ -99,7 +124,7 @@ export function SidebarProjectsFolderBrowser({
             type="button"
             className="sidebar-project-folder-row sidebar-project-folder-row--add"
             onClick={() => onAddFolder(state.currentPath)}
-            disabled={busy}
+            disabled={busy || loading}
           >
             <Plus size={13} />
             <span>Initialise project in current folder</span>
@@ -112,7 +137,7 @@ export function SidebarProjectsFolderBrowser({
             type="button"
             className="sidebar-project-folder-row"
             onClick={() => void openDirectory(entry.path)}
-            disabled={busy}
+            disabled={busy || loading}
             title={entry.path}
           >
             <Folder size={13} />
@@ -138,7 +163,7 @@ export function SidebarProjectsFolderBrowser({
           className="sidebar-project-folder-search-input"
           placeholder="Search current folder"
           aria-label="Search current folder"
-          disabled={busy}
+          disabled={busy || loading}
         />
       </label>
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}

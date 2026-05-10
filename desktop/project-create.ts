@@ -82,9 +82,10 @@ export async function addProjectFromPath(options: {
 
   if (!exists) {
     await mkdir(resolvedProjectPath, { recursive: true })
-    if (options.initializeGit) {
-      await initializeProjectGit(resolvedProjectPath)
-    }
+  }
+
+  if (options.initializeGit) {
+    await initializeProjectGit(resolvedProjectPath)
   }
 
   const result = await startNewThread({ projectId: resolvedProjectPath })
