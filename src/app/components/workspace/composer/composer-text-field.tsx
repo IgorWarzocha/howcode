@@ -17,7 +17,6 @@ import { cn } from '../../../utils/cn'
 
 const COLLAPSED_VISIBLE_LINE_COUNT = 5
 const EXPANDED_VISIBLE_LINE_COUNT = 15
-const MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH = 180
 
 type ComposerTextFieldProps = {
   value: string
@@ -257,17 +256,11 @@ export function ComposerTextField({
     top: number
   } | null>(null)
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null)
-  const [textareaMetrics, setTextareaMetrics] = useState<{ height: number; width: number } | null>(
-    null,
-  )
+  const [textareaLayoutVersion, setTextareaLayoutVersion] = useState(0)
   const [fieldExpanded, setFieldExpanded] = useState(false)
   const [canExpandField, setCanExpandField] = useState(false)
   const lineHeightRef = useRef(20)
-  const trailingAdornmentVisible =
-    trailingAdornmentEnabled &&
-    (textareaMetrics === null ||
-      (textareaMetrics.width >= MIN_TRAILING_ADORNMENT_TEXTAREA_WIDTH &&
-        textareaMetrics.height <= lineHeightRef.current * 1.8))
+  const trailingAdornmentVisible = trailingAdornmentEnabled
 
   const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current
@@ -289,6 +282,7 @@ export function ComposerTextField({
   })
 
   useLayoutEffect(() => {
+    void textareaLayoutVersion
     const textarea = textareaRef.current
     if (!textarea) return
     updateComposerTextareaHeight({
@@ -306,7 +300,15 @@ export function ComposerTextField({
       value,
       wrapperRef,
     })
-  }, [fieldExpanded, onExpandedChange, onHeightChange, reservedHeight, reservedLineCount, value])
+  }, [
+    fieldExpanded,
+    onExpandedChange,
+    onHeightChange,
+    reservedHeight,
+    reservedLineCount,
+    textareaLayoutVersion,
+    value,
+  ])
 
   useEffect(() => {
     const height = wrapperRef.current?.getBoundingClientRect().height
@@ -322,22 +324,10 @@ export function ComposerTextField({
     const textarea = textareaRef.current
     if (!textarea) return
 
-    const updateTextareaMetrics = () => {
-      const nextMetrics = {
-        height: Math.floor(textarea.offsetHeight),
-        width: Math.floor(textarea.clientWidth),
-      }
-      setTextareaMetrics((current) =>
-        current?.height === nextMetrics.height && current.width === nextMetrics.width
-          ? current
-          : nextMetrics,
-      )
-    }
-
-    updateTextareaMetrics()
-
     if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(updateTextareaMetrics)
+    const observer = new ResizeObserver(() => {
+      setTextareaLayoutVersion((current) => current + 1)
+    })
     observer.observe(textarea)
     return () => observer.disconnect()
   }, [])
