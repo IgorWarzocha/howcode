@@ -1,7 +1,7 @@
 import { Paperclip, X } from 'lucide-react'
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
-import { compactIconButtonClass } from '../../../ui/classes'
+import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
 import { AskQuestionsCard } from './ask-questions-card'
@@ -442,7 +442,7 @@ export function ComposerPromptSurface({
             aria-label={attachmentButtonLabel}
             data-tooltip={attachmentButtonLabel}
           >
-            <span className={cn(compactIconButtonClass, 'h-7 w-7 shrink-0 rounded-full')}>
+            <span className={cn(compactRoundIconButtonClass, 'shrink-0')}>
               <Paperclip size={15} />
             </span>
           </button>
