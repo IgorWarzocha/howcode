@@ -163,6 +163,15 @@ export type DesktopRequestMap = {
     params: { projectId?: string | undefined | null | undefined }
     response: ComposerAttachment[]
   }
+  listProjectDirectoryEntries: {
+    params: { path?: string | undefined | null | undefined }
+    response: {
+      homePath: string
+      currentPath: string
+      parentPath: string | null
+      entries: Array<{ path: string; name: string; kind: 'directory' }>
+    }
+  }
   readClipboardSnapshot: {
     params: { formats?: string[] | undefined | null | undefined }
     response: DesktopClipboardSnapshot

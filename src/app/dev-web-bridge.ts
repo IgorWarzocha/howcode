@@ -136,6 +136,8 @@ export function installDevWebDesktopBridge() {
     closeSkillCreatorSession: (sessionId: string) =>
       invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
+    listProjectDirectoryEntries: (request = {}) =>
+      invokeRequest('listProjectDirectoryEntries', request),
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest('readClipboardSnapshot', { formats }),
     readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),

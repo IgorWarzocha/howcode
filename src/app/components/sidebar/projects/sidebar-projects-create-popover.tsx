@@ -1,5 +1,6 @@
 import { FolderPlus } from 'lucide-react'
-import { type RefObject, useEffect, useRef } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
+import { SidebarProjectsFolderBrowser } from './sidebar-projects-folder-browser'
 
 type SidebarProjectsCreatePopoverProps = {
   menuId: string
@@ -11,6 +12,8 @@ type SidebarProjectsCreatePopoverProps = {
   panelRef?: RefObject<HTMLDialogElement | null>
   onChangeDraft: (value: string) => void
   onCreate: () => void
+  onAddFolder: (path: string) => void
+  onCreateFolder: (parentPath: string, folderName: string) => void
   onClose: () => void
 }
 
@@ -24,9 +27,12 @@ export function SidebarProjectsCreatePopover({
   panelRef,
   onChangeDraft,
   onCreate,
+  onAddFolder,
+  onCreateFolder,
   onClose,
 }: SidebarProjectsCreatePopoverProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [browseOpen, setBrowseOpen] = useState(false)
   const canCreate = draft.trim().length > 0 && !busy && Boolean(defaultLocation)
 
   useEffect(() => {
@@ -34,8 +40,8 @@ export function SidebarProjectsCreatePopover({
       return
     }
 
-    inputRef.current?.focus()
-  }, [open])
+    if (!browseOpen) inputRef.current?.focus()
+  }, [browseOpen, open])
 
   if (!open) {
     return null
@@ -83,6 +89,21 @@ export function SidebarProjectsCreatePopover({
           <FolderPlus size={15} />
         </button>
       </div>
+      <button
+        type="button"
+        className="sidebar-project-browse-toggle"
+        onClick={() => setBrowseOpen((current) => !current)}
+        aria-expanded={browseOpen}
+      >
+        {browseOpen ? 'Hide folders' : 'Browse folders'}
+      </button>
+      {browseOpen ? (
+        <SidebarProjectsFolderBrowser
+          busy={busy}
+          onAddFolder={onAddFolder}
+          onCreateFolder={onCreateFolder}
+        />
+      ) : null}
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}
     </dialog>
   )

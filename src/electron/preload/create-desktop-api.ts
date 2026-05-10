@@ -96,6 +96,8 @@ export function createDesktopApi() {
       invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: (projectId: string | null = null) =>
       invokeRequest('pickComposerAttachments', { projectId }),
+    listProjectDirectoryEntries: (request = {}) =>
+      invokeRequest('listProjectDirectoryEntries', request),
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest('readClipboardSnapshot', { formats }),
     readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),

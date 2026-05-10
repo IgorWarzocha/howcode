@@ -2,8 +2,8 @@ const pathSeparatorPattern = /[\\/]/
 const leadingDotsPattern = /^\.+/
 
 import { randomUUID } from 'node:crypto'
-import { mkdir, open, readdir, rm, stat, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, open, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import { app, clipboard, dialog, shell } from 'electron'
 import { getAttachmentKind } from '../../../../../shared/composer-attachments'
@@ -21,6 +21,7 @@ type SystemRequestHandlers = Pick<
   DesktopRequestHandlerMap,
   | 'clearClipboardImages'
   | 'pickComposerAttachments'
+  | 'listProjectDirectoryEntries'
   | 'readClipboardSnapshot'
   | 'readClipboardFilePaths'
   | 'readClipboardImage'
@@ -107,6 +108,45 @@ async function writeUniqueTextFile(directoryPath: string, fileName: string, cont
   throw new Error('Could not find an unused file name in Downloads.')
 }
 
+async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
+  const homePath = homedir()
+  const requestedPath = request.path?.trim() ? request.path : homePath
+  const currentPath = await realpath(path.resolve(requestedPath)).catch(() =>
+    path.resolve(requestedPath),
+  )
+  const directoryEntries = await readdir(currentPath, { withFileTypes: true })
+
+  const entries = directoryEntries
+    .filter(
+      (entry) => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()),
+    )
+    .map(async (entry) => {
+      const entryPath = path.join(currentPath, entry.name)
+      if (entry.isDirectory())
+        return { path: entryPath, name: entry.name, kind: 'directory' as const }
+
+      try {
+        const stats = await stat(entryPath)
+        return stats.isDirectory()
+          ? { path: entryPath, name: entry.name, kind: 'directory' as const }
+          : null
+      } catch {
+        return null
+      }
+    })
+
+  return {
+    homePath,
+    currentPath,
+    parentPath: path.dirname(currentPath) === currentPath ? null : path.dirname(currentPath),
+    entries: (await Promise.all(entries))
+      .filter((entry): entry is { path: string; name: string; kind: 'directory' } => Boolean(entry))
+      .sort((left, right) =>
+        left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }),
+      ),
+  }
+}
+
 export function createSystemHandlers(): SystemRequestHandlers {
   return {
     clearClipboardImages: clearClipboardImageTempFiles,
@@ -130,6 +170,7 @@ export function createSystemHandlers(): SystemRequestHandlers {
           kind: getAttachmentKind(filePath),
         }))
     },
+    listProjectDirectoryEntries,
     readClipboardSnapshot: ({ formats: requestedFormats }) => {
       const formats = Array.isArray(requestedFormats)
         ? requestedFormats.filter((format) => typeof format === 'string' && format.length > 0)

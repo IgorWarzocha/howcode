@@ -1,6 +1,7 @@
 const pathSeparatorPattern = /[\\/]/
 
 import { fallbackAppSlashCommands } from '../../../shared/composer-slash-commands'
+import type { DesktopRequestMap } from '../../../shared/desktop-ipc'
 import { getPersistedSessionPath } from '../../../shared/session-paths'
 import type {
   AppUpdateState,
@@ -306,6 +307,12 @@ export async function pickComposerAttachmentsQuery(
   projectId?: string | null | undefined,
 ): Promise<ComposerAttachment[]> {
   return (await window.piDesktop?.pickComposerAttachments?.(projectId ?? null)) ?? []
+}
+
+export async function listProjectDirectoryEntriesQuery(
+  request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
+): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
+  return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
 }
 
 export async function clearClipboardImagesQuery() {

@@ -14,11 +14,14 @@ import {
   type SidebarProjectsFilterMode,
 } from './sidebar-projects.helpers'
 import { SidebarProjectsCreatePopover } from './sidebar-projects-create-popover'
+import { getSidebarFolderProjectName } from './sidebar-projects-folder-browser'
 
 type PendingProject = {
   key: string
   name: string
 }
+
+const trailingPathSeparatorsPattern = /[\\/]+$/
 
 type SidebarProjectsSectionProps = {
   activeView: View
@@ -112,6 +115,11 @@ function getCreateProjectPayload(draft: string) {
     pendingProjectName: repository?.folderName ?? draft,
     payload: repository ? { repoUrl: repository.canonicalUrl } : { projectName: draft },
   }
+}
+
+function joinProjectFolderPath(parentPath: string, folderName: string) {
+  const separator = parentPath.includes('\\') && !parentPath.includes('/') ? '\\' : '/'
+  return `${parentPath.replace(trailingPathSeparatorsPattern, '')}${separator}${folderName}`
 }
 
 function PendingProjectRow({ pendingProject }: { pendingProject: PendingProject }) {
@@ -384,6 +392,40 @@ export function SidebarProjectsSection({
     }
   }
 
+  const handleAddFolderProject = async (projectPath: string, options?: { create?: boolean }) => {
+    if (createBusy) return
+    const pendingProjectName = getSidebarFolderProjectName(projectPath)
+    setCreateErrorMessage(null)
+    setPendingProject({ key: `${Date.now()}:${projectPath}`, name: pendingProjectName })
+    setProjectNameDraft('')
+    setCreateOpen(false)
+    setCreateBusy(true)
+
+    try {
+      const result = await onAction('project.add', {
+        projectPath,
+        createIfMissing: options?.create === true,
+      })
+      const error = typeof result?.result?.error === 'string' ? result.result.error : null
+
+      if (error) {
+        setCreateErrorMessage(error)
+        setCreateOpen(true)
+        setPendingProject(null)
+        return
+      }
+
+      recordCreatedProject({ result, setCreatedProjectIds })
+      setPendingProject(null)
+    } catch (error) {
+      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
+      setCreateOpen(true)
+      setPendingProject(null)
+    } finally {
+      setCreateBusy(false)
+    }
+  }
+
   if (!showProjects) {
     return <section className="sidebar-section" aria-hidden="true" />
   }
@@ -419,11 +461,6 @@ export function SidebarProjectsSection({
                 label="Add new project"
                 tooltipPlacement="right"
                 onClick={() => {
-                  if (!appSettings.preferredProjectLocation) {
-                    onOpenSettingsPanel()
-                    return
-                  }
-
                   setCreateErrorMessage(null)
                   setCreateOpen(true)
                 }}
@@ -445,6 +482,14 @@ export function SidebarProjectsSection({
             onChangeDraft={setProjectNameDraft}
             onCreate={() => {
               void handleCreateProject()
+            }}
+            onAddFolder={(projectPath) => {
+              void handleAddFolderProject(projectPath)
+            }}
+            onCreateFolder={(parentPath, folderName) => {
+              void handleAddFolderProject(joinProjectFolderPath(parentPath, folderName), {
+                create: true,
+              })
             }}
             onClose={() => {
               setCreateOpen(false)
