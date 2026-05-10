@@ -279,6 +279,10 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   color: var(--text);
 }
 
+.composer-textarea-scroll-above-button {
+  width: calc(100% + 0.25rem);
+}
+
 .composer-textarea-scroll-above-button::-webkit-scrollbar-track {
   margin-bottom: 1.25rem;
 }
