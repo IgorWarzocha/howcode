@@ -255,7 +255,7 @@
 
 .sidebar-project-create-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px;
+  grid-template-columns: minmax(0, 1fr) 32px 32px;
   align-items: center;
   gap: 0.25rem;
 }
@@ -309,14 +309,8 @@
 }
 
 .sidebar-project-browse-toggle {
-  justify-self: start;
-  border-radius: 0.5rem;
-  padding: 0.125rem 0.375rem;
+  background: var(--surface-hover);
   color: var(--muted);
-  font-size: 11px;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
 }
 
 .sidebar-project-browse-toggle:hover {
@@ -404,6 +398,31 @@
   color: var(--muted-2);
   font-size: 12px;
   text-align: center;
+}
+
+.sidebar-project-folder-search {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.75rem;
+  background: var(--surface-hover);
+  padding: 0 0.5rem;
+  color: var(--muted);
+}
+
+.sidebar-project-folder-search-input {
+  height: 1.875rem;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+.sidebar-project-folder-search-input::placeholder {
+  color: var(--muted);
 }
 
 .sidebar-inline-error {

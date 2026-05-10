@@ -138,6 +138,7 @@ async function createProjectFromPayload(payload: AnyDesktopActionPayload) {
   const appSettings = loadAppSettings()
   const repoUrl = typeof payload.repoUrl === 'string' ? payload.repoUrl.trim() : ''
   const projectPath = typeof payload.projectPath === 'string' ? payload.projectPath.trim() : ''
+  const parentPath = typeof payload.parentPath === 'string' ? payload.parentPath.trim() : ''
   if (projectPath) {
     return await addProjectFromPath({
       projectPath,
@@ -148,11 +149,11 @@ async function createProjectFromPayload(payload: AnyDesktopActionPayload) {
 
   return repoUrl
     ? await createProjectFromGitHubUrl({
-        preferredProjectLocation: appSettings.preferredProjectLocation,
+        preferredProjectLocation: parentPath || appSettings.preferredProjectLocation,
         repositoryUrl: repoUrl,
       })
     : await createProject({
-        preferredProjectLocation: appSettings.preferredProjectLocation,
+        preferredProjectLocation: parentPath || appSettings.preferredProjectLocation,
         projectName: getProjectName(payload) ?? '',
         initializeGit: appSettings.initializeGitOnProjectCreate,
       })

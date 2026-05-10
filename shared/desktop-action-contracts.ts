@@ -38,6 +38,7 @@ export type DesktopActionPayloadFields = {
   projectIds?: string[] | undefined
   projectName?: string | undefined
   projectPath?: string | undefined
+  parentPath?: string | undefined
   createIfMissing?: boolean | undefined
   provider?: string | undefined
   queueId?: string | undefined
@@ -100,6 +101,7 @@ export type DesktopActionPayloadMap = {
   'project.add': {
     projectName?: string | undefined
     projectPath?: string | undefined
+    parentPath?: string | undefined
     createIfMissing?: boolean | undefined
     repoUrl?: string | undefined | null | undefined
   }

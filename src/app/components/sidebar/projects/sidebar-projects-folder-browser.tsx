@@ -1,4 +1,4 @@
-import { ChevronLeft, Folder, FolderPlus, Home, Plus } from 'lucide-react'
+import { ChevronLeft, Folder, Home, Plus, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DesktopRequestMap } from '../../../../../shared/desktop-ipc'
 import { listProjectDirectoryEntriesQuery } from '../../../query/desktop-query'
@@ -7,8 +7,10 @@ type ProjectDirectoryState = DesktopRequestMap['listProjectDirectoryEntries']['r
 
 type SidebarProjectsFolderBrowserProps = {
   busy: boolean
+  searchQuery: string
   onAddFolder: (path: string) => void
-  onCreateFolder: (parentPath: string, folderName: string) => void
+  onCurrentPathChange: (path: string | null) => void
+  onSearchQueryChange: (query: string) => void
 }
 
 const pathSegmentSeparatorPattern = /[\\/]/
@@ -25,37 +27,45 @@ function compactPath(path: string, homePath?: string) {
 
 export function SidebarProjectsFolderBrowser({
   busy,
+  searchQuery,
   onAddFolder,
-  onCreateFolder,
+  onCurrentPathChange,
+  onSearchQueryChange,
 }: SidebarProjectsFolderBrowserProps) {
   const [state, setState] = useState<ProjectDirectoryState | null>(null)
   const [loadingPath, setLoadingPath] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [folderNameDraft, setFolderNameDraft] = useState('')
 
-  const openDirectory = useCallback(async (path?: string | null) => {
-    setLoadingPath(path ?? '__home__')
-    setErrorMessage(null)
-    try {
-      const nextState = await listProjectDirectoryEntriesQuery(path ? { path } : {})
-      setState(nextState)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to open folder.')
-    } finally {
-      setLoadingPath(null)
-    }
-  }, [])
+  const openDirectory = useCallback(
+    async (path?: string | null) => {
+      setLoadingPath(path ?? '__home__')
+      setErrorMessage(null)
+      try {
+        const nextState = await listProjectDirectoryEntriesQuery(path ? { path } : {})
+        setState(nextState)
+        onCurrentPathChange(nextState?.currentPath ?? null)
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : 'Unable to open folder.')
+      } finally {
+        setLoadingPath(null)
+      }
+    },
+    [onCurrentPathChange],
+  )
 
   useEffect(() => {
     void openDirectory()
   }, [openDirectory])
 
-  const trimmedFolderName = folderNameDraft.trim()
-  const canCreate = trimmedFolderName.length > 0 && Boolean(state?.currentPath) && !busy
   const currentLabel = useMemo(
     () => compactPath(state?.currentPath ?? 'Home', state?.homePath),
     [state?.currentPath, state?.homePath],
   )
+  const filteredEntries = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return state?.entries ?? []
+    return (state?.entries ?? []).filter((entry) => entry.name.toLowerCase().includes(query))
+  }, [searchQuery, state?.entries])
 
   return (
     <div className="sidebar-project-folder-browser">
@@ -92,11 +102,11 @@ export function SidebarProjectsFolderBrowser({
             disabled={busy}
           >
             <Plus size={13} />
-            <span>Add this folder</span>
+            <span>Initialise project in current folder</span>
           </button>
         ) : null}
 
-        {state?.entries.map((entry) => (
+        {filteredEntries.map((entry) => (
           <button
             key={entry.path}
             type="button"
@@ -113,43 +123,24 @@ export function SidebarProjectsFolderBrowser({
         {!state && loadingPath ? (
           <div className="sidebar-project-folder-empty">Loading…</div>
         ) : null}
-        {state && state.entries.length === 0 ? (
-          <div className="sidebar-project-folder-empty">No folders here.</div>
+        {state && filteredEntries.length === 0 ? (
+          <div className="sidebar-project-folder-empty">
+            {searchQuery.trim() ? 'No matching folders.' : 'No folders here.'}
+          </div>
         ) : null}
       </div>
 
-      <div className="sidebar-project-create-row">
+      <label className="sidebar-project-folder-search">
+        <Search size={12} />
         <input
-          value={folderNameDraft}
-          onChange={(event) => setFolderNameDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && canCreate && state) {
-              event.preventDefault()
-              onCreateFolder(state.currentPath, trimmedFolderName)
-              setFolderNameDraft('')
-            }
-          }}
-          className="sidebar-project-create-input"
-          placeholder="New folder name"
-          aria-label="New folder name"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          className="sidebar-project-folder-search-input"
+          placeholder="Search current folder"
+          aria-label="Search current folder"
           disabled={busy}
         />
-        <button
-          type="button"
-          className="sidebar-project-create-submit"
-          onClick={() => {
-            if (state && canCreate) {
-              onCreateFolder(state.currentPath, trimmedFolderName)
-              setFolderNameDraft('')
-            }
-          }}
-          disabled={!canCreate}
-          data-enabled={canCreate ? 'true' : 'false'}
-          aria-label="Create folder and add project"
-        >
-          <FolderPlus size={15} />
-        </button>
-      </div>
+      </label>
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}
     </div>
   )

@@ -1,4 +1,4 @@
-import { FolderPlus } from 'lucide-react'
+import { FolderPlus, Search } from 'lucide-react'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { SidebarProjectsFolderBrowser } from './sidebar-projects-folder-browser'
 
@@ -11,9 +11,8 @@ type SidebarProjectsCreatePopoverProps = {
   errorMessage: string | null
   panelRef?: RefObject<HTMLDialogElement | null>
   onChangeDraft: (value: string) => void
-  onCreate: () => void
+  onCreate: (options?: { parentPath?: string | null }) => void
   onAddFolder: (path: string) => void
-  onCreateFolder: (parentPath: string, folderName: string) => void
   onClose: () => void
 }
 
@@ -28,12 +27,16 @@ export function SidebarProjectsCreatePopover({
   onChangeDraft,
   onCreate,
   onAddFolder,
-  onCreateFolder,
   onClose,
 }: SidebarProjectsCreatePopoverProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [browseOpen, setBrowseOpen] = useState(false)
-  const canCreate = draft.trim().length > 0 && !busy && Boolean(defaultLocation)
+  const [browseSearchQuery, setBrowseSearchQuery] = useState('')
+  const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null)
+  const canSubmit =
+    draft.trim().length > 0 &&
+    !busy &&
+    (Boolean(defaultLocation) || (browseOpen && Boolean(currentFolderPath)))
 
   useEffect(() => {
     if (!open) {
@@ -64,7 +67,7 @@ export function SidebarProjectsCreatePopover({
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              onCreate()
+              onCreate({ parentPath: browseOpen ? currentFolderPath : null })
             }
 
             if (event.key === 'Escape') {
@@ -79,29 +82,34 @@ export function SidebarProjectsCreatePopover({
 
         <button
           type="button"
+          className="sidebar-project-create-submit sidebar-project-browse-toggle"
+          onClick={() => setBrowseOpen((current) => !current)}
+          aria-label={browseOpen ? 'Hide folder browser' : 'Browse folders'}
+          aria-expanded={browseOpen}
+          data-enabled={browseOpen ? 'true' : 'false'}
+        >
+          <Search size={15} />
+        </button>
+
+        <button
+          type="button"
           className="sidebar-project-create-submit"
-          onClick={onCreate}
-          disabled={!canCreate}
-          data-enabled={canCreate ? 'true' : 'false'}
+          onClick={() => onCreate({ parentPath: browseOpen ? currentFolderPath : null })}
+          disabled={!canSubmit}
+          data-enabled={canSubmit ? 'true' : 'false'}
           aria-label={busy ? 'Adding project' : 'Add project'}
           data-tooltip={busy ? 'Adding project' : 'Add project'}
         >
           <FolderPlus size={15} />
         </button>
       </div>
-      <button
-        type="button"
-        className="sidebar-project-browse-toggle"
-        onClick={() => setBrowseOpen((current) => !current)}
-        aria-expanded={browseOpen}
-      >
-        {browseOpen ? 'Hide folders' : 'Browse folders'}
-      </button>
       {browseOpen ? (
         <SidebarProjectsFolderBrowser
           busy={busy}
+          searchQuery={browseSearchQuery}
           onAddFolder={onAddFolder}
-          onCreateFolder={onCreateFolder}
+          onCurrentPathChange={setCurrentFolderPath}
+          onSearchQueryChange={setBrowseSearchQuery}
         />
       ) : null}
       {errorMessage ? <div className="sidebar-inline-error">{errorMessage}</div> : null}

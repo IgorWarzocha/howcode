@@ -21,8 +21,6 @@ type PendingProject = {
   name: string
 }
 
-const trailingPathSeparatorsPattern = /[\\/]+$/
-
 type SidebarProjectsSectionProps = {
   activeView: View
   appLaunchedAtMs: number
@@ -93,6 +91,7 @@ function recordCreatedProject(input: {
 function prepareCreateProject(input: {
   appSettings: AppSettings
   createBusy: boolean
+  parentPath?: string | null | undefined
   onOpenSettingsPanel: () => void
   projectNameDraft: string
   setCreateErrorMessage: (message: string | null) => void
@@ -100,7 +99,7 @@ function prepareCreateProject(input: {
 }) {
   if (input.createBusy) return null
   input.setCreateErrorMessage(null)
-  if (!input.appSettings.preferredProjectLocation) {
+  if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
     input.setCreateOpen(false)
     input.onOpenSettingsPanel()
     return null
@@ -109,17 +108,14 @@ function prepareCreateProject(input: {
   return draft || null
 }
 
-function getCreateProjectPayload(draft: string) {
+function getCreateProjectPayload(draft: string, parentPath?: string | null) {
   const repository = parseGitHubRepositoryUrl(draft)
   return {
     pendingProjectName: repository?.folderName ?? draft,
-    payload: repository ? { repoUrl: repository.canonicalUrl } : { projectName: draft },
+    payload: repository
+      ? { repoUrl: repository.canonicalUrl, parentPath: parentPath ?? undefined }
+      : { projectName: draft, parentPath: parentPath ?? undefined },
   }
-}
-
-function joinProjectFolderPath(parentPath: string, folderName: string) {
-  const separator = parentPath.includes('\\') && !parentPath.includes('/') ? '\\' : '/'
-  return `${parentPath.replace(trailingPathSeparatorsPattern, '')}${separator}${folderName}`
 }
 
 function PendingProjectRow({ pendingProject }: { pendingProject: PendingProject }) {
@@ -355,10 +351,11 @@ export function SidebarProjectsSection({
     refs: [createButtonRef, createPanelRef],
   })
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (options?: { parentPath?: string | null }) => {
     const draft = prepareCreateProject({
       appSettings,
       createBusy,
+      parentPath: options?.parentPath,
       onOpenSettingsPanel,
       projectNameDraft,
       setCreateErrorMessage,
@@ -366,7 +363,7 @@ export function SidebarProjectsSection({
     })
     if (!draft) return
 
-    const { payload, pendingProjectName } = getCreateProjectPayload(draft)
+    const { payload, pendingProjectName } = getCreateProjectPayload(draft, options?.parentPath)
     setPendingProject({ key: `${Date.now()}:${draft}`, name: pendingProjectName })
     setProjectNameDraft('')
     setCreateOpen(false)
@@ -480,16 +477,11 @@ export function SidebarProjectsSection({
             errorMessage={createErrorMessage}
             panelRef={createPanelRef}
             onChangeDraft={setProjectNameDraft}
-            onCreate={() => {
-              void handleCreateProject()
+            onCreate={(options) => {
+              void handleCreateProject(options)
             }}
             onAddFolder={(projectPath) => {
               void handleAddFolderProject(projectPath)
-            }}
-            onCreateFolder={(parentPath, folderName) => {
-              void handleAddFolderProject(joinProjectFolderPath(parentPath, folderName), {
-                create: true,
-              })
             }}
             onClose={() => {
               setCreateOpen(false)
