@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PointerEvent, ReactNode } from 'react'
+import { useRef } from 'react'
 import { chatRowShellClass } from './thread-layout'
 
 const clampOneLineClass =
@@ -61,6 +62,15 @@ function isInteractiveTarget(target: EventTarget | null) {
   )
 }
 
+function hasActiveTextSelection() {
+  const selection = window.getSelection?.()
+  if (!selection || selection.isCollapsed) {
+    return false
+  }
+
+  return selection.toString().trim().length > 0
+}
+
 export function RowLeadToggleSurface({
   onToggle,
   children,
@@ -68,6 +78,8 @@ export function RowLeadToggleSurface({
   onToggle?: (() => void) | undefined
   children: ReactNode
 }) {
+  const pointerStartRef = useRef<{ id: number; x: number; y: number; time: number } | null>(null)
+
   if (!onToggle) {
     return <>{children}</>
   }
@@ -75,8 +87,29 @@ export function RowLeadToggleSurface({
   return (
     <div
       className="block w-full min-w-0 cursor-pointer text-left"
+      onPointerDown={(event: PointerEvent<HTMLDivElement>) => {
+        pointerStartRef.current = {
+          id: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          time: performance.now(),
+        }
+      }}
       onPointerUp={(event: PointerEvent<HTMLDivElement>) => {
         if (isInteractiveTarget(event.target)) {
+          return
+        }
+
+        const start = pointerStartRef.current
+        pointerStartRef.current = null
+        if (!start || start.id !== event.pointerId) {
+          return
+        }
+
+        const deltaX = Math.abs(event.clientX - start.x)
+        const deltaY = Math.abs(event.clientY - start.y)
+        const elapsedMs = performance.now() - start.time
+        if (deltaX > 4 || deltaY > 4 || elapsedMs > 250 || hasActiveTextSelection()) {
           return
         }
 
