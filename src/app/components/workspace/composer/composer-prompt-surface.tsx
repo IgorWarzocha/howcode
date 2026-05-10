@@ -1,5 +1,6 @@
-import { Paperclip, Square, X } from 'lucide-react'
+import { Paperclip, X } from 'lucide-react'
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
+import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
@@ -403,6 +404,7 @@ export function ComposerPromptSurface({
   const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null)
   const placeholderText = getComposerPlaceholderText({ activeView, errorMessage, showAskQuestions })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
+  const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   return (
     <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
@@ -570,7 +572,7 @@ export function ComposerPromptSurface({
             onOpenTakeoverTerminal={onOpenTakeoverTerminal}
             onSelectBaseline={onSetDiffBaseline}
             onSelectModel={(availableModel) => {
-              if (isConversationComposerView(activeView)) {
+              if (isConversationComposerView(activeView) && !persistedSessionPath) {
                 void runComposerAction(
                   'settings.update',
                   {
@@ -595,7 +597,7 @@ export function ComposerPromptSurface({
               )
             }}
             onSelectThinkingLevel={(level) => {
-              if (isConversationComposerView(activeView)) {
+              if (isConversationComposerView(activeView) && !persistedSessionPath) {
                 void runComposerAction('settings.update', {
                   key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
                   value: level,
@@ -634,9 +636,9 @@ export function ComposerPromptSurface({
             type="button"
             className={cn(
               compactIconButtonClass,
-              'h-7 w-7 shrink-0 rounded-full text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]',
+              'composer-stop-button relative h-7 w-7 shrink-0 text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]',
               canStopComposer
-                ? 'bg-[color:var(--danger-bg)] opacity-80'
+                ? 'composer-stop-button--active bg-[color:var(--danger-bg)] opacity-95'
                 : 'bg-transparent opacity-25 hover:opacity-45',
             )}
             onClick={() => void stop()}
@@ -644,7 +646,24 @@ export function ComposerPromptSurface({
             aria-label="Stop Pi"
             data-tooltip="Stop Pi"
           >
-            <Square size={11} fill="currentColor" />
+            {canStopComposer ? (
+              <svg
+                className="composer-stop-button__spinner absolute text-[color:var(--danger)]"
+                viewBox="0 0 28 28"
+                aria-hidden="true"
+              >
+                <g className="activity-spinner__rotor" fill="currentColor">
+                  <circle cx="14" cy="1.5" r="1.3" opacity=".14" />
+                  <circle cx="20.2" cy="3.05" r="1.3" opacity=".29" />
+                  <circle cx="24.95" cy="7.8" r="1.3" opacity=".43" />
+                  <circle cx="26.5" cy="14" r="1.3" opacity=".57" />
+                  <circle cx="24.95" cy="20.2" r="1.3" opacity=".71" />
+                  <circle cx="20.2" cy="24.95" r="1.3" opacity=".86" />
+                  <circle cx="14" cy="26.5" r="1.3" />
+                </g>
+              </svg>
+            ) : null}
+            <span className="composer-stop-button__square" aria-hidden="true" />
           </button>
         </div>
       </div>
