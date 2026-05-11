@@ -64,6 +64,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  betaUpdateBranch: false,
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,

@@ -40,6 +40,7 @@ const optimisticSettingKeys = new Set([
   'projectDeletionMode',
   'useAgentsSkillsPaths',
   'howcodeNativeAskQuestions',
+  'betaUpdateBranch',
   'piTuiTakeover',
   'hoverToFocus',
   'hoverToBlur',
@@ -158,6 +159,7 @@ function applyOptimisticBooleanSetting(
   if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value
   if (payload.key === 'howcodeNativeAskQuestions')
     nextSettings.howcodeNativeAskQuestions = payload.value
+  if (payload.key === 'betaUpdateBranch') nextSettings.betaUpdateBranch = payload.value
   if (payload.key === 'piTuiTakeover') nextSettings.piTuiTakeover = payload.value
   if (payload.key === 'hoverToFocus') nextSettings.hoverToFocus = payload.value
   if (payload.key === 'hoverToBlur') nextSettings.hoverToBlur = payload.value

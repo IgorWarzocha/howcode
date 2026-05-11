@@ -42,6 +42,7 @@ export type AppSettings = {
   projectDeletionMode: ProjectDeletionMode
   useAgentsSkillsPaths: boolean
   howcodeNativeAskQuestions: boolean
+  betaUpdateBranch: boolean
   piTuiTakeover: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean

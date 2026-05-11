@@ -14,6 +14,7 @@ import {
 } from '../../shared/dictation-settings.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import {
+  betaUpdateBranchKey,
   chatModelKey,
   chatThinkingLevelKey,
   codeModelKey,
@@ -247,6 +248,10 @@ export function setUseAgentsSkillsPaths(enabled: boolean) {
 
 export function setHowcodeNativeAskQuestions(enabled: boolean) {
   writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled))
+}
+
+export function setBetaUpdateBranch(enabled: boolean) {
+  writeAppPreference(betaUpdateBranchKey, JSON.stringify(enabled))
 }
 
 export function setPiTuiTakeover(enabled: boolean) {

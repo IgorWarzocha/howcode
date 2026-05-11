@@ -114,7 +114,7 @@ function PixelHLogo() {
   )
 }
 
-function LandingMockUpdateCard() {
+function LandingUpdateCard() {
   const { step, isRunning, advance } = useAppUpdateFlow()
   const Icon =
     step.id === 'idle' ||
@@ -494,7 +494,7 @@ export function LandingView({
           <PixelHLogo />
           <h1 className="sr-only">{content.title}</h1>
 
-          <LandingMockUpdateCard />
+          <LandingUpdateCard />
 
           <div className="grid min-h-0 w-full max-w-[680px] grid-rows-[auto_minmax(0,1fr)] gap-0">
             <div

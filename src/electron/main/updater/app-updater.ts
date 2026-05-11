@@ -18,9 +18,8 @@ function getProcessEnvironmentVariable(name: string) {
 }
 
 const APP_NAME = 'howcode'
-const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/latest/download'
-const RELEASE_BASE_URL =
-  getProcessEnvironmentVariable('HOWCODE_BASE_URL') ?? DEFAULT_RELEASE_BASE_URL
+const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/download'
+const RELEASE_BASE_URL = getProcessEnvironmentVariable('HOWCODE_BASE_URL')
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP_UPDATE') === '1'
 const semverPattern = /^\d+\.\d+\.\d+$/
@@ -33,10 +32,13 @@ type UpdateTarget = {
 }
 
 type ReleaseInfo = {
+  channel: UpdateChannel
   version: string
   hash: string
   assetUrl: string
 }
+
+type UpdateChannel = 'main' | 'dev'
 
 type InstalledUpdate = ReleaseInfo & {
   executablePath: string
@@ -84,13 +86,17 @@ function getCacheRoot() {
   )
 }
 
+function getReleaseBaseUrl(channel: UpdateChannel) {
+  return RELEASE_BASE_URL ?? `${DEFAULT_RELEASE_BASE_URL}/${channel}`
+}
+
 function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   const cacheRoot = getCacheRoot()
-  const releaseKey = `${release.version}-${release.hash}`
+  const releaseKey = `${release.channel}-${release.version}-${release.hash}`
   const installDir = path.join(cacheRoot, 'versions', releaseKey)
   return {
     cacheRoot,
-    currentFile: path.join(cacheRoot, 'current.json'),
+    currentFile: path.join(cacheRoot, `current-${release.channel}.json`),
     installDir,
     executablePath: path.join(installDir, target.executable),
   }
@@ -180,17 +186,18 @@ async function fetchJson(url: string, timeoutMs = 15_000) {
   return response.json() as Promise<unknown>
 }
 
-async function resolveLatestRelease(target: UpdateTarget): Promise<ReleaseInfo> {
-  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`
+async function resolveLatestRelease(
+  target: UpdateTarget,
+  channel: UpdateChannel,
+): Promise<ReleaseInfo> {
+  const releaseBaseUrl = getReleaseBaseUrl(channel)
+  const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
   const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl)
-  const assetBaseUrl =
-    RELEASE_BASE_URL === DEFAULT_RELEASE_BASE_URL
-      ? `https://github.com/IgorWarzocha/howcode/releases/download/v${version}`
-      : RELEASE_BASE_URL
   return {
+    channel,
     version,
     hash,
-    assetUrl: `${assetBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -224,11 +231,13 @@ async function sha256File(filePath: string) {
 
 function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
   if (!record || typeof record !== 'object') return null
+  const channel = 'channel' in record ? record.channel : null
   const version = 'version' in record ? record.version : null
   const hash = 'hash' in record ? record.hash : null
   const installDir = 'installDir' in record ? record.installDir : null
   const executablePath = 'executablePath' in record ? record.executablePath : null
   if (
+    !(channel === 'main' || channel === 'dev') ||
     typeof version !== 'string' ||
     !semverPattern.test(version) ||
     typeof hash !== 'string' ||
@@ -238,7 +247,7 @@ function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
   ) {
     return null
   }
-  return { version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
+  return { channel, version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
 }
 
 async function isExecutableFile(filePath: string) {
@@ -280,6 +289,7 @@ function getRunningCachedVersionDir(versionsRoot: string) {
 
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
+  private readonly getUpdateChannel: () => Promise<UpdateChannel>
   private installedUpdate: InstalledUpdate | null = null
   private checkPromise: Promise<AppUpdateState> | null = null
   private installPromise: Promise<AppUpdateState> | null = null
@@ -290,6 +300,10 @@ export class AppUpdater {
     currentVersion: getCurrentAppVersion(),
     latestVersion: null,
     error: null,
+  }
+
+  constructor(getUpdateChannel: () => Promise<UpdateChannel> = async () => 'main') {
+    this.getUpdateChannel = getUpdateChannel
   }
 
   subscribe(listener: AppUpdaterListener) {
@@ -351,7 +365,7 @@ export class AppUpdater {
         })
         return this.state
       }
-      const release = await resolveLatestRelease(target)
+      const release = await resolveLatestRelease(target, await this.getUpdateChannel())
       this.latestRelease = release
       const hasUpdate = compareVersions(release.version, this.state.currentVersion) > 0
       this.setState({
@@ -425,6 +439,7 @@ export class AppUpdater {
         JSON.stringify(
           {
             version: release.version,
+            channel: release.channel,
             hash: release.hash,
             installDir: paths.installDir,
             executablePath: paths.executablePath,
@@ -469,7 +484,9 @@ export class AppUpdater {
   private async readInstalledUpdate() {
     if (!isUpdateEnabled()) return
     this.installedUpdate = null
-    const record = await this.readCurrentFile(path.join(getCacheRoot(), 'current.json'))
+    const record = await this.readCurrentFile(
+      path.join(getCacheRoot(), `current-${await this.getUpdateChannel()}.json`),
+    )
     if (!record || compareVersions(record.version, this.state.currentVersion) <= 0) return
     const target = getTarget()
     const expectedPaths = getInstallPaths(target, record)

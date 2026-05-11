@@ -35,7 +35,11 @@ async function bootstrap() {
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort)
 
   const runtime = await loadDesktopRuntimeModules()
-  const appUpdater = new AppUpdater()
+  const appUpdater = new AppUpdater(async () =>
+    (await runtime.piThreads.loadShellState(process.cwd())).appSettings.betaUpdateBranch
+      ? 'dev'
+      : 'main',
+  )
   registerDesktopRuntimeShutdown(runtime)
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater)
   await openMainWindow()
