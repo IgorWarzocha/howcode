@@ -481,7 +481,7 @@ export function LandingView({
           composerOverlayHeight={composerOverlayHeight}
           project={selectedProject}
           gitState={projectGitQuery.data}
-          usageLoading={projectUsageQuery.isFetching}
+          usageLoading={projectUsageQuery.isLoading}
           usageSummary={projectUsageQuery.data}
           onOpenThread={onOpenThread}
         />
