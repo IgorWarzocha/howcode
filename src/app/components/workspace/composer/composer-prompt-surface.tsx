@@ -166,6 +166,9 @@ export function ComposerPromptSurface({
       answers,
     })
   }
+  const startNewSession = () => {
+    void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
+  }
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId,
@@ -175,6 +178,7 @@ export function ComposerPromptSurface({
     send,
     sendExtensionCommand,
     onOpenSettingsView,
+    onStartNewSession: startNewSession,
   })
   const slashCommandListSignature = slashCommands.commands
     .map((command) => `${command.source}:${command.name}`)

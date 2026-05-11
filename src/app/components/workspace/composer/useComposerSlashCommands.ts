@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  appNewSessionSlashCommand,
   appSettingsSlashCommand,
   fallbackAppSlashCommands,
 } from '../../../../../shared/composer-slash-commands'
@@ -62,6 +63,7 @@ type UseComposerSlashCommandsOptions = {
   send: () => void
   sendExtensionCommand?: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
+  onStartNewSession?: () => void
 }
 
 export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
@@ -194,6 +196,7 @@ export function useComposerSlashCommands({
   send,
   sendExtensionCommand,
   onOpenSettingsView,
+  onStartNewSession,
 }: UseComposerSlashCommandsOptions) {
   const [commands, setCommands] = useState<ComposerSlashCommand[]>([])
   const [loading, setLoading] = useState(false)
@@ -242,6 +245,12 @@ export function useComposerSlashCommands({
       return
     }
 
+    if (command.source === 'app' && command.name === 'new') {
+      setDraft('')
+      onStartNewSession?.()
+      return
+    }
+
     if (isExactCommandDraft(command)) {
       dismiss()
       if (command.source === 'extension' && sendExtensionCommand) {
@@ -277,6 +286,11 @@ export function useComposerSlashCommands({
     // "/settings " so they can still be sent through AgentSession.prompt().
     if (draft === '/settings') {
       selectCommand(appSettingsSlashCommand)
+      return
+    }
+
+    if (draft === '/new') {
+      selectCommand(appNewSessionSlashCommand)
       return
     }
 

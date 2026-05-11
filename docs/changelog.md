@@ -16,6 +16,7 @@
 - Surfaced Pi stop states, model/reasoning changes, and extension errors in chat.
 - Added token, cache, and cost totals to the context popover.
 - Made live tool calls show running state and arguments sooner.
+- Added `/new` in the composer.
 - Fixed compact terminal/sidebar behavior, including Pi TUI takeover fold-button alignment.
 - Improved macOS window chrome and quit behavior.
 
