@@ -226,6 +226,43 @@ export function listProjectThreads(
     )
 }
 
+export function listArchivedProjectThreads(
+  projectId: string,
+  options: { chat?: boolean | undefined } = {},
+): Thread[] {
+  const db = getThreadStateDatabase()
+  const rows = db
+    .prepare(
+      `
+        SELECT
+          threads.id AS id,
+          threads.title AS title,
+          threads.session_path AS sessionPath,
+          COALESCE(inbox_items.last_assistant_preview, threads.last_assistant_preview) AS summary,
+          threads.running AS running,
+          COALESCE(inbox_items.unread, 0) AS unread,
+          threads.pinned AS pinned,
+          threads.last_modified_ms AS lastModifiedMs
+        FROM threads
+        LEFT JOIN inbox_items ON inbox_items.session_path = threads.session_path
+        WHERE threads.cwd = ? AND threads.archived = 1
+        ORDER BY threads.last_modified_ms DESC, threads.title COLLATE NOCASE ASC
+      `,
+    )
+    .all(projectId) as ThreadRow[]
+
+  return rows
+    .filter((row) => matchesThreadScope(row.sessionPath, options))
+    .map((row) =>
+      mapThreadRow({
+        ...row,
+        running: getEffectiveThreadRunningState(row.running, getLiveThread(row.sessionPath))
+          ? 1
+          : 0,
+      }),
+    )
+}
+
 export function listInboxThreads(): InboxThread[] {
   const db = getThreadStateDatabase()
   const rows = db

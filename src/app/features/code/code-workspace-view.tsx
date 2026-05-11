@@ -40,7 +40,7 @@ type CodeWorkspaceViewProps = {
 }
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
-const NEW_THREAD_COMPOSER_TOP = '60%'
+const EMPTY_COMPOSER_TOP = '60%'
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,
   chatThinkingLevel: null,
@@ -514,8 +514,10 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       ref={footerRef}
       className={cn(
         'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
-        centerThreadFooter ? 'transition-[top,transform] duration-300 ease-out' : 'bottom-0',
-        centerThreadFooter && '-translate-y-1/2',
+        centerThreadFooter || state.activeView === 'code'
+          ? 'transition-[top,transform] duration-300 ease-out'
+          : 'bottom-0',
+        (centerThreadFooter || state.activeView === 'code') && '-translate-y-1/2',
         showThreadFooter && !centerThreadFooter && 'translate-y-0',
       )}
       style={threadFooterStyle}
@@ -598,13 +600,54 @@ function shouldShowDesktopTerminalDrawer(
   return activeView === 'thread' && terminalDrawerVisible && !terminalDrawerOverlay
 }
 
-function getCodeWorkspaceFlags(activeView: AppShellController['state']['activeView']) {
+function getFloatingFooterStyle(input: {
+  centerDashboardFooter: boolean
+  centerThreadFooter: boolean
+  showThreadFooter: boolean
+  terminalDrawerInsetStyle: { right: string } | undefined
+}) {
+  if (input.centerDashboardFooter) {
+    return { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
+  }
+
+  if (!input.showThreadFooter) {
+    return input.terminalDrawerInsetStyle
+  }
+
+  return input.centerThreadFooter
+    ? { ...input.terminalDrawerInsetStyle, top: EMPTY_COMPOSER_TOP }
+    : { ...input.terminalDrawerInsetStyle, bottom: 0 }
+}
+
+function getFloatingFooterLayoutState(input: {
+  activeView: AppShellController['state']['activeView']
+  activeThreadData: Message[] | undefined
+  activeThreadLoading: boolean
+  showThreadFooter: boolean
+}) {
+  const hasThreadConversation = input.showThreadFooter && (input.activeThreadData?.length ?? 0) > 0
+  const hasThreadConversationLayout = hasThreadConversation || input.activeThreadLoading
+  const centerDashboardFooter = input.activeView === 'code'
+  const centerThreadFooter = input.showThreadFooter && !hasThreadConversationLayout
   return {
-    showWorkspaceFooter: activeView === 'thread' || activeView === 'gitops',
-    showThreadFooter: activeView === 'thread',
-    showCodeSidebarFooter: activeView === 'code',
-    showUtilitySidebarButton: isCodeUtilityView(activeView),
-    showDiffInMainView: activeView === 'gitops',
+    centerDashboardFooter,
+    centerThreadFooter,
+    floatingWorkspaceFooter: centerThreadFooter || centerDashboardFooter,
+  }
+}
+
+function getCodeWorkspaceFlags(input: {
+  activeView: AppShellController['state']['activeView']
+  selectedProjectId: string
+}) {
+  const showCodeDashboardFooter = input.activeView === 'code' && Boolean(input.selectedProjectId)
+  return {
+    showWorkspaceFooter:
+      input.activeView === 'thread' || input.activeView === 'gitops' || showCodeDashboardFooter,
+    showThreadFooter: input.activeView === 'thread',
+    showCodeSidebarFooter: false,
+    showUtilitySidebarButton: isCodeUtilityView(input.activeView),
+    showDiffInMainView: input.activeView === 'gitops',
   }
 }
 
@@ -654,7 +697,10 @@ export function CodeWorkspaceView({
     showCodeSidebarFooter,
     showUtilitySidebarButton,
     showDiffInMainView,
-  } = getCodeWorkspaceFlags(state.activeView)
+  } = getCodeWorkspaceFlags({
+    activeView: state.activeView,
+    selectedProjectId: state.selectedProjectId,
+  })
   const showDesktopTerminalDrawer = shouldShowDesktopTerminalDrawer(
     state.activeView,
     terminalDrawerVisible,
@@ -680,10 +726,14 @@ export function CodeWorkspaceView({
     footerRef,
     visible: showWorkspaceFooter,
   })
-  const hasThreadConversation = showThreadFooter && (activeThreadData?.messages.length ?? 0) > 0
-  const hasThreadConversationLayout = hasThreadConversation || controller.activeThreadLoading
-  const centerThreadFooter = showThreadFooter && !hasThreadConversationLayout
-  const footerInset = showWorkspaceFooter && !centerThreadFooter ? footerHeight : 0
+  const { centerDashboardFooter, centerThreadFooter, floatingWorkspaceFooter } =
+    getFloatingFooterLayoutState({
+      activeThreadData: activeThreadData?.messages,
+      activeThreadLoading: controller.activeThreadLoading,
+      activeView: state.activeView,
+      showThreadFooter,
+    })
+  const footerInset = showWorkspaceFooter && !floatingWorkspaceFooter ? footerHeight : 0
   const {
     diffCommentCount,
     diffCommentError,
@@ -715,11 +765,12 @@ export function CodeWorkspaceView({
   const terminalDrawerInsetStyle = showDesktopTerminalDrawer
     ? { right: TERMINAL_DRAWER_OFFSET }
     : undefined
-  const threadFooterStyle = showThreadFooter
-    ? centerThreadFooter
-      ? { ...terminalDrawerInsetStyle, top: NEW_THREAD_COMPOSER_TOP }
-      : { ...terminalDrawerInsetStyle, bottom: 0 }
-    : terminalDrawerInsetStyle
+  const threadFooterStyle = getFloatingFooterStyle({
+    centerDashboardFooter,
+    centerThreadFooter,
+    showThreadFooter,
+    terminalDrawerInsetStyle,
+  })
   const threadTimelineLoading = state.activeView === 'thread' && controller.activeThreadLoading
 
   return (

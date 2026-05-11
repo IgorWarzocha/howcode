@@ -222,7 +222,9 @@ export function CodeWorkspaceMainView({
         projectName={currentProjectName}
         projects={projects}
         selectedProjectId={selectedProjectId}
+        composerOverlayHeight={composerOverlayHeight}
         onAction={onAction}
+        onOpenThread={onOpenThread}
         onSelectProject={onSelectProject}
       />
     </div>

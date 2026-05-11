@@ -17,6 +17,7 @@ export {
   searchPiPackages,
 } from './pi-packages/index.ts'
 export { handleDesktopAction } from './pi-threads/action-router.ts'
+export { loadProjectUsageSummary } from './pi-threads/project-usage-summary.ts'
 export {
   captureProjectDiffBaseline,
   disposeDesktopRuntime,

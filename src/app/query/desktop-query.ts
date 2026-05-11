@@ -27,6 +27,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -58,6 +59,8 @@ export const desktopQueryKeys = {
       request.chatGroupId ?? null,
     ] as const,
   projectGitState: (projectId: string) => ['desktop', 'projectGitState', projectId] as const,
+  projectUsageSummary: (projectId: string) =>
+    ['desktop', 'projectUsageSummary', projectId] as const,
   projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ['desktop', 'projectDiff', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
@@ -176,6 +179,12 @@ export async function getComposerSkillsQuery(request: ComposerStateRequest = {})
 
 export async function getProjectGitStateQuery(projectId: string): Promise<ProjectGitState | null> {
   return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null
+}
+
+export async function getProjectUsageSummaryQuery(
+  projectId: string,
+): Promise<ProjectUsageSummary | null> {
+  return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
 }
 
 export async function getProjectDiffQuery(
