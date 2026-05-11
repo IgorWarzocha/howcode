@@ -95,6 +95,11 @@
   animation-delay: -0.5s;
 }
 
+.thread-timeline-viewport,
+.thread-timeline-scroll-shell {
+  overflow-x: hidden;
+}
+
 .composer-stop-button {
   border-radius: 9999px;
 }
