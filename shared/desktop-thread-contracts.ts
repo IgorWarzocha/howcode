@@ -43,6 +43,35 @@ export type Project = {
   repoOriginChecked?: boolean | undefined
 }
 
+export type ProjectUsageSessionSummary = {
+  threadId: string
+  title: string
+  sessionPath: string
+  lastModifiedMs?: number | undefined
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+}
+
+export type ProjectUsageSummary = {
+  projectId: string
+  sessionCount: number
+  sessionsWithUsageCount: number
+  assistantTurnCount: number
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  archivedUsageRefreshing?: boolean | undefined
+  topSessions: ProjectUsageSessionSummary[]
+}
+
 export type ProjectImportCandidate = {
   projectId: string
   name: string

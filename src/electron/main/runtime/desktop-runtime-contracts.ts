@@ -30,6 +30,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
@@ -88,6 +89,7 @@ export type PiThreadsModule = {
     chat?: boolean | undefined
   }) => Promise<PiPackageMutationResult>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
+  loadProjectUsageSummary: (projectId: string) => Promise<ProjectUsageSummary>
   loadProjectDiff: (
     projectId: string,
     baseline?: ProjectDiffBaseline | null,

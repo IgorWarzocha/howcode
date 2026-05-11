@@ -137,6 +137,7 @@ const handlers: DesktopRequestHandlerMap = {
   clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
+  getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
   getProjectDiff: ({ projectId, baseline }) =>
     piThreads.loadProjectDiff(projectId, baseline ?? null),
   getProjectDiffStats: ({ projectId, baseline }) =>

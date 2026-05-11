@@ -97,6 +97,8 @@ export type {
   Message,
   Project,
   ProjectImportCandidate,
+  ProjectUsageSessionSummary,
+  ProjectUsageSummary,
   ProseMessage,
   SummaryThreadMessage,
   SystemThreadMessage,

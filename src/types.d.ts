@@ -38,6 +38,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
@@ -66,6 +67,7 @@ declare global {
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
+      getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
       getProjectDiff?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,

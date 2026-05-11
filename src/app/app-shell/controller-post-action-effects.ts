@@ -82,9 +82,21 @@ function clearSelectedThreadIfIncluded(ctx: PostEffectsContext, threadIds: strin
   })
 }
 
+async function invalidateProjectUsage(ctx: PostEffectsContext, projectIds: string[]) {
+  const uniqueProjectIds = [...new Set(projectIds.filter((projectId) => projectId.length > 0))]
+  await Promise.all(
+    uniqueProjectIds.map((projectId) =>
+      ctx.queryClient.invalidateQueries({
+        queryKey: desktopQueryKeys.projectUsageSummary(projectId),
+      }),
+    ),
+  )
+}
+
 async function handleArchivedThreadEffects(ctx: PostEffectsContext) {
   const projectId = getPayloadProjectId(ctx.contextualPayload)
   if (projectId) await ctx.loadProjectThreads(projectId)
+  if (projectId) await invalidateProjectUsage(ctx, [projectId])
   if (ctx.action === 'thread.archive' || ctx.action === 'thread.archive-many') {
     await refreshArchivedThreadsIfOpen({
       archivedThreadsVisible: ctx.workspaceState.activeView === 'archived',
@@ -108,9 +120,11 @@ async function refreshMutatedThreadProjects(ctx: PostEffectsContext) {
     await ctx.refreshShellState()
     const projectIds = [...new Set(getPayloadProjectIds(ctx.contextualPayload))]
     if (projectIds.length > 0) await Promise.all(projectIds.map((id) => ctx.loadProjectThreads(id)))
+    await invalidateProjectUsage(ctx, projectIds)
     return
   }
   if (projectId) await ctx.loadProjectThreads(projectId)
+  if (projectId) await invalidateProjectUsage(ctx, [projectId])
 }
 
 function getDeletedThreadIds(ctx: PostEffectsContext) {
@@ -147,6 +161,7 @@ async function refreshArchivedIfVisible(ctx: PostEffectsContext) {
 async function handleProjectArchiveThreadsEffects(ctx: PostEffectsContext) {
   const projectId = getPayloadProjectId(ctx.contextualPayload)
   if (projectId) await ctx.loadProjectThreads(projectId)
+  if (projectId) await invalidateProjectUsage(ctx, [projectId])
   await ctx.refreshShellState()
   await refreshArchivedIfVisible(ctx)
   if (ctx.contextualPayload.projectId === ctx.workspaceState.selectedProjectId)
