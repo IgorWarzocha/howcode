@@ -37,6 +37,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
@@ -67,6 +68,7 @@ export type DesktopRequestMap = {
   }
   getShellState: { params: Record<string, never>; response: ShellState }
   getProjectGitState: { params: { projectId: string }; response: ProjectGitState | null }
+  getProjectUsageSummary: { params: { projectId: string }; response: ProjectUsageSummary }
   getProjectDiff: {
     params: { projectId: string; baseline?: ProjectDiffBaseline | null }
     response: ProjectDiffResult | null
@@ -162,6 +164,15 @@ export type DesktopRequestMap = {
   pickComposerAttachments: {
     params: { projectId?: string | undefined | null | undefined }
     response: ComposerAttachment[]
+  }
+  listProjectDirectoryEntries: {
+    params: { path?: string | undefined | null | undefined }
+    response: {
+      homePath: string
+      currentPath: string
+      parentPath: string | null
+      entries: Array<{ path: string; name: string; kind: 'directory' }>
+    }
   }
   readClipboardSnapshot: {
     params: { formats?: string[] | undefined | null | undefined }

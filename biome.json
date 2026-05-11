@@ -12,6 +12,7 @@
       "!**/build",
       "!**/dist",
       "!**/dist-pages",
+      "!**/Frameworks",
       "!**/node_modules",
       "!**/vendor"
     ],

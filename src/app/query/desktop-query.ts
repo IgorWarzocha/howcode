@@ -1,6 +1,7 @@
 const pathSeparatorPattern = /[\\/]/
 
 import { fallbackAppSlashCommands } from '../../../shared/composer-slash-commands'
+import type { DesktopRequestMap } from '../../../shared/desktop-ipc'
 import { getPersistedSessionPath } from '../../../shared/session-paths'
 import type {
   AppUpdateState,
@@ -26,6 +27,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ShellState,
   SkillCreatorSessionState,
   Thread,
@@ -57,6 +59,8 @@ export const desktopQueryKeys = {
       request.chatGroupId ?? null,
     ] as const,
   projectGitState: (projectId: string) => ['desktop', 'projectGitState', projectId] as const,
+  projectUsageSummary: (projectId: string) =>
+    ['desktop', 'projectUsageSummary', projectId] as const,
   projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
   projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
     ['desktop', 'projectDiff', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
@@ -175,6 +179,12 @@ export async function getComposerSkillsQuery(request: ComposerStateRequest = {})
 
 export async function getProjectGitStateQuery(projectId: string): Promise<ProjectGitState | null> {
   return (await window.piDesktop?.getProjectGitState?.(projectId)) ?? null
+}
+
+export async function getProjectUsageSummaryQuery(
+  projectId: string,
+): Promise<ProjectUsageSummary | null> {
+  return (await window.piDesktop?.getProjectUsageSummary?.(projectId)) ?? null
 }
 
 export async function getProjectDiffQuery(
@@ -306,6 +316,12 @@ export async function pickComposerAttachmentsQuery(
   projectId?: string | null | undefined,
 ): Promise<ComposerAttachment[]> {
   return (await window.piDesktop?.pickComposerAttachments?.(projectId ?? null)) ?? []
+}
+
+export async function listProjectDirectoryEntriesQuery(
+  request: DesktopRequestMap['listProjectDirectoryEntries']['params'] = {},
+): Promise<DesktopRequestMap['listProjectDirectoryEntries']['response'] | null> {
+  return (await window.piDesktop?.listProjectDirectoryEntries?.(request)) ?? null
 }
 
 export async function clearClipboardImagesQuery() {

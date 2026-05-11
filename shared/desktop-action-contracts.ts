@@ -37,6 +37,9 @@ export type DesktopActionPayloadFields = {
   projectId?: string | undefined | null | undefined
   projectIds?: string[] | undefined
   projectName?: string | undefined
+  projectPath?: string | undefined
+  parentPath?: string | undefined
+  createIfMissing?: boolean | undefined
   provider?: string | undefined
   queueId?: string | undefined
   answers?: string[][] | undefined | null
@@ -97,6 +100,9 @@ export type DesktopActionPayloadMap = {
   'threads.collapse-all': EmptyActionPayload
   'project.add': {
     projectName?: string | undefined
+    projectPath?: string | undefined
+    parentPath?: string | undefined
+    createIfMissing?: boolean | undefined
     repoUrl?: string | undefined | null | undefined
   }
   'project.select': {

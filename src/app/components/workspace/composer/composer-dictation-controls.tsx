@@ -1,10 +1,12 @@
 import { AudioLines, Check, FileAudio, Mic, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useAnimatedPresence } from '../../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { compactCardClass, compactIconButtonClass, iconButtonClass } from '../../../ui/classes'
+import { compactIconButtonClass, iconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { TextButton } from '../../common/text-button'
 
 type ComposerDictationControlsProps = {
@@ -14,7 +16,7 @@ type ComposerDictationControlsProps = {
   dictationTranscribing: boolean
   placement?: 'inline' | 'trailing'
   onAction: DesktopActionInvoker
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   showDictationButton: boolean
   toggleDictation: () => Promise<'started' | 'stopped' | 'setup-required' | 'unavailable'>
 }
@@ -42,57 +44,99 @@ function getDictationButtonTooltip(input: {
 }
 
 function DictationPrompt({
+  anchorRef,
   onAction,
   onDismiss,
   onOpenSettingsView,
   open,
   promptRef,
 }: {
+  anchorRef: React.RefObject<HTMLButtonElement | null>
   onAction: DesktopActionInvoker
   onDismiss: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   open: boolean
   promptRef: React.RefObject<HTMLDivElement | null>
 }) {
-  return (
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const updatePosition = () => {
+      const anchorRect = anchorRef.current?.getBoundingClientRect()
+      if (!anchorRect) return
+
+      const promptRect = promptRef.current?.getBoundingClientRect()
+      const viewportPadding = 12
+      const promptWidth = promptRect?.width ?? 312
+      const promptHeight = promptRect?.height ?? 42
+      const preferredLeft = anchorRect.right - promptWidth
+      const left = Math.min(
+        window.innerWidth - viewportPadding - promptWidth,
+        Math.max(viewportPadding, preferredLeft),
+      )
+      const topAbove = anchorRect.top - promptHeight - 10
+      const top =
+        topAbove >= viewportPadding
+          ? topAbove
+          : Math.min(window.innerHeight - viewportPadding - promptHeight, anchorRect.bottom + 10)
+
+      setPosition({ left, top })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [anchorRef, open, promptRef])
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
       ref={promptRef}
       data-open={open ? 'true' : 'false'}
+      role="dialog"
+      aria-label="Install speech-to-text model"
+      style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
       className={cn(
-        compactCardClass,
-        'absolute right-[calc(100%+8px)] top-1/2 z-20 inline-flex items-center gap-1.5 whitespace-nowrap -translate-y-1/2 rounded-full px-2 py-1 text-[10.5px] shadow-[0_18px_40px_rgba(0,0,0,0.28)] transition-[opacity,transform] duration-180 ease-out',
-        open ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-2 opacity-0',
+        'fixed z-[140] inline-flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel)] px-2 py-1 text-[11px] shadow-[0_18px_40px_rgba(0,0,0,0.34)] transition-[opacity,transform] duration-180 ease-out',
+        open ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
+        !position && 'opacity-0',
       )}
     >
-      <span className="pr-1 text-[10.5px] text-[color:var(--text)] whitespace-nowrap">
+      <span className="whitespace-nowrap text-[11px] leading-4 text-[color:var(--text)]">
         No speech-to-text model detected. Install?
       </span>
-      <button
-        type="button"
-        className={cn(
-          compactIconButtonClass,
-          'h-6 w-6 rounded-full bg-[color:var(--accent)] text-[color:var(--accent-contrast)] hover:bg-[color:var(--accent)] hover:text-[color:var(--accent-contrast)]',
-        )}
-        onClick={() => {
-          onDismiss()
-          onOpenSettingsView()
-        }}
-        aria-label="Open app settings to install speech-to-text"
-        data-tooltip="Open app settings"
-      >
-        <Check size={12} />
-      </button>
-      <button
-        type="button"
-        className={cn(compactIconButtonClass, 'h-6 w-6 rounded-full')}
-        onClick={onDismiss}
-        aria-label="Dismiss dictation setup prompt"
-        data-tooltip="Dismiss"
-      >
-        <X size={12} />
-      </button>
+      <div className="inline-flex shrink-0 items-center justify-end gap-1">
+        <button
+          type="button"
+          className="inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--accent)] px-2 text-[10.5px] font-medium text-[color:var(--accent-contrast)] transition-transform active:scale-[0.96]"
+          onClick={() => {
+            onDismiss()
+            onOpenSettingsView({ category: 'dictation', settingId: 'dictation.models' })
+          }}
+          aria-label="Open dictation settings to install speech-to-text"
+        >
+          <Check size={12} />
+          Yes
+        </button>
+        <button
+          type="button"
+          className={cn(compactIconButtonClass, 'h-6 w-6 rounded-full')}
+          onClick={onDismiss}
+          aria-label="Dismiss dictation setup prompt"
+          data-tooltip="Dismiss"
+        >
+          <X size={12} />
+        </button>
+      </div>
       <TextButton
-        className="rounded-full border border-[color:var(--danger-border)] px-2 py-0.5 text-[10px] leading-4 whitespace-nowrap text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]"
+        className="shrink-0 rounded-full border border-[color:var(--danger-border)] px-2 py-0.5 text-[10px] leading-4 whitespace-nowrap text-[color:var(--danger)] hover:border-[color:var(--danger-border)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]"
         onClick={() => {
           onDismiss()
           void onAction('settings.update', { key: 'showDictationButton', value: false })
@@ -100,7 +144,8 @@ function DictationPrompt({
       >
         Hide permanently
       </TextButton>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -148,6 +193,7 @@ export function ComposerDictationControls({
     <div className={cn('relative', placement === 'trailing' && 'h-6 w-6 shrink-0')}>
       {dictationPromptPresent ? (
         <DictationPrompt
+          anchorRef={dictationButtonRef}
           onAction={onAction}
           onDismiss={() => setDictationPromptOpen(false)}
           onOpenSettingsView={onOpenSettingsView}
@@ -165,14 +211,14 @@ export function ComposerDictationControls({
         }}
         className={cn(
           placement === 'trailing'
-            ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-transparent bg-transparent text-[color:var(--muted-2)] opacity-45 transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[color:var(--muted)] hover:opacity-70'
+            ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-transparent bg-transparent text-[color:var(--muted-2)] transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[color:var(--muted)]'
             : iconButtonClass,
           dictationActive &&
-            'border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] text-[color:var(--danger)] opacity-100',
+            'border-[color:var(--danger-border)] bg-[color:var(--danger-bg)] text-[color:var(--danger)]',
           dictationTranscribing &&
-            'border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] text-[color:var(--text)] opacity-100',
+            'border-[color:var(--accent-border)] bg-[color:var(--accent-bg)] text-[color:var(--text)]',
           dictationPromptOpen &&
-            'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)] opacity-100',
+            'border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]',
         )}
         aria-label={getDictationButtonAriaLabel({ dictationActive, dictationTranscribing })}
         aria-pressed={dictationActive || dictationTranscribing || dictationPromptOpen}

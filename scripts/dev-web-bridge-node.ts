@@ -1,6 +1,6 @@
 const leadingDotsPattern = /^\.+/
 
-import { mkdir, open, stat } from 'node:fs/promises'
+import { mkdir, open, readdir, realpath, stat } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
@@ -81,6 +81,47 @@ async function writeUniqueTextFile(directoryPath: string, fileName: string, cont
   throw new Error('Could not find an unused file name in Downloads.')
 }
 
+async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
+  const homePath = os.homedir()
+  const requestedPath = request.path?.trim() ? request.path : homePath
+  const currentPath = await realpath(path.resolve(requestedPath)).catch(() =>
+    path.resolve(requestedPath),
+  )
+  const directoryEntries = await readdir(currentPath, { withFileTypes: true })
+  const entries = await Promise.all(
+    directoryEntries
+      .filter(
+        (entry) => !entry.name.startsWith('.') && (entry.isDirectory() || entry.isSymbolicLink()),
+      )
+      .map(async (entry) => {
+        const entryPath = path.join(currentPath, entry.name)
+        if (entry.isDirectory()) {
+          return { path: entryPath, name: entry.name, kind: 'directory' as const }
+        }
+
+        try {
+          const stats = await stat(entryPath)
+          return stats.isDirectory()
+            ? { path: entryPath, name: entry.name, kind: 'directory' as const }
+            : null
+        } catch {
+          return null
+        }
+      }),
+  )
+
+  return {
+    homePath,
+    currentPath,
+    parentPath: path.dirname(currentPath) === currentPath ? null : path.dirname(currentPath),
+    entries: entries
+      .filter((entry): entry is { path: string; name: string; kind: 'directory' } => Boolean(entry))
+      .sort((left, right) =>
+        left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }),
+      ),
+  }
+}
+
 piThreads.subscribeDesktopEvents((event) => {
   sendSseEvent(desktopEventClients, 'desktopEvent', event)
 })
@@ -96,6 +137,7 @@ const handlers: DesktopRequestHandlerMap = {
   clearClipboardImages: () => ({ clearedCount: 0, clearFailedCount: 0 }),
   getShellState: () => piThreads.loadShellState(getDesktopWorkingDirectory()),
   getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
+  getProjectUsageSummary: ({ projectId }) => piThreads.loadProjectUsageSummary(projectId),
   getProjectDiff: ({ projectId, baseline }) =>
     piThreads.loadProjectDiff(projectId, baseline ?? null),
   getProjectDiffStats: ({ projectId, baseline }) =>
@@ -115,6 +157,7 @@ const handlers: DesktopRequestHandlerMap = {
   continueSkillCreatorSession: (request) => skillCreator.continueSkillCreatorSession(request),
   closeSkillCreatorSession: (request) => skillCreator.closeSkillCreatorSession(request),
   pickComposerAttachments: () => [],
+  listProjectDirectoryEntries,
   readClipboardSnapshot: () => ({ formats: [], valuesByFormat: {} }),
   readClipboardFilePaths: () => ({ filePaths: [], text: null }),
   readClipboardImage: () => null,

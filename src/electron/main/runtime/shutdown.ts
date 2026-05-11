@@ -48,7 +48,7 @@ export function registerDesktopRuntimeShutdown(runtime: DesktopRuntimeModules) {
       })
       .finally(() => {
         cleanupFinished = true
-        app.quit()
+        app.exit(0)
       })
   })
 }

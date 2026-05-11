@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, GitBranch, Search } from 'lucide-react'
+import { Check, GitCompareArrows, Search } from 'lucide-react'
 import { type RefObject, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
@@ -505,7 +505,7 @@ export function ComposerDiffBaselineSelector({
         aria-label="Diff baseline selector"
         data-tooltip="Diff baseline"
       >
-        <GitBranch size={14} />
+        <GitCompareArrows size={14} />
       </button>
       {open ? (
         <BaselineSelectorPortal

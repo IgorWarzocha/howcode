@@ -3,6 +3,7 @@ import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerFileMentionPanel } from './composer-file-mention-panel'
 import { ComposerFilePicker } from './composer-file-picker'
@@ -269,8 +270,7 @@ type ComposerPromptInputPanelProps = {
     textarea: HTMLTextAreaElement
   }) => Promise<void>
   onAction: DesktopActionInvoker
-  onLayoutChange?: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onArrowNavigationOverride?: ((direction: 'previous' | 'next') => boolean) | undefined
   onEscapeOverride?: (() => boolean) | undefined
   onSubmitOverride?: (() => boolean) | undefined
@@ -316,7 +316,6 @@ export function ComposerPromptInputPanel({
   cancelDictation,
   handlePaste,
   onAction,
-  onLayoutChange,
   onOpenSettingsView,
   onArrowNavigationOverride,
   onEscapeOverride,
@@ -436,6 +435,7 @@ export function ComposerPromptInputPanel({
                     />
                   ) : null
                 }
+                trailingAdornmentEnabled={showDictationButton}
                 trailingAdornment={
                   <ComposerDictationControls
                     dictationActive={dictationActive}
@@ -449,7 +449,6 @@ export function ComposerPromptInputPanel({
                     toggleDictation={toggleDictation}
                   />
                 }
-                onHeightChange={onLayoutChange}
               />
             </div>
           </div>

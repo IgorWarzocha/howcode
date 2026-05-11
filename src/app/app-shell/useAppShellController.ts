@@ -9,6 +9,7 @@ import { useDesktopThreadQuery } from '../hooks/useDesktopThread'
 import { useToast } from '../hooks/useToast'
 import { createChatGroupQuery, getChatSidebarStateQuery } from '../query/desktop-query'
 import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
+import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 import { deriveControllerViewModel } from './controller-view-model'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
@@ -29,6 +30,7 @@ export function useAppShellController() {
   const [projectGitLoading, setProjectGitLoading] = useState(false)
   const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false)
   const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false)
+  const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
   const [threadRefreshKey, setThreadRefreshKey] = useState(0)
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0)
   const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null)
@@ -214,6 +216,7 @@ export function useAppShellController() {
     queryClient,
     runDesktopAction,
     scheduleShellStateRefresh,
+    setSettingsOpenTarget,
     setThreadHistoryCompactions,
     setThreadRefreshKey,
     shellState,
@@ -245,6 +248,7 @@ export function useAppShellController() {
     projectGitLoading,
     shellState,
     shellLoading,
+    settingsOpenTarget,
     skillsProjectScopeActive,
     state,
     selectedInboxThread,

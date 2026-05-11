@@ -43,6 +43,35 @@ export type Project = {
   repoOriginChecked?: boolean | undefined
 }
 
+export type ProjectUsageSessionSummary = {
+  threadId: string
+  title: string
+  sessionPath: string
+  lastModifiedMs?: number | undefined
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  assistantTurnCount: number
+}
+
+export type ProjectUsageSummary = {
+  projectId: string
+  sessionCount: number
+  sessionsWithUsageCount: number
+  assistantTurnCount: number
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  archivedUsageRefreshing?: boolean | undefined
+  topSessions: ProjectUsageSessionSummary[]
+}
+
 export type ProjectImportCandidate = {
   projectId: string
   name: string
@@ -66,18 +95,33 @@ export type ProseMessage = {
   role: 'assistant' | 'user'
   format?: 'prose' | 'list' | undefined
   content: string[]
+  isError?: boolean | undefined
+  stopReason?: 'length' | 'error' | 'aborted' | undefined
+  usage?: AssistantUsageSummary | undefined
   thinkingContent?: string[] | undefined
   thinkingHeaders?: string[] | undefined
   thinkingRedacted?: boolean | undefined
 }
 
+export type AssistantUsageSummary = {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+}
+
 export type ToolResultMessage = {
   id: string
   role: 'toolResult'
+  toolCallId?: string | undefined
   toolName: string
   content: string[]
   images?: ToolResultImage[] | undefined
   isError: boolean
+  args?: string | undefined
+  running?: boolean | undefined
 }
 
 export type ToolResultImage = {
@@ -101,6 +145,7 @@ export type CustomThreadMessage = {
   role: 'custom'
   customType: string
   content: string[]
+  isError?: boolean | undefined
 }
 
 export type SystemThreadMessage = {

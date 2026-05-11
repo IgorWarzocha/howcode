@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useRef, useState } from 'react'
 import type { DesktopActionInvoker } from '../../desktop/types'
 import type { Project, View } from '../../types'
 import { ProjectActionMenu } from './project-action-menu'
@@ -108,6 +108,7 @@ export function ProjectTree({
   const [draggingProjectId, setDraggingProjectId] = useState<string | null>(null)
   const [expandedOldProjectIds, setExpandedOldProjectIds] = useState<Record<string, boolean>>({})
   const [renameDraft, setRenameDraft] = useState('')
+  const suppressProjectClickAfterDragRef = useRef(false)
   const { containerRef } = useProjectMenuDismiss(openProjectMenuId !== null, () =>
     setOpenProjectMenuId(null),
   )
@@ -122,11 +123,19 @@ export function ProjectTree({
 
   const handleDragStart = (event: DragStartEvent) => {
     setDraggingProjectId(typeof event.active.id === 'string' ? event.active.id : null)
+    suppressProjectClickAfterDragRef.current = true
     setOpenProjectMenuId(null)
+  }
+
+  const clearDragClickSuppression = () => {
+    window.setTimeout(() => {
+      suppressProjectClickAfterDragRef.current = false
+    }, 250)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingProjectId(null)
+    clearDragClickSuppression()
 
     const { active, over } = event
     if (!over || active.id === over.id) {
@@ -177,7 +186,10 @@ export function ProjectTree({
         collisionDetection={closestCorners}
         modifiers={[restrictToVerticalAxis, restrictToParentElement]}
         onDragStart={handleDragStart}
-        onDragCancel={() => setDraggingProjectId(null)}
+        onDragCancel={() => {
+          setDraggingProjectId(null)
+          clearDragClickSuppression()
+        }}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={projectIds} strategy={verticalListSortingStrategy}>
@@ -216,6 +228,10 @@ export function ProjectTree({
                         onChangeRenameDraft={setRenameDraft}
                         onEdit={() => handleStartEdit(project.id, project.name)}
                         onSelect={() => {
+                          if (suppressProjectClickAfterDragRef.current) {
+                            return
+                          }
+
                           onProjectSelect(project.id)
                           if (activeView !== 'extensions' && activeView !== 'skills') {
                             void onAction('project.select', { projectId: project.id })
@@ -224,10 +240,13 @@ export function ProjectTree({
                         }}
                         onSubmitEdit={() => handleSubmitEdit(project.id)}
                         onCreateSession={() => {
-                          if (activeView !== 'chat') {
+                          if (activeView === 'chat') {
+                            void onAction('thread.new', { projectId: project.id })
+                          } else if (activeView === 'extensions' || activeView === 'skills') {
                             onProjectPrimeSelection(project.id)
+                          } else {
+                            onProjectSelect(project.id)
                           }
-                          void onAction('thread.new', { projectId: project.id })
                           setOpenProjectMenuId(null)
                         }}
                         onToggleActions={() =>

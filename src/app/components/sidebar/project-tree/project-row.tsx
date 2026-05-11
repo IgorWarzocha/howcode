@@ -213,6 +213,10 @@ export function ProjectRow({
   }, [])
 
   const handleRowClick = () => {
+    if (isDragging) {
+      return
+    }
+
     clearClickTimeout(clickTimeoutRef)
     clickTimeoutRef.current = window.setTimeout(() => {
       onSelect()

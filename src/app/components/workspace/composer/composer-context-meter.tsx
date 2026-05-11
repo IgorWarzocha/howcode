@@ -1,11 +1,13 @@
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComposerContextUsage } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
+import type { Message } from '../../../types'
 import { ghostButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ComposerContextMeterProps = {
   contextUsage: ComposerContextUsage | null
+  messages?: Message[] | undefined
   isCompacting: boolean
   compactDisabled: boolean
   onCompact: () => void
@@ -16,6 +18,21 @@ const tokenFormatter = new Intl.NumberFormat('en', {
   maximumFractionDigits: 1,
 })
 const numberFormatter = new Intl.NumberFormat('en')
+const costFormatter = new Intl.NumberFormat('en', {
+  currency: 'USD',
+  maximumFractionDigits: 4,
+  style: 'currency',
+})
+
+type UsageTotals = {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  totalTokens: number
+  costTotal: number
+  count: number
+}
 
 function formatTokens(value: number | null | undefined, options: { compact?: boolean } = {}) {
   if (value === null || value === undefined) {
@@ -23,6 +40,38 @@ function formatTokens(value: number | null | undefined, options: { compact?: boo
   }
 
   return options.compact ? tokenFormatter.format(value) : numberFormatter.format(value)
+}
+
+function formatCost(value: number | null | undefined) {
+  if (value === null || value === undefined) return 'Unknown'
+  return costFormatter.format(value)
+}
+
+function getMessageUsageTotals(messages: Message[] | undefined): UsageTotals | null {
+  if (!messages || messages.length === 0) return null
+
+  const totals: UsageTotals = {
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    totalTokens: 0,
+    costTotal: 0,
+    count: 0,
+  }
+
+  for (const message of messages) {
+    if (message.role !== 'assistant' || !message.usage) continue
+    totals.input += message.usage.input
+    totals.output += message.usage.output
+    totals.cacheRead += message.usage.cacheRead
+    totals.cacheWrite += message.usage.cacheWrite
+    totals.totalTokens += message.usage.totalTokens
+    totals.costTotal += message.usage.costTotal
+    totals.count += 1
+  }
+
+  return totals.count === 0 ? null : totals
 }
 
 function getMeterTone(percent: number | null | undefined) {
@@ -132,12 +181,14 @@ function createHoverTriangleCleanup(input: {
 
 export function ComposerContextMeter({
   contextUsage,
+  messages,
   isCompacting,
   compactDisabled,
   onCompact,
 }: ComposerContextMeterProps) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
+  const [usageTotals, setUsageTotals] = useState<UsageTotals | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const clearHoverTriangleRef = useRef<(() => void) | null>(null)
@@ -158,10 +209,15 @@ export function ComposerContextMeter({
     clearHoverTriangleRef.current = null
   }, [])
 
+  const loadUsageTotals = useCallback(() => {
+    setUsageTotals(getMessageUsageTotals(messages))
+  }, [messages])
+
   const openHoverPreview = useCallback(() => {
     clearHoverTriangle()
+    loadUsageTotals()
     setHovered(true)
-  }, [clearHoverTriangle])
+  }, [clearHoverTriangle, loadUsageTotals])
 
   const closeHoverPreview = useCallback(() => {
     clearHoverTriangle()
@@ -195,7 +251,6 @@ export function ComposerContextMeter({
   )
 
   useEffect(() => clearHoverTriangle, [clearHoverTriangle])
-
   return (
     <div
       role="application"
@@ -208,6 +263,7 @@ export function ComposerContextMeter({
         type="button"
         className="relative inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
         onClick={() => setPinned((current) => !current)}
+        onPointerDown={loadUsageTotals}
         aria-label={label}
         aria-expanded={open}
       >
@@ -228,6 +284,46 @@ export function ComposerContextMeter({
           onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >
+          {usageTotals ? (
+            <div className="grid gap-1 border-b border-[color:var(--border)] pb-2">
+              <div className="flex justify-between gap-4">
+                <span>Tokens</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatTokens(usageTotals.totalTokens)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Input</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatTokens(usageTotals.input)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Output</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatTokens(usageTotals.output)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Cache read</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatTokens(usageTotals.cacheRead)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Cache write</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatTokens(usageTotals.cacheWrite)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Cost</span>
+                <span className="font-mono text-[color:var(--text)]">
+                  {formatCost(usageTotals.costTotal)}
+                </span>
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-1">
             <div className="flex justify-between gap-3">
               <span>Used</span>

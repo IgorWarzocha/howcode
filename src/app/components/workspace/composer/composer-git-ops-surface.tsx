@@ -9,6 +9,7 @@ import type {
 import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
 import { composerTextActionButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import type { SavedDiffComment } from '../diff/diffCommentStore'
 import { ComposerDictationControls } from './composer-dictation-controls'
 import { ComposerGitOpsFooter } from './composer-git-ops-footer'
@@ -21,7 +22,7 @@ type ComposerGitOpsSurfaceProps = {
   dictationModelId: string | null
   dictationMaxDurationSeconds: number
   composerPanelRef: RefObject<HTMLDivElement | null>
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   projectGitState: ProjectGitState | null
   projectId: string
   sessionPath: string | null

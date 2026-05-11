@@ -1,4 +1,5 @@
 import {
+  appNewSessionSlashCommand,
   appSettingsSlashCommand,
   compactSlashCommand,
 } from '../../shared/composer-slash-commands.ts'
@@ -8,7 +9,11 @@ import type { PiRuntime } from '../runtime/types.ts'
 const builtinCommandNames = new Set([compactSlashCommand.name])
 
 export function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
-  const commands: ComposerSlashCommand[] = [appSettingsSlashCommand, compactSlashCommand]
+  const commands: ComposerSlashCommand[] = [
+    appSettingsSlashCommand,
+    appNewSessionSlashCommand,
+    compactSlashCommand,
+  ]
   const extensionCommandNames = new Set<string>()
 
   for (const command of session.extensionRunner.getRegisteredCommands()) {

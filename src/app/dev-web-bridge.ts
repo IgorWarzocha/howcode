@@ -115,6 +115,8 @@ export function installDevWebDesktopBridge() {
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
+    getProjectUsageSummary: (projectId: string) =>
+      invokeRequest('getProjectUsageSummary', { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
       invokeRequest('getProjectDiff', { projectId, baseline }),
     getProjectDiffStats: (projectId: string, baseline = null) =>
@@ -136,6 +138,8 @@ export function installDevWebDesktopBridge() {
     closeSkillCreatorSession: (sessionId: string) =>
       invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: () => Promise.resolve([] satisfies ComposerAttachment[]),
+    listProjectDirectoryEntries: (request = {}) =>
+      invokeRequest('listProjectDirectoryEntries', request),
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest('readClipboardSnapshot', { formats }),
     readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),

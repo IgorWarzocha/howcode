@@ -1,5 +1,5 @@
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
+import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
 import { Sidebar } from '../components/sidebar/sidebar'
@@ -295,7 +295,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onToggleSettings={handleToggleSettings}
       onOpenExtensionsView={() => handleShowView('extensions')}
       onOpenSkillsView={() => handleShowView('skills')}
-      onOpenSettingsPanel={() => handleShowView('settings')}
+      onOpenSettingsPanel={(target) => handleShowView('settings', target)}
       onOpenArchivedThreads={() => handleShowView('archived')}
       onDismissInboxThread={controller.handleDismissInboxThread}
       onCreateChatGroup={controller.handleCreateChatGroup}
@@ -376,8 +376,17 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
     closeArtifactDrawerOverlay,
     handleToggleSidebar,
   } = props
-  if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive)) return null
+  if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
+    return null
   const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
+  const workspaceDockStyle = {
+    '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',
+  } as CSSProperties
+  const sidebarButtonStyle = compactSidebarButtonEdgeMode
+    ? undefined
+    : ({
+        transform: 'translateX(clamp(2rem, calc(8rem - var(--dock-left-lane)), 2.5rem))',
+      } as CSSProperties)
   return (
     <div
       className={cn(
@@ -385,12 +394,16 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
         compactSidebarButtonEdgeMode ? 'px-3' : 'px-5',
       )}
     >
-      <div className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2">
+      <div
+        className="grid w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] items-end gap-2 [container-type:inline-size]"
+        style={workspaceDockStyle}
+      >
         <div
           className={cn(
-            'pointer-events-auto mb-1.5 min-w-0 justify-self-end self-end',
-            compactSidebarButtonEdgeMode ? 'justify-self-start' : 'translate-x-10',
+            'pointer-events-auto mb-1.5 min-w-0 self-end transition-transform duration-100 ease-out',
+            compactSidebarButtonEdgeMode ? 'justify-self-start' : 'justify-self-end',
           )}
+          style={sidebarButtonStyle}
         >
           <button
             type="button"
@@ -521,7 +534,11 @@ function AppShellWorkspaceSection(props: AppShellLayoutViewProps) {
           terminalDrawerVisible={terminalDrawerVisible}
           terminalSessionPath={terminalSessionPath}
           terminalDrawerOverlay={sidebarCompactMode}
+          sidebarCollapsed={sidebarCollapsed}
+          sidebarCompactMode={sidebarCompactMode}
+          sidebarOverlayOpen={props.sidebarOverlayOpen}
           workspaceContentClass={workspaceContentClass}
+          onToggleSidebar={handleToggleSidebar}
           onOpenGitOps={handleOpenGitOpsFromTakeover}
           onSetDiffBaseline={handleSetDiffBaseline}
           hoverToFocus={controller.shellState?.appSettings.hoverToFocus ?? true}
@@ -923,6 +940,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   useEffect(() => {
     if (!sidebarCompactMode) setSidebarOverlayOpen(false)
   }, [sidebarCompactMode])
+
+  const previousSidebarCompactModeRef = useRef(sidebarCompactMode)
+  useEffect(() => {
+    const wasSidebarCompactMode = previousSidebarCompactModeRef.current
+    previousSidebarCompactModeRef.current = sidebarCompactMode
+    if (!wasSidebarCompactMode && sidebarCompactMode && terminalDrawerVisible) {
+      controllerRef.current.handleCloseTerminalDrawer()
+    }
+  }, [sidebarCompactMode, terminalDrawerVisible])
 
   useEffect(() => {
     if (!sidebarOverlayOpen) return

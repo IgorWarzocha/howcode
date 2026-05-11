@@ -10,6 +10,7 @@ import { registerDesktopRuntimeShutdown } from './runtime/shutdown'
 import { AppUpdater } from './updater/app-updater'
 
 let currentMainWindow: BrowserWindow | null = null
+let quitRequested = false
 const devtoolsDebuggingPort = configureDevtoolsRemoteDebugging()
 
 app.setName('howcode')
@@ -41,11 +42,19 @@ async function bootstrap() {
   void appUpdater.checkForUpdate()
 
   app.on('activate', async () => {
+    if (quitRequested) {
+      return
+    }
+
     if (BrowserWindow.getAllWindows().length === 0) {
       await openMainWindow()
     }
   })
 }
+
+app.on('before-quit', () => {
+  quitRequested = true
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -51,7 +51,7 @@ function MarkdownLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
     <a
       {...rest}
       href={href}
-      className="text-[color:var(--markdown-link)] underline decoration-[color:var(--accent-border)] underline-offset-[3px] transition-colors hover:text-[color:var(--accent)]"
+      className="break-words text-[color:var(--markdown-link)] underline decoration-[color:var(--accent-border)] underline-offset-[3px] transition-colors [overflow-wrap:anywhere] hover:text-[color:var(--accent)]"
       onClick={(event) => {
         if (!href) {
           return
@@ -150,7 +150,7 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
   return (
     <div
       className={cn(
-        'grid min-w-0 gap-1.5 text-[14px] leading-[1.68] [overflow-wrap:anywhere] [&_code]:break-all [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-words [&_pre_code]:text-inherit [&_pre_code]:[overflow-wrap:anywhere]',
+        'grid min-w-0 max-w-full gap-1.5 text-[14px] leading-[1.68] break-words [overflow-wrap:anywhere] [&_*]:min-w-0 [&_code]:break-all [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-words [&_pre_code]:text-inherit [&_pre_code]:[overflow-wrap:anywhere]',
         className,
       )}
     >
@@ -158,27 +158,32 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
         remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => (
-            <p className={cn('m-0 whitespace-pre-wrap break-words', getToneTextClass(tone))}>
+            <p
+              className={cn(
+                'm-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
+                getToneTextClass(tone),
+              )}
+            >
               {children}
             </p>
           ),
           h1: ({ children }) => (
-            <h1 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
+            <h1 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
+            <h2 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
+            <h3 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="m-0 text-[14px] font-semibold leading-[1.68] text-[color:var(--markdown-heading)]">
+            <h4 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
               {children}
             </h4>
           ),
@@ -193,7 +198,11 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
             </ol>
           ),
           li: ({ children }) => (
-            <li className={cn('min-w-0 break-words', getToneTextClass(tone))}>{children}</li>
+            <li
+              className={cn('min-w-0 break-words [overflow-wrap:anywhere]', getToneTextClass(tone))}
+            >
+              {children}
+            </li>
           ),
           strong: ({ children }) => (
             <strong className={cn('font-semibold', getToneStrongClass(tone))}>{children}</strong>

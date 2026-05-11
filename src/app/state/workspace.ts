@@ -7,6 +7,7 @@ export type UtilityView = Extract<View, 'settings' | 'extensions' | 'skills'>
 type UtilityViewReturnState = {
   activeView: View
   selectedProjectId: string
+  hasSelectedProject: boolean
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -20,6 +21,7 @@ type UtilityViewReturnState = {
 export type WorkspaceState = {
   activeView: View
   selectedProjectId: string
+  hasSelectedProject: boolean
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -76,6 +78,7 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
   return {
     activeView: state.activeView,
     selectedProjectId: state.selectedProjectId,
+    hasSelectedProject: state.hasSelectedProject,
     selectedInboxSessionPath: state.selectedInboxSessionPath,
     selectedThreadId: state.selectedThreadId,
     selectedSessionPath: state.selectedSessionPath,
@@ -175,11 +178,10 @@ function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
 // The collapsed map is derived once from project metadata so the tree interaction
 // stays deterministic even before we add persisted desktop state.
 export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
-  const [firstProject] = projects
-
   return {
     activeView: 'code',
-    selectedProjectId: firstProject?.id ?? '',
+    selectedProjectId: '',
+    hasSelectedProject: false,
     selectedInboxSessionPath: null,
     selectedThreadId: null,
     selectedSessionPath: null,
@@ -249,7 +251,9 @@ function syncProjectsState(
   )
   const selectedProjectId = hasSelectedProject
     ? state.selectedProjectId
-    : action.projects[0]?.id || ''
+    : state.hasSelectedProject
+      ? action.projects[0]?.id || ''
+      : ''
   const selectedThreadProject = findProjectContainingThread(action.projects, state)
   const shouldPreserveSelectedThread =
     (state.activeView === 'chat' || state.activeView === 'thread') && Boolean(selectedThreadProject)
@@ -276,6 +280,8 @@ function syncProjectsState(
       : shouldPreserveProjectSelection
         ? state.selectedProjectId
         : selectedProjectId,
+    hasSelectedProject:
+      state.hasSelectedProject || Boolean(selectedThreadProject) || shouldPreserveProjectSelection,
     selectedThreadId: getPreservedThreadValue(
       state,
       shouldPreserveProjectSelection,
@@ -350,6 +356,7 @@ function openThreadState(
     ...state,
     activeView: action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread'),
     selectedProjectId: action.projectId,
+    hasSelectedProject: true,
     selectedThreadId: action.threadId,
     selectedSessionPath: action.sessionPath,
     terminalVisible: getTerminalVisibilityForSession(
@@ -466,6 +473,7 @@ const workspaceActionHandlers = {
     ...getTerminalStateForNextView(state, 'code'),
     activeView: 'code',
     selectedProjectId: action.projectId,
+    hasSelectedProject: true,
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
@@ -477,7 +485,7 @@ const workspaceActionHandlers = {
   'set-selected-project': (
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-selected-project' }>,
-  ) => ({ ...state, selectedProjectId: action.projectId }),
+  ) => ({ ...state, selectedProjectId: action.projectId, hasSelectedProject: true }),
   'open-thread': openThreadState,
   'open-gitops': openGitOpsState,
   'close-gitops': closeGitOpsState,
@@ -535,7 +543,8 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
 }
 
 export function selectProject(projects: Project[], selectedProjectId: string): Project | undefined {
-  return projects.find((project) => project.id === selectedProjectId) ?? projects[0]
+  if (!selectedProjectId) return undefined
+  return projects.find((project) => project.id === selectedProjectId)
 }
 
 export function selectThread(

@@ -7,6 +7,7 @@ import type {
   ProjectDiffBaseline,
   ProjectGitState,
 } from '../../../desktop/types'
+import type { Message } from '../../../types'
 import { compactIconButtonClass, iconActionButtonDisabledClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { PiLogoMark } from '../../common/pi-logo-mark'
@@ -28,6 +29,7 @@ type ComposerFooterProps = {
   diffBaseline: ProjectDiffBaseline
   model: ComposerModel | null
   contextUsage: ComposerContextUsage | null
+  messages?: Message[] | undefined
   compactDisabled: boolean
   isCompacting: boolean
   modelButtonRef: RefObject<HTMLButtonElement | null>
@@ -60,6 +62,7 @@ export function ComposerFooter({
   diffBaseline,
   model,
   contextUsage,
+  messages,
   compactDisabled,
   isCompacting,
   modelButtonRef,
@@ -127,6 +130,7 @@ export function ComposerFooter({
         <div className="absolute top-0 right-0">
           <ComposerContextMeter
             contextUsage={contextUsage}
+            messages={messages}
             compactDisabled={compactDisabled}
             isCompacting={isCompacting}
             onCompact={onCompact}

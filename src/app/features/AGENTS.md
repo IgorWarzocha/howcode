@@ -1,0 +1,1 @@
+- Artifact previews must not share fragile editor deps: keep HTML/React preview paths independent of MDXEditor/Prism, and pin React artifact `react`/`react-dom` imports to Howcode's bundled runtime copy.

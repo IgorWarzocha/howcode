@@ -48,6 +48,8 @@ export function createDesktopApi() {
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
+    getProjectUsageSummary: (projectId: string) =>
+      invokeRequest('getProjectUsageSummary', { projectId }),
     getProjectDiff: (projectId: string, baseline = null) =>
       invokeRequest('getProjectDiff', { projectId, baseline }),
     getProjectDiffStats: (projectId: string, baseline = null) =>
@@ -96,6 +98,8 @@ export function createDesktopApi() {
       invokeRequest('closeSkillCreatorSession', { sessionId }),
     pickComposerAttachments: (projectId: string | null = null) =>
       invokeRequest('pickComposerAttachments', { projectId }),
+    listProjectDirectoryEntries: (request = {}) =>
+      invokeRequest('listProjectDirectoryEntries', request),
     readClipboardSnapshot: (formats: string[] | null = null) =>
       invokeRequest('readClipboardSnapshot', { formats }),
     readClipboardFilePaths: () => invokeRequest('readClipboardFilePaths', {}),

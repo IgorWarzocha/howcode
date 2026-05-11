@@ -21,6 +21,12 @@ export const appSettingsSlashCommand: ComposerSlashCommand = {
   source: 'app',
 }
 
+export const appNewSessionSlashCommand: ComposerSlashCommand = {
+  name: 'new',
+  description: 'Start a new session in the current project',
+  source: 'app',
+}
+
 export const compactSlashCommand: ComposerSlashCommand = {
   name: 'compact',
   description: 'Manually compact the session context',
@@ -29,5 +35,6 @@ export const compactSlashCommand: ComposerSlashCommand = {
 
 export const fallbackAppSlashCommands: ComposerSlashCommand[] = [
   appSettingsSlashCommand,
+  appNewSessionSlashCommand,
   compactSlashCommand,
 ]

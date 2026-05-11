@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - dev
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -20,6 +21,7 @@ concurrency:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
@@ -43,14 +45,14 @@ jobs:
             runs_on: macos-15-intel
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.10
           no-cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24.15.0
 
@@ -108,19 +110,33 @@ jobs:
 
       - name: Upload dev artifacts
         if: github.event_name == 'push' && github.ref_name == 'dev'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dev-${{ matrix.name }}
           retention-days: 1
           if-no-files-found: error
           path: |
-            artifacts/*
-            !artifacts/npm-launcher
-            artifacts/npm-launcher/*
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
+
+      - name: Upload main artifacts
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: preview-${{ github.ref_name }}-${{ matrix.name }}
           retention-days: 1
@@ -132,7 +148,7 @@ jobs:
 
       - name: Upload release files
         if: github.event_name == 'push' && github.ref_type == 'tag'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.name }}
           retention-days: 1
@@ -153,7 +169,7 @@ jobs:
 
     steps:
       - name: Delete artifacts from older dev runs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const owner = context.repo.owner;
@@ -196,17 +212,65 @@ jobs:
               });
             }
 
+  publish-channel-release:
+    name: Publish channel GitHub release
+    if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
+    needs: build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ github.ref_name }}-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: List channel release assets
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
+
+      - name: Create or update channel GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ github.ref_name }}
+        run: |
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "No release assets found"
+            exit 1
+          fi
+
+          release_flags=()
+          if [ "$CHANNEL" = "dev" ]; then
+            release_flags+=(--prerelease)
+          else
+            release_flags+=(--latest)
+          fi
+
+          if gh release view "$CHANNEL" >/dev/null 2>&1; then
+            mapfile -t old_assets < <(gh release view "$CHANNEL" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-.*\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+            for old_asset in "${old_assets[@]}"; do
+              gh release delete-asset "$CHANNEL" "$old_asset" --yes
+            done
+            gh release upload "$CHANNEL" "${assets[@]}" --clobber
+            gh release edit "$CHANNEL" --title "$CHANNEL" --target "$GITHUB_SHA" "${release_flags[@]}"
+          else
+            gh release create "$CHANNEL" "${assets[@]}" --title "$CHANNEL" --target "$GITHUB_SHA" --notes "Automated $CHANNEL build." "${release_flags[@]}"
+          fi
+
   publish-release:
-    name: Publish GitHub release
+    name: Publish versioned GitHub release
     if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download built artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: release-*
           merge-multiple: true

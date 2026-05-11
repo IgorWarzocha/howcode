@@ -1,3 +1,4 @@
+import type { DesktopRequestMap } from '../shared/desktop-ipc'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
@@ -37,6 +38,7 @@ import type {
   ProjectDiffResult,
   ProjectDiffStatsResult,
   ProjectGitState,
+  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionState,
@@ -65,6 +67,7 @@ declare global {
       clearClipboardImages?: () => Promise<{ clearedCount: number; clearFailedCount: number }>
       getShellState: () => Promise<ShellState>
       getProjectGitState?: (projectId: string) => Promise<ProjectGitState | null>
+      getProjectUsageSummary?: (projectId: string) => Promise<ProjectUsageSummary>
       getProjectDiff?: (
         projectId: string,
         baseline?: ProjectDiffBaseline | null,
@@ -135,6 +138,9 @@ declare global {
       pickComposerAttachments?: (
         projectId?: string | null | undefined,
       ) => Promise<ComposerAttachment[]>
+      listProjectDirectoryEntries?: (
+        request?: DesktopRequestMap['listProjectDirectoryEntries']['params'],
+      ) => Promise<DesktopRequestMap['listProjectDirectoryEntries']['response']>
       readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>
       readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>
       readClipboardImage?: () => Promise<DesktopClipboardImage>

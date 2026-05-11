@@ -66,6 +66,8 @@ export type {
   ProjectDiffStatsResult,
   ProjectGitState,
   ProjectImportCandidate,
+  ProjectUsageSessionSummary,
+  ProjectUsageSummary,
   ReactArtifactCompileResult,
   ShellState,
   SkillCreatorSessionMessage,

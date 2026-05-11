@@ -1,7 +1,7 @@
 {
   "name": "howcode",
   "productName": "howcode",
-  "version": "0.1.63",
+  "version": "0.1.64",
   "private": true,
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
@@ -44,7 +44,8 @@
     "ai:check": "bun run lint && bun run typecheck && bun run test",
     "pages:dev": "vite --config pages/vite.config.ts",
     "pages:build": "vite build --config pages/vite.config.ts",
-    "pages:preview": "vite preview --config pages/vite.config.ts"
+    "pages:preview": "vite preview --config pages/vite.config.ts",
+    "deadcode": "knip"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
@@ -82,7 +83,9 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "sherpa-onnx-node": "^1.12.38",
-    "tar": "^7.5.13"
+    "tar": "^7.5.13",
+    "prismjs": "^1.30.0",
+    "typebox": "^1.1.38"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
@@ -103,7 +106,8 @@
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "knip": "^6.12.1"
   },
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",

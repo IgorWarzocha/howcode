@@ -231,6 +231,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       activeView={state.activeView}
       model={activeComposerState?.currentModel ?? null}
       contextUsage={activeComposerState?.contextUsage ?? null}
+      messages={activeThreadData?.messages}
       availableModels={activeComposerState?.availableModels ?? []}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
@@ -274,7 +275,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       onOpenGitOpsView={() => {
         /* Already in chat workspace. */
       }}
-      onOpenSettingsView={() => controller.handleShowView('settings')}
+      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
       onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       onToggleTerminal={handleToggleTerminal}
       onToggleArtifacts={getToggleArtifacts(props)}

@@ -90,12 +90,15 @@ export type {
 } from './desktop-settings-contracts'
 export type {
   ArchivedThread,
+  AssistantUsageSummary,
   BashExecutionMessage,
   CustomThreadMessage,
   InboxThread,
   Message,
   Project,
   ProjectImportCandidate,
+  ProjectUsageSessionSummary,
+  ProjectUsageSummary,
   ProseMessage,
   SummaryThreadMessage,
   SystemThreadMessage,

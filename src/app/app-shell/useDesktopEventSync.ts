@@ -240,6 +240,9 @@ function refreshThreadEndState(input: {
     projectId: input.event.projectId,
     queryClient: input.runtime.queryClient,
   })
+  void input.runtime.queryClient.invalidateQueries({
+    queryKey: desktopQueryKeys.projectUsageSummary(input.event.projectId),
+  })
   if (input.event.projectId === input.latestComposerProjectId) {
     void input.runtime
       .loadProjectGitState(input.event.projectId)

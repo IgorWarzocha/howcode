@@ -6,6 +6,7 @@ import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
@@ -14,6 +15,7 @@ import {
   type SidebarProjectsFilterMode,
 } from './sidebar-projects.helpers'
 import { SidebarProjectsCreatePopover } from './sidebar-projects-create-popover'
+import { getSidebarFolderProjectName } from './sidebar-projects-folder-browser'
 
 type PendingProject = {
   key: string
@@ -35,7 +37,7 @@ type SidebarProjectsSectionProps = {
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  onOpenSettingsPanel: () => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
@@ -90,27 +92,30 @@ function recordCreatedProject(input: {
 function prepareCreateProject(input: {
   appSettings: AppSettings
   createBusy: boolean
-  onOpenSettingsPanel: () => void
+  parentPath?: string | null | undefined
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   projectNameDraft: string
   setCreateErrorMessage: (message: string | null) => void
   setCreateOpen: (open: boolean) => void
 }) {
   if (input.createBusy) return null
   input.setCreateErrorMessage(null)
-  if (!input.appSettings.preferredProjectLocation) {
+  if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
     input.setCreateOpen(false)
-    input.onOpenSettingsPanel()
+    input.onOpenSettingsPanel({ category: 'projects', settingId: 'projects.default-location' })
     return null
   }
   const draft = input.projectNameDraft.trim()
   return draft || null
 }
 
-function getCreateProjectPayload(draft: string) {
+function getCreateProjectPayload(draft: string, parentPath?: string | null) {
   const repository = parseGitHubRepositoryUrl(draft)
   return {
     pendingProjectName: repository?.folderName ?? draft,
-    payload: repository ? { repoUrl: repository.canonicalUrl } : { projectName: draft },
+    payload: repository
+      ? { repoUrl: repository.canonicalUrl, parentPath: parentPath ?? undefined }
+      : { projectName: draft, parentPath: parentPath ?? undefined },
   }
 }
 
@@ -347,10 +352,11 @@ export function SidebarProjectsSection({
     refs: [createButtonRef, createPanelRef],
   })
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (options?: { parentPath?: string | null }) => {
     const draft = prepareCreateProject({
       appSettings,
       createBusy,
+      parentPath: options?.parentPath,
       onOpenSettingsPanel,
       projectNameDraft,
       setCreateErrorMessage,
@@ -358,7 +364,7 @@ export function SidebarProjectsSection({
     })
     if (!draft) return
 
-    const { payload, pendingProjectName } = getCreateProjectPayload(draft)
+    const { payload, pendingProjectName } = getCreateProjectPayload(draft, options?.parentPath)
     setPendingProject({ key: `${Date.now()}:${draft}`, name: pendingProjectName })
     setProjectNameDraft('')
     setCreateOpen(false)
@@ -379,6 +385,40 @@ export function SidebarProjectsSection({
     } catch (error) {
       setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
       restoreCreateProjectDraft({ draft, setCreateOpen, setPendingProject, setProjectNameDraft })
+    } finally {
+      setCreateBusy(false)
+    }
+  }
+
+  const handleAddFolderProject = async (projectPath: string, options?: { create?: boolean }) => {
+    if (createBusy) return
+    const pendingProjectName = getSidebarFolderProjectName(projectPath)
+    setCreateErrorMessage(null)
+    setPendingProject({ key: `${Date.now()}:${projectPath}`, name: pendingProjectName })
+    setProjectNameDraft('')
+    setCreateOpen(false)
+    setCreateBusy(true)
+
+    try {
+      const result = await onAction('project.add', {
+        projectPath,
+        createIfMissing: options?.create === true,
+      })
+      const error = typeof result?.result?.error === 'string' ? result.result.error : null
+
+      if (error) {
+        setCreateErrorMessage(error)
+        setCreateOpen(true)
+        setPendingProject(null)
+        return
+      }
+
+      recordCreatedProject({ result, setCreatedProjectIds })
+      setPendingProject(null)
+    } catch (error) {
+      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
+      setCreateOpen(true)
+      setPendingProject(null)
     } finally {
       setCreateBusy(false)
     }
@@ -419,11 +459,6 @@ export function SidebarProjectsSection({
                 label="Add new project"
                 tooltipPlacement="right"
                 onClick={() => {
-                  if (!appSettings.preferredProjectLocation) {
-                    onOpenSettingsPanel()
-                    return
-                  }
-
                   setCreateErrorMessage(null)
                   setCreateOpen(true)
                 }}
@@ -443,8 +478,11 @@ export function SidebarProjectsSection({
             errorMessage={createErrorMessage}
             panelRef={createPanelRef}
             onChangeDraft={setProjectNameDraft}
-            onCreate={() => {
-              void handleCreateProject()
+            onCreate={(options) => {
+              void handleCreateProject(options)
+            }}
+            onAddFolder={(projectPath) => {
+              void handleAddFolderProject(projectPath)
             }}
             onClose={() => {
               setCreateOpen(false)

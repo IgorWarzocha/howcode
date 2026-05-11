@@ -22,6 +22,7 @@ import type {
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { IconButton } from '../../common/icon-button'
 import { ToolbarButton } from '../../common/toolbar-button'
 import { Tooltip } from '../../common/tooltip'
@@ -80,7 +81,7 @@ type InboxComposerProps = {
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
   onOpenThread: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   onSend: (input: { draft: string; attachments: ComposerAttachment[] }) => Promise<void> | void
   onStop: () => void
 }

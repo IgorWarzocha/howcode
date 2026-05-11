@@ -292,15 +292,18 @@ export function ThreadTimeline({
   )
 
   return (
-    <div className={`${chatViewportClass} relative`}>
+    <div className={`${chatViewportClass} thread-timeline-viewport relative`}>
       <div
         ref={containerRef}
-        className={cn(chatScrollableAreaClass, 'ml-[2.95rem] mr-[2.05rem]')}
+        className={cn(
+          chatScrollableAreaClass,
+          'thread-timeline-scroll-shell ml-[2.95rem] mr-[3.375rem] -translate-x-[1.325rem]',
+        )}
         onScroll={handleScroll}
       >
         <div
           ref={contentRef}
-          className={`mx-auto flex min-h-full w-full min-w-0 flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
+          className={`mx-auto flex min-h-full w-full translate-x-[1.9875rem] flex-col justify-end ${CHAT_TEXT_MAX_WIDTH_CLASS} overflow-x-hidden px-4 pt-4 pb-4`}
           style={
             composerOverlayHeight > 0
               ? { paddingBottom: `calc(1rem + ${composerOverlayHeight}px)` }
@@ -321,7 +324,7 @@ export function ThreadTimeline({
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute right-0 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
+      <div className="pointer-events-none absolute right-10 bottom-4 z-10 flex w-7 flex-col items-center gap-1.5">
         <button
           type="button"
           className={cn(compactIconButtonClass, timelineQuickActionButtonClass)}

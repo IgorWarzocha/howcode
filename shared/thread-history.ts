@@ -9,14 +9,28 @@ export type SessionPathEntry = {
   content?: string | undefined | unknown[]
   display?: boolean | undefined
   summary?: string | undefined
+  provider?: string | undefined
+  modelId?: string | undefined
+  thinkingLevel?: string | undefined
   tokensBefore?: number | undefined
   firstKeptEntryId?: string | undefined
 }
 
 function isDisplayableEntry(entry: SessionPathEntry) {
   return (
-    entry.type === 'message' || entry.type === 'custom_message' || entry.type === 'branch_summary'
+    entry.type === 'message' ||
+    entry.type === 'custom_message' ||
+    entry.type === 'branch_summary' ||
+    entry.type === 'model_change' ||
+    entry.type === 'thinking_level_change'
   )
+}
+
+function modelChangeConsumesNextEntry(
+  entry: SessionPathEntry,
+  nextEntry: SessionPathEntry | undefined,
+) {
+  return entry.type === 'model_change' && nextEntry?.type === 'thinking_level_change'
 }
 
 function countDisplayableEntriesInRange(
@@ -30,13 +44,61 @@ function countDisplayableEntriesInRange(
     const entry = entries[index]
     if (entry && isDisplayableEntry(entry)) {
       count += 1
+      if (modelChangeConsumesNextEntry(entry, entries[index + 1])) {
+        index += 1
+      }
     }
   }
 
   return count
 }
 
-function appendEntryMessage(messages: AgentMessage[], entry: SessionPathEntry) {
+function appendModelChangeMessage(
+  messages: AgentMessage[],
+  entry: SessionPathEntry,
+  nextEntry: SessionPathEntry | undefined,
+) {
+  const provider = entry.provider?.trim()
+  const modelId = entry.modelId?.trim()
+  if (!(provider && modelId)) {
+    return false
+  }
+
+  const thinkingLevel =
+    nextEntry?.type === 'thinking_level_change' ? nextEntry.thinkingLevel?.trim() : undefined
+  const modelLabel = thinkingLevel
+    ? `${provider}/${modelId}/${thinkingLevel}`
+    : `${provider}/${modelId}`
+
+  messages.push({
+    role: 'system',
+    content: [{ type: 'text', text: modelLabel }],
+    label: 'Model changed',
+    timestamp: entry.timestamp ?? Date.now(),
+  } as unknown as AgentMessage)
+
+  return Boolean(thinkingLevel)
+}
+
+function appendThinkingLevelChangeMessage(messages: AgentMessage[], entry: SessionPathEntry) {
+  const thinkingLevel = entry.thinkingLevel?.trim()
+  if (!thinkingLevel) {
+    return
+  }
+
+  messages.push({
+    role: 'system',
+    content: [{ type: 'text', text: thinkingLevel }],
+    label: 'Reasoning changed',
+    timestamp: entry.timestamp ?? Date.now(),
+  } as unknown as AgentMessage)
+}
+
+function appendEntryMessage(
+  messages: AgentMessage[],
+  entry: SessionPathEntry,
+  nextEntry: SessionPathEntry | undefined,
+) {
   switch (entry.type) {
     case 'message':
       if (entry.message) {
@@ -66,6 +128,11 @@ function appendEntryMessage(messages: AgentMessage[], entry: SessionPathEntry) {
         timestamp: entry.timestamp ?? Date.now(),
       } as unknown as AgentMessage)
       return
+    case 'model_change':
+      return appendModelChangeMessage(messages, entry, nextEntry)
+    case 'thinking_level_change':
+      appendThinkingLevelChangeMessage(messages, entry)
+      return false
     case 'compaction':
       if (!entry.summary?.trim()) {
         return
@@ -77,9 +144,9 @@ function appendEntryMessage(messages: AgentMessage[], entry: SessionPathEntry) {
         tokensBefore: entry.tokensBefore ?? 0,
         timestamp: entry.timestamp ?? Date.now(),
       } as unknown as AgentMessage)
-      return
+      return false
     default:
-      return
+      return false
   }
 }
 
@@ -100,7 +167,10 @@ function appendSourceMessagesFromEntryRange(
   for (let index = startIndex; index < endIndex; index += 1) {
     const entry = pathEntries[index]
     if (entry) {
-      appendEntryMessage(messages, entry)
+      const consumedNextEntry = appendEntryMessage(messages, entry, pathEntries[index + 1])
+      if (consumedNextEntry) {
+        index += 1
+      }
     }
   }
 }

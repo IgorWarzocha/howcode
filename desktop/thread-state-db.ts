@@ -7,6 +7,7 @@ export {
   hasInboxItem,
   hasProject,
   hasRunningProjectThread,
+  listArchivedProjectThreads,
   listArchivedThreads,
   listInboxThreads,
   listProjectSessionPaths,

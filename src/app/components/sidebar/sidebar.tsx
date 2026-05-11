@@ -17,6 +17,7 @@ import type {
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../types'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { Tooltip } from '../common/tooltip'
 
 type SidebarNavigableView = Exclude<View, 'gitops'>
@@ -53,7 +54,7 @@ type SidebarProps = {
   onToggleSettings: () => void
   onOpenExtensionsView: () => void
   onOpenSkillsView: () => void
-  onOpenSettingsPanel: () => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onOpenArchivedThreads: () => void
   onDismissInboxThread: (thread: InboxThread) => void
   onCreateChatGroup: (name: string) => Promise<unknown>
