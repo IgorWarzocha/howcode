@@ -368,7 +368,7 @@ function ProjectOverview({
               {githubLink ? (
                 <button
                   type="button"
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96]"
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96] max-[520px]:hidden"
                   onClick={() => void openExternalQuery(githubLink.canonicalUrl)}
                   aria-label={`Open ${githubLink.owner}/${githubLink.repo} on GitHub`}
                 >
@@ -376,13 +376,13 @@ function ProjectOverview({
                 </button>
               ) : null}
               {gitState?.isGitRepo ? (
-                <span className="max-w-full truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--muted)] max-[720px]:hidden">
+                <span className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--muted)] max-[900px]:hidden">
                   {branchLabel}
                 </span>
               ) : null}
             </div>
             {githubLink ? (
-              <div className="flex min-w-0 shrink-0 items-center gap-1 max-[560px]:hidden">
+              <div className="flex min-w-0 shrink-0 items-center gap-1 max-[600px]:hidden">
                 <button
                   type="button"
                   className={cn(

@@ -254,7 +254,7 @@ export function ComposerContextMeter({
   return (
     <div
       role="application"
-      className="relative"
+      className="composer-context-control relative"
       onMouseEnter={openHoverPreview}
       onMouseLeave={handleMouseLeave}
     >
