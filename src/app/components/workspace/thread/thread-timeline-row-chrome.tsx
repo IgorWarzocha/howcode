@@ -62,13 +62,19 @@ function isInteractiveTarget(target: EventTarget | null) {
   )
 }
 
-function hasActiveTextSelection() {
+function hasActiveTextSelectionWithin(container: Element) {
   const selection = window.getSelection?.()
   if (!selection || selection.isCollapsed) {
     return false
   }
 
-  return selection.toString().trim().length > 0
+  const anchorNode = selection.anchorNode
+  const focusNode = selection.focusNode
+  return (
+    selection.toString().trim().length > 0 &&
+    Boolean(anchorNode && container.contains(anchorNode)) &&
+    Boolean(focusNode && container.contains(focusNode))
+  )
 }
 
 export function RowLeadToggleSurface({
@@ -78,7 +84,8 @@ export function RowLeadToggleSurface({
   onToggle?: (() => void) | undefined
   children: ReactNode
 }) {
-  const pointerStartRef = useRef<{ id: number; x: number; y: number; time: number } | null>(null)
+  const surfaceRef = useRef<HTMLDivElement>(null)
+  const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null)
 
   if (!onToggle) {
     return <>{children}</>
@@ -87,12 +94,12 @@ export function RowLeadToggleSurface({
   return (
     <div
       className="block w-full min-w-0 cursor-pointer text-left"
+      ref={surfaceRef}
       onPointerDown={(event: PointerEvent<HTMLDivElement>) => {
         pointerStartRef.current = {
           id: event.pointerId,
           x: event.clientX,
           y: event.clientY,
-          time: performance.now(),
         }
       }}
       onPointerUp={(event: PointerEvent<HTMLDivElement>) => {
@@ -108,8 +115,8 @@ export function RowLeadToggleSurface({
 
         const deltaX = Math.abs(event.clientX - start.x)
         const deltaY = Math.abs(event.clientY - start.y)
-        const elapsedMs = performance.now() - start.time
-        if (deltaX > 4 || deltaY > 4 || elapsedMs > 250 || hasActiveTextSelection()) {
+        const surface = surfaceRef.current
+        if (deltaX > 4 || deltaY > 4 || (surface && hasActiveTextSelectionWithin(surface))) {
           return
         }
 

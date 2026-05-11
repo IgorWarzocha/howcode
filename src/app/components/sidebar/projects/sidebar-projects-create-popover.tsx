@@ -67,7 +67,9 @@ export function SidebarProjectsCreatePopover({
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              onCreate({ parentPath: browseOpen ? currentFolderPath : null })
+              if (canSubmit) {
+                onCreate({ parentPath: browseOpen ? currentFolderPath : null })
+              }
             }
 
             if (event.key === 'Escape') {

@@ -74,15 +74,17 @@ export async function addProjectFromPath(options: {
     throw new Error('Choose a folder to add.')
   }
 
-  const resolvedProjectPath = path.resolve(projectPath)
-  const exists = await directoryExists(resolvedProjectPath)
+  const candidateProjectPath = path.resolve(projectPath)
+  const exists = await directoryExists(candidateProjectPath)
   if (!(exists || options.createIfMissing)) {
     throw new Error('Choose an existing folder or create a new one.')
   }
 
   if (!exists) {
-    await mkdir(resolvedProjectPath, { recursive: true })
+    await mkdir(candidateProjectPath, { recursive: true })
   }
+
+  const resolvedProjectPath = await resolvePathIfPresent(candidateProjectPath)
 
   if (options.initializeGit) {
     await initializeProjectGit(resolvedProjectPath)

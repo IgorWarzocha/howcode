@@ -41,6 +41,7 @@ function getPathTail(path: string) {
 function compactPath(path: string, homePath?: string) {
   if (homePath && path === homePath) return '~'
   if (homePath && path.startsWith(`${homePath}/`)) return `~/${path.slice(homePath.length + 1)}`
+  if (homePath && path.startsWith(`${homePath}\\`)) return `~/${path.slice(homePath.length + 1)}`
   return path
 }
 
