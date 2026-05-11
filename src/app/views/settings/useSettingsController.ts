@@ -272,10 +272,10 @@ export function useSettingsController({
         key: 'howcodeNativeAskQuestions',
         value: !appSettings.howcodeNativeAskQuestions,
       }),
-    toggleBetaUpdateBranch: () =>
+    toggleDevUpdateBranch: () =>
       void onAction('settings.update', {
-        key: 'betaUpdateBranch',
-        value: !appSettings.betaUpdateBranch,
+        key: 'devUpdateBranch',
+        value: !appSettings.devUpdateBranch,
       }),
     toggleHoverToFocus: () =>
       void onAction('settings.update', {

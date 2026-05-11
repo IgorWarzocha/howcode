@@ -5,12 +5,12 @@ import {
 } from '../../shared/dictation-settings.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import {
-  betaUpdateBranchKey,
   chatModelKey,
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
   composerStreamingBehaviorKey,
+  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -24,6 +24,7 @@ import {
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  legacyDevUpdateBranchKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
   projectDeletionModeKey,
@@ -69,8 +70,12 @@ function getDictationMaxDurationSeconds(valueJson: string | undefined) {
   )
 }
 
-function getBetaUpdateBranch(valueJson: string | undefined) {
+function getDevUpdateBranch(valueJson: string | undefined) {
   return parseBooleanPreference(valueJson) ?? false
+}
+
+function getDevUpdateBranchValue(value: (key: string) => string | undefined) {
+  return value(devUpdateBranchKey) ?? value(legacyDevUpdateBranchKey)
 }
 
 export function loadAppSettings(): AppSettings {
@@ -112,7 +117,7 @@ export function loadAppSettings(): AppSettings {
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
     howcodeNativeAskQuestions: parseBooleanPreference(value(howcodeNativeAskQuestionsKey)) ?? false,
-    betaUpdateBranch: getBetaUpdateBranch(value(betaUpdateBranchKey)),
+    devUpdateBranch: getDevUpdateBranch(getDevUpdateBranchValue(value)),
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,

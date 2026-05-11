@@ -37,7 +37,7 @@ async function bootstrap() {
   const runtime = await loadDesktopRuntimeModules()
   const appUpdater = new AppUpdater(async () => {
     const appSettings = await runtime.piThreads.loadAppSettings()
-    return appSettings.betaUpdateBranch ? 'dev' : 'main'
+    return appSettings.devUpdateBranch ? 'dev' : 'main'
   })
   registerDesktopRuntimeShutdown(runtime)
   registerDesktopIpc(() => currentMainWindow, runtime, appUpdater)

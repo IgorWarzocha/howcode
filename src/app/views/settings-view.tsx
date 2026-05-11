@@ -27,10 +27,10 @@ import type { SettingsCategoryId, SettingsOpenTarget } from './settings/settings
 import { SettingRow } from './settings/settingsUi'
 import { useSettingsController } from './settings/useSettingsController'
 
-function BetaBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+function DevBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
     <label className="mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]">
-      <span className="min-w-0 truncate">Beta branch</span>
+      <span className="min-w-0 truncate">Dev branch</span>
       <input
         type="checkbox"
         checked={checked}
@@ -421,9 +421,9 @@ export function SettingsView({
               </button>
             ))}
           </nav>
-          <BetaBranchToggle
-            checked={appSettings.betaUpdateBranch}
-            onToggle={controller.toggleBetaUpdateBranch}
+          <DevBranchToggle
+            checked={appSettings.devUpdateBranch}
+            onToggle={controller.toggleDevUpdateBranch}
           />
         </div>
 
@@ -475,9 +475,9 @@ export function SettingsView({
                   {category.label}
                 </button>
               ))}
-              <BetaBranchToggle
-                checked={appSettings.betaUpdateBranch}
-                onToggle={controller.toggleBetaUpdateBranch}
+              <DevBranchToggle
+                checked={appSettings.devUpdateBranch}
+                onToggle={controller.toggleDevUpdateBranch}
               />
             </div>
           </div>

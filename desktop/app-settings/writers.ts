@@ -14,12 +14,12 @@ import {
 } from '../../shared/dictation-settings.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import {
-  betaUpdateBranchKey,
   chatModelKey,
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
   composerStreamingBehaviorKey,
+  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -250,8 +250,8 @@ export function setHowcodeNativeAskQuestions(enabled: boolean) {
   writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled))
 }
 
-export function setBetaUpdateBranch(enabled: boolean) {
-  writeAppPreference(betaUpdateBranchKey, JSON.stringify(enabled))
+export function setDevUpdateBranch(enabled: boolean) {
+  writeAppPreference(devUpdateBranchKey, JSON.stringify(enabled))
 }
 
 export function setPiTuiTakeover(enabled: boolean) {

@@ -20,12 +20,12 @@ import {
   getSettingsThinkingLevel,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
-  setBetaUpdateBranch,
   setChatModelSelection,
   setChatThinkingLevel,
   setCodeModelSelection,
   setCodeThinkingLevel,
   setComposerStreamingBehavior,
+  setDevUpdateBranch,
   setDictationMaxDurationSeconds,
   setDictationModelId,
   setFavoriteFolders,
@@ -140,7 +140,8 @@ const settingsUpdateHandlers = {
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
   howcodeNativeAskQuestions: (payload) =>
     setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false),
-  betaUpdateBranch: (payload) => setBetaUpdateBranch(getSettingsBooleanValue(payload) ?? false),
+  devUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
+  betaUpdateBranch: (payload) => setDevUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),

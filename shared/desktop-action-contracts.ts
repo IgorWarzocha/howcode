@@ -92,6 +92,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'howcodeNativeAskQuestions'; value: boolean }
+  | { key: 'devUpdateBranch'; value: boolean }
   | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
