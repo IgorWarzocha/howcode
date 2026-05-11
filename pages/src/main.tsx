@@ -1,6 +1,7 @@
 import { Github, Heart } from 'lucide-react'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import changelogMarkdown from '../../docs/changelog.md?raw'
 import './styles.css'
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
@@ -50,23 +51,29 @@ const installCommands = [
   { label: 'global install', command: 'npm i -g howcode' },
 ]
 
+const latestChangelogSectionPattern = /^###\s+([^\n]+)\n([\s\S]*?)(?=^###\s+|\s*$)/m
+
 function copyCommand(command: string) {
   void navigator.clipboard?.writeText(command)
 }
 
-const changelog = [
-  '0.1.61-6x hotfixes: ASAR packaging, launcher installs, runtime host deps, artifact previews',
-  '0.1.6 added responsive layouts everywhere-ish',
-  'composer now has @ file mentions and $skill mentions',
-  'hardened Chat mode filesystem and extensions guardrails',
-  'added a custom Chat mode system prompt and scrollable composer input',
-  'Git errors are more visible now; please report any',
-  'terminal is back on xterm, because addon-fit',
-  'ASAR is back, TS6 is fully implemented, and CI is stricter',
-  'now on @earendil-works packages. RIP',
-  'https://igorwarzocha.github.io/howcode/ is live',
-  '0.1.5 added Howcode and Pi JSON theme support',
-]
+function getLatestChangelogItems(markdown: string) {
+  const latestSection = markdown.match(latestChangelogSectionPattern)
+  if (!latestSection) {
+    return ['See the changelog for recent fixes and shipped bits.']
+  }
+
+  const [, version, body = ''] = latestSection
+  const items = body
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2))
+
+  return [`${version}: latest release`, ...items]
+}
+
+const changelog = getLatestChangelogItems(changelogMarkdown)
 
 function App() {
   const [activeScreenshot, setActiveScreenshot] = useState<(typeof screenshots)[number] | null>(
