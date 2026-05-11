@@ -653,7 +653,7 @@ function getCodeWorkspaceFlags(input: {
     showWorkspaceFooter:
       input.activeView === 'thread' || input.activeView === 'gitops' || showCodeDashboardFooter,
     showThreadFooter: input.activeView === 'thread',
-    showCodeSidebarFooter: false,
+    showCodeSidebarFooter: input.activeView === 'code' && !input.selectedProjectId,
     showUtilitySidebarButton: isCodeUtilityView(input.activeView),
     showDiffInMainView: input.activeView === 'gitops',
   }

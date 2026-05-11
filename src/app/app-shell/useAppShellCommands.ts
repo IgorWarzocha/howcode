@@ -81,6 +81,10 @@ export function useAppShellCommands({
     dispatch({ type: 'show-view', view })
   }
 
+  const handleShowLanding = () => {
+    dispatch({ type: 'show-landing' })
+  }
+
   const handleCloseUtilityView = () => {
     dispatch({ type: 'close-utility-view' })
   }
@@ -224,6 +228,7 @@ export function useAppShellCommands({
     handleSelectInboxThread,
     handleShowTakeoverTerminal,
     handleShowView,
+    handleShowLanding,
     handleThreadOpen,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: 'toggle-settings' }),
