@@ -238,7 +238,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs')
           const changelog = fs.readFileSync('docs/changelog.md', 'utf8')
-          const match = changelog.match(/^###\s+([^\n]+)\n([\s\S]*?)(?=^###\s+|\s*$)/m)
+          const match = changelog.match(/^###\s+([^\n]+)\n([\s\S]*?)(?=^###\s+|(?![\s\S]))/m)
           const version = match?.[1]?.trim() || 'current'
           const notes = match?.[2]?.trim() || 'See the changelog for details.'
           const channel = process.env.CHANNEL

@@ -20,6 +20,7 @@ import {
   getSettingsThinkingLevel,
 } from '../../shared/pi-thread-action-payloads.ts'
 import {
+  setBetaUpdateBranch,
   setChatModelSelection,
   setChatThinkingLevel,
   setCodeModelSelection,
@@ -139,6 +140,7 @@ const settingsUpdateHandlers = {
     setUseAgentsSkillsPaths(getSettingsBooleanValue(payload) ?? false),
   howcodeNativeAskQuestions: (payload) =>
     setHowcodeNativeAskQuestions(getSettingsBooleanValue(payload) ?? false),
+  betaUpdateBranch: (payload) => setBetaUpdateBranch(getSettingsBooleanValue(payload) ?? false),
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),

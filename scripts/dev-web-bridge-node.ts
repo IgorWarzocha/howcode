@@ -38,6 +38,7 @@ const devAppUpdateState = {
   status: 'up-to-date' as const,
   currentVersion: packageJson.version,
   latestVersion: packageJson.version,
+  channel: null,
   error: null,
 }
 

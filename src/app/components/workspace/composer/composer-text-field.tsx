@@ -45,6 +45,58 @@ type ComposerTextFieldProps = {
   onExpandedChange?: ((expanded: boolean) => void) | undefined
 }
 
+function splitPlaceholderText(placeholder: string) {
+  const separators = [' · ', ' — ', ': ']
+  for (const separator of separators) {
+    const index = placeholder.indexOf(separator)
+    if (index > 0) {
+      return {
+        leading: placeholder.slice(0, index),
+        tailParts: placeholder
+          .slice(index)
+          .split(separator)
+          .filter(Boolean)
+          .map((part) => `${separator}${part}`),
+      }
+    }
+  }
+  return { leading: placeholder, tailParts: [] }
+}
+
+function ComposerResponsivePlaceholder({
+  placeholder,
+  tone,
+}: {
+  placeholder: string
+  tone: NonNullable<ComposerTextFieldProps['placeholderTone']>
+}) {
+  if (!placeholder) return null
+  const { leading, tailParts } = splitPlaceholderText(placeholder)
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate text-[14px] leading-[1.45]',
+        tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
+      )}
+    >
+      <span>{leading}</span>
+      {tailParts.map((part, index) => (
+        <span
+          key={part}
+          className={cn(
+            index === 0 && 'composer-placeholder-tail-md',
+            index === 1 && 'composer-placeholder-tail-sm',
+            index >= 2 && 'composer-placeholder-tail-xs',
+          )}
+        >
+          {part}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function updateComposerTextareaHeight(input: {
   fieldExpanded: boolean
   lastReportedHeightRef: React.MutableRefObject<number | null>
@@ -345,10 +397,12 @@ export function ComposerTextField({
     }
 
     const measureTrailingAdornmentPosition = () => {
+      const measuredPlaceholder =
+        value.length === 0 ? splitPlaceholderText(placeholder).leading : placeholder
       const markerPosition = measureTextareaMarkerPosition({
         adornmentWidth: 0,
         markerText: value,
-        placeholder,
+        placeholder: measuredPlaceholder,
         textarea,
       })
       const markerLeft = markerPosition.left
@@ -474,6 +528,9 @@ export function ComposerTextField({
         className="relative min-w-0"
         style={trailingContainerHeight ? { minHeight: `${trailingContainerHeight}px` } : undefined}
       >
+        {value.length === 0 ? (
+          <ComposerResponsivePlaceholder placeholder={placeholder} tone={placeholderTone} />
+        ) : null}
         <textarea
           ref={textareaRef}
           rows={1}
@@ -482,9 +539,7 @@ export function ComposerTextField({
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
-            placeholderTone === 'error'
-              ? 'placeholder:text-[color:var(--danger)]'
-              : 'placeholder:text-[color:var(--muted-2)]',
+            'placeholder:text-transparent',
           )}
           value={value}
           onChange={(event) => {
@@ -499,7 +554,7 @@ export function ComposerTextField({
           aria-activedescendant={ariaActiveDescendant}
           aria-autocomplete={ariaControls ? 'list' : undefined}
           aria-controls={ariaControls}
-          placeholder={placeholder}
+          placeholder=""
           readOnly={readOnly}
         />
         <ComposerExpandButton

@@ -5,6 +5,7 @@ import {
 } from '../../shared/dictation-settings.ts'
 import { getThreadStateDatabase } from '../thread-state-db/db.ts'
 import {
+  betaUpdateBranchKey,
   chatModelKey,
   chatThinkingLevelKey,
   codeModelKey,
@@ -68,6 +69,10 @@ function getDictationMaxDurationSeconds(valueJson: string | undefined) {
   )
 }
 
+function getBetaUpdateBranch(valueJson: string | undefined) {
+  return parseBooleanPreference(valueJson) ?? false
+}
+
 export function loadAppSettings(): AppSettings {
   const rows = loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
@@ -107,6 +112,7 @@ export function loadAppSettings(): AppSettings {
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
     howcodeNativeAskQuestions: parseBooleanPreference(value(howcodeNativeAskQuestionsKey)) ?? false,
+    betaUpdateBranch: getBetaUpdateBranch(value(betaUpdateBranchKey)),
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,

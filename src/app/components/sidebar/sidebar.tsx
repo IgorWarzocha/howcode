@@ -53,6 +53,7 @@ type SidebarProps = {
   onShowView: (view: SidebarNavigableView) => void
   onToggleSettings: () => void
   onOpenExtensionsView: () => void
+  onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onOpenArchivedThreads: () => void
@@ -215,6 +216,7 @@ export function Sidebar({
   onShowView,
   onToggleSettings,
   onOpenExtensionsView,
+  onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
@@ -275,6 +277,7 @@ export function Sidebar({
     onShowView,
     onToggleSettings,
     onOpenExtensionsView,
+    onOpenAbout,
     onOpenSkillsView,
     onOpenSettingsPanel,
     onOpenArchivedThreads,
@@ -346,6 +349,7 @@ export function Sidebar({
             open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenExtensionsView={onOpenExtensionsView}
+            onOpenAbout={onOpenAbout}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
             onOpenArchivedThreads={onOpenArchivedThreads}

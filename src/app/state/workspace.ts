@@ -41,6 +41,7 @@ export type WorkspaceState = {
 export type WorkspaceAction =
   | { type: 'sync-projects'; projects: Project[] }
   | { type: 'show-view'; view: NonGitOpsView }
+  | { type: 'show-landing' }
   | { type: 'close-utility-view' }
   | { type: 'select-inbox-thread'; sessionPath: string | null }
   | { type: 'clear-thread-selection' }
@@ -444,6 +445,21 @@ function setSessionTakeoverOverrideState(
 const workspaceActionHandlers = {
   'sync-projects': syncProjectsState,
   'show-view': showViewState,
+  'show-landing': (state: WorkspaceState) => ({
+    ...state,
+    activeView: 'code',
+    terminalVisible: false,
+    selectedProjectId: '',
+    selectedThreadId: null,
+    selectedSessionPath: null,
+    selectedDiffFilePath: null,
+    takeoverVisible: false,
+    settingsOpen: false,
+    settingsPanelOpen: false,
+    gitOpsReturnView: 'code',
+    utilityViewReturnState: null,
+    hasSelectedProject: false,
+  }),
   'close-utility-view': (state: WorkspaceState) =>
     state.utilityViewReturnState
       ? {

@@ -27,6 +27,20 @@ import type { SettingsCategoryId, SettingsOpenTarget } from './settings/settings
 import { SettingRow } from './settings/settingsUi'
 import { useSettingsController } from './settings/useSettingsController'
 
+function BetaBranchToggle({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  return (
+    <label className="mt-2 flex min-h-8 cursor-pointer items-center justify-between gap-2 px-3 text-[12px] text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]">
+      <span className="min-w-0 truncate">Beta branch</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onToggle}
+        className="h-3.5 w-3.5 shrink-0 accent-[color:var(--accent)]"
+      />
+    </label>
+  )
+}
+
 type SettingsViewProps = {
   appSettings: AppSettings
   piSettings: PiSettings
@@ -377,35 +391,41 @@ export function SettingsView({
           showHelp && 'lg:grid-cols-[220px_minmax(0,1fr)_minmax(18rem,24rem)]',
         )}
       >
-        <nav className="sticky top-0 hidden max-h-full overflow-y-auto rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2 lg:grid">
-          <button
-            type="button"
-            className={cn(
-              'flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]',
-              activeCategory === null && !normalizedFilter
-                ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
-                : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-            )}
-            onClick={() => setActiveCategory(null)}
-          >
-            All settings
-          </button>
-          {settingsCategories.map((category) => (
+        <div className="sticky top-0 hidden max-h-full min-w-0 overflow-y-auto lg:grid">
+          <nav className="grid rounded-[22px] border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2">
             <button
-              key={category.id}
               type="button"
               className={cn(
                 'flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]',
-                activeCategory === category.id && !normalizedFilter
+                activeCategory === null && !normalizedFilter
                   ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
                   : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
               )}
-              onClick={() => setActiveCategory(category.id)}
+              onClick={() => setActiveCategory(null)}
             >
-              {category.label}
+              All settings
             </button>
-          ))}
-        </nav>
+            {settingsCategories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={cn(
+                  'flex h-10 items-center rounded-xl px-3 text-left text-[12px] transition-colors active:scale-[0.96]',
+                  activeCategory === category.id && !normalizedFilter
+                    ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
+                    : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+                )}
+                onClick={() => setActiveCategory(category.id)}
+              >
+                {category.label}
+              </button>
+            ))}
+          </nav>
+          <BetaBranchToggle
+            checked={appSettings.betaUpdateBranch}
+            onToggle={controller.toggleBetaUpdateBranch}
+          />
+        </div>
 
         <div
           ref={settingsScrollRef}
@@ -455,6 +475,10 @@ export function SettingsView({
                   {category.label}
                 </button>
               ))}
+              <BetaBranchToggle
+                checked={appSettings.betaUpdateBranch}
+                onToggle={controller.toggleBetaUpdateBranch}
+              />
             </div>
           </div>
 
