@@ -413,7 +413,7 @@ export function ComposerPromptSurface({
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
   return (
     <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
-      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+      <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
           {attachments.length > 0 ? (
             <>
@@ -633,7 +633,7 @@ export function ComposerPromptSurface({
         </section>
       </div>
 
-      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
+      <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div
           ref={stopButtonBoundaryRef}
           className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center"
