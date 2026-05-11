@@ -40,7 +40,7 @@ export function buildTimelineRows({
   let pendingToolMessages: ToolCallMessage[] = []
   let currentTurn: Extract<TimelineRow, { kind: 'turn' }> | null = null
   let pendingImplicitTurnId: string | null = null
-  let conversationStarted = false
+  let conversationStarted = previousMessageCount > 0
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {

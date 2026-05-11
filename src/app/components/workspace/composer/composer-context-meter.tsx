@@ -197,7 +197,6 @@ export function ComposerContextMeter({
   const tone = getMeterTone(percent)
   const open = hovered || pinned
   const label = getContextMeterLabel(isCompacting, percent)
-  const usageSourceVersion = messages?.length ?? 0
 
   useDismissibleLayer({
     open: pinned,
@@ -211,7 +210,7 @@ export function ComposerContextMeter({
   }, [])
 
   const loadUsageTotals = useCallback(() => {
-    setUsageTotals((current) => current ?? getMessageUsageTotals(messages))
+    setUsageTotals(getMessageUsageTotals(messages))
   }, [messages])
 
   const openHoverPreview = useCallback(() => {
@@ -252,11 +251,6 @@ export function ComposerContextMeter({
   )
 
   useEffect(() => clearHoverTriangle, [clearHoverTriangle])
-  useEffect(() => {
-    void usageSourceVersion
-    setUsageTotals(null)
-  }, [usageSourceVersion])
-
   return (
     <div
       role="application"

@@ -293,6 +293,25 @@ describe('pi message mapper', () => {
     ])
   })
 
+  it('truncates large live tool progress arguments', () => {
+    const [message] = mapAgentMessagesToUiMessages([
+      {
+        role: 'toolResult',
+        timestamp: 'tool-progress:large',
+        toolName: 'write',
+        isError: false,
+        running: true,
+        args: { content: 'x'.repeat(5000) },
+        content: [{ type: 'text', text: 'Running write...' }],
+      },
+    ] as never[])
+
+    expect(message?.role).toBe('toolResult')
+    if (message?.role !== 'toolResult') return
+    expect(message.args?.length).toBeLessThan(4100)
+    expect(message.args).toContain('… truncated')
+  })
+
   it('preserves displayed extension and system messages', () => {
     expect(
       mapAgentMessagesToUiMessages([

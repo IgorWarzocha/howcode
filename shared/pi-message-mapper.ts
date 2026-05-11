@@ -88,6 +88,7 @@ const paragraphBreakPattern = /\n{2,}/
 const markdownHeadingPattern = /^#{1,6}\s+(.+)$/
 const boldOnlyPattern = /^\*\*(.+?)\*\*$/
 const underscoreBoldOnlyPattern = /^__(.+?)__$/
+const maxToolArgsDisplayLength = 4000
 
 function splitParagraphs(text: string) {
   return text
@@ -335,13 +336,19 @@ function mapToolResultMessage(id: string, runtimeMessage: RuntimeMessage): Messa
 
 function formatToolArgs(args: unknown) {
   if (args === undefined || args === null) return undefined
-  if (typeof args === 'string') return args.trim() || undefined
+  if (typeof args === 'string') return truncateToolArgs(args.trim())
 
   try {
-    return JSON.stringify(args, null, 2)
+    return truncateToolArgs(JSON.stringify(args, null, 2))
   } catch {
-    return String(args)
+    return truncateToolArgs(String(args))
   }
+}
+
+function truncateToolArgs(value: string | undefined) {
+  if (!value) return undefined
+  if (value.length <= maxToolArgsDisplayLength) return value
+  return `${value.slice(0, maxToolArgsDisplayLength)}\n… truncated ${value.length - maxToolArgsDisplayLength} chars`
 }
 
 function mapCustomMessage(id: string, runtimeMessage: RuntimeMessage): Message | null {
