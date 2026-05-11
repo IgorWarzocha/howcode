@@ -45,14 +45,14 @@ jobs:
             runs_on: macos-15-intel
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.10
           no-cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24.15.0
 
@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload dev artifacts
         if: github.event_name == 'push' && github.ref_name == 'dev'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dev-${{ matrix.name }}
           retention-days: 1
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload main artifacts
         if: github.event_name == 'push' && github.ref_name == 'main'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: main-${{ matrix.name }}
           retention-days: 1
@@ -136,7 +136,7 @@ jobs:
 
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: preview-${{ github.ref_name }}-${{ matrix.name }}
           retention-days: 1
@@ -148,7 +148,7 @@ jobs:
 
       - name: Upload release files
         if: github.event_name == 'push' && github.ref_type == 'tag'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.name }}
           retention-days: 1
@@ -169,7 +169,7 @@ jobs:
 
     steps:
       - name: Delete artifacts from older dev runs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const owner = context.repo.owner;
@@ -219,10 +219,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download built artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ github.ref_name }}-*
           merge-multiple: true
@@ -267,10 +267,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download built artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: release-*
           merge-multiple: true
