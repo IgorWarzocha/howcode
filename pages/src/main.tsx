@@ -51,21 +51,28 @@ const installCommands = [
   { label: 'global install', command: 'npm i -g howcode' },
 ]
 
-const latestChangelogSectionPattern = /^###\s+([^\n]+)\n([\s\S]*?)(?=^###\s+|\s*$)/m
+const changelogHeadingPattern = /^###\s+(.+)$/
 
 function copyCommand(command: string) {
   void navigator.clipboard?.writeText(command)
 }
 
 function getLatestChangelogItems(markdown: string) {
-  const latestSection = markdown.match(latestChangelogSectionPattern)
-  if (!latestSection) {
+  const lines = markdown.split('\n')
+  const headingIndex = lines.findIndex((line) => changelogHeadingPattern.test(line))
+  if (headingIndex < 0) {
     return ['See the changelog for recent fixes and shipped bits.']
   }
 
-  const [, version, body = ''] = latestSection
-  const items = body
-    .split('\n')
+  const version = lines[headingIndex]?.match(changelogHeadingPattern)?.[1]?.trim() ?? 'current'
+  const nextHeadingIndex = lines.findIndex(
+    (line, index) => index > headingIndex && changelogHeadingPattern.test(line),
+  )
+  const sectionLines = lines.slice(
+    headingIndex + 1,
+    nextHeadingIndex > headingIndex ? nextHeadingIndex : undefined,
+  )
+  const items = sectionLines
     .map((line) => line.trim())
     .filter((line) => line.startsWith('- '))
     .map((line) => line.slice(2))
