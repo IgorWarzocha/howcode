@@ -281,6 +281,9 @@ function CodeSidebarFooterButton(props: CodeWorkspaceContentProps) {
 
 function CodeFooterLeft(props: CodeWorkspaceContentProps) {
   const { state, sidebarCompactMode } = props
+  if (state.activeView === 'code' && !sidebarCompactMode) {
+    return <CodeSidebarToggleButton {...props} />
+  }
   if (
     !(
       (state.activeView === 'thread' || state.activeView === 'gitops') &&
@@ -597,7 +600,11 @@ function shouldShowDesktopTerminalDrawer(
   terminalDrawerVisible: boolean,
   terminalDrawerOverlay: boolean,
 ) {
-  return activeView === 'thread' && terminalDrawerVisible && !terminalDrawerOverlay
+  return (
+    (activeView === 'thread' || activeView === 'code') &&
+    terminalDrawerVisible &&
+    !terminalDrawerOverlay
+  )
 }
 
 function getFloatingFooterStyle(input: {
