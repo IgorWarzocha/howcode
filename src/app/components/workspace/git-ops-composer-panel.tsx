@@ -7,6 +7,7 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../desktop/types'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerGitOpsSurface } from './composer/composer-git-ops-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
 
@@ -32,7 +33,7 @@ type GitOpsComposerPanelProps = {
   onAction: DesktopActionInvoker
   onLayoutChange: () => void
   onBack: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
 }
 
 function GitOpsErrorDetails({ detail, onDismiss }: { detail: string; onDismiss: () => void }) {

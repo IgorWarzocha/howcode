@@ -23,7 +23,7 @@ import {
   groupSettingsByCategory,
   settingsCategories,
 } from './settings/settingsGroups'
-import type { SettingsCategoryId } from './settings/settingsTypes'
+import type { SettingsCategoryId, SettingsOpenTarget } from './settings/settingsTypes'
 import { SettingRow } from './settings/settingsUi'
 import { useSettingsController } from './settings/useSettingsController'
 
@@ -37,6 +37,7 @@ type SettingsViewProps = {
   projects: Project[]
   onAction: DesktopActionInvoker
   onClose: () => void
+  openTarget?: SettingsOpenTarget | null | undefined
 }
 
 function getDatasetValue(element: HTMLElement, key: string) {
@@ -53,6 +54,7 @@ export function SettingsView({
   projects,
   onAction,
   onClose,
+  openTarget = null,
 }: SettingsViewProps) {
   const controller = useSettingsController({ appSettings, projects, onAction })
   const [draftPiSettings, setDraftPiSettings] = useState(piSettings)
@@ -67,9 +69,21 @@ export function SettingsView({
   const [openSelectId, setOpenSelectId] = useState<string | null>(null)
   const [dictationModelDraft, setDictationModelDraft] = useState<DictationModelId | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [highlightedSettingId, setHighlightedSettingId] = useState<string | null>(null)
+  const [highlightedCategoryId, setHighlightedCategoryId] = useState<SettingsCategoryId | null>(
+    null,
+  )
   const [helpColumnAvailable, setHelpColumnAvailable] = useState(false)
   const [settingRowHeights, setSettingRowHeights] = useState<Record<string, number>>({})
   const normalizedFilter = filter.trim().toLowerCase()
+
+  useEffect(() => {
+    if (!openTarget) return
+    setFilter('')
+    setActiveCategory(openTarget.category ?? null)
+    setHighlightedSettingId(openTarget.settingId ?? null)
+    setHighlightedCategoryId(openTarget.category ?? null)
+  }, [openTarget])
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 1024px)')
@@ -274,6 +288,28 @@ export function SettingsView({
     }
   }, [showHelp, visibleSettingIds])
 
+  useEffect(() => {
+    if (!highlightedSettingId) return
+
+    const frameId = window.requestAnimationFrame(() => {
+      const target = settingsScrollRef.current?.querySelector<HTMLElement>(
+        `[data-setting-id="${CSS.escape(highlightedSettingId)}"]`,
+      )
+      target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+    const timeoutId = window.setTimeout(() => setHighlightedSettingId(null), 2200)
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.clearTimeout(timeoutId)
+    }
+  }, [highlightedSettingId])
+
+  useEffect(() => {
+    if (!highlightedCategoryId) return
+    const timeoutId = window.setTimeout(() => setHighlightedCategoryId(null), 1800)
+    return () => window.clearTimeout(timeoutId)
+  }, [highlightedCategoryId])
+
   return (
     <ViewShell
       className="h-full content-stretch grid-rows-[auto_minmax(0,1fr)] overflow-hidden !pb-0"
@@ -425,7 +461,13 @@ export function SettingsView({
           {visibleGroups.length > 0 ? (
             visibleGroups.map((group) => (
               <Fragment key={group.id}>
-                <section className={cn(settingsSectionClass, 'min-w-0 gap-1 p-2.5')}>
+                <section
+                  className={cn(
+                    settingsSectionClass,
+                    'motion-surface-pulse motion-settings-section-pulse min-w-0 gap-1 p-2.5',
+                  )}
+                  data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
+                >
                   <div className="flex items-baseline justify-between gap-3 px-1 pt-1 pb-1">
                     <h2 className="text-[15px] font-semibold text-[color:var(--text)]">
                       {group.label}

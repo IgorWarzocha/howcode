@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, type BrowserWindowConstructorOptions, shell } from 'electron'
 import { resolveConfiguredDevServerUrl } from '../../../../shared/dev-server'
 import { getElectronBuildDirectory, getRendererDistDirectory } from '../runtime/app-paths'
 import { isTrustedRendererUrl, shouldOpenUrlExternally } from './navigation-security'
@@ -33,22 +33,36 @@ function getRendererTrustConfig() {
   }
 }
 
-export function createMainWindow() {
-  const mainWindow = new BrowserWindow({
+export function getMainWindowOptions(): BrowserWindowConstructorOptions {
+  const macWindowOptions: BrowserWindowConstructorOptions =
+    process.platform === 'darwin'
+      ? {
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 18, y: 17 },
+        }
+      : {}
+
+  return {
     title: 'howcode',
     width: 1480,
     height: 980,
     x: 120,
     y: 80,
     autoHideMenuBar: true,
+    backgroundColor: '#1b1d28',
     icon: getWindowIconPath(),
+    ...macWindowOptions,
     webPreferences: {
       preload: path.join(getElectronBuildDirectory(), 'preload', 'index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
-  })
+  }
+}
+
+export function createMainWindow() {
+  const mainWindow = new BrowserWindow(getMainWindowOptions())
 
   const rendererTrustConfig = getRendererTrustConfig()
 

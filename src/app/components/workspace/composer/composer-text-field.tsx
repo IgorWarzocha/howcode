@@ -30,6 +30,7 @@ type ComposerTextFieldProps = {
   reservedLineCount?: number
   inlinePopover?: ReactNode
   trailingAdornment?: ReactNode
+  trailingAdornmentEnabled?: boolean
   readOnly?: boolean
   hoverToFocus?: boolean
   hoverToBlur?: boolean
@@ -150,15 +151,20 @@ function TrailingAdornment({
   lineHeight,
   position,
   trailingAdornment,
+  visible,
 }: {
   lineHeight: number
   position: { left: number; top: number } | null
   trailingAdornment: ReactNode
+  visible: boolean
 }) {
   if (!(trailingAdornment && position)) return null
   return (
     <span
-      className="absolute z-10 inline-flex items-center"
+      className={cn(
+        'absolute z-10 inline-flex items-center',
+        !visible && 'pointer-events-none invisible',
+      )}
       style={{ left: `${position.left}px`, top: `${position.top}px`, height: `${lineHeight}px` }}
     >
       {trailingAdornment}
@@ -167,6 +173,7 @@ function TrailingAdornment({
 }
 
 function measureTextareaMarkerPosition(input: {
+  adornmentWidth: number
   markerText: string
   placeholder: string
   textarea: HTMLTextAreaElement
@@ -183,7 +190,7 @@ function measureTextareaMarkerPosition(input: {
   mirror.style.overflowWrap = 'break-word'
   mirror.style.wordBreak = 'break-word'
   mirror.style.boxSizing = computedStyle.boxSizing
-  mirror.style.width = `${input.textarea.clientWidth}px`
+  mirror.style.width = `${Math.max(1, input.textarea.clientWidth - input.adornmentWidth)}px`
   mirror.style.font = computedStyle.font
   mirror.style.fontFamily = computedStyle.fontFamily
   mirror.style.fontSize = computedStyle.fontSize
@@ -221,6 +228,7 @@ export function ComposerTextField({
   reservedLineCount = 4,
   inlinePopover = null,
   trailingAdornment = null,
+  trailingAdornmentEnabled = Boolean(trailingAdornment),
   readOnly = false,
   hoverToFocus = true,
   hoverToBlur = false,
@@ -248,9 +256,11 @@ export function ComposerTextField({
     top: number
   } | null>(null)
   const [trailingContainerHeight, setTrailingContainerHeight] = useState<number | null>(null)
+  const [textareaLayoutVersion, setTextareaLayoutVersion] = useState(0)
   const [fieldExpanded, setFieldExpanded] = useState(false)
   const [canExpandField, setCanExpandField] = useState(false)
   const lineHeightRef = useRef(20)
+  const trailingAdornmentVisible = trailingAdornmentEnabled
 
   const focusTextareaAtEnd = useCallback(() => {
     const textarea = textareaRef.current
@@ -271,7 +281,8 @@ export function ComposerTextField({
     blurOnLeave: hoverToBlur,
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    void textareaLayoutVersion
     const textarea = textareaRef.current
     if (!textarea) return
     updateComposerTextareaHeight({
@@ -289,7 +300,15 @@ export function ComposerTextField({
       value,
       wrapperRef,
     })
-  }, [fieldExpanded, onExpandedChange, onHeightChange, reservedHeight, reservedLineCount, value])
+  }, [
+    fieldExpanded,
+    onExpandedChange,
+    onHeightChange,
+    reservedHeight,
+    reservedLineCount,
+    textareaLayoutVersion,
+    value,
+  ])
 
   useEffect(() => {
     const height = wrapperRef.current?.getBoundingClientRect().height
@@ -302,7 +321,19 @@ export function ComposerTextField({
   })
 
   useLayoutEffect(() => {
-    if (!trailingAdornment) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => {
+      setTextareaLayoutVersion((current) => current + 1)
+    })
+    observer.observe(textarea)
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!trailingAdornmentVisible) {
       setTrailingAdornmentPosition(null)
       setTrailingContainerHeight(null)
       return
@@ -315,6 +346,7 @@ export function ComposerTextField({
 
     const measureTrailingAdornmentPosition = () => {
       const markerPosition = measureTextareaMarkerPosition({
+        adornmentWidth: 0,
         markerText: value,
         placeholder,
         textarea,
@@ -324,7 +356,8 @@ export function ComposerTextField({
       const lineHeight = markerPosition.lineHeight || lineHeightRef.current
       const adornmentWidth = 24
       const adornmentGap = 6
-      const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth
+      const shouldWrapAdornment =
+        markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth && value.length > 0
       const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
       const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5)
       const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
@@ -347,7 +380,7 @@ export function ComposerTextField({
     measureTrailingAdornmentPosition()
     window.addEventListener('resize', measureTrailingAdornmentPosition)
     return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
-  }, [placeholder, trailingAdornment, value])
+  }, [placeholder, trailingAdornmentVisible, value])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -361,6 +394,7 @@ export function ComposerTextField({
     const measureInlinePopoverPosition = () => {
       const cursorPosition = textarea.selectionStart ?? value.length
       const markerPosition = measureTextareaMarkerPosition({
+        adornmentWidth: 0,
         markerText: value.slice(0, cursorPosition),
         placeholder,
         textarea,
@@ -445,8 +479,8 @@ export function ComposerTextField({
           rows={1}
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
-            canExpandField &&
-              'composer-textarea-scroll-above-button relative left-[0.25rem] w-[calc(100%-0.25rem)]',
+            'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
+            canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             placeholderTone === 'error'
               ? 'placeholder:text-[color:var(--danger)]'
@@ -478,6 +512,7 @@ export function ComposerTextField({
           lineHeight={lineHeightRef.current}
           position={trailingAdornmentPosition}
           trailingAdornment={trailingAdornment}
+          visible={trailingAdornmentVisible}
         />
       </div>
     </div>

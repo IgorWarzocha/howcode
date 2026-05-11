@@ -5,6 +5,7 @@ import {
 } from '../../../../../shared/composer-slash-commands'
 import type { ComposerSlashCommand } from '../../../desktop/types'
 import { getComposerSlashCommandsQuery } from '../../../query/desktop-query'
+import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 
 const slashCommandSourceOrder: Record<ComposerSlashCommand['source'], number> = {
   prompt: 0,
@@ -60,7 +61,7 @@ type UseComposerSlashCommandsOptions = {
   setDraft: (draft: string) => void
   send: () => void
   sendExtensionCommand?: () => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
 }
 
 export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>

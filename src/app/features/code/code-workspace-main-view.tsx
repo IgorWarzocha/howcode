@@ -16,6 +16,7 @@ import type { Project, View } from '../../types'
 import { ArchivedThreadsView } from '../../views/archived-threads-view'
 import { InboxView } from '../../views/inbox-view'
 import { LandingView } from '../../views/landing-view'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { SettingsView } from '../../views/settings-view'
 import { ThreadView } from '../../views/thread-view'
 
@@ -44,6 +45,7 @@ type CodeWorkspaceMainViewProps = {
   currentProjectName: string
   selectedInboxThread: InboxThread | null
   projects: Project[]
+  settingsOpenTarget?: SettingsOpenTarget | null | undefined
   selectedProjectId: string
   workspaceContentClass: string
   threadData: ThreadData | null
@@ -59,7 +61,7 @@ type CodeWorkspaceMainViewProps = {
   }) => Promise<ComposerFilePickerState | null>
   onCloseUtilityView: () => void
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void
@@ -84,6 +86,7 @@ export function CodeWorkspaceMainView({
   currentProjectName,
   selectedInboxThread,
   projects,
+  settingsOpenTarget,
   selectedProjectId,
   workspaceContentClass,
   threadData,
@@ -156,6 +159,7 @@ export function CodeWorkspaceMainView({
         availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}
         projects={projects}
+        openTarget={settingsOpenTarget}
         onAction={onAction}
         onClose={onCloseUtilityView}
       />

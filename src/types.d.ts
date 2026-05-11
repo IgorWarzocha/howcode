@@ -1,3 +1,4 @@
+import type { DesktopRequestMap } from '../shared/desktop-ipc'
 import type { DesktopAction } from './app/desktop/actions'
 import type {
   AnyDesktopActionPayload,
@@ -135,6 +136,9 @@ declare global {
       pickComposerAttachments?: (
         projectId?: string | null | undefined,
       ) => Promise<ComposerAttachment[]>
+      listProjectDirectoryEntries?: (
+        request?: DesktopRequestMap['listProjectDirectoryEntries']['params'],
+      ) => Promise<DesktopRequestMap['listProjectDirectoryEntries']['response']>
       readClipboardSnapshot?: (formats?: string[] | null) => Promise<DesktopClipboardSnapshot>
       readClipboardFilePaths?: () => Promise<DesktopClipboardFilePaths>
       readClipboardImage?: () => Promise<DesktopClipboardImage>

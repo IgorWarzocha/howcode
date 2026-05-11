@@ -8,6 +8,7 @@ import type {
   ProseMessage,
   ThreadData,
 } from '../shared/desktop-contracts.ts'
+import { getPersistedSessionPath } from '../shared/session-paths.ts'
 import { getLatestInboxAssistantMessage } from '../shared/thread-inbox.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 import { getChatSessionDir } from './chat-session-dir.ts'
@@ -33,6 +34,17 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
   request: TRequest,
 ): TRequest {
   const appSettings = loadAppSettings()
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  const composerSessionDir = request.composerMode === 'chat' ? getChatSessionDir() : null
+
+  if (persistedSessionPath) {
+    return {
+      ...request,
+      composerStreamingBehavior: appSettings.composerStreamingBehavior,
+      composerSessionDir,
+    }
+  }
+
   const composerModelSelection =
     request.composerMode === 'chat'
       ? appSettings.chatModel
@@ -52,7 +64,7 @@ function withComposerModeSettings<TRequest extends ComposerStateRequest>(
     composerUseDefaultModel: Boolean(request.composerMode) && composerModelSelection === null,
     composerThinkingLevel,
     composerStreamingBehavior: appSettings.composerStreamingBehavior,
-    composerSessionDir: request.composerMode === 'chat' ? getChatSessionDir() : null,
+    composerSessionDir,
   }
 }
 
@@ -204,14 +216,21 @@ export function getComposerState(request = {}) {
 }
 
 export function setComposerModel(request: ComposerStateRequest, provider: string, modelId: string) {
-  return invokeRuntimeHost('setComposerModel', { request, provider, modelId })
+  return invokeRuntimeHost('setComposerModel', {
+    request: withComposerModeSettings(request),
+    provider,
+    modelId,
+  })
 }
 
 export function setComposerThinkingLevel(
   request: ComposerStateRequest,
   level: ComposerThinkingLevel,
 ) {
-  return invokeRuntimeHost('setComposerThinkingLevel', { request, level })
+  return invokeRuntimeHost('setComposerThinkingLevel', {
+    request: withComposerModeSettings(request),
+    level,
+  })
 }
 
 export function sendComposerPrompt(

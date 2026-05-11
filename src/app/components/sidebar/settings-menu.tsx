@@ -3,6 +3,7 @@ import type { ReactNode, RefObject } from 'react'
 import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../../features/feature-status'
 import { useAppUpdateFlow } from '../../hooks/useAppUpdateFlow'
 import { cn } from '../../utils/cn'
+import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { FeatureStatusBadge } from '../common/feature-status-badge'
 import { SurfacePanel } from '../common/surface-panel'
 
@@ -11,7 +12,7 @@ type SettingsMenuProps = {
   open: boolean
   onOpenExtensionsView: () => void
   onOpenSkillsView: () => void
-  onOpenSettingsPanel: () => void
+  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onOpenArchivedThreads: () => void
   panelRef?: RefObject<HTMLDivElement | null>
 }

@@ -2,6 +2,11 @@ import type { ReactNode } from 'react'
 
 export type SettingsCategoryId = 'models' | 'pi-runtime' | 'pi-tui' | 'projects' | 'dictation'
 
+export type SettingsOpenTarget = {
+  category?: SettingsCategoryId | undefined
+  settingId?: string | undefined
+}
+
 export type SettingDescriptor = {
   id: string
   category: SettingsCategoryId

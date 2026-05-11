@@ -95,6 +95,34 @@
   animation-delay: -0.5s;
 }
 
+.composer-stop-button {
+  border-radius: 9999px;
+}
+
+.composer-stop-button--active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+.composer-stop-button__spinner {
+  inset: -0.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.composer-stop-button__square {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 0.125rem;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
 button[data-tooltip] {
   position: relative;
 }
@@ -277,6 +305,10 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   border-color: var(--border-strong);
   background: var(--surface-hover);
   color: var(--text);
+}
+
+.composer-textarea-scroll-above-button {
+  width: calc(100% + 0.25rem);
 }
 
 .composer-textarea-scroll-above-button::-webkit-scrollbar-track {

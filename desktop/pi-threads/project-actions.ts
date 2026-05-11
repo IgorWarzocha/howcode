@@ -12,7 +12,7 @@ import {
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { deleteArtifactsForConversations } from '../artifact-state-db.ts'
 import { selectProjectRuntime } from '../pi-desktop-runtime.ts'
-import { createProject, createProjectFromGitHubUrl } from '../project-create.ts'
+import { addProjectFromPath, createProject, createProjectFromGitHubUrl } from '../project-create.ts'
 import { getOriginUrl } from '../project-git/project-state.ts'
 import { importProjects, scanKnownProjects } from '../project-import.ts'
 import { openPathWithSystem } from '../system-open-path.ts'
@@ -137,13 +137,23 @@ async function isBusyProjectDeletionTarget(projectId: string) {
 async function createProjectFromPayload(payload: AnyDesktopActionPayload) {
   const appSettings = loadAppSettings()
   const repoUrl = typeof payload.repoUrl === 'string' ? payload.repoUrl.trim() : ''
+  const projectPath = typeof payload.projectPath === 'string' ? payload.projectPath.trim() : ''
+  const parentPath = typeof payload.parentPath === 'string' ? payload.parentPath.trim() : ''
+  if (projectPath) {
+    return await addProjectFromPath({
+      projectPath,
+      createIfMissing: payload.createIfMissing === true,
+      initializeGit: appSettings.initializeGitOnProjectCreate,
+    })
+  }
+
   return repoUrl
     ? await createProjectFromGitHubUrl({
-        preferredProjectLocation: appSettings.preferredProjectLocation,
+        preferredProjectLocation: parentPath || appSettings.preferredProjectLocation,
         repositoryUrl: repoUrl,
       })
     : await createProject({
-        preferredProjectLocation: appSettings.preferredProjectLocation,
+        preferredProjectLocation: parentPath || appSettings.preferredProjectLocation,
         projectName: getProjectName(payload) ?? '',
         initializeGit: appSettings.initializeGitOnProjectCreate,
       })

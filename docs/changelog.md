@@ -1,3 +1,23 @@
+### 0.1.64
+
+- Added copy controls to chat and reasoning messages.
+- Made chat text selection less annoying. Dragging over messages should not collapse them.
+- Improved wrapping for long markdown, links, and awkward agent output.
+- Polished compact composer controls.
+- Added a working-state stop button animation. It looks properly agitated when the agent is busy.
+- Smoothed composer resizing, textarea scrolling, and bottom anchoring.
+- Added an in-app folder browser for adding projects.
+- Added project creation and GitHub clone flows from the selected folder.
+- Fixed folder browser edge cases around stale loads and Git initialization.
+- Added targeted Settings routing for setup prompts.
+- Dictation setup now opens the right Settings section instead of leaving you to hunt for it.
+- Missing project location setup now points at the right Settings card.
+- Fixed persisted chats overriding each other’s model/thinking choices.
+- Fixed compact terminal/sidebar behavior, including Pi TUI takeover fold-button alignment.
+- Improved macOS window chrome and quit behavior.
+
+Snapshot: May 10, 2026.
+
 ### 0.1.61-6x hotfixes
 
 - ASAR is back. And then it disappeared. And it's back again.
@@ -45,7 +65,7 @@ Snapshot: May 4, 2026.
 - Added in-app update detection and restart flow.
 - Upgraded the terminal renderer to Ghostty via WTerm 0.3.0.
 - Added loading skeletons across workspace surfaces.
-- Fixed clean desktop shutdown,
+- Fixed clean desktop shutdown.
 - Updated Pi packages to 0.72.1.
 
 Snapshot: May 3, 2026.

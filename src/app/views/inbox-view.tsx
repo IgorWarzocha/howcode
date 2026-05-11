@@ -18,6 +18,7 @@ import type {
   InboxThread,
 } from '../desktop/types'
 import { WORKSPACE_CONTENT_MAX_WIDTH_CLASS } from '../ui/layout'
+import type { SettingsOpenTarget } from './settings/settingsTypes'
 
 type InboxViewProps = {
   appSettings: AppSettings
@@ -38,7 +39,7 @@ type InboxViewProps = {
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
-  onOpenSettingsView: () => void
+  onOpenSettingsView: (target?: SettingsOpenTarget) => void
   sidebarCollapsed: boolean
   sidebarCompactMode: boolean
   onToggleSidebar: () => void

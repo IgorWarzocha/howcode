@@ -86,6 +86,11 @@
   animation: standardSurfacePulse 2.8s ease-in-out infinite;
 }
 
+.motion-settings-section-pulse[data-pulse-active="true"]::before {
+  opacity: 1;
+  animation: standardSurfacePulse 1.15s ease-out 1;
+}
+
 .motion-overlay-panel {
   opacity: 0;
   transform: translateY(var(--motion-slide-y-md));

@@ -5,6 +5,7 @@ import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/ty
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
+import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 import { getProjectSelectionAction } from './scoped-project-view'
 
 type RunDesktopAction = (
@@ -35,6 +36,7 @@ type UseAppShellCommandsInput = {
   scheduleShellStateRefresh: () => void
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
   setThreadRefreshKey: Dispatch<SetStateAction<number>>
+  setSettingsOpenTarget: Dispatch<SetStateAction<SettingsOpenTarget | null>>
   shellState: ShellState | null
   workspaceState: WorkspaceState
 }
@@ -60,6 +62,7 @@ export function useAppShellCommands({
   queryClient,
   runDesktopAction,
   scheduleShellStateRefresh,
+  setSettingsOpenTarget,
   setThreadHistoryCompactions,
   setThreadRefreshKey,
   shellState,
@@ -71,7 +74,10 @@ export function useAppShellCommands({
     [dispatch],
   )
 
-  const handleShowView = (view: Exclude<View, 'gitops'>) => {
+  const handleShowView = (view: Exclude<View, 'gitops'>, target?: SettingsOpenTarget) => {
+    if (view === 'settings') {
+      setSettingsOpenTarget(target ?? null)
+    }
     dispatch({ type: 'show-view', view })
   }
 
