@@ -28,7 +28,11 @@ export function getToolCallTitle(message: ToolCallMessage) {
 
 export function getToolCallPreview(message: ToolCallMessage) {
   if (message.role === 'toolResult') {
-    return message.content[0] ?? (message.isError ? 'Tool failed.' : 'Tool finished.')
+    return (
+      message.args ??
+      message.content[0] ??
+      (message.running ? 'Running…' : message.isError ? 'Tool failed.' : 'Tool finished.')
+    )
   }
 
   return message.command || 'No command'

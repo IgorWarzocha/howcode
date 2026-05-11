@@ -1,5 +1,5 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
-import type { Message, ToolResultImage } from './desktop-contracts'
+import type { AssistantUsageSummary, Message, ToolResultImage } from './desktop-contracts'
 
 type TextPart = {
   type?: string | undefined
@@ -30,7 +30,11 @@ type RuntimeMessage = {
       >
   timestamp?: string | undefined | number
   errorMessage?: string | undefined
+  stopReason?: string | undefined
+  toolCallId?: string | undefined
   toolName?: string | undefined
+  args?: unknown
+  running?: boolean | undefined
   isError?: boolean | undefined
   command?: string | undefined
   output?: string | undefined
@@ -38,7 +42,40 @@ type RuntimeMessage = {
   cancelled?: boolean | undefined
   truncated?: boolean | undefined
   customType?: string | undefined
+  label?: string | undefined
   summary?: string | undefined
+  usage?:
+    | {
+        input?: number | undefined
+        output?: number | undefined
+        cacheRead?: number | undefined
+        cacheWrite?: number | undefined
+        totalTokens?: number | undefined
+        cost?: { total?: number | undefined } | undefined
+      }
+    | undefined
+}
+
+function normalizeAssistantStopReason(value: string | undefined) {
+  return value === 'length' || value === 'error' || value === 'aborted' ? value : undefined
+}
+
+function getNumberValue(value: number | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function mapAssistantUsage(runtimeMessage: RuntimeMessage): AssistantUsageSummary | undefined {
+  const usage = runtimeMessage.usage
+  if (!usage) return undefined
+
+  return {
+    input: getNumberValue(usage.input),
+    output: getNumberValue(usage.output),
+    cacheRead: getNumberValue(usage.cacheRead),
+    cacheWrite: getNumberValue(usage.cacheWrite),
+    totalTokens: getNumberValue(usage.totalTokens),
+    costTotal: getNumberValue(usage.cost?.total),
+  }
 }
 
 type SessionBranchEntry = {
@@ -271,6 +308,9 @@ function mapAssistantMessage(id: string, runtimeMessage: RuntimeMessage): Messag
     id,
     role: 'assistant',
     content,
+    isError: runtimeMessage.stopReason === 'error' || undefined,
+    stopReason: normalizeAssistantStopReason(runtimeMessage.stopReason),
+    usage: mapAssistantUsage(runtimeMessage),
     thinkingContent: thinkingContent.length > 0 ? thinkingContent : undefined,
     thinkingHeaders: thinkingHeaders.length > 0 ? [...new Set(thinkingHeaders)] : undefined,
     thinkingRedacted: thinkingRedacted || undefined,
@@ -283,23 +323,46 @@ function mapToolResultMessage(id: string, runtimeMessage: RuntimeMessage): Messa
   return {
     id,
     role: 'toolResult',
+    toolCallId: runtimeMessage.toolCallId?.trim() || undefined,
     toolName: runtimeMessage.toolName ?? 'tool',
     content: text.length > 0 ? text : [runtimeMessage.isError ? 'Tool failed.' : 'Tool finished.'],
     images: images.length > 0 ? images : undefined,
     isError: Boolean(runtimeMessage.isError),
+    args: formatToolArgs(runtimeMessage.args),
+    running: runtimeMessage.running || undefined,
+  }
+}
+
+function formatToolArgs(args: unknown) {
+  if (args === undefined || args === null) return undefined
+  if (typeof args === 'string') return args.trim() || undefined
+
+  try {
+    return JSON.stringify(args, null, 2)
+  } catch {
+    return String(args)
   }
 }
 
 function mapCustomMessage(id: string, runtimeMessage: RuntimeMessage): Message | null {
   const content = extractDisplayContent(runtimeMessage.content)
-  return content.length === 0
-    ? null
-    : { id, role: 'custom', customType: runtimeMessage.customType ?? 'custom', content }
+  if (content.length === 0) return null
+
+  const customType = runtimeMessage.customType ?? 'custom'
+  return {
+    id,
+    role: 'custom',
+    customType,
+    content,
+    isError: customType === 'howcode.extension.error' || undefined,
+  }
 }
 
 function mapSystemMessage(id: string, runtimeMessage: RuntimeMessage): Message | null {
   const content = extractDisplayContent(runtimeMessage.content)
-  return content.length === 0 ? null : { id, role: 'system', label: 'System', content }
+  return content.length === 0
+    ? null
+    : { id, role: 'system', label: runtimeMessage.label?.trim() || 'System', content }
 }
 
 function mapSummaryMessage(id: string, runtimeMessage: RuntimeMessage): Message | null {

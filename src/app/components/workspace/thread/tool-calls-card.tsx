@@ -24,6 +24,16 @@ function renderToolCallBody(message: ToolCallMessage) {
             : 'grid min-w-0 gap-2 text-[13px] text-[color:var(--muted-2)]/88'
         }
       >
+        {message.args ? (
+          <div className="grid min-w-0 gap-1 rounded-lg bg-[rgba(255,255,255,0.03)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82">
+            <div className="font-sans text-[10.5px] tracking-[0.08em] text-[color:var(--muted-2)]/70 uppercase">
+              Arguments
+            </div>
+            <pre className="m-0 max-h-44 overflow-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {message.args}
+            </pre>
+          </div>
+        ) : null}
         {message.content.map((paragraph) => (
           <p
             key={paragraph}
@@ -112,6 +122,7 @@ export function ToolCallsCard({
           const title = getToolCallTitle(message)
           const preview = getToolCallPreview(message)
           const isError = message.role === 'toolResult' && message.isError
+          const isRunning = message.role === 'toolResult' && message.running
 
           return (
             <ExpandablePanel
@@ -142,6 +153,11 @@ export function ToolCallsCard({
                   {isError ? (
                     <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--danger)]">
                       Error
+                    </span>
+                  ) : null}
+                  {isRunning ? (
+                    <span className="shrink-0 text-[10.5px] font-medium text-[color:var(--accent)]">
+                      Running
                     </span>
                   ) : null}
                 </>

@@ -46,6 +46,7 @@ export function ComposerPromptSurface({
   workspaceFooterRef,
   model,
   contextUsage,
+  messages,
   availableModels,
   isStreaming,
   replyActivityKey,
@@ -562,6 +563,7 @@ export function ComposerPromptSurface({
             diffBaseline={diffBaseline}
             model={model}
             contextUsage={contextUsage}
+            messages={messages}
             compactDisabled={isStreaming || isCompacting || !sessionPath}
             isCompacting={isCompacting}
             modelButtonRef={modelButtonRef}
@@ -648,7 +650,7 @@ export function ComposerPromptSurface({
           >
             {canStopComposer ? (
               <svg
-                className="composer-stop-button__spinner absolute text-[color:var(--danger)]"
+                className="composer-stop-button__spinner absolute text-white/50"
                 viewBox="0 0 28 28"
                 aria-hidden="true"
               >

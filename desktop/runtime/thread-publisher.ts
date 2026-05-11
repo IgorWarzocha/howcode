@@ -72,9 +72,12 @@ function getLiveToolProgressMessages(runtime: PiRuntime) {
 
     return {
       role: 'toolResult',
+      toolCallId: entry.toolCallId,
       toolName: entry.toolName,
       isError: Boolean(entry.isError),
       content: displayContent,
+      args: entry.args,
+      running: !entry.terminal,
       timestamp: `tool-progress:${entry.toolCallId}`,
     } as unknown as AgentMessage
   })

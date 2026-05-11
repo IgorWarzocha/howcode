@@ -407,6 +407,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       activeView={state.activeView}
       model={activeComposerState?.currentModel ?? null}
       contextUsage={activeComposerState?.contextUsage ?? null}
+      messages={activeThreadData?.messages}
       availableModels={activeComposerState?.availableModels ?? []}
       isStreaming={activeThreadData?.isStreaming ?? false}
       replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}

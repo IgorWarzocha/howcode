@@ -5,6 +5,7 @@ import {
   mapAgentMessagesToUiMessages,
   normalizeThreadTitle,
 } from '../../shared/pi-message-mapper'
+import { buildSourceMessagesFromPathEntries } from '../../shared/thread-history'
 
 describe('pi message mapper', () => {
   it('normalizes titles and derives the first user title', () => {
@@ -123,6 +124,115 @@ describe('pi message mapper', () => {
     ])
   })
 
+  it('marks errored assistant messages for desktop styling', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'assistant',
+          timestamp: 1,
+          content: [],
+          stopReason: 'error',
+          errorMessage: 'Provider request failed',
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-assistant',
+        role: 'assistant',
+        content: ['Provider request failed'],
+        isError: true,
+        stopReason: 'error',
+      },
+    ])
+  })
+
+  it('keeps aborted assistant messages distinct from errors', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'assistant',
+          timestamp: 1,
+          content: [],
+          stopReason: 'aborted',
+          errorMessage: 'Request was aborted.',
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-assistant',
+        role: 'assistant',
+        content: ['Request was aborted.'],
+        stopReason: 'aborted',
+      },
+    ])
+  })
+
+  it('preserves assistant stop reasons that affect desktop display', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'assistant',
+          timestamp: 1,
+          content: [{ type: 'text', text: 'Partial answer' }],
+          stopReason: 'length',
+        },
+        {
+          role: 'assistant',
+          timestamp: 2,
+          content: [{ type: 'text', text: 'Cancelled answer' }],
+          stopReason: 'aborted',
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-assistant',
+        role: 'assistant',
+        content: ['Partial answer'],
+        stopReason: 'length',
+      },
+      {
+        id: '2-assistant',
+        role: 'assistant',
+        content: ['Cancelled answer'],
+        stopReason: 'aborted',
+      },
+    ])
+  })
+
+  it('preserves assistant usage summaries for lazy composer details', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'assistant',
+          timestamp: 1,
+          content: [{ type: 'text', text: 'Done' }],
+          usage: {
+            input: 100,
+            output: 25,
+            cacheRead: 40,
+            cacheWrite: 10,
+            totalTokens: 175,
+            cost: { total: 0.0123 },
+          },
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-assistant',
+        role: 'assistant',
+        content: ['Done'],
+        usage: {
+          input: 100,
+          output: 25,
+          cacheRead: 40,
+          cacheWrite: 10,
+          totalTokens: 175,
+          costTotal: 0.0123,
+        },
+      },
+    ])
+  })
+
   it('preserves tool result images for desktop rendering', () => {
     expect(
       mapAgentMessagesToUiMessages([
@@ -151,6 +261,34 @@ describe('pi message mapper', () => {
           },
         ],
         isError: false,
+      },
+    ])
+  })
+
+  it('preserves live tool progress arguments and running state', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'toolResult',
+          timestamp: 'tool-progress:abc',
+          toolCallId: 'abc-call',
+          toolName: 'read',
+          isError: false,
+          running: true,
+          args: { path: 'src/app.tsx' },
+          content: [{ type: 'text', text: 'Running read...' }],
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: 'tool-progress:abc-toolResult',
+        role: 'toolResult',
+        toolCallId: 'abc-call',
+        toolName: 'read',
+        content: ['Running read...'],
+        isError: false,
+        args: '{\n  "path": "src/app.tsx"\n}',
+        running: true,
       },
     ])
   })
@@ -193,6 +331,74 @@ describe('pi message mapper', () => {
         role: 'system',
         label: 'extensionNotice',
         content: ['A non-standard Pi message'],
+      },
+    ])
+  })
+
+  it('marks Howcode extension error messages for desktop styling', () => {
+    expect(
+      mapAgentMessagesToUiMessages([
+        {
+          role: 'custom',
+          timestamp: 1,
+          customType: 'howcode.extension.error',
+          content: 'Test extension error: boom',
+        },
+      ] as never[]),
+    ).toEqual([
+      {
+        id: '1-custom',
+        role: 'custom',
+        customType: 'howcode.extension.error',
+        content: ['Test extension error: boom'],
+        isError: true,
+      },
+    ])
+  })
+
+  it('surfaces model and thinking changes as muted system messages', () => {
+    const messages = buildSourceMessagesFromPathEntries([
+      {
+        type: 'model_change',
+        id: 'model-1',
+        timestamp: 1,
+        provider: 'openai',
+        modelId: 'gpt-5',
+      },
+      {
+        type: 'thinking_level_change',
+        id: 'thinking-1',
+        timestamp: 2,
+        thinkingLevel: 'high',
+      },
+    ])
+
+    expect(mapAgentMessagesToUiMessages(messages)).toEqual([
+      {
+        id: '1-system',
+        role: 'system',
+        label: 'Model changed',
+        content: ['openai/gpt-5/high'],
+      },
+    ])
+  })
+
+  it('surfaces standalone thinking changes as reasoning messages', () => {
+    const messages = buildSourceMessagesFromPathEntries([
+      {
+        type: 'thinking_level_change',
+        id: 'thinking-1',
+        timestamp: 1,
+        thinkingLevel: 'medium',
+      },
+    ])
+
+    expect(mapAgentMessagesToUiMessages(messages)).toEqual([
+      {
+        id: '1-system',
+        role: 'system',
+        label: 'Reasoning changed',
+        content: ['medium'],
       },
     ])
   })
