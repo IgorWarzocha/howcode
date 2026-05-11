@@ -13,6 +13,9 @@
 - Dictation setup now opens the right Settings section instead of leaving you to hunt for it.
 - Missing project location setup now points at the right Settings card.
 - Fixed persisted chats overriding each other’s model/thinking choices.
+- Surfaced Pi stop states, model/reasoning changes, and extension errors in chat.
+- Added token, cache, and cost totals to the context popover.
+- Made live tool calls show running state and arguments sooner.
 - Fixed compact terminal/sidebar behavior, including Pi TUI takeover fold-button alignment.
 - Improved macOS window chrome and quit behavior.
 
