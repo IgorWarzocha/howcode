@@ -454,6 +454,8 @@ const workspaceActionHandlers = {
     selectedSessionPath: null,
     selectedDiffFilePath: null,
     takeoverVisible: false,
+    settingsOpen: false,
+    settingsPanelOpen: false,
     gitOpsReturnView: 'code',
     utilityViewReturnState: null,
     hasSelectedProject: false,
