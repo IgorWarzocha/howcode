@@ -17,6 +17,21 @@ function isSummaryMessage(
   return message.role === 'branchSummary' || message.role === 'compactionSummary'
 }
 
+function isStandaloneStatusMessage(message: Message) {
+  return (
+    message.role === 'system' &&
+    (message.label === 'Model changed' || message.label === 'Reasoning changed')
+  )
+}
+
+function getToolGroupMessageKey(message: ToolCallMessage) {
+  if (message.role === 'toolResult') {
+    return message.toolCallId ?? message.id
+  }
+
+  return message.id
+}
+
 export function buildTimelineRows({
   messages,
   previousMessageCount,
@@ -25,6 +40,7 @@ export function buildTimelineRows({
   let pendingToolMessages: ToolCallMessage[] = []
   let currentTurn: Extract<TimelineRow, { kind: 'turn' }> | null = null
   let pendingImplicitTurnId: string | null = null
+  let conversationStarted = previousMessageCount > 0
 
   const flushPendingToolMessages = () => {
     if (pendingToolMessages.length === 0) {
@@ -32,10 +48,10 @@ export function buildTimelineRows({
     }
 
     const firstMessage = pendingToolMessages[0]
-    const lastMessage = pendingToolMessages[pendingToolMessages.length - 1]
+    const toolGroupKey = pendingToolMessages.map(getToolGroupMessageKey).join(':')
     const toolGroup: Extract<TimelineTurnItem, { kind: 'tool-group' }> = {
       kind: 'tool-group',
-      id: `tool-group:${firstMessage?.id ?? 'start'}:${lastMessage?.id ?? 'end'}:${pendingToolMessages.length}`,
+      id: `tool-group:${toolGroupKey || firstMessage?.id || 'start'}:${pendingToolMessages.length}`,
       messages: pendingToolMessages,
     }
 
@@ -63,6 +79,32 @@ export function buildTimelineRows({
     currentTurn = null
   }
 
+  const appendStandaloneMessage = (
+    timelineMessage: Extract<TimelineTurnItem, { kind: 'message' }>,
+  ) => {
+    const { message } = timelineMessage
+    if (isSummaryMessage(message)) {
+      flushCurrentTurn()
+      nextRows.push({
+        kind: 'summary',
+        id: `summary:${message.id}`,
+        message,
+      })
+      pendingImplicitTurnId =
+        message.role === 'compactionSummary' ? `turn:post-summary:${message.id}` : null
+      return true
+    }
+
+    if (!(conversationStarted || currentTurn) && isStandaloneStatusMessage(message)) {
+      flushCurrentTurn()
+      nextRows.push(timelineMessage)
+      pendingImplicitTurnId = null
+      return true
+    }
+
+    return false
+  }
+
   if (previousMessageCount > 0) {
     nextRows.push({
       kind: 'history-divider',
@@ -88,6 +130,7 @@ export function buildTimelineRows({
     if (message.role === 'user') {
       flushCurrentTurn()
       pendingImplicitTurnId = null
+      conversationStarted = true
       currentTurn = {
         kind: 'turn',
         id: `turn:${message.id}`,
@@ -97,17 +140,11 @@ export function buildTimelineRows({
       continue
     }
 
-    if (isSummaryMessage(message)) {
-      flushCurrentTurn()
-      nextRows.push({
-        kind: 'summary',
-        id: `summary:${message.id}`,
-        message,
-      })
-      pendingImplicitTurnId =
-        message.role === 'compactionSummary' ? `turn:post-summary:${message.id}` : null
+    if (appendStandaloneMessage(timelineMessage)) {
       continue
     }
+
+    conversationStarted = true
 
     if (currentTurn) {
       currentTurn.items.push(timelineMessage)
