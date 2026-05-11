@@ -15,7 +15,6 @@ import type { AppShellController } from './useAppShellController'
 import { useAppShellLayoutState } from './useAppShellLayoutState'
 
 const TERMINAL_DRAWER_WIDTH = 'min(28rem, calc(100% - 2.5rem))'
-
 type AppShellLayoutViewProps = {
   controller: AppShellController
   projects: AppShellController['projects']
@@ -378,6 +377,7 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
   } = props
   if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
     return null
+  if (props.state.activeView === 'code') return null
   const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
   const workspaceDockStyle = {
     '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',

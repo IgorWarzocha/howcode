@@ -248,17 +248,18 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
 }
 
 function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
-  const { sidebarCollapsed, onToggleSidebar } = props
+  const { sidebarCollapsed, sidebarCompactMode, onToggleSidebar } = props
+  const sidebarHidden = sidebarCollapsed || sidebarCompactMode
   return (
     <button
       type="button"
       className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
       onClick={onToggleSidebar}
-      aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+      aria-label={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
       data-tooltip-placement="right"
     >
-      {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+      {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
     </button>
   )
 }
@@ -281,7 +282,7 @@ function CodeSidebarFooterButton(props: CodeWorkspaceContentProps) {
 
 function CodeFooterLeft(props: CodeWorkspaceContentProps) {
   const { state, sidebarCompactMode } = props
-  if (state.activeView === 'code' && !sidebarCompactMode) {
+  if (state.activeView === 'code') {
     return <CodeSidebarToggleButton {...props} />
   }
   if (
