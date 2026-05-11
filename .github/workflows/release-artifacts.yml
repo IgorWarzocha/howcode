@@ -116,9 +116,10 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            artifacts/*
-            !artifacts/npm-launcher
-            artifacts/npm-launcher/*
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload main artifacts
         if: github.event_name == 'push' && github.ref_name == 'main'
@@ -128,9 +129,10 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            artifacts/*
-            !artifacts/npm-launcher
-            artifacts/npm-launcher/*
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
