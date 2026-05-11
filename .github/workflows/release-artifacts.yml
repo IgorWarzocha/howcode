@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - dev
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -20,6 +21,7 @@ concurrency:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
@@ -118,6 +120,18 @@ jobs:
             !artifacts/npm-launcher
             artifacts/npm-launcher/*
 
+      - name: Upload main artifacts
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: main-${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            artifacts/*
+            !artifacts/npm-launcher
+            artifacts/npm-launcher/*
+
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v6
@@ -196,8 +210,56 @@ jobs:
               });
             }
 
+  publish-channel-release:
+    name: Publish channel GitHub release
+    if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
+    needs: build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: ${{ github.ref_name }}-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: List channel release assets
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
+
+      - name: Create or update channel GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ github.ref_name }}
+        run: |
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "No release assets found"
+            exit 1
+          fi
+
+          release_flags=()
+          if [ "$CHANNEL" = "dev" ]; then
+            release_flags+=(--prerelease)
+          else
+            release_flags+=(--latest)
+          fi
+
+          if gh release view "$CHANNEL" >/dev/null 2>&1; then
+            mapfile -t old_assets < <(gh release view "$CHANNEL" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-.*\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+            for old_asset in "${old_assets[@]}"; do
+              gh release delete-asset "$CHANNEL" "$old_asset" --yes
+            done
+            gh release upload "$CHANNEL" "${assets[@]}" --clobber
+            gh release edit "$CHANNEL" --title "$CHANNEL" --target "$GITHUB_SHA" "${release_flags[@]}"
+          else
+            gh release create "$CHANNEL" "${assets[@]}" --title "$CHANNEL" --target "$GITHUB_SHA" --notes "Automated $CHANNEL build." "${release_flags[@]}"
+          fi
+
   publish-release:
-    name: Publish GitHub release
+    name: Publish versioned GitHub release
     if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-24.04

@@ -1,7 +1,7 @@
 {
   "name": "howcode",
   "productName": "howcode",
-  "version": "0.1.63",
+  "version": "0.1.64",
   "private": true,
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
