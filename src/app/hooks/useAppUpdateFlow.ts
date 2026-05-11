@@ -12,6 +12,7 @@ const fallbackUpdateState: AppUpdateState = {
   status: 'idle',
   currentVersion: packageJson.version,
   latestVersion: null,
+  channel: null,
   error: null,
 }
 

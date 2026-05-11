@@ -13,5 +13,6 @@ export type AppUpdateState = {
   status: AppUpdateStatus
   currentVersion: string
   latestVersion: string | null
+  channel: 'main' | 'dev' | null
   error: string | null
 }

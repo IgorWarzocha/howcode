@@ -447,8 +447,8 @@ const workspaceActionHandlers = {
   'show-view': showViewState,
   'show-landing': (state: WorkspaceState) => ({
     ...state,
-    ...getTerminalStateForNextView(state, 'code'),
     activeView: 'code',
+    terminalVisible: false,
     selectedProjectId: '',
     selectedThreadId: null,
     selectedSessionPath: null,

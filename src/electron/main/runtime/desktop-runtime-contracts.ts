@@ -1,6 +1,7 @@
 import type { DesktopAction } from '../../../../shared/desktop-actions'
 import type {
   AnyDesktopActionPayload,
+  AppSettings,
   ArchivedThread,
   Artifact,
   ArtifactVersion,
@@ -129,6 +130,7 @@ export type PiThreadsModule = {
   listArtifactVersions: (artifactSlug: string) => Promise<ArtifactVersion[]> | ArtifactVersion[]
   compileReactArtifact: (source: string) => Promise<ReactArtifactCompileResult>
   loadShellState: (cwd: string) => Promise<ShellState>
+  loadAppSettings: () => Promise<AppSettings> | AppSettings
   loadThread: (
     sessionPath: string,
     options?: { historyCompactions?: number },

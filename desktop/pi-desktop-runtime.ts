@@ -28,7 +28,7 @@ import {
   upsertThreadSummary,
 } from './thread-state-db.ts'
 
-export { getLiveThread }
+export { getLiveThread, loadAppSettings }
 
 function withComposerModeSettings<TRequest extends ComposerStateRequest>(
   request: TRequest,
