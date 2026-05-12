@@ -24,6 +24,8 @@ const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP_UPDATE') === '1'
 const semverPattern = /^\d+\.\d+\.\d+$/
 const sha256Pattern = /^[a-f0-9]{64}$/i
+const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -284,6 +286,26 @@ async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<string>
 function getRunningReleaseKey() {
   const runningVersionDir = getRunningCachedVersionDir(path.join(getCacheRoot(), 'versions'))
   return runningVersionDir ? path.basename(runningVersionDir) : null
+}
+
+function getRunningReleaseFingerprint() {
+  const runningReleaseKey = getRunningReleaseKey()
+  if (!runningReleaseKey) return null
+
+  const channelPrefixedMatch = channelReleaseKeyPattern.exec(runningReleaseKey)
+  if (channelPrefixedMatch?.[2] && channelPrefixedMatch[3]) {
+    return {
+      version: channelPrefixedMatch[2],
+      hash: channelPrefixedMatch[3].toLowerCase(),
+    }
+  }
+
+  const legacyMatch = legacyReleaseKeyPattern.exec(runningReleaseKey)
+  if (legacyMatch?.[1] && legacyMatch[2]) {
+    return { version: legacyMatch[1], hash: legacyMatch[2].toLowerCase() }
+  }
+
+  return null
 }
 
 function getRunningCachedVersionDir(versionsRoot: string) {
@@ -549,7 +571,13 @@ export class AppUpdater {
     const versionDiff = compareVersions(release.version, this.state.currentVersion)
     if (versionDiff > 0) return true
     if (versionDiff < 0) return false
-    return getRunningReleaseKey() !== getReleaseKey(release) && release.channel === 'dev'
+
+    const runningRelease = getRunningReleaseFingerprint()
+    if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
+      return false
+    }
+
+    return release.channel === 'dev'
   }
 
   private async getPruneKeepDirs(installDir: string) {
