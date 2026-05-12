@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import {
   type CSSProperties,
+  type KeyboardEvent,
   lazy,
   type PointerEvent,
   Suspense,
@@ -265,6 +266,15 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
     event.stopPropagation()
     setOpen((current) => !current)
   }
+  const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!(event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown')) return
+    event.preventDefault()
+    setOpen(true)
+  }
+  const selectOption = (value: (typeof options)[number]['value']) => {
+    setSelectedVersion(value)
+    closeMenu()
+  }
   return (
     <>
       <button
@@ -272,6 +282,7 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
         type="button"
         className="artifact-version-trigger inline-flex h-7 max-w-28 shrink-0 items-center gap-1 rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
         onPointerDown={handleTriggerPointerDown}
+        onKeyDown={handleTriggerKeyDown}
         aria-label="Artifact version"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -306,9 +317,9 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
                   onPointerDown={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
-                    setSelectedVersion(option.value)
-                    closeMenu()
+                    selectOption(option.value)
                   }}
+                  onClick={() => selectOption(option.value)}
                 >
                   {option.value === selectedVersion ? <Check size={12} /> : <span />}
                   <span className="truncate">{option.label}</span>

@@ -73,7 +73,10 @@ export function useArtifactPanelState(conversationId: string | null) {
     setSelectedVersion('latest')
     setVersions([])
     setArtifactLoadError(null)
-    if (!conversationId) return
+    if (!conversationId) {
+      setLoadingArtifacts(false)
+      return
+    }
     setLoadingArtifacts(true)
     void listArtifactsQuery(conversationId)
       .then((nextArtifacts) => {
