@@ -558,7 +558,7 @@ export function ComposerTextField({
           aria-activedescendant={ariaActiveDescendant}
           aria-autocomplete={ariaControls ? 'list' : undefined}
           aria-controls={ariaControls}
-          placeholder=""
+          placeholder={placeholder}
           readOnly={readOnly}
         />
         <ComposerExpandButton
