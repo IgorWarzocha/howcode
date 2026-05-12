@@ -297,10 +297,13 @@ export function Sidebar({
     ...(onCloseCompactSidebar ? { onCloseCompactSidebar } : {}),
   }
 
+  const isMacOS = typeof window !== 'undefined' && window.piDesktop?.platform === 'darwin'
+
   return (
     <aside
       aria-label="Workspace sidebar"
       data-pulse-active={projectScopeLockActive ? 'true' : 'false'}
+      data-macos={isMacOS ? 'true' : 'false'}
       className="sidebar-shell motion-surface-pulse motion-sidebar-selection-pulse relative"
     >
       {showModeSelection ? (

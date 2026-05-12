@@ -11,6 +11,10 @@
   padding: 0.75rem 0.625rem 0.625rem;
 }
 
+.sidebar-shell[data-macos="true"] {
+  padding-top: 2.375rem;
+}
+
 .sidebar-mode-nav {
   display: grid;
   gap: 0.125rem;

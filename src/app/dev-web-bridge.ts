@@ -13,6 +13,7 @@ import type {
 import type { TerminalEvent, TerminalOpenRequest } from '../../shared/terminal-contracts'
 
 let bridgeTokenPromise: Promise<string> | null = null
+const MAC_PLATFORM_RE = /^Mac/
 
 function getBridgeToken() {
   bridgeTokenPromise ??= fetch('/__howcode/config')
@@ -112,6 +113,7 @@ export function installDevWebDesktopBridge() {
   window.howcodeDevWebBridge = true
 
   window.piDesktop = {
+    platform: MAC_PLATFORM_RE.test(navigator.platform) ? 'darwin' : 'linux',
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
