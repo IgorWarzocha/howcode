@@ -60,6 +60,7 @@ declare global {
   interface Window {
     howcodeDevWebBridge?: boolean
     piDesktop?: {
+      platform?: string
       getAppUpdateState?: () => Promise<AppUpdateState>
       checkAppUpdate?: () => Promise<AppUpdateState>
       installAppUpdate?: () => Promise<AppUpdateState>

@@ -81,19 +81,27 @@ export function DiffChangedFilesTree({
   focusedFileCount,
   onSelectedPathsChange,
 }: DiffChangedFilesTreeProps) {
-  const paths = useMemo(() => files.flatMap((file) => [resolveFileDiffPath(file)]), [files])
-  const gitStatus = useMemo<GitStatusEntry[]>(
-    () => files.map((file) => ({ path: resolveFileDiffPath(file), status: getGitStatus(file) })),
+  const filesWithPaths = useMemo(
+    () =>
+      files.flatMap((file) => {
+        const path = resolveFileDiffPath(file)
+        return path ? [{ file, path }] : []
+      }),
     [files],
+  )
+  const paths = useMemo(() => filesWithPaths.map(({ path }) => path), [filesWithPaths])
+  const gitStatus = useMemo<GitStatusEntry[]>(
+    () => filesWithPaths.map(({ file, path }) => ({ path, status: getGitStatus(file) })),
+    [filesWithPaths],
   )
   const fileStatsByPath = useMemo(() => {
     const stats = new Map<string, string>()
-    for (const file of files) {
+    for (const { file, path } of filesWithPaths) {
       const { additions, deletions } = getFileChangeCounts(file)
-      stats.set(resolveFileDiffPath(file), `+${additions} −${deletions}`)
+      stats.set(path, `+${additions} −${deletions}`)
     }
     return stats
-  }, [files])
+  }, [filesWithPaths])
 
   const fileStatsByPathRef = useRef(fileStatsByPath)
   fileStatsByPathRef.current = fileStatsByPath
