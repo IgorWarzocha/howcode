@@ -5,14 +5,15 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
 const { pipeline } = require('node:stream/promises')
-const { Readable } = require('node:stream')
+const { Readable, Transform } = require('node:stream')
 const tar = require('tar')
 
 const packageJson = require('../package.json')
 
 const APP_NAME = packageJson.howcode.appName
 const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl
-const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
+const FETCH_METADATA_TIMEOUT_MS = 30_000
+const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000
 
 const TARGETS = {
   'darwin:arm64': {
@@ -236,9 +237,53 @@ async function ensureWindowsLaunchIntegration(target, paths) {
   }
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+
+  const precision = unitIndex === 0 || value >= 10 ? 0 : 1
+  return `${value.toFixed(precision)} ${units[unitIndex]}`
+}
+
+function createDownloadProgressStream(input) {
+  let downloadedBytes = 0
+  let lastLoggedAt = 0
+
+  return new Transform({
+    transform(chunk, _encoding, callback) {
+      downloadedBytes += chunk.length
+      input.onProgress(downloadedBytes)
+
+      const now = Date.now()
+      if (now - lastLoggedAt >= 1000) {
+        lastLoggedAt = now
+        const downloadedLabel = formatBytes(downloadedBytes)
+        if (input.totalBytes > 0) {
+          const percent = Math.min(100, (downloadedBytes / input.totalBytes) * 100)
+          const totalLabel = formatBytes(input.totalBytes)
+          process.stdout.write(
+            `\rDownloading ${APP_NAME}: ${downloadedLabel} / ${totalLabel} (${percent.toFixed(0)}%)`,
+          )
+        } else {
+          process.stdout.write(`\rDownloading ${APP_NAME}: ${downloadedLabel}`)
+        }
+      }
+
+      callback(null, chunk)
+    },
+  })
+}
+
 async function fetchJson(url) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
+  const timeout = setTimeout(() => controller.abort(), FETCH_METADATA_TIMEOUT_MS)
 
   try {
     const response = await fetch(url, { signal: controller.signal })
@@ -251,9 +296,21 @@ async function fetchJson(url) {
   }
 }
 
-async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
+async function downloadFile(url, filePath, idleTimeoutMs = DOWNLOAD_IDLE_TIMEOUT_MS) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  let timedOut = false
+  let idleTimeout = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, idleTimeoutMs)
+
+  const resetIdleTimeout = () => {
+    clearTimeout(idleTimeout)
+    idleTimeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, idleTimeoutMs)
+  }
 
   try {
     const response = await fetch(url, { signal: controller.signal })
@@ -261,10 +318,22 @@ async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
       throw new Error(`HTTP ${response.status} while downloading ${url}`)
     }
 
+    const totalBytes = Number(response.headers.get('content-length')) || 0
+    resetIdleTimeout()
     await fsp.mkdir(path.dirname(filePath), { recursive: true })
-    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(filePath))
+    await pipeline(
+      Readable.fromWeb(response.body),
+      createDownloadProgressStream({ totalBytes, onProgress: resetIdleTimeout }),
+      fs.createWriteStream(filePath),
+    )
+    process.stdout.write('\n')
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(`Download stalled for ${Math.round(idleTimeoutMs / 1000)} seconds: ${url}`)
+    }
+    throw error
   } finally {
-    clearTimeout(timeout)
+    clearTimeout(idleTimeout)
   }
 }
 
