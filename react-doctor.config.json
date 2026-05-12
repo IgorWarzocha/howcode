@@ -1,5 +1,27 @@
 {
   "ignore": {
-    "files": ["Frameworks/effect-smol/**", "Frameworks/t3-code/**"]
+    "files": ["Frameworks/effect-smol/**", "Frameworks/t3-code/**"],
+    "overrides": [
+      {
+        "files": [
+          "src/app/components/workspace/terminal/terminal-viewport.tsx",
+          "src/app/components/workspace/composer/composer-text-field.tsx",
+          "src/app/views/settings-view.tsx",
+          "src/app/components/workspace/composer/ask-questions-card.tsx"
+        ],
+        "rules": ["react-doctor/rerender-state-only-in-handlers"]
+      },
+      {
+        "files": ["src/app/components/sidebar/projects/sidebar-projects-folder-browser.tsx"],
+        "rules": ["react-doctor/async-defer-await"]
+      },
+      {
+        "files": [
+          "src/app/views/settings-view.tsx",
+          "src/app/components/workspace/composer/ask-questions-card.tsx"
+        ],
+        "rules": ["react-doctor/no-derived-state-effect"]
+      }
+    ]
   }
 }

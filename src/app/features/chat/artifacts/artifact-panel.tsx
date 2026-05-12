@@ -138,9 +138,7 @@ function ArtifactPanelBody({
             sandbox="allow-scripts allow-forms allow-modals allow-popups"
             srcDoc={previewHtml}
             className="h-full w-full border-0"
-            title={
-              selectedArtifact ? formatArtifactSlug(selectedArtifact.slug) : 'Artifact preview'
-            }
+            title="Artifact preview"
           />
         ) : null}
       </div>

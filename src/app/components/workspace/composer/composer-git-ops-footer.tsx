@@ -1,5 +1,5 @@
 import { ArrowLeft, Columns2, Rows3, Settings } from 'lucide-react'
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import type {
   GitOpsMode,
   ProjectDiffBaseline,
@@ -77,6 +77,7 @@ export function ComposerGitOpsFooter({
       originSaveRequestedRef.current = false
     })
   }, [hasOrigin, onSaveOrigin, repoUrl])
+  const saveOriginFromOutsidePointerDown = useEffectEvent(() => saveOriginOnce())
 
   useEffect(() => {
     if (!optionsOpen) {
@@ -89,14 +90,14 @@ export function ComposerGitOpsFooter({
         return
       }
 
-      saveOriginOnce()
+      saveOriginFromOutsidePointerDown()
 
       window.setTimeout(() => setOptionsOpen(false), 0)
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
     return () => window.removeEventListener('pointerdown', handlePointerDown, true)
-  }, [optionsOpen, saveOriginOnce])
+  }, [optionsOpen])
 
   useEffect(() => {
     if (!optionsOpen) {

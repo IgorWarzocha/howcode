@@ -355,12 +355,12 @@ export function ComposerDiffBaselineSelector({
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [positionReady, setPositionReady] = useState(false)
-  const [activeAnchor, setActiveAnchor] = useState<'summary' | 'branch' | 'compact'>('summary')
   const panelId = useId()
   const anchorRef = useRef<HTMLButtonElement>(null)
   const branchAnchorRef = useRef<HTMLButtonElement>(null)
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const activeAnchorRef = useRef<'summary' | 'branch' | 'compact'>('summary')
   const [panelPosition, setPanelPosition] = useState({ right: 20, bottom: 20 })
 
   const commitsQuery = useQuery<ProjectCommitEntry[]>({
@@ -426,13 +426,13 @@ export function ComposerDiffBaselineSelector({
 
     const updatePosition = () => {
       const composerRect = composerPanelRef.current?.getBoundingClientRect()
-      const activeAnchorRef = getActiveBaselineAnchorRef({
-        activeAnchor,
+      const activeBaselineAnchorRef = getActiveBaselineAnchorRef({
+        activeAnchor: activeAnchorRef.current,
         anchorRef,
         branchAnchorRef,
         compactAnchorRef,
       })
-      const anchorRect = activeAnchorRef.current?.getBoundingClientRect()
+      const anchorRect = activeBaselineAnchorRef.current?.getBoundingClientRect()
       if (!(composerRect && anchorRect)) {
         return
       }
@@ -452,7 +452,7 @@ export function ComposerDiffBaselineSelector({
       window.removeEventListener('resize', updatePosition)
       window.removeEventListener('scroll', updatePosition, true)
     }
-  }, [activeAnchor, composerPanelRef, open])
+  }, [composerPanelRef, open])
 
   const fileCountLabel = counts ? formatGitCount(counts.fileCount) : '…'
   const insertionCountLabel = counts ? formatGitCount(counts.insertions) : '…'
@@ -472,7 +472,7 @@ export function ComposerDiffBaselineSelector({
         insertionCountLabel={insertionCountLabel}
         open={open}
         onOpen={() => {
-          setActiveAnchor('summary')
+          activeAnchorRef.current = 'summary'
           setOpen((current) => !current)
         }}
       />
@@ -483,7 +483,7 @@ export function ComposerDiffBaselineSelector({
           open={open}
           panelId={panelId}
           onOpen={() => {
-            setActiveAnchor('branch')
+            activeAnchorRef.current = 'branch'
             setOpen((current) => !current)
           }}
         />
@@ -499,7 +499,7 @@ export function ComposerDiffBaselineSelector({
           open && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
         )}
         onClick={() => {
-          setActiveAnchor('compact')
+          activeAnchorRef.current = 'compact'
           setOpen((current) => !current)
         }}
         aria-label="Diff baseline selector"
