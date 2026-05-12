@@ -9,12 +9,18 @@ import { applyStoredPiGuiTheme } from './app/app-shell/usePiGuiTheme'
 import { installDevWebDesktopBridge } from './app/dev-web-bridge'
 import { queryClient } from './app/query/query-client'
 
+function applyDesktopPlatformAttribute() {
+  const platform = window.piDesktop?.platform ?? 'browser'
+  document.documentElement.setAttribute('data-desktop-platform', platform)
+}
+
 if (import.meta.env.DEV) {
   void import('react-grab')
   installDevWebDesktopBridge()
 }
 
 try {
+  applyDesktopPlatformAttribute()
   applyStoredPiGuiTheme()
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>

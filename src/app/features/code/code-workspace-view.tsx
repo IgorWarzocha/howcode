@@ -342,7 +342,9 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onSendDiffComments={(message) => {
-          void handleSendDiffComments(message)
+          void handleSendDiffComments(message).then((sent) => {
+            if (sent) handleCloseGitOpsView()
+          })
         }}
         onSelectDiffComment={handleSelectDiffComment}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}

@@ -494,6 +494,12 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   display: none;
 }
 
+.artifact-version-trigger,
+.artifact-version-option {
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .artifact-markdown-editor .artifact-mdx-toolbar [class*="diffSourceToggleWrapper"] {
   height: 24px;
   display: inline-flex;

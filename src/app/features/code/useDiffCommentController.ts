@@ -24,7 +24,7 @@ async function sendDiffCommentsToComposer(input: {
   handleAction: AppShellController['handleAction']
   message?: string | null | undefined
   shellState: AppShellController['shellState']
-}) {
+}): Promise<{ ok: boolean; error: string | null }> {
   const streamingBehaviorPreference =
     input.shellState?.appSettings.composerStreamingBehavior ?? 'followUp'
   const result = await input.handleAction('composer.send', {
@@ -33,11 +33,11 @@ async function sendDiffCommentsToComposer(input: {
   })
 
   const actionErrorMessage = getDiffCommentSendError(result)
-  if (actionErrorMessage) return actionErrorMessage
-  if (result?.result?.composerSendOutcome !== 'stopped') {
-    diffCommentStore.clearContext(input.diffCommentContextId)
-  }
-  return null
+  if (actionErrorMessage) return { ok: false, error: actionErrorMessage }
+  if (result?.result?.composerSendOutcome === 'stopped') return { ok: false, error: null }
+
+  diffCommentStore.clearContext(input.diffCommentContextId)
+  return { ok: true, error: null }
 }
 
 export function useDiffCommentController({
@@ -84,9 +84,9 @@ export function useDiffCommentController({
   }, [diffCommentContextId])
 
   const handleSendDiffComments = async (message?: string | null) => {
-    if (!diffCommentContextId || diffCommentsSending) return
+    if (!diffCommentContextId || diffCommentsSending) return false
     const context = diffCommentStore.getContext(diffCommentContextId)
-    if (!hasDiffCommentsContext(context)) return
+    if (!hasDiffCommentsContext(context)) return false
 
     setDiffCommentsSending(true)
     setDiffCommentError(null)
@@ -94,19 +94,20 @@ export function useDiffCommentController({
     setComposerPromptResetKey((current) => current + 1)
 
     try {
-      setDiffCommentError(
-        await sendDiffCommentsToComposer({
-          context,
-          diffCommentContextId,
-          handleAction,
-          message,
-          shellState,
-        }),
-      )
+      const result = await sendDiffCommentsToComposer({
+        context,
+        diffCommentContextId,
+        handleAction,
+        message,
+        shellState,
+      })
+      setDiffCommentError(result.error)
+      return result.ok
     } catch (error) {
       setDiffCommentError(
         error instanceof Error ? error.message : 'Could not send comments to the agent.',
       )
+      return false
     } finally {
       setDiffCommentsSending(false)
     }
