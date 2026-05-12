@@ -447,6 +447,48 @@ li {
   gap: var(--space-xl);
 }
 
+.install-command {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  width: min(100%, 360px);
+  min-height: 48px;
+  padding: 0 var(--space-lg);
+  border: 0;
+  border-radius: 16px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 14px 34px oklch(22% 0.026 272 / 16%);
+  cursor: copy;
+  transition-property: transform, background-color;
+  transition-duration: 170ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.install-command:hover {
+  background: oklch(28% 0.032 272);
+}
+
+.install-command:active {
+  transform: scale(0.96);
+}
+
+.install-command:focus-visible {
+  outline: 2px solid oklch(58% 0.09 285 / 62%);
+  outline-offset: 4px;
+}
+
+.install-command code {
+  color: inherit;
+}
+
+.install-command span {
+  color: oklch(84% 0.026 272);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
 .text-link,
 footer a {
   color: var(--ink);
