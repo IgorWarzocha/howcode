@@ -5,10 +5,10 @@
 - `bun run ai:check` is the repo-wide verification command.
 
 ## Code Quality
-- MUST run `bun run ai:check` after concluding any changes.
-- Run `bun run ai:check` frequently while working and always before considering the task complete.
+- Run `bun run ai:check` after meaningful code, config, packaging, or behavior changes.
+- Run `bun run ai:check` frequently while working on code and before considering substantive implementation work complete.
 - If you touch a subsystem with its own fast deterministic tests, run those too.
-- Do not consider work complete while `ai:check` is failing.
+- Do not consider substantive implementation work complete while `ai:check` is failing.
 - Never weaken strict Biome or TypeScript rules just to silence warnings quickly. Fix the issue properly or add a narrow, justified override.
 
 ## Project Workflow

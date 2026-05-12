@@ -11,7 +11,8 @@ Use GitHub issues as the working brief for this repo. This skill covers four rel
 1. pick the right issue to work on
 2. rewrite vague issues into proper issues, epics, and sub-issues
 3. implement issue-backed work on a fresh branch from `dev`
-4. open and maintain clean PRs with good GitHub hygiene
+4. choose single-PR vs stacked-PR shape
+5. open and maintain clean PRs with good GitHub hygiene
 
 Do not treat every issue as immediately buildable. First decide whether it is a good leaf issue, a parent issue, a research item, or something that should be rewritten before coding.
 
@@ -24,10 +25,12 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 - When rewriting an existing issue, preserve the user's original text at the bottom under `## Original issue text` as a blockquote.
 - New or rewritten issues should follow the writing rules in `references/issue-writing.md`.
 - If PR or release work touches GitHub Actions, artifact uploads, or release packaging, check `references/actions-artifact-retention.md` so workflow changes match the repo's storage policy.
-- Start new work from a fresh local branch based on `dev`.
-- Open the PR back into `dev`, not `main`, unless the user explicitly says otherwise.
+- Start new work from fresh `dev`. For single PRs, create a normal branch from `dev`; for stacked work, initialize the stack with `--base dev`.
+- Open PRs back into `dev`, not `main`, unless the user explicitly says otherwise. In stacked mode, the bottom PR ultimately targets `dev` and upper PRs target the layer below.
 - If the issue asks for discussion first or is clearly not actionable yet, stop and explain instead of forcing implementation.
-- Only use auto-closing keywords such as `Closes #123` for issues that are fully resolved by the PR. Use `Refs #123` for anything partial.
+- Choose the PR shape deliberately: small related changes should usually become layers in a stack; big unrelated features should be separate PRs or separate stacks; GitHub epics usually become a stacked PR series rather than one giant PR.
+- Use the `gh-stack` skill as the operating manual when stacked PR mode is selected; this skill owns the issue/PR policy and stack-vs-single decision.
+- Only use auto-closing keywords such as `Closes #123` for issues that are fully resolved by the PR. Use `Refs #123` for anything partial. In stacked mode, use `Refs` on intermediate layers and reserve `Closes` for the layer/PR whose merge completes the issue.
 - Before any build or release pass in this flow, refresh the landing changelog in `src/app/views/landing-overview-content.ts` from recent merged PRs / `origin/dev` commits so the shipped app does not carry stale release notes.
 
 ## When to use
@@ -99,13 +102,25 @@ Avoid the shorter `gh issue view <number> --comments` as the first read: it can 
    - `Backlog` means valid but not next
    - epics are usually containers, not active implementation cards
 
-### 4. Branch from `dev`
-1. Fetch remotes.
-2. Switch to `dev`.
-3. Fast-forward `dev` from `origin/dev`.
-4. Create a fresh branch from `dev` for the issue work.
+### 4. Choose PR shape, then branch from `dev`
+1. Fetch remotes, switch to `dev`, and fast-forward from `origin/dev`.
+2. Decide whether this work should be a single PR, a stacked PR series, or separate independent PRs/stacks.
+3. Use single PR mode only for tiny self-contained leaf work where a stack would be empty ceremony.
+4. Use stacked PR mode for small related changes that form one cohesive story with reviewable dependency layers. Treat most GitHub epics this way: split the epic into bottom-to-top PR layers instead of making one huge branch.
+5. Use separate PRs/stacks for big features that can merge independently or belong to different product stories.
 
-Useful commands:
+Decision tree:
+
+```text
+Is this local-only or not issue-backed? → leave this skill.
+Is the issue not actionable yet? → rewrite/split/research first.
+Is it one tiny self-contained leaf change? → one normal PR from dev.
+Is it small related changes or one cohesive feature/epic with dependent layers? → stacked PRs, base dev.
+Are the parts big, independent, or unrelated? → separate PRs or separate stacks.
+Would a stack only add ceremony? → one normal PR.
+```
+
+Useful commands for single PR mode:
 
 ```bash
 git fetch origin
@@ -114,7 +129,22 @@ git pull --ff-only origin dev
 git switch -c <branch-name>
 ```
 
-Branch naming should be issue-oriented and easy to trace, for example `issue-123-short-slug` or `issues-123-124-short-slug`.
+Useful commands for stacked PR mode:
+
+```bash
+git fetch origin
+git switch dev
+git pull --ff-only origin dev
+gh stack init --base dev -p issue-123 foundation
+# commit foundation layer
+gh stack add api
+# commit next layer
+gh stack add ui
+# commit top layer
+gh stack submit --auto
+```
+
+Branch naming should be issue-oriented and easy to trace. For stacks, prefer a shared prefix such as `issue-123` with short layer suffixes.
 
 ### 5. Implement the work
 1. Treat the issue as the brief.
@@ -134,10 +164,11 @@ Branch naming should be issue-oriented and easy to trace, for example `issue-123
 3. Keep it terse and user-facing; do not dump issue numbers or internal workflow noise into the app UI.
 4. If nothing user-visible changed since the last refresh, say so explicitly instead of inventing changelog churn.
 
-### 7. Open a clean PR with good hygiene
-1. Push the branch if needed.
-2. Create a PR targeting `dev`.
-3. Write a detailed PR body with:
+### 7. Open clean PRs with good hygiene
+1. Push the branch or submit the stack if needed.
+2. In single PR mode, create one PR targeting `dev`.
+3. In stacked mode, create/update the stack with `gh stack submit --auto`; verify with `gh stack view --json`.
+4. Write detailed PR bodies with:
    - a concise summary of the change
    - notable implementation details if they matter to reviewers
    - any validation or review loop summary worth preserving
@@ -149,16 +180,33 @@ Branch naming should be issue-oriented and easy to trace, for example `issue-123
 Useful commands:
 
 ```bash
+# single PR
 git push -u origin <branch-name>
 gh pr create --base dev --fill
 gh pr edit <pr-number> --body-file <file>
+
+# stacked PRs
+gh stack submit --auto
+gh stack view --json
+# edit individual PR bodies with gh pr edit as needed
 ```
 
+Stacked PR body guidance:
+- Intermediate layers usually use `Refs #n`.
+- The final/completing layer may use `Closes #n` if merging that layer resolves the issue.
+- For epic stacks, child issue PRs can close their child issues; parent epics should usually be referenced until the full epic is complete.
+
 ### 8. Ask Codex for review
-Post this exact PR comment after the PR is up:
+Post this exact PR comment after a normal PR is up:
 
 ```text
 @codex please review this PR and give me 10-20 issues if any. Categorize findings as required, recommended, or optional.
+```
+
+For stacked PRs, post this variant on each PR in the stack:
+
+```text
+@codex please review this PR as one layer in a stacked PR series. Focus on this layer's diff and call out cross-layer issues only when they affect correctness. Categorize findings as required, recommended, or optional.
 ```
 
 Useful command:
@@ -194,13 +242,13 @@ gh pr view <pr-number-or-url> --comments
 - If the user asked for issue selection, the chosen issue is a manageable leaf issue rather than an epic or mushy umbrella issue.
 - If the user asked for issue cleanup, the rewritten issues follow the house format and preserve original text.
 - The issue or PR was fully read before action.
-- New work started from a branch created off current `dev`.
-- The PR targets `dev` explicitly.
+- New single-PR work started from a branch created off current `dev`; stacked work was initialized with `--base dev`.
+- The PR targets `dev` explicitly, or the stack bottom ultimately targets `dev` with upper PRs targeting the layer below.
 - The PR body clearly distinguishes `Closes` from `Refs`.
 - The user's `/review` findings were addressed or explicitly called out.
 - If the flow included a build or release pass, `src/app/views/landing-overview-content.ts` was refreshed first from real merged PRs / `origin/dev` history.
 - If the flow touched GitHub Actions workflows, artifact retention and upload behavior still match `references/actions-artifact-retention.md`.
-- Codex was asked for review.
+- Codex was asked for review; in stacked mode, each layer received the stack-aware review request.
 - The PR link was returned to the user after posting the review request.
 - Codex feedback was triaged instead of accepted blindly when the user asked for feedback handling.
 
@@ -229,8 +277,8 @@ Action: do not churn on them. Fix the real ones, then note why the others were d
 ## Output contract
 The completed flow should leave:
 - a clearly chosen or clearly rewritten issue when the request was about backlog triage
-- an issue-backed implementation branch created from `dev`
-- a PR targeting `dev`
+- an issue-backed implementation branch from `dev`, or a stack initialized with `--base dev`
+- a PR targeting `dev`, or a stacked PR series whose bottom targets `dev`
 - a detailed PR description with correct closing references
 - a Codex review request comment on the PR
 - the PR link returned to the user
