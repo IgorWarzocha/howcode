@@ -44,7 +44,7 @@ const baselineOptions = [
   >
 }>
 
-const BASELINE_POPOVER_WIDTH = 332
+const BASELINE_POPOVER_WIDTH = 400
 
 function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
   const normalizedQuery = query.trim().toLowerCase()
