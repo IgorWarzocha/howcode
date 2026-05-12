@@ -144,6 +144,7 @@ function SidebarContent(props: SidebarProps) {
         terminalRunningSessionPaths={props.terminalRunningSessionPaths}
         threads={props.inboxThreads}
         selectedSessionPath={props.selectedInboxSessionPath}
+        onAction={props.onAction}
         onDismissThread={props.onDismissInboxThread}
         onSelectThread={props.onSelectInboxThread}
       />

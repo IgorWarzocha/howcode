@@ -1,4 +1,13 @@
-import { Clock3, FolderPlus, Github, ListFilter, Search, SquareTerminal, Star } from 'lucide-react'
+import {
+  Clock3,
+  FolderPlus,
+  Github,
+  ListFilter,
+  Search,
+  SquareTerminal,
+  Star,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
@@ -15,6 +24,7 @@ import {
   type SidebarProjectsFilterMode,
 } from './sidebar-projects.helpers'
 import { SidebarProjectsCreatePopover } from './sidebar-projects-create-popover'
+import { SidebarProjectsFilterMenu } from './sidebar-projects-filter-menu'
 import { getSidebarFolderProjectName } from './sidebar-projects-folder-browser'
 
 type PendingProject = {
@@ -252,6 +262,7 @@ export function SidebarProjectsSection({
   const showProjectCreate = activeView !== 'extensions' && activeView !== 'skills'
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>('all')
+  const [filterOpen, setFilterOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [projectNameDraft, setProjectNameDraft] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
@@ -259,6 +270,8 @@ export function SidebarProjectsSection({
   const [createdProjectIds, setCreatedProjectIds] = useState<string[]>([])
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null)
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
+  const filterButtonRef = useRef<HTMLButtonElement>(null)
+  const filterPanelRef = useRef<HTMLDivElement>(null)
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const createPanelRef = useRef<HTMLDialogElement>(null)
 
@@ -319,33 +332,21 @@ export function SidebarProjectsSection({
     }
   }, [autoExpandedProjectIds, collapsedProjectIds, searchQuery])
 
-  const cycleFilterMode = () => {
-    setFilterMode((current) => {
-      if (current === 'all') {
-        return 'favourites'
-      }
-
-      if (current === 'favourites') {
-        return 'github'
-      }
-
-      if (current === 'github') {
-        return 'terminal'
-      }
-
-      if (current === 'terminal') {
-        return 'recent'
-      }
-
-      return 'all'
-    })
-  }
-
   const filterLabel = getSidebarProjectFilterLabel(filterMode)
+
+  const dismissFilter = useCallback(() => {
+    setFilterOpen(false)
+  }, [])
 
   const dismissCreate = useCallback(() => {
     setCreateOpen(false)
   }, [])
+
+  useDismissibleLayer({
+    open: filterOpen,
+    onDismiss: dismissFilter,
+    refs: [filterButtonRef, filterPanelRef],
+  })
 
   useDismissibleLayer({
     open: createOpen,
@@ -432,7 +433,7 @@ export function SidebarProjectsSection({
   return (
     <section className="sidebar-section">
       <div className="sidebar-toolbar">
-        <label
+        <div
           className="sidebar-search-field"
           data-active={searchQuery.trim().length > 0 ? 'true' : 'false'}
         >
@@ -440,19 +441,42 @@ export function SidebarProjectsSection({
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape' || searchQuery.length === 0) return
+              event.preventDefault()
+              event.stopPropagation()
+              setSearchQuery('')
+            }}
             placeholder="Search"
             className="sidebar-search-input"
             aria-label="Search projects"
           />
-        </label>
+          {searchQuery.length > 0 ? (
+            <button
+              type="button"
+              className="sidebar-search-clear"
+              aria-label="Clear project search"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={13} />
+            </button>
+          ) : null}
+        </div>
         {showProjects ? (
           <div className="sidebar-action-group">
             <IconButton
+              ref={filterButtonRef}
               label={filterLabel}
               tooltipPlacement="right"
-              onClick={cycleFilterMode}
+              onClick={() => {
+                setCreateOpen(false)
+                setFilterOpen((open) => !open)
+              }}
               icon={getSidebarProjectFilterIcon(filterMode)}
               active={filterMode !== 'all'}
+              aria-haspopup="menu"
+              aria-expanded={filterOpen}
+              aria-controls="sidebar-project-filter-menu"
             />
             {showProjectCreate ? (
               <IconButton
@@ -461,12 +485,26 @@ export function SidebarProjectsSection({
                 tooltipPlacement="right"
                 onClick={() => {
                   setCreateErrorMessage(null)
+                  setFilterOpen(false)
                   setCreateOpen(true)
                 }}
                 icon={<FolderPlus size={15} />}
               />
             ) : null}
           </div>
+        ) : null}
+
+        {filterOpen ? (
+          <SidebarProjectsFilterMenu
+            menuId="sidebar-project-filter-menu"
+            open={filterOpen}
+            filterMode={filterMode}
+            panelRef={filterPanelRef}
+            onSelect={(nextFilterMode) => {
+              setFilterMode(nextFilterMode)
+              setFilterOpen(false)
+            }}
+          />
         ) : null}
 
         {createOpen ? (

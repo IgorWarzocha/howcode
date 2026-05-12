@@ -37,6 +37,7 @@ export const desktopActions = [
   'composer.answer-native-questions',
   'inbox.mark-read',
   'inbox.dismiss',
+  'inbox.clear-read',
   'settings.update',
   'settings.clear-clipboard-images',
   'pi-settings.update',

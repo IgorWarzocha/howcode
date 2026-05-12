@@ -20,6 +20,7 @@ export {
   archiveThread,
   archiveThreads,
   beginInboxThreadTurn,
+  clearReadInboxThreads,
   collapseAllProjects,
   deleteProject,
   deleteThreadRecord,
