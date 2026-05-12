@@ -76,6 +76,37 @@ export function dismissInboxThread(sessionPath: string) {
   ).run(sessionPath)
 }
 
+export function clearReadInboxThreads(olderThanMs: number | null = null) {
+  const db = getThreadStateDatabase()
+  const result = (
+    olderThanMs
+      ? db
+          .prepare(
+            `
+            DELETE FROM inbox_items
+            WHERE unread = 0
+              AND COALESCE(
+                last_assistant_at_ms,
+                unixepoch(updated_at) * 1000,
+                unixepoch(created_at) * 1000,
+                0
+              ) < ?
+          `,
+          )
+          .run(olderThanMs)
+      : db
+          .prepare(
+            `
+            DELETE FROM inbox_items
+            WHERE unread = 0
+          `,
+          )
+          .run()
+  ) as { changes: number }
+
+  return result.changes
+}
+
 export function upsertInboxThreadMessage(record: ThreadInboxMessageRecord) {
   const db = getThreadStateDatabase()
   const serializedContent = JSON.stringify(record.content)

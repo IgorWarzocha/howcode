@@ -450,6 +450,7 @@ const workspaceActionHandlers = {
     activeView: 'code',
     terminalVisible: false,
     selectedProjectId: '',
+    selectedInboxSessionPath: null,
     selectedThreadId: null,
     selectedSessionPath: null,
     selectedDiffFilePath: null,

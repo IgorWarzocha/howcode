@@ -13,6 +13,7 @@ import { openThreadRuntime, startNewThread } from '../pi-desktop-runtime.ts'
 import {
   archiveThread,
   archiveThreads,
+  clearReadInboxThreads,
   deleteThreadRecord,
   dismissInboxThread,
   getThreadSessionPath,
@@ -137,6 +138,11 @@ const threadActionHandlers = {
     const sessionPath = getSessionPath(payload)
     if (sessionPath) dismissInboxThread(sessionPath)
     return handledAction()
+  },
+  'inbox.clear-read': (payload) => {
+    const olderThanDays = typeof payload.olderThanDays === 'number' ? payload.olderThanDays : null
+    const olderThanMs = olderThanDays ? Date.now() - olderThanDays * 24 * 60 * 60 * 1000 : null
+    return handledAction({ clearedCount: clearReadInboxThreads(olderThanMs) })
   },
 } satisfies Partial<Record<DesktopAction, ThreadActionHandler>>
 
