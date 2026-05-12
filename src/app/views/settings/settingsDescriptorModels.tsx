@@ -30,7 +30,7 @@ export function buildModelSettingsDescriptors({
   setOpenSelectId: Dispatch<SetStateAction<string | null>>
   onAction: DesktopActionInvoker
 }): SettingDescriptor[] {
-  const modelProviders = [...new Set(availableModels.map((model) => model.provider))].sort()
+  const modelProviders = [...new Set(availableModels.map((model) => model.provider))].toSorted()
   const allThinkingLevels: ComposerThinkingLevel[] = [
     'off',
     'minimal',

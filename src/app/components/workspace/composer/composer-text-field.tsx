@@ -17,6 +17,7 @@ import { cn } from '../../../utils/cn'
 
 const COLLAPSED_VISIBLE_LINE_COUNT = 5
 const EXPANDED_VISIBLE_LINE_COUNT = 15
+const PLACEHOLDER_SEPARATOR_PATTERN = / · | — |: /
 
 type ComposerTextFieldProps = {
   value: string
@@ -46,18 +47,17 @@ type ComposerTextFieldProps = {
 }
 
 function splitPlaceholderText(placeholder: string) {
-  const separators = [' · ', ' — ', ': ']
-  for (const separator of separators) {
-    const index = placeholder.indexOf(separator)
-    if (index > 0) {
-      return {
-        leading: placeholder.slice(0, index),
-        tailParts: placeholder
-          .slice(index)
-          .split(separator)
-          .filter(Boolean)
-          .map((part) => `${separator}${part}`),
-      }
+  const separatorMatch = PLACEHOLDER_SEPARATOR_PATTERN.exec(placeholder)
+  const separator = separatorMatch?.[0]
+  const index = separatorMatch?.index ?? -1
+  if (separator && index > 0) {
+    const tailParts: string[] = []
+    for (const part of placeholder.slice(index).split(separator)) {
+      if (part) tailParts.push(`${separator}${part}`)
+    }
+    return {
+      leading: placeholder.slice(0, index),
+      tailParts,
     }
   }
   return { leading: placeholder, tailParts: [] }
@@ -126,8 +126,10 @@ function updateComposerTextareaHeight(input: {
   input.textarea.style.height = '0px'
   const scrollHeight = Math.max(input.textarea.scrollHeight, 24)
   const nextHeight = Math.min(scrollHeight, Math.max(maxVisibleHeight, 24))
-  input.textarea.style.height = `${nextHeight}px`
-  input.textarea.style.overflowY = scrollHeight > nextHeight + 1 ? 'auto' : 'hidden'
+  Object.assign(input.textarea.style, {
+    height: `${nextHeight}px`,
+    overflowY: scrollHeight > nextHeight + 1 ? 'auto' : 'hidden',
+  })
   const nextCanExpandField = scrollHeight > Math.ceil(lineHeight * COLLAPSED_VISIBLE_LINE_COUNT) + 1
   input.setCanExpandField((current) =>
     current === nextCanExpandField ? current : nextCanExpandField,
@@ -235,22 +237,24 @@ function measureTextareaMarkerPosition(input: {
   const marker = document.createElement('span')
   const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20
 
-  mirror.style.position = 'absolute'
-  mirror.style.visibility = 'hidden'
-  mirror.style.pointerEvents = 'none'
-  mirror.style.whiteSpace = 'pre-wrap'
-  mirror.style.overflowWrap = 'break-word'
-  mirror.style.wordBreak = 'break-word'
-  mirror.style.boxSizing = computedStyle.boxSizing
-  mirror.style.width = `${Math.max(1, input.textarea.clientWidth - input.adornmentWidth)}px`
-  mirror.style.font = computedStyle.font
-  mirror.style.fontFamily = computedStyle.fontFamily
-  mirror.style.fontSize = computedStyle.fontSize
-  mirror.style.fontWeight = computedStyle.fontWeight
-  mirror.style.letterSpacing = computedStyle.letterSpacing
-  mirror.style.lineHeight = computedStyle.lineHeight
-  mirror.style.padding = computedStyle.padding
-  mirror.style.border = computedStyle.border
+  Object.assign(mirror.style, {
+    border: computedStyle.border,
+    boxSizing: computedStyle.boxSizing,
+    font: computedStyle.font,
+    fontFamily: computedStyle.fontFamily,
+    fontSize: computedStyle.fontSize,
+    fontWeight: computedStyle.fontWeight,
+    letterSpacing: computedStyle.letterSpacing,
+    lineHeight: computedStyle.lineHeight,
+    overflowWrap: 'break-word',
+    padding: computedStyle.padding,
+    pointerEvents: 'none',
+    position: 'absolute',
+    visibility: 'hidden',
+    whiteSpace: 'pre-wrap',
+    width: `${Math.max(1, input.textarea.clientWidth - input.adornmentWidth)}px`,
+    wordBreak: 'break-word',
+  })
 
   mirror.textContent = input.markerText || input.placeholder || ''
   marker.textContent = '\u200b'
@@ -554,7 +558,7 @@ export function ComposerTextField({
           aria-activedescendant={ariaActiveDescendant}
           aria-autocomplete={ariaControls ? 'list' : undefined}
           aria-controls={ariaControls}
-          placeholder=""
+          placeholder={placeholder}
           readOnly={readOnly}
         />
         <ComposerExpandButton

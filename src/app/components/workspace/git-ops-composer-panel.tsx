@@ -134,48 +134,50 @@ export function GitOpsComposerPanel({
     gitActionErrorMessage && !gitActionErrorDismissed ? gitActionErrorMessage : null
 
   return (
-    <div className="relative grid gap-0 overflow-visible">
-      {visibleGitActionErrorMessage ? (
-        <GitOpsErrorDetails
-          detail={visibleGitActionErrorMessage}
-          onDismiss={() => setGitActionErrorDismissed(true)}
-        />
-      ) : null}
-      <section
-        ref={composerPanelRef}
-        className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
-        aria-label="Git ops composer panel"
-      >
-        <ComposerGitOpsSurface
-          dictationModelId={dictationModelId}
-          dictationMaxDurationSeconds={dictationMaxDurationSeconds}
-          composerPanelRef={composerPanelRef}
-          onOpenSettingsView={onOpenSettingsView}
-          projectGitState={projectGitState}
-          projectId={projectId}
-          sessionPath={sessionPath}
-          showDictationButton={showDictationButton}
-          appSettings={appSettings}
-          diffBaseline={diffBaseline}
-          diffRenderMode={diffRenderMode}
-          diffComments={diffComments}
-          diffCommentCount={diffCommentCount}
-          diffCommentsSending={diffCommentsSending}
-          diffCommentError={diffCommentError}
-          diffLoadError={diffLoadError}
-          onSetDiffBaseline={onSetDiffBaseline}
-          onSetDiffRenderMode={onSetDiffRenderMode}
-          onSendDiffComments={onSendDiffComments}
-          onSelectDiffComment={onSelectDiffComment}
-          onAction={onAction}
-          onLayoutChange={onLayoutChange}
-          onBack={onBack}
-          onActionErrorMessageChange={(message) => {
-            setGitActionErrorMessage(message)
-            setGitActionErrorDismissed(false)
-          }}
-        />
-      </section>
+    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
+      <div className="relative col-start-2 grid min-w-0 gap-0 overflow-visible">
+        {visibleGitActionErrorMessage ? (
+          <GitOpsErrorDetails
+            detail={visibleGitActionErrorMessage}
+            onDismiss={() => setGitActionErrorDismissed(true)}
+          />
+        ) : null}
+        <section
+          ref={composerPanelRef}
+          className="grid min-w-0 gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
+          aria-label="Git ops composer panel"
+        >
+          <ComposerGitOpsSurface
+            dictationModelId={dictationModelId}
+            dictationMaxDurationSeconds={dictationMaxDurationSeconds}
+            composerPanelRef={composerPanelRef}
+            onOpenSettingsView={onOpenSettingsView}
+            projectGitState={projectGitState}
+            projectId={projectId}
+            sessionPath={sessionPath}
+            showDictationButton={showDictationButton}
+            appSettings={appSettings}
+            diffBaseline={diffBaseline}
+            diffRenderMode={diffRenderMode}
+            diffComments={diffComments}
+            diffCommentCount={diffCommentCount}
+            diffCommentsSending={diffCommentsSending}
+            diffCommentError={diffCommentError}
+            diffLoadError={diffLoadError}
+            onSetDiffBaseline={onSetDiffBaseline}
+            onSetDiffRenderMode={onSetDiffRenderMode}
+            onSendDiffComments={onSendDiffComments}
+            onSelectDiffComment={onSelectDiffComment}
+            onAction={onAction}
+            onLayoutChange={onLayoutChange}
+            onBack={onBack}
+            onActionErrorMessageChange={(message) => {
+              setGitActionErrorMessage(message)
+              setGitActionErrorDismissed(false)
+            }}
+          />
+        </section>
+      </div>
     </div>
   )
 }

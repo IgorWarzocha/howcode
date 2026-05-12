@@ -1,5 +1,5 @@
 import { Check, GitCommitHorizontal, X } from 'lucide-react'
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useEffectEvent, useId, useRef } from 'react'
 import type { AppSettings, ComposerModel, DesktopActionInvoker } from '../../desktop/types'
 import { modalPanelClass, panelChromeClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
@@ -26,6 +26,7 @@ export function SettingsPanel({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const lastFocusedElementRef = useRef<HTMLElement | null>(null)
   const selectedModel = appSettings.gitCommitMessageModel
+  const closeOnEscape = useEffectEvent(() => onClose())
 
   useEffect(() => {
     if (!open) {
@@ -38,7 +39,7 @@ export function SettingsPanel({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        closeOnEscape()
       }
     }
 
@@ -48,7 +49,7 @@ export function SettingsPanel({
       window.removeEventListener('keydown', handleKeyDown)
       lastFocusedElementRef.current?.focus()
     }
-  }, [onClose, open])
+  }, [open])
 
   if (!open) {
     return null

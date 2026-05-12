@@ -86,8 +86,7 @@ function resolveCssColor(element: HTMLElement, value: string, fallback: string) 
   if (!trimmedValue) return fallback
 
   const probe = element.ownerDocument.createElement('span')
-  probe.style.color = trimmedValue
-  probe.style.display = 'none'
+  Object.assign(probe.style, { color: trimmedValue, display: 'none' })
   element.appendChild(probe)
   const resolvedColor = getComputedStyle(probe).color
   probe.remove()
