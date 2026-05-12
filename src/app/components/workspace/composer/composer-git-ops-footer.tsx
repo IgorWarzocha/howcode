@@ -1,5 +1,13 @@
 import { ArrowLeft, Columns2, Rows3, Settings } from 'lucide-react'
-import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import type {
   GitOpsMode,
   ProjectDiffBaseline,
@@ -64,8 +72,15 @@ export function ComposerGitOpsFooter({
   repoUrl,
 }: ComposerGitOpsFooterProps) {
   const [optionsOpen, setOptionsOpen] = useState(false)
+  const [optionsPopoverLeft, setOptionsPopoverLeft] = useState(0)
   const optionsRef = useRef<HTMLDivElement>(null)
+  const repoInputRef = useRef<HTMLInputElement>(null)
   const originSaveRequestedRef = useRef(false)
+
+  const openOriginEditor = () => {
+    setOptionsOpen(true)
+    window.requestAnimationFrame(() => repoInputRef.current?.focus())
+  }
 
   const saveOriginOnce = useCallback(() => {
     if (hasOrigin || repoUrl.trim().length === 0 || originSaveRequestedRef.current) {
@@ -78,6 +93,31 @@ export function ComposerGitOpsFooter({
     })
   }, [hasOrigin, onSaveOrigin, repoUrl])
   const saveOriginFromOutsidePointerDown = useEffectEvent(() => saveOriginOnce())
+
+  useEffect(() => {
+    if (optionsOpen && !hasOrigin) {
+      repoInputRef.current?.focus()
+    }
+  }, [hasOrigin, optionsOpen])
+
+  useLayoutEffect(() => {
+    if (!optionsOpen) return
+
+    const updatePopoverLeft = () => {
+      const composerRect = composerPanelRef.current?.getBoundingClientRect()
+      const optionsRect = optionsRef.current?.getBoundingClientRect()
+      if (!(composerRect && optionsRect)) return
+      setOptionsPopoverLeft(composerRect.left - optionsRect.left)
+    }
+
+    updatePopoverLeft()
+    window.addEventListener('resize', updatePopoverLeft)
+    window.addEventListener('scroll', updatePopoverLeft, true)
+    return () => {
+      window.removeEventListener('resize', updatePopoverLeft)
+      window.removeEventListener('scroll', updatePopoverLeft, true)
+    }
+  }, [composerPanelRef, optionsOpen])
 
   useEffect(() => {
     if (!optionsOpen) {
@@ -127,10 +167,10 @@ export function ComposerGitOpsFooter({
               type="button"
               className={cn(compactIconButtonClass, 'h-7 w-7')}
               onClick={() => setOptionsOpen((current) => !current)}
-              aria-label="Commit options"
+              aria-label="GitOps settings"
               aria-haspopup="menu"
               aria-expanded={optionsOpen}
-              data-tooltip="Commit options"
+              data-tooltip="GitOps settings"
             >
               <Settings size={14} />
             </button>
@@ -139,28 +179,35 @@ export function ComposerGitOpsFooter({
               <div
                 className={cn(
                   popoverPanelClass,
-                  'absolute bottom-[calc(100%+8px)] left-0 z-20 grid min-w-56 gap-2 rounded-xl border p-3',
+                  'absolute bottom-[calc(100%+8px)] z-20 grid min-w-56 gap-2 rounded-xl border p-3',
                 )}
+                style={{ left: `${optionsPopoverLeft}px` }}
                 role="menu"
-                aria-label="Commit options"
+                aria-label="GitOps settings"
               >
                 {hasOrigin ? null : (
-                  <input
-                    value={repoUrl}
-                    onChange={(event) => onSetRepoUrl(event.target.value)}
-                    onBlur={() => {
-                      saveOriginOnce()
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
+                  <label className="grid gap-1">
+                    <span className="px-1 text-[11px] text-[color:var(--muted)]">
+                      GitHub origin URL
+                    </span>
+                    <input
+                      ref={repoInputRef}
+                      value={repoUrl}
+                      onChange={(event) => onSetRepoUrl(event.target.value)}
+                      onBlur={() => {
                         saveOriginOnce()
-                      }
-                    }}
-                    className="min-h-7 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
-                    placeholder="Repository URL"
-                    aria-label="Repository URL"
-                  />
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          saveOriginOnce()
+                        }
+                      }}
+                      className="min-h-7 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+                      placeholder="https://github.com/owner/repo"
+                      aria-label="GitHub origin URL"
+                    />
+                  </label>
                 )}
                 <PlainToggle
                   label="Include unstaged"
@@ -196,6 +243,17 @@ export function ComposerGitOpsFooter({
               </div>
             ) : null}
           </div>
+          {hasOrigin ? null : (
+            <button
+              type="button"
+              className="composer-origin-control composer-footer-text inline-flex h-7 items-center rounded-lg border border-[color:var(--border)] px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              onClick={openOriginEditor}
+              aria-label="Add GitHub origin"
+              data-tooltip="Add GitHub origin"
+            >
+              Add origin
+            </button>
+          )}
           <button
             type="button"
             className={cn(

@@ -360,6 +360,12 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   }
 }
 
+@container (max-width: 28rem) {
+  .composer-origin-control {
+    display: none;
+  }
+}
+
 @container (max-width: 22rem) {
   .composer-gitops-control {
     display: none;
