@@ -29,7 +29,7 @@ export function SettingsMenu({
   panelRef,
 }: SettingsMenuProps) {
   const { step, isRunning, advance } = useAppUpdateFlow()
-  const updateDisabled = isRunning || step.id === 'up-to-date'
+  const updateDisabled = isRunning
   const UpdateIcon =
     step.id === 'idle' ||
     step.id === 'up-to-date' ||

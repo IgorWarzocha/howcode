@@ -13,6 +13,7 @@ import type {
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
+import { checkAppUpdateQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
 import { buildContextualActionPayload } from './controller-action-helpers'
@@ -163,6 +164,14 @@ export function useDesktopActionHandlers({
       const actionErrorMessage = getActionErrorMessage(actionResult)
       if (actionErrorMessage && shouldShowGlobalActionError(action)) {
         showToast(actionErrorMessage)
+      }
+
+      if (
+        action === 'settings.update' &&
+        contextualPayload.key === 'devUpdateBranch' &&
+        !actionErrorMessage
+      ) {
+        void checkAppUpdateQuery()
       }
 
       return actionResult
