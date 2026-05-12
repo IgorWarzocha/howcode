@@ -109,10 +109,11 @@ type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
   }
 
 function getReplyActivityKey(messages: readonly Message[]) {
-  return messages
-    .filter((message) => message.role !== 'user')
-    .map((message) => message.id)
-    .join('|')
+  const replyMessageIds: string[] = []
+  for (const message of messages) {
+    if (message.role !== 'user') replyMessageIds.push(message.id)
+  }
+  return replyMessageIds.join('|')
 }
 
 function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {

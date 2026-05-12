@@ -45,7 +45,8 @@
     "pages:dev": "vite --config pages/vite.config.ts",
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",
-    "deadcode": "knip"
+    "deadcode": "knip",
+    "react-doctor": "react-doctor . --offline --project howcode"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
@@ -101,13 +102,14 @@
     "electron": "41.2.1",
     "electron-builder": "^26.0.12",
     "husky": "^9.1.7",
+    "knip": "^6.12.1",
     "lint-staged": "^15.2.7",
+    "react-doctor": "^0.1.6",
     "react-grab": "^0.1.32",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
-    "vitest": "^4.1.5",
-    "knip": "^6.12.1"
+    "vitest": "^4.1.5"
   },
   "overrides": {
     "@aws-sdk/client-bedrock-runtime": "^3.1036.0",

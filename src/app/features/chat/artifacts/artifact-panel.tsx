@@ -163,13 +163,15 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
       aria-label="Artifact version"
     >
       <option value="latest">Latest v{selectedArtifact.version}</option>
-      {versions
-        .filter((version) => version.version !== selectedArtifact.version)
-        .map((version) => (
-          <option key={version.version} value={version.version}>
-            v{version.version}
-          </option>
-        ))}
+      {versions.flatMap((version) =>
+        version.version === selectedArtifact.version
+          ? []
+          : [
+              <option key={version.version} value={version.version}>
+                v{version.version}
+              </option>,
+            ],
+      )}
     </select>
   )
 }

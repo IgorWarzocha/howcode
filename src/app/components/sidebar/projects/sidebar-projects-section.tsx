@@ -289,8 +289,9 @@ export function SidebarProjectsSection({
       return
     }
 
+    const projectsById = new Map(projects.map((project) => [project.id, project]))
     for (const project of visibleProjects) {
-      const sourceProject = projects.find((candidate) => candidate.id === project.id)
+      const sourceProject = projectsById.get(project.id)
 
       const shouldLoadSearchedProject = searchQuery.trim().length > 0
       const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0

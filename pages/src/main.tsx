@@ -72,10 +72,11 @@ function getLatestChangelog(markdown: string) {
     headingIndex + 1,
     nextHeadingIndex > headingIndex ? nextHeadingIndex : undefined,
   )
-  const items = sectionLines
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('- '))
-    .map((line) => line.slice(2))
+  const items: string[] = []
+  for (const line of sectionLines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine.startsWith('- ')) items.push(trimmedLine.slice(2))
+  }
 
   return { version, items }
 }

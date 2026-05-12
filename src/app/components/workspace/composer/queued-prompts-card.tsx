@@ -10,9 +10,11 @@ type QueuedPromptsCardProps = {
   onRemovePrompt: (prompt: ComposerQueuedPrompt) => void
 }
 
+const EMPTY_PENDING_PROMPT_IDS: string[] = []
+
 export function QueuedPromptsCard({
   prompts,
-  pendingPromptIds = [],
+  pendingPromptIds = EMPTY_PENDING_PROMPT_IDS,
   onEditPrompt,
   onRemovePrompt,
 }: QueuedPromptsCardProps) {
