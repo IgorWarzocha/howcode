@@ -9,7 +9,6 @@ import type {
   ComposerThinkingLevel,
 } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
 import { getPiModule } from '../pi-module.ts'
@@ -24,6 +23,7 @@ import {
   buildComposerState,
   buildComposerStateSnapshot,
   clampThinkingLevel,
+  createComposerSnapshotSession,
   getAvailableThinkingLevelsForModel,
 } from './composer-state.ts'
 import {
@@ -159,28 +159,43 @@ async function promptAndReturnAfterPreflight({
     })
 }
 
-async function setDraftComposerModel(cwd: string, provider: string, modelId: string) {
-  const { AuthStorage, ModelRegistry, SettingsManager, getAgentDir } = await getPiModule()
+async function setDraftComposerModel(
+  request: ComposerStateRequest,
+  cwd: string,
+  provider: string,
+  modelId: string,
+) {
+  const { SettingsManager, getAgentDir } = await getPiModule()
   const agentDir = getAgentDir()
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
-  )
-  const model = modelRegistry.find(provider, modelId)
+  const snapshot = await createComposerSnapshotSession({
+    ...request,
+    projectId: cwd,
+    sessionPath: null,
+  })
 
-  if (!model) {
-    throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
+  try {
+    const model = snapshot.session.modelRegistry.find(provider, modelId)
+
+    if (!model) {
+      throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
+    }
+
+    const currentComposer = await buildComposerStateSnapshot({
+      ...request,
+      projectId: cwd,
+      sessionPath: null,
+    })
+    const nextThinkingLevel = clampThinkingLevel(
+      currentComposer.currentThinkingLevel,
+      getAvailableThinkingLevelsForModel(model),
+    )
+    const settingsManager = SettingsManager.create(cwd, agentDir)
+
+    settingsManager.setDefaultModelAndProvider(provider, modelId)
+    settingsManager.setDefaultThinkingLevel(nextThinkingLevel)
+  } finally {
+    snapshot.session.dispose()
   }
-
-  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null })
-  const nextThinkingLevel = clampThinkingLevel(
-    currentComposer.currentThinkingLevel,
-    getAvailableThinkingLevelsForModel(model),
-  )
-  const settingsManager = SettingsManager.create(cwd, agentDir)
-
-  settingsManager.setDefaultModelAndProvider(provider, modelId)
-  settingsManager.setDefaultThinkingLevel(nextThinkingLevel)
 }
 
 async function setDraftComposerThinkingLevel(cwd: string, level: ComposerThinkingLevel) {
@@ -223,6 +238,7 @@ export async function setComposerModel(
 
   if (!persistedSessionPath) {
     await setDraftComposerModel(
+      request,
       request.projectId ?? getDesktopWorkingDirectory(),
       provider,
       modelId,

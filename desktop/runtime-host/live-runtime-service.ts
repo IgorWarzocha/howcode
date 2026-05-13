@@ -10,7 +10,6 @@ import type {
   ComposerThinkingLevel,
 } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { getPiModule } from '../pi-module.ts'
 import { discoverHeadlessAgentSessionResources } from '../runtime/agent-session-extensions.ts'
@@ -281,24 +280,35 @@ export async function setComposerModel(
 ) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
   if (!persistedSessionPath) {
-    const { AuthStorage, ModelRegistry, SettingsManager, getAgentDir } = await getPiModule()
+    const { SettingsManager, getAgentDir } = await getPiModule()
     const cwd = request.projectId ?? getDesktopWorkingDirectory()
     const agentDir = getAgentDir()
-    const authStorage = AuthStorage.create()
-    const modelRegistry = normalizeModelRegistryContextWindows(
-      ModelRegistry.create(authStorage, `${agentDir}/models.json`),
-    )
-    const model = modelRegistry.find(provider, modelId)
-    if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
-    const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null })
-    const settingsManager = SettingsManager.create(cwd, agentDir)
-    settingsManager.setDefaultModelAndProvider(provider, modelId)
-    settingsManager.setDefaultThinkingLevel(
-      clampThinkingLevel(
-        currentComposer.currentThinkingLevel,
-        getAvailableThinkingLevelsForModel(model),
-      ),
-    )
+    const snapshot = await createComposerSnapshotSession({
+      ...request,
+      projectId: cwd,
+      sessionPath: null,
+    })
+
+    try {
+      const model = snapshot.session.modelRegistry.find(provider, modelId)
+      if (!model) throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
+      const currentComposer = await buildComposerStateSnapshot({
+        ...request,
+        projectId: cwd,
+        sessionPath: null,
+      })
+      const settingsManager = SettingsManager.create(cwd, agentDir)
+      settingsManager.setDefaultModelAndProvider(provider, modelId)
+      settingsManager.setDefaultThinkingLevel(
+        clampThinkingLevel(
+          currentComposer.currentThinkingLevel,
+          getAvailableThinkingLevelsForModel(model),
+        ),
+      )
+    } finally {
+      snapshot.session.dispose()
+    }
+
     await emitComposerUpdate({ ...request, sessionPath: null })
     return { ok: true as const }
   }
