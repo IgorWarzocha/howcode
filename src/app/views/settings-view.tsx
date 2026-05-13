@@ -181,14 +181,12 @@ export function SettingsView({
 
     dirtyPiSettingsRef.current.clear()
     const snapshot = draftPiSettingsRef.current
-    await Promise.all(
-      dirtyKeys.map((key) =>
-        onAction('pi-settings.update', {
-          piSettingsKey: key,
-          value: snapshot[key],
-        }),
-      ),
-    )
+    for (const key of dirtyKeys) {
+      await onAction('pi-settings.update', {
+        piSettingsKey: key,
+        value: snapshot[key],
+      })
+    }
   }, [onAction])
 
   useEffect(() => {
