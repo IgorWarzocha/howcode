@@ -6,6 +6,7 @@
 
 ## Code Quality
 - Run `bun run ai:check` after meaningful code, config, packaging, or behavior changes.
+- Do not run `bun run ai:check` for docs-only or AGENTS.md-only edits unless they change commands, configuration, packaging, workflow behavior, or explicit validation instructions.
 - Run `bun run ai:check` frequently while working on code and before considering substantive implementation work complete.
 - If you touch a subsystem with its own fast deterministic tests, run those too.
 - Do not consider substantive implementation work complete while `ai:check` is failing.
