@@ -26,6 +26,9 @@ const semverPattern = /^\d+\.\d+\.\d+$/
 const sha256Pattern = /^[a-f0-9]{64}$/i
 const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const trailingSlashesPattern = /\/+$/
+const trailingChannelPattern = /\/(?:main|dev)$/i
+const channelPlaceholderPattern = /\{channel\}/g
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -89,7 +92,13 @@ function getCacheRoot() {
 }
 
 function getReleaseBaseUrl(channel: UpdateChannel) {
-  return RELEASE_BASE_URL ?? `${DEFAULT_RELEASE_BASE_URL}/${channel}`
+  if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${channel}`
+
+  const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, channel)
+
+  const channelBaseUrl = baseUrl.replace(trailingChannelPattern, `/${channel}`)
+  return channelBaseUrl
 }
 
 function getReleaseKey(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
@@ -103,6 +112,22 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   return {
     cacheRoot,
     currentFile: path.join(cacheRoot, `current-${release.channel}.json`),
+    installDir,
+    executablePath: path.join(installDir, target.executable),
+  }
+}
+
+function getLegacyCurrentFile() {
+  return path.join(getCacheRoot(), 'current.json')
+}
+
+function getLegacyInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
+  const cacheRoot = getCacheRoot()
+  const releaseKey = `${release.version}-${release.hash}`
+  const installDir = path.join(cacheRoot, 'versions', releaseKey)
+  return {
+    cacheRoot,
+    currentFile: getLegacyCurrentFile(),
     installDir,
     executablePath: path.join(installDir, target.executable),
   }
@@ -235,9 +260,12 @@ async function sha256File(filePath: string) {
   return hash.digest('hex')
 }
 
-function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
+function parseInstalledUpdateRecord(
+  record: unknown,
+  fallbackChannel: UpdateChannel | null = null,
+): InstalledUpdate | null {
   if (!record || typeof record !== 'object') return null
-  const channel = 'channel' in record ? record.channel : null
+  const channel = 'channel' in record ? record.channel : fallbackChannel
   const version = 'version' in record ? record.version : null
   const hash = 'hash' in record ? record.hash : null
   const installDir = 'installDir' in record ? record.installDir : null
@@ -254,6 +282,23 @@ function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
     return null
   }
   return { channel, version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
+}
+
+function writeInstalledUpdateRecord(currentFile: string, record: InstalledUpdate) {
+  return writeFile(
+    currentFile,
+    JSON.stringify(
+      {
+        version: record.version,
+        channel: record.channel,
+        hash: record.hash,
+        installDir: record.installDir,
+        executablePath: record.executablePath,
+      },
+      null,
+      2,
+    ),
+  )
 }
 
 async function isExecutableFile(filePath: string) {
@@ -486,25 +531,12 @@ export class AppUpdater {
         tempRoot = null
       }
 
-      await writeFile(
-        paths.currentFile,
-        JSON.stringify(
-          {
-            version: release.version,
-            channel: release.channel,
-            hash: release.hash,
-            installDir: paths.installDir,
-            executablePath: paths.executablePath,
-          },
-          null,
-          2,
-        ),
-      )
       this.installedUpdate = {
         ...release,
         executablePath: paths.executablePath,
         installDir: paths.installDir,
       }
+      await writeInstalledUpdateRecord(paths.currentFile, this.installedUpdate)
       await pruneOldVersions(paths.cacheRoot, await this.getPruneKeepDirs(paths.installDir))
       this.setState({
         status: 'ready',
@@ -544,21 +576,34 @@ export class AppUpdater {
   private async readInstalledUpdate() {
     if (!isUpdateEnabled()) return
     this.installedUpdate = null
-    const record = await this.readCurrentFile(
-      path.join(getCacheRoot(), `current-${await this.getUpdateChannel()}.json`),
-    )
+    const channel = await this.getUpdateChannel()
+    const currentFile = path.join(getCacheRoot(), `current-${channel}.json`)
+    const record =
+      (await this.readCurrentFile(currentFile)) ??
+      (await this.readCurrentFile(getLegacyCurrentFile(), channel))
     if (!(record && this.isUpdateCandidate(record))) return
     const target = getTarget()
     const expectedPaths = getInstallPaths(target, record)
+    const legacyPaths = getLegacyInstallPaths(target, record)
     if (
-      record.installDir !== expectedPaths.installDir ||
-      record.executablePath !== expectedPaths.executablePath
+      !(
+        (record.installDir === expectedPaths.installDir &&
+          record.executablePath === expectedPaths.executablePath) ||
+        (record.installDir === legacyPaths.installDir &&
+          record.executablePath === legacyPaths.executablePath)
+      )
     ) {
       return
     }
-    if (!(await isValidInstall(expectedPaths, target))) return
+    const paths = record.installDir === legacyPaths.installDir ? legacyPaths : expectedPaths
+    if (!(await isValidInstall(paths, target))) return
     this.installedUpdate = record
     this.latestRelease = record
+    if (paths.currentFile === getLegacyCurrentFile()) {
+      await writeInstalledUpdateRecord(currentFile, record).catch(() => {
+        // Preserve restart capability even if best-effort migration fails.
+      })
+    }
     this.setState({
       status: 'ready',
       latestVersion: record.version,
@@ -577,7 +622,7 @@ export class AppUpdater {
       return false
     }
 
-    return release.channel === 'dev'
+    return true
   }
 
   private async getPruneKeepDirs(installDir: string) {
@@ -593,9 +638,12 @@ export class AppUpdater {
     return keepDirs
   }
 
-  private async readCurrentFile(currentFile: string) {
+  private async readCurrentFile(currentFile: string, fallbackChannel: UpdateChannel | null = null) {
     try {
-      return parseInstalledUpdateRecord(JSON.parse(await readFile(currentFile, 'utf8')))
+      return parseInstalledUpdateRecord(
+        JSON.parse(await readFile(currentFile, 'utf8')),
+        fallbackChannel,
+      )
     } catch {
       return null
     }

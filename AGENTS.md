@@ -1,11 +1,10 @@
 ## Stack
 - Use Bun for installs and scripts; keep the app runtime on Node.js/Electron.
-- Biome for formatting, linting, and import organization.
-- `tsgo --noEmit` via `@typescript/native-preview` for type checking.
-- `bun run ai:check` is the repo-wide verification command.
+- `bun run ai:check` is the repo-wide verification command; do not run standalone formatting or typechecking commands.
 
 ## Code Quality
 - Run `bun run ai:check` after meaningful code, config, packaging, or behavior changes.
+- Do not run `bun run ai:check` for docs-only or AGENTS.md-only edits unless they change commands, configuration, packaging, workflow behavior, or explicit validation instructions.
 - Run `bun run ai:check` frequently while working on code and before considering substantive implementation work complete.
 - If you touch a subsystem with its own fast deterministic tests, run those too.
 - Do not consider substantive implementation work complete while `ai:check` is failing.

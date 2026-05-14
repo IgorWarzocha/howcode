@@ -12,9 +12,7 @@ import { formatGitCommandError, getNonInteractiveGitEnv } from './project-git/gi
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
 import { initializeProjectGit } from './project-git.ts'
 import {
-  deleteProject,
   ensureProject,
-  hasProject,
   listProjects,
   moveProjectToTop,
   setProjectRepoOrigin,
@@ -23,19 +21,10 @@ import {
 const execFile = promisify(execFileCallback)
 
 async function startThreadForNewlyVisibleProject(projectId: string) {
-  const hadVisibleProject = hasProject(projectId)
+  const result = await startNewThread({ projectId })
   ensureProject(projectId)
   moveProjectToTop(projectId)
-
-  try {
-    return await startNewThread({ projectId })
-  } catch (error) {
-    if (!hadVisibleProject) {
-      deleteProject(projectId)
-    }
-
-    throw error
-  }
+  return result
 }
 
 function sanitizeProjectFolderName(projectName: string) {

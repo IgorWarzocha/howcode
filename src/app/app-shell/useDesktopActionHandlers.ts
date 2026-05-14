@@ -168,7 +168,8 @@ export function useDesktopActionHandlers({
 
       if (
         action === 'settings.update' &&
-        contextualPayload.key === 'devUpdateBranch' &&
+        (contextualPayload.key === 'devUpdateBranch' ||
+          contextualPayload.key === 'betaUpdateBranch') &&
         !actionErrorMessage
       ) {
         void checkAppUpdateQuery()
