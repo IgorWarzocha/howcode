@@ -79,7 +79,7 @@ function ComposerResponsivePlaceholder({
       aria-hidden="true"
       className={cn(
         'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate text-[14px] leading-[1.45]',
-        leadingAdornmentVisible && 'pl-7',
+        leadingAdornmentVisible && 'pl-6',
         tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
       )}
     >
@@ -573,7 +573,7 @@ export function ComposerTextField({
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
-            trailingAdornmentVisible && value.length === 0 && 'pl-7',
+            trailingAdornmentVisible && value.length === 0 && 'pl-6',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             'placeholder:text-transparent',
