@@ -12,13 +12,31 @@ import { formatGitCommandError, getNonInteractiveGitEnv } from './project-git/gi
 import { getOriginUrl, isGitRepository } from './project-git/project-state.ts'
 import { initializeProjectGit } from './project-git.ts'
 import {
+  deleteProject,
   ensureProject,
+  hasProject,
   listProjects,
   moveProjectToTop,
   setProjectRepoOrigin,
 } from './thread-state-db.ts'
 
 const execFile = promisify(execFileCallback)
+
+async function startThreadForNewlyVisibleProject(projectId: string) {
+  const hadVisibleProject = hasProject(projectId)
+  ensureProject(projectId)
+  moveProjectToTop(projectId)
+
+  try {
+    return await startNewThread({ projectId })
+  } catch (error) {
+    if (!hadVisibleProject) {
+      deleteProject(projectId)
+    }
+
+    throw error
+  }
+}
 
 function sanitizeProjectFolderName(projectName: string) {
   let nextName = projectName
@@ -59,8 +77,7 @@ export async function createProject(options: {
     await initializeProjectGit(projectPath)
   }
 
-  const result = await startNewThread({ projectId: projectPath })
-  moveProjectToTop(projectPath)
+  const result = await startThreadForNewlyVisibleProject(projectPath)
   return result
 }
 
@@ -90,8 +107,7 @@ export async function addProjectFromPath(options: {
     await initializeProjectGit(resolvedProjectPath)
   }
 
-  const result = await startNewThread({ projectId: resolvedProjectPath })
-  moveProjectToTop(resolvedProjectPath)
+  const result = await startThreadForNewlyVisibleProject(resolvedProjectPath)
   return result
 }
 
@@ -210,9 +226,7 @@ export async function createProjectFromGitHubUrl(options: {
     throw new Error(`Unable to clone ${repository.canonicalUrl}: ${formatGitCommandError(error)}`)
   }
 
-  const result = await startNewThread({ projectId: projectPath })
-  ensureProject(projectPath)
+  const result = await startThreadForNewlyVisibleProject(projectPath)
   setProjectRepoOrigin(projectPath, repository.canonicalUrl)
-  moveProjectToTop(projectPath)
   return result
 }
