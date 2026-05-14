@@ -66,9 +66,11 @@ function splitPlaceholderText(placeholder: string) {
 function ComposerResponsivePlaceholder({
   placeholder,
   tone,
+  leadingAdornmentVisible = false,
 }: {
   placeholder: string
   tone: NonNullable<ComposerTextFieldProps['placeholderTone']>
+  leadingAdornmentVisible?: boolean
 }) {
   if (!placeholder) return null
   const { leading, tailParts } = splitPlaceholderText(placeholder)
@@ -77,6 +79,7 @@ function ComposerResponsivePlaceholder({
       aria-hidden="true"
       className={cn(
         'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate text-[14px] leading-[1.45]',
+        leadingAdornmentVisible && 'pl-7',
         tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
       )}
     >
@@ -216,7 +219,7 @@ function TrailingAdornment({
   return (
     <span
       className={cn(
-        'absolute z-10 inline-flex items-center',
+        'absolute z-10 inline-flex items-center justify-center',
         !visible && 'pointer-events-none invisible',
       )}
       style={{ left: `${position.left}px`, top: `${position.top}px`, height: `${lineHeight}px` }}
@@ -407,36 +410,12 @@ export function ComposerTextField({
     }
 
     const measureTrailingAdornmentPosition = () => {
-      const measuredPlaceholder =
-        value.length === 0 ? splitPlaceholderText(placeholder).leading : placeholder
-      const markerPosition = measureTextareaMarkerPosition({
-        adornmentWidth: 0,
-        markerText: value,
-        placeholder: measuredPlaceholder,
-        textarea,
-      })
-      const markerLeft = markerPosition.left
-      const markerTop = markerPosition.top
-      const lineHeight = markerPosition.lineHeight || lineHeightRef.current
-      const adornmentWidth = 24
-      const adornmentGap = 6
-      const shouldWrapAdornment =
-        markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth && value.length > 0
-      const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
-      const rawTop = markerTop + (shouldWrapAdornment ? lineHeight : 0) - textarea.scrollTop - 1.5
-      const maxVisibleTop = Math.max(0, textarea.clientHeight - lineHeight)
-      const nextTop = Math.max(0, Math.min(rawTop, maxVisibleTop))
-      const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
-      const maxContainerHeight = textarea.offsetHeight + (canGrowForAdornment ? lineHeight : 0)
-      const nextContainerHeight = Math.min(
-        maxContainerHeight,
-        Math.max(textarea.offsetHeight, nextTop + lineHeight),
-      )
+      const lineHeight = lineHeightRef.current
+      const nextTop = Math.max(0, (textarea.clientHeight - lineHeight) / 2)
+      const nextContainerHeight = textarea.offsetHeight
 
       setTrailingAdornmentPosition((current) =>
-        current?.left === nextLeft && current.top === nextTop
-          ? current
-          : { left: nextLeft, top: nextTop },
+        current?.left === 0 && current.top === nextTop ? current : { left: 0, top: nextTop },
       )
       setTrailingContainerHeight((current) =>
         current === nextContainerHeight ? current : nextContainerHeight,
@@ -450,7 +429,7 @@ export function ComposerTextField({
       window.removeEventListener('resize', measureTrailingAdornmentPosition)
       textarea.removeEventListener('scroll', measureTrailingAdornmentPosition)
     }
-  }, [placeholder, textareaLayoutVersion, trailingAdornmentVisible, value])
+  }, [textareaLayoutVersion, trailingAdornmentVisible])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -545,7 +524,11 @@ export function ComposerTextField({
         style={trailingContainerHeight ? { minHeight: `${trailingContainerHeight}px` } : undefined}
       >
         {value.length === 0 ? (
-          <ComposerResponsivePlaceholder placeholder={placeholder} tone={placeholderTone} />
+          <ComposerResponsivePlaceholder
+            placeholder={placeholder}
+            tone={placeholderTone}
+            leadingAdornmentVisible={trailingAdornmentVisible}
+          />
         ) : null}
         <textarea
           ref={textareaRef}
@@ -553,6 +536,7 @@ export function ComposerTextField({
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
+            trailingAdornmentVisible && 'pl-7',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             'placeholder:text-transparent',
