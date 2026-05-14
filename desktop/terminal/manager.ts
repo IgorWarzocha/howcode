@@ -200,11 +200,23 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
 
   const unboundProjectTerminal = findUnboundProjectShellTerminal(request)
   if (unboundProjectTerminal) {
-    return bindProjectTerminalToSession({
+    const snapshot = bindProjectTerminalToSession({
       record: unboundProjectTerminal,
       request,
       sessionId,
     })
+    if (isRestartableTerminalStatus(unboundProjectTerminal.snapshot.status)) {
+      unboundProjectTerminal.snapshot = {
+        ...unboundProjectTerminal.snapshot,
+        status: 'starting',
+        exitCode: null,
+        exitSignal: null,
+        updatedAt: nowIso(),
+      }
+      void ensureProcessStarted(unboundProjectTerminal, 'restarted')
+      return unboundProjectTerminal.snapshot
+    }
+    return snapshot
   }
 
   const history = readTranscript(getTranscriptPath(sessionId))

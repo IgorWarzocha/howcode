@@ -383,7 +383,10 @@ async function resolveLatestRelease(target) {
     channel,
     version: metadata.version,
     hash: metadata.hash,
-    assetUrl: `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl:
+      typeof metadata.assetUrl === 'string' && metadata.assetUrl.length > 0
+        ? metadata.assetUrl
+        : `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 

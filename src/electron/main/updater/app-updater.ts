@@ -28,6 +28,7 @@ const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const trailingSlashesPattern = /\/+$/
 const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
 const channelPlaceholderPattern = /\{channel\}/g
+const releaseTagPlaceholderPattern = /\{releaseTag\}/g
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -99,7 +100,8 @@ function getReleaseBaseUrl(channel: UpdateChannel) {
   if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${releaseTag}`
 
   const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
-  if (baseUrl.includes('{releaseTag}')) return baseUrl.replace(/\{releaseTag\}/g, releaseTag)
+  if (baseUrl.includes('{releaseTag}'))
+    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
   if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
 
   return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
@@ -180,13 +182,14 @@ function assertInstallSupported(target: UpdateTarget) {
 function normalizeReleaseMetadata(
   metadata: unknown,
   updateUrl: string,
-): Pick<ReleaseInfo, 'version' | 'hash'> {
+): Pick<ReleaseInfo, 'version' | 'hash' | 'assetUrl'> {
   if (!metadata || typeof metadata !== 'object') {
     throw new Error(`Invalid metadata from ${updateUrl}`)
   }
 
   const version = 'version' in metadata ? metadata.version : null
   const hash = 'hash' in metadata ? metadata.hash : null
+  const assetUrl = 'assetUrl' in metadata ? metadata.assetUrl : null
 
   if (typeof version !== 'string' || !semverPattern.test(version)) {
     throw new Error(`Invalid release version from ${updateUrl}`)
@@ -196,7 +199,11 @@ function normalizeReleaseMetadata(
     throw new Error(`Invalid release hash from ${updateUrl}`)
   }
 
-  return { version, hash: hash.toLowerCase() }
+  return {
+    version,
+    hash: hash.toLowerCase(),
+    assetUrl: typeof assetUrl === 'string' && assetUrl.length > 0 ? assetUrl : '',
+  }
 }
 
 async function fetchJson(url: string, timeoutMs = 15_000) {
@@ -211,12 +218,15 @@ async function resolveLatestRelease(
 ): Promise<ReleaseInfo> {
   const releaseBaseUrl = getReleaseBaseUrl(channel)
   const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
-  const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl)
+  const { version, hash, assetUrl } = normalizeReleaseMetadata(
+    await fetchJson(updateUrl),
+    updateUrl,
+  )
   return {
     channel,
     version,
     hash,
-    assetUrl: `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: assetUrl || `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -598,6 +608,8 @@ export class AppUpdater {
     if (versionDiff < 0) return false
 
     const runningRelease = getRunningReleaseFingerprint()
+    if (release.channel === 'main') return false
+
     if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
       return false
     }
