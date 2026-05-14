@@ -141,7 +141,8 @@ const threadActionHandlers = {
   },
   'inbox.clear-read': (payload) => {
     const olderThanDays = typeof payload.olderThanDays === 'number' ? payload.olderThanDays : null
-    const olderThanMs = olderThanDays ? Date.now() - olderThanDays * 24 * 60 * 60 * 1000 : null
+    const olderThanMs =
+      olderThanDays === null ? null : Date.now() - olderThanDays * 24 * 60 * 60 * 1000
     return handledAction({ clearedCount: clearReadInboxThreads(olderThanMs) })
   },
 } satisfies Partial<Record<DesktopAction, ThreadActionHandler>>
