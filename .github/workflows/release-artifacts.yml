@@ -265,7 +265,7 @@ jobs:
           release_title=$(cat channel-release-title.txt)
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
             for old_asset in "${old_assets[@]}"; do
               gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
             done

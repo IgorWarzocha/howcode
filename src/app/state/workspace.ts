@@ -133,6 +133,10 @@ function getTerminalVisibilityForSession(
   return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false
 }
 
+function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
+  return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'code')
+}
+
 function shouldMigrateTerminalVisibilityForOpenedThread(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'open-thread' }>,
@@ -189,7 +193,8 @@ function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
   }
 
   return {
-    terminalVisible: nextView === 'thread' && state.restoreTerminalVisibleOnGitOpsClose,
+    terminalVisible:
+      (nextView === 'thread' || nextView === 'code') && state.restoreTerminalVisibleOnGitOpsClose,
     restoreTerminalVisibleOnGitOpsClose: false,
   }
 }
@@ -409,7 +414,7 @@ function openGitOpsState(
     restoreTerminalVisibleOnGitOpsClose:
       state.activeView === 'gitops'
         ? state.restoreTerminalVisibleOnGitOpsClose
-        : state.activeView === 'thread' && state.terminalVisible,
+        : shouldRestoreTerminalOnGitOpsClose(state),
     takeoverVisible: false,
     gitOpsReturnView:
       action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
