@@ -414,8 +414,11 @@ export function ComposerTextField({
         const nextTop = 0
         const nextContainerHeight = textarea.offsetHeight
 
+        const nextLeft = -2
         setTrailingAdornmentPosition((current) =>
-          current?.left === 0 && current.top === nextTop ? current : { left: 0, top: nextTop },
+          current?.left === nextLeft && current.top === nextTop
+            ? current
+            : { left: nextLeft, top: nextTop },
         )
         setTrailingContainerHeight((current) =>
           current === nextContainerHeight ? current : nextContainerHeight,
