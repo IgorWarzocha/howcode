@@ -730,6 +730,7 @@
   color: var(--text);
   fill: currentColor;
   opacity: 0.72;
+  transform: none;
 }
 
 .sidebar-project-actions {
