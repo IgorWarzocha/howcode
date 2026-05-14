@@ -411,8 +411,7 @@ export function ComposerTextField({
 
     const measureTrailingAdornmentPosition = () => {
       if (value.length === 0) {
-        const lineHeight = lineHeightRef.current
-        const nextTop = Math.max(0, (textarea.clientHeight - lineHeight) / 2)
+        const nextTop = 0
         const nextContainerHeight = textarea.offsetHeight
 
         setTrailingAdornmentPosition((current) =>
