@@ -249,6 +249,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ github.ref_name }}
         run: |
+          RELEASE_TAG="channel-$CHANNEL"
           mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
@@ -264,15 +265,15 @@ jobs:
 
           release_title=$(cat channel-release-title.txt)
 
-          if gh release view "$CHANNEL" >/dev/null 2>&1; then
-            mapfile -t old_assets < <(gh release view "$CHANNEL" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-.*\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-.*\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
             for old_asset in "${old_assets[@]}"; do
-              gh release delete-asset "$CHANNEL" "$old_asset" --yes
+              gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
             done
-            gh release upload "$CHANNEL" "${assets[@]}" --clobber
-            gh release edit "$CHANNEL" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+            gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
           else
-            gh release create "$CHANNEL" "${assets[@]}" --title "$release_title" --target "$GITHUB_SHA" --notes-file channel-release-notes.md "${release_flags[@]}"
+            gh release create "$RELEASE_TAG" "${assets[@]}" --title "$release_title" --target "$GITHUB_SHA" --notes-file channel-release-notes.md "${release_flags[@]}"
           fi
 
   publish-release:

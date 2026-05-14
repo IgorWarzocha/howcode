@@ -38,6 +38,7 @@
   ],
   "howcode": {
     "appName": "howcode",
-    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/download/main"
+    "releaseChannel": "main",
+    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/download/channel-main"
   }
 }
