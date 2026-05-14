@@ -148,6 +148,7 @@ export function DesktopComposerStatusModelPicker({
 
   const selectModel = useCallback(
     (availableModel: ComposerModel) => {
+      setOpen(false)
       if (!persistedSessionPath) {
         void onAction('settings.update', {
           key: composerMode === 'chat' ? 'chatModel' : 'codeModel',
@@ -169,6 +170,7 @@ export function DesktopComposerStatusModelPicker({
 
   const selectThinkingLevel = useCallback(
     (level: ComposerThinkingLevel) => {
+      setOpen(false)
       if (!persistedSessionPath) {
         void onAction('settings.update', {
           key: composerMode === 'chat' ? 'chatThinkingLevel' : 'codeThinkingLevel',
