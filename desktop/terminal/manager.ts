@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs'
+import { renameSync, rmSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import type {
@@ -108,6 +108,67 @@ function ensureProcessStarted(record: TerminalSessionRecord, reason: 'started' |
   return record.restartPromise
 }
 
+function findUnboundProjectShellTerminal(request: TerminalOpenRequest) {
+  if (!request.sessionPath) {
+    return null
+  }
+
+  const cwd = request.cwd ?? request.projectId
+  return (
+    listTerminalSessions().find(
+      (record) =>
+        record.snapshot.projectId === request.projectId &&
+        record.snapshot.sessionPath === null &&
+        record.snapshot.cwd === cwd &&
+        record.snapshot.launchMode === (request.launchMode ?? 'shell'),
+    ) ?? null
+  )
+}
+
+function moveTranscript(fromPath: string, toPath: string) {
+  if (fromPath === toPath) {
+    return
+  }
+
+  try {
+    renameSync(fromPath, toPath)
+  } catch {
+    // The transcript may not have been flushed yet, or the target can already exist from a
+    // previous bound terminal. Keeping the live in-memory history is more important than failing
+    // the bind operation for best-effort persistence.
+  }
+}
+
+function bindProjectTerminalToSession(input: {
+  record: TerminalSessionRecord
+  request: TerminalOpenRequest
+  sessionId: string
+}) {
+  const previousSessionId = input.record.snapshot.sessionId
+  const nextTranscriptPath = getTranscriptPath(input.sessionId)
+
+  deleteTerminalSession(previousSessionId)
+  moveTranscript(input.record.transcriptPath, nextTranscriptPath)
+  input.record.transcriptPath = nextTranscriptPath
+  input.record.snapshot = {
+    ...input.record.snapshot,
+    sessionId: input.sessionId,
+    sessionPath: input.request.sessionPath ?? null,
+    cols: input.request.cols,
+    rows: input.request.rows,
+    updatedAt: nowIso(),
+  }
+  setTerminalSession(input.sessionId, input.record)
+  input.record.process?.resize(input.request.cols, input.request.rows)
+  emitTerminalEvent({
+    type: 'updated',
+    sessionId: input.sessionId,
+    snapshot: input.record.snapshot,
+    createdAt: nowIso(),
+  })
+  return input.record.snapshot
+}
+
 export async function openTerminal(request: TerminalOpenRequest): Promise<TerminalSessionSnapshot> {
   const cwd = request.cwd ?? request.projectId
   const sessionId = makeSessionId(request)
@@ -135,6 +196,15 @@ export async function openTerminal(request: TerminalOpenRequest): Promise<Termin
     }
 
     return existing.snapshot
+  }
+
+  const unboundProjectTerminal = findUnboundProjectShellTerminal(request)
+  if (unboundProjectTerminal) {
+    return bindProjectTerminalToSession({
+      record: unboundProjectTerminal,
+      request,
+      sessionId,
+    })
   }
 
   const history = readTranscript(getTranscriptPath(sessionId))

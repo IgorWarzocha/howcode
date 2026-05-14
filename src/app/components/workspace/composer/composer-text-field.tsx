@@ -272,6 +272,10 @@ function measureTextareaMarkerPosition(input: {
   }
 }
 
+function isTextareaScrolledToBottom(textarea: HTMLTextAreaElement) {
+  return textarea.scrollHeight - textarea.scrollTop - textarea.clientHeight <= 1
+}
+
 export function ComposerTextField({
   value,
   placeholder,
@@ -389,6 +393,8 @@ export function ComposerTextField({
   }, [])
 
   useLayoutEffect(() => {
+    void textareaLayoutVersion
+
     if (!trailingAdornmentVisible) {
       setTrailingAdornmentPosition(null)
       setTrailingContainerHeight(null)
@@ -417,7 +423,9 @@ export function ComposerTextField({
       const shouldWrapAdornment =
         markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth && value.length > 0
       const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
-      const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5)
+      const rawTop = markerTop + (shouldWrapAdornment ? lineHeight : 0) - textarea.scrollTop - 1.5
+      const maxVisibleTop = Math.max(0, textarea.clientHeight - lineHeight)
+      const nextTop = Math.max(0, Math.min(rawTop, maxVisibleTop))
       const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
       const maxContainerHeight = textarea.offsetHeight + (canGrowForAdornment ? lineHeight : 0)
       const nextContainerHeight = Math.min(
@@ -437,8 +445,12 @@ export function ComposerTextField({
 
     measureTrailingAdornmentPosition()
     window.addEventListener('resize', measureTrailingAdornmentPosition)
-    return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
-  }, [placeholder, trailingAdornmentVisible, value])
+    textarea.addEventListener('scroll', measureTrailingAdornmentPosition, { passive: true })
+    return () => {
+      window.removeEventListener('resize', measureTrailingAdornmentPosition)
+      textarea.removeEventListener('scroll', measureTrailingAdornmentPosition)
+    }
+  }, [placeholder, textareaLayoutVersion, trailingAdornmentVisible, value])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -549,7 +561,12 @@ export function ComposerTextField({
           onChange={(event) => {
             if (!readOnly) onChange(event.target.value)
           }}
-          onInput={onInput}
+          onInput={() => {
+            if (textareaRef.current && isTextareaScrolledToBottom(textareaRef.current)) {
+              setTextareaLayoutVersion((current) => current + 1)
+            }
+            onInput?.()
+          }}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
           onFocus={onFocus}

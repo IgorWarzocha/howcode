@@ -10,7 +10,7 @@ import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '..
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import type { Message } from '../../types'
 import { cn } from '../../utils/cn'
-import { DesktopComposerStatus } from '../code/desktop-composer-status'
+import { DesktopComposerStatusModelPicker } from '../code/desktop-composer-status'
 import { useQueuedPromptRestore } from '../code/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code/useWorkspaceFooterHeight'
 import { ChatView } from './chat-view'
@@ -303,8 +303,15 @@ function ChatComposerCenter(props: ChatWorkspaceContentProps) {
 }
 
 function ChatComposerDock(props: ChatWorkspaceContentProps) {
-  const { sidebarAutoHidden, sidebarCompactMode, showDesktopArtifactDrawer, activeComposerState } =
-    props
+  const {
+    sidebarAutoHidden,
+    sidebarCompactMode,
+    showDesktopArtifactDrawer,
+    activeComposerState,
+    composerProjectId,
+    terminalSessionPath,
+    handleAction,
+  } = props
   return (
     <WorkspaceComposerDock
       compactControls={sidebarAutoHidden}
@@ -315,10 +322,16 @@ function ChatComposerDock(props: ChatWorkspaceContentProps) {
         showDesktopArtifactDrawer && 'invisible',
       )}
       right={
-        <DesktopComposerStatus
+        <DesktopComposerStatusModelPicker
+          availableModels={activeComposerState?.availableModels ?? []}
+          availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
+          composerMode="chat"
           contextUsage={activeComposerState?.contextUsage ?? null}
           model={activeComposerState?.currentModel ?? null}
+          projectId={composerProjectId}
+          sessionPath={terminalSessionPath}
           thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
+          onAction={handleAction}
         />
       }
     />
