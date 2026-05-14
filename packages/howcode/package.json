@@ -1,6 +1,6 @@
 {
   "name": "howcode",
-  "version": "0.1.65",
+  "version": "0.1.66",
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
   "author": "Igor Warzocha",
