@@ -79,8 +79,16 @@ export function dismissInboxThread(sessionPath: string) {
 export function clearReadInboxThreads(olderThanMs: number | null = null) {
   const db = getThreadStateDatabase()
   const result = (
-    olderThanMs
+    olderThanMs === null
       ? db
+          .prepare(
+            `
+            DELETE FROM inbox_items
+            WHERE unread = 0
+          `,
+          )
+          .run()
+      : db
           .prepare(
             `
             DELETE FROM inbox_items
@@ -94,14 +102,6 @@ export function clearReadInboxThreads(olderThanMs: number | null = null) {
           `,
           )
           .run(olderThanMs)
-      : db
-          .prepare(
-            `
-            DELETE FROM inbox_items
-            WHERE unread = 0
-          `,
-          )
-          .run()
   ) as { changes: number }
 
   return result.changes

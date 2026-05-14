@@ -28,6 +28,7 @@ const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const trailingSlashesPattern = /\/+$/
 const trailingChannelPattern = /\/(?:main|dev)$/i
+const channelPlaceholderPattern = /\{channel\}/g
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -94,8 +95,10 @@ function getReleaseBaseUrl(channel: UpdateChannel) {
   if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${channel}`
 
   const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, channel)
+
   const channelBaseUrl = baseUrl.replace(trailingChannelPattern, `/${channel}`)
-  return channelBaseUrl === baseUrl ? `${baseUrl}/${channel}` : channelBaseUrl
+  return channelBaseUrl
 }
 
 function getReleaseKey(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
@@ -619,7 +622,7 @@ export class AppUpdater {
       return false
     }
 
-    return release.channel === 'dev'
+    return true
   }
 
   private async getPruneKeepDirs(installDir: string) {
