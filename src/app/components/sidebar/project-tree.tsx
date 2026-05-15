@@ -217,6 +217,7 @@ export function ProjectTree({
                         isDragging={isDragging}
                         isEditing={editingProjectId === project.id}
                         isExpanded={effectiveIsExpanded}
+                        pinned={Boolean(project.pinned)}
                         hasRepoOrigin={Boolean(project.repoOriginUrl)}
                         canEdit={!selectionModeActive}
                         canToggleExpanded={!selectionModeActive}

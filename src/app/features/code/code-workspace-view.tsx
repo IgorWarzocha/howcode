@@ -14,7 +14,7 @@ import type { Message } from '../../types'
 import { mainPanelClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
-import { DesktopComposerStatus } from './desktop-composer-status'
+import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 import { useDiffCommentController } from './useDiffCommentController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
@@ -485,6 +485,9 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     gitOpsFileTreeVisible,
     showDesktopTerminalDrawer,
     activeComposerState,
+    composerProjectId,
+    terminalSessionPath,
+    handleAction,
   } = props
   if (state.activeView === 'gitops' && !state.takeoverVisible)
     return (
@@ -500,10 +503,16 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     )
   if (state.activeView === 'thread' && !state.takeoverVisible && !showDesktopTerminalDrawer)
     return (
-      <DesktopComposerStatus
+      <DesktopComposerStatusModelPicker
+        availableModels={activeComposerState?.availableModels ?? []}
+        availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
+        composerMode="code"
         contextUsage={activeComposerState?.contextUsage ?? null}
         model={activeComposerState?.currentModel ?? null}
+        projectId={composerProjectId}
+        sessionPath={terminalSessionPath}
         thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
+        onAction={handleAction}
       />
     )
   return null

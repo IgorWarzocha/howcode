@@ -1,6 +1,6 @@
 {
   "name": "howcode",
-  "version": "0.1.65",
+  "version": "0.1.67",
   "description": "Desktop coding app for Pi with projects, terminal, git, and diff workflows.",
   "license": "MIT",
   "author": "Igor Warzocha",
@@ -38,6 +38,7 @@
   ],
   "howcode": {
     "appName": "howcode",
-    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/download/main"
+    "releaseChannel": "main",
+    "releaseBaseUrl": "https://github.com/IgorWarzocha/howcode/releases/download/channel-main"
   }
 }

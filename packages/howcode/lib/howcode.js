@@ -12,6 +12,13 @@ const packageJson = require('../package.json')
 
 const APP_NAME = packageJson.howcode.appName
 const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl
+const RELEASE_CHANNEL =
+  process.env.HOWCODE_RELEASE_CHANNEL || packageJson.howcode.releaseChannel || 'main'
+const CHANNEL_RELEASE_TAGS = { main: 'channel-main', dev: 'channel-dev' }
+const trailingSlashesPattern = /\/+$/
+const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
+const releaseTagPlaceholderPattern = /\{releaseTag\}/g
+const channelPlaceholderPattern = /\{channel\}/g
 const FETCH_METADATA_TIMEOUT_MS = 30_000
 const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000
 
@@ -84,15 +91,35 @@ function getCacheRoot() {
   return path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), APP_NAME)
 }
 
+function getReleaseChannel() {
+  if (RELEASE_CHANNEL === 'main' || RELEASE_CHANNEL === 'dev') return RELEASE_CHANNEL
+  throw new Error(`Unsupported release channel: ${RELEASE_CHANNEL}`)
+}
+
+function getChannelReleaseTag(channel) {
+  return CHANNEL_RELEASE_TAGS[channel]
+}
+
+function getReleaseBaseUrl(channel = getReleaseChannel()) {
+  const releaseTag = getChannelReleaseTag(channel)
+  const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
+
+  if (baseUrl.includes('{releaseTag}'))
+    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
+
+  return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
+}
+
 function getPaths(target, releaseInfo) {
   const cacheRoot = getCacheRoot()
   const versionsRoot = path.join(cacheRoot, 'versions')
-  const releaseKey = `${releaseInfo.version}-${releaseInfo.hash}`
+  const releaseKey = `${releaseInfo.channel}-${releaseInfo.version}-${releaseInfo.hash}`
   const installDir = path.join(versionsRoot, releaseKey)
   const launcherWorkingDirectory = path.dirname(path.join(installDir, target.executable))
   return {
     cacheRoot,
-    currentFile: path.join(cacheRoot, 'current.json'),
+    currentFile: path.join(cacheRoot, `current-${releaseInfo.channel}.json`),
     windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
     launcherWorkingDirectory,
     installDir,
@@ -344,16 +371,22 @@ async function sha256File(filePath) {
 }
 
 async function resolveLatestRelease(target) {
-  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`
+  const channel = getReleaseChannel()
+  const releaseBaseUrl = getReleaseBaseUrl(channel)
+  const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
   const metadata = await fetchJson(updateUrl)
   if (!metadata || typeof metadata.version !== 'string' || typeof metadata.hash !== 'string') {
     throw new Error(`Invalid release metadata from ${updateUrl}`)
   }
 
   return {
+    channel,
     version: metadata.version,
     hash: metadata.hash,
-    assetUrl: `${RELEASE_BASE_URL}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl:
+      typeof metadata.assetUrl === 'string' && metadata.assetUrl.length > 0
+        ? metadata.assetUrl
+        : `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -399,6 +432,7 @@ async function installRelease(target, releaseInfo, paths) {
     JSON.stringify(
       {
         version: releaseInfo.version,
+        channel: releaseInfo.channel,
         hash: releaseInfo.hash,
         installDir: paths.installDir,
         executablePath: paths.executablePath,
@@ -409,8 +443,22 @@ async function installRelease(target, releaseInfo, paths) {
   )
 }
 
+async function getPruneKeepDirs(cacheRoot, keepDir) {
+  const keepDirs = new Set([keepDir])
+
+  for (const channel of Object.keys(CHANNEL_RELEASE_TAGS)) {
+    const record = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
+    if (record?.installDir) {
+      keepDirs.add(record.installDir)
+    }
+  }
+
+  return keepDirs
+}
+
 async function pruneOldVersions(cacheRoot, keepDir) {
   const versionsRoot = path.join(cacheRoot, 'versions')
+  const keepDirs = await getPruneKeepDirs(cacheRoot, keepDir)
   let entries = []
 
   try {
@@ -423,7 +471,7 @@ async function pruneOldVersions(cacheRoot, keepDir) {
     entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(versionsRoot, entry.name))
-      .filter((dirPath) => dirPath !== keepDir)
+      .filter((dirPath) => !keepDirs.has(dirPath))
       .map((dirPath) => fsp.rm(dirPath, { recursive: true, force: true })),
   )
 }
@@ -456,7 +504,8 @@ async function main() {
   const cacheRoot = getCacheRoot()
   await fsp.mkdir(cacheRoot, { recursive: true })
 
-  const current = readJsonIfPresent(path.join(cacheRoot, 'current.json'))
+  const channel = getReleaseChannel()
+  const current = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
 
   let releaseInfo = null
   try {
@@ -465,7 +514,7 @@ async function main() {
     if (current?.executablePath) {
       const currentPaths = {
         cacheRoot,
-        currentFile: path.join(cacheRoot, 'current.json'),
+        currentFile: path.join(cacheRoot, `current-${channel}.json`),
         windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
         installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
         launcherWorkingDirectory: path.dirname(current.executablePath),

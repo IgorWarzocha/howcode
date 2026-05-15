@@ -66,9 +66,11 @@ function splitPlaceholderText(placeholder: string) {
 function ComposerResponsivePlaceholder({
   placeholder,
   tone,
+  leadingAdornmentVisible = false,
 }: {
   placeholder: string
   tone: NonNullable<ComposerTextFieldProps['placeholderTone']>
+  leadingAdornmentVisible?: boolean
 }) {
   if (!placeholder) return null
   const { leading, tailParts } = splitPlaceholderText(placeholder)
@@ -77,6 +79,7 @@ function ComposerResponsivePlaceholder({
       aria-hidden="true"
       className={cn(
         'pointer-events-none absolute inset-x-0 top-0 min-w-0 truncate text-[14px] leading-[1.45]',
+        leadingAdornmentVisible && 'pl-6',
         tone === 'error' ? 'text-[color:var(--danger)]' : 'text-[color:var(--muted-2)]',
       )}
     >
@@ -272,6 +275,10 @@ function measureTextareaMarkerPosition(input: {
   }
 }
 
+function isTextareaScrolledToBottom(textarea: HTMLTextAreaElement) {
+  return textarea.scrollHeight - textarea.scrollTop - textarea.clientHeight <= 1
+}
+
 export function ComposerTextField({
   value,
   placeholder,
@@ -389,6 +396,8 @@ export function ComposerTextField({
   }, [])
 
   useLayoutEffect(() => {
+    void textareaLayoutVersion
+
     if (!trailingAdornmentVisible) {
       setTrailingAdornmentPosition(null)
       setTrailingContainerHeight(null)
@@ -401,12 +410,26 @@ export function ComposerTextField({
     }
 
     const measureTrailingAdornmentPosition = () => {
-      const measuredPlaceholder =
-        value.length === 0 ? splitPlaceholderText(placeholder).leading : placeholder
+      if (value.length === 0) {
+        const nextTop = 0
+        const nextContainerHeight = textarea.offsetHeight
+
+        const nextLeft = -5
+        setTrailingAdornmentPosition((current) =>
+          current?.left === nextLeft && current.top === nextTop
+            ? current
+            : { left: nextLeft, top: nextTop },
+        )
+        setTrailingContainerHeight((current) =>
+          current === nextContainerHeight ? current : nextContainerHeight,
+        )
+        return
+      }
+
       const markerPosition = measureTextareaMarkerPosition({
         adornmentWidth: 0,
         markerText: value,
-        placeholder: measuredPlaceholder,
+        placeholder,
         textarea,
       })
       const markerLeft = markerPosition.left
@@ -414,10 +437,11 @@ export function ComposerTextField({
       const lineHeight = markerPosition.lineHeight || lineHeightRef.current
       const adornmentWidth = 24
       const adornmentGap = 6
-      const shouldWrapAdornment =
-        markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth && value.length > 0
+      const shouldWrapAdornment = markerLeft + adornmentGap + adornmentWidth > textarea.clientWidth
       const nextLeft = shouldWrapAdornment ? 0 : markerLeft + adornmentGap
-      const nextTop = Math.max(0, markerTop + (shouldWrapAdornment ? lineHeight : 0) - 1.5)
+      const rawTop = markerTop + (shouldWrapAdornment ? lineHeight : 0) - textarea.scrollTop - 1.5
+      const maxVisibleTop = Math.max(0, textarea.clientHeight - lineHeight)
+      const nextTop = Math.max(0, Math.min(rawTop, maxVisibleTop))
       const canGrowForAdornment = textarea.scrollHeight <= textarea.offsetHeight + 1
       const maxContainerHeight = textarea.offsetHeight + (canGrowForAdornment ? lineHeight : 0)
       const nextContainerHeight = Math.min(
@@ -437,8 +461,12 @@ export function ComposerTextField({
 
     measureTrailingAdornmentPosition()
     window.addEventListener('resize', measureTrailingAdornmentPosition)
-    return () => window.removeEventListener('resize', measureTrailingAdornmentPosition)
-  }, [placeholder, trailingAdornmentVisible, value])
+    textarea.addEventListener('scroll', measureTrailingAdornmentPosition, { passive: true })
+    return () => {
+      window.removeEventListener('resize', measureTrailingAdornmentPosition)
+      textarea.removeEventListener('scroll', measureTrailingAdornmentPosition)
+    }
+  }, [placeholder, textareaLayoutVersion, trailingAdornmentVisible, value])
 
   useLayoutEffect(() => {
     if (!inlinePopover) {
@@ -533,7 +561,11 @@ export function ComposerTextField({
         style={trailingContainerHeight ? { minHeight: `${trailingContainerHeight}px` } : undefined}
       >
         {value.length === 0 ? (
-          <ComposerResponsivePlaceholder placeholder={placeholder} tone={placeholderTone} />
+          <ComposerResponsivePlaceholder
+            placeholder={placeholder}
+            tone={placeholderTone}
+            leadingAdornmentVisible={trailingAdornmentVisible}
+          />
         ) : null}
         <textarea
           ref={textareaRef}
@@ -541,6 +573,7 @@ export function ComposerTextField({
           className={cn(
             'm-0 w-full min-h-6 resize-none bg-transparent p-0 text-[14px] leading-[1.45] text-[color:var(--text)] outline-none transition-opacity duration-150 [scrollbar-gutter:stable]',
             'overflow-x-hidden [hyphens:auto] [overflow-wrap:break-word] [word-break:normal]',
+            trailingAdornmentVisible && value.length === 0 && 'pl-6',
             canExpandField && 'composer-textarea-scroll-above-button',
             readOnly && 'cursor-wait opacity-45',
             'placeholder:text-transparent',
@@ -549,7 +582,12 @@ export function ComposerTextField({
           onChange={(event) => {
             if (!readOnly) onChange(event.target.value)
           }}
-          onInput={onInput}
+          onInput={() => {
+            if (textareaRef.current && isTextareaScrolledToBottom(textareaRef.current)) {
+              setTextareaLayoutVersion((current) => current + 1)
+            }
+            onInput?.()
+          }}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
           onFocus={onFocus}

@@ -25,10 +25,10 @@ const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP
 const semverPattern = /^\d+\.\d+\.\d+$/
 const sha256Pattern = /^[a-f0-9]{64}$/i
 const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
-const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const trailingSlashesPattern = /\/+$/
-const trailingChannelPattern = /\/(?:main|dev)$/i
+const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
 const channelPlaceholderPattern = /\{channel\}/g
+const releaseTagPlaceholderPattern = /\{releaseTag\}/g
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -91,14 +91,20 @@ function getCacheRoot() {
   )
 }
 
+function getChannelReleaseTag(channel: UpdateChannel) {
+  return `channel-${channel}`
+}
+
 function getReleaseBaseUrl(channel: UpdateChannel) {
-  if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${channel}`
+  const releaseTag = getChannelReleaseTag(channel)
+  if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${releaseTag}`
 
   const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
-  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, channel)
+  if (baseUrl.includes('{releaseTag}'))
+    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
 
-  const channelBaseUrl = baseUrl.replace(trailingChannelPattern, `/${channel}`)
-  return channelBaseUrl
+  return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
 }
 
 function getReleaseKey(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
@@ -112,22 +118,6 @@ function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   return {
     cacheRoot,
     currentFile: path.join(cacheRoot, `current-${release.channel}.json`),
-    installDir,
-    executablePath: path.join(installDir, target.executable),
-  }
-}
-
-function getLegacyCurrentFile() {
-  return path.join(getCacheRoot(), 'current.json')
-}
-
-function getLegacyInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
-  const cacheRoot = getCacheRoot()
-  const releaseKey = `${release.version}-${release.hash}`
-  const installDir = path.join(cacheRoot, 'versions', releaseKey)
-  return {
-    cacheRoot,
-    currentFile: getLegacyCurrentFile(),
     installDir,
     executablePath: path.join(installDir, target.executable),
   }
@@ -192,13 +182,14 @@ function assertInstallSupported(target: UpdateTarget) {
 function normalizeReleaseMetadata(
   metadata: unknown,
   updateUrl: string,
-): Pick<ReleaseInfo, 'version' | 'hash'> {
+): Pick<ReleaseInfo, 'version' | 'hash' | 'assetUrl'> {
   if (!metadata || typeof metadata !== 'object') {
     throw new Error(`Invalid metadata from ${updateUrl}`)
   }
 
   const version = 'version' in metadata ? metadata.version : null
   const hash = 'hash' in metadata ? metadata.hash : null
+  const assetUrl = 'assetUrl' in metadata ? metadata.assetUrl : null
 
   if (typeof version !== 'string' || !semverPattern.test(version)) {
     throw new Error(`Invalid release version from ${updateUrl}`)
@@ -208,7 +199,11 @@ function normalizeReleaseMetadata(
     throw new Error(`Invalid release hash from ${updateUrl}`)
   }
 
-  return { version, hash: hash.toLowerCase() }
+  return {
+    version,
+    hash: hash.toLowerCase(),
+    assetUrl: typeof assetUrl === 'string' && assetUrl.length > 0 ? assetUrl : '',
+  }
 }
 
 async function fetchJson(url: string, timeoutMs = 15_000) {
@@ -223,12 +218,15 @@ async function resolveLatestRelease(
 ): Promise<ReleaseInfo> {
   const releaseBaseUrl = getReleaseBaseUrl(channel)
   const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
-  const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl)
+  const { version, hash, assetUrl } = normalizeReleaseMetadata(
+    await fetchJson(updateUrl),
+    updateUrl,
+  )
   return {
     channel,
     version,
     hash,
-    assetUrl: `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: assetUrl || `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -343,11 +341,6 @@ function getRunningReleaseFingerprint() {
       version: channelPrefixedMatch[2],
       hash: channelPrefixedMatch[3].toLowerCase(),
     }
-  }
-
-  const legacyMatch = legacyReleaseKeyPattern.exec(runningReleaseKey)
-  if (legacyMatch?.[1] && legacyMatch[2]) {
-    return { version: legacyMatch[1], hash: legacyMatch[2].toLowerCase() }
   }
 
   return null
@@ -490,7 +483,12 @@ export class AppUpdater {
         this.latestRelease = null
         throw new Error('Update channel changed. Check for updates again before installing.')
       }
-      this.setState({ status: 'downloading', latestVersion: release.version, error: null })
+      this.setState({
+        status: 'downloading',
+        latestVersion: release.version,
+        channel: release.channel,
+        error: null,
+      })
       const target = getTarget()
       assertInstallSupported(target)
       const paths = getInstallPaths(target, release)
@@ -514,7 +512,12 @@ export class AppUpdater {
           throw new Error(
             `Downloaded archive hash mismatch. Expected ${release.hash}, got ${hash}.`,
           )
-        this.setState({ status: 'installing', latestVersion: release.version, error: null })
+        this.setState({
+          status: 'installing',
+          latestVersion: release.version,
+          channel: release.channel,
+          error: null,
+        })
         await mkdir(tempInstallDir, { recursive: true })
         await extractTar({ file: archivePath, cwd: tempInstallDir })
         if (!existsSync(path.join(tempInstallDir, target.executable))) {
@@ -578,32 +581,19 @@ export class AppUpdater {
     this.installedUpdate = null
     const channel = await this.getUpdateChannel()
     const currentFile = path.join(getCacheRoot(), `current-${channel}.json`)
-    const record =
-      (await this.readCurrentFile(currentFile)) ??
-      (await this.readCurrentFile(getLegacyCurrentFile(), channel))
+    const record = await this.readCurrentFile(currentFile)
     if (!(record && this.isUpdateCandidate(record))) return
     const target = getTarget()
     const expectedPaths = getInstallPaths(target, record)
-    const legacyPaths = getLegacyInstallPaths(target, record)
     if (
-      !(
-        (record.installDir === expectedPaths.installDir &&
-          record.executablePath === expectedPaths.executablePath) ||
-        (record.installDir === legacyPaths.installDir &&
-          record.executablePath === legacyPaths.executablePath)
-      )
+      record.installDir !== expectedPaths.installDir ||
+      record.executablePath !== expectedPaths.executablePath
     ) {
       return
     }
-    const paths = record.installDir === legacyPaths.installDir ? legacyPaths : expectedPaths
-    if (!(await isValidInstall(paths, target))) return
+    if (!(await isValidInstall(expectedPaths, target))) return
     this.installedUpdate = record
     this.latestRelease = record
-    if (paths.currentFile === getLegacyCurrentFile()) {
-      await writeInstalledUpdateRecord(currentFile, record).catch(() => {
-        // Preserve restart capability even if best-effort migration fails.
-      })
-    }
     this.setState({
       status: 'ready',
       latestVersion: record.version,
@@ -618,6 +608,8 @@ export class AppUpdater {
     if (versionDiff < 0) return false
 
     const runningRelease = getRunningReleaseFingerprint()
+    if (release.channel === 'main') return false
+
     if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
       return false
     }

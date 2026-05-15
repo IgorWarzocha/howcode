@@ -1,5 +1,5 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
-import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, Github, MoreHorizontal, Plus, Star } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
@@ -19,6 +19,7 @@ type ProjectRowProps = {
   isActive: boolean
   isDragging: boolean
   isExpanded: boolean
+  pinned: boolean
   hasRepoOrigin: boolean
   name: string
   renameDraft: string
@@ -53,6 +54,7 @@ function ProjectRowName({
   onCancelEdit,
   onChangeRenameDraft,
   onSubmitEdit,
+  pinned,
   renameDraft,
 }: Pick<
   ProjectRowProps,
@@ -60,6 +62,7 @@ function ProjectRowName({
   | 'isActive'
   | 'isEditing'
   | 'name'
+  | 'pinned'
   | 'onCancelEdit'
   | 'onChangeRenameDraft'
   | 'onSubmitEdit'
@@ -110,6 +113,9 @@ function ProjectRowName({
       aria-current={isActive ? 'page' : undefined}
     >
       <span className="sidebar-project-title">{name}</span>
+      {pinned ? (
+        <Star size={12} className="sidebar-row-inline-icon sidebar-project-favourite-icon" />
+      ) : null}
     </button>
   )
 }
@@ -181,6 +187,7 @@ export function ProjectRow({
   isActive,
   isDragging,
   isExpanded,
+  pinned,
   hasRepoOrigin,
   name,
   renameDraft,
@@ -273,6 +280,7 @@ export function ProjectRow({
         isActive={isActive}
         isEditing={isEditing}
         name={name}
+        pinned={pinned}
         onCancelEdit={onCancelEdit}
         onChangeRenameDraft={onChangeRenameDraft}
         onSubmitEdit={onSubmitEdit}
