@@ -183,7 +183,7 @@ function handleOpenSlashCommandKey(input: {
   if (input.draft !== '/settings' && !(input.loading && shouldWaitForSlashCommands(input.draft)))
     return false
   input.event.preventDefault()
-  if (input.draft === '/settings') input.submit()
+  if (input.draft === '/settings' || input.draft === '/new') input.submit()
   return true
 }
 

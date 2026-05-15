@@ -127,15 +127,17 @@ function findUnboundProjectShellTerminal(request: TerminalOpenRequest) {
 
 function moveTranscript(fromPath: string, toPath: string) {
   if (fromPath === toPath) {
-    return
+    return true
   }
 
   try {
     renameSync(fromPath, toPath)
+    return true
   } catch {
     // The transcript may not have been flushed yet, or the target can already exist from a
     // previous bound terminal. Keeping the live in-memory history is more important than failing
     // the bind operation for best-effort persistence.
+    return false
   }
 }
 
@@ -148,8 +150,9 @@ function bindProjectTerminalToSession(input: {
   const nextTranscriptPath = getTranscriptPath(input.sessionId)
 
   deleteTerminalSession(previousSessionId)
-  moveTranscript(input.record.transcriptPath, nextTranscriptPath)
-  input.record.transcriptPath = nextTranscriptPath
+  if (moveTranscript(input.record.transcriptPath, nextTranscriptPath)) {
+    input.record.transcriptPath = nextTranscriptPath
+  }
   input.record.snapshot = {
     ...input.record.snapshot,
     sessionId: input.sessionId,

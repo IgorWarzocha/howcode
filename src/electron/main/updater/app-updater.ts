@@ -25,6 +25,7 @@ const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP
 const semverPattern = /^\d+\.\d+\.\d+$/
 const sha256Pattern = /^[a-f0-9]{64}$/i
 const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
 const trailingSlashesPattern = /\/+$/
 const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
 const channelPlaceholderPattern = /\{channel\}/g
@@ -340,6 +341,14 @@ function getRunningReleaseFingerprint() {
     return {
       version: channelPrefixedMatch[2],
       hash: channelPrefixedMatch[3].toLowerCase(),
+    }
+  }
+
+  const legacyMatch = legacyReleaseKeyPattern.exec(runningReleaseKey)
+  if (legacyMatch?.[1] && legacyMatch[2]) {
+    return {
+      version: legacyMatch[1],
+      hash: legacyMatch[2].toLowerCase(),
     }
   }
 
