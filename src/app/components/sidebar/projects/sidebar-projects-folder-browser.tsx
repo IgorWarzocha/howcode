@@ -70,6 +70,8 @@ export function SidebarProjectsFolderBrowser({
         setState(result.state)
         onCurrentPathChange(result.state.currentPath)
       } else {
+        setState(null)
+        onCurrentPathChange(null)
         setErrorMessage(result.errorMessage)
       }
       setLoadingPath(null)

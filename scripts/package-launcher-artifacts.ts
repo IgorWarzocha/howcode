@@ -169,7 +169,7 @@ async function createUpdateMetadata(archivePath: string, target: Target, version
     `archive-${appName}-${target.os}-${target.arch}-${hash}.tar.gz`,
   )
   await copyFile(archivePath, immutableArchivePath)
-  const assetBaseUrl = process.env['HOWCODE_RELEASE_ASSET_BASE_URL']
+  const { HOWCODE_RELEASE_ASSET_BASE_URL: assetBaseUrl } = process.env
 
   await writeFile(
     metadataPath,

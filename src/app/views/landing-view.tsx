@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { CircleDot, Download, ExternalLink, GitBranch, Github, RotateCw } from 'lucide-react'
-import { type KeyboardEvent, useEffect, useState } from 'react'
+import { type KeyboardEvent, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { MarkdownContent } from '../components/common/markdown-content'
 import { SkeletonBlock } from '../components/common/skeleton'
@@ -310,6 +310,7 @@ function ProjectOverview({
 }) {
   const githubLink = getGitHubRepositoryLink(project, gitState)
   const sessionCount = usageSummary?.sessionCount ?? project.threadCount ?? project.threads.length
+  const sessionsWithUsageCount = usageSummary?.sessionsWithUsageCount ?? 0
   const branchLabel = gitState?.isGitRepo ? (gitState.branch ?? 'Detached HEAD') : 'No branch'
   const gitSummary = formatGitSummary(gitState)
   const assistantTurnCount = usageSummary?.assistantTurnCount ?? 0
@@ -342,7 +343,7 @@ function ProjectOverview({
             label="Spend"
             loading={usageLoading}
             value={formatCost(usageSummary?.costTotal)}
-            detail={`${formatAverageCost(usageSummary?.costTotal, sessionCount)}/session`}
+            detail={`${formatAverageCost(usageSummary?.costTotal, sessionsWithUsageCount)}/active session`}
           />
           <ProjectMetric
             label="Tokens"
@@ -437,6 +438,7 @@ export function LandingView({
       : ['desktop', 'projectUsageSummary', null],
     queryFn: () => getProjectUsageSummaryQuery(selectedProject?.id ?? ''),
     enabled: Boolean(selectedProject),
+    refetchInterval: (query) => (query.state.data?.archivedUsageRefreshing ? 5000 : false),
   })
   const projectGitQuery = useQuery({
     queryKey: selectedProject
@@ -446,13 +448,6 @@ export function LandingView({
     enabled: Boolean(selectedProject),
   })
 
-  useEffect(() => {
-    if (!(selectedProject && projectUsageQuery.data?.archivedUsageRefreshing)) return
-    const timeout = window.setTimeout(() => {
-      void projectUsageQuery.refetch()
-    }, 750)
-    return () => window.clearTimeout(timeout)
-  }, [projectUsageQuery.data?.archivedUsageRefreshing, projectUsageQuery.refetch, selectedProject])
   const [activeSectionIndex, setActiveSectionIndex] = useState(0)
   const activeContent = content.sections[activeSectionIndex] ?? content.sections[0]
   const activePanelId = 'landing-overview-panel'

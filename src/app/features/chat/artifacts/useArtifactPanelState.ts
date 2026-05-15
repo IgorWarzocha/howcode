@@ -82,6 +82,7 @@ export function useArtifactPanelState(conversationId: string | null) {
       .then((nextArtifacts) => {
         if (cancelled) return
         setArtifacts(nextArtifacts)
+        setArtifactLoadError(null)
         setSelectedArtifactId((current) =>
           current && nextArtifacts.some((artifact) => artifact.slug === current)
             ? current
@@ -108,6 +109,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     return window.piDesktop.subscribe((event) => {
       if (event.type !== 'artifact-update') return
       if (!conversationId || event.conversationId !== conversationId) return
+      setArtifactLoadError(null)
       setArtifacts((current) => {
         const index = current.findIndex((artifact) => artifact.slug === event.artifact.slug)
         if (index === -1) return [event.artifact, ...current]
