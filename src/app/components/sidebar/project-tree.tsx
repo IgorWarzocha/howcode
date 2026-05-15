@@ -247,6 +247,10 @@ export function ProjectTree({
                             onProjectPrimeSelection(project.id)
                           } else {
                             onProjectSelect(project.id)
+                            void onAction('thread.new', {
+                              projectId: project.id,
+                              composerMode: 'code',
+                            })
                           }
                           setOpenProjectMenuId(null)
                         }}

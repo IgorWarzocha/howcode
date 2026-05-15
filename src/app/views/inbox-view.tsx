@@ -326,7 +326,10 @@ export function InboxView({
               }
               onOpenSettingsView={onOpenSettingsView}
               onStartNewSession={() =>
-                void onAction('thread.new', { projectId: thread.projectId, composerMode: 'code' })
+                void onAction('thread.new', {
+                  projectId: thread.projectId,
+                  composerMode: thread.isChat ? 'chat' : 'code',
+                })
               }
               onSend={(sendInput) => handleSend(sendInput)}
               onStop={handleStop}
