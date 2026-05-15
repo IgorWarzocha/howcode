@@ -10,7 +10,7 @@ import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '..
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import type { Message } from '../../types'
 import { cn } from '../../utils/cn'
-import { DesktopComposerStatus } from '../code/desktop-composer-status'
+import { DesktopComposerStatusModelPicker } from '../code/desktop-composer-status'
 import { useQueuedPromptRestore } from '../code/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code/useWorkspaceFooterHeight'
 import { ChatView } from './chat-view'
@@ -64,6 +64,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  devUpdateBranch: false,
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
@@ -108,10 +109,11 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
   }
 
 function getReplyActivityKey(messages: readonly Message[]) {
-  return messages
-    .filter((message) => message.role !== 'user')
-    .map((message) => message.id)
-    .join('|')
+  const replyMessageIds: string[] = []
+  for (const message of messages) {
+    if (message.role !== 'user') replyMessageIds.push(message.id)
+  }
+  return replyMessageIds.join('|')
 }
 
 function SidebarToggleButton(props: ChatWorkspaceContentProps) {
@@ -301,8 +303,15 @@ function ChatComposerCenter(props: ChatWorkspaceContentProps) {
 }
 
 function ChatComposerDock(props: ChatWorkspaceContentProps) {
-  const { sidebarAutoHidden, sidebarCompactMode, showDesktopArtifactDrawer, activeComposerState } =
-    props
+  const {
+    sidebarAutoHidden,
+    sidebarCompactMode,
+    showDesktopArtifactDrawer,
+    activeComposerState,
+    composerProjectId,
+    terminalSessionPath,
+    handleAction,
+  } = props
   return (
     <WorkspaceComposerDock
       compactControls={sidebarAutoHidden}
@@ -313,10 +322,16 @@ function ChatComposerDock(props: ChatWorkspaceContentProps) {
         showDesktopArtifactDrawer && 'invisible',
       )}
       right={
-        <DesktopComposerStatus
+        <DesktopComposerStatusModelPicker
+          availableModels={activeComposerState?.availableModels ?? []}
+          availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
+          composerMode="chat"
           contextUsage={activeComposerState?.contextUsage ?? null}
           model={activeComposerState?.currentModel ?? null}
+          projectId={composerProjectId}
+          sessionPath={terminalSessionPath}
           thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
+          onAction={handleAction}
         />
       }
     />

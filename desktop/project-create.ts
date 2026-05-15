@@ -20,6 +20,13 @@ import {
 
 const execFile = promisify(execFileCallback)
 
+async function startThreadForNewlyVisibleProject(projectId: string) {
+  const result = await startNewThread({ projectId })
+  ensureProject(projectId)
+  moveProjectToTop(projectId)
+  return result
+}
+
 function sanitizeProjectFolderName(projectName: string) {
   let nextName = projectName
     .trim()
@@ -59,8 +66,7 @@ export async function createProject(options: {
     await initializeProjectGit(projectPath)
   }
 
-  const result = await startNewThread({ projectId: projectPath })
-  moveProjectToTop(projectPath)
+  const result = await startThreadForNewlyVisibleProject(projectPath)
   return result
 }
 
@@ -90,8 +96,7 @@ export async function addProjectFromPath(options: {
     await initializeProjectGit(resolvedProjectPath)
   }
 
-  const result = await startNewThread({ projectId: resolvedProjectPath })
-  moveProjectToTop(resolvedProjectPath)
+  const result = await startThreadForNewlyVisibleProject(resolvedProjectPath)
   return result
 }
 
@@ -210,9 +215,7 @@ export async function createProjectFromGitHubUrl(options: {
     throw new Error(`Unable to clone ${repository.canonicalUrl}: ${formatGitCommandError(error)}`)
   }
 
-  const result = await startNewThread({ projectId: projectPath })
-  ensureProject(projectPath)
+  const result = await startThreadForNewlyVisibleProject(projectPath)
   setProjectRepoOrigin(projectPath, repository.canonicalUrl)
-  moveProjectToTop(projectPath)
   return result
 }

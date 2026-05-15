@@ -38,6 +38,7 @@ const devAppUpdateState = {
   status: 'up-to-date' as const,
   currentVersion: packageJson.version,
   latestVersion: packageJson.version,
+  channel: null,
   error: null,
 }
 
@@ -83,7 +84,8 @@ async function writeUniqueTextFile(directoryPath: string, fileName: string, cont
 
 async function listProjectDirectoryEntries(request: { path?: string | null | undefined }) {
   const homePath = os.homedir()
-  const requestedPath = request.path?.trim() ? request.path : homePath
+  const trimmedRequestPath = request.path?.trim() ?? ''
+  const requestedPath = trimmedRequestPath || homePath
   const currentPath = await realpath(path.resolve(requestedPath)).catch(() =>
     path.resolve(requestedPath),
   )

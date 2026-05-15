@@ -12,6 +12,7 @@ const fallbackUpdateState: AppUpdateState = {
   status: 'idle',
   currentVersion: packageJson.version,
   latestVersion: null,
+  channel: null,
   error: null,
 }
 
@@ -24,7 +25,7 @@ function getUpdateLabel(state: AppUpdateState) {
   if (state.status === 'installing') return 'Installing update…'
   if (state.status === 'ready') return `Update ${latestVersion} ready`
   if (state.status === 'restarting') return 'Restarting…'
-  return 'Update check failed'
+  return state.error ? `Update failed: ${state.error}` : 'Update failed'
 }
 
 function getUpdateAction(state: AppUpdateState) {

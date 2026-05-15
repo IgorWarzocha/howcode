@@ -5,14 +5,22 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
 const { pipeline } = require('node:stream/promises')
-const { Readable } = require('node:stream')
+const { Readable, Transform } = require('node:stream')
 const tar = require('tar')
 
 const packageJson = require('../package.json')
 
 const APP_NAME = packageJson.howcode.appName
 const RELEASE_BASE_URL = process.env.HOWCODE_BASE_URL || packageJson.howcode.releaseBaseUrl
-const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
+const RELEASE_CHANNEL =
+  process.env.HOWCODE_RELEASE_CHANNEL || packageJson.howcode.releaseChannel || 'main'
+const CHANNEL_RELEASE_TAGS = { main: 'channel-main', dev: 'channel-dev' }
+const trailingSlashesPattern = /\/+$/
+const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
+const releaseTagPlaceholderPattern = /\{releaseTag\}/g
+const channelPlaceholderPattern = /\{channel\}/g
+const FETCH_METADATA_TIMEOUT_MS = 30_000
+const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000
 
 const TARGETS = {
   'darwin:arm64': {
@@ -83,15 +91,35 @@ function getCacheRoot() {
   return path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), APP_NAME)
 }
 
+function getReleaseChannel() {
+  if (RELEASE_CHANNEL === 'main' || RELEASE_CHANNEL === 'dev') return RELEASE_CHANNEL
+  throw new Error(`Unsupported release channel: ${RELEASE_CHANNEL}`)
+}
+
+function getChannelReleaseTag(channel) {
+  return CHANNEL_RELEASE_TAGS[channel]
+}
+
+function getReleaseBaseUrl(channel = getReleaseChannel()) {
+  const releaseTag = getChannelReleaseTag(channel)
+  const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
+
+  if (baseUrl.includes('{releaseTag}'))
+    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
+
+  return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
+}
+
 function getPaths(target, releaseInfo) {
   const cacheRoot = getCacheRoot()
   const versionsRoot = path.join(cacheRoot, 'versions')
-  const releaseKey = `${releaseInfo.version}-${releaseInfo.hash}`
+  const releaseKey = `${releaseInfo.channel}-${releaseInfo.version}-${releaseInfo.hash}`
   const installDir = path.join(versionsRoot, releaseKey)
   const launcherWorkingDirectory = path.dirname(path.join(installDir, target.executable))
   return {
     cacheRoot,
-    currentFile: path.join(cacheRoot, 'current.json'),
+    currentFile: path.join(cacheRoot, `current-${releaseInfo.channel}.json`),
     windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
     launcherWorkingDirectory,
     installDir,
@@ -236,9 +264,53 @@ async function ensureWindowsLaunchIntegration(target, paths) {
   }
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+
+  const precision = unitIndex === 0 || value >= 10 ? 0 : 1
+  return `${value.toFixed(precision)} ${units[unitIndex]}`
+}
+
+function createDownloadProgressStream(input) {
+  let downloadedBytes = 0
+  let lastLoggedAt = 0
+
+  return new Transform({
+    transform(chunk, _encoding, callback) {
+      downloadedBytes += chunk.length
+      input.onProgress(downloadedBytes)
+
+      const now = Date.now()
+      if (now - lastLoggedAt >= 1000) {
+        lastLoggedAt = now
+        const downloadedLabel = formatBytes(downloadedBytes)
+        if (input.totalBytes > 0) {
+          const percent = Math.min(100, (downloadedBytes / input.totalBytes) * 100)
+          const totalLabel = formatBytes(input.totalBytes)
+          process.stdout.write(
+            `\rDownloading ${APP_NAME}: ${downloadedLabel} / ${totalLabel} (${percent.toFixed(0)}%)`,
+          )
+        } else {
+          process.stdout.write(`\rDownloading ${APP_NAME}: ${downloadedLabel}`)
+        }
+      }
+
+      callback(null, chunk)
+    },
+  })
+}
+
 async function fetchJson(url) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
+  const timeout = setTimeout(() => controller.abort(), FETCH_METADATA_TIMEOUT_MS)
 
   try {
     const response = await fetch(url, { signal: controller.signal })
@@ -251,9 +323,21 @@ async function fetchJson(url) {
   }
 }
 
-async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
+async function downloadFile(url, filePath, idleTimeoutMs = DOWNLOAD_IDLE_TIMEOUT_MS) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  let timedOut = false
+  let idleTimeout = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, idleTimeoutMs)
+
+  const resetIdleTimeout = () => {
+    clearTimeout(idleTimeout)
+    idleTimeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, idleTimeoutMs)
+  }
 
   try {
     const response = await fetch(url, { signal: controller.signal })
@@ -261,10 +345,22 @@ async function downloadFile(url, filePath, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
       throw new Error(`HTTP ${response.status} while downloading ${url}`)
     }
 
+    const totalBytes = Number(response.headers.get('content-length')) || 0
+    resetIdleTimeout()
     await fsp.mkdir(path.dirname(filePath), { recursive: true })
-    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(filePath))
+    await pipeline(
+      Readable.fromWeb(response.body),
+      createDownloadProgressStream({ totalBytes, onProgress: resetIdleTimeout }),
+      fs.createWriteStream(filePath),
+    )
+    process.stdout.write('\n')
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(`Download stalled for ${Math.round(idleTimeoutMs / 1000)} seconds: ${url}`)
+    }
+    throw error
   } finally {
-    clearTimeout(timeout)
+    clearTimeout(idleTimeout)
   }
 }
 
@@ -275,16 +371,22 @@ async function sha256File(filePath) {
 }
 
 async function resolveLatestRelease(target) {
-  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`
+  const channel = getReleaseChannel()
+  const releaseBaseUrl = getReleaseBaseUrl(channel)
+  const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
   const metadata = await fetchJson(updateUrl)
   if (!metadata || typeof metadata.version !== 'string' || typeof metadata.hash !== 'string') {
     throw new Error(`Invalid release metadata from ${updateUrl}`)
   }
 
   return {
+    channel,
     version: metadata.version,
     hash: metadata.hash,
-    assetUrl: `${RELEASE_BASE_URL}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl:
+      typeof metadata.assetUrl === 'string' && metadata.assetUrl.length > 0
+        ? metadata.assetUrl
+        : `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -330,6 +432,7 @@ async function installRelease(target, releaseInfo, paths) {
     JSON.stringify(
       {
         version: releaseInfo.version,
+        channel: releaseInfo.channel,
         hash: releaseInfo.hash,
         installDir: paths.installDir,
         executablePath: paths.executablePath,
@@ -340,8 +443,22 @@ async function installRelease(target, releaseInfo, paths) {
   )
 }
 
+async function getPruneKeepDirs(cacheRoot, keepDir) {
+  const keepDirs = new Set([keepDir])
+
+  for (const channel of Object.keys(CHANNEL_RELEASE_TAGS)) {
+    const record = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
+    if (record?.installDir) {
+      keepDirs.add(record.installDir)
+    }
+  }
+
+  return keepDirs
+}
+
 async function pruneOldVersions(cacheRoot, keepDir) {
   const versionsRoot = path.join(cacheRoot, 'versions')
+  const keepDirs = await getPruneKeepDirs(cacheRoot, keepDir)
   let entries = []
 
   try {
@@ -354,7 +471,7 @@ async function pruneOldVersions(cacheRoot, keepDir) {
     entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(versionsRoot, entry.name))
-      .filter((dirPath) => dirPath !== keepDir)
+      .filter((dirPath) => !keepDirs.has(dirPath))
       .map((dirPath) => fsp.rm(dirPath, { recursive: true, force: true })),
   )
 }
@@ -387,7 +504,8 @@ async function main() {
   const cacheRoot = getCacheRoot()
   await fsp.mkdir(cacheRoot, { recursive: true })
 
-  const current = readJsonIfPresent(path.join(cacheRoot, 'current.json'))
+  const channel = getReleaseChannel()
+  const current = readJsonIfPresent(path.join(cacheRoot, `current-${channel}.json`))
 
   let releaseInfo = null
   try {
@@ -396,7 +514,7 @@ async function main() {
     if (current?.executablePath) {
       const currentPaths = {
         cacheRoot,
-        currentFile: path.join(cacheRoot, 'current.json'),
+        currentFile: path.join(cacheRoot, `current-${channel}.json`),
         windowsCommandFile: path.join(cacheRoot, `${APP_NAME}.cmd`),
         installDir: current.installDir || path.dirname(path.dirname(current.executablePath)),
         launcherWorkingDirectory: path.dirname(current.executablePath),

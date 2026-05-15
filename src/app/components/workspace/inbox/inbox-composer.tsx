@@ -82,6 +82,7 @@ type InboxComposerProps = {
   }) => Promise<ComposerFilePickerState | null>
   onOpenThread: () => void
   onOpenSettingsView: (target?: SettingsOpenTarget) => void
+  onStartNewSession: () => void
   onSend: (input: { draft: string; attachments: ComposerAttachment[] }) => Promise<void> | void
   onStop: () => void
 }
@@ -110,6 +111,7 @@ export function InboxComposer({
   onListAttachmentEntries,
   onOpenThread,
   onOpenSettingsView,
+  onStartNewSession,
   onSend,
   onStop,
 }: InboxComposerProps) {
@@ -262,6 +264,7 @@ export function InboxComposer({
     setDraft: setDraftValue,
     send: () => void send(),
     onOpenSettingsView,
+    onStartNewSession,
   })
 
   const slashCommandListSignature = slashCommands.commands

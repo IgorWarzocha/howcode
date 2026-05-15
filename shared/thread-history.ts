@@ -17,13 +17,13 @@ export type SessionPathEntry = {
 }
 
 function isDisplayableEntry(entry: SessionPathEntry) {
-  return (
-    entry.type === 'message' ||
-    entry.type === 'custom_message' ||
-    entry.type === 'branch_summary' ||
-    entry.type === 'model_change' ||
-    entry.type === 'thinking_level_change'
-  )
+  if (entry.display === false) return false
+  if (entry.type === 'message') return Boolean(entry.message)
+  if (entry.type === 'custom_message') return true
+  if (entry.type === 'branch_summary') return Boolean(entry.summary?.trim())
+  if (entry.type === 'model_change') return Boolean(entry.provider?.trim() && entry.modelId?.trim())
+  if (entry.type === 'thinking_level_change') return Boolean(entry.thinkingLevel?.trim())
+  return false
 }
 
 function modelChangeConsumesNextEntry(
@@ -58,6 +58,10 @@ function appendModelChangeMessage(
   entry: SessionPathEntry,
   nextEntry: SessionPathEntry | undefined,
 ) {
+  if (entry.display === false) {
+    return false
+  }
+
   const provider = entry.provider?.trim()
   const modelId = entry.modelId?.trim()
   if (!(provider && modelId)) {
@@ -81,6 +85,10 @@ function appendModelChangeMessage(
 }
 
 function appendThinkingLevelChangeMessage(messages: AgentMessage[], entry: SessionPathEntry) {
+  if (entry.display === false) {
+    return
+  }
+
   const thinkingLevel = entry.thinkingLevel?.trim()
   if (!thinkingLevel) {
     return

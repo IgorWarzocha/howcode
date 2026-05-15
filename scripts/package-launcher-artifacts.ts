@@ -4,7 +4,7 @@ const linuxUnpackedDirectoryPattern = /linux.*unpacked$/i
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
-import { cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -164,6 +164,12 @@ async function createUpdateMetadata(archivePath: string, target: Target, version
   const archiveBuffer = await readFile(archivePath)
   const hash = createHash('sha256').update(archiveBuffer).digest('hex')
   const metadataPath = path.join(artifactRoot, `stable-${target.os}-${target.arch}-update.json`)
+  const immutableArchivePath = path.join(
+    path.dirname(archivePath),
+    `archive-${appName}-${target.os}-${target.arch}-${hash}.tar.gz`,
+  )
+  await copyFile(archivePath, immutableArchivePath)
+  const { HOWCODE_RELEASE_ASSET_BASE_URL: assetBaseUrl } = process.env
 
   await writeFile(
     metadataPath,
@@ -171,11 +177,16 @@ async function createUpdateMetadata(archivePath: string, target: Target, version
       {
         version,
         hash,
+        assetUrl: assetBaseUrl
+          ? `${assetBaseUrl}/${path.basename(immutableArchivePath)}`
+          : undefined,
       },
       null,
       2,
     ),
   )
+
+  return immutableArchivePath
 }
 
 async function main() {
@@ -186,8 +197,8 @@ async function main() {
   const target = getCurrentTarget()
   const bundlePath = await resolveBundlePath(target)
   const archivePath = await createNormalizedArchive(bundlePath, target)
-  await createUpdateMetadata(archivePath, target, packageJson.version)
-  console.log(`created ${path.relative(process.cwd(), archivePath)}`)
+  const immutableArchivePath = await createUpdateMetadata(archivePath, target, packageJson.version)
+  console.log(`created ${path.relative(process.cwd(), immutableArchivePath)}`)
 }
 
 void main().catch((error) => {

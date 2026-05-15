@@ -14,7 +14,7 @@ import type { Message } from '../../types'
 import { mainPanelClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
-import { DesktopComposerStatus } from './desktop-composer-status'
+import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 import { useDiffCommentController } from './useDiffCommentController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from './useWorkspaceFooterHeight'
@@ -65,6 +65,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  devUpdateBranch: false,
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
@@ -108,10 +109,11 @@ type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
   }
 
 function getReplyActivityKey(messages: readonly Message[]) {
-  return messages
-    .filter((message) => message.role !== 'user')
-    .map((message) => message.id)
-    .join('|')
+  const replyMessageIds: string[] = []
+  for (const message of messages) {
+    if (message.role !== 'user') replyMessageIds.push(message.id)
+  }
+  return replyMessageIds.join('|')
 }
 
 function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
@@ -202,6 +204,7 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
                   projectDeletionMode: 'pi-only',
                   useAgentsSkillsPaths: false,
                   howcodeNativeAskQuestions: false,
+                  devUpdateBranch: false,
                   piTuiTakeover: false,
                   hoverToFocus: true,
                   hoverToBlur: false,
@@ -248,17 +251,18 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
 }
 
 function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {
-  const { sidebarCollapsed, onToggleSidebar } = props
+  const { sidebarCollapsed, sidebarCompactMode, onToggleSidebar } = props
+  const sidebarHidden = sidebarCollapsed || sidebarCompactMode
   return (
     <button
       type="button"
       className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
       onClick={onToggleSidebar}
-      aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+      aria-label={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
+      data-tooltip={sidebarHidden ? 'Show sidebar' : 'Hide sidebar'}
       data-tooltip-placement="right"
     >
-      {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+      {sidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
     </button>
   )
 }
@@ -281,6 +285,9 @@ function CodeSidebarFooterButton(props: CodeWorkspaceContentProps) {
 
 function CodeFooterLeft(props: CodeWorkspaceContentProps) {
   const { state, sidebarCompactMode } = props
+  if (state.activeView === 'code') {
+    return <CodeSidebarToggleButton {...props} />
+  }
   if (
     !(
       (state.activeView === 'thread' || state.activeView === 'gitops') &&
@@ -335,7 +342,9 @@ function CodeGitOpsComposer(props: CodeWorkspaceContentProps) {
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
         onSendDiffComments={(message) => {
-          void handleSendDiffComments(message)
+          void handleSendDiffComments(message).then((sent) => {
+            if (sent) handleCloseGitOpsView()
+          })
         }}
         onSelectDiffComment={handleSelectDiffComment}
         onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
@@ -476,6 +485,9 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     gitOpsFileTreeVisible,
     showDesktopTerminalDrawer,
     activeComposerState,
+    composerProjectId,
+    terminalSessionPath,
+    handleAction,
   } = props
   if (state.activeView === 'gitops' && !state.takeoverVisible)
     return (
@@ -491,10 +503,16 @@ function CodeFooterRight(props: CodeWorkspaceContentProps) {
     )
   if (state.activeView === 'thread' && !state.takeoverVisible && !showDesktopTerminalDrawer)
     return (
-      <DesktopComposerStatus
+      <DesktopComposerStatusModelPicker
+        availableModels={activeComposerState?.availableModels ?? []}
+        availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
+        composerMode="code"
         contextUsage={activeComposerState?.contextUsage ?? null}
         model={activeComposerState?.currentModel ?? null}
+        projectId={composerProjectId}
+        sessionPath={terminalSessionPath}
         thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
+        onAction={handleAction}
       />
     )
   return null
@@ -597,7 +615,11 @@ function shouldShowDesktopTerminalDrawer(
   terminalDrawerVisible: boolean,
   terminalDrawerOverlay: boolean,
 ) {
-  return activeView === 'thread' && terminalDrawerVisible && !terminalDrawerOverlay
+  return (
+    (activeView === 'thread' || activeView === 'code') &&
+    terminalDrawerVisible &&
+    !terminalDrawerOverlay
+  )
 }
 
 function getFloatingFooterStyle(input: {
@@ -645,7 +667,7 @@ function getCodeWorkspaceFlags(input: {
     showWorkspaceFooter:
       input.activeView === 'thread' || input.activeView === 'gitops' || showCodeDashboardFooter,
     showThreadFooter: input.activeView === 'thread',
-    showCodeSidebarFooter: false,
+    showCodeSidebarFooter: input.activeView === 'code' && !input.selectedProjectId,
     showUtilitySidebarButton: isCodeUtilityView(input.activeView),
     showDiffInMainView: input.activeView === 'gitops',
   }

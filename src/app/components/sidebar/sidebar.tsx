@@ -53,6 +53,7 @@ type SidebarProps = {
   onShowView: (view: SidebarNavigableView) => void
   onToggleSettings: () => void
   onOpenExtensionsView: () => void
+  onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onOpenArchivedThreads: () => void
@@ -143,6 +144,7 @@ function SidebarContent(props: SidebarProps) {
         terminalRunningSessionPaths={props.terminalRunningSessionPaths}
         threads={props.inboxThreads}
         selectedSessionPath={props.selectedInboxSessionPath}
+        onAction={props.onAction}
         onDismissThread={props.onDismissInboxThread}
         onSelectThread={props.onSelectInboxThread}
       />
@@ -215,6 +217,7 @@ export function Sidebar({
   onShowView,
   onToggleSettings,
   onOpenExtensionsView,
+  onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
@@ -275,6 +278,7 @@ export function Sidebar({
     onShowView,
     onToggleSettings,
     onOpenExtensionsView,
+    onOpenAbout,
     onOpenSkillsView,
     onOpenSettingsPanel,
     onOpenArchivedThreads,
@@ -346,6 +350,7 @@ export function Sidebar({
             open={settingsOpen}
             panelRef={settingsMenuRef}
             onOpenExtensionsView={onOpenExtensionsView}
+            onOpenAbout={onOpenAbout}
             onOpenSkillsView={onOpenSkillsView}
             onOpenSettingsPanel={onOpenSettingsPanel}
             onOpenArchivedThreads={onOpenArchivedThreads}

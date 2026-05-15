@@ -110,6 +110,7 @@ export function ComposerFooter({
             onClick={onToggleTerminal}
             className={cn(
               workspaceFooterTextClass,
+              'composer-terminal-control',
               terminalVisible && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
           />
@@ -167,7 +168,7 @@ export function ComposerFooter({
             type="button"
             className={cn(
               compactIconButtonClass,
-              'h-7 w-7',
+              'composer-gitops-control h-7 w-7',
               getGitOpsEntryButtonClass(gitVisualMode),
             )}
             onClick={onOpenGitOps}

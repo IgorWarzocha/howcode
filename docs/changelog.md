@@ -1,3 +1,19 @@
+### 0.1.65
+
+- Added sidebar project search.
+- Added inbox actions for local sessions.
+- Added clickable model/provider selection in the footer.
+- Improved Pi message status details.
+- Improved artifact preview controls and artifact panel interactions.
+- Improved GitOps composer polish and diff baseline controls.
+- Improved sidebar favorites, project icons, and project ordering.
+- Polished compact composer controls, including dictation button placement.
+- Fixed extension-backed models in draft composer selection.
+- Fixed updater rechecks, self-update detection, and launcher download timeouts.
+- Fixed a bunch of small sidebar, composer, GitOps, and artifact rough edges.
+
+Snapshot: May 15, 2026.
+
 ### 0.1.64
 
 - Added copy controls to chat and reasoning messages.

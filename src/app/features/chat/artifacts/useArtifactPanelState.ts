@@ -26,6 +26,8 @@ export function useArtifactPanelState(conversationId: string | null) {
   const [versions, setVersions] = useState<ArtifactVersion[]>([])
   const [selectedVersion, setSelectedVersion] = useState<number | 'latest'>('latest')
   const [saving, setSaving] = useState(false)
+  const [loadingArtifacts, setLoadingArtifacts] = useState(false)
+  const [artifactLoadError, setArtifactLoadError] = useState<string | null>(null)
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -70,16 +72,33 @@ export function useArtifactPanelState(conversationId: string | null) {
     setSelectedArtifactId(null)
     setSelectedVersion('latest')
     setVersions([])
-    if (!conversationId) return
-    void listArtifactsQuery(conversationId).then((nextArtifacts) => {
-      if (cancelled) return
-      setArtifacts(nextArtifacts)
-      setSelectedArtifactId((current) =>
-        current && nextArtifacts.some((artifact) => artifact.slug === current)
-          ? current
-          : (nextArtifacts[0]?.slug ?? null),
-      )
-    })
+    setArtifactLoadError(null)
+    if (!conversationId) {
+      setLoadingArtifacts(false)
+      return
+    }
+    setLoadingArtifacts(true)
+    void listArtifactsQuery(conversationId)
+      .then((nextArtifacts) => {
+        if (cancelled) return
+        setArtifacts(nextArtifacts)
+        setArtifactLoadError(null)
+        setSelectedArtifactId((current) =>
+          current && nextArtifacts.some((artifact) => artifact.slug === current)
+            ? current
+            : (nextArtifacts[0]?.slug ?? null),
+        )
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setArtifactLoadError(
+            error instanceof Error ? error.message : 'Could not load artifacts.',
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingArtifacts(false)
+      })
     return () => {
       cancelled = true
     }
@@ -90,6 +109,7 @@ export function useArtifactPanelState(conversationId: string | null) {
     return window.piDesktop.subscribe((event) => {
       if (event.type !== 'artifact-update') return
       if (!conversationId || event.conversationId !== conversationId) return
+      setArtifactLoadError(null)
       setArtifacts((current) => {
         const index = current.findIndex((artifact) => artifact.slug === event.artifact.slug)
         if (index === -1) return [event.artifact, ...current]
@@ -129,9 +149,13 @@ export function useArtifactPanelState(conversationId: string | null) {
       return
     }
     void selectedArtifactVersion
-    void listArtifactVersionsQuery(selectedArtifactSlug).then((nextVersions) => {
-      if (!cancelled) setVersions(nextVersions)
-    })
+    void listArtifactVersionsQuery(selectedArtifactSlug)
+      .then((nextVersions) => {
+        if (!cancelled) setVersions(nextVersions)
+      })
+      .catch(() => {
+        if (!cancelled) setVersions([])
+      })
     return () => {
       cancelled = true
     }
@@ -227,6 +251,8 @@ export function useArtifactPanelState(conversationId: string | null) {
 
   return {
     artifacts,
+    artifactLoadError,
+    loadingArtifacts,
     selectedArtifact,
     selectedVersion,
     versions,

@@ -385,7 +385,8 @@ const postEffectHandlers: PostEffectHandler[] = [
     matches: (ctx) =>
       ctx.action === 'thread.open' ||
       ctx.action === 'inbox.mark-read' ||
-      ctx.action === 'inbox.dismiss',
+      ctx.action === 'inbox.dismiss' ||
+      ctx.action === 'inbox.clear-read',
     run: handleThreadOpenOrInboxEffects,
   },
   {

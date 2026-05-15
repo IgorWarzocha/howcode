@@ -1,4 +1,6 @@
 import {
+  Check,
+  ChevronDown,
   Download,
   FileCode2,
   List,
@@ -8,9 +10,23 @@ import {
   Play,
   Save,
 } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  lazy,
+  type PointerEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { SurfacePanel } from '../../../components/common/surface-panel'
 import { Tooltip } from '../../../components/common/tooltip'
-import { compactIconButtonClass } from '../../../ui/classes'
+import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
+import { compactIconButtonClass, popoverPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { HistoricalMarkdownPreview } from './artifact-markdown-preview'
 import { formatArtifactSlug } from './artifactFormat'
@@ -33,6 +49,43 @@ type ArtifactPanelProps = {
   onClose: () => void
 }
 
+function ArtifactPreviewIframe({
+  previewHtml,
+  previewRevision,
+  selectedArtifactKey,
+  setPreviewSource,
+}: {
+  previewHtml: string
+  previewRevision: number
+  selectedArtifactKey: string
+  setPreviewSource: (source: MessageEventSource | null) => void
+}) {
+  const [previewUrl, setPreviewUrl] = useState('')
+
+  useEffect(() => {
+    if (!previewHtml) {
+      setPreviewUrl('')
+      return
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(new Blob([previewHtml], { type: 'text/html' }))
+    setPreviewUrl(nextPreviewUrl)
+    return () => URL.revokeObjectURL(nextPreviewUrl)
+  }, [previewHtml])
+
+  if (!previewUrl) return null
+  return (
+    <iframe
+      ref={(node) => setPreviewSource(node?.contentWindow ?? null)}
+      key={`${selectedArtifactKey}:${previewRevision}:${previewUrl}`}
+      sandbox="allow-scripts allow-forms allow-modals allow-popups"
+      src={previewUrl}
+      className="h-full w-full border-0"
+      title="Artifact preview"
+    />
+  )
+}
+
 function ArtifactPanelBody({
   fullscreen,
   panel,
@@ -42,6 +95,7 @@ function ArtifactPanelBody({
 }) {
   const {
     artifacts,
+    artifactLoadError,
     displayedContent,
     draft,
     markdownPreviewEditable,
@@ -57,6 +111,18 @@ function ArtifactPanelBody({
     showingHistoricalVersion,
     view,
   } = panel
+  if (artifactLoadError)
+    return (
+      <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--danger)]">
+        {artifactLoadError}
+      </div>
+    )
+  if (panel.loadingArtifacts)
+    return (
+      <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--muted)]">
+        Loading artifacts…
+      </div>
+    )
   if (artifacts.length === 0)
     return (
       <div className="grid h-full place-items-center px-6 text-center text-[12px] text-[color:var(--muted)]">
@@ -132,15 +198,11 @@ function ArtifactPanelBody({
           </pre>
         ) : null}
         {previewHtml ? (
-          <iframe
-            ref={(node) => setPreviewSource(node?.contentWindow ?? null)}
-            key={`${selectedArtifact?.slug}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}:${previewRevision}`}
-            sandbox="allow-scripts allow-forms allow-modals allow-popups"
-            srcDoc={previewHtml}
-            className="h-full w-full border-0"
-            title={
-              selectedArtifact ? formatArtifactSlug(selectedArtifact.slug) : 'Artifact preview'
-            }
+          <ArtifactPreviewIframe
+            previewHtml={previewHtml}
+            previewRevision={previewRevision}
+            selectedArtifactKey={`${selectedArtifact?.slug}:${selectedArtifact?.version}:${selectedArtifact?.updatedAt}`}
+            setPreviewSource={setPreviewSource}
           />
         ) : null}
       </div>
@@ -151,26 +213,123 @@ function ArtifactPanelBody({
 
 function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifactPanelState> }) {
   const { selectedArtifact, selectedVersion, setSelectedVersion, versions } = panel
+  const [open, setOpen] = useState(false)
+  const [menuStyle, setMenuStyle] = useState<CSSProperties | undefined>(undefined)
+  const [positionReady, setPositionReady] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const closeMenu = useCallback(() => setOpen(false), [])
+
+  useDismissibleLayer({ open, onDismiss: closeMenu, refs: [buttonRef, menuRef] })
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPositionReady(false)
+      return
+    }
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const width = Math.max(rect.width, 112)
+      setMenuStyle({
+        left: Math.min(Math.max(8, rect.left), window.innerWidth - width - 8),
+        top: rect.bottom + 6,
+        width,
+      })
+      setPositionReady(true)
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open])
+
   if (!selectedArtifact) return null
+  const options = [
+    { label: `Latest v${selectedArtifact.version}`, value: 'latest' as const },
+    ...versions.flatMap((version) =>
+      version.version === selectedArtifact.version
+        ? []
+        : [{ label: `v${version.version}`, value: version.version }],
+    ),
+  ]
+  const selectedLabel =
+    options.find((option) => option.value === selectedVersion)?.label ??
+    (selectedVersion === 'latest' ? `Latest v${selectedArtifact.version}` : `v${selectedVersion}`)
+  const handleTriggerPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setOpen((current) => !current)
+  }
+  const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!(event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown')) return
+    event.preventDefault()
+    setOpen(true)
+  }
+  const selectOption = (value: (typeof options)[number]['value']) => {
+    setSelectedVersion(value)
+    closeMenu()
+  }
   return (
-    <select
-      className="h-7 max-w-28 shrink-0 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[11px] text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-      value={selectedVersion}
-      onChange={(event) => {
-        const value = event.target.value
-        setSelectedVersion(value === 'latest' ? 'latest' : Number(value))
-      }}
-      aria-label="Artifact version"
-    >
-      <option value="latest">Latest v{selectedArtifact.version}</option>
-      {versions
-        .filter((version) => version.version !== selectedArtifact.version)
-        .map((version) => (
-          <option key={version.version} value={version.version}>
-            v{version.version}
-          </option>
-        ))}
-    </select>
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="artifact-version-trigger inline-flex h-7 max-w-28 shrink-0 items-center gap-1 rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2 text-[color:var(--muted)] outline-none transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+        onPointerDown={handleTriggerPointerDown}
+        onKeyDown={handleTriggerKeyDown}
+        aria-label="Artifact version"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <ChevronDown size={12} className="shrink-0" />
+      </button>
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <SurfacePanel
+              ref={menuRef}
+              data-open={positionReady ? 'true' : 'false'}
+              className={cn(
+                popoverPanelClass,
+                'motion-popover fixed z-[120] grid gap-0.5 rounded-xl p-1',
+              )}
+              style={menuStyle}
+              role="listbox"
+              aria-label="Artifact version"
+            >
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={option.value === selectedVersion}
+                  className={cn(
+                    'artifact-version-option grid grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+                    option.value === selectedVersion &&
+                      'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+                  )}
+                  onPointerDown={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    selectOption(option.value)
+                  }}
+                  onClick={() => selectOption(option.value)}
+                >
+                  {option.value === selectedVersion ? <Check size={12} /> : <span />}
+                  <span className="truncate">{option.label}</span>
+                </button>
+              ))}
+            </SurfacePanel>,
+            document.body,
+          )
+        : null}
+    </>
   )
 }
 

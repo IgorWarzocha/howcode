@@ -10,6 +10,7 @@ import {
   codeModelKey,
   codeThinkingLevelKey,
   composerStreamingBehaviorKey,
+  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -23,6 +24,7 @@ import {
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  legacyDevUpdateBranchKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
   projectDeletionModeKey,
@@ -68,6 +70,14 @@ function getDictationMaxDurationSeconds(valueJson: string | undefined) {
   )
 }
 
+function getDevUpdateBranch(valueJson: string | undefined) {
+  return parseBooleanPreference(valueJson) ?? false
+}
+
+function getDevUpdateBranchValue(value: (key: string) => string | undefined) {
+  return value(devUpdateBranchKey) ?? value(legacyDevUpdateBranchKey)
+}
+
 export function loadAppSettings(): AppSettings {
   const rows = loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
@@ -107,6 +117,7 @@ export function loadAppSettings(): AppSettings {
       parseProjectDeletionModePreference(value(projectDeletionModeKey)) ?? 'pi-only',
     useAgentsSkillsPaths: parseBooleanPreference(value(useAgentsSkillsPathsKey)) ?? false,
     howcodeNativeAskQuestions: parseBooleanPreference(value(howcodeNativeAskQuestionsKey)) ?? false,
+    devUpdateBranch: getDevUpdateBranch(getDevUpdateBranchValue(value)),
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,

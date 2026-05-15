@@ -24,6 +24,8 @@ type UsageEntry = {
 
 const PROJECT_USAGE_SCAN_CONCURRENCY = 6
 const TOP_USAGE_SESSION_LIMIT = 10
+const ARCHIVED_USAGE_CACHE_LIMIT = 100
+const THREAD_USAGE_CACHE_LIMIT = 2000
 
 type UsageTotals = Pick<
   ProjectUsageSummary,
@@ -49,6 +51,25 @@ type ThreadUsageCacheEntry = {
 
 const archivedUsageCache = new Map<string, ArchivedUsageCacheEntry>()
 const threadUsageCache = new Map<string, ThreadUsageCacheEntry>()
+
+function pruneCache<TKey, TValue>(cache: Map<TKey, TValue>, limit: number) {
+  while (cache.size > limit) {
+    const oldestKey = cache.keys().next().value
+    if (oldestKey === undefined) return
+    cache.delete(oldestKey)
+  }
+}
+
+function setBoundedCacheEntry<TKey, TValue>(
+  cache: Map<TKey, TValue>,
+  key: TKey,
+  value: TValue,
+  limit: number,
+) {
+  if (cache.has(key)) cache.delete(key)
+  cache.set(key, value)
+  pruneCache(cache, limit)
+}
 
 function finiteNumber(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
@@ -189,7 +210,12 @@ async function summarizeThreads(projectId: string, threads: ReturnType<typeof li
           sessionPath: thread.sessionPath,
           lastModifiedMs: thread.lastModifiedMs,
         })
-        threadUsageCache.set(thread.sessionPath, { summary, signature: cacheKey })
+        setBoundedCacheEntry(
+          threadUsageCache,
+          thread.sessionPath,
+          { summary, signature: cacheKey },
+          THREAD_USAGE_CACHE_LIMIT,
+        )
         return summary
       } catch (error) {
         console.warn(`Failed to summarize project usage for ${thread.sessionPath}.`, error)
@@ -239,24 +265,39 @@ function getArchivedUsage(projectId: string) {
 
   const promise = summarizeThreads(projectId, archivedThreads)
     .then((summary) => {
-      archivedUsageCache.set(projectId, { summary, threadSignature, promise: null })
+      setBoundedCacheEntry(
+        archivedUsageCache,
+        projectId,
+        { summary, threadSignature, promise: null },
+        ARCHIVED_USAGE_CACHE_LIMIT,
+      )
       return summary
     })
     .catch((error) => {
       console.warn(`Failed to summarize archived project usage for ${projectId}.`, error)
-      archivedUsageCache.set(projectId, {
-        summary: cached?.summary ?? null,
-        threadSignature,
-        promise: null,
-      })
+      setBoundedCacheEntry(
+        archivedUsageCache,
+        projectId,
+        {
+          summary: cached?.summary ?? null,
+          threadSignature,
+          promise: null,
+        },
+        ARCHIVED_USAGE_CACHE_LIMIT,
+      )
       return cached?.summary ?? summarizeEmptyProject(projectId)
     })
 
-  archivedUsageCache.set(projectId, {
-    summary: cached?.summary ?? null,
-    threadSignature,
-    promise,
-  })
+  setBoundedCacheEntry(
+    archivedUsageCache,
+    projectId,
+    {
+      summary: cached?.summary ?? null,
+      threadSignature,
+      promise,
+    },
+    ARCHIVED_USAGE_CACHE_LIMIT,
+  )
   return { summary: cached?.summary ?? null, refreshing: true }
 }
 

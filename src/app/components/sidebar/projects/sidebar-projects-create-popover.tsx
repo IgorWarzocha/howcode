@@ -34,9 +34,7 @@ export function SidebarProjectsCreatePopover({
   const [browseSearchQuery, setBrowseSearchQuery] = useState('')
   const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null)
   const canSubmit =
-    draft.trim().length > 0 &&
-    !busy &&
-    (Boolean(defaultLocation) || (browseOpen && Boolean(currentFolderPath)))
+    draft.trim().length > 0 && !busy && Boolean(browseOpen ? currentFolderPath : defaultLocation)
 
   useEffect(() => {
     if (!open) {
@@ -85,7 +83,10 @@ export function SidebarProjectsCreatePopover({
         <button
           type="button"
           className="sidebar-project-create-submit sidebar-project-browse-toggle"
-          onClick={() => setBrowseOpen((current) => !current)}
+          onClick={() => {
+            setCurrentFolderPath(null)
+            setBrowseOpen((current) => !current)
+          }}
           aria-label={browseOpen ? 'Hide folder browser' : 'Browse folders'}
           aria-expanded={browseOpen}
           data-enabled={browseOpen ? 'true' : 'false'}

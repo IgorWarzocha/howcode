@@ -224,6 +224,11 @@ export function ComposerContextMeter({
     setHovered(false)
   }, [clearHoverTriangle])
 
+  const togglePinned = useCallback(() => {
+    loadUsageTotals()
+    setPinned((current) => !current)
+  }, [loadUsageTotals])
+
   const handleMouseLeave = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       if (pinned) {
@@ -251,10 +256,17 @@ export function ComposerContextMeter({
   )
 
   useEffect(() => clearHoverTriangle, [clearHoverTriangle])
+
+  useEffect(() => {
+    if (open) {
+      loadUsageTotals()
+    }
+  }, [loadUsageTotals, open])
+
   return (
     <div
       role="application"
-      className="relative"
+      className="composer-context-control relative"
       onMouseEnter={openHoverPreview}
       onMouseLeave={handleMouseLeave}
     >
@@ -262,7 +274,7 @@ export function ComposerContextMeter({
         ref={buttonRef}
         type="button"
         className="relative inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
-        onClick={() => setPinned((current) => !current)}
+        onClick={togglePinned}
         onPointerDown={loadUsageTotals}
         aria-label={label}
         aria-expanded={open}

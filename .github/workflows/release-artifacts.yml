@@ -4,9 +4,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  pull_request:
-    branches:
-      - dev
   push:
     branches:
       - dev
@@ -83,12 +80,6 @@ jobs:
         shell: bash
         run: |
           ROOT_VERSION=$(node -p "require('./package.json').version")
-          LAUNCHER_VERSION=$(node -p "require('./packages/howcode/package.json').version")
-          if [ "$ROOT_VERSION" != "$LAUNCHER_VERSION" ]; then
-            echo "Version mismatch detected"
-            echo "root=$ROOT_VERSION launcher=$LAUNCHER_VERSION"
-            exit 1
-          fi
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG_VERSION="${GITHUB_REF_NAME#v}"
             if [ "$ROOT_VERSION" != "$TAG_VERSION" ]; then
@@ -106,6 +97,8 @@ jobs:
           bun run build:release
 
       - name: Build launcher archives
+        env:
+          HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || format('channel-{0}', github.ref_name) }}
         run: bun run build:launcher-artifacts
 
       - name: Upload dev artifacts
@@ -231,11 +224,31 @@ jobs:
       - name: List channel release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
 
+      - name: Prepare channel release notes
+        env:
+          CHANNEL: ${{ github.ref_name }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const changelog = fs.readFileSync('docs/changelog.md', 'utf8')
+          const match = changelog.match(/^###\s+([^\n]+)\n([\s\S]*?)(?=^###\s+|(?![\s\S]))/m)
+          const version = match?.[1]?.trim() || 'current'
+          const notes = match?.[2]?.trim() || 'See the changelog for details.'
+          const channel = process.env.CHANNEL
+          const title = channel === 'dev' ? `howcode dev (${version})` : `howcode ${version}`
+          const channelNote = channel === 'dev'
+            ? 'This is the moving dev channel used by `npx howcode@dev`.'
+            : 'This is the moving stable channel used by `npx howcode`.'
+          fs.writeFileSync('channel-release-title.txt', `${title}\n`)
+          fs.writeFileSync('channel-release-notes.md', `## ${title}\n\n${notes}\n\n### Release channel\n\n${channelNote} Future app updates refresh these GitHub Release assets without requiring an npm package publish unless the launcher itself changes.\n`)
+          NODE
+
       - name: Create or update channel GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ github.ref_name }}
         run: |
+          RELEASE_TAG="channel-$CHANNEL"
           mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
@@ -249,15 +262,17 @@ jobs:
             release_flags+=(--latest)
           fi
 
-          if gh release view "$CHANNEL" >/dev/null 2>&1; then
-            mapfile -t old_assets < <(gh release view "$CHANNEL" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-.*\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+          release_title=$(cat channel-release-title.txt)
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
             for old_asset in "${old_assets[@]}"; do
-              gh release delete-asset "$CHANNEL" "$old_asset" --yes
+              gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
             done
-            gh release upload "$CHANNEL" "${assets[@]}" --clobber
-            gh release edit "$CHANNEL" --title "$CHANNEL" --target "$GITHUB_SHA" "${release_flags[@]}"
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+            gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file channel-release-notes.md --target "$GITHUB_SHA" "${release_flags[@]}"
           else
-            gh release create "$CHANNEL" "${assets[@]}" --title "$CHANNEL" --target "$GITHUB_SHA" --notes "Automated $CHANNEL build." "${release_flags[@]}"
+            gh release create "$RELEASE_TAG" "${assets[@]}" --title "$release_title" --target "$GITHUB_SHA" --notes-file channel-release-notes.md "${release_flags[@]}"
           fi
 
   publish-release:

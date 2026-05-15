@@ -33,6 +33,7 @@ export type DesktopActionPayloadFields = {
   level?: ComposerThinkingLevel
   message?: string | undefined | null | undefined
   modelId?: string | undefined
+  olderThanDays?: number | undefined | null | undefined
   preview?: boolean | undefined
   projectId?: string | undefined | null | undefined
   projectIds?: string[] | undefined
@@ -92,6 +93,8 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'projectDeletionMode'; value: ProjectDeletionMode }
   | { key: 'useAgentsSkillsPaths'; value: boolean }
   | { key: 'howcodeNativeAskQuestions'; value: boolean }
+  | { key: 'devUpdateBranch'; value: boolean }
+  | { key: 'betaUpdateBranch'; value: boolean }
   | { key: 'piTuiTakeover'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
@@ -211,6 +214,7 @@ export type DesktopActionPayloadMap = {
   }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }
+  'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }
   'settings.update': DesktopSettingsUpdatePayload
   'settings.clear-clipboard-images': EmptyActionPayload
   'pi-settings.update': { piSettingsKey: keyof PiSettings; value: string | number | boolean }

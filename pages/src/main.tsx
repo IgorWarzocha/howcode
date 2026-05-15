@@ -1,6 +1,7 @@
 import { Github, Heart } from 'lucide-react'
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import changelogMarkdown from '../../docs/changelog.md?raw'
 import './styles.css'
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
@@ -50,27 +51,45 @@ const installCommands = [
   { label: 'global install', command: 'npm i -g howcode' },
 ]
 
+const changelogHeadingPattern = /^###\s+(.+)$/
+
 function copyCommand(command: string) {
   void navigator.clipboard?.writeText(command)
 }
 
-const changelog = [
-  '0.1.61-6x hotfixes: ASAR packaging, launcher installs, runtime host deps, artifact previews',
-  '0.1.6 added responsive layouts everywhere-ish',
-  'composer now has @ file mentions and $skill mentions',
-  'hardened Chat mode filesystem and extensions guardrails',
-  'added a custom Chat mode system prompt and scrollable composer input',
-  'Git errors are more visible now; please report any',
-  'terminal is back on xterm, because addon-fit',
-  'ASAR is back, TS6 is fully implemented, and CI is stricter',
-  'now on @earendil-works packages. RIP',
-  'https://igorwarzocha.github.io/howcode/ is live',
-  '0.1.5 added Howcode and Pi JSON theme support',
-]
+function getLatestChangelog(markdown: string) {
+  const lines = markdown.split('\n')
+  const headingIndex = lines.findIndex((line) => changelogHeadingPattern.test(line))
+  if (headingIndex < 0) {
+    return { version: 'latest', items: ['See the changelog for recent fixes and shipped bits.'] }
+  }
+
+  const version = lines[headingIndex]?.match(changelogHeadingPattern)?.[1]?.trim() ?? 'current'
+  const nextHeadingIndex = lines.findIndex(
+    (line, index) => index > headingIndex && changelogHeadingPattern.test(line),
+  )
+  const sectionLines = lines.slice(
+    headingIndex + 1,
+    nextHeadingIndex > headingIndex ? nextHeadingIndex : undefined,
+  )
+  const items: string[] = []
+  for (const line of sectionLines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine.startsWith('- ')) items.push(trimmedLine.slice(2))
+  }
+
+  return { version, items }
+}
+
+const changelog = getLatestChangelog(changelogMarkdown)
 
 function App() {
   const [activeScreenshot, setActiveScreenshot] = useState<(typeof screenshots)[number] | null>(
     null,
+  )
+  const activeScreenshotIndex = useMemo(
+    () => screenshots.findIndex((screenshot) => screenshot.id === activeScreenshot?.id),
+    [activeScreenshot],
   )
 
   useEffect(() => {
@@ -81,12 +100,24 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActiveScreenshot(null)
+        return
+      }
+
+      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'l') {
+        const previousIndex = (activeScreenshotIndex - 1 + screenshots.length) % screenshots.length
+        setActiveScreenshot(screenshots[previousIndex] ?? null)
+        return
+      }
+
+      if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'r') {
+        const nextIndex = (activeScreenshotIndex + 1) % screenshots.length
+        setActiveScreenshot(screenshots[nextIndex] ?? null)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeScreenshot])
+  }, [activeScreenshot, activeScreenshotIndex])
 
   return (
     <main className="site-shell">
@@ -219,6 +250,15 @@ function App() {
             The launcher downloads the right desktop build and relaunches the cached app. Releases
             include a Windows installer and a Linux AppImage. Mac should work. Hopefully.
           </p>
+          <button
+            type="button"
+            className="install-command"
+            onClick={() => copyCommand('npx howcode')}
+            aria-label="Copy install command"
+          >
+            <code>npx howcode</code>
+            <span>copy</span>
+          </button>
           <a className="text-link" href="https://github.com/IgorWarzocha/howcode/issues">
             Report a weird case →
           </a>
@@ -239,11 +279,11 @@ function App() {
 
       <section className="section roadmap" id="changelog">
         <div>
-          <p className="eyebrow">latest</p>
+          <p className="eyebrow">{changelog.version}</p>
           <h2>Recent fixes and shipped bits.</h2>
         </div>
         <ol>
-          {changelog.map((item) => (
+          {changelog.items.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ol>

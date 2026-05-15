@@ -41,6 +41,7 @@ function subscribeToEvent<K extends DesktopEventChannel>(
 
 export function createDesktopApi() {
   return {
+    platform: process.platform,
     getAppUpdateState: () => invokeRequest('getAppUpdateState', {}),
     checkAppUpdate: () => invokeRequest('checkAppUpdate', {}),
     installAppUpdate: () => invokeRequest('installAppUpdate', {}),

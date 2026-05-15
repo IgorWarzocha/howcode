@@ -217,6 +217,7 @@ export function ProjectTree({
                         isDragging={isDragging}
                         isEditing={editingProjectId === project.id}
                         isExpanded={effectiveIsExpanded}
+                        pinned={Boolean(project.pinned)}
                         hasRepoOrigin={Boolean(project.repoOriginUrl)}
                         canEdit={!selectionModeActive}
                         canToggleExpanded={!selectionModeActive}
@@ -246,6 +247,10 @@ export function ProjectTree({
                             onProjectPrimeSelection(project.id)
                           } else {
                             onProjectSelect(project.id)
+                            void onAction('thread.new', {
+                              projectId: project.id,
+                              composerMode: 'code',
+                            })
                           }
                           setOpenProjectMenuId(null)
                         }}

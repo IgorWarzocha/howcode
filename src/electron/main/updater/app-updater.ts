@@ -18,13 +18,18 @@ function getProcessEnvironmentVariable(name: string) {
 }
 
 const APP_NAME = 'howcode'
-const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/latest/download'
-const RELEASE_BASE_URL =
-  getProcessEnvironmentVariable('HOWCODE_BASE_URL') ?? DEFAULT_RELEASE_BASE_URL
+const DEFAULT_RELEASE_BASE_URL = 'https://github.com/IgorWarzocha/howcode/releases/download'
+const RELEASE_BASE_URL = getProcessEnvironmentVariable('HOWCODE_BASE_URL')
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000
 const updateAllowedInDev = getProcessEnvironmentVariable('HOWCODE_ENABLE_DEV_APP_UPDATE') === '1'
 const semverPattern = /^\d+\.\d+\.\d+$/
 const sha256Pattern = /^[a-f0-9]{64}$/i
+const channelReleaseKeyPattern = /^(main|dev)-(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const legacyReleaseKeyPattern = /^(\d+\.\d+\.\d+)-([a-f0-9]{64})$/i
+const trailingSlashesPattern = /\/+$/
+const trailingChannelPattern = /\/(?:main|dev|channel-main|channel-dev)$/i
+const channelPlaceholderPattern = /\{channel\}/g
+const releaseTagPlaceholderPattern = /\{releaseTag\}/g
 
 type UpdateTarget = {
   os: 'macos' | 'linux' | 'win'
@@ -33,10 +38,13 @@ type UpdateTarget = {
 }
 
 type ReleaseInfo = {
+  channel: UpdateChannel
   version: string
   hash: string
   assetUrl: string
 }
+
+type UpdateChannel = 'main' | 'dev'
 
 type InstalledUpdate = ReleaseInfo & {
   executablePath: string
@@ -84,13 +92,33 @@ function getCacheRoot() {
   )
 }
 
+function getChannelReleaseTag(channel: UpdateChannel) {
+  return `channel-${channel}`
+}
+
+function getReleaseBaseUrl(channel: UpdateChannel) {
+  const releaseTag = getChannelReleaseTag(channel)
+  if (!RELEASE_BASE_URL) return `${DEFAULT_RELEASE_BASE_URL}/${releaseTag}`
+
+  const baseUrl = RELEASE_BASE_URL.replace(trailingSlashesPattern, '')
+  if (baseUrl.includes('{releaseTag}'))
+    return baseUrl.replace(releaseTagPlaceholderPattern, releaseTag)
+  if (baseUrl.includes('{channel}')) return baseUrl.replace(channelPlaceholderPattern, releaseTag)
+
+  return baseUrl.replace(trailingChannelPattern, `/${releaseTag}`)
+}
+
+function getReleaseKey(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
+  return `${release.channel}-${release.version}-${release.hash}`
+}
+
 function getInstallPaths(target: UpdateTarget, release: ReleaseInfo) {
   const cacheRoot = getCacheRoot()
-  const releaseKey = `${release.version}-${release.hash}`
+  const releaseKey = getReleaseKey(release)
   const installDir = path.join(cacheRoot, 'versions', releaseKey)
   return {
     cacheRoot,
-    currentFile: path.join(cacheRoot, 'current.json'),
+    currentFile: path.join(cacheRoot, `current-${release.channel}.json`),
     installDir,
     executablePath: path.join(installDir, target.executable),
   }
@@ -155,13 +183,14 @@ function assertInstallSupported(target: UpdateTarget) {
 function normalizeReleaseMetadata(
   metadata: unknown,
   updateUrl: string,
-): Pick<ReleaseInfo, 'version' | 'hash'> {
+): Pick<ReleaseInfo, 'version' | 'hash' | 'assetUrl'> {
   if (!metadata || typeof metadata !== 'object') {
     throw new Error(`Invalid metadata from ${updateUrl}`)
   }
 
   const version = 'version' in metadata ? metadata.version : null
   const hash = 'hash' in metadata ? metadata.hash : null
+  const assetUrl = 'assetUrl' in metadata ? metadata.assetUrl : null
 
   if (typeof version !== 'string' || !semverPattern.test(version)) {
     throw new Error(`Invalid release version from ${updateUrl}`)
@@ -171,7 +200,11 @@ function normalizeReleaseMetadata(
     throw new Error(`Invalid release hash from ${updateUrl}`)
   }
 
-  return { version, hash: hash.toLowerCase() }
+  return {
+    version,
+    hash: hash.toLowerCase(),
+    assetUrl: typeof assetUrl === 'string' && assetUrl.length > 0 ? assetUrl : '',
+  }
 }
 
 async function fetchJson(url: string, timeoutMs = 15_000) {
@@ -180,17 +213,21 @@ async function fetchJson(url: string, timeoutMs = 15_000) {
   return response.json() as Promise<unknown>
 }
 
-async function resolveLatestRelease(target: UpdateTarget): Promise<ReleaseInfo> {
-  const updateUrl = `${RELEASE_BASE_URL}/stable-${target.os}-${target.arch}-update.json`
-  const { version, hash } = normalizeReleaseMetadata(await fetchJson(updateUrl), updateUrl)
-  const assetBaseUrl =
-    RELEASE_BASE_URL === DEFAULT_RELEASE_BASE_URL
-      ? `https://github.com/IgorWarzocha/howcode/releases/download/v${version}`
-      : RELEASE_BASE_URL
+async function resolveLatestRelease(
+  target: UpdateTarget,
+  channel: UpdateChannel,
+): Promise<ReleaseInfo> {
+  const releaseBaseUrl = getReleaseBaseUrl(channel)
+  const updateUrl = `${releaseBaseUrl}/stable-${target.os}-${target.arch}-update.json`
+  const { version, hash, assetUrl } = normalizeReleaseMetadata(
+    await fetchJson(updateUrl),
+    updateUrl,
+  )
   return {
+    channel,
     version,
     hash,
-    assetUrl: `${assetBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
+    assetUrl: assetUrl || `${releaseBaseUrl}/${APP_NAME}-${target.os}-${target.arch}.tar.gz`,
   }
 }
 
@@ -222,13 +259,18 @@ async function sha256File(filePath: string) {
   return hash.digest('hex')
 }
 
-function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
+function parseInstalledUpdateRecord(
+  record: unknown,
+  fallbackChannel: UpdateChannel | null = null,
+): InstalledUpdate | null {
   if (!record || typeof record !== 'object') return null
+  const channel = 'channel' in record ? record.channel : fallbackChannel
   const version = 'version' in record ? record.version : null
   const hash = 'hash' in record ? record.hash : null
   const installDir = 'installDir' in record ? record.installDir : null
   const executablePath = 'executablePath' in record ? record.executablePath : null
   if (
+    !(channel === 'main' || channel === 'dev') ||
     typeof version !== 'string' ||
     !semverPattern.test(version) ||
     typeof hash !== 'string' ||
@@ -238,7 +280,24 @@ function parseInstalledUpdateRecord(record: unknown): InstalledUpdate | null {
   ) {
     return null
   }
-  return { version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
+  return { channel, version, hash: hash.toLowerCase(), installDir, executablePath, assetUrl: '' }
+}
+
+function writeInstalledUpdateRecord(currentFile: string, record: InstalledUpdate) {
+  return writeFile(
+    currentFile,
+    JSON.stringify(
+      {
+        version: record.version,
+        channel: record.channel,
+        hash: record.hash,
+        installDir: record.installDir,
+        executablePath: record.executablePath,
+      },
+      null,
+      2,
+    ),
+  )
 }
 
 async function isExecutableFile(filePath: string) {
@@ -249,7 +308,7 @@ async function isExecutableFile(filePath: string) {
   }
 }
 
-async function pruneOldVersions(cacheRoot: string, keepDir: string) {
+async function pruneOldVersions(cacheRoot: string, keepDirs: ReadonlySet<string>) {
   const versionsRoot = path.join(cacheRoot, 'versions')
   const runningVersionDir = getRunningCachedVersionDir(versionsRoot)
   let entries: Array<{ isDirectory(): boolean; name: string }>
@@ -262,10 +321,38 @@ async function pruneOldVersions(cacheRoot: string, keepDir: string) {
     entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(versionsRoot, entry.name))
-      .filter((dirPath) => dirPath !== keepDir)
+      .filter((dirPath) => !keepDirs.has(dirPath))
       .filter((dirPath) => dirPath !== runningVersionDir)
       .map((dirPath) => rm(dirPath, { recursive: true, force: true })),
   )
+}
+
+function getRunningReleaseKey() {
+  const runningVersionDir = getRunningCachedVersionDir(path.join(getCacheRoot(), 'versions'))
+  return runningVersionDir ? path.basename(runningVersionDir) : null
+}
+
+function getRunningReleaseFingerprint() {
+  const runningReleaseKey = getRunningReleaseKey()
+  if (!runningReleaseKey) return null
+
+  const channelPrefixedMatch = channelReleaseKeyPattern.exec(runningReleaseKey)
+  if (channelPrefixedMatch?.[2] && channelPrefixedMatch[3]) {
+    return {
+      version: channelPrefixedMatch[2],
+      hash: channelPrefixedMatch[3].toLowerCase(),
+    }
+  }
+
+  const legacyMatch = legacyReleaseKeyPattern.exec(runningReleaseKey)
+  if (legacyMatch?.[1] && legacyMatch[2]) {
+    return {
+      version: legacyMatch[1],
+      hash: legacyMatch[2].toLowerCase(),
+    }
+  }
+
+  return null
 }
 
 function getRunningCachedVersionDir(versionsRoot: string) {
@@ -280,6 +367,7 @@ function getRunningCachedVersionDir(versionsRoot: string) {
 
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
+  private readonly getUpdateChannel: () => Promise<UpdateChannel>
   private installedUpdate: InstalledUpdate | null = null
   private checkPromise: Promise<AppUpdateState> | null = null
   private installPromise: Promise<AppUpdateState> | null = null
@@ -289,7 +377,12 @@ export class AppUpdater {
     status: 'idle',
     currentVersion: getCurrentAppVersion(),
     latestVersion: null,
+    channel: null,
     error: null,
+  }
+
+  constructor(getUpdateChannel: () => Promise<UpdateChannel> = async () => 'main') {
+    this.getUpdateChannel = getUpdateChannel
   }
 
   subscribe(listener: AppUpdaterListener) {
@@ -325,38 +418,53 @@ export class AppUpdater {
   }
 
   private async checkForUpdateInner() {
-    if (!isUpdateEnabled()) {
-      this.setState({
-        status: 'up-to-date',
-        latestVersion: this.state.currentVersion,
-        error: null,
-      })
-      return this.state
-    }
-
-    await this.restoreInstalledUpdate()
-    if (this.installedUpdate) {
-      this.setState({ status: 'ready', latestVersion: this.installedUpdate.version, error: null })
-      return this.state
-    }
-
-    this.setState({ status: 'checking', error: null })
     try {
+      const channel = await this.getUpdateChannel()
+      if (this.state.channel !== channel) {
+        this.latestRelease = null
+        this.installedUpdate = null
+        this.setState({ status: 'idle', latestVersion: null, channel, error: null })
+      }
+
+      if (!isUpdateEnabled()) {
+        this.setState({
+          status: 'up-to-date',
+          latestVersion: this.state.currentVersion,
+          channel,
+          error: null,
+        })
+        return this.state
+      }
+
+      await this.restoreInstalledUpdate()
+      if (this.installedUpdate) {
+        this.setState({
+          status: 'ready',
+          latestVersion: this.installedUpdate.version,
+          channel: this.installedUpdate.channel,
+          error: null,
+        })
+        return this.state
+      }
+
+      this.setState({ status: 'checking', error: null })
       const target = getTarget()
       if (target.os === 'win') {
         this.setState({
           status: 'up-to-date',
           latestVersion: this.state.currentVersion,
+          channel,
           error: null,
         })
         return this.state
       }
-      const release = await resolveLatestRelease(target)
+      const release = await resolveLatestRelease(target, channel)
       this.latestRelease = release
-      const hasUpdate = compareVersions(release.version, this.state.currentVersion) > 0
+      const hasUpdate = this.isUpdateCandidate(release)
       this.setState({
         status: hasUpdate ? 'available' : 'up-to-date',
         latestVersion: hasUpdate ? release.version : this.state.currentVersion,
+        channel: release.channel,
         error: null,
       })
     } catch (error) {
@@ -379,7 +487,17 @@ export class AppUpdater {
     try {
       assertUpdateEnabled()
       const release = this.latestRelease ?? (await this.resolveAvailableRelease())
-      this.setState({ status: 'downloading', latestVersion: release.version, error: null })
+      const channel = await this.getUpdateChannel()
+      if (release.channel !== channel) {
+        this.latestRelease = null
+        throw new Error('Update channel changed. Check for updates again before installing.')
+      }
+      this.setState({
+        status: 'downloading',
+        latestVersion: release.version,
+        channel: release.channel,
+        error: null,
+      })
       const target = getTarget()
       assertInstallSupported(target)
       const paths = getInstallPaths(target, release)
@@ -403,7 +521,12 @@ export class AppUpdater {
           throw new Error(
             `Downloaded archive hash mismatch. Expected ${release.hash}, got ${hash}.`,
           )
-        this.setState({ status: 'installing', latestVersion: release.version, error: null })
+        this.setState({
+          status: 'installing',
+          latestVersion: release.version,
+          channel: release.channel,
+          error: null,
+        })
         await mkdir(tempInstallDir, { recursive: true })
         await extractTar({ file: archivePath, cwd: tempInstallDir })
         if (!existsSync(path.join(tempInstallDir, target.executable))) {
@@ -420,26 +543,19 @@ export class AppUpdater {
         tempRoot = null
       }
 
-      await writeFile(
-        paths.currentFile,
-        JSON.stringify(
-          {
-            version: release.version,
-            hash: release.hash,
-            installDir: paths.installDir,
-            executablePath: paths.executablePath,
-          },
-          null,
-          2,
-        ),
-      )
       this.installedUpdate = {
         ...release,
         executablePath: paths.executablePath,
         installDir: paths.installDir,
       }
-      await pruneOldVersions(paths.cacheRoot, paths.installDir)
-      this.setState({ status: 'ready', latestVersion: release.version, error: null })
+      await writeInstalledUpdateRecord(paths.currentFile, this.installedUpdate)
+      await pruneOldVersions(paths.cacheRoot, await this.getPruneKeepDirs(paths.installDir))
+      this.setState({
+        status: 'ready',
+        latestVersion: release.version,
+        channel: release.channel,
+        error: null,
+      })
     } catch (error) {
       this.setState({ status: 'error', error: getErrorMessage(error) })
     } finally {
@@ -454,10 +570,13 @@ export class AppUpdater {
   }
 
   async restartToUpdate() {
-    await this.restoreInstalledUpdate()
-    if (!this.installedUpdate) return this.state
-    this.setState({ status: 'restarting', error: null })
     try {
+      await this.restoreInstalledUpdate()
+      if (!this.installedUpdate) {
+        this.setState({ status: 'idle', latestVersion: null, error: null })
+        return this.state
+      }
+      this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })
       await spawnDetached(this.installedUpdate.executablePath)
       app.quit()
     } catch (error) {
@@ -469,8 +588,10 @@ export class AppUpdater {
   private async readInstalledUpdate() {
     if (!isUpdateEnabled()) return
     this.installedUpdate = null
-    const record = await this.readCurrentFile(path.join(getCacheRoot(), 'current.json'))
-    if (!record || compareVersions(record.version, this.state.currentVersion) <= 0) return
+    const channel = await this.getUpdateChannel()
+    const currentFile = path.join(getCacheRoot(), `current-${channel}.json`)
+    const record = await this.readCurrentFile(currentFile)
+    if (!(record && this.isUpdateCandidate(record))) return
     const target = getTarget()
     const expectedPaths = getInstallPaths(target, record)
     if (
@@ -482,12 +603,48 @@ export class AppUpdater {
     if (!(await isValidInstall(expectedPaths, target))) return
     this.installedUpdate = record
     this.latestRelease = record
-    this.setState({ status: 'ready', latestVersion: record.version, error: null })
+    this.setState({
+      status: 'ready',
+      latestVersion: record.version,
+      channel: record.channel,
+      error: null,
+    })
   }
 
-  private async readCurrentFile(currentFile: string) {
+  private isUpdateCandidate(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
+    const versionDiff = compareVersions(release.version, this.state.currentVersion)
+    if (versionDiff > 0) return true
+    if (versionDiff < 0) return false
+
+    const runningRelease = getRunningReleaseFingerprint()
+    if (release.channel === 'main') return false
+
+    if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
+      return false
+    }
+
+    return true
+  }
+
+  private async getPruneKeepDirs(installDir: string) {
+    const keepDirs = new Set([installDir])
+    await Promise.all(
+      (['main', 'dev'] as const).map(async (channel) => {
+        const record = await this.readCurrentFile(
+          path.join(getCacheRoot(), `current-${channel}.json`),
+        )
+        if (record?.installDir) keepDirs.add(record.installDir)
+      }),
+    )
+    return keepDirs
+  }
+
+  private async readCurrentFile(currentFile: string, fallbackChannel: UpdateChannel | null = null) {
     try {
-      return parseInstalledUpdateRecord(JSON.parse(await readFile(currentFile, 'utf8')))
+      return parseInstalledUpdateRecord(
+        JSON.parse(await readFile(currentFile, 'utf8')),
+        fallbackChannel,
+      )
     } catch {
       return null
     }

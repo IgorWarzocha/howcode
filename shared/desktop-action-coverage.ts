@@ -31,6 +31,7 @@ export const implementedDesktopActions = [
   'composer.answer-native-questions',
   'inbox.mark-read',
   'inbox.dismiss',
+  'inbox.clear-read',
   'workspace.commit',
   'workspace.commit-options',
   'workspace.diff-preferences',

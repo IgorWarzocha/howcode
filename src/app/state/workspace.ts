@@ -12,6 +12,7 @@ type UtilityViewReturnState = {
   selectedThreadId: string | null
   selectedSessionPath: string | null
   terminalVisible: boolean
+  projectTerminalVisibleByProject: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
   takeoverVisible: boolean
   gitOpsReturnView: NonGitOpsView
@@ -26,6 +27,7 @@ export type WorkspaceState = {
   selectedThreadId: string | null
   selectedSessionPath: string | null
   terminalVisible: boolean
+  projectTerminalVisibleByProject: Record<string, boolean>
   terminalVisibleBySession: Record<string, boolean>
   restoreTerminalVisibleOnGitOpsClose: boolean
   takeoverVisible: boolean
@@ -41,6 +43,7 @@ export type WorkspaceState = {
 export type WorkspaceAction =
   | { type: 'sync-projects'; projects: Project[] }
   | { type: 'show-view'; view: NonGitOpsView }
+  | { type: 'show-landing' }
   | { type: 'close-utility-view' }
   | { type: 'select-inbox-thread'; sessionPath: string | null }
   | { type: 'clear-thread-selection' }
@@ -83,6 +86,7 @@ function createUtilityViewReturnState(state: WorkspaceState): UtilityViewReturnS
     selectedThreadId: state.selectedThreadId,
     selectedSessionPath: state.selectedSessionPath,
     terminalVisible: state.terminalVisible,
+    projectTerminalVisibleByProject: state.projectTerminalVisibleByProject,
     restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
     takeoverVisible: state.takeoverVisible,
     gitOpsReturnView: state.gitOpsReturnView,
@@ -129,10 +133,22 @@ function getTerminalVisibilityForSession(
   return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false
 }
 
+function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
+  return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'code')
+}
+
 function shouldMigrateTerminalVisibilityForOpenedThread(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'open-thread' }>,
 ) {
+  if (
+    state.activeView === 'code' &&
+    state.selectedProjectId === action.projectId &&
+    (state.projectTerminalVisibleByProject[action.projectId] ?? false)
+  ) {
+    return true
+  }
+
   if (
     state.activeView !== 'thread' ||
     !state.selectedSessionPath ||
@@ -149,6 +165,11 @@ function shouldMigrateTerminalVisibilityForOpenedThread(
 }
 
 function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
+  const getProjectTerminalVisible = () =>
+    state.selectedProjectId
+      ? (state.projectTerminalVisibleByProject[state.selectedProjectId] ?? false)
+      : false
+
   if (state.activeView !== 'gitops') {
     return {
       terminalVisible:
@@ -157,7 +178,9 @@ function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
               state.terminalVisibleBySession,
               state.selectedSessionPath,
             )
-          : state.terminalVisible,
+          : nextView === 'code'
+            ? getProjectTerminalVisible()
+            : state.terminalVisible,
       restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
     }
   }
@@ -170,7 +193,8 @@ function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
   }
 
   return {
-    terminalVisible: nextView === 'thread' && state.restoreTerminalVisibleOnGitOpsClose,
+    terminalVisible:
+      (nextView === 'thread' || nextView === 'code') && state.restoreTerminalVisibleOnGitOpsClose,
     restoreTerminalVisibleOnGitOpsClose: false,
   }
 }
@@ -186,6 +210,7 @@ export function createInitialWorkspaceState(projects: Project[]): WorkspaceState
     selectedThreadId: null,
     selectedSessionPath: null,
     terminalVisible: false,
+    projectTerminalVisibleByProject: {},
     terminalVisibleBySession: {},
     restoreTerminalVisibleOnGitOpsClose: false,
     takeoverVisible: false,
@@ -346,10 +371,12 @@ function openThreadState(
     ? {
         ...state.terminalVisibleBySession,
         [action.sessionPath]:
-          getTerminalVisibilityForSession(
-            state.terminalVisibleBySession,
-            state.selectedSessionPath,
-          ) ?? false,
+          state.activeView === 'code'
+            ? (state.projectTerminalVisibleByProject[action.projectId] ?? false)
+            : getTerminalVisibilityForSession(
+                state.terminalVisibleBySession,
+                state.selectedSessionPath,
+              ),
       }
     : state.terminalVisibleBySession
   return {
@@ -387,7 +414,7 @@ function openGitOpsState(
     restoreTerminalVisibleOnGitOpsClose:
       state.activeView === 'gitops'
         ? state.restoreTerminalVisibleOnGitOpsClose
-        : state.activeView === 'thread' && state.terminalVisible,
+        : shouldRestoreTerminalOnGitOpsClose(state),
     takeoverVisible: false,
     gitOpsReturnView:
       action.returnView ?? getGitOpsReturnView(state.activeView, state.gitOpsReturnView),
@@ -415,7 +442,17 @@ function closeGitOpsState(state: WorkspaceState): WorkspaceState {
 }
 
 function setTerminalVisibleState(state: WorkspaceState, visible: boolean): WorkspaceState {
-  if (!state.selectedSessionPath) return { ...state, terminalVisible: visible }
+  if (!state.selectedSessionPath) {
+    if (!state.selectedProjectId) return { ...state, terminalVisible: visible }
+    return {
+      ...state,
+      terminalVisible: visible,
+      projectTerminalVisibleByProject: {
+        ...state.projectTerminalVisibleByProject,
+        [state.selectedProjectId]: visible,
+      },
+    }
+  }
   return {
     ...state,
     terminalVisible: visible,
@@ -444,6 +481,22 @@ function setSessionTakeoverOverrideState(
 const workspaceActionHandlers = {
   'sync-projects': syncProjectsState,
   'show-view': showViewState,
+  'show-landing': (state: WorkspaceState) => ({
+    ...state,
+    activeView: 'code',
+    terminalVisible: false,
+    selectedProjectId: '',
+    selectedInboxSessionPath: null,
+    selectedThreadId: null,
+    selectedSessionPath: null,
+    selectedDiffFilePath: null,
+    takeoverVisible: false,
+    settingsOpen: false,
+    settingsPanelOpen: false,
+    gitOpsReturnView: 'code',
+    utilityViewReturnState: null,
+    hasSelectedProject: false,
+  }),
   'close-utility-view': (state: WorkspaceState) =>
     state.utilityViewReturnState
       ? {
@@ -476,7 +529,7 @@ const workspaceActionHandlers = {
     hasSelectedProject: true,
     selectedThreadId: null,
     selectedSessionPath: null,
-    terminalVisible: false,
+    terminalVisible: state.projectTerminalVisibleByProject[action.projectId] ?? false,
     selectedDiffFilePath: null,
     takeoverVisible: false,
     gitOpsReturnView: 'code',

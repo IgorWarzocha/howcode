@@ -112,6 +112,7 @@ export function installDevWebDesktopBridge() {
   window.howcodeDevWebBridge = true
 
   window.piDesktop = {
+    platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'browser',
     clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),

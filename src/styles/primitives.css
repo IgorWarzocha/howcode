@@ -320,6 +320,30 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
   margin-bottom: 1.25rem;
 }
 
+.composer-placeholder-tail-md,
+.composer-placeholder-tail-sm,
+.composer-placeholder-tail-xs {
+  display: inline;
+}
+
+@container (max-width: 34rem) {
+  .composer-placeholder-tail-xs {
+    display: none;
+  }
+}
+
+@container (max-width: 30rem) {
+  .composer-placeholder-tail-sm {
+    display: none;
+  }
+}
+
+@container (max-width: 26rem) {
+  .composer-placeholder-tail-md {
+    display: none;
+  }
+}
+
 @container (max-width: 38rem) {
   .composer-diff-summary {
     display: none;
@@ -332,6 +356,36 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 @container (max-width: 32rem) {
   .composer-branch-chip {
+    display: none;
+  }
+}
+
+@container (max-width: 28rem) {
+  .composer-origin-control {
+    display: none;
+  }
+}
+
+@container (max-width: 22rem) {
+  .composer-gitops-control {
+    display: none;
+  }
+}
+
+@container (max-width: 20rem) {
+  .composer-context-control {
+    display: none;
+  }
+}
+
+@container (max-width: 18rem) {
+  .composer-terminal-control {
+    display: none;
+  }
+}
+
+@container (max-width: 12rem) {
+  .composer-baseline-compact-trigger {
     display: none;
   }
 }
@@ -438,6 +492,12 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .artifact-markdown-editor .artifact-mdx-toolbar [class*="toolbarTitleMode"] {
   display: none;
+}
+
+.artifact-version-trigger,
+.artifact-version-option {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .artifact-markdown-editor .artifact-mdx-toolbar [class*="diffSourceToggleWrapper"] {

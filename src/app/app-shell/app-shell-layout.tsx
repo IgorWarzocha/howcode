@@ -15,7 +15,6 @@ import type { AppShellController } from './useAppShellController'
 import { useAppShellLayoutState } from './useAppShellLayoutState'
 
 const TERMINAL_DRAWER_WIDTH = 'min(28rem, calc(100% - 2.5rem))'
-
 type AppShellLayoutViewProps = {
   controller: AppShellController
   projects: AppShellController['projects']
@@ -242,6 +241,7 @@ const FALLBACK_APP_SETTINGS = {
   projectDeletionMode: 'pi-only',
   useAgentsSkillsPaths: false,
   howcodeNativeAskQuestions: false,
+  devUpdateBranch: false,
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
@@ -294,6 +294,7 @@ function AppShellSidebar(props: AppShellLayoutViewProps) {
       onShowView={handleShowView}
       onToggleSettings={handleToggleSettings}
       onOpenExtensionsView={() => handleShowView('extensions')}
+      onOpenAbout={controller.handleShowLanding}
       onOpenSkillsView={() => handleShowView('skills')}
       onOpenSettingsPanel={(target) => handleShowView('settings', target)}
       onOpenArchivedThreads={() => handleShowView('archived')}
@@ -378,6 +379,7 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
   } = props
   if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
     return null
+  if (props.state.activeView === 'code' && props.state.selectedProjectId) return null
   const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
   const workspaceDockStyle = {
     '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',
@@ -794,7 +796,8 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const terminalSessionPath = getThreadSessionPath(state)
   const activeThreadId = getThreadId(state)
   const takeoverVisible = state.takeoverVisible
-  const terminalDrawerVisible = state.activeView === 'thread' && state.terminalVisible
+  const terminalDrawerVisible =
+    (state.activeView === 'thread' || state.activeView === 'code') && state.terminalVisible
   const utilityViewActive = isUtilityView(state.activeView)
   const compactSidebarButtonEdgeMode =
     state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible

@@ -1,4 +1,4 @@
-import { Archive, Download, PackagePlus, RotateCw, Settings, Sparkles } from 'lucide-react'
+import { Archive, Download, Info, PackagePlus, RotateCw, Settings, Sparkles } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../../features/feature-status'
 import { useAppUpdateFlow } from '../../hooks/useAppUpdateFlow'
@@ -11,6 +11,7 @@ type SettingsMenuProps = {
   menuId: string
   open: boolean
   onOpenExtensionsView: () => void
+  onOpenAbout: () => void
   onOpenSkillsView: () => void
   onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
   onOpenArchivedThreads: () => void
@@ -21,13 +22,14 @@ export function SettingsMenu({
   menuId,
   open,
   onOpenExtensionsView,
+  onOpenAbout,
   onOpenSkillsView,
   onOpenSettingsPanel,
   onOpenArchivedThreads,
   panelRef,
 }: SettingsMenuProps) {
   const { step, isRunning, advance } = useAppUpdateFlow()
-  const updateDisabled = isRunning || step.id === 'up-to-date'
+  const updateDisabled = isRunning
   const UpdateIcon =
     step.id === 'idle' ||
     step.id === 'up-to-date' ||
@@ -45,6 +47,7 @@ export function SettingsMenu({
     statusId?: FeatureStatusId
     disabled?: boolean
   }> = [
+    { icon: <Info size={15} />, title: 'About', onClick: onOpenAbout },
     { icon: <Sparkles size={15} />, title: 'Skills', onClick: onOpenSkillsView },
     { icon: <PackagePlus size={15} />, title: 'Extensions', onClick: onOpenExtensionsView },
     { icon: <Archive size={15} />, title: 'Archived threads', onClick: onOpenArchivedThreads },

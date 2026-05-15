@@ -21,6 +21,17 @@ import {
   getComposerSlashCommandOptionId,
 } from './useComposerSlashCommands'
 
+let graphemeSegmenter: Intl.Segmenter | null = null
+
+function getTextSegments(value: string) {
+  if (!('Segmenter' in Intl)) {
+    return Array.from(value, (segment, index) => ({ index, segment }))
+  }
+
+  graphemeSegmenter ??= new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  return [...graphemeSegmenter.segment(value)]
+}
+
 function SlashCommandOption({
   command,
   index,
@@ -155,9 +166,7 @@ function handleDeleteTextKey(
   const textarea = event.currentTarget
   const selectionStart = textarea.selectionStart
   const selectionEnd = textarea.selectionEnd
-  const segments = [
-    ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(textarea.value),
-  ]
+  const segments = getTextSegments(textarea.value)
   const previousSegment = [...segments].reverse().find((segment) => segment.index < selectionStart)
   const nextSegment = segments.find((segment) => segment.index > selectionEnd)
   const deleteStart =

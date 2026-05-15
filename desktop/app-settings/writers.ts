@@ -19,6 +19,7 @@ import {
   codeModelKey,
   codeThinkingLevelKey,
   composerStreamingBehaviorKey,
+  devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
   favoriteFoldersKey,
@@ -247,6 +248,10 @@ export function setUseAgentsSkillsPaths(enabled: boolean) {
 
 export function setHowcodeNativeAskQuestions(enabled: boolean) {
   writeAppPreference(howcodeNativeAskQuestionsKey, JSON.stringify(enabled))
+}
+
+export function setDevUpdateBranch(enabled: boolean) {
+  writeAppPreference(devUpdateBranchKey, JSON.stringify(enabled))
 }
 
 export function setPiTuiTakeover(enabled: boolean) {

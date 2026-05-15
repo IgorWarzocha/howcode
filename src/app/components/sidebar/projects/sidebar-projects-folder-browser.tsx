@@ -65,13 +65,13 @@ export function SidebarProjectsFolderBrowser({
       setLoadingPath(path ?? '__home__')
       setErrorMessage(null)
       const result = await loadDirectory(path)
-      if (requestIdRef.current !== requestId) {
-        return
-      }
+      if (requestIdRef.current !== requestId) return
       if (result.state) {
         setState(result.state)
         onCurrentPathChange(result.state.currentPath)
       } else {
+        setState(null)
+        onCurrentPathChange(null)
         setErrorMessage(result.errorMessage)
       }
       setLoadingPath(null)
