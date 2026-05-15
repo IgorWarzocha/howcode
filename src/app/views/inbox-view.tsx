@@ -325,6 +325,9 @@ export function InboxView({
                 onOpenThread(thread.projectId, thread.threadId, thread.sessionPath)
               }
               onOpenSettingsView={onOpenSettingsView}
+              onStartNewSession={() =>
+                void onAction('thread.new', { projectId: thread.projectId, composerMode: 'code' })
+              }
               onSend={(sendInput) => handleSend(sendInput)}
               onStop={handleStop}
             />

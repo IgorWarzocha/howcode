@@ -15,7 +15,11 @@ import {
 } from './runtime-registry.ts'
 import type { PiRuntime } from './types.ts'
 
-const builtinCommandNames = new Set([compactSlashCommand.name])
+const reservedCommandNames = new Set([
+  appSettingsSlashCommand.name,
+  appNewSessionSlashCommand.name,
+  compactSlashCommand.name,
+])
 
 function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
   const commands: ComposerSlashCommand[] = [
@@ -26,7 +30,7 @@ function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand
   const extensionCommandNames = new Set<string>()
 
   for (const command of session.extensionRunner.getRegisteredCommands()) {
-    if (builtinCommandNames.has(command.invocationName)) {
+    if (reservedCommandNames.has(command.invocationName)) {
       continue
     }
 
@@ -40,7 +44,7 @@ function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand
   }
 
   for (const template of session.promptTemplates) {
-    if (builtinCommandNames.has(template.name) || extensionCommandNames.has(template.name)) {
+    if (reservedCommandNames.has(template.name) || extensionCommandNames.has(template.name)) {
       continue
     }
 
@@ -56,7 +60,7 @@ function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand
     for (const skill of session.resourceLoader.getSkills().skills) {
       const skillCommandName = `skill:${skill.name}`
       if (
-        builtinCommandNames.has(skillCommandName) ||
+        reservedCommandNames.has(skillCommandName) ||
         extensionCommandNames.has(skillCommandName)
       ) {
         continue
