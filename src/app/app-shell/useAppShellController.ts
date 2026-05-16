@@ -131,11 +131,10 @@ export function useAppShellController() {
         projects,
         workspaceState: state,
         threadData: effectiveThreadData,
-        shellCwd: shellState?.cwd,
         composerState,
         shellComposerState: shellState?.composer,
       }),
-    [composerState, effectiveThreadData, projects, shellState?.composer, shellState?.cwd, state],
+    [composerState, effectiveThreadData, projects, shellState?.composer, state],
   )
 
   useAppShellEffects({
