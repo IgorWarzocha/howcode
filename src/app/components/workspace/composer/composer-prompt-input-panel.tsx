@@ -1,10 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
-import {
-  type ComposerSendMode,
-  getEffectiveAccelerators,
-  type KeybindingOverrides,
-} from '../../../../../shared/keybindings'
+import type { ComposerSendMode, KeybindingOverrides } from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -253,13 +249,17 @@ function matchesComposerCommandKey(
   const accelerators =
     typeof override === 'string'
       ? [override]
-      : (getEffectiveAccelerators(input.keybindings).get(commandId) ?? [])
+      : getComposerDefaultAccelerators(commandId, input.composerSendMode)
   const candidates = eventToAcceleratorCandidates(event)
   return accelerators.some((accelerator) => candidates.has(accelerator))
 }
 
-function composerSubmitOverrideIsConfigured(input: ComposerKeyDownInput) {
-  return Object.hasOwn(input.keybindings, 'composer.submit')
+function getComposerDefaultAccelerators(
+  commandId: 'composer.newline' | 'composer.submit',
+  mode: ComposerSendMode,
+) {
+  if (commandId === 'composer.submit') return mode === 'cmd-enter' ? ['CmdOrCtrl+Enter'] : ['Enter']
+  return mode === 'cmd-enter' ? ['Enter'] : ['Shift+Enter']
 }
 
 function handleComposerTextKeyDown(
@@ -290,8 +290,7 @@ function handleComposerTextKeyDown(
   }
   if (
     matchesComposerCommandKey(event, input, 'composer.submit') ||
-    (!composerSubmitOverrideIsConfigured(input) &&
-      isComposerSubmitKey(event, input.composerSendMode))
+    isComposerSubmitKey(event, input.composerSendMode)
   ) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()
