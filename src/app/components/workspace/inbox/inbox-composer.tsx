@@ -561,6 +561,7 @@ export function InboxComposer({
             hoverToFocus={appSettings.hoverToFocus}
             hoverToBlur={appSettings.hoverToBlur}
             composerSendMode={appSettings.composerSendMode}
+            keybindings={appSettings.keybindings}
             hoverBoundaryRef={composerSurfaceRef}
             onAction={onAction}
             onOpenSettingsView={onOpenSettingsView}

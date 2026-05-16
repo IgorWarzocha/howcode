@@ -73,6 +73,7 @@ export function ComposerPromptSurface({
   hoverToFocus,
   hoverToBlur,
   composerSendMode,
+  keybindings,
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -550,6 +551,7 @@ export function ComposerPromptSurface({
               hoverToFocus={hoverToFocus}
               hoverToBlur={hoverToBlur}
               composerSendMode={composerSendMode}
+              keybindings={keybindings}
               hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
               onOpenSettingsView={onOpenSettingsView}

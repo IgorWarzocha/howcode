@@ -10,7 +10,11 @@ import type {
   ProjectDiffDefaultBaseline,
   ProjectDiffRenderMode,
 } from '../../shared/desktop-contracts.ts'
-import { isKeybindingCommandId, normalizeAccelerator } from '../../shared/keybindings.ts'
+import {
+  isKeybindingCommandId,
+  isValidAccelerator,
+  normalizeAccelerator,
+} from '../../shared/keybindings.ts'
 
 export type PreferenceRow = {
   valueJson: string
@@ -235,7 +239,7 @@ export function parseKeybindingOverrides(
     for (const [key, value] of Object.entries(parsed)) {
       if (!isKeybindingCommandId(key)) continue
       if (value === null) overrides[key] = null
-      else if (typeof value === 'string' && value.trim()) {
+      else if (typeof value === 'string' && isValidAccelerator(value)) {
         overrides[key] = normalizeAccelerator(value)
       }
     }

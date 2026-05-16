@@ -446,6 +446,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
+      keybindings={appSettings.keybindings}
       diffRenderMode={diffRenderMode}
       diffComments={diffComments}
       diffCommentCount={diffCommentCount}

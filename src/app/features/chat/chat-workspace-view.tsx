@@ -258,6 +258,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
       composerSendMode={appSettings.composerSendMode}
+      keybindings={appSettings.keybindings}
       diffRenderMode={diffRenderMode}
       diffComments={[]}
       diffCommentCount={0}

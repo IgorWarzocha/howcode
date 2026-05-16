@@ -1,6 +1,10 @@
 import { Loader2 } from 'lucide-react'
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
-import type { ComposerSendMode } from '../../../../../shared/keybindings'
+import {
+  type ComposerSendMode,
+  getEffectiveAccelerators,
+  type KeybindingOverrides,
+} from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -134,6 +138,7 @@ type ComposerKeyDownInput = {
   skillMentions: ComposerSkillMentions
   setDraft: (value: string) => void
   composerSendMode: ComposerSendMode
+  keybindings: KeybindingOverrides
 }
 
 function isCursorAtStart(textarea: HTMLTextAreaElement) {
@@ -217,6 +222,46 @@ function isComposerSubmitKey(event: KeyboardEvent<HTMLTextAreaElement>, mode: Co
   return !(event.shiftKey || event.metaKey || event.ctrlKey)
 }
 
+function eventToAcceleratorCandidates(event: KeyboardEvent<HTMLTextAreaElement>) {
+  const genericParts: string[] = []
+  const exactParts: string[] = []
+  if (event.metaKey) exactParts.push('Cmd')
+  if (event.ctrlKey) exactParts.push('Ctrl')
+  if (event.metaKey || event.ctrlKey) genericParts.push('CmdOrCtrl')
+  if (event.altKey) {
+    genericParts.push('Alt')
+    exactParts.push('Alt')
+  }
+  if (event.shiftKey) {
+    genericParts.push('Shift')
+    exactParts.push('Shift')
+  }
+  const key =
+    event.key === ' ' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key
+  genericParts.push(key)
+  exactParts.push(key)
+  return new Set([exactParts.join('+'), genericParts.join('+')])
+}
+
+function matchesComposerCommandKey(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+  commandId: 'composer.newline' | 'composer.submit',
+) {
+  const override = input.keybindings[commandId]
+  if (override === null) return false
+  const accelerators =
+    typeof override === 'string'
+      ? [override]
+      : (getEffectiveAccelerators(input.keybindings).get(commandId) ?? [])
+  const candidates = eventToAcceleratorCandidates(event)
+  return accelerators.some((accelerator) => candidates.has(accelerator))
+}
+
+function composerSubmitOverrideIsConfigured(input: ComposerKeyDownInput) {
+  return Object.hasOwn(input.keybindings, 'composer.submit')
+}
+
 function handleComposerTextKeyDown(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
@@ -240,7 +285,14 @@ function handleComposerTextKeyDown(
   if (handleOpenAutocompleteKeyDown(event, input)) {
     return
   }
-  if (isComposerSubmitKey(event, input.composerSendMode)) {
+  if (matchesComposerCommandKey(event, input, 'composer.newline')) {
+    return
+  }
+  if (
+    matchesComposerCommandKey(event, input, 'composer.submit') ||
+    (!composerSubmitOverrideIsConfigured(input) &&
+      isComposerSubmitKey(event, input.composerSendMode))
+  ) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()
     return
@@ -264,6 +316,7 @@ type ComposerPromptInputPanelProps = {
   hoverToFocus: boolean
   hoverToBlur: boolean
   composerSendMode: ComposerSendMode
+  keybindings: KeybindingOverrides
   favoriteFolders: string[]
   pickerLoading: boolean
   pickerOpen: boolean
@@ -314,6 +367,7 @@ export function ComposerPromptInputPanel({
   hoverToFocus,
   hoverToBlur,
   composerSendMode,
+  keybindings,
   favoriteFolders,
   hoverBoundaryRef,
   pickerLoading,
@@ -388,6 +442,7 @@ export function ComposerPromptInputPanel({
                     fileMentions,
                     inputLocked,
                     composerSendMode,
+                    keybindings,
                     onArrowNavigationOverride,
                     onEscapeOverride,
                     onSubmitOverride,

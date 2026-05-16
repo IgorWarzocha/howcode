@@ -1,6 +1,10 @@
 import { type BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { getDesktopEventIpcChannel } from '../../../../shared/desktop-ipc'
-import { type bundledKeybindings, getEffectiveAccelerators } from '../../../../shared/keybindings'
+import {
+  type bundledKeybindings,
+  getEffectiveAccelerators,
+  isValidAccelerator,
+} from '../../../../shared/keybindings'
 import type { PiThreadsModule } from '../runtime/desktop-runtime-contracts'
 
 function getPrimaryAccelerator(
@@ -9,7 +13,7 @@ function getPrimaryAccelerator(
 ) {
   return getEffectiveAccelerators(keybindings)
     .get(commandId)
-    ?.find((accelerator) => !accelerator.includes(' '))
+    ?.find((accelerator) => !accelerator.includes(' ') && isValidAccelerator(accelerator))
 }
 
 function sendKeybindingCommand(

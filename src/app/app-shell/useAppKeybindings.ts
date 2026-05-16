@@ -16,8 +16,6 @@ const rendererCommandIds = new Set<KeybindingCommandId>([
   'app.commandPalette',
   'gitops.toggleChangedFiles',
   'terminal.clear',
-  'composer.submit',
-  'composer.newline',
   'dictation.toggle',
 ])
 
@@ -35,15 +33,21 @@ function eventTargetIsTerminal(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('.xterm') !== null
 }
 
-function eventToAccelerator(event: KeyboardEvent) {
+function eventToAcceleratorCandidates(event: KeyboardEvent) {
   const parts: string[] = []
+  const exactParts: string[] = []
+  if (event.metaKey) exactParts.push('Cmd')
+  if (event.ctrlKey) exactParts.push('Ctrl')
   if (event.metaKey || event.ctrlKey) parts.push('CmdOrCtrl')
   if (event.altKey) parts.push('Alt')
+  if (event.altKey) exactParts.push('Alt')
   if (event.shiftKey) parts.push('Shift')
+  if (event.shiftKey) exactParts.push('Shift')
   const key =
     event.key === ' ' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key
   parts.push(key)
-  return parts.join('+')
+  exactParts.push(key)
+  return [...new Set([exactParts.join('+'), parts.join('+')])]
 }
 
 function findSelectedThreadIndex(
@@ -74,16 +78,15 @@ type KeybindingRuntime = {
   onToggleSidebar: () => void
 }
 
-function stopActiveRun(event: KeyboardEvent, runtime: KeybindingRuntime) {
+function stopActiveRun(runtime: KeybindingRuntime) {
   const { activeThreadData, composerProjectId, state } = runtime.appController
-  if (!(activeThreadData?.isStreaming && state.selectedSessionPath)) return
-  if (state.settingsOpen || state.settingsPanelOpen) return
-  event.preventDefault()
-  event.stopImmediatePropagation()
+  if (!(activeThreadData?.isStreaming && state.selectedSessionPath)) return false
+  if (state.settingsOpen || state.settingsPanelOpen) return false
   void runtime.appController.handleAction('composer.stop', {
     projectId: composerProjectId,
     sessionPath: state.selectedSessionPath,
   })
+  return true
 }
 
 function handleEscape(
@@ -94,7 +97,11 @@ function handleEscape(
   const now = Date.now()
   const isDoubleEscape = now - lastEscapeAtRef.current < 650
   lastEscapeAtRef.current = now
-  if (isDoubleEscape) stopActiveRun(event, runtime)
+  const commandId = runtime.acceleratorToCommand.get('Escape Escape')
+  if (!(isDoubleEscape && commandId === 'agent.interrupt')) return
+  if (!stopActiveRun(runtime)) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
 }
 
 function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
@@ -117,8 +124,22 @@ function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   return true
 }
 
+function handleProjectCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
+  if (commandId === 'thread.previousInProject') return openAdjacentThread(runtime, -1)
+  if (commandId === 'thread.nextInProject') return openAdjacentThread(runtime, 1)
+  return null
+}
+
+function handleRendererCommand(commandId: KeybindingCommandId) {
+  if (!rendererCommandIds.has(commandId)) return false
+  dispatchHowcodeKeybindingCommand(commandId)
+  return true
+}
+
 function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const controller = runtime.appController
+  const projectHandled = handleProjectCommand(commandId, runtime)
+  if (projectHandled !== null) return projectHandled
   if (commandId === 'settings.open') controller.handleShowView('settings')
   else if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
   else if (commandId === 'terminal.toggle') controller.handleToggleTerminal()
@@ -131,16 +152,17 @@ function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntim
       composerMode: controller.state.activeView === 'chat' ? 'chat' : 'code',
       chatGroupId: controller.selectedChatGroupId,
     })
-  } else if (commandId === 'thread.previousInProject') return openAdjacentThread(runtime, -1)
-  else if (commandId === 'thread.nextInProject') return openAdjacentThread(runtime, 1)
-  else if (rendererCommandIds.has(commandId)) dispatchHowcodeKeybindingCommand(commandId)
+  } else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
+  else if (handleRendererCommand(commandId)) return true
   else if (commandId === 'thread.find') return false
   else return false
   return true
 }
 
 function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
-  const commandId = runtime.acceleratorToCommand.get(eventToAccelerator(event))
+  const commandId = eventToAcceleratorCandidates(event)
+    .map((accelerator) => runtime.acceleratorToCommand.get(accelerator))
+    .find((value): value is KeybindingCommandId => value !== undefined)
   if (!commandId) return
   if (
     eventTargetIsEditable(event.target) &&
@@ -164,7 +186,7 @@ export function useAppKeybindings(input: {
     const map = new Map<string, KeybindingCommandId>()
     for (const [commandId, accelerators] of getEffectiveAccelerators(keybindings)) {
       for (const accelerator of accelerators) {
-        if (!accelerator.includes(' ')) map.set(accelerator, commandId)
+        map.set(accelerator, commandId)
       }
     }
     return map

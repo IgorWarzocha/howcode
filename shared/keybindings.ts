@@ -77,12 +77,40 @@ export function normalizeAccelerator(value: string) {
     .join('+')
 }
 
+const modifierNames = new Set([
+  'CmdOrCtrl',
+  'Cmd',
+  'Command',
+  'Meta',
+  'Ctrl',
+  'Control',
+  'Alt',
+  'Option',
+  'Shift',
+])
+const acceleratorSequenceSeparatorPattern = /\s+/
+
+export function isValidAccelerator(value: string) {
+  const sequenceParts = value.trim().split(acceleratorSequenceSeparatorPattern).filter(Boolean)
+  if (sequenceParts.length === 0) return false
+
+  for (const sequencePart of sequenceParts) {
+    const parts = sequencePart.split('+')
+    const key = parts.at(-1)?.trim()
+    if (!key || modifierNames.has(key)) return false
+    const modifiers = parts.slice(0, -1)
+    if (modifiers.some((modifier) => !modifierNames.has(modifier.trim()))) return false
+  }
+
+  return true
+}
+
 export function getEffectiveAccelerators(overrides: KeybindingOverrides | null | undefined) {
   const result = new Map<KeybindingCommandId, readonly string[]>()
   for (const binding of bundledKeybindings) {
     const override = overrides?.[binding.id]
     if (override === null) result.set(binding.id, [])
-    else if (typeof override === 'string' && override.trim())
+    else if (typeof override === 'string' && isValidAccelerator(override))
       result.set(binding.id, [normalizeAccelerator(override)])
     else result.set(binding.id, binding.defaults)
   }
