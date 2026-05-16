@@ -175,6 +175,7 @@ function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   if (!(controller.state.activeView === 'thread' || controller.state.activeView === 'code')) {
     return false
   }
+  if (controller.state.activeView === 'code' && !controller.state.selectedProjectId) return false
   const project =
     controller.projects.find(
       (item) => item.id === (controller.state.selectedProjectId || controller.composerProjectId),
