@@ -199,6 +199,18 @@ function handleSettingsCommand(runtime: KeybindingRuntime) {
   return true
 }
 
+function handleGitOpsCommand(runtime: KeybindingRuntime) {
+  const controller = runtime.appController
+  const { activeView, selectedSessionPath } = controller.state
+  if (activeView === 'gitops') {
+    controller.handleCloseGitOpsView()
+    return true
+  }
+  if (activeView !== 'thread' || !selectedSessionPath) return false
+  controller.handleOpenGitOpsView()
+  return true
+}
+
 function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const controller = runtime.appController
   const projectHandled = handleProjectCommand(commandId, runtime)
@@ -206,10 +218,8 @@ function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntim
   if (commandId === 'settings.open') return handleSettingsCommand(runtime)
   if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
   else if (commandId === 'terminal.toggle') controller.handleToggleTerminal()
-  else if (commandId === 'gitops.open') {
-    if (controller.state.activeView === 'gitops') controller.handleCloseGitOpsView()
-    else controller.handleOpenGitOpsView()
-  } else if (commandId === 'thread.new') {
+  else if (commandId === 'gitops.open') return handleGitOpsCommand(runtime)
+  else if (commandId === 'thread.new') {
     void controller.handleAction('thread.new', {
       projectId: controller.composerProjectId,
       composerMode: controller.state.activeView === 'chat' ? 'chat' : 'code',
