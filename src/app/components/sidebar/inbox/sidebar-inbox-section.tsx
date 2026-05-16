@@ -9,7 +9,7 @@ import {
   SquareTerminal,
   X,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import { EmptyStateCard } from '../../common/empty-state-card'
@@ -174,6 +174,7 @@ export function SidebarInboxSection({
   const clearPanelRef = useRef<HTMLDivElement>(null)
   const filterButtonRef = useRef<HTMLButtonElement>(null)
   const filterPanelRef = useRef<HTMLDivElement>(null)
+  const scrollRegionRef = useRef<HTMLDivElement>(null)
 
   const dismissClear = useCallback(() => {
     setClearOpen(false)
@@ -214,6 +215,13 @@ export function SidebarInboxSection({
 
   const filterIcon = getInboxFilterIcon(filterMode)
   const filterLabel = getInboxFilterLabel(filterMode)
+
+  useEffect(() => {
+    const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
+      '[data-inbox-thread-selected="true"]',
+    )
+    selectedRow?.scrollIntoView({ block: 'nearest' })
+  })
 
   return (
     <section className="sidebar-section">
@@ -310,22 +318,28 @@ export function SidebarInboxSection({
       </div>
 
       {visibleThreads.length > 0 ? (
-        <div className="sidebar-scroll-region">
+        <div ref={scrollRegionRef} className="sidebar-scroll-region">
           <div className="sidebar-list">
             {visibleThreads.map((thread) => (
-              <InboxThreadRow
+              <div
                 key={thread.sessionPath}
-                age={thread.age}
-                preview={thread.preview}
-                projectName={thread.projectName}
-                running={thread.running}
-                terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
-                selected={selectedSessionPath === thread.sessionPath}
-                title={thread.title}
-                unread={thread.unread}
-                onDismiss={() => onDismissThread(thread)}
-                onSelect={() => onSelectThread(thread)}
-              />
+                data-inbox-thread-selected={
+                  selectedSessionPath === thread.sessionPath ? 'true' : 'false'
+                }
+              >
+                <InboxThreadRow
+                  age={thread.age}
+                  preview={thread.preview}
+                  projectName={thread.projectName}
+                  running={thread.running}
+                  terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
+                  selected={selectedSessionPath === thread.sessionPath}
+                  title={thread.title}
+                  unread={thread.unread}
+                  onDismiss={() => onDismissThread(thread)}
+                  onSelect={() => onSelectThread(thread)}
+                />
+              </div>
             ))}
           </div>
         </div>

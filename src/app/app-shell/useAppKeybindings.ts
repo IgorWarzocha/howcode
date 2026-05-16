@@ -42,6 +42,8 @@ function eventTargetIsComposer(target: EventTarget | null) {
 function getKeyboardEventKey(event: KeyboardEvent) {
   if (keyboardCodeLetterPattern.test(event.code)) return event.code.slice(3)
   if (keyboardCodeDigitPattern.test(event.code)) return event.code.slice(5)
+  if (event.code === 'BracketLeft') return '['
+  if (event.code === 'BracketRight') return ']'
   if (event.key === ' ') return 'Space'
   return event.key.length === 1 ? event.key.toUpperCase() : event.key
 }
@@ -63,6 +65,7 @@ function commandCanRunFromEditableTarget(
   if (commandId === 'terminal.toggle') return eventTargetIsTerminal(event.target)
   if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
   if (commandId === 'terminal.clear') return runtime.appController.state.terminalVisible
+  if (commandId === 'thread.previousInProject' || commandId === 'thread.nextInProject') return true
   return false
 }
 
@@ -123,6 +126,12 @@ function getThreadSessionPath(thread: Thread) {
   return thread.sessionPath ?? thread.id
 }
 
+function getAdjacentIndex(currentIndex: number, length: number, direction: -1 | 1) {
+  if (length === 0) return -1
+  if (currentIndex < 0) return direction > 0 ? 0 : length - 1
+  return (currentIndex + direction + length) % length
+}
+
 function useLatest<T>(value: T) {
   const ref = useRef(value)
   ref.current = value
@@ -163,27 +172,77 @@ function handleEscape(
 
 function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const controller = runtime.appController
+  if (!(controller.state.activeView === 'thread' || controller.state.activeView === 'code')) {
+    return false
+  }
   const project =
-    controller.projects.find((item) => item.id === controller.composerProjectId) ?? null
+    controller.projects.find(
+      (item) => item.id === (controller.state.selectedProjectId || controller.composerProjectId),
+    ) ?? null
   const index = findSelectedThreadIndex(
     project,
     controller.state.selectedSessionPath,
     controller.state.selectedThreadId,
   )
-  const nextThread = project?.threads[index + direction]
-  if (!(project && nextThread)) return false
-  controller.handleThreadOpen(
-    project.id,
-    nextThread.id,
-    getThreadSessionPath(nextThread),
-    controller.state.activeView === 'chat' ? 'chat' : 'thread',
+  if (!(project && project.threads.length > 0)) return false
+  const nextIndex = getAdjacentIndex(index, project.threads.length, direction)
+  const nextThread = project.threads[nextIndex]
+  if (!nextThread) return false
+  controller.handleThreadOpen(project.id, nextThread.id, getThreadSessionPath(nextThread), 'thread')
+  return true
+}
+
+function getChatThreads(runtime: KeybindingRuntime) {
+  const chatState = runtime.appController.chatSidebarState
+  if (!chatState) return []
+  return [...chatState.ungroupedThreads, ...chatState.groups.flatMap((group) => group.threads)]
+}
+
+function openAdjacentChatThread(runtime: KeybindingRuntime, direction: -1 | 1) {
+  const controller = runtime.appController
+  if (controller.state.activeView !== 'chat') return null
+  const threads = getChatThreads(runtime)
+  const index = findSelectedThreadIndex(
+    { id: 'chat', name: 'Chat', threads },
+    controller.state.selectedSessionPath,
+    controller.state.selectedThreadId,
   )
+  const nextThread = threads[getAdjacentIndex(index, threads.length, direction)]
+  if (!nextThread?.sessionPath) return false
+  controller.handleThreadOpen(nextThread.projectId, nextThread.id, nextThread.sessionPath, 'chat')
+  return true
+}
+
+function selectAdjacentInboxThread(runtime: KeybindingRuntime, direction: -1 | 1) {
+  const controller = runtime.appController
+  if (controller.state.activeView !== 'inbox') return null
+  const selectedPath = controller.state.selectedInboxSessionPath
+  const currentIndex = selectedPath
+    ? controller.inboxThreads.findIndex((thread) => thread.sessionPath === selectedPath)
+    : 0
+  if (controller.inboxThreads.length === 0) return false
+  const nextIndex = getAdjacentIndex(currentIndex, controller.inboxThreads.length, direction)
+  const nextThread = controller.inboxThreads[nextIndex]
+  if (!nextThread) return false
+  controller.handleSelectInboxThread(nextThread)
   return true
 }
 
 function handleProjectCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
-  if (commandId === 'thread.previousInProject') return openAdjacentThread(runtime, -1)
-  if (commandId === 'thread.nextInProject') return openAdjacentThread(runtime, 1)
+  if (commandId === 'thread.previousInProject') {
+    return (
+      selectAdjacentInboxThread(runtime, -1) ??
+      openAdjacentChatThread(runtime, -1) ??
+      openAdjacentThread(runtime, -1)
+    )
+  }
+  if (commandId === 'thread.nextInProject') {
+    return (
+      selectAdjacentInboxThread(runtime, 1) ??
+      openAdjacentChatThread(runtime, 1) ??
+      openAdjacentThread(runtime, 1)
+    )
+  }
   return null
 }
 

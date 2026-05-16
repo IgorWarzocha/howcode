@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
@@ -41,6 +41,8 @@ type UseAppShellCommandsInput = {
   workspaceState: WorkspaceState
 }
 
+const THREAD_OPEN_ACTION_DELAY_MS = 120
+
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   queryClient.removeQueries({
     queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
@@ -68,6 +70,41 @@ export function useAppShellCommands({
   shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
+  const pendingThreadOpenActionRef = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (pendingThreadOpenActionRef.current !== null) {
+        window.clearTimeout(pendingThreadOpenActionRef.current)
+      }
+    },
+    [],
+  )
+
+  const scheduleThreadOpenAction = useCallback(
+    (input: {
+      projectId: string
+      threadId: string
+      sessionPath: string
+      view?: 'chat' | 'thread' | undefined
+    }) => {
+      if (pendingThreadOpenActionRef.current !== null) {
+        window.clearTimeout(pendingThreadOpenActionRef.current)
+      }
+
+      pendingThreadOpenActionRef.current = window.setTimeout(() => {
+        pendingThreadOpenActionRef.current = null
+        void handleAction('thread.open', {
+          projectId: input.projectId,
+          threadId: input.threadId,
+          sessionPath: input.sessionPath,
+          composerMode: input.view === 'chat' ? 'chat' : 'code',
+        })
+      }, THREAD_OPEN_ACTION_DELAY_MS)
+    },
+    [handleAction],
+  )
+
   const handleToggleTerminal = useCallback(() => dispatch({ type: 'toggle-terminal' }), [dispatch])
   const handleCloseTerminalDrawer = useCallback(
     () => dispatch({ type: 'set-terminal-visible', visible: false }),
@@ -108,12 +145,7 @@ export function useAppShellCommands({
   ) => {
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
-    void handleAction('thread.open', {
-      projectId,
-      threadId,
-      sessionPath,
-      composerMode: view === 'chat' ? 'chat' : 'code',
-    })
+    scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })
   }
 
   const handleSelectInboxThread = (thread: InboxThread) => {
