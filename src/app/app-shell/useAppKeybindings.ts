@@ -265,6 +265,22 @@ function handleGitOpsCommand(runtime: KeybindingRuntime) {
   return true
 }
 
+function handleNewThreadCommand(runtime: KeybindingRuntime) {
+  const controller = runtime.appController
+  if (controller.state.activeView !== 'chat' && !controller.state.selectedProjectId) return false
+  const projectId =
+    controller.state.activeView === 'chat'
+      ? controller.composerProjectId
+      : controller.state.selectedProjectId
+  if (!controller.projects.some((project) => project.id === projectId)) return false
+  void controller.handleAction('thread.new', {
+    projectId,
+    composerMode: controller.state.activeView === 'chat' ? 'chat' : 'code',
+    chatGroupId: controller.selectedChatGroupId,
+  })
+  return true
+}
+
 function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const controller = runtime.appController
   const projectHandled = handleProjectCommand(commandId, runtime)
@@ -273,13 +289,8 @@ function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntim
   if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
   else if (commandId === 'terminal.toggle') controller.handleToggleTerminal()
   else if (commandId === 'gitops.open') return handleGitOpsCommand(runtime)
-  else if (commandId === 'thread.new') {
-    void controller.handleAction('thread.new', {
-      projectId: controller.composerProjectId,
-      composerMode: controller.state.activeView === 'chat' ? 'chat' : 'code',
-      chatGroupId: controller.selectedChatGroupId,
-    })
-  } else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
+  else if (commandId === 'thread.new') return handleNewThreadCommand(runtime)
+  else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
   else if (handleRendererCommand(commandId)) return true
   else if (commandId === 'thread.find') return false
   else return false
