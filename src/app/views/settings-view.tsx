@@ -58,6 +58,11 @@ function getDatasetValue(element: HTMLElement, key: string) {
   return element.dataset[key]
 }
 
+function getCategoryHelpIntro(categoryId: SettingsCategoryId) {
+  if (categoryId !== 'keybindings') return null
+  return 'Shortcuts require at least one modifier — Ctrl, Shift, Alt, or Command — plus one key.'
+}
+
 export function SettingsView({
   appSettings,
   piSettings,
@@ -492,7 +497,12 @@ export function SettingsView({
                   )}
                   data-pulse-active={group.id === highlightedCategoryId ? 'true' : 'false'}
                 >
-                  <div className="flex items-baseline justify-between gap-3 px-1 pt-1 pb-1">
+                  <div
+                    className={cn(
+                      'flex items-baseline justify-between gap-3 px-1 pt-1 pb-1',
+                      getCategoryHelpIntro(group.id) && 'min-h-10 items-start',
+                    )}
+                  >
                     <h2 className="text-[15px] font-semibold text-[color:var(--text)]">
                       {group.label}
                     </h2>
@@ -506,10 +516,18 @@ export function SettingsView({
                 {showHelp ? (
                   <aside className="hidden min-w-0 content-start gap-1 rounded-[18px] border border-transparent p-2.5 lg:grid">
                     <div
-                      className="flex items-baseline justify-between gap-3 px-1 pt-1 pb-1"
-                      aria-hidden="true"
+                      className={cn(
+                        'flex items-baseline gap-3 px-1 pt-1 pb-1',
+                        getCategoryHelpIntro(group.id) && 'min-h-10 items-start',
+                      )}
                     >
-                      <h2 className="invisible text-[15px] font-semibold">{group.label}</h2>
+                      {getCategoryHelpIntro(group.id) ? (
+                        <span className="min-w-0 text-[11.5px] leading-4 text-wrap text-[color:var(--muted)]">
+                          {getCategoryHelpIntro(group.id)}
+                        </span>
+                      ) : (
+                        <h2 className="invisible text-[15px] font-semibold">{group.label}</h2>
+                      )}
                     </div>
                     <div className="grid">
                       {group.settings.map((setting) => (
@@ -523,7 +541,7 @@ export function SettingsView({
                           }
                         >
                           <span className="relative top-[10px] truncate">
-                            {setting.description}
+                            {setting.helpDescription ?? setting.description}
                           </span>
                         </div>
                       ))}

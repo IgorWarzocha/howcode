@@ -18,6 +18,7 @@ export type SettingDescriptor = {
   category: SettingsCategoryId
   title: string
   description: string
+  helpDescription?: string
   keywords?: string
   render: () => ReactNode
 }
