@@ -1,4 +1,8 @@
 import { type RefObject, useEffect, useMemo } from 'react'
+import {
+  type HowcodeKeybindingCommandDetail,
+  howcodeKeybindingCommandEvent,
+} from '../../../app-shell/keybinding-events'
 import type {
   AppSettings,
   DesktopActionInvoker,
@@ -137,6 +141,18 @@ export function ComposerGitOpsSurface({
   useEffect(() => {
     onActionErrorMessageChange?.(actionErrorMessage)
   }, [actionErrorMessage, onActionErrorMessageChange])
+
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'dictation.toggle' || !showDictationButton) return
+      event.preventDefault()
+      void toggleDictation()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [showDictationButton, toggleDictation])
 
   useEffect(() => {
     if (!(dictationActive || dictationTranscribing)) {

@@ -37,6 +37,10 @@ function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
 }
 
+function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
+  return eventTargetIsComposer(event.target) || runtime.appController.state.activeView === 'gitops'
+}
+
 function interactiveLayerIsOpen() {
   return (
     document.querySelector(
@@ -200,7 +204,7 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
   if (
     eventTargetIsEditable(event.target) &&
     commandId !== 'settings.open' &&
-    !(commandId === 'dictation.toggle' && eventTargetIsComposer(event.target)) &&
+    !(commandId === 'dictation.toggle' && dictationShortcutIsAllowed(event, runtime)) &&
     !(commandId === 'terminal.clear' && eventTargetIsTerminal(event.target))
   ) {
     return
