@@ -18,6 +18,7 @@ const rendererCommandIds = new Set<KeybindingCommandId>([
   'gitops.toggleChangedFiles',
   'terminal.clear',
   'thread.find',
+  'sidebar.find',
   'dictation.toggle',
 ])
 function eventTargetIsEditable(target: EventTarget | null) {
