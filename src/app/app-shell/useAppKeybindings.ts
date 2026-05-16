@@ -46,9 +46,17 @@ function interactiveLayerIsOpen() {
 }
 
 function appLevelShortcutsAreBlocked(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
-  if (commandId === 'settings.open') return false
+  if (commandId === 'sidebar.toggle' || commandId === 'app.commandPalette') {
+    return false
+  }
   const { state } = runtime.appController
-  return state.settingsOpen || state.settingsPanelOpen || interactiveLayerIsOpen()
+  if (commandId === 'settings.open') return state.settingsPanelOpen || interactiveLayerIsOpen()
+  return (
+    state.activeView === 'settings' ||
+    state.settingsOpen ||
+    state.settingsPanelOpen ||
+    interactiveLayerIsOpen()
+  )
 }
 
 function eventToAcceleratorCandidates(event: KeyboardEvent) {
@@ -153,12 +161,19 @@ function handleRendererCommand(commandId: KeybindingCommandId) {
   return dispatchHowcodeKeybindingCommand(commandId)
 }
 
+function handleSettingsCommand(runtime: KeybindingRuntime) {
+  const controller = runtime.appController
+  if (controller.state.activeView === 'settings') controller.handleShowLanding()
+  else controller.handleShowView('settings')
+  return true
+}
+
 function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
   const controller = runtime.appController
   const projectHandled = handleProjectCommand(commandId, runtime)
   if (projectHandled !== null) return projectHandled
-  if (commandId === 'settings.open') controller.handleShowView('settings')
-  else if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
+  if (commandId === 'settings.open') return handleSettingsCommand(runtime)
+  if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
   else if (commandId === 'terminal.toggle') controller.handleToggleTerminal()
   else if (commandId === 'gitops.open') {
     if (controller.state.activeView === 'gitops') controller.handleCloseGitOpsView()
@@ -222,6 +237,7 @@ export function useAppKeybindings(input: {
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (!commandId || rendererCommandIds.has(commandId)) return
+      if (appLevelShortcutsAreBlocked(commandId, latest.current)) return
       runAppCommand(commandId, latest.current)
     }
 

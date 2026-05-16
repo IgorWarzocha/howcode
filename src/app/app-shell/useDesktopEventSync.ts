@@ -314,6 +314,12 @@ function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: DesktopEven
     return
   }
   if (event.type === 'keybinding-command') {
+    const { activeView } = runtime.desktopEventStateRef.current.workspaceState
+    const allowedOverSettings =
+      event.commandId === 'settings.open' ||
+      event.commandId === 'sidebar.toggle' ||
+      event.commandId === 'app.commandPalette'
+    if (activeView === 'settings' && !allowedOverSettings) return
     dispatchHowcodeKeybindingCommand(event.commandId)
     return
   }
