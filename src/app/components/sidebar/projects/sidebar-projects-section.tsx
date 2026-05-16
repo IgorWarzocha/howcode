@@ -362,6 +362,7 @@ export function SidebarProjectsSection({
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId !== 'sidebar.find') return
       event.preventDefault()
+      event.stopPropagation()
       searchInputRef.current?.focus()
       searchInputRef.current?.select()
     }
@@ -459,10 +460,11 @@ export function SidebarProjectsSection({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key !== 'Escape' || searchQuery.length === 0) return
+              if (event.key !== 'Escape') return
               event.preventDefault()
               event.stopPropagation()
-              setSearchQuery('')
+              if (searchQuery.length > 0) setSearchQuery('')
+              else event.currentTarget.blur()
             }}
             placeholder="Search"
             className="sidebar-search-input"
