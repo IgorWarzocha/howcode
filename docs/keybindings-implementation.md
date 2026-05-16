@@ -1,6 +1,6 @@
-# Keybindings plan
+# Keybindings implementation
 
-Status: planning notes from the keybinding research/comparison session.
+Status: implemented on `keybindings-implementation`.
 
 ## Goals
 
@@ -23,16 +23,16 @@ Status: planning notes from the keybinding research/comparison session.
 
 Prefer a first-party keybinding layer rather than a large dependency.
 
-Recommended shape:
+Implemented shape:
 
-- Define bundled command IDs and default accelerators in `shared/`.
+- Define bundled command IDs and default accelerators in `shared/keybindings.ts`.
 - Store user overrides in app config as command ID to accelerator/null.
   - Missing value: use bundled default.
   - String value: user override.
   - `null`: user disabled this command.
 - Use Electron-compatible accelerator strings as the persisted format where possible.
 - Add context/scope support so the same key can mean different things only when safe.
-- Detect and report conflicts.
+- Detect and report conflicts in Settings.
 - Keep menu/native accelerators and renderer shortcuts resolved from the same registry.
 
 T3 Code has a useful model worth borrowing:
@@ -107,9 +107,9 @@ Priority guidance:
 5. Double Escape can interrupt only when an agent is running in the active thread.
 6. App-level shortcuts apply only after context-specific handlers decline.
 
-## Open questions
+## Decisions
 
-- Should config be edited through a settings UI first, a JSON file first, or both?
-- Should aliases be allowed by default, or should each command have only one primary binding except command palette?
-- Should keybindings support full T3-style `when` expressions on day one, or a simpler scope list first?
-- How should conflicts be displayed: inline settings warning, toast, diagnostics panel, or all of these?
+- Config is edited through Settings first. The backend persists it in app preferences.
+- Aliases are bundled only for command palette. User overrides are one accelerator or `null`.
+- We use simple built-in context rules first, not full `when` expressions.
+- Conflicts show inline in Settings, next to the shortcut that caused them.

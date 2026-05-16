@@ -35,7 +35,10 @@ type PiThreadsRequestHandlers = Pick<
   | 'invokeAction'
 >
 
-export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRequestHandlers {
+export function createPiThreadsHandlers(
+  piThreads: PiThreadsModule,
+  onSettingsChanged?: (() => Promise<void> | void) | undefined,
+): PiThreadsRequestHandlers {
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
     getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
@@ -87,6 +90,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     invokeAction: async ({ action, payload = {} }) => {
       try {
         const result = await piThreads.handleDesktopAction(action, payload)
+        if (action === 'settings.update') await onSettingsChanged?.()
         return {
           ok: true,
           at: new Date().toISOString(),

@@ -10,6 +10,7 @@ import type {
 } from '../../desktop/types'
 import { buildCommonSettingsDescriptors } from './settingsDescriptorCommon'
 import { buildDictationSettingsDescriptors } from './settingsDescriptorDictation'
+import { buildKeybindingSettingsDescriptors } from './settingsDescriptorKeybindings'
 import { buildModelSettingsDescriptors } from './settingsDescriptorModels'
 import { buildPiRuntimeSettingsDescriptors } from './settingsDescriptorPiRuntime'
 import { buildProjectsSettingsDescriptors } from './settingsDescriptorProjects'
@@ -75,6 +76,12 @@ export function buildSettingsDescriptors({
       dictationModelDraft,
       setDictationModelDraft,
       configuredDictationModelId,
+    }),
+    ...buildKeybindingSettingsDescriptors({
+      appSettings,
+      openSelectId,
+      setOpenSelectId,
+      onAction,
     }),
   ]
 }

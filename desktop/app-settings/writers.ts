@@ -1,8 +1,10 @@
 import type {
+  ComposerSendMode,
   ComposerStreamingBehavior,
   ComposerThinkingLevel,
   DictationModelId,
   GitOpsMode,
+  KeybindingOverrides,
   ModelSelection,
   ProjectDeletionMode,
   ProjectDiffDefaultBaseline,
@@ -18,6 +20,7 @@ import {
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
+  composerSendModeKey,
   composerStreamingBehaviorKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
@@ -33,6 +36,7 @@ import {
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  keybindingsKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
   projectDeletionModeKey,
@@ -274,4 +278,22 @@ export function setHoverToBlur(enabled: boolean) {
   }
 
   writeAppPreference(hoverToBlurKey, JSON.stringify(true))
+}
+
+export function setKeybindings(keybindings: KeybindingOverrides) {
+  if (Object.keys(keybindings).length === 0) {
+    deleteAppPreference(keybindingsKey)
+    return
+  }
+
+  writeAppPreference(keybindingsKey, JSON.stringify(keybindings))
+}
+
+export function setComposerSendMode(mode: ComposerSendMode) {
+  if (mode === 'enter') {
+    deleteAppPreference(composerSendModeKey)
+    return
+  }
+
+  writeAppPreference(composerSendModeKey, JSON.stringify(mode))
 }

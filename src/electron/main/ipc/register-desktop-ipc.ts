@@ -67,10 +67,11 @@ export function registerDesktopIpc(
   getMainWindow: () => BrowserWindow | null,
   runtime: DesktopRuntimeModules,
   appUpdater: AppUpdater,
+  onSettingsChanged?: (() => Promise<void> | void) | undefined,
 ) {
   const handlers: DesktopRequestHandlerMap = {
     ...createAppUpdateHandlers(appUpdater),
-    ...createPiThreadsHandlers(runtime.piThreads),
+    ...createPiThreadsHandlers(runtime.piThreads, onSettingsChanged),
     ...createPiPackagesHandlers(runtime.piThreads),
     ...createPiSkillsHandlers(runtime.piSkills),
     ...createSkillCreatorHandlers(runtime.skillCreator),

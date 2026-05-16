@@ -560,6 +560,7 @@ export function InboxComposer({
             handlePaste={handlePaste}
             hoverToFocus={appSettings.hoverToFocus}
             hoverToBlur={appSettings.hoverToBlur}
+            composerSendMode={appSettings.composerSendMode}
             hoverBoundaryRef={composerSurfaceRef}
             onAction={onAction}
             onOpenSettingsView={onOpenSettingsView}

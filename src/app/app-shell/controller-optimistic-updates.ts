@@ -45,6 +45,8 @@ const optimisticSettingKeys = new Set([
   'piTuiTakeover',
   'hoverToFocus',
   'hoverToBlur',
+  'keybindings',
+  'composerSendMode',
 ])
 
 const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
@@ -168,6 +170,21 @@ function applyOptimisticBooleanSetting(
   if (payload.key === 'hoverToBlur') nextSettings.hoverToBlur = payload.value
 }
 
+function applyOptimisticKeybindingSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (
+    payload.key === 'composerSendMode' &&
+    (payload.value === 'enter' || payload.value === 'cmd-enter')
+  ) {
+    nextSettings.composerSendMode = payload.value
+  }
+  if (payload.key === 'keybindings' && payload.value && typeof payload.value === 'object') {
+    nextSettings.keybindings = payload.value as ShellState['appSettings']['keybindings']
+  }
+}
+
 function applyOptimisticComposerSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
@@ -254,6 +271,7 @@ export function getOptimisticallyUpdatedShellState(
   applyOptimisticBooleanSetting(appSettings, payload)
   applyOptimisticScalarSetting(appSettings, payload)
   applyOptimisticGitSetting(appSettings, payload)
+  applyOptimisticKeybindingSetting(appSettings, payload)
 
   return { ...currentState, appSettings } satisfies ShellState
 }

@@ -1,4 +1,5 @@
 import { type RefObject, useRef } from 'react'
+import type { ComposerSendMode } from '../../../../shared/keybindings'
 import type {
   ComposerContextUsage,
   ComposerFilePickerState,
@@ -42,6 +43,7 @@ export type ComposerProps = {
   showDictationButton: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
+  composerSendMode: ComposerSendMode
   diffRenderMode: ProjectDiffRenderMode
   diffComments: SavedDiffComment[]
   diffCommentCount: number

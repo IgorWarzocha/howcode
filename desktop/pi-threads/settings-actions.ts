@@ -24,6 +24,7 @@ import {
   setChatThinkingLevel,
   setCodeModelSelection,
   setCodeThinkingLevel,
+  setComposerSendMode,
   setComposerStreamingBehavior,
   setDevUpdateBranch,
   setDictationMaxDurationSeconds,
@@ -39,6 +40,7 @@ import {
   setHoverToFocus,
   setHowcodeNativeAskQuestions,
   setInitializeGitOnProjectCreate,
+  setKeybindings,
   setPiTuiTakeover,
   setPreferredProjectLocation,
   setProjectDeletionMode,
@@ -145,6 +147,14 @@ const settingsUpdateHandlers = {
   piTuiTakeover: (payload) => setPiTuiTakeover(getSettingsBooleanValue(payload) ?? false),
   hoverToFocus: (payload) => setHoverToFocus(getSettingsBooleanValue(payload) ?? true),
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),
+  keybindings: (payload) => {
+    const value = payload.value
+    if (value && typeof value === 'object' && !Array.isArray(value)) setKeybindings(value)
+  },
+  composerSendMode: (payload) => {
+    if (payload.value === 'enter' || payload.value === 'cmd-enter')
+      setComposerSendMode(payload.value)
+  },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
   initializeGitOnProjectCreate: (payload) =>

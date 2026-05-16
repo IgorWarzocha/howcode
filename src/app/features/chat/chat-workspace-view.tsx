@@ -68,6 +68,8 @@ const FALLBACK_APP_SETTINGS = {
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
+  keybindings: {},
+  composerSendMode: 'enter',
 } satisfies AppSettings
 
 type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
@@ -255,6 +257,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       showDictationButton={appSettings.showDictationButton}
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
+      composerSendMode={appSettings.composerSendMode}
       diffRenderMode={diffRenderMode}
       diffComments={[]}
       diffCommentCount={0}

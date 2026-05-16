@@ -3,6 +3,7 @@ import type { Artifact } from './desktop-artifact-contracts'
 import type { ComposerState } from './desktop-composer-contracts'
 import type { DictationModelId } from './desktop-dictation-contracts'
 import type { ThreadData } from './desktop-thread-contracts'
+import type { KeybindingCommandId } from './keybindings'
 
 export type DesktopEvent =
   | {
@@ -11,6 +12,10 @@ export type DesktopEvent =
     }
   | {
       type: 'shell-state-refresh'
+    }
+  | {
+      type: 'keybinding-command'
+      commandId: KeybindingCommandId
     }
   | {
       type: 'dictation-download-log'

@@ -1,6 +1,10 @@
 import { Paperclip, X } from 'lucide-react'
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
+import {
+  type HowcodeKeybindingCommandDetail,
+  howcodeKeybindingCommandEvent,
+} from '../../../app-shell/keybinding-events'
 import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
@@ -68,6 +72,7 @@ export function ComposerPromptSurface({
   showDictationButton,
   hoverToFocus,
   hoverToBlur,
+  composerSendMode,
   onOpenTakeoverTerminal,
   onToggleTerminal,
   onToggleArtifacts,
@@ -411,6 +416,23 @@ export function ComposerPromptSurface({
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
+
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId === 'composer.submit') {
+        void send()
+        return
+      }
+      if (commandId === 'dictation.toggle' && showDictationButton) {
+        void toggleDictation()
+      }
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [send, showDictationButton, toggleDictation])
+
   return (
     <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
       <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
@@ -527,6 +549,7 @@ export function ComposerPromptSurface({
               handlePaste={handlePaste}
               hoverToFocus={hoverToFocus}
               hoverToBlur={hoverToBlur}
+              composerSendMode={composerSendMode}
               hoverBoundaryRef={composerPanelRef}
               onAction={onAction}
               onOpenSettingsView={onOpenSettingsView}

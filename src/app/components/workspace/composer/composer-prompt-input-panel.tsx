@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
+import type { ComposerSendMode } from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -132,6 +133,7 @@ type ComposerKeyDownInput = {
   fileMentions: ComposerFileMentions
   skillMentions: ComposerSkillMentions
   setDraft: (value: string) => void
+  composerSendMode: ComposerSendMode
 }
 
 function isCursorAtStart(textarea: HTMLTextAreaElement) {
@@ -209,6 +211,12 @@ function handleHorizontalBoundaryNavigation(
   return false
 }
 
+function isComposerSubmitKey(event: KeyboardEvent<HTMLTextAreaElement>, mode: ComposerSendMode) {
+  if (event.key !== 'Enter') return false
+  if (mode === 'cmd-enter') return event.metaKey || event.ctrlKey
+  return !(event.shiftKey || event.metaKey || event.ctrlKey)
+}
+
 function handleComposerTextKeyDown(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
@@ -232,7 +240,7 @@ function handleComposerTextKeyDown(
   if (handleOpenAutocompleteKeyDown(event, input)) {
     return
   }
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (isComposerSubmitKey(event, input.composerSendMode)) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()
     return
@@ -255,6 +263,7 @@ type ComposerPromptInputPanelProps = {
   inputLocked: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
+  composerSendMode: ComposerSendMode
   favoriteFolders: string[]
   pickerLoading: boolean
   pickerOpen: boolean
@@ -304,6 +313,7 @@ export function ComposerPromptInputPanel({
   inputLocked,
   hoverToFocus,
   hoverToBlur,
+  composerSendMode,
   favoriteFolders,
   hoverBoundaryRef,
   pickerLoading,
@@ -377,6 +387,7 @@ export function ComposerPromptInputPanel({
                     dictationTranscribing,
                     fileMentions,
                     inputLocked,
+                    composerSendMode,
                     onArrowNavigationOverride,
                     onEscapeOverride,
                     onSubmitOverride,
