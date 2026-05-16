@@ -9,8 +9,10 @@ type ChatViewProps = {
   isCompacting: boolean
   composerLayoutVersion: number
   composerOverlayHeight?: number
+  sessionPath?: string | null | undefined
   loading?: boolean
   onLoadEarlierMessages: () => void
+  onLoadAroundMessage?: ((targetHistoryCompactions: number) => void) | undefined
 }
 
 export function ChatView({
@@ -20,8 +22,10 @@ export function ChatView({
   isCompacting,
   composerLayoutVersion,
   composerOverlayHeight = 0,
+  sessionPath,
   loading = false,
   onLoadEarlierMessages,
+  onLoadAroundMessage,
 }: ChatViewProps) {
   if (loading) {
     return <ThreadTimelineSkeleton composerOverlayHeight={composerOverlayHeight} />
@@ -39,6 +43,8 @@ export function ChatView({
       isCompacting={isCompacting}
       composerLayoutVersion={composerLayoutVersion}
       composerOverlayHeight={composerOverlayHeight}
+      sessionPath={sessionPath}
+      onLoadAroundMessage={onLoadAroundMessage}
       onLoadEarlierMessages={() => {
         if (previousMessageCount === 0) {
           return

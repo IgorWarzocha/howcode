@@ -122,3 +122,4 @@ export {
   isKeybindingCommandId,
   normalizeAccelerator,
 } from './keybindings'
+export type { ThreadSearchMatch, ThreadSearchResult } from './thread-search'

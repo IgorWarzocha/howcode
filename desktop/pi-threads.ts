@@ -43,4 +43,5 @@ export {
   loadInboxThreadList,
   loadProjectThreads,
   loadThread,
+  searchThread,
 } from './pi-threads/thread-loader.ts'

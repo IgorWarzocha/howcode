@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import {
+  eventToAcceleratorCandidates,
   getEffectiveAccelerators,
   type KeybindingCommandId,
   type KeybindingOverrides,
@@ -16,11 +17,10 @@ const rendererCommandIds = new Set<KeybindingCommandId>([
   'app.commandPalette',
   'gitops.toggleChangedFiles',
   'terminal.clear',
+  'thread.find',
+  'sidebar.find',
   'dictation.toggle',
 ])
-const keyboardCodeLetterPattern = /^Key[A-Z]$/
-const keyboardCodeDigitPattern = /^Digit\d$/
-
 function eventTargetIsEditable(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   if (target.isContentEditable) return true
@@ -33,15 +33,6 @@ function eventTargetIsEditable(target: EventTarget | null) {
 
 function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
-}
-
-function getKeyboardEventKey(event: KeyboardEvent) {
-  if (keyboardCodeLetterPattern.test(event.code)) return event.code.slice(3)
-  if (keyboardCodeDigitPattern.test(event.code)) return event.code.slice(5)
-  if (event.code === 'BracketLeft') return '['
-  if (event.code === 'BracketRight') return ']'
-  if (event.key === ' ') return 'Space'
-  return event.key.length === 1 ? event.key.toUpperCase() : event.key
 }
 
 function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
@@ -88,22 +79,6 @@ function appLevelShortcutsAreBlocked(commandId: KeybindingCommandId, runtime: Ke
     state.settingsPanelOpen ||
     interactiveLayerIsOpen()
   )
-}
-
-function eventToAcceleratorCandidates(event: KeyboardEvent) {
-  const parts: string[] = []
-  const exactParts: string[] = []
-  if (event.metaKey) exactParts.push('Cmd')
-  if (event.ctrlKey) exactParts.push('Ctrl')
-  if (event.metaKey || event.ctrlKey) parts.push('CmdOrCtrl')
-  if (event.altKey) parts.push('Alt')
-  if (event.altKey) exactParts.push('Alt')
-  if (event.shiftKey) parts.push('Shift')
-  if (event.shiftKey) exactParts.push('Shift')
-  const key = getKeyboardEventKey(event)
-  parts.push(key)
-  exactParts.push(key)
-  return [...new Set([exactParts.join('+'), parts.join('+')])]
 }
 
 function findSelectedThreadIndex(
@@ -338,7 +313,6 @@ function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntim
   else if (commandId === 'thread.new') return handleNewThreadCommand(runtime)
   else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
   else if (handleRendererCommand(commandId)) return true
-  else if (commandId === 'thread.find') return false
   else return false
   return true
 }

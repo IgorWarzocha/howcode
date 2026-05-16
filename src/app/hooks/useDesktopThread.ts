@@ -19,6 +19,7 @@ export function useDesktopThreadQuery(
       persistedSessionPath
         ? getThreadQuery(persistedSessionPath, historyCompactions)
         : Promise.resolve(null),
+    placeholderData: (previousData) => previousData,
     enabled: Boolean(persistedSessionPath) && options.enabled !== false,
     staleTime: Number.POSITIVE_INFINITY,
   })

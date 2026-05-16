@@ -20,6 +20,7 @@ import {
   openThreadRuntime,
   removePiPackage,
   removePiSkill,
+  searchThreadSnapshot,
   selectProjectRuntime,
   sendComposerPrompt,
   setComposerModel,
@@ -139,6 +140,11 @@ async function handleRequest<TName extends RuntimeHostRequestName>(
       const payload =
         message.payload as unknown as RuntimeHostRequestMessage<'loadThreadSnapshot'>['payload']
       return (await loadThreadSnapshot(payload)) as RuntimeHostResponseMap[TName]
+    }
+    case 'searchThreadSnapshot': {
+      const payload =
+        message.payload as unknown as RuntimeHostRequestMessage<'searchThreadSnapshot'>['payload']
+      return (await searchThreadSnapshot(payload)) as RuntimeHostResponseMap[TName]
     }
     case 'startSkillCreatorSession': {
       const payload =

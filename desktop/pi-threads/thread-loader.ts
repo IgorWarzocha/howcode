@@ -3,6 +3,7 @@ import type {
   InboxThread,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from '../../shared/desktop-contracts.ts'
 import { getLiveThread } from '../pi-desktop-runtime.ts'
 import { invokeRuntimeHost } from '../runtime-host/client-bridge.ts'
@@ -105,4 +106,11 @@ export async function loadThread(
   }
 
   return (await loadThreadSnapshot(sessionPath, options)).thread
+}
+
+export async function searchThread(
+  sessionPath: string,
+  query: string,
+): Promise<ThreadSearchResult> {
+  return await invokeRuntimeHost('searchThreadSnapshot', { sessionPath, query })
 }

@@ -32,6 +32,7 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from '../desktop/types'
 
 export const desktopQueryKeys = {
@@ -392,4 +393,16 @@ export async function getThreadQuery(
   historyCompactions = 0,
 ): Promise<ThreadData | null> {
   return (await window.piDesktop?.getThread?.(sessionPath, historyCompactions)) ?? null
+}
+
+export async function searchThreadQuery(
+  sessionPath: string,
+  query: string,
+): Promise<ThreadSearchResult> {
+  return (
+    (await window.piDesktop?.searchThread?.(sessionPath, query)) ?? {
+      matches: [],
+      searchedMessageCount: 0,
+    }
+  )
 }

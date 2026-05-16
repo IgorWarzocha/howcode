@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react'
 import { useEffect, useState } from 'react'
 import {
   bundledKeybindings,
+  eventToAcceleratorCandidates,
   getConflictForCommand,
   isValidAccelerator,
   normalizeAccelerator,
@@ -20,6 +21,7 @@ const commandHelp: Record<KeybindingCommandId, string> = {
   'settings.open': 'Open settings. Press again to return to the previous view.',
   'thread.new': 'Create a new thread in the current project.',
   'thread.find': 'Find in the current thread.',
+  'sidebar.find': 'Focus sidebar search.',
   'sidebar.toggle': 'Show or hide the sidebar. Still works while settings is open.',
   'terminal.toggle': 'Open or close the terminal drawer.',
   'terminal.clear': 'Clear the terminal when it is available.',
@@ -41,6 +43,7 @@ const keybindingOrder: KeybindingCommandId[] = [
   'thread.previousInProject',
   'thread.nextInProject',
   'thread.find',
+  'sidebar.find',
   'terminal.toggle',
   'terminal.clear',
   'gitops.open',
@@ -101,16 +104,7 @@ function keyEventToAccelerator(event: KeyboardEvent<HTMLButtonElement>) {
   if (event.key === 'Escape') return null
   if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return null
   if (!(event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)) return null
-
-  const parts: string[] = []
-  if (event.metaKey) parts.push('Cmd')
-  if (event.ctrlKey) parts.push('Ctrl')
-  if (event.altKey) parts.push('Alt')
-  if (event.shiftKey) parts.push('Shift')
-  const key =
-    event.key === ' ' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key
-  parts.push(key)
-  return parts.join('+')
+  return eventToAcceleratorCandidates(event)[0] ?? null
 }
 
 function updateKeybinding(input: {

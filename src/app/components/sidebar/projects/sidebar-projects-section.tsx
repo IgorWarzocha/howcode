@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
+import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
+import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -274,6 +276,7 @@ export function SidebarProjectsSection({
   const filterPanelRef = useRef<HTMLDivElement>(null)
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const createPanelRef = useRef<HTMLDialogElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const { projects: visibleProjects, autoExpandedProjectIds } = useMemo(
     () =>
@@ -353,6 +356,19 @@ export function SidebarProjectsSection({
     onDismiss: dismissCreate,
     refs: [createButtonRef, createPanelRef],
   })
+
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'sidebar.find') return
+      event.preventDefault()
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [])
 
   const handleCreateProject = async (options?: { parentPath?: string | null }) => {
     const draft = prepareCreateProject({
@@ -439,6 +455,7 @@ export function SidebarProjectsSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {

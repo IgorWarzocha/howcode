@@ -62,12 +62,14 @@ export function buildThreadTimelineState({
   isStreaming,
   collapsedRowIds,
   expandedToolGroupIds,
+  forcedExpandedRowId,
 }: {
   rows: TimelineRow[]
   messages: Message[]
   isStreaming: boolean
   collapsedRowIds: Record<string, boolean>
   expandedToolGroupIds: Record<string, boolean>
+  forcedExpandedRowId?: string | null | undefined
 }) {
   const bottomAnchorKey = `${getMessageRenderSignature(messages[messages.length - 1])}:${isStreaming ? 'streaming' : 'idle'}`
   const streamingAssistantMessageId = getStreamingAssistantMessageId(messages, isStreaming)
@@ -82,7 +84,7 @@ export function buildThreadTimelineState({
   })
   const effectiveCollapsedRowIds = reconcileCollapsedRowIds(foldableRows, collapsedRowIds, {
     defaultExpandedRowId: latestTurnRowId,
-    forcedExpandedRowId: streamingTurnRowId,
+    forcedExpandedRowId: forcedExpandedRowId ?? streamingTurnRowId,
   })
   const rowStructureSignature = getRowStructureSignature(rows, effectiveCollapsedRowIds)
   const expandedToolGroupSignature = getExpandedStateSignature(expandedToolGroupIds)

@@ -5,6 +5,7 @@ export type KeybindingCommandId =
   | 'settings.open'
   | 'thread.new'
   | 'thread.find'
+  | 'sidebar.find'
   | 'sidebar.toggle'
   | 'terminal.toggle'
   | 'terminal.clear'
@@ -36,6 +37,7 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   { id: 'settings.open', label: 'Open settings', defaults: ['CmdOrCtrl+,'] },
   { id: 'thread.new', label: 'New thread', defaults: ['CmdOrCtrl+N'] },
   { id: 'thread.find', label: 'Find in current thread', defaults: ['CmdOrCtrl+F'] },
+  { id: 'sidebar.find', label: 'Find in sidebar', defaults: ['CmdOrCtrl+Shift+F'] },
   { id: 'sidebar.toggle', label: 'Toggle sidebar', defaults: ['CmdOrCtrl+B'] },
   { id: 'terminal.toggle', label: 'Toggle terminal', defaults: ['CmdOrCtrl+J'] },
   { id: 'terminal.clear', label: 'Clear terminal', defaults: ['Ctrl+L'] },
@@ -69,12 +71,26 @@ export function isKeybindingCommandId(value: unknown): value is KeybindingComman
   return typeof value === 'string' && knownCommandIds.has(value as KeybindingCommandId)
 }
 
+const modifierAliasMap = new Map([
+  ['Command', 'Cmd'],
+  ['Meta', 'Cmd'],
+  ['Control', 'Ctrl'],
+  ['Option', 'Alt'],
+])
+
 export function normalizeAccelerator(value: string) {
   return value
-    .split('+')
-    .map((part) => part.trim())
+    .trim()
+    .split(acceleratorSequenceSeparatorPattern)
     .filter(Boolean)
-    .join('+')
+    .map((chord) =>
+      chord
+        .split('+')
+        .map((part) => modifierAliasMap.get(part.trim()) ?? part.trim())
+        .filter(Boolean)
+        .join('+'),
+    )
+    .join(' ')
 }
 
 const modifierNames = new Set([
@@ -91,7 +107,9 @@ const modifierNames = new Set([
 const acceleratorSequenceSeparatorPattern = /\s+/
 
 export function isValidAccelerator(value: string) {
-  const sequenceParts = value.trim().split(acceleratorSequenceSeparatorPattern).filter(Boolean)
+  const sequenceParts = normalizeAccelerator(value)
+    .split(acceleratorSequenceSeparatorPattern)
+    .filter(Boolean)
   if (sequenceParts.length === 0) return false
 
   for (const sequencePart of sequenceParts) {
@@ -103,6 +121,43 @@ export function isValidAccelerator(value: string) {
   }
 
   return true
+}
+
+const keyboardCodeLetterPattern = /^Key[A-Z]$/
+const keyboardCodeDigitPattern = /^Digit\d$/
+
+export type KeybindingKeyboardEventLike = {
+  altKey: boolean
+  code: string
+  ctrlKey: boolean
+  key: string
+  metaKey: boolean
+  shiftKey: boolean
+}
+
+export function getKeybindingEventKey(event: Pick<KeybindingKeyboardEventLike, 'code' | 'key'>) {
+  if (keyboardCodeLetterPattern.test(event.code)) return event.code.slice(3)
+  if (keyboardCodeDigitPattern.test(event.code)) return event.code.slice(5)
+  if (event.code === 'BracketLeft') return '['
+  if (event.code === 'BracketRight') return ']'
+  if (event.key === ' ') return 'Space'
+  return event.key.length === 1 ? event.key.toUpperCase() : event.key
+}
+
+export function eventToAcceleratorCandidates(event: KeybindingKeyboardEventLike) {
+  const parts: string[] = []
+  const exactParts: string[] = []
+  if (event.metaKey) exactParts.push('Cmd')
+  if (event.ctrlKey) exactParts.push('Ctrl')
+  if (event.metaKey || event.ctrlKey) parts.push('CmdOrCtrl')
+  if (event.altKey) parts.push('Alt')
+  if (event.altKey) exactParts.push('Alt')
+  if (event.shiftKey) parts.push('Shift')
+  if (event.shiftKey) exactParts.push('Shift')
+  const key = getKeybindingEventKey(event)
+  parts.push(key)
+  exactParts.push(key)
+  return [...new Set([exactParts.join('+'), parts.join('+')])]
 }
 
 export function getEffectiveAccelerators(overrides: KeybindingOverrides | null | undefined) {

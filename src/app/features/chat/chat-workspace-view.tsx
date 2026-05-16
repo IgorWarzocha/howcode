@@ -155,10 +155,12 @@ function ChatWorkspaceMain(props: ChatWorkspaceContentProps) {
         isCompacting={activeThreadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
+        sessionPath={activeThreadData?.sessionPath ?? null}
         loading={
           controller.activeThreadLoading || (hasConversation && !shouldShowConversationContent)
         }
         onLoadEarlierMessages={handleLoadEarlierMessages}
+        onLoadAroundMessage={handleLoadEarlierMessages}
       />
     </main>
   )

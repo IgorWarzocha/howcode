@@ -45,6 +45,16 @@ type UseAppShellCommandsInput = {
 const THREAD_OPEN_ACTION_DELAY_MS = 120
 const THREAD_CYCLE_OPEN_ACTION_DELAY_MS = 450
 
+type ScheduledThreadOpenInput = {
+  projectId: string
+  threadId: string
+  sessionPath: string
+  view?: 'chat' | 'thread' | undefined
+  delayMs?: number | undefined
+  deferThreadQuery?: boolean | undefined
+  commitLocally?: boolean | undefined
+}
+
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   queryClient.removeQueries({
     queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
@@ -55,6 +65,11 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
   })
+}
+
+function shouldCommitScheduledThreadOpen(input: ScheduledThreadOpenInput, state: WorkspaceState) {
+  const expectedView = input.view ?? (state.activeView === 'chat' ? 'chat' : 'thread')
+  return state.selectedThreadId === input.threadId && state.activeView === expectedView
 }
 
 export function useAppShellCommands({
@@ -74,6 +89,11 @@ export function useAppShellCommands({
   workspaceState,
 }: UseAppShellCommandsInput) {
   const pendingThreadOpenActionRef = useRef<number | null>(null)
+  const workspaceStateRef = useRef(workspaceState)
+
+  useEffect(() => {
+    workspaceStateRef.current = workspaceState
+  }, [workspaceState])
 
   useEffect(
     () => () => {
@@ -87,14 +107,7 @@ export function useAppShellCommands({
   )
 
   const scheduleThreadOpenAction = useCallback(
-    (input: {
-      projectId: string
-      threadId: string
-      sessionPath: string
-      view?: 'chat' | 'thread' | undefined
-      delayMs?: number | undefined
-      deferThreadQuery?: boolean | undefined
-    }) => {
+    (input: ScheduledThreadOpenInput) => {
       if (pendingThreadOpenActionRef.current !== null) {
         window.clearTimeout(pendingThreadOpenActionRef.current)
       }
@@ -103,13 +116,19 @@ export function useAppShellCommands({
       pendingThreadOpenActionRef.current = window.setTimeout(() => {
         pendingThreadOpenActionRef.current = null
         setThreadQueryDeferred(false)
-        dispatch({
-          type: 'open-thread',
-          projectId: input.projectId,
-          threadId: input.threadId,
-          sessionPath: input.sessionPath,
-          view: input.view,
-        })
+        const currentState = workspaceStateRef.current
+        if (input.commitLocally && !shouldCommitScheduledThreadOpen(input, currentState)) {
+          return
+        }
+        if (input.commitLocally) {
+          dispatch({
+            type: 'open-thread',
+            projectId: input.projectId,
+            threadId: input.threadId,
+            sessionPath: input.sessionPath,
+            view: input.view,
+          })
+        }
         void handleAction('thread.open', {
           projectId: input.projectId,
           threadId: input.threadId,
@@ -179,6 +198,7 @@ export function useAppShellCommands({
       view,
       delayMs: THREAD_CYCLE_OPEN_ACTION_DELAY_MS,
       deferThreadQuery: true,
+      commitLocally: true,
     })
   }
 
@@ -200,7 +220,12 @@ export function useAppShellCommands({
     })
   }
 
-  const handleLoadEarlierMessages = () => {
+  const handleLoadEarlierMessages = (targetHistoryCompactions?: number | undefined) => {
+    if (typeof targetHistoryCompactions === 'number' && Number.isFinite(targetHistoryCompactions)) {
+      setThreadHistoryCompactions(Math.max(0, Math.floor(targetHistoryCompactions)))
+      return
+    }
+
     setThreadHistoryCompactions((current) => current + 1)
   }
 

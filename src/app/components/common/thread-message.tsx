@@ -60,13 +60,45 @@ function CopyMessageButton({ label, text }: { label: string; text: string }) {
 type ThreadMessageProps = {
   message: Message
   autoExpandThinking?: boolean | undefined
+  findQuery?: string | undefined
+  findActive?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
   firstCardOnly?: boolean | undefined
   disableInnerExpansion?: boolean | undefined
   primaryToggleAction?: (() => void) | undefined
 }
 
-function renderProse(content: string[], format: 'prose' | 'list' = 'prose') {
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const index = text.toLowerCase().indexOf(query.toLowerCase())
+  if (index === -1) return text
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark className="rounded bg-[color:var(--accent-bg-subtle)] px-0.5 text-[color:var(--accent)]">
+        {text.slice(index, index + query.length)}
+      </mark>
+      {text.slice(index + query.length)}
+    </>
+  )
+}
+
+function renderHighlightedProse(content: string[], query: string) {
+  return (
+    <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
+      {content.map((paragraph) => (
+        <p
+          key={paragraph}
+          className="m-0 max-w-full whitespace-pre-wrap break-words text-[14px] leading-[1.68] text-[color:var(--text)]/92 [overflow-wrap:anywhere]"
+        >
+          <HighlightedText text={paragraph} query={query} />
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function renderProse(content: string[], format: 'prose' | 'list' = 'prose', findQuery = '') {
+  if (findQuery.trim()) return renderHighlightedProse(content, findQuery.trim())
   if (format === 'list') {
     return (
       <MarkdownContent
@@ -200,18 +232,28 @@ function SummaryBlock({ label, content }: { label: string; content: string[] }) 
   )
 }
 
-function UserMessageBlock({ message }: { message: ProseMessage }) {
+function UserMessageBlock({
+  findActive,
+  findQuery,
+  message,
+}: {
+  message: ProseMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   return (
     <div className="group/message relative w-full min-w-0 rounded-2xl border border-[color:var(--accent-border)] bg-[color:var(--message-user-bg)] px-3 py-2 pr-11 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_var(--accent-bg-subtle)]">
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
-        {message.content.map((paragraph) => (
-          <MarkdownContent
-            key={paragraph}
-            markdown={paragraph}
-            tone="user"
-            className="text-[14px] leading-[1.58]"
-          />
-        ))}
+        {findActive && findQuery?.trim()
+          ? renderHighlightedProse(message.content, findQuery.trim())
+          : message.content.map((paragraph) => (
+              <MarkdownContent
+                key={paragraph}
+                markdown={paragraph}
+                tone="user"
+                className="text-[14px] leading-[1.58]"
+              />
+            ))}
       </div>
       <div className="absolute top-2 right-2">
         <CopyMessageButton label="user turn" text={message.content.join('\n\n')} />
@@ -223,6 +265,8 @@ function UserMessageBlock({ message }: { message: ProseMessage }) {
 function AssistantMessageBlock({
   autoExpandThinking,
   disableInnerExpansion,
+  findActive,
+  findQuery,
   firstCardOnly,
   message,
   onToggleExpanded,
@@ -258,7 +302,7 @@ function AssistantMessageBlock({
               {statusLabel}
             </div>
           ) : null}
-          {renderProse(message.content, message.format)}
+          {renderProse(message.content, message.format, findActive ? findQuery : '')}
           <div className="absolute top-0 right-1">
             <CopyMessageButton label="assistant turn" text={message.content.join('\n\n')} />
           </div>
@@ -336,7 +380,15 @@ function BashExecutionMessageBlock({ message }: { message: BashExecutionMessage 
   )
 }
 
-function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
+function CustomMessageBlock({
+  findActive,
+  findQuery,
+  message,
+}: {
+  message: CustomThreadMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   const customStatusClassName = message.isError
     ? 'border-transparent bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] text-[color:var(--danger)]'
     : 'border-dashed border-[color:var(--border)] bg-[color:var(--message-tool-bg)] text-[color:var(--text)]/84'
@@ -348,12 +400,20 @@ function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
       <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
         {message.isError ? 'Extension error' : message.customType}
       </div>
-      {renderProse(message.content)}
+      {renderProse(message.content, 'prose', findActive ? findQuery : '')}
     </div>
   )
 }
 
-function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
+function SystemMessageBlock({
+  findActive,
+  findQuery,
+  message,
+}: {
+  message: SystemThreadMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   const isModelStatus = message.label === 'Model changed' || message.label === 'Reasoning changed'
 
   if (isModelStatus) {
@@ -374,19 +434,42 @@ function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
       <div className="break-words text-[11px] not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]">
         {message.label}
       </div>
-      {renderThinking(message.content)}
+      {findActive && findQuery?.trim()
+        ? renderHighlightedProse(message.content, findQuery.trim())
+        : renderThinking(message.content)}
     </div>
   )
 }
 
 function ThreadMessageComponent(props: ThreadMessageProps) {
   const { message } = props
-  if (message.role === 'user') return <UserMessageBlock message={message} />
+  if (message.role === 'user')
+    return (
+      <UserMessageBlock
+        message={message}
+        findActive={props.findActive}
+        findQuery={props.findQuery}
+      />
+    )
   if (message.role === 'assistant') return <AssistantMessageBlock {...props} message={message} />
   if (message.role === 'toolResult') return <ToolResultMessageBlock message={message} />
   if (message.role === 'bashExecution') return <BashExecutionMessageBlock message={message} />
-  if (message.role === 'custom') return <CustomMessageBlock message={message} />
-  if (message.role === 'system') return <SystemMessageBlock message={message} />
+  if (message.role === 'custom')
+    return (
+      <CustomMessageBlock
+        message={message}
+        findActive={props.findActive}
+        findQuery={props.findQuery}
+      />
+    )
+  if (message.role === 'system')
+    return (
+      <SystemMessageBlock
+        message={message}
+        findActive={props.findActive}
+        findQuery={props.findQuery}
+      />
+    )
   if (message.role === 'branchSummary' || message.role === 'compactionSummary') {
     return (
       <SummaryBlock

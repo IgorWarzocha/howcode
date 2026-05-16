@@ -13,6 +13,7 @@ type ThinkingPart = {
 }
 
 type RuntimeMessage = {
+  id?: string | undefined
   role?: string | undefined
   content?:
     | string
@@ -394,7 +395,9 @@ export function mapAgentMessageToUiMessage(
   messageIndex: number,
 ): Message | null {
   const runtimeMessage = agentMessage as RuntimeMessage
-  const id = `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`
+  const id =
+    runtimeMessage.id ??
+    `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`
 
   switch (runtimeMessage.role) {
     case 'user':

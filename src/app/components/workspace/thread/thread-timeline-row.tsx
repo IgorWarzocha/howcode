@@ -11,6 +11,8 @@ import { ToolCallsCard } from './tool-calls-card'
 type ThreadTimelineRowProps = {
   row: TimelineRow
   collapsed: boolean
+  activeFindMessageId: string | null
+  findQuery: string
   streamingAssistantMessageId: string | null
   streamingToolGroupId: string | null
   expandedToolGroupIds: Record<string, boolean>
@@ -50,12 +52,16 @@ function TurnRow({
   renderTurnItem,
   row,
   streamingAssistantMessageId,
+  activeFindMessageId,
+  findQuery,
 }: {
   collapsed: boolean
   onToggleRowCollapse: (rowId: string) => void
   renderTurnItem: RenderTurnItem
   row: Extract<TimelineRow, { kind: 'turn' }>
   streamingAssistantMessageId: string | null
+  activeFindMessageId: string | null
+  findQuery: string
 }) {
   const canCollapseTurn = isTurnRowCollapsible(row)
   const isStreamingTurn = row.items.some(
@@ -94,7 +100,13 @@ function TurnRow({
       <div className="grid min-w-0 gap-3">
         {row.userMessage ? (
           <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
-            <ThreadMessage message={row.userMessage} />
+            <div data-message-id={row.userMessage.id}>
+              <ThreadMessage
+                message={row.userMessage}
+                findActive={row.userMessage.id === activeFindMessageId}
+                findQuery={findQuery}
+              />
+            </div>
           </RowLeadToggleSurface>
         ) : null}
         {row.items.map((item, index) =>
@@ -105,6 +117,8 @@ function TurnRow({
             renderTurnItem,
             row,
             streamingAssistantMessageId,
+            activeFindMessageId,
+            findQuery,
           }),
         )}
       </div>
@@ -119,19 +133,32 @@ function renderVisibleTurnItem(input: {
   renderTurnItem: RenderTurnItem
   row: Extract<TimelineRow, { kind: 'turn' }>
   streamingAssistantMessageId: string | null
+  activeFindMessageId: string | null
+  findQuery: string
 }) {
-  const { item, index, onToggleTurnCollapse, renderTurnItem, row, streamingAssistantMessageId } =
-    input
+  const {
+    item,
+    index,
+    onToggleTurnCollapse,
+    renderTurnItem,
+    row,
+    streamingAssistantMessageId,
+    activeFindMessageId,
+    findQuery,
+  } = input
   if (row.userMessage || index > 0 || item.kind === 'tool-group') return renderTurnItem(item)
   if (item.message.role === 'assistant')
     return (
-      <ThreadMessage
-        key={`lead:${item.id}`}
-        message={item.message}
-        autoExpandThinking={item.message.id === streamingAssistantMessageId}
-        onToggleExpanded={onToggleTurnCollapse}
-        primaryToggleAction={onToggleTurnCollapse}
-      />
+      <div key={`lead:${item.id}`} data-message-id={item.message.id}>
+        <ThreadMessage
+          message={item.message}
+          findActive={item.message.id === activeFindMessageId}
+          findQuery={findQuery}
+          autoExpandThinking={item.message.id === streamingAssistantMessageId}
+          onToggleExpanded={onToggleTurnCollapse}
+          primaryToggleAction={onToggleTurnCollapse}
+        />
+      </div>
     )
   return (
     <RowLeadToggleSurface key={`lead:${item.id}`} onToggle={onToggleTurnCollapse}>
@@ -191,7 +218,9 @@ function SummaryRow({
           <div className="h-px w-full bg-[color:var(--border-strong)]" />
         ) : null}
         <RowLeadToggleSurface onToggle={onToggle}>
-          <ThreadMessage message={row.message} />
+          <div data-message-id={row.message.id}>
+            <ThreadMessage message={row.message} />
+          </div>
         </RowLeadToggleSurface>
       </div>
     </TimelineRowShell>
@@ -202,6 +231,8 @@ export function ThreadTimelineRow({
   row,
   collapsed,
   streamingAssistantMessageId,
+  activeFindMessageId,
+  findQuery,
   streamingToolGroupId,
   expandedToolGroupIds,
   onToggleRowCollapse,
@@ -225,12 +256,15 @@ export function ThreadTimelineRow({
     }
 
     return (
-      <ThreadMessage
-        key={item.id}
-        message={item.message}
-        autoExpandThinking={item.message.id === streamingAssistantMessageId}
-        onToggleExpanded={onToggleToolCallExpansion}
-      />
+      <div key={item.id} data-message-id={item.message.id}>
+        <ThreadMessage
+          message={item.message}
+          findActive={item.message.id === activeFindMessageId}
+          findQuery={findQuery}
+          autoExpandThinking={item.message.id === streamingAssistantMessageId}
+          onToggleExpanded={onToggleToolCallExpansion}
+        />
+      </div>
     )
   }
 
@@ -250,6 +284,8 @@ export function ThreadTimelineRow({
         renderTurnItem={renderTurnItem}
         row={row}
         streamingAssistantMessageId={streamingAssistantMessageId}
+        activeFindMessageId={activeFindMessageId}
+        findQuery={findQuery}
       />
     )
   }

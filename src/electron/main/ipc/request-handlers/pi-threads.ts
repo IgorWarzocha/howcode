@@ -31,6 +31,7 @@ type PiThreadsRequestHandlers = Pick<
   | 'getInboxThreads'
   | 'getArchivedThreads'
   | 'getThread'
+  | 'searchThread'
   | 'watchSession'
   | 'invokeAction'
 >
@@ -83,6 +84,7 @@ export function createPiThreadsHandlers(
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>
       piThreads.loadThread(sessionPath, { historyCompactions }),
+    searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
     watchSession: async ({ sessionPath }) => {
       await piThreads.setWatchedSessionPath(sessionPath)
       return { ok: true }

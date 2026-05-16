@@ -43,6 +43,7 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from './desktop-contracts'
 import type {
   TerminalCloseRequest,
@@ -263,6 +264,10 @@ export type DesktopRequestMap = {
   getThread: {
     params: { sessionPath: string; historyCompactions?: number | undefined }
     response: ThreadData | null
+  }
+  searchThread: {
+    params: { sessionPath: string; query: string }
+    response: ThreadSearchResult
   }
   watchSession: { params: { sessionPath: string | null }; response: { ok: boolean } }
   invokeAction: {
