@@ -753,6 +753,7 @@ export function CodeWorkspaceView({
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId !== 'gitops.toggleChangedFiles' || state.activeView !== 'gitops') return
+      event.preventDefault()
       toggleGitOpsFileTree()
     }
 

@@ -19,6 +19,7 @@ import {
   getSettingsReset,
   getSettingsThinkingLevel,
 } from '../../shared/pi-thread-action-payloads.ts'
+import { parseKeybindingOverrides } from '../app-settings/parsers.ts'
 import {
   setChatModelSelection,
   setChatThinkingLevel,
@@ -149,7 +150,9 @@ const settingsUpdateHandlers = {
   hoverToBlur: (payload) => setHoverToBlur(getSettingsBooleanValue(payload) ?? false),
   keybindings: (payload) => {
     const value = payload.value
-    if (value && typeof value === 'object' && !Array.isArray(value)) setKeybindings(value)
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      setKeybindings(parseKeybindingOverrides(JSON.stringify(value)))
+    }
   },
   composerSendMode: (payload) => {
     if (payload.value === 'enter' || payload.value === 'cmd-enter')

@@ -7,8 +7,9 @@ export type HowcodeKeybindingCommandDetail = {
 }
 
 export function dispatchHowcodeKeybindingCommand(commandId: KeybindingCommandId) {
-  window.dispatchEvent(
+  return !window.dispatchEvent(
     new CustomEvent<HowcodeKeybindingCommandDetail>(howcodeKeybindingCommandEvent, {
+      cancelable: true,
       detail: { commandId },
     }),
   )

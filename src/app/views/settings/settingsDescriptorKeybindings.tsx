@@ -89,7 +89,6 @@ function KeybindingRow({
           if (event.key !== 'Enter') return
           event.preventDefault()
           event.currentTarget.blur()
-          saveDraft()
         }}
         aria-label={`${binding?.label ?? commandId} shortcut`}
       />

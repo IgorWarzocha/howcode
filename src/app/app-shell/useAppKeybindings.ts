@@ -33,6 +33,24 @@ function eventTargetIsTerminal(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('.xterm') !== null
 }
 
+function eventTargetIsComposer(target: EventTarget | null) {
+  return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
+}
+
+function interactiveLayerIsOpen() {
+  return (
+    document.querySelector(
+      'dialog[open], [aria-modal="true"], [role="dialog"], [role="listbox"], .sidebar-popover-panel, .motion-popover',
+    ) !== null
+  )
+}
+
+function appLevelShortcutsAreBlocked(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
+  if (commandId === 'settings.open') return false
+  const { state } = runtime.appController
+  return state.settingsOpen || state.settingsPanelOpen || interactiveLayerIsOpen()
+}
+
 function eventToAcceleratorCandidates(event: KeyboardEvent) {
   const parts: string[] = []
   const exactParts: string[] = []
@@ -81,7 +99,7 @@ type KeybindingRuntime = {
 function stopActiveRun(runtime: KeybindingRuntime) {
   const { activeThreadData, composerProjectId, state } = runtime.appController
   if (!(activeThreadData?.isStreaming && state.selectedSessionPath)) return false
-  if (state.settingsOpen || state.settingsPanelOpen) return false
+  if (appLevelShortcutsAreBlocked('agent.interrupt', runtime)) return false
   void runtime.appController.handleAction('composer.stop', {
     projectId: composerProjectId,
     sessionPath: state.selectedSessionPath,
@@ -132,8 +150,7 @@ function handleProjectCommand(commandId: KeybindingCommandId, runtime: Keybindin
 
 function handleRendererCommand(commandId: KeybindingCommandId) {
   if (!rendererCommandIds.has(commandId)) return false
-  dispatchHowcodeKeybindingCommand(commandId)
-  return true
+  return dispatchHowcodeKeybindingCommand(commandId)
 }
 
 function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntime) {
@@ -164,9 +181,11 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
     .map((accelerator) => runtime.acceleratorToCommand.get(accelerator))
     .find((value): value is KeybindingCommandId => value !== undefined)
   if (!commandId) return
+  if (appLevelShortcutsAreBlocked(commandId, runtime)) return
   if (
     eventTargetIsEditable(event.target) &&
     commandId !== 'settings.open' &&
+    !(commandId === 'dictation.toggle' && eventTargetIsComposer(event.target)) &&
     !(commandId === 'terminal.clear' && eventTargetIsTerminal(event.target))
   ) {
     return

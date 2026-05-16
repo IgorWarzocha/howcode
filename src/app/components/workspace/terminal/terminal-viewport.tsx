@@ -341,6 +341,7 @@ export function TerminalViewport({
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId !== 'terminal.clear' || !isTerminalFocused()) return
+      event.preventDefault()
       resetTerminal('')
     }
 

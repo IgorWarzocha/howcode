@@ -426,6 +426,7 @@ export function ComposerPromptSurface({
         return
       }
       if (commandId === 'dictation.toggle' && showDictationButton) {
+        event.preventDefault()
         void toggleDictation()
       }
     }
@@ -435,7 +436,10 @@ export function ComposerPromptSurface({
   }, [send, showDictationButton, toggleDictation])
 
   return (
-    <div className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
+    <div
+      className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
+      data-composer-root="true"
+    >
       <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
           {attachments.length > 0 ? (
