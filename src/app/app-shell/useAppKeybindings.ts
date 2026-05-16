@@ -163,7 +163,7 @@ function handleRendererCommand(commandId: KeybindingCommandId) {
 
 function handleSettingsCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
-  if (controller.state.activeView === 'settings') controller.handleShowLanding()
+  if (controller.state.activeView === 'settings') controller.handleCloseUtilityView()
   else controller.handleShowView('settings')
   return true
 }
