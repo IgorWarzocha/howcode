@@ -657,3 +657,8 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 .artifact-markdown-editor .artifact-markdown-editor-content table {
   border-color: var(--border-strong);
 }
+
+::highlight(thread-find-match) {
+  background-color: var(--accent-bg-subtle);
+  color: var(--accent);
+}
