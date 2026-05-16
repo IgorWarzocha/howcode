@@ -33,6 +33,7 @@ export function useAppShellController() {
   const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
   const [threadRefreshKey, setThreadRefreshKey] = useState(0)
   const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0)
+  const [threadQueryDeferred, setThreadQueryDeferred] = useState(false)
   const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null)
   const [chatSidebarState, setChatSidebarState] =
     useState<Awaited<ReturnType<typeof getChatSidebarStateQuery>>>(null)
@@ -57,6 +58,7 @@ export function useAppShellController() {
     state.selectedSessionPath,
     threadRefreshKey,
     threadHistoryCompactions,
+    { enabled: !threadQueryDeferred },
   )
   const threadData = threadQuery.data ?? null
   const selectedPersistedSessionPath = getPersistedSessionPath(state.selectedSessionPath)
@@ -219,6 +221,7 @@ export function useAppShellController() {
     setSettingsOpenTarget,
     setThreadHistoryCompactions,
     setThreadRefreshKey,
+    setThreadQueryDeferred,
     shellState,
     workspaceState: state,
   })

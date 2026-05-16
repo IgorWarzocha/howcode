@@ -112,9 +112,12 @@ function findSelectedThreadIndex(
   selectedThreadId: string | null,
 ) {
   if (!project) return -1
+  const selectedThreadIndex = project.threads.findIndex(
+    (thread) => selectedThreadId !== null && thread.id === selectedThreadId,
+  )
+  if (selectedThreadIndex >= 0) return selectedThreadIndex
   return project.threads.findIndex((thread) => {
-    if (selectedSessionPath && thread.sessionPath === selectedSessionPath) return true
-    return selectedThreadId !== null && thread.id === selectedThreadId
+    return Boolean(selectedSessionPath && thread.sessionPath === selectedSessionPath)
   })
 }
 
@@ -137,6 +140,12 @@ function useLatest<T>(value: T) {
 type KeybindingRuntime = {
   acceleratorToCommand: Map<string, KeybindingCommandId>
   appController: AppShellController
+  cycleSelectionRef: React.MutableRefObject<{
+    projectId: string
+    threadId: string
+    sessionPath: string | null
+    view: 'chat' | 'thread'
+  } | null>
   onToggleSidebar: () => void
 }
 
@@ -176,16 +185,32 @@ function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
     controller.projects.find(
       (item) => item.id === (controller.state.selectedProjectId || controller.composerProjectId),
     ) ?? null
+  const cycleSelection = runtime.cycleSelectionRef.current
+  const hasThreadCycleSelection =
+    cycleSelection !== null &&
+    cycleSelection.projectId === project?.id &&
+    cycleSelection.view === 'thread'
   const index = findSelectedThreadIndex(
     project,
-    controller.state.selectedSessionPath,
-    controller.state.selectedThreadId,
+    hasThreadCycleSelection ? cycleSelection.sessionPath : controller.state.selectedSessionPath,
+    hasThreadCycleSelection ? cycleSelection.threadId : controller.state.selectedThreadId,
   )
   if (!(project && project.threads.length > 0)) return false
   const nextIndex = getAdjacentIndex(index, project.threads.length, direction)
   const nextThread = project.threads[nextIndex]
   if (!nextThread) return false
-  controller.handleThreadOpen(project.id, nextThread.id, getThreadSessionPath(nextThread), 'thread')
+  runtime.cycleSelectionRef.current = {
+    projectId: project.id,
+    threadId: nextThread.id,
+    sessionPath: getThreadSessionPath(nextThread),
+    view: 'thread',
+  }
+  controller.handleThreadCycle(
+    project.id,
+    nextThread.id,
+    getThreadSessionPath(nextThread),
+    'thread',
+  )
   return true
 }
 
@@ -199,14 +224,22 @@ function openAdjacentChatThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const controller = runtime.appController
   if (controller.state.activeView !== 'chat') return null
   const threads = getChatThreads(runtime)
+  const cycleSelection = runtime.cycleSelectionRef.current
+  const hasChatCycleSelection = cycleSelection !== null && cycleSelection.view === 'chat'
   const index = findSelectedThreadIndex(
     { id: 'chat', name: 'Chat', threads },
-    controller.state.selectedSessionPath,
-    controller.state.selectedThreadId,
+    hasChatCycleSelection ? cycleSelection.sessionPath : controller.state.selectedSessionPath,
+    hasChatCycleSelection ? cycleSelection.threadId : controller.state.selectedThreadId,
   )
   const nextThread = threads[getAdjacentIndex(index, threads.length, direction)]
   if (!nextThread?.sessionPath) return false
-  controller.handleThreadOpen(nextThread.projectId, nextThread.id, nextThread.sessionPath, 'chat')
+  runtime.cycleSelectionRef.current = {
+    projectId: nextThread.projectId,
+    threadId: nextThread.id,
+    sessionPath: nextThread.sessionPath,
+    view: 'chat',
+  }
+  controller.handleThreadCycle(nextThread.projectId, nextThread.id, nextThread.sessionPath, 'chat')
   return true
 }
 
@@ -343,8 +376,30 @@ export function useAppKeybindings(input: {
     }
     return map
   }, [keybindings])
-  const latest = useLatest({ acceleratorToCommand, appController: controller, onToggleSidebar })
   const lastEscapeAtRef = useRef(0)
+  const cycleSelectionRef = useRef<KeybindingRuntime['cycleSelectionRef']['current']>(null)
+  const latest = useLatest({
+    acceleratorToCommand,
+    appController: controller,
+    cycleSelectionRef,
+    onToggleSidebar,
+  })
+
+  useEffect(() => {
+    const current = cycleSelectionRef.current
+    if (!current) return
+    if (
+      current.view !== (controller.state.activeView === 'chat' ? 'chat' : 'thread') ||
+      current.projectId !== controller.state.selectedProjectId ||
+      current.threadId !== controller.state.selectedThreadId
+    ) {
+      cycleSelectionRef.current = null
+    }
+  }, [
+    controller.state.activeView,
+    controller.state.selectedProjectId,
+    controller.state.selectedThreadId,
+  ])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

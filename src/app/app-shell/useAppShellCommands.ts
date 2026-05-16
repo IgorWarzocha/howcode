@@ -36,12 +36,14 @@ type UseAppShellCommandsInput = {
   scheduleShellStateRefresh: () => void
   setThreadHistoryCompactions: Dispatch<SetStateAction<number>>
   setThreadRefreshKey: Dispatch<SetStateAction<number>>
+  setThreadQueryDeferred: Dispatch<SetStateAction<boolean>>
   setSettingsOpenTarget: Dispatch<SetStateAction<SettingsOpenTarget | null>>
   shellState: ShellState | null
   workspaceState: WorkspaceState
 }
 
 const THREAD_OPEN_ACTION_DELAY_MS = 120
+const THREAD_CYCLE_OPEN_ACTION_DELAY_MS = 450
 
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   queryClient.removeQueries({
@@ -67,6 +69,7 @@ export function useAppShellCommands({
   setSettingsOpenTarget,
   setThreadHistoryCompactions,
   setThreadRefreshKey,
+  setThreadQueryDeferred,
   shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
@@ -76,9 +79,11 @@ export function useAppShellCommands({
     () => () => {
       if (pendingThreadOpenActionRef.current !== null) {
         window.clearTimeout(pendingThreadOpenActionRef.current)
+        pendingThreadOpenActionRef.current = null
       }
+      setThreadQueryDeferred(false)
     },
-    [],
+    [setThreadQueryDeferred],
   )
 
   const scheduleThreadOpenAction = useCallback(
@@ -87,22 +92,33 @@ export function useAppShellCommands({
       threadId: string
       sessionPath: string
       view?: 'chat' | 'thread' | undefined
+      delayMs?: number | undefined
+      deferThreadQuery?: boolean | undefined
     }) => {
       if (pendingThreadOpenActionRef.current !== null) {
         window.clearTimeout(pendingThreadOpenActionRef.current)
       }
+      setThreadQueryDeferred(input.deferThreadQuery === true)
 
       pendingThreadOpenActionRef.current = window.setTimeout(() => {
         pendingThreadOpenActionRef.current = null
+        setThreadQueryDeferred(false)
+        dispatch({
+          type: 'open-thread',
+          projectId: input.projectId,
+          threadId: input.threadId,
+          sessionPath: input.sessionPath,
+          view: input.view,
+        })
         void handleAction('thread.open', {
           projectId: input.projectId,
           threadId: input.threadId,
           sessionPath: input.sessionPath,
           composerMode: input.view === 'chat' ? 'chat' : 'code',
         })
-      }, THREAD_OPEN_ACTION_DELAY_MS)
+      }, input.delayMs ?? THREAD_OPEN_ACTION_DELAY_MS)
     },
-    [handleAction],
+    [dispatch, handleAction, setThreadQueryDeferred],
   )
 
   const handleToggleTerminal = useCallback(() => dispatch({ type: 'toggle-terminal' }), [dispatch])
@@ -146,6 +162,24 @@ export function useAppShellCommands({
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
     scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })
+  }
+
+  const handleThreadCycle = (
+    projectId: string,
+    threadId: string,
+    sessionPath: string,
+    view?: 'chat' | 'thread' | undefined,
+  ) => {
+    setThreadHistoryCompactions(0)
+    dispatch({ type: 'preview-thread', projectId, threadId, view })
+    scheduleThreadOpenAction({
+      projectId,
+      threadId,
+      sessionPath,
+      view,
+      delayMs: THREAD_CYCLE_OPEN_ACTION_DELAY_MS,
+      deferThreadQuery: true,
+    })
   }
 
   const handleSelectInboxThread = (thread: InboxThread) => {
@@ -262,6 +296,7 @@ export function useAppShellCommands({
     handleShowView,
     handleShowLanding,
     handleThreadOpen,
+    handleThreadCycle,
     handleToggleProjectCollapse,
     handleToggleSettings: () => dispatch({ type: 'toggle-settings' }),
     handleToggleTerminal,

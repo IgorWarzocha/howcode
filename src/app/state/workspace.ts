@@ -57,6 +57,12 @@ export type WorkspaceAction =
       view?: 'chat' | 'thread' | undefined
     }
   | {
+      type: 'preview-thread'
+      projectId: string
+      threadId: string
+      view?: 'chat' | 'thread' | undefined
+    }
+  | {
       type: 'open-gitops'
       filePath?: string | null
       returnView?: NonGitOpsView
@@ -403,6 +409,23 @@ function openThreadState(
   }
 }
 
+function previewThreadState(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'preview-thread' }>,
+): WorkspaceState {
+  return {
+    ...state,
+    activeView: action.view ?? (state.activeView === 'chat' ? 'chat' : 'thread'),
+    selectedProjectId: action.projectId,
+    hasSelectedProject: true,
+    selectedThreadId: action.threadId,
+    selectedDiffFilePath: null,
+    gitOpsReturnView: 'thread',
+    utilityViewReturnState: null,
+    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+  }
+}
+
 function openGitOpsState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'open-gitops' }>,
@@ -539,6 +562,7 @@ const workspaceActionHandlers = {
     state: WorkspaceState,
     action: Extract<WorkspaceAction, { type: 'set-selected-project' }>,
   ) => ({ ...state, selectedProjectId: action.projectId, hasSelectedProject: true }),
+  'preview-thread': previewThreadState,
   'open-thread': openThreadState,
   'open-gitops': openGitOpsState,
   'close-gitops': closeGitOpsState,

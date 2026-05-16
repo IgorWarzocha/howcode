@@ -7,6 +7,7 @@ export function useDesktopThreadQuery(
   sessionPath: string | null | undefined,
   refreshKey = 0,
   historyCompactions = 0,
+  options: { enabled?: boolean | undefined } = {},
 ) {
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
 
@@ -18,7 +19,7 @@ export function useDesktopThreadQuery(
       persistedSessionPath
         ? getThreadQuery(persistedSessionPath, historyCompactions)
         : Promise.resolve(null),
-    enabled: Boolean(persistedSessionPath),
+    enabled: Boolean(persistedSessionPath) && options.enabled !== false,
     staleTime: Number.POSITIVE_INFINITY,
   })
 }
