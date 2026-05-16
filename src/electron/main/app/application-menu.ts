@@ -36,6 +36,7 @@ function keybindingMenuItem(input: {
   return {
     label: input.label,
     ...(input.accelerator ? { accelerator: input.accelerator } : {}),
+    registerAccelerator: false,
     click: () => sendKeybindingCommand(input.getMainWindow(), input.commandId),
   }
 }

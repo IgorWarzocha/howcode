@@ -328,7 +328,8 @@ export function TerminalViewport({
     (history = '') => {
       const nextHistory = clampTerminalHistory(history)
       terminalHistoryRef.current = nextHistory
-      clearTerminal((data) => writeToTerminal(data))
+      if (nextHistory) clearTerminal((data) => writeToTerminal(data))
+      else terminalInstanceRef.current?.clear()
       if (nextHistory) {
         writeToTerminal(nextHistory)
       }

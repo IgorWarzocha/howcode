@@ -38,7 +38,7 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   { id: 'thread.find', label: 'Find in current thread', defaults: ['CmdOrCtrl+F'] },
   { id: 'sidebar.toggle', label: 'Toggle sidebar', defaults: ['CmdOrCtrl+B'] },
   { id: 'terminal.toggle', label: 'Toggle terminal', defaults: ['CmdOrCtrl+J'] },
-  { id: 'terminal.clear', label: 'Clear focused terminal', defaults: ['Ctrl+L'] },
+  { id: 'terminal.clear', label: 'Clear terminal', defaults: ['Ctrl+L'] },
   { id: 'gitops.open', label: 'Open GitOps', defaults: ['CmdOrCtrl+G'] },
   {
     id: 'gitops.toggleChangedFiles',

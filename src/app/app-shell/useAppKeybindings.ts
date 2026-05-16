@@ -18,6 +18,8 @@ const rendererCommandIds = new Set<KeybindingCommandId>([
   'terminal.clear',
   'dictation.toggle',
 ])
+const keyboardCodeLetterPattern = /^Key[A-Z]$/
+const keyboardCodeDigitPattern = /^Digit\d$/
 
 function eventTargetIsEditable(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
@@ -29,8 +31,19 @@ function eventTargetIsEditable(target: EventTarget | null) {
   )
 }
 
+function eventTargetIsTerminal(target: EventTarget | null) {
+  return target instanceof HTMLElement && target.closest('.xterm') !== null
+}
+
 function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
+}
+
+function getKeyboardEventKey(event: KeyboardEvent) {
+  if (keyboardCodeLetterPattern.test(event.code)) return event.code.slice(3)
+  if (keyboardCodeDigitPattern.test(event.code)) return event.code.slice(5)
+  if (event.key === ' ') return 'Space'
+  return event.key.length === 1 ? event.key.toUpperCase() : event.key
 }
 
 function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
@@ -39,6 +52,18 @@ function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRun
     runtime.appController.state.activeView === 'gitops' ||
     runtime.appController.state.activeView === 'inbox'
   )
+}
+
+function commandCanRunFromEditableTarget(
+  commandId: KeybindingCommandId,
+  event: KeyboardEvent,
+  runtime: KeybindingRuntime,
+) {
+  if (commandId === 'settings.open') return true
+  if (commandId === 'terminal.toggle') return eventTargetIsTerminal(event.target)
+  if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
+  if (commandId === 'terminal.clear') return runtime.appController.state.terminalVisible
+  return false
 }
 
 function interactiveLayerIsOpen() {
@@ -76,8 +101,7 @@ function eventToAcceleratorCandidates(event: KeyboardEvent) {
   if (event.altKey) exactParts.push('Alt')
   if (event.shiftKey) parts.push('Shift')
   if (event.shiftKey) exactParts.push('Shift')
-  const key =
-    event.key === ' ' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key
+  const key = getKeyboardEventKey(event)
   parts.push(key)
   exactParts.push(key)
   return [...new Set([exactParts.join('+'), parts.join('+')])]
@@ -206,15 +230,14 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
   if (appLevelShortcutsAreBlocked(commandId, runtime)) return
   if (
     eventTargetIsEditable(event.target) &&
-    commandId !== 'settings.open' &&
-    !(commandId === 'dictation.toggle' && dictationShortcutIsAllowed(event, runtime)) &&
-    !(commandId === 'terminal.clear' && runtime.appController.state.terminalVisible)
+    !commandCanRunFromEditableTarget(commandId, event, runtime)
   ) {
     return
   }
   const handled = runAppCommand(commandId, runtime)
   if (!handled) return
   event.preventDefault()
+  event.stopImmediatePropagation()
 }
 
 export function useAppKeybindings(input: {
