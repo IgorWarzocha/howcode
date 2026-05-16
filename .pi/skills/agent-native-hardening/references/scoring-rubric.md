@@ -1,9 +1,9 @@
 # Scoring Rubric (0-10)
 
-Apply an explicit godfile penalty during scoring. A repo with unresolved godfiles, catch-all folders, or persistent mixed-concern modules should not receive a high structure score just because it is typed or tested.
+Apply an explicit godfile/godfunction penalty during scoring. A repo with unresolved godfiles, godfunctions, catch-all folders, or persistent mixed-concern modules should not receive a high structure score just because it is typed or tested.
 
 ## 1) agent_native
-0-2: monoliths/godfiles, unclear ownership, no guardrails
+0-2: monoliths/godfiles/godfunctions, unclear ownership, no guardrails
 3-5: partial modularization, weak lane boundaries, mixed concerns still central
 6-8: clear feature modules, low duplication, boundaries enforced by scripts/lint
 9-10: lane-safe architecture, deterministic extension points, feature ownership is obvious and DRY
@@ -15,7 +15,7 @@ Apply an explicit godfile penalty during scoring. A repo with unresolved godfile
 9-10: strict everywhere, clean request/event/domain typing, invalid states modeled out, end-to-end type flow preserved where tooling supports it
 
 ## 3) traversable
-0-2: hard to locate ownership and flows, godfiles dominate navigation
+0-2: hard to locate ownership and flows, godfiles/godfunctions dominate navigation
 3-5: partial structure, large hotspots remain, feature boundaries blurry
 6-8: clear feature folders, reduced hotspots, entrypoints mostly obvious
 9-10: small focused modules with stable entrypoints and crisp separation of concerns
@@ -38,7 +38,7 @@ Apply an explicit godfile penalty during scoring. A repo with unresolved godfile
 6-8: strategic comments + concise lane map + feature ownership mostly obvious
 9-10: high signal comments, accurate map, no stale docs, file/folder layout explains the system
 
-## Godfile / Boundary Criteria
+## Godfile / Godfunction / Boundary Criteria
 
 Treat these as strong negative signals:
 - one file or folder absorbing unrelated features, orchestration, IO, types, and UI
@@ -46,15 +46,27 @@ Treat these as strong negative signals:
 - broad `utils`/`helpers`/`misc` dumping grounds with weak ownership
 - copy-paste logic across features where a stable shared abstraction should exist
 - hidden side effects or mixed layers that make extraction risky
+- godfunctions that mix unrelated responsibilities, such as validation, orchestration, IO, mutation, rendering, and error handling in one long flow
+- central handlers or lifecycle methods that keep absorbing feature-specific branches instead of delegating to feature-owned code
+- root app/controller objects owning feature-local state, input handling, async task coordination, and rendering decisions
+- global dispatch functions that grow with every feature instead of delegating to feature-owned handlers or typed commands
+- positional data flowing through domain logic: magic indexes, parallel arrays, tuple rows, or string lists whose meaning depends on order
+- scattered manual reset/cleanup patterns that reveal unmodeled state transitions or lifecycle ownership
 
 Treat these as strong positive signals:
 - godfiles decomposed into feature folders with clear ownership
+- godfunctions decomposed into small named steps with clear ownership and typed inputs/outputs
 - feature-local modules separated by concern where needed (`index`/entrypoint, domain logic, IO, types/schema, tests)
 - shared abstractions extracted only when genuinely cross-feature and stable
 - discriminated unions, domain/branded types, and derived types replace ambiguous primitives or manually duplicated shapes
 - lower fan-in/fan-out per module and fewer unrelated edits per lane
+- central paths are small routers/registries; feature behavior lives behind explicit, typed extension points
+- async/background work communicates through typed messages/events/results, with one clear state mutation owner
+- domain data keeps named fields until render/serialization boundaries
 
 Suggested score caps:
 - any active godfile hotspot: cap `agent_native` and `traversable` at 5
+- any active godfunction hotspot in a central path: cap `agent_native` and `traversable` at 6
 - multiple godfiles or godfolders: cap `agent_native`, `traversable`, and `self_documenting` at 4
+- multiple godfunctions in central feature paths: cap `agent_native`, `traversable`, and `self_documenting` at 5
 - persistent duplication plus mixed concerns: cap `agent_native` at 6 until shared ownership is clarified
