@@ -443,7 +443,7 @@ function closeGitOpsState(state: WorkspaceState): WorkspaceState {
 
 function setTerminalVisibleState(state: WorkspaceState, visible: boolean): WorkspaceState {
   if (!state.selectedSessionPath) {
-    if (!state.selectedProjectId) return state
+    if (!state.selectedProjectId) return { ...state, terminalVisible: visible }
     return {
       ...state,
       terminalVisible: visible,

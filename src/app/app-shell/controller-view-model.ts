@@ -7,6 +7,7 @@ type DeriveControllerViewModelInput = {
   projects: Project[]
   workspaceState: WorkspaceState
   threadData: ThreadData | null
+  shellCwd: string | null | undefined
   composerState: import('../desktop/types').ComposerState | null
   shellComposerState: import('../desktop/types').ComposerState | null | undefined
 }
@@ -40,6 +41,7 @@ export function deriveControllerViewModel({
   projects,
   workspaceState,
   threadData,
+  shellCwd,
   composerState,
   shellComposerState,
 }: DeriveControllerViewModelInput): ControllerViewModel {
@@ -65,7 +67,8 @@ export function deriveControllerViewModel({
         ? (activeThreadData?.title ?? selectedThread?.title ?? 'New thread')
         : getCurrentTitle(workspaceState.activeView, selectedThread),
     currentProjectName: getProjectName(selectedProject),
-    composerProjectId: selectedProject?.id ?? '',
+    // Keep sidebar selection strict, but preserve cwd-backed composer/chat/runtime actions.
+    composerProjectId: selectedProject?.id ?? shellCwd ?? '',
     activeComposerState: composerState ?? shellComposerState ?? null,
   }
 }
