@@ -29,10 +29,6 @@ function eventTargetIsEditable(target: EventTarget | null) {
   )
 }
 
-function eventTargetIsTerminal(target: EventTarget | null) {
-  return target instanceof HTMLElement && target.closest('.xterm') !== null
-}
-
 function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
 }
@@ -58,6 +54,9 @@ function appLevelShortcutsAreBlocked(commandId: KeybindingCommandId, runtime: Ke
     return false
   }
   const { state } = runtime.appController
+  if (commandId === 'terminal.toggle') {
+    return state.activeView === 'settings' || state.settingsOpen || state.settingsPanelOpen
+  }
   if (commandId === 'settings.open') return state.settingsPanelOpen || interactiveLayerIsOpen()
   return (
     state.activeView === 'settings' ||
@@ -209,7 +208,7 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
     eventTargetIsEditable(event.target) &&
     commandId !== 'settings.open' &&
     !(commandId === 'dictation.toggle' && dictationShortcutIsAllowed(event, runtime)) &&
-    !(commandId === 'terminal.clear' && eventTargetIsTerminal(event.target))
+    !(commandId === 'terminal.clear' && runtime.appController.state.terminalVisible)
   ) {
     return
   }

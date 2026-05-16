@@ -340,14 +340,14 @@ export function TerminalViewport({
   useEffect(() => {
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'terminal.clear' || !isTerminalFocused()) return
+      if (commandId !== 'terminal.clear') return
       event.preventDefault()
       resetTerminal('')
     }
 
     window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
     return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [isTerminalFocused, resetTerminal])
+  }, [resetTerminal])
 
   const appendTerminalHistory = useCallback(
     (chunk: string) => {
