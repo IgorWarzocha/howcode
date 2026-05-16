@@ -38,7 +38,11 @@ function eventTargetIsComposer(target: EventTarget | null) {
 }
 
 function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRuntime) {
-  return eventTargetIsComposer(event.target) || runtime.appController.state.activeView === 'gitops'
+  return (
+    eventTargetIsComposer(event.target) ||
+    runtime.appController.state.activeView === 'gitops' ||
+    runtime.appController.state.activeView === 'inbox'
+  )
 }
 
 function interactiveLayerIsOpen() {
