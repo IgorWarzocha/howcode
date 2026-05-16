@@ -140,13 +140,18 @@ export function ProjectThreadsList({
   const groupRef = useRef<HTMLDivElement>(null)
   const selectedOldThreadVisible = oldThreads.some((thread) => thread.id === selectedThreadId)
   const oldThreadsExpanded = revealOldThreads || selectedOldThreadVisible || expandedByUser
+  const selectedThreadInProject = project.threads.some((thread) => thread.id === selectedThreadId)
 
   useEffect(() => {
+    if (!(isExpanded && selectedThreadId)) return
+    if (!(activeView === 'chat' || activeView === 'thread' || activeView === 'gitops')) return
+    if (!selectedThreadInProject) return
+    void oldThreadsExpanded
     const selectedRow = groupRef.current?.querySelector<HTMLElement>(
       '[data-project-thread-selected="true"]',
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
-  })
+  }, [activeView, isExpanded, oldThreadsExpanded, selectedThreadId, selectedThreadInProject])
 
   const renderThread = (thread: Project['threads'][number]) => {
     const isSelected =

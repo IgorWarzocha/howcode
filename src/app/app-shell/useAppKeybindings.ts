@@ -52,11 +52,13 @@ function dictationShortcutIsAllowed(event: KeyboardEvent, runtime: KeybindingRun
   )
 }
 
-function commandCanRunFromEditableTarget(
+function appShortcutCanRunFromTextInput(
   commandId: KeybindingCommandId,
   event: KeyboardEvent,
   runtime: KeybindingRuntime,
 ) {
+  // Composer text input still lets app shortcuts through; normal text is unaffected because
+  // only registered accelerators reach this point. Changed-files stays GitOps-panel scoped.
   if (commandId === 'gitops.toggleChangedFiles') return false
   if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
   if (commandId === 'terminal.clear') return runtime.appController.state.terminalVisible
@@ -305,7 +307,7 @@ function handleShortcut(event: KeyboardEvent, runtime: KeybindingRuntime) {
   if (appLevelShortcutsAreBlocked(commandId, runtime)) return
   if (
     eventTargetIsEditable(event.target) &&
-    !commandCanRunFromEditableTarget(commandId, event, runtime)
+    !appShortcutCanRunFromTextInput(commandId, event, runtime)
   ) {
     return
   }

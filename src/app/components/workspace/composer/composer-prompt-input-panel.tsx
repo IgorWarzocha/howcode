@@ -254,6 +254,13 @@ function matchesComposerCommandKey(
   return accelerators.some((accelerator) => candidates.has(accelerator))
 }
 
+function composerCommandHasOverride(
+  input: ComposerKeyDownInput,
+  commandId: 'composer.newline' | 'composer.submit',
+) {
+  return Object.hasOwn(input.keybindings, commandId)
+}
+
 function getComposerDefaultAccelerators(
   commandId: 'composer.newline' | 'composer.submit',
   mode: ComposerSendMode,
@@ -290,7 +297,8 @@ function handleComposerTextKeyDown(
   }
   if (
     matchesComposerCommandKey(event, input, 'composer.submit') ||
-    isComposerSubmitKey(event, input.composerSendMode)
+    (!composerCommandHasOverride(input, 'composer.submit') &&
+      isComposerSubmitKey(event, input.composerSendMode))
   ) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()

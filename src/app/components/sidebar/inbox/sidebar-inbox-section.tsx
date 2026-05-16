@@ -217,11 +217,13 @@ export function SidebarInboxSection({
   const filterLabel = getInboxFilterLabel(filterMode)
 
   useEffect(() => {
+    if (!selectedSessionPath) return
+    if (!visibleThreads.some((thread) => thread.sessionPath === selectedSessionPath)) return
     const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
       '[data-inbox-thread-selected="true"]',
     )
     selectedRow?.scrollIntoView({ block: 'nearest' })
-  })
+  }, [selectedSessionPath, visibleThreads])
 
   return (
     <section className="sidebar-section">
