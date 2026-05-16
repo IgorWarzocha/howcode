@@ -1,7 +1,7 @@
 import { closestCorners, DndContext } from '@dnd-kit/core'
 import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { Edit2, FolderPlus, Plus, Search, X } from 'lucide-react'
+import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
 import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
@@ -75,7 +75,6 @@ export function SidebarChatSection({
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId !== 'sidebar.find') return
       event.preventDefault()
-      event.stopPropagation()
       searchInputRef.current?.focus()
       searchInputRef.current?.select()
     }
@@ -109,27 +108,10 @@ export function SidebarChatSection({
             ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== 'Escape') return
-              event.preventDefault()
-              event.stopPropagation()
-              if (searchQuery.length > 0) setSearchQuery('')
-              else event.currentTarget.blur()
-            }}
             placeholder="Search"
             className="sidebar-search-input"
             aria-label="Search chats"
           />
-          {searchQuery.length > 0 ? (
-            <button
-              type="button"
-              className="sidebar-search-clear"
-              aria-label="Clear chat search"
-              onClick={() => setSearchQuery('')}
-            >
-              <X size={13} />
-            </button>
-          ) : null}
         </label>
         <div className="sidebar-action-group">
           <IconButton

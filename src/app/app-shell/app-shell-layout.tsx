@@ -969,14 +969,6 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
   }, [sidebarOverlayOpen])
 
-  useEffect(() => {
-    if (sidebarOverlayOpen) return
-    const activeElement = document.activeElement
-    if (!(activeElement instanceof HTMLElement)) return
-    if (!activeElement.closest('.sidebar-shell')) return
-    activeElement.blur()
-  }, [sidebarOverlayOpen])
-
   const handleToggleSidebar = useCallback(() => {
     if (sidebarCompactMode) {
       setSidebarCollapsed(false)

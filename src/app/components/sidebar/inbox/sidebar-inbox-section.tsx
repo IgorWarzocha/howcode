@@ -204,7 +204,6 @@ export function SidebarInboxSection({
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId !== 'sidebar.find') return
       event.preventDefault()
-      event.stopPropagation()
       searchInputRef.current?.focus()
       searchInputRef.current?.select()
     }
@@ -255,11 +254,10 @@ export function SidebarInboxSection({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key !== 'Escape') return
+              if (event.key !== 'Escape' || searchQuery.length === 0) return
               event.preventDefault()
               event.stopPropagation()
-              if (searchQuery.length > 0) setSearchQuery('')
-              else event.currentTarget.blur()
+              setSearchQuery('')
             }}
             placeholder="Search inbox"
             className="sidebar-search-input"
