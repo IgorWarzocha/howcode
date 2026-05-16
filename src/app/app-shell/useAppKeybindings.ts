@@ -18,7 +18,6 @@ const rendererCommandIds = new Set<KeybindingCommandId>([
   'gitops.toggleChangedFiles',
   'terminal.clear',
   'thread.find',
-  'sidebar.find',
   'dictation.toggle',
 ])
 function eventTargetIsEditable(target: EventTarget | null) {
@@ -122,6 +121,7 @@ type KeybindingRuntime = {
     view: 'chat' | 'thread'
   } | null>
   onToggleSidebar: () => void
+  onOpenSidebar: () => void
 }
 
 function stopActiveRun(runtime: KeybindingRuntime) {
@@ -308,7 +308,10 @@ function runAppCommand(commandId: KeybindingCommandId, runtime: KeybindingRuntim
   if (projectHandled !== null) return projectHandled
   if (commandId === 'settings.open') return handleSettingsCommand(runtime)
   if (commandId === 'sidebar.toggle') runtime.onToggleSidebar()
-  else if (commandId === 'terminal.toggle') return handleTerminalToggleCommand(runtime)
+  else if (commandId === 'sidebar.find') {
+    runtime.onOpenSidebar()
+    window.requestAnimationFrame(() => dispatchHowcodeKeybindingCommand(commandId))
+  } else if (commandId === 'terminal.toggle') return handleTerminalToggleCommand(runtime)
   else if (commandId === 'gitops.open') return handleGitOpsCommand(runtime)
   else if (commandId === 'thread.new') return handleNewThreadCommand(runtime)
   else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
@@ -339,8 +342,9 @@ export function useAppKeybindings(input: {
   controller: AppShellController
   keybindings: KeybindingOverrides
   onToggleSidebar: () => void
+  onOpenSidebar: () => void
 }) {
-  const { controller, keybindings, onToggleSidebar } = input
+  const { controller, keybindings, onOpenSidebar, onToggleSidebar } = input
   const acceleratorToCommand = useMemo(() => {
     const map = new Map<string, KeybindingCommandId>()
     for (const [commandId, accelerators] of getEffectiveAccelerators(keybindings)) {
@@ -356,6 +360,7 @@ export function useAppKeybindings(input: {
     acceleratorToCommand,
     appController: controller,
     cycleSelectionRef,
+    onOpenSidebar,
     onToggleSidebar,
   })
 

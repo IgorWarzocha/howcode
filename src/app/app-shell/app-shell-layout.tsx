@@ -978,9 +978,15 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     setSidebarCollapsed((collapsed) => !collapsed)
   }, [sidebarCompactMode])
 
+  const handleOpenSidebar = useCallback(() => {
+    setSidebarCollapsed(false)
+    if (sidebarCompactMode) setSidebarOverlayOpen(true)
+  }, [sidebarCompactMode])
+
   useAppKeybindings({
     controller,
     keybindings: controller.shellState?.appSettings.keybindings ?? {},
+    onOpenSidebar: handleOpenSidebar,
     onToggleSidebar: handleToggleSidebar,
   })
 

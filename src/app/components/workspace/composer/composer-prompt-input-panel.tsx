@@ -1,6 +1,11 @@
 import { Loader2 } from 'lucide-react'
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
-import type { ComposerSendMode, KeybindingOverrides } from '../../../../../shared/keybindings'
+import {
+  type ComposerSendMode,
+  eventToAcceleratorCandidates,
+  type KeybindingOverrides,
+  normalizeAccelerator,
+} from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -218,27 +223,6 @@ function isComposerSubmitKey(event: KeyboardEvent<HTMLTextAreaElement>, mode: Co
   return !(event.shiftKey || event.metaKey || event.ctrlKey)
 }
 
-function eventToAcceleratorCandidates(event: KeyboardEvent<HTMLTextAreaElement>) {
-  const genericParts: string[] = []
-  const exactParts: string[] = []
-  if (event.metaKey) exactParts.push('Cmd')
-  if (event.ctrlKey) exactParts.push('Ctrl')
-  if (event.metaKey || event.ctrlKey) genericParts.push('CmdOrCtrl')
-  if (event.altKey) {
-    genericParts.push('Alt')
-    exactParts.push('Alt')
-  }
-  if (event.shiftKey) {
-    genericParts.push('Shift')
-    exactParts.push('Shift')
-  }
-  const key =
-    event.key === ' ' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key
-  genericParts.push(key)
-  exactParts.push(key)
-  return new Set([exactParts.join('+'), genericParts.join('+')])
-}
-
 function matchesComposerCommandKey(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
@@ -250,8 +234,33 @@ function matchesComposerCommandKey(
     typeof override === 'string'
       ? [override]
       : getComposerDefaultAccelerators(commandId, input.composerSendMode)
-  const candidates = eventToAcceleratorCandidates(event)
-  return accelerators.some((accelerator) => candidates.has(accelerator))
+  const candidates = new Set(eventToAcceleratorCandidates(event))
+  return accelerators.some((accelerator) => candidates.has(normalizeAccelerator(accelerator)))
+}
+
+function insertComposerNewline(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  setDraft: (value: string) => void,
+) {
+  const textarea = event.currentTarget
+  const selectionStart = textarea.selectionStart
+  const selectionEnd = textarea.selectionEnd
+  const nextCursor = selectionStart + 1
+  const nextValue = `${textarea.value.slice(0, selectionStart)}\n${textarea.value.slice(selectionEnd)}`
+  event.preventDefault()
+  setDraft(nextValue)
+  window.requestAnimationFrame(() => textarea.setSelectionRange(nextCursor, nextCursor))
+}
+
+function handleComposerNewlineCommand(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+) {
+  if (!matchesComposerCommandKey(event, input, 'composer.newline')) return false
+  if (event.key !== 'Enter' || event.altKey || event.ctrlKey || event.metaKey) {
+    insertComposerNewline(event, input.setDraft)
+  }
+  return true
 }
 
 function composerCommandHasOverride(
@@ -292,7 +301,7 @@ function handleComposerTextKeyDown(
   if (handleOpenAutocompleteKeyDown(event, input)) {
     return
   }
-  if (matchesComposerCommandKey(event, input, 'composer.newline')) {
+  if (handleComposerNewlineCommand(event, input)) {
     return
   }
   if (

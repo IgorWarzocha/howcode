@@ -68,37 +68,7 @@ type ThreadMessageProps = {
   primaryToggleAction?: (() => void) | undefined
 }
 
-function HighlightedText({ text, query }: { text: string; query: string }) {
-  const index = text.toLowerCase().indexOf(query.toLowerCase())
-  if (index === -1) return text
-  return (
-    <>
-      {text.slice(0, index)}
-      <mark className="rounded bg-[color:var(--accent-bg-subtle)] px-0.5 text-[color:var(--accent)]">
-        {text.slice(index, index + query.length)}
-      </mark>
-      {text.slice(index + query.length)}
-    </>
-  )
-}
-
-function renderHighlightedProse(content: string[], query: string) {
-  return (
-    <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
-      {content.map((paragraph) => (
-        <p
-          key={paragraph}
-          className="m-0 max-w-full whitespace-pre-wrap break-words text-[14px] leading-[1.68] text-[color:var(--text)]/92 [overflow-wrap:anywhere]"
-        >
-          <HighlightedText text={paragraph} query={query} />
-        </p>
-      ))}
-    </div>
-  )
-}
-
-function renderProse(content: string[], format: 'prose' | 'list' = 'prose', findQuery = '') {
-  if (findQuery.trim()) return renderHighlightedProse(content, findQuery.trim())
+function renderProse(content: string[], format: 'prose' | 'list' = 'prose') {
   if (format === 'list') {
     return (
       <MarkdownContent
@@ -233,8 +203,6 @@ function SummaryBlock({ label, content }: { label: string; content: string[] }) 
 }
 
 function UserMessageBlock({
-  findActive,
-  findQuery,
   message,
 }: {
   message: ProseMessage
@@ -244,16 +212,14 @@ function UserMessageBlock({
   return (
     <div className="group/message relative w-full min-w-0 rounded-2xl border border-[color:var(--accent-border)] bg-[color:var(--message-user-bg)] px-3 py-2 pr-11 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_var(--accent-bg-subtle)]">
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
-        {findActive && findQuery?.trim()
-          ? renderHighlightedProse(message.content, findQuery.trim())
-          : message.content.map((paragraph) => (
-              <MarkdownContent
-                key={paragraph}
-                markdown={paragraph}
-                tone="user"
-                className="text-[14px] leading-[1.58]"
-              />
-            ))}
+        {message.content.map((paragraph) => (
+          <MarkdownContent
+            key={paragraph}
+            markdown={paragraph}
+            tone="user"
+            className="text-[14px] leading-[1.58]"
+          />
+        ))}
       </div>
       <div className="absolute top-2 right-2">
         <CopyMessageButton label="user turn" text={message.content.join('\n\n')} />
@@ -265,8 +231,6 @@ function UserMessageBlock({
 function AssistantMessageBlock({
   autoExpandThinking,
   disableInnerExpansion,
-  findActive,
-  findQuery,
   firstCardOnly,
   message,
   onToggleExpanded,
@@ -302,7 +266,7 @@ function AssistantMessageBlock({
               {statusLabel}
             </div>
           ) : null}
-          {renderProse(message.content, message.format, findActive ? findQuery : '')}
+          {renderProse(message.content, message.format)}
           <div className="absolute top-0 right-1">
             <CopyMessageButton label="assistant turn" text={message.content.join('\n\n')} />
           </div>
@@ -381,8 +345,6 @@ function BashExecutionMessageBlock({ message }: { message: BashExecutionMessage 
 }
 
 function CustomMessageBlock({
-  findActive,
-  findQuery,
   message,
 }: {
   message: CustomThreadMessage
@@ -400,14 +362,12 @@ function CustomMessageBlock({
       <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
         {message.isError ? 'Extension error' : message.customType}
       </div>
-      {renderProse(message.content, 'prose', findActive ? findQuery : '')}
+      {renderProse(message.content)}
     </div>
   )
 }
 
 function SystemMessageBlock({
-  findActive,
-  findQuery,
   message,
 }: {
   message: SystemThreadMessage
@@ -434,9 +394,7 @@ function SystemMessageBlock({
       <div className="break-words text-[11px] not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]">
         {message.label}
       </div>
-      {findActive && findQuery?.trim()
-        ? renderHighlightedProse(message.content, findQuery.trim())
-        : renderThinking(message.content)}
+      {renderThinking(message.content)}
     </div>
   )
 }

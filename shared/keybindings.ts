@@ -77,19 +77,34 @@ const modifierAliasMap = new Map([
   ['Control', 'Ctrl'],
   ['Option', 'Alt'],
 ])
+const modifierOrder = new Map([
+  ['CmdOrCtrl', 0],
+  ['Cmd', 1],
+  ['Ctrl', 2],
+  ['Alt', 3],
+  ['Shift', 4],
+])
+const acceleratorSequenceSeparatorPattern = /\s+/
+
+function normalizeAcceleratorChord(chord: string) {
+  const parts = chord
+    .split('+')
+    .map((part) => modifierAliasMap.get(part.trim()) ?? part.trim())
+    .filter(Boolean)
+  const key = parts.at(-1)
+  if (!key) return ''
+  const modifiers = parts
+    .slice(0, -1)
+    .sort((left, right) => (modifierOrder.get(left) ?? 99) - (modifierOrder.get(right) ?? 99))
+  return [...modifiers, key].join('+')
+}
 
 export function normalizeAccelerator(value: string) {
   return value
     .trim()
     .split(acceleratorSequenceSeparatorPattern)
     .filter(Boolean)
-    .map((chord) =>
-      chord
-        .split('+')
-        .map((part) => modifierAliasMap.get(part.trim()) ?? part.trim())
-        .filter(Boolean)
-        .join('+'),
-    )
+    .map(normalizeAcceleratorChord)
     .join(' ')
 }
 
@@ -104,13 +119,14 @@ const modifierNames = new Set([
   'Option',
   'Shift',
 ])
-const acceleratorSequenceSeparatorPattern = /\s+/
 
 export function isValidAccelerator(value: string) {
-  const sequenceParts = normalizeAccelerator(value)
+  const normalizedAccelerator = normalizeAccelerator(value)
+  const sequenceParts = normalizedAccelerator
     .split(acceleratorSequenceSeparatorPattern)
     .filter(Boolean)
   if (sequenceParts.length === 0) return false
+  if (sequenceParts.length > 1) return normalizedAccelerator === 'Escape Escape'
 
   for (const sequencePart of sequenceParts) {
     const parts = sequencePart.split('+')
@@ -125,6 +141,22 @@ export function isValidAccelerator(value: string) {
 
 const keyboardCodeLetterPattern = /^Key[A-Z]$/
 const keyboardCodeDigitPattern = /^Digit\d$/
+const keyboardCodePunctuationMap = new Map([
+  ['Backquote', '`'],
+  ['Minus', '-'],
+  ['Equal', '='],
+  ['BracketLeft', '['],
+  ['BracketRight', ']'],
+  ['Backslash', '\\'],
+  ['Semicolon', ';'],
+  ['Quote', "'"],
+  ['Comma', ','],
+  ['Period', '.'],
+  ['Slash', '/'],
+  ['IntlBackslash', '\\'],
+  ['IntlRo', '\\'],
+  ['IntlYen', '¥'],
+])
 
 export type KeybindingKeyboardEventLike = {
   altKey: boolean
@@ -138,8 +170,8 @@ export type KeybindingKeyboardEventLike = {
 export function getKeybindingEventKey(event: Pick<KeybindingKeyboardEventLike, 'code' | 'key'>) {
   if (keyboardCodeLetterPattern.test(event.code)) return event.code.slice(3)
   if (keyboardCodeDigitPattern.test(event.code)) return event.code.slice(5)
-  if (event.code === 'BracketLeft') return '['
-  if (event.code === 'BracketRight') return ']'
+  const punctuationKey = keyboardCodePunctuationMap.get(event.code)
+  if (punctuationKey) return punctuationKey
   if (event.key === ' ') return 'Space'
   return event.key.length === 1 ? event.key.toUpperCase() : event.key
 }

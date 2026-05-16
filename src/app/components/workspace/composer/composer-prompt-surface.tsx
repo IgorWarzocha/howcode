@@ -422,6 +422,7 @@ export function ComposerPromptSurface({
     const handleCommand = (event: Event) => {
       const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
       if (commandId === 'composer.submit') {
+        event.preventDefault()
         void send()
         return
       }

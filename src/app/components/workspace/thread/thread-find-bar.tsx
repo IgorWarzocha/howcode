@@ -107,13 +107,21 @@ export function ThreadFindBar({
     requestIdRef.current = requestId
     setSearching(true)
     const timeout = window.setTimeout(() => {
-      void searchThreadQuery(sessionPath, query).then((nextResult) => {
-        if (requestIdRef.current !== requestId) return
-        setResult(nextResult)
-        setSearching(false)
-        setMatchIndex(0)
-        onActiveMatchChange(null)
-      })
+      void searchThreadQuery(sessionPath, query)
+        .then((nextResult) => {
+          if (requestIdRef.current !== requestId) return
+          setResult(nextResult)
+          setSearching(false)
+          setMatchIndex(0)
+          onActiveMatchChange(null)
+        })
+        .catch(() => {
+          if (requestIdRef.current !== requestId) return
+          setResult({ matches: [], searchedMessageCount: 0 })
+          setSearching(false)
+          setMatchIndex(0)
+          onActiveMatchChange(null)
+        })
     }, 220)
 
     return () => window.clearTimeout(timeout)

@@ -1,6 +1,6 @@
 import { buildThreadData } from '../../shared/thread-data.ts'
 import { buildThreadHistorySlice, type SessionPathEntry } from '../../shared/thread-history.ts'
-import { searchThreadData, type ThreadSearchMatch } from '../../shared/thread-search.ts'
+import { searchThreadData } from '../../shared/thread-search.ts'
 import { getPiModule } from '../pi-module.ts'
 
 export async function loadThreadSnapshot(request: {
@@ -40,24 +40,24 @@ export async function searchThreadSnapshot(request: { sessionPath: string; query
   })
 
   const result = searchThreadData(thread, request.query)
+  const revealHistoryCompactionsByMessageId = getRevealHistoryCompactionsByMessageId({
+    pathEntries,
+    sessionPath: request.sessionPath,
+  })
   return {
     ...result,
     matches: result.matches.map((match) => ({
       ...match,
-      revealHistoryCompactions: getRevealHistoryCompactions({
-        match,
-        pathEntries,
-        sessionPath: request.sessionPath,
-      }),
+      revealHistoryCompactions: revealHistoryCompactionsByMessageId.get(match.messageId) ?? 0,
     })),
   }
 }
 
-function getRevealHistoryCompactions(input: {
-  match: ThreadSearchMatch
+function getRevealHistoryCompactionsByMessageId(input: {
   pathEntries: SessionPathEntry[]
   sessionPath: string
 }) {
+  const revealHistoryCompactionsByMessageId = new Map<string, number>()
   for (
     let historyCompactions = 0;
     historyCompactions <= input.pathEntries.length;
@@ -71,10 +71,12 @@ function getRevealHistoryCompactions(input: {
       isStreaming: false,
       isCompacting: false,
     })
-    if (thread.messages.some((message) => message.id === input.match.messageId)) {
-      return historyCompactions
+    for (const message of thread.messages) {
+      if (!revealHistoryCompactionsByMessageId.has(message.id)) {
+        revealHistoryCompactionsByMessageId.set(message.id, historyCompactions)
+      }
     }
-    if (historySlice.previousMessageCount === 0) return historyCompactions
+    if (historySlice.previousMessageCount === 0) break
   }
-  return 0
+  return revealHistoryCompactionsByMessageId
 }
