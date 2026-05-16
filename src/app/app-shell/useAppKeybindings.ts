@@ -31,10 +31,6 @@ function eventTargetIsEditable(target: EventTarget | null) {
   )
 }
 
-function eventTargetIsTerminal(target: EventTarget | null) {
-  return target instanceof HTMLElement && target.closest('.xterm') !== null
-}
-
 function eventTargetIsComposer(target: EventTarget | null) {
   return target instanceof HTMLElement && target.closest('[data-composer-root="true"]') !== null
 }
@@ -61,12 +57,10 @@ function commandCanRunFromEditableTarget(
   event: KeyboardEvent,
   runtime: KeybindingRuntime,
 ) {
-  if (commandId === 'settings.open') return true
-  if (commandId === 'terminal.toggle') return eventTargetIsTerminal(event.target)
+  if (commandId === 'gitops.toggleChangedFiles') return false
   if (commandId === 'dictation.toggle') return dictationShortcutIsAllowed(event, runtime)
   if (commandId === 'terminal.clear') return runtime.appController.state.terminalVisible
-  if (commandId === 'thread.previousInProject' || commandId === 'thread.nextInProject') return true
-  return false
+  return true
 }
 
 function interactiveLayerIsOpen() {
