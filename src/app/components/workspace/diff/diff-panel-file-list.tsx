@@ -182,6 +182,7 @@ function DiffPanelFileRow({
         fileDiff={fileDiff}
         lineAnnotations={commentAnnotationsByFile.get(fileKey) ?? []}
         selectedLines={selectedLines}
+        style={{ visibility: 'hidden' }}
         renderCustomHeader={(currentFileDiff) => (
           <DiffPanelFileHeader
             fileDiff={currentFileDiff}
@@ -223,6 +224,9 @@ function DiffPanelFileRow({
           lineHoverHighlight: 'both',
           onLineClick: fileInteractionHandlers.onLineClick,
           onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
+          onPostRender: (node) => {
+            node.style.visibility = 'visible'
+          },
         }}
       />
     </div>

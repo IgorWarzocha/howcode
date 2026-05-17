@@ -309,6 +309,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     typeof window === 'undefined' ? false : window.innerWidth <= 1236,
   )
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
+  const [terminalHiddenByCompactResize, setTerminalHiddenByCompactResize] = useState(false)
   const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false)
   const [closeArtifactDrawerOverlay, setCloseArtifactDrawerOverlay] = useState<(() => void) | null>(
     null,
@@ -355,7 +356,9 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const activeThreadId = getThreadId(state)
   const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible =
-    (state.activeView === 'thread' || state.activeView === 'code') && state.terminalVisible
+    (state.activeView === 'thread' || state.activeView === 'code') &&
+    state.terminalVisible &&
+    !(sidebarCompactMode && terminalHiddenByCompactResize)
   const utilityViewActive = isUtilityView(state.activeView)
   const compactSidebarButtonEdgeMode =
     state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible
@@ -491,8 +494,20 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     }
   }, [state.activeView])
 
+  const previousWindowCompactModeRef = useRef(
+    typeof window === 'undefined' ? false : window.innerWidth <= 1236,
+  )
   useLayoutEffect(() => {
-    const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236)
+    const updateSidebarCompactMode = () => {
+      const nextCompactMode = window.innerWidth <= 1236
+      const enteredCompactMode = !previousWindowCompactModeRef.current && nextCompactMode
+      previousWindowCompactModeRef.current = nextCompactMode
+      if (enteredCompactMode && controllerRef.current.state.terminalVisible) {
+        setTerminalHiddenByCompactResize(true)
+        controllerRef.current.handleCloseTerminalDrawer()
+      }
+      setSidebarCompactMode(nextCompactMode)
+    }
     updateSidebarCompactMode()
     window.addEventListener('resize', updateSidebarCompactMode)
     return () => window.removeEventListener('resize', updateSidebarCompactMode)
@@ -501,6 +516,10 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   useEffect(() => {
     if (!sidebarCompactMode) setSidebarOverlayOpen(false)
   }, [sidebarCompactMode])
+
+  useEffect(() => {
+    if (!state.terminalVisible) setTerminalHiddenByCompactResize(false)
+  }, [state.terminalVisible])
 
   useEffect(() => {
     if (!sidebarOverlayOpen) return
