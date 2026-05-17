@@ -17,10 +17,10 @@ import {
   DIFF_FILE_ESTIMATED_HEADER_HEIGHT,
   type DiffCommentMetadata,
   estimateFileDiffHeight,
-  getRenderablePatch,
   orderRenderableFiles,
   resolveFileDiffPath,
 } from './diff-panel-content.helpers'
+import type { RenderablePatch } from './diff-panel-content.types'
 import { DiffPanelEmptyState } from './diff-panel-empty-state'
 import { DiffPanelFileList } from './diff-panel-file-list'
 import { DiffPanelSkeleton } from './diff-panel-skeleton'
@@ -39,6 +39,56 @@ type DiffPanelContentProps = {
   layoutMode?: 'split' | 'overlay' | 'main'
   showFileTree?: boolean
   loading?: boolean
+}
+
+type DiffParseResponse = {
+  id: number
+  patch: RenderablePatch | null
+}
+
+type DiffParseWorker = Worker & {
+  onmessage: ((event: MessageEvent<DiffParseResponse>) => void) | null
+}
+
+function createDiffParseWorker(): DiffParseWorker {
+  return new Worker(new URL('./diff-parse-worker.ts', import.meta.url), {
+    type: 'module',
+  }) as DiffParseWorker
+}
+
+function useWorkerRenderablePatch(selectedPatch: string | undefined) {
+  const [renderablePatch, setRenderablePatch] = useState<RenderablePatch | null>(null)
+  const requestIdRef = useRef(0)
+  const workerRef = useRef<DiffParseWorker | null>(null)
+
+  useEffect(() => {
+    if (typeof selectedPatch !== 'string') {
+      requestIdRef.current += 1
+      setRenderablePatch(null)
+      return
+    }
+
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+
+    const worker = workerRef.current ?? createDiffParseWorker()
+    workerRef.current = worker
+    worker.onmessage = (event) => {
+      if (event.data.id !== requestIdRef.current) return
+      setRenderablePatch(event.data.patch)
+    }
+    worker.postMessage({ id: requestId, patch: selectedPatch, cacheScope: 'diff-panel:dark' })
+  }, [selectedPatch])
+
+  useEffect(
+    () => () => {
+      workerRef.current?.terminate()
+      workerRef.current = null
+    },
+    [],
+  )
+
+  return renderablePatch
 }
 
 function DiffPanelUnavailable({
@@ -192,7 +242,7 @@ function DiffPanelContentBody(input: {
   projectId: string
   renderCommentAnnotation: (annotation: DiffLineAnnotation<DiffCommentMetadata>) => React.ReactNode
   renderableFiles: FileDiffMetadata[]
-  renderablePatch: ReturnType<typeof getRenderablePatch>
+  renderablePatch: RenderablePatch | null
   renderFileTree: boolean
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   setFocusedFilePaths: (paths: readonly string[]) => void
@@ -257,10 +307,7 @@ export function DiffPanelContent({
   const selectedPatch = diff?.diff
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
-  const renderablePatch = useMemo(
-    () => getRenderablePatch(selectedPatch, 'diff-panel:dark'),
-    [selectedPatch],
-  )
+  const renderablePatch = useWorkerRenderablePatch(selectedPatch)
   const renderableFiles = useMemo(
     () =>
       renderablePatch && renderablePatch.kind === 'files'
