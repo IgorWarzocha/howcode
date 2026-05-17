@@ -6,8 +6,6 @@ import type {
   ChatSidebarState,
   ComposerState,
   DesktopActionResult,
-  ProjectDiffBaseline,
-  ProjectDiffRenderMode,
   ProjectGitState,
   ThreadData,
 } from '../desktop/types'
@@ -25,6 +23,11 @@ import {
   hasDesktopBridge,
   isThreadList,
 } from './controller-action-utils'
+import { applyDiffPreferencesPostEffect } from './post-effects/diff-preferences'
+import {
+  applyCommitOptionsPostEffect,
+  applyWorkspaceCommitPostEffect,
+} from './post-effects/workspace'
 import { applyProjectThreadToShellState } from './project-thread-cache'
 import { reconcileComposerThreadResult } from './sidebar-thread-sync'
 
@@ -38,6 +41,7 @@ export {
   getOptimisticallyUpdatedPiSettingsState,
   getOptimisticallyUpdatedShellState,
 } from './controller-optimistic-updates'
+export { applyDiffPreferencesToThread } from './post-effects/diff-preferences'
 
 type RunPostDesktopActionEffectsInput = {
   action: DesktopAction
@@ -294,70 +298,32 @@ async function handleNewThreadOrProjectEffects(ctx: PostEffectsContext) {
   if (nextComposerState) ctx.setComposerState(nextComposerState)
 }
 
-function applyDiffPreferencesToThread(
-  current: ThreadData | null | undefined,
-  input: {
-    hasBaseline: boolean
-    hasRenderMode: boolean
-    nextBaseline: ProjectDiffBaseline | null
-    nextRenderMode: ProjectDiffRenderMode | null
-  },
-) {
-  if (!current) return current
-  return {
-    ...current,
-    diffPreferences: {
-      baseline: input.hasBaseline
-        ? input.nextBaseline
-        : (current.diffPreferences?.baseline ?? null),
-      renderMode: input.hasRenderMode
-        ? input.nextRenderMode
-        : (current.diffPreferences?.renderMode ?? null),
-    },
-  }
-}
-
 async function handleDiffPreferencesEffects(ctx: PostEffectsContext) {
   if (hasActionError(ctx.actionResult)) return
-  const sessionPath =
-    typeof ctx.contextualPayload.sessionPath === 'string' ? ctx.contextualPayload.sessionPath : null
-  if (!sessionPath) return
-  const input = {
-    hasBaseline: 'diffBaseline' in ctx.contextualPayload,
-    hasRenderMode: 'diffRenderMode' in ctx.contextualPayload,
-    nextBaseline: (ctx.contextualPayload.diffBaseline ?? null) as ProjectDiffBaseline | null,
-    nextRenderMode: (ctx.contextualPayload.diffRenderMode ?? null) as ProjectDiffRenderMode | null,
-  }
-  ctx.queryClient.setQueryData(desktopQueryKeys.thread(sessionPath), (current: unknown) =>
-    applyDiffPreferencesToThread(current as ThreadData | null | undefined, input),
-  )
-  ctx.setLiveThreadData((current) =>
-    current?.sessionPath === sessionPath
-      ? (applyDiffPreferencesToThread(current, input) ?? null)
-      : current,
-  )
-  await ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.threadPrefix(sessionPath) })
+  await applyDiffPreferencesPostEffect({
+    contextualPayload: ctx.contextualPayload,
+    queryClient: ctx.queryClient,
+    setLiveThreadData: ctx.setLiveThreadData,
+  })
 }
 
 async function handleWorkspaceCommitEffects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (!projectId || ctx.actionResult?.result?.committed !== true) return
-  await Promise.all([
-    ctx.queryClient.invalidateQueries({ queryKey: desktopQueryKeys.projectDiffPrefix(projectId) }),
-    ctx.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectDiffStatsPrefix(projectId),
-    }),
-    ctx.queryClient.invalidateQueries({
-      queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
-    }),
-  ])
-  ctx.setProjectGitState(await ctx.loadProjectGitState(projectId))
+  await applyWorkspaceCommitPostEffect({
+    contextualPayload: ctx.contextualPayload,
+    committed: ctx.actionResult?.result?.committed === true,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
 }
 
 async function handleCommitOptionsEffects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (projectId) ctx.setProjectGitState(await ctx.loadProjectGitState(projectId))
-  await ctx.refreshShellState()
+  await applyCommitOptionsPostEffect({
+    contextualPayload: ctx.contextualPayload,
+    refreshShellState: ctx.refreshShellState,
+    loadProjectGitState: ctx.loadProjectGitState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
 }
 
 type PostEffectHandler = {

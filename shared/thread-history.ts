@@ -1,4 +1,5 @@
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
+import { toTrustedAgentMessage, withTrustedAgentMessageId } from './agent-message-boundary'
 
 export type SessionPathEntry = {
   type: string
@@ -74,12 +75,14 @@ function appendModelChangeMessage(
     ? `${provider}/${modelId}/${thinkingLevel}`
     : `${provider}/${modelId}`
 
-  messages.push({
-    role: 'system',
-    content: [{ type: 'text', text: modelLabel }],
-    label: 'Model changed',
-    timestamp: entry.timestamp ?? Date.now(),
-  } as unknown as AgentMessage)
+  messages.push(
+    toTrustedAgentMessage({
+      role: 'system',
+      content: [{ type: 'text', text: modelLabel }],
+      label: 'Model changed',
+      timestamp: entry.timestamp ?? Date.now(),
+    }),
+  )
 
   return Boolean(thinkingLevel)
 }
@@ -94,12 +97,14 @@ function appendThinkingLevelChangeMessage(messages: AgentMessage[], entry: Sessi
     return
   }
 
-  messages.push({
-    role: 'system',
-    content: [{ type: 'text', text: thinkingLevel }],
-    label: 'Reasoning changed',
-    timestamp: entry.timestamp ?? Date.now(),
-  } as unknown as AgentMessage)
+  messages.push(
+    toTrustedAgentMessage({
+      role: 'system',
+      content: [{ type: 'text', text: thinkingLevel }],
+      label: 'Reasoning changed',
+      timestamp: entry.timestamp ?? Date.now(),
+    }),
+  )
 }
 
 function appendEntryMessage(
@@ -110,7 +115,7 @@ function appendEntryMessage(
   switch (entry.type) {
     case 'message':
       if (entry.message) {
-        messages.push({ ...(entry.message as object), id: entry.id } as unknown as AgentMessage)
+        messages.push(withTrustedAgentMessageId(entry.message, entry.id))
       }
       return
     case 'custom_message':
@@ -118,25 +123,29 @@ function appendEntryMessage(
         return
       }
 
-      messages.push({
-        id: entry.id,
-        role: 'custom',
-        customType: entry.customType ?? 'custom',
-        content: entry.content ?? '',
-        timestamp: entry.timestamp ?? Date.now(),
-      } as unknown as AgentMessage)
+      messages.push(
+        toTrustedAgentMessage({
+          id: entry.id,
+          role: 'custom',
+          customType: entry.customType ?? 'custom',
+          content: entry.content ?? '',
+          timestamp: entry.timestamp ?? Date.now(),
+        }),
+      )
       return
     case 'branch_summary':
       if (!entry.summary?.trim()) {
         return
       }
 
-      messages.push({
-        id: entry.id,
-        role: 'branchSummary',
-        summary: entry.summary,
-        timestamp: entry.timestamp ?? Date.now(),
-      } as unknown as AgentMessage)
+      messages.push(
+        toTrustedAgentMessage({
+          id: entry.id,
+          role: 'branchSummary',
+          summary: entry.summary,
+          timestamp: entry.timestamp ?? Date.now(),
+        }),
+      )
       return
     case 'model_change':
       return appendModelChangeMessage(messages, entry, nextEntry)
@@ -148,13 +157,15 @@ function appendEntryMessage(
         return
       }
 
-      messages.push({
-        id: entry.id,
-        role: 'compactionSummary',
-        summary: entry.summary,
-        tokensBefore: entry.tokensBefore ?? 0,
-        timestamp: entry.timestamp ?? Date.now(),
-      } as unknown as AgentMessage)
+      messages.push(
+        toTrustedAgentMessage({
+          id: entry.id,
+          role: 'compactionSummary',
+          summary: entry.summary,
+          tokensBefore: entry.tokensBefore ?? 0,
+          timestamp: entry.timestamp ?? Date.now(),
+        }),
+      )
       return false
     default:
       return false
