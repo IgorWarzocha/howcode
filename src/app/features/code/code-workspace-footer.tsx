@@ -301,7 +301,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
     <footer
       ref={footerRef}
       className={cn(
-        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
+        'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-30 px-5 pb-4',
         centerThreadFooter || state.activeView === 'code'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',
@@ -328,7 +328,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
 function CodeSidebarFooter(props: CodeWorkspaceContentProps) {
   const { sidebarCompactMode } = props
   return (
-    <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
+    <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-5 pb-4">
       <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarCompactMode}
@@ -342,7 +342,7 @@ function CodeSidebarFooter(props: CodeWorkspaceContentProps) {
 
 function CodeUtilitySidebarButton(props: CodeWorkspaceContentProps) {
   return (
-    <div className="pointer-events-none absolute bottom-5 left-5 z-10">
+    <div className="pointer-events-none absolute bottom-5 left-5 z-30">
       <CodeSidebarFooterButton {...props} />
     </div>
   )
