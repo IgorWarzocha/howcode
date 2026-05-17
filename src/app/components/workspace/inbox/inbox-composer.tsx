@@ -7,10 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  type HowcodeKeybindingCommandDetail,
-  howcodeKeybindingCommandEvent,
-} from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type {
@@ -261,17 +258,11 @@ export function InboxComposer({
     }
   }
 
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'dictation.toggle' || !showDictationButton) return
-      event.preventDefault()
-      void toggleDictation()
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [showDictationButton, toggleDictation])
+  useHowcodeKeybindingCommand('dictation.toggle', (event) => {
+    if (!showDictationButton) return
+    event.preventDefault()
+    void toggleDictation()
+  })
 
   const slashCommands = useComposerSlashCommands({
     draft,

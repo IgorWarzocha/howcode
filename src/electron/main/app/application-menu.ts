@@ -1,14 +1,14 @@
 import { type BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { getDesktopEventIpcChannel } from '../../../../shared/desktop-ipc'
 import {
-  type bundledKeybindings,
   getEffectiveAccelerators,
   isValidAccelerator,
+  type KeybindingCommandId,
 } from '../../../../shared/keybindings'
 import type { PiThreadsModule } from '../runtime/desktop-runtime-contracts'
 
 function getPrimaryAccelerator(
-  commandId: (typeof bundledKeybindings)[number]['id'],
+  commandId: KeybindingCommandId,
   keybindings: Awaited<ReturnType<PiThreadsModule['loadAppSettings']>>['keybindings'],
 ) {
   return getEffectiveAccelerators(keybindings)
@@ -16,10 +16,7 @@ function getPrimaryAccelerator(
     ?.find((accelerator) => !accelerator.includes(' ') && isValidAccelerator(accelerator))
 }
 
-function sendKeybindingCommand(
-  mainWindow: BrowserWindow | null,
-  commandId: (typeof bundledKeybindings)[number]['id'],
-) {
+function sendKeybindingCommand(mainWindow: BrowserWindow | null, commandId: KeybindingCommandId) {
   if (!mainWindow || mainWindow.isDestroyed()) return
   mainWindow.webContents.send(getDesktopEventIpcChannel('desktopEvent'), {
     type: 'keybinding-command',
@@ -29,7 +26,7 @@ function sendKeybindingCommand(
 
 function keybindingMenuItem(input: {
   label: string
-  commandId: (typeof bundledKeybindings)[number]['id']
+  commandId: KeybindingCommandId
   accelerator?: string | undefined
   getMainWindow: () => BrowserWindow | null
 }): MenuItemConstructorOptions {
@@ -46,7 +43,7 @@ export async function installApplicationMenu(input: {
   piThreads: PiThreadsModule
 }) {
   const appSettings = await input.piThreads.loadAppSettings()
-  const accelerator = (commandId: (typeof bundledKeybindings)[number]['id']) =>
+  const accelerator = (commandId: KeybindingCommandId) =>
     getPrimaryAccelerator(commandId, appSettings.keybindings)
 
   Menu.setApplicationMenu(

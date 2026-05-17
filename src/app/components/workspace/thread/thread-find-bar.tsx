@@ -1,7 +1,6 @@
 import { Loader2, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
-import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { ThreadSearchMatch, ThreadSearchResult } from '../../../desktop/types'
 import { searchThreadQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -82,17 +81,10 @@ export function ThreadFindBar({
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
   }, [close, open])
 
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'thread.find') return
-      event.preventDefault()
-      openFind()
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [openFind])
+  useHowcodeKeybindingCommand('thread.find', (event) => {
+    event.preventDefault()
+    openFind()
+  })
 
   useEffect(() => {
     onQueryChange(open ? query : '')
