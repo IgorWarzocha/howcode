@@ -11,18 +11,17 @@ import type {
 } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
-import { refreshArchivedThreadsIfOpen } from './controller-action-helpers'
-import {
-  type ActionPayload,
-  getPayloadProjectId,
-  getPayloadProjectIds,
-  getPayloadThreadIds,
-  getResultThreadIds,
-  hasActionError,
-  isThreadList,
-} from './controller-action-utils'
+import { type ActionPayload, hasActionError } from './controller-action-utils'
 import { applyDiffPreferencesPostEffect } from './post-effects/diff-preferences'
 import { applyNewThreadPostEffect } from './post-effects/new-thread'
+import {
+  applyArchivedThreadPostEffect,
+  applyProjectArchiveThreadsPostEffect,
+  applyProjectRemovePostEffect,
+  applyRestoreOrDeleteThreadPostEffect,
+  applyThreadOpenOrInboxPostEffect,
+  refreshArchivedIfVisible,
+} from './post-effects/thread-lifecycle'
 import {
   applyCommitOptionsPostEffect,
   applyWorkspaceCommitPostEffect,
@@ -70,136 +69,43 @@ type PostEffectsContext = RunPostDesktopActionEffectsInput & {
   invalidateInboxThreads: () => Promise<unknown>
 }
 
-function getPayloadThreadId(payload: ActionPayload) {
-  return typeof payload.threadId === 'string' ? payload.threadId : null
-}
-
-function clearSelectedThreadIfIncluded(ctx: PostEffectsContext, threadIds: string[]) {
-  const selectedThreadId = ctx.workspaceState.selectedThreadId
-  if (!(selectedThreadId && new Set(threadIds).has(selectedThreadId))) return
-  ctx.dispatch({ type: 'clear-thread-selection' })
-  ctx.dispatch({
-    type: 'show-view',
-    view: ctx.workspaceState.activeView === 'chat' ? 'chat' : 'code',
-  })
-}
-
-async function invalidateProjectUsage(ctx: PostEffectsContext, projectIds: string[]) {
-  const uniqueProjectIds = [...new Set(projectIds.filter((projectId) => projectId.length > 0))]
-  await Promise.all(
-    uniqueProjectIds.map((projectId) =>
-      ctx.queryClient.invalidateQueries({
-        queryKey: desktopQueryKeys.projectUsageSummary(projectId),
-      }),
-    ),
-  )
+function getThreadLifecycleInput(ctx: PostEffectsContext) {
+  return {
+    action: ctx.action,
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    workspaceState: ctx.workspaceState,
+    queryClient: ctx.queryClient,
+    dispatch: ctx.dispatch,
+    loadArchivedThreads: ctx.loadArchivedThreads,
+    loadProjectThreads: ctx.loadProjectThreads,
+    refreshShellState: ctx.refreshShellState,
+    setArchivedThreads: ctx.setArchivedThreads,
+    invalidateInboxThreads: ctx.invalidateInboxThreads,
+  }
 }
 
 async function handleArchivedThreadEffects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (projectId) await ctx.loadProjectThreads(projectId)
-  if (projectId) await invalidateProjectUsage(ctx, [projectId])
-  if (ctx.action === 'thread.archive' || ctx.action === 'thread.archive-many') {
-    await refreshArchivedThreadsIfOpen({
-      archivedThreadsVisible: ctx.workspaceState.activeView === 'archived',
-      loadArchivedThreads: ctx.loadArchivedThreads,
-      setArchivedThreads: ctx.setArchivedThreads,
-    })
-  }
-  const archivedThreadIds =
-    ctx.action === 'thread.archive'
-      ? [getPayloadThreadId(ctx.contextualPayload)].filter((threadId) => threadId !== null)
-      : ctx.action === 'thread.archive-many'
-        ? getPayloadThreadIds(ctx.contextualPayload)
-        : []
-  clearSelectedThreadIfIncluded(ctx, archivedThreadIds)
-  await ctx.invalidateInboxThreads()
-}
-
-async function refreshMutatedThreadProjects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (ctx.action === 'thread.restore-many' || ctx.action === 'thread.delete-many') {
-    await ctx.refreshShellState()
-    const projectIds = [...new Set(getPayloadProjectIds(ctx.contextualPayload))]
-    if (projectIds.length > 0) await Promise.all(projectIds.map((id) => ctx.loadProjectThreads(id)))
-    await invalidateProjectUsage(ctx, projectIds)
-    return
-  }
-  if (projectId) await ctx.loadProjectThreads(projectId)
-  if (projectId) await invalidateProjectUsage(ctx, [projectId])
-}
-
-function getDeletedThreadIds(ctx: PostEffectsContext) {
-  if (ctx.action === 'thread.delete')
-    return [getPayloadThreadId(ctx.contextualPayload)].filter((threadId) => threadId !== null)
-  if (ctx.action !== 'thread.delete-many') return []
-  const deletedBatchThreadIds = getResultThreadIds(ctx.actionResult?.result?.deletedThreadIds)
-  return deletedBatchThreadIds.length > 0
-    ? deletedBatchThreadIds
-    : getPayloadThreadIds(ctx.contextualPayload)
+  await applyArchivedThreadPostEffect(getThreadLifecycleInput(ctx))
 }
 
 async function handleRestoreOrDeleteThreadEffects(ctx: PostEffectsContext) {
-  await refreshMutatedThreadProjects(ctx)
-  ctx.setArchivedThreads(await ctx.loadArchivedThreads())
-  clearSelectedThreadIfIncluded(ctx, getDeletedThreadIds(ctx))
-  await ctx.invalidateInboxThreads()
+  await applyRestoreOrDeleteThreadPostEffect(getThreadLifecycleInput(ctx))
 }
 
 async function handleThreadOpenOrInboxEffects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (projectId) await ctx.loadProjectThreads(projectId)
-  await ctx.invalidateInboxThreads()
-}
-
-async function refreshArchivedIfVisible(ctx: PostEffectsContext) {
-  await refreshArchivedThreadsIfOpen({
-    archivedThreadsVisible: ctx.workspaceState.activeView === 'archived',
-    loadArchivedThreads: ctx.loadArchivedThreads,
-    setArchivedThreads: ctx.setArchivedThreads,
-  })
+  await applyThreadOpenOrInboxPostEffect(getThreadLifecycleInput(ctx))
 }
 
 async function handleProjectArchiveThreadsEffects(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  if (projectId) await ctx.loadProjectThreads(projectId)
-  if (projectId) await invalidateProjectUsage(ctx, [projectId])
-  await ctx.refreshShellState()
-  await refreshArchivedIfVisible(ctx)
-  if (ctx.contextualPayload.projectId === ctx.workspaceState.selectedProjectId)
-    ctx.dispatch({ type: 'show-view', view: 'code' })
-  await ctx.invalidateInboxThreads()
-}
-
-async function handleErroredProjectRemoval(ctx: PostEffectsContext) {
-  if (ctx.actionResult?.result?.didMutate !== true) return false
-  const projectId = getPayloadProjectId(ctx.contextualPayload)
-  await ctx.refreshShellState()
-  const refreshedThreads = projectId ? await ctx.loadProjectThreads(projectId) : null
-  const selectedThreadId = ctx.workspaceState.selectedThreadId
-  if (
-    projectId === ctx.workspaceState.selectedProjectId &&
-    selectedThreadId &&
-    isThreadList(refreshedThreads) &&
-    !refreshedThreads.some((thread) => thread.id === selectedThreadId)
-  ) {
-    ctx.dispatch({ type: 'show-view', view: 'code' })
-  }
-  await refreshArchivedIfVisible(ctx)
-  await ctx.invalidateInboxThreads()
-  return true
+  await applyProjectArchiveThreadsPostEffect(getThreadLifecycleInput(ctx))
 }
 
 async function handleProjectRemoveEffects(ctx: PostEffectsContext) {
-  if (hasActionError(ctx.actionResult)) {
-    await handleErroredProjectRemoval(ctx)
-    return
-  }
-  if (ctx.contextualPayload.projectId === ctx.workspaceState.selectedProjectId)
-    ctx.dispatch({ type: 'show-view', view: 'code' })
-  await ctx.refreshShellState()
-  await refreshArchivedIfVisible(ctx)
-  await ctx.invalidateInboxThreads()
+  await applyProjectRemovePostEffect({
+    ...getThreadLifecycleInput(ctx),
+    hasActionError: hasActionError(ctx.actionResult),
+  })
 }
 
 async function handleNewThreadOrProjectEffects(ctx: PostEffectsContext) {
@@ -280,7 +186,7 @@ const postEffectHandlers: PostEffectHandler[] = [
     matches: (ctx) => ctx.action === 'project.edit-name',
     run: async (ctx) => {
       await ctx.refreshShellState()
-      await refreshArchivedIfVisible(ctx)
+      await refreshArchivedIfVisible(getThreadLifecycleInput(ctx))
     },
   },
   {
