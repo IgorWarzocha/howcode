@@ -15,6 +15,7 @@ import {
   createIsolatedRuntimeResourceLoader,
   createRuntimeSettingsManager,
 } from '../runtime/isolated-settings-manager.ts'
+import { normalizeRuntimeSettingsCwd } from '../runtime/runtime-settings-cwd.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { publishComposerUpdate } from './live-thread-publisher.ts'
 import { invokeMainRequest } from './main-request-client.ts'
@@ -235,10 +236,6 @@ export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
   })
 }
 
-function normalizeSettingsCwd(settingsCwd?: string | undefined | null | undefined) {
-  return settingsCwd ? path.resolve(settingsCwd) : null
-}
-
 function registerRuntime(
   runtimeKey: string,
   runtimePromise: Promise<PiRuntime>,
@@ -248,7 +245,7 @@ function registerRuntime(
   const record: RuntimeRecord = {
     runtimePromise,
     disposeTimeout: null,
-    settingsCwd: normalizeSettingsCwd(settingsCwd),
+    settingsCwd: normalizeRuntimeSettingsCwd(settingsCwd),
   }
   runtimeRecords.set(runtimeKey, record)
   return record
@@ -272,7 +269,7 @@ export async function getOrCreateRuntimeForSessionPath(
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   if (!persistedSessionPath)
     throw new Error('A persisted session path is required to open a live runtime.')
-  const settingsCwd = normalizeSettingsCwd(options.settingsCwd)
+  const settingsCwd = normalizeRuntimeSettingsCwd(options.settingsCwd)
   const existingRuntime = runtimeRecords.get(persistedSessionPath)
   if (existingRuntime) {
     if (existingRuntime.settingsCwd === settingsCwd) {

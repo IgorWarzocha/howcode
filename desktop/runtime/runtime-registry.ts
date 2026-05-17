@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { createArtifact, editArtifact, getArtifact, listArtifacts } from '../artifact-state-db.ts'
 import { getPiModule } from '../pi-module.ts'
@@ -28,6 +27,7 @@ import {
   suspendRuntimeDisposal,
   withRuntimeMutationLock,
 } from './registry/runtime-registry-state.ts'
+import { normalizeRuntimeSettingsCwd } from './runtime-settings-cwd.ts'
 import { rememberSessionPath } from './session-path-index.ts'
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from './settings-refresh.ts'
 import {
@@ -52,10 +52,6 @@ const settingsRefreshController = createRuntimeSettingsRefreshController({
   buildComposerState,
   publishComposerUpdate,
 })
-
-function normalizeSettingsCwd(settingsCwd?: string | undefined | null | undefined) {
-  return settingsCwd ? path.resolve(settingsCwd) : null
-}
 
 function isHowcodeRuntimeBusy(runtime: PiRuntime) {
   return isRuntimeBusy(runtime) || isRuntimeExtensionCommandRunning(runtime)
@@ -340,7 +336,7 @@ export async function getOrCreateRuntimeForSessionPath(
     throw new Error('A persisted session path is required to open a live runtime.')
   }
 
-  const settingsCwd = normalizeSettingsCwd(options.settingsCwd)
+  const settingsCwd = normalizeRuntimeSettingsCwd(options.settingsCwd)
   const existingRuntime = getRuntimeRecord(persistedSessionPath)
   if (existingRuntime) {
     if (existingRuntime.settingsCwd === settingsCwd) {
