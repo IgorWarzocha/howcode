@@ -355,9 +355,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const activeThreadId = getThreadId(state)
   const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible =
-    !sidebarCompactMode &&
-    (state.activeView === 'thread' || state.activeView === 'code') &&
-    state.terminalVisible
+    (state.activeView === 'thread' || state.activeView === 'code') && state.terminalVisible
   const utilityViewActive = isUtilityView(state.activeView)
   const compactSidebarButtonEdgeMode =
     state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible
