@@ -14,21 +14,19 @@ import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import { refreshArchivedThreadsIfOpen } from './controller-action-helpers'
 import {
   type ActionPayload,
-  buildLocalThreadFallback,
   getPayloadProjectId,
   getPayloadProjectIds,
   getPayloadThreadIds,
   getResultThreadIds,
   hasActionError,
-  hasDesktopBridge,
   isThreadList,
 } from './controller-action-utils'
 import { applyDiffPreferencesPostEffect } from './post-effects/diff-preferences'
+import { applyNewThreadPostEffect } from './post-effects/new-thread'
 import {
   applyCommitOptionsPostEffect,
   applyWorkspaceCommitPostEffect,
 } from './post-effects/workspace'
-import { applyProjectThreadToShellState } from './project-thread-cache'
 import { reconcileComposerThreadResult } from './sidebar-thread-sync'
 
 export {
@@ -204,98 +202,21 @@ async function handleProjectRemoveEffects(ctx: PostEffectsContext) {
   await ctx.invalidateInboxThreads()
 }
 
-function getNewThreadResult(ctx: PostEffectsContext) {
-  const projectId = getPayloadProjectId(ctx.contextualPayload) ?? ctx.composerProjectId
-  const resultProjectId =
-    typeof ctx.actionResult?.result?.projectId === 'string'
-      ? ctx.actionResult.result.projectId
-      : null
-  const sessionPath =
-    typeof ctx.actionResult?.result?.sessionPath === 'string'
-      ? ctx.actionResult.result.sessionPath
-      : null
-  const threadId =
-    typeof ctx.actionResult?.result?.threadId === 'string' ? ctx.actionResult.result.threadId : null
-  const localFallback =
-    !(threadId || sessionPath) && projectId && !hasDesktopBridge()
-      ? buildLocalThreadFallback(projectId)
-      : null
-  return { projectId, resultProjectId, sessionPath, threadId, localFallback }
-}
-
-function applyAndOpenOptimisticThread(
-  ctx: PostEffectsContext,
-  input: { projectId: string; threadId: string; sessionPath: string },
-) {
-  const optimisticThread = {
-    id: input.threadId,
-    title: 'New thread',
-    age: 'Now',
-    lastModifiedMs: Date.now(),
-    sessionPath: input.sessionPath,
-  }
-  applyProjectThreadToShellState(ctx.queryClient, input.projectId, optimisticThread, {
-    revealProject: true,
-  })
-  ctx.dispatch({
-    type: 'open-thread',
-    projectId: input.projectId,
-    threadId: input.threadId,
-    sessionPath: input.sessionPath,
-  })
-  return optimisticThread
-}
-
-async function handleNewThreadBridgeResult(
-  ctx: PostEffectsContext,
-  result: ReturnType<typeof getNewThreadResult>,
-) {
-  const nextProjectId = result.resultProjectId ?? result.projectId
-  if (!(nextProjectId && result.threadId && result.sessionPath)) return false
-  const optimisticThread = applyAndOpenOptimisticThread(ctx, {
-    projectId: nextProjectId,
-    threadId: result.threadId,
-    sessionPath: result.sessionPath,
-  })
-  await ctx.loadProjectThreads(nextProjectId, { chat: ctx.workspaceState.activeView === 'chat' })
-  applyProjectThreadToShellState(ctx.queryClient, nextProjectId, optimisticThread, {
-    revealProject: true,
-  })
-  return true
-}
-
-async function handleNewThreadNavigation(
-  ctx: PostEffectsContext,
-  result: ReturnType<typeof getNewThreadResult>,
-) {
-  if (await handleNewThreadBridgeResult(ctx, result)) return
-  if (result.localFallback) {
-    applyAndOpenOptimisticThread(ctx, {
-      projectId: result.localFallback.projectId,
-      threadId: result.localFallback.threadId,
-      sessionPath: result.localFallback.sessionPath,
-    })
-    return
-  }
-  const nextProjectId = result.resultProjectId ?? result.projectId
-  if (nextProjectId) {
-    ctx.dispatch({ type: 'select-project', projectId: nextProjectId })
-    await ctx.loadProjectThreads(nextProjectId)
-    return
-  }
-  ctx.dispatch({ type: 'show-view', view: 'code' })
-}
-
 async function handleNewThreadOrProjectEffects(ctx: PostEffectsContext) {
-  const result = getNewThreadResult(ctx)
-  if (ctx.action === 'project.add') await ctx.refreshShellState()
-  await handleNewThreadNavigation(ctx, result)
-  if (result.localFallback) return
-  const nextComposerState = await ctx.loadComposerState({
-    projectId: result.resultProjectId ?? result.projectId,
-    composerMode: ctx.workspaceState.activeView === 'chat' ? 'chat' : 'code',
+  if (ctx.action !== 'thread.new' && ctx.action !== 'project.add') return
+  await applyNewThreadPostEffect({
+    action: ctx.action,
+    contextualPayload: ctx.contextualPayload,
+    actionResult: ctx.actionResult,
+    workspaceState: ctx.workspaceState,
+    composerProjectId: ctx.composerProjectId,
+    queryClient: ctx.queryClient,
+    dispatch: ctx.dispatch,
+    refreshShellState: ctx.refreshShellState,
+    loadProjectThreads: ctx.loadProjectThreads,
+    loadComposerState: ctx.loadComposerState,
+    setComposerState: ctx.setComposerState,
   })
-  if (nextComposerState) ctx.setComposerState(nextComposerState)
 }
 
 async function handleDiffPreferencesEffects(ctx: PostEffectsContext) {
