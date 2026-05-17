@@ -1,10 +1,7 @@
 import { Paperclip, X } from 'lucide-react'
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
-import {
-  type HowcodeKeybindingCommandDetail,
-  howcodeKeybindingCommandEvent,
-} from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
@@ -418,23 +415,15 @@ export function ComposerPromptSurface({
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
 
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId === 'composer.submit') {
-        event.preventDefault()
-        void send()
-        return
-      }
-      if (commandId === 'dictation.toggle' && showDictationButton) {
-        event.preventDefault()
-        void toggleDictation()
-      }
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [send, showDictationButton, toggleDictation])
+  useHowcodeKeybindingCommand('composer.submit', (event) => {
+    event.preventDefault()
+    void send()
+  })
+  useHowcodeKeybindingCommand('dictation.toggle', (event) => {
+    if (!showDictationButton) return
+    event.preventDefault()
+    void toggleDictation()
+  })
 
   return (
     <div

@@ -258,13 +258,7 @@ function SummaryBlock({ label, content }: { label: string; content: string[] }) 
   )
 }
 
-function UserMessageBlock({
-  message,
-}: {
-  message: ProseMessage
-  findActive?: boolean | undefined
-  findQuery?: string | undefined
-}) {
+function UserMessageBlock({ message }: { message: ProseMessage }) {
   return (
     <div className="group/message relative w-full min-w-0 rounded-2xl border border-[color:var(--accent-border)] bg-[color:var(--message-user-bg)] px-3 py-2 pr-11 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_var(--accent-bg-subtle)]">
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
@@ -400,13 +394,7 @@ function BashExecutionMessageBlock({ message }: { message: BashExecutionMessage 
   )
 }
 
-function CustomMessageBlock({
-  message,
-}: {
-  message: CustomThreadMessage
-  findActive?: boolean | undefined
-  findQuery?: string | undefined
-}) {
+function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
   const customStatusClassName = message.isError
     ? 'border-transparent bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] text-[color:var(--danger)]'
     : 'border-dashed border-[color:var(--border)] bg-[color:var(--message-tool-bg)] text-[color:var(--text)]/84'
@@ -423,13 +411,7 @@ function CustomMessageBlock({
   )
 }
 
-function SystemMessageBlock({
-  message,
-}: {
-  message: SystemThreadMessage
-  findActive?: boolean | undefined
-  findQuery?: string | undefined
-}) {
+function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
   const isModelStatus = message.label === 'Model changed' || message.label === 'Reasoning changed'
 
   if (isModelStatus) {

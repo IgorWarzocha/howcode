@@ -1,11 +1,8 @@
 import { FolderGit2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { defaultPiSettings } from '../../../../shared/default-pi-settings'
-import {
-  type HowcodeKeybindingCommandDetail,
-  howcodeKeybindingCommandEvent,
-} from '../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
@@ -749,17 +746,11 @@ export function CodeWorkspaceView({
       [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? gitOpsFileTreeVisible),
     }))
   }, [gitOpsFileTreeStateKey, gitOpsFileTreeVisible])
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'gitops.toggleChangedFiles' || state.activeView !== 'gitops') return
-      event.preventDefault()
-      toggleGitOpsFileTree()
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [state.activeView, toggleGitOpsFileTree])
+  useHowcodeKeybindingCommand('gitops.toggleChangedFiles', (event) => {
+    if (state.activeView !== 'gitops') return
+    event.preventDefault()
+    toggleGitOpsFileTree()
+  })
   const { error: diffLoadError } = useDesktopDiff(
     composerProjectId,
     diffBaseline,

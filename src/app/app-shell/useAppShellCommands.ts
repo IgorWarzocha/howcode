@@ -1,12 +1,13 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback } from 'react'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
 import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 import { getProjectSelectionAction } from './scoped-project-view'
+import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
 
 type RunDesktopAction = (
   action: 'project.reorder',
@@ -42,19 +43,6 @@ type UseAppShellCommandsInput = {
   workspaceState: WorkspaceState
 }
 
-const THREAD_OPEN_ACTION_DELAY_MS = 120
-const THREAD_CYCLE_OPEN_ACTION_DELAY_MS = 450
-
-type ScheduledThreadOpenInput = {
-  projectId: string
-  threadId: string
-  sessionPath: string
-  view?: 'chat' | 'thread' | undefined
-  delayMs?: number | undefined
-  deferThreadQuery?: boolean | undefined
-  commitLocally?: boolean | undefined
-}
-
 function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   queryClient.removeQueries({
     queryKey: desktopQueryKeys.projectDiffPrefix(projectId),
@@ -65,11 +53,6 @@ function resetProjectDiffCaches(queryClient: QueryClient, projectId: string) {
   void queryClient.invalidateQueries({
     queryKey: desktopQueryKeys.projectCommitsPrefix(projectId),
   })
-}
-
-function shouldCommitScheduledThreadOpen(input: ScheduledThreadOpenInput, state: WorkspaceState) {
-  const expectedView = input.view ?? (state.activeView === 'chat' ? 'chat' : 'thread')
-  return state.selectedThreadId === input.threadId && state.activeView === expectedView
 }
 
 export function useAppShellCommands({
@@ -88,57 +71,12 @@ export function useAppShellCommands({
   shellState,
   workspaceState,
 }: UseAppShellCommandsInput) {
-  const pendingThreadOpenActionRef = useRef<number | null>(null)
-  const workspaceStateRef = useRef(workspaceState)
-
-  useEffect(() => {
-    workspaceStateRef.current = workspaceState
-  }, [workspaceState])
-
-  useEffect(
-    () => () => {
-      if (pendingThreadOpenActionRef.current !== null) {
-        window.clearTimeout(pendingThreadOpenActionRef.current)
-        pendingThreadOpenActionRef.current = null
-      }
-      setThreadQueryDeferred(false)
-    },
-    [setThreadQueryDeferred],
-  )
-
-  const scheduleThreadOpenAction = useCallback(
-    (input: ScheduledThreadOpenInput) => {
-      if (pendingThreadOpenActionRef.current !== null) {
-        window.clearTimeout(pendingThreadOpenActionRef.current)
-      }
-      setThreadQueryDeferred(input.deferThreadQuery === true)
-
-      pendingThreadOpenActionRef.current = window.setTimeout(() => {
-        pendingThreadOpenActionRef.current = null
-        setThreadQueryDeferred(false)
-        const currentState = workspaceStateRef.current
-        if (input.commitLocally && !shouldCommitScheduledThreadOpen(input, currentState)) {
-          return
-        }
-        if (input.commitLocally) {
-          dispatch({
-            type: 'open-thread',
-            projectId: input.projectId,
-            threadId: input.threadId,
-            sessionPath: input.sessionPath,
-            view: input.view,
-          })
-        }
-        void handleAction('thread.open', {
-          projectId: input.projectId,
-          threadId: input.threadId,
-          sessionPath: input.sessionPath,
-          composerMode: input.view === 'chat' ? 'chat' : 'code',
-        })
-      }, input.delayMs ?? THREAD_OPEN_ACTION_DELAY_MS)
-    },
-    [dispatch, handleAction, setThreadQueryDeferred],
-  )
+  const scheduleThreadOpenAction = useScheduledThreadOpen({
+    dispatch,
+    handleAction,
+    setThreadQueryDeferred,
+    workspaceState,
+  })
 
   const handleToggleTerminal = useCallback(() => dispatch({ type: 'toggle-terminal' }), [dispatch])
   const handleCloseTerminalDrawer = useCallback(

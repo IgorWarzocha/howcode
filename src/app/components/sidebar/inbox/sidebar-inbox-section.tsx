@@ -10,8 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
-import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import { EmptyStateCard } from '../../common/empty-state-card'
@@ -199,18 +198,11 @@ export function SidebarInboxSection({
     refs: [filterButtonRef, filterPanelRef],
   })
 
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'sidebar.find') return
-      event.preventDefault()
-      searchInputRef.current?.focus()
-      searchInputRef.current?.select()
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [])
+  useHowcodeKeybindingCommand('sidebar.find', (event) => {
+    event.preventDefault()
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  })
 
   const visibleThreads = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()

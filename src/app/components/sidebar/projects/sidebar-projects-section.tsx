@@ -10,8 +10,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
-import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
-import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
+import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -362,18 +361,11 @@ export function SidebarProjectsSection({
     refs: [createButtonRef, createPanelRef],
   })
 
-  useEffect(() => {
-    const handleCommand = (event: Event) => {
-      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
-      if (commandId !== 'sidebar.find') return
-      event.preventDefault()
-      searchInputRef.current?.focus()
-      searchInputRef.current?.select()
-    }
-
-    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
-    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
-  }, [])
+  useHowcodeKeybindingCommand('sidebar.find', (event) => {
+    event.preventDefault()
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  })
 
   const handleCreateProject = async (options?: { parentPath?: string | null }) => {
     const draft = prepareCreateProject({
