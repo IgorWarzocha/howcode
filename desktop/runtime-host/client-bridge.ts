@@ -2,29 +2,20 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
-import {
-  createArtifact,
-  editArtifact,
-  getArtifact,
-  listArtifacts,
-  updateArtifact,
-} from '../artifact-state-db.ts'
-import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
 import {
   getBundledSkillsPath,
   getElectronResourcesPath,
   getNodeExecutable,
   getRuntimeHostPath,
 } from './client-environment.ts'
+import { handleRuntimeHostMainRequest } from './main-request-handlers.ts'
 import type {
-  RuntimeHostMainRequestMessage,
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
   RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
 } from './protocol.ts'
+import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
 
 type PendingRequest = {
   name: RuntimeHostRequestName
@@ -268,56 +259,12 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
   }
   if (message.type === 'response') handleHostResponseMessage(host, message)
 }
-async function handleHostMainRequest(host: HostConnection, message: RuntimeHostMainRequestMessage) {
+async function handleHostMainRequest(
+  host: HostConnection,
+  message: Extract<RuntimeHostToMainMessage, { type: 'main-request' }>,
+) {
   try {
-    let result: unknown
-    switch (message.name) {
-      case 'getSessionNativeExtensions': {
-        const payload = message.payload as { sessionPath: string }
-        result = getSessionNativeExtensions(payload.sessionPath)
-        break
-      }
-      case 'setSessionNativeExtensions': {
-        const payload = message.payload as { sessionPath: string; enabled: string[] }
-        setSessionNativeExtensions(payload.sessionPath, payload.enabled)
-        result = { ok: true }
-        break
-      }
-      case 'snapshotDefaultNativeExtensions': {
-        result = loadAppSettings().howcodeNativeAskQuestions ? ['askQuestions'] : []
-        break
-      }
-      case 'createArtifact': {
-        const payload = message.payload as Parameters<typeof createArtifact>[0]
-        result = createArtifact(payload)
-        break
-      }
-      case 'updateArtifact': {
-        const payload = message.payload as Parameters<typeof updateArtifact>[0]
-        result = updateArtifact(payload)
-        break
-      }
-      case 'editArtifact': {
-        const payload = message.payload as Parameters<typeof editArtifact>[0]
-        result = editArtifact(payload)
-        break
-      }
-      case 'getArtifact': {
-        const payload = message.payload as {
-          artifactSlug: string
-          conversationId?: string | undefined | null | undefined
-        }
-        result = getArtifact(payload.artifactSlug, payload.conversationId)
-        break
-      }
-      case 'listArtifacts': {
-        const payload = message.payload as { conversationId: string }
-        result = listArtifacts(payload.conversationId)
-        break
-      }
-      default:
-        throw new Error(`Unknown runtime host main request: ${message.name}`)
-    }
+    const result = handleRuntimeHostMainRequest(message)
     host.process?.send?.({ type: 'main-response', id: message.id, ok: true, result })
   } catch (error) {
     host.process?.send?.({
@@ -426,36 +373,12 @@ async function ensureRuntimeHost(host: HostConnection) {
   return host.startPromise
 }
 
-function getRequestSessionPath<TName extends RuntimeHostRequestName>(
-  name: TName,
-  payload: RuntimeHostRequestMap[TName],
-) {
-  if (name === 'startNewThread' || name === 'selectProjectRuntime') return null
-  if ('request' in payload) return payload.request.sessionPath ?? null
-  if ('sessionPath' in payload) return payload.sessionPath ?? null
-  return null
-}
-
-function shouldUseThreadHost<TName extends RuntimeHostRequestName>(
-  name: TName,
-  payload: RuntimeHostRequestMap[TName],
-) {
-  if (name === 'startNewThread' || name === 'selectProjectRuntime') return false
-  if (name === 'loadThreadSnapshot') return false
-  if (
-    (name === 'getComposerSlashCommands' || name === 'getComposerSkills') &&
-    !getRequestSessionPath(name, payload)
-  )
-    return false
-  return Boolean(getPersistedSessionPath(getRequestSessionPath(name, payload)))
-}
-
 function getHostForRequest<TName extends RuntimeHostRequestName>(
   name: TName,
   payload: RuntimeHostRequestMap[TName],
 ) {
-  const sessionPath = getPersistedSessionPath(getRequestSessionPath(name, payload))
-  if (!shouldUseThreadHost(name, payload)) {
+  const sessionPath = getRuntimeHostRequestSessionPath(name, payload)
+  if (!shouldUseThreadRuntimeHost(name, payload)) {
     return serviceHost
   }
 
