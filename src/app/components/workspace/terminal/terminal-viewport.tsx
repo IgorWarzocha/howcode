@@ -1,15 +1,11 @@
-import { FitAddon } from '@xterm/addon-fit'
-import { WebLinksAddon } from '@xterm/addon-web-links'
-import { Terminal as XTerm } from '@xterm/xterm'
+import type { FitAddon } from '@xterm/addon-fit'
+import type { Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
-import { piGuiThemeUpdatedEvent } from '../../../app-shell/usePiGuiTheme'
 import type { TerminalEvent } from '../../../desktop/types'
 import { resizeDesktopTerminal, writeDesktopTerminal } from '../../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
-import { openExternalQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
-import { buildXtermTheme } from './terminal-xterm-theme'
 import {
   clampTerminalHistory,
   clearTerminal,
@@ -27,6 +23,7 @@ import {
   getTerminalPersistedSessionPath,
   useTerminalSessionLifecycle,
 } from './useTerminalSessionLifecycle'
+import { useTerminalXtermInstance } from './useTerminalXtermInstance'
 
 type TerminalViewportProps = {
   projectId: string
@@ -317,103 +314,21 @@ export function TerminalViewport({
     [writeToTerminal],
   )
 
-  useEffect(() => {
-    const mount = terminalMountRef.current
-    if (!mount || terminalInstanceRef.current) {
-      return
-    }
-
-    try {
-      const terminal = new XTerm({
-        cols: DEFAULT_TERMINAL_COLS,
-        rows: DEFAULT_TERMINAL_ROWS,
-        cursorBlink: true,
-        scrollback: 5_000,
-        convertEol: false,
-        fontFamily: '"Liberation Mono", Consolas, Menlo, monospace',
-        fontSize: 12,
-        lineHeight: 1.2,
-        theme: buildXtermTheme(mount),
-      })
-      const fitAddon = new FitAddon()
-      terminal.loadAddon(fitAddon)
-      terminal.loadAddon(
-        new WebLinksAddon((event, uri) => {
-          terminal.focus()
-          event.preventDefault()
-          void openExternalQuery(uri).then((opened) => {
-            if (!opened) {
-              writeSystemMessage((message) => writeToTerminal(message), `Unable to open ${uri}`)
-            }
-          })
-        }),
-      )
-      terminal.open(mount)
-      terminal.onData((data) => handleTerminalData(data))
-      terminal.onResize(({ cols, rows }) => handleTerminalResize(cols, rows))
-      terminalInstanceRef.current = terminal
-      fitAddonRef.current = fitAddon
-      fitAddon.fit()
-      lastKnownSizeRef.current = {
-        cols: normalizeTerminalDimension(terminal.cols, DEFAULT_TERMINAL_COLS),
-        rows: normalizeTerminalDimension(terminal.rows, DEFAULT_TERMINAL_ROWS),
-      }
-      setTerminalInitError(null)
-      setTerminalReadyRevision((current) => current + 1)
-      terminalInitialFitTimerRef.current = window.setTimeout(() => {
-        terminalInitialFitTimerRef.current = null
-        fitAddon.fit()
-        scheduleXtermBottomAlign()
-        terminal.scrollToBottom()
-      }, 30)
-    } catch (error) {
-      handleTerminalError(error)
-    }
-
-    return () => {
-      if (terminalInitialFitTimerRef.current !== null) {
-        window.clearTimeout(terminalInitialFitTimerRef.current)
-        terminalInitialFitTimerRef.current = null
-      }
-      fitAddonRef.current = null
-      terminalInstanceRef.current?.dispose()
-      terminalInstanceRef.current = null
-    }
-  }, [
+  useTerminalXtermInstance({
+    fitAddonRef,
     handleTerminalData,
     handleTerminalError,
     handleTerminalResize,
+    lastKnownSizeRef,
     scheduleXtermBottomAlign,
+    setTerminalInitError,
+    setTerminalReadyRevision,
+    terminalInitialFitTimerRef,
+    terminalInstanceRef,
+    terminalMountRef,
+    terminalStyle,
     writeToTerminal,
-  ])
-
-  useEffect(() => {
-    void terminalStyle
-    const terminal = terminalInstanceRef.current
-    const mount = terminalMountRef.current
-    if (!(terminal && mount)) {
-      return
-    }
-
-    terminal.options.theme = buildXtermTheme(mount)
-  }, [terminalStyle])
-
-  useEffect(() => {
-    const handleThemeUpdate = () => {
-      const terminal = terminalInstanceRef.current
-      const mount = terminalMountRef.current
-      if (!(terminal && mount)) {
-        return
-      }
-
-      terminal.options.theme = buildXtermTheme(mount)
-    }
-
-    window.addEventListener(piGuiThemeUpdatedEvent, handleThemeUpdate)
-    return () => {
-      window.removeEventListener(piGuiThemeUpdatedEvent, handleThemeUpdate)
-    }
-  }, [])
+  })
 
   const resizeTerminalToContainer = useCallback(() => {
     const terminal = terminalInstanceRef.current

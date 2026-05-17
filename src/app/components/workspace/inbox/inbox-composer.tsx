@@ -1,11 +1,4 @@
-import {
-  type Dispatch,
-  type RefObject,
-  type SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
 import { getErrorMessage } from '../../../desktop/error-messages'
@@ -30,10 +23,8 @@ import { useComposerSkillMentions } from '../composer/useComposerSkillMentions'
 import { useComposerSlashCommands } from '../composer/useComposerSlashCommands'
 import { InboxComposerFooter } from './inbox-composer-footer'
 import { InboxAttachmentRail, InboxStopRail } from './inbox-composer-rails'
-
-function isTargetWithinRefs(target: Node, refs: RefObject<Node | null>[]) {
-  return refs.some((ref) => ref.current?.contains(target))
-}
+import { useInboxComposerMentionDismiss } from './useInboxComposerMentionDismiss'
+import { useInboxComposerStateRefs } from './useInboxComposerStateRefs'
 
 type InboxComposerProps = {
   appSettings: AppSettings
@@ -106,35 +97,15 @@ export function InboxComposer({
   const slashCommandPanelRef = useRef<HTMLDivElement>(null)
   const fileMentionPanelRef = useRef<HTMLDivElement>(null)
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
-  const draftValueRef = useRef(draft)
-  const attachmentsRef = useRef(attachments)
   const sendLockRef = useRef(false)
   const [localActionPending, setLocalActionPending] = useState(false)
-  useEffect(() => {
-    draftValueRef.current = draft
-  }, [draft])
-
-  useEffect(() => {
-    attachmentsRef.current = attachments
-  }, [attachments])
-
-  const setDraftValue: Dispatch<SetStateAction<string>> = (value) => {
-    const nextValue =
-      typeof value === 'function'
-        ? (value as (current: string) => string)(draftValueRef.current)
-        : value
-    draftValueRef.current = nextValue
-    onChangeDraft(nextValue)
-  }
-
-  const setAttachmentValue: Dispatch<SetStateAction<ComposerAttachment[]>> = (value) => {
-    const nextValue =
-      typeof value === 'function'
-        ? (value as (current: ComposerAttachment[]) => ComposerAttachment[])(attachmentsRef.current)
-        : value
-    attachmentsRef.current = nextValue
-    onChangeAttachments(nextValue)
-  }
+  const { attachmentsRef, draftValueRef, setAttachmentValue, setDraftValue } =
+    useInboxComposerStateRefs({
+      attachments,
+      draft,
+      onChangeAttachments,
+      onChangeDraft,
+    })
 
   useDismissibleLayer({
     open: openMenu === 'model',
@@ -281,59 +252,16 @@ export function InboxComposer({
     setErrorMessage: onChangeErrorMessage,
   })
 
-  useEffect(() => {
-    if (slashCommands.open || fileMentions.open || skillMentions.open) {
-      setOpenMenu((current) => (current === 'picker' ? null : current))
-    }
-  }, [fileMentions.open, skillMentions.open, slashCommands.open])
-
-  useEffect(() => {
-    if (!(slashCommands.open || fileMentions.open || skillMentions.open)) {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-
-      if (!target) {
-        return
-      }
-
-      if (
-        isTargetWithinRefs(target, [
-          slashCommandPanelRef,
-          fileMentionPanelRef,
-          skillMentionPanelRef,
-          composerSurfaceRef,
-        ])
-      ) {
-        return
-      }
-
-      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
-      if (fileMentions.open) fileMentions.dismiss()
-      if (skillMentions.open) skillMentions.dismiss()
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return
-      }
-
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      if (slashCommands.open) slashCommands.dismiss()
-      if (fileMentions.open) fileMentions.dismiss()
-      if (skillMentions.open) skillMentions.dismiss()
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [fileMentions, skillMentions, slashCommands])
+  useInboxComposerMentionDismiss({
+    composerSurfaceRef,
+    fileMentionPanelRef,
+    fileMentions,
+    setOpenMenu,
+    skillMentionPanelRef,
+    skillMentions,
+    slashCommandPanelRef,
+    slashCommands,
+  })
 
   useEffect(() => {
     if (!(slashCommands.open && slashCommands.activeDescendantId)) {
