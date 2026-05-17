@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, GitCompareArrows, Search } from 'lucide-react'
-import { type RefObject, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { GitCompareArrows, Search } from 'lucide-react'
+import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ProjectCommitEntry,
@@ -17,8 +17,19 @@ import {
 import { popoverPanelClass, settingsInputClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { SurfacePanel } from '../../common/surface-panel'
+import {
+  BaselineOption,
+  baselineOptions,
+  CommitOption,
+  getBaselineCounts,
+  matchesCommitSearch,
+} from './composer-diff-baseline-options'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { formatGitCount } from './git-ops'
+import {
+  type BaselineAnchorKind,
+  useDiffBaselinePopoverPosition,
+} from './useDiffBaselinePopoverPosition'
 
 type ComposerDiffBaselineSelectorProps = {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -27,150 +38,6 @@ type ComposerDiffBaselineSelectorProps = {
   branch?: string | null
   selectedBaseline: ProjectDiffBaseline
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
-}
-
-const baselineOptions = [
-  { key: 'head', label: 'last commit', baseline: { kind: 'head' } },
-  { key: 'previous', label: 'prev commit', baseline: { kind: 'previous' } },
-  { key: 'dev-branch', label: 'dev branch', baseline: { kind: 'dev-branch' } },
-  { key: 'main-branch', label: 'main branch', baseline: { kind: 'main-branch' } },
-  { key: 'yesterday', label: 'yesterday', baseline: { kind: 'yesterday' } },
-] as const satisfies ReadonlyArray<{
-  key: ProjectDiffBaseline['kind']
-  label: string
-  baseline: Extract<
-    ProjectDiffBaseline,
-    { kind: 'head' | 'previous' | 'dev-branch' | 'main-branch' | 'yesterday' }
-  >
-}>
-
-const BASELINE_POPOVER_WIDTH = 400
-
-function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
-  const normalizedQuery = query.trim().toLowerCase()
-  if (normalizedQuery.length === 0) {
-    return true
-  }
-
-  return [commit.subject, commit.sha, commit.shortSha, commit.authorName, commit.authorEmail].some(
-    (value) => value.toLowerCase().includes(normalizedQuery),
-  )
-}
-
-function CommitOption({
-  commit,
-  selected,
-  onSelect,
-}: {
-  commit: ProjectCommitEntry
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'grid min-h-11 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
-      )}
-      onClick={onSelect}
-      aria-label={`Select ${commit.subject || commit.shortSha}`}
-      data-tooltip="Select baseline"
-    >
-      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-        {selected ? <Check size={14} /> : null}
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate text-[12.5px] text-[color:var(--text)]">
-          {commit.subject || '(no subject)'}
-        </span>
-        <span className="block truncate text-[11px] text-[color:var(--muted)]">
-          {commit.shortSha} · {commit.authorName}
-        </span>
-      </span>
-    </button>
-  )
-}
-
-function BaselineOption({
-  label,
-  selected,
-  onSelect,
-}: {
-  label: string
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
-      )}
-      onClick={onSelect}
-    >
-      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-        {selected ? <Check size={14} /> : null}
-      </span>
-      <span className="text-[12.5px] text-[color:var(--text)]">{label}</span>
-    </button>
-  )
-}
-
-function getBaselineCounts(input: {
-  baselineStats: ProjectDiffStatsResult | null | undefined
-  projectGitState: ProjectGitState | null
-  selectedBaseline: ProjectDiffBaseline
-}) {
-  if (input.selectedBaseline.kind === 'head') {
-    if (!input.projectGitState) return null
-    return {
-      fileCount: input.projectGitState.fileCount,
-      insertions: input.projectGitState.insertions,
-      deletions: input.projectGitState.deletions,
-    }
-  }
-  if (!input.baselineStats) return null
-  return {
-    fileCount: input.baselineStats.fileCount,
-    insertions: input.baselineStats.insertions,
-    deletions: input.baselineStats.deletions,
-  }
-}
-
-function getActiveBaselineAnchorRef(input: {
-  activeAnchor: 'summary' | 'branch' | 'compact'
-  anchorRef: RefObject<HTMLButtonElement | null>
-  branchAnchorRef: RefObject<HTMLButtonElement | null>
-  compactAnchorRef: RefObject<HTMLButtonElement | null>
-}) {
-  if (input.activeAnchor === 'branch') return input.branchAnchorRef
-  if (input.activeAnchor === 'compact') return input.compactAnchorRef
-  return input.anchorRef
-}
-
-function getVisibleAnchorRect(anchorRef: RefObject<HTMLButtonElement | null>) {
-  const element = anchorRef.current
-  if (!element) return null
-  const rect = element.getBoundingClientRect()
-  if (rect.width === 0 || rect.height === 0) return null
-  return rect
-}
-
-function getResponsiveAnchorRect(input: {
-  activeAnchor: 'summary' | 'branch' | 'compact'
-  anchorRef: RefObject<HTMLButtonElement | null>
-  branchAnchorRef: RefObject<HTMLButtonElement | null>
-  compactAnchorRef: RefObject<HTMLButtonElement | null>
-}) {
-  const activeAnchorRect = getVisibleAnchorRect(getActiveBaselineAnchorRef(input))
-  if (activeAnchorRect) return activeAnchorRect
-  return (
-    getVisibleAnchorRect(input.compactAnchorRef) ??
-    getVisibleAnchorRect(input.branchAnchorRef) ??
-    getVisibleAnchorRect(input.anchorRef)
-  )
 }
 
 function BaselineSummaryButton({
@@ -386,19 +253,12 @@ export function ComposerDiffBaselineSelector({
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [positionReady, setPositionReady] = useState(false)
   const panelId = useId()
   const anchorRef = useRef<HTMLButtonElement>(null)
   const branchAnchorRef = useRef<HTMLButtonElement>(null)
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const activeAnchorRef = useRef<'summary' | 'branch' | 'compact'>('summary')
-  const [panelPosition, setPanelPosition] = useState({
-    left: 16,
-    bottom: 20,
-    maxHeight: 360,
-    width: BASELINE_POPOVER_WIDTH,
-  })
+  const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
 
   const commitsQuery = useQuery<ProjectCommitEntry[]>({
     queryKey: desktopQueryKeys.projectCommits(projectId, 100),
@@ -461,46 +321,14 @@ export function ComposerDiffBaselineSelector({
     }
   }, [open])
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setPositionReady(false)
-      return
-    }
-
-    const updatePosition = () => {
-      const composerRect = composerPanelRef.current?.getBoundingClientRect()
-      const anchorRect = getResponsiveAnchorRect({
-        activeAnchor: activeAnchorRef.current,
-        anchorRef,
-        branchAnchorRef,
-        compactAnchorRef,
-      })
-      if (!(composerRect && anchorRect)) {
-        return
-      }
-
-      const viewportGutter = 8
-      const width = Math.min(BASELINE_POPOVER_WIDTH, composerRect.width)
-      const minLeft = viewportGutter
-      const maxLeft = Math.max(minLeft, window.innerWidth - width - viewportGutter)
-      const preferredLeft = composerRect.right - width
-      const left = Math.min(Math.max(preferredLeft, minLeft), maxLeft)
-      const bottom = Math.max(window.innerHeight - anchorRect.top + 8, viewportGutter)
-      const maxHeight = Math.max(160, window.innerHeight - bottom - viewportGutter)
-
-      setPanelPosition({ left, bottom, maxHeight, width })
-      setPositionReady(true)
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [composerPanelRef, open])
+  const { panelPosition, positionReady } = useDiffBaselinePopoverPosition({
+    activeAnchorRef,
+    anchorRef,
+    branchAnchorRef,
+    compactAnchorRef,
+    composerPanelRef,
+    open,
+  })
 
   const fileCountLabel = counts ? formatGitCount(counts.fileCount) : '…'
   const insertionCountLabel = counts ? formatGitCount(counts.insertions) : '…'

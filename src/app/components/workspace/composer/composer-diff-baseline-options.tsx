@@ -1,0 +1,113 @@
+import { Check } from 'lucide-react'
+import type {
+  ProjectCommitEntry,
+  ProjectDiffBaseline,
+  ProjectDiffStatsResult,
+  ProjectGitState,
+} from '../../../desktop/types'
+import { cn } from '../../../utils/cn'
+
+export const baselineOptions = [
+  { key: 'head', label: 'last commit', baseline: { kind: 'head' } },
+  { key: 'previous', label: 'prev commit', baseline: { kind: 'previous' } },
+  { key: 'dev-branch', label: 'dev branch', baseline: { kind: 'dev-branch' } },
+  { key: 'main-branch', label: 'main branch', baseline: { kind: 'main-branch' } },
+  { key: 'yesterday', label: 'yesterday', baseline: { kind: 'yesterday' } },
+] as const satisfies ReadonlyArray<{
+  key: ProjectDiffBaseline['kind']
+  label: string
+  baseline: Extract<
+    ProjectDiffBaseline,
+    { kind: 'head' | 'previous' | 'dev-branch' | 'main-branch' | 'yesterday' }
+  >
+}>
+
+export function matchesCommitSearch(commit: ProjectCommitEntry, query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (normalizedQuery.length === 0) return true
+  return [commit.subject, commit.sha, commit.shortSha, commit.authorName, commit.authorEmail].some(
+    (value) => value.toLowerCase().includes(normalizedQuery),
+  )
+}
+
+export function getBaselineCounts(input: {
+  baselineStats: ProjectDiffStatsResult | null | undefined
+  projectGitState: ProjectGitState | null
+  selectedBaseline: ProjectDiffBaseline
+}) {
+  if (input.selectedBaseline.kind === 'head') {
+    if (!input.projectGitState) return null
+    return {
+      fileCount: input.projectGitState.fileCount,
+      insertions: input.projectGitState.insertions,
+      deletions: input.projectGitState.deletions,
+    }
+  }
+  if (!input.baselineStats) return null
+  return {
+    fileCount: input.baselineStats.fileCount,
+    insertions: input.baselineStats.insertions,
+    deletions: input.baselineStats.deletions,
+  }
+}
+
+export function CommitOption({
+  commit,
+  selected,
+  onSelect,
+}: {
+  commit: ProjectCommitEntry
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'grid min-h-11 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+      )}
+      onClick={onSelect}
+      aria-label={`Select ${commit.subject || commit.shortSha}`}
+      data-tooltip="Select baseline"
+    >
+      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+        {selected ? <Check size={14} /> : null}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[12.5px] text-[color:var(--text)]">
+          {commit.subject || '(no subject)'}
+        </span>
+        <span className="block truncate text-[11px] text-[color:var(--muted)]">
+          {commit.shortSha} · {commit.authorName}
+        </span>
+      </span>
+    </button>
+  )
+}
+
+export function BaselineOption({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+      )}
+      onClick={onSelect}
+    >
+      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+        {selected ? <Check size={14} /> : null}
+      </span>
+      <span className="text-[12.5px] text-[color:var(--text)]">{label}</span>
+    </button>
+  )
+}
