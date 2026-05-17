@@ -492,7 +492,13 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   }, [state.activeView])
 
   useLayoutEffect(() => {
-    const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236)
+    const updateSidebarCompactMode = () => {
+      const nextCompactMode = window.innerWidth <= 1236
+      if (nextCompactMode && controllerRef.current.state.terminalVisible) {
+        controllerRef.current.handleCloseTerminalDrawer()
+      }
+      setSidebarCompactMode(nextCompactMode)
+    }
     updateSidebarCompactMode()
     window.addEventListener('resize', updateSidebarCompactMode)
     return () => window.removeEventListener('resize', updateSidebarCompactMode)
