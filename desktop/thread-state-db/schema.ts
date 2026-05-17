@@ -122,12 +122,7 @@ function purgeLegacyCheckpointRefsMigration(database: Database) {
   `)
 }
 
-export function ensureThreadStateSchema(database: Database) {
-  if (schemaReady) {
-    return
-  }
-
-  database.exec(`
+const threadStateSchemaSql = `
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
 
@@ -215,71 +210,62 @@ export function ensureThreadStateSchema(database: Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
-  `)
 
-  purgeLegacyCheckpointRefsMigration(database)
+`
 
-  if (!hasColumn(database, 'projects', 'custom_name')) {
-    database.exec('ALTER TABLE projects ADD COLUMN custom_name TEXT')
+function ensureThreadStateTables(database: Database) {
+  database.exec(threadStateSchemaSql)
+}
+
+function addColumnIfMissing(database: Database, tableName: string, columnSql: string) {
+  const columnName = columnSql.split(' ', 1)[0] ?? columnSql
+  if (!hasColumn(database, tableName, columnName)) {
+    database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnSql}`)
   }
+}
 
-  if (!hasColumn(database, 'projects', 'order_index')) {
-    database.exec('ALTER TABLE projects ADD COLUMN order_index INTEGER')
-  }
+function ensureProjectColumns(database: Database) {
+  addColumnIfMissing(database, 'projects', 'custom_name TEXT')
+  addColumnIfMissing(database, 'projects', 'order_index INTEGER')
+  addColumnIfMissing(database, 'projects', 'hidden INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'pinned INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'repo_origin_url TEXT')
+  addColumnIfMissing(database, 'projects', 'repo_origin_checked INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'projects', 'git_ops_mode TEXT')
+}
 
-  if (!hasColumn(database, 'projects', 'hidden')) {
-    database.exec('ALTER TABLE projects ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0')
-  }
+function ensureThreadColumns(database: Database) {
+  addColumnIfMissing(database, 'threads', 'last_assistant_message_json TEXT')
+  addColumnIfMissing(database, 'threads', 'last_assistant_preview TEXT')
+  addColumnIfMissing(database, 'threads', 'last_assistant_at_ms INTEGER')
+  addColumnIfMissing(database, 'threads', 'running INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(database, 'threads', 'diff_baseline_json TEXT')
+  addColumnIfMissing(database, 'threads', 'diff_render_mode TEXT')
+}
 
-  if (!hasColumn(database, 'projects', 'pinned')) {
-    database.exec('ALTER TABLE projects ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0')
-  }
+function ensureInboxColumns(database: Database) {
+  addColumnIfMissing(database, 'inbox_items', 'last_user_prompt TEXT')
+}
 
-  if (!hasColumn(database, 'projects', 'repo_origin_url')) {
-    database.exec('ALTER TABLE projects ADD COLUMN repo_origin_url TEXT')
-  }
-
-  if (!hasColumn(database, 'projects', 'repo_origin_checked')) {
-    database.exec('ALTER TABLE projects ADD COLUMN repo_origin_checked INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'projects', 'git_ops_mode')) {
-    database.exec('ALTER TABLE projects ADD COLUMN git_ops_mode TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_message_json')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_message_json TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_preview')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_preview TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'last_assistant_at_ms')) {
-    database.exec('ALTER TABLE threads ADD COLUMN last_assistant_at_ms INTEGER')
-  }
-
-  if (!hasColumn(database, 'threads', 'running')) {
-    database.exec('ALTER TABLE threads ADD COLUMN running INTEGER NOT NULL DEFAULT 0')
-  }
-
-  if (!hasColumn(database, 'threads', 'diff_baseline_json')) {
-    database.exec('ALTER TABLE threads ADD COLUMN diff_baseline_json TEXT')
-  }
-
-  if (!hasColumn(database, 'threads', 'diff_render_mode')) {
-    database.exec('ALTER TABLE threads ADD COLUMN diff_render_mode TEXT')
-  }
-
-  if (!hasColumn(database, 'inbox_items', 'last_user_prompt')) {
-    database.exec('ALTER TABLE inbox_items ADD COLUMN last_user_prompt TEXT')
-  }
-
+function resetRunningThreads(database: Database) {
   database.exec(`
     UPDATE threads
     SET running = 0
     WHERE running != 0
   `)
+}
 
+function runThreadStateMigrations(database: Database) {
+  purgeLegacyCheckpointRefsMigration(database)
+  ensureProjectColumns(database)
+  ensureThreadColumns(database)
+  ensureInboxColumns(database)
+  resetRunningThreads(database)
+}
+
+export function ensureThreadStateSchema(database: Database) {
+  if (schemaReady) return
+  ensureThreadStateTables(database)
+  runThreadStateMigrations(database)
   schemaReady = true
 }

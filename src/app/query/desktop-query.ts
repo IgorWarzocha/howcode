@@ -154,6 +154,15 @@ export async function compileReactArtifactQuery(source: string) {
   )
 }
 
+export async function saveTextToDownloadsQuery(fileName: string, content: string) {
+  return (
+    (await window.piDesktop?.saveTextToDownloads?.(fileName, content)) ?? {
+      ok: false as const,
+      error: 'Desktop downloads are unavailable.',
+    }
+  )
+}
+
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
   return (await window.piDesktop?.getInboxThreads?.()) ?? []
 }

@@ -1,20 +1,17 @@
 import { FolderGit2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useCallback, useRef, useState } from 'react'
-import { defaultPiSettings } from '../../../../shared/default-pi-settings'
 import { useHowcodeKeybindingCommand } from '../../app-shell/keybinding-events'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
-import { DiffPanel } from '../../components/workspace/diff-panel'
 import { GitOpsComposerPanel } from '../../components/workspace/git-ops-composer-panel'
 import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../../desktop/types'
 import { useDesktopDiff } from '../../hooks/useDesktopDiff'
 import type { Message } from '../../types'
-import { mainPanelClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { CodeWorkspaceMainView } from './code-workspace-main-view'
+import { CodeWorkspaceMainArea } from './code-workspace-main-area'
 import { DesktopComposerStatusModelPicker } from './desktop-composer-status'
 import { useDiffCommentController } from './useDiffCommentController'
 import { useQueuedPromptRestore } from './useQueuedPromptRestore'
@@ -42,7 +39,7 @@ type CodeWorkspaceViewProps = {
 
 const TERMINAL_DRAWER_OFFSET = 'min(28rem, calc(100% - 2.5rem))'
 const EMPTY_COMPOSER_TOP = '60%'
-const FALLBACK_APP_SETTINGS = {
+export const FALLBACK_APP_SETTINGS = {
   chatModel: null,
   chatThinkingLevel: null,
   codeModel: null,
@@ -74,7 +71,7 @@ const FALLBACK_APP_SETTINGS = {
   composerSendMode: 'enter',
 } satisfies AppSettings
 
-type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
+export type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
   ReturnType<typeof useDiffCommentController> &
   ReturnType<typeof useQueuedPromptRestore> & {
     footerRef: RefObject<HTMLElement | null>
@@ -117,142 +114,6 @@ function getReplyActivityKey(messages: readonly Message[]) {
     if (message.role !== 'user') replyMessageIds.push(message.id)
   }
   return replyMessageIds.join('|')
-}
-
-function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
-  const {
-    terminalDrawerInsetStyle,
-    footerInset,
-    mainViewRef,
-    state,
-    showDiffInMainView,
-    composerProjectId,
-    projectGitState,
-    diffBaseline,
-    selectedDiffCommentId,
-    selectedDiffCommentJumpKey,
-    diffRenderMode,
-    gitOpsFileTreeVisible,
-    controller,
-    shellState,
-    activeComposerState,
-    currentProjectName,
-    workspaceContentClass,
-    activeThreadData,
-    threadTimelineLoading,
-    composerLayoutVersion,
-    composerOverlayHeight,
-    handleAction,
-    listComposerAttachmentEntries,
-    sidebarCollapsed,
-    sidebarCompactMode,
-    onToggleSidebar,
-    handleLoadEarlierMessages,
-  } = props
-  return (
-    <div
-      className="motion-terminal-drawer-offset absolute inset-x-0 top-0 overflow-hidden px-5"
-      style={{ ...terminalDrawerInsetStyle, bottom: `${footerInset}px` }}
-    >
-      <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-hidden">
-        <main
-          ref={mainViewRef}
-          className={
-            state.activeView === 'thread' ||
-            state.activeView === 'code' ||
-            state.activeView === 'inbox' ||
-            showDiffInMainView
-              ? 'min-h-0 overflow-hidden pt-1.5'
-              : mainPanelClass
-          }
-        >
-          {showDiffInMainView ? (
-            <DiffPanel
-              projectId={composerProjectId}
-              isGitRepo={projectGitState?.isGitRepo ?? false}
-              baseline={diffBaseline}
-              selectedFilePath={state.selectedDiffFilePath}
-              selectedCommentId={selectedDiffCommentId}
-              selectedCommentJumpKey={selectedDiffCommentJumpKey}
-              diffRenderMode={diffRenderMode}
-              layoutMode="main"
-              showFileTree={gitOpsFileTreeVisible}
-              loading={controller.projectGitLoading}
-            />
-          ) : (
-            <CodeWorkspaceMainView
-              activeView={state.activeView}
-              appSettings={
-                shellState?.appSettings ?? {
-                  chatModel: null,
-                  chatThinkingLevel: null,
-                  codeModel: null,
-                  codeThinkingLevel: null,
-                  gitCommitMessageModel: null,
-                  gitCommitMessageThinkingLevel: 'off',
-                  skillCreatorModel: null,
-                  skillCreatorThinkingLevel: 'off',
-                  composerStreamingBehavior: 'followUp',
-                  dictationModelId: null,
-                  dictationMaxDurationSeconds: 180,
-                  showDictationButton: true,
-                  favoriteFolders: [],
-                  projectImportState: null,
-                  preferredProjectLocation: null,
-                  initializeGitOnProjectCreate: false,
-                  gitOpsDefaultMode: 'commit',
-                  gitDiffBaselineDefault: { kind: 'head' },
-                  gitDiffRenderModeDefault: 'stacked',
-                  gitDiffFileTreeDefaultVisible: true,
-                  projectDeletionMode: 'pi-only',
-                  useAgentsSkillsPaths: false,
-                  howcodeNativeAskQuestions: false,
-                  devUpdateBranch: false,
-                  piTuiTakeover: false,
-                  hoverToFocus: true,
-                  hoverToBlur: false,
-                  keybindings: {},
-                  composerSendMode: 'enter',
-                }
-              }
-              piSettings={shellState?.piSettings ?? defaultPiSettings}
-              piTheme={shellState?.piTheme ?? null}
-              archivedThreads={controller.archivedThreads}
-              availableModels={activeComposerState?.availableModels ?? []}
-              availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-              contextUsage={activeComposerState?.contextUsage ?? null}
-              currentModel={activeComposerState?.currentModel ?? null}
-              currentThinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
-              isCompacting={activeComposerState?.isCompacting ?? false}
-              currentProjectName={currentProjectName}
-              selectedInboxThread={controller.selectedInboxThread}
-              projects={controller.projects}
-              settingsOpenTarget={controller.settingsOpenTarget}
-              selectedProjectId={controller.state.selectedProjectId}
-              workspaceContentClass={workspaceContentClass}
-              threadData={activeThreadData}
-              threadLoading={threadTimelineLoading}
-              composerLayoutVersion={composerLayoutVersion}
-              composerOverlayHeight={composerOverlayHeight}
-              onAction={handleAction}
-              onDismissInboxThread={controller.handleDismissInboxThread}
-              onListAttachmentEntries={listComposerAttachmentEntries}
-              onOpenThread={controller.handleThreadOpen}
-              onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
-              sidebarCollapsed={sidebarCollapsed}
-              sidebarCompactMode={sidebarCompactMode}
-              onToggleSidebar={onToggleSidebar}
-              onCloseUtilityView={controller.handleCloseUtilityView}
-              onLoadEarlierMessages={handleLoadEarlierMessages}
-              onSetExtensionsProjectScopeActive={controller.handleSetExtensionsProjectScopeActive}
-              onSetSkillsProjectScopeActive={controller.handleSetSkillsProjectScopeActive}
-              onSelectProject={controller.handleProjectSelect}
-            />
-          )}
-        </main>
-      </div>
-    </div>
-  )
 }
 
 function CodeSidebarToggleButton(props: CodeWorkspaceContentProps) {

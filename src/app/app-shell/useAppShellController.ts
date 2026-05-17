@@ -1,269 +1,177 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
-import { getPersistedSessionPath } from '../../../shared/session-paths'
-import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from '../desktop/types'
+import { useMemo } from 'react'
 import { useDesktopBridge } from '../hooks/useDesktopBridge'
 import { useDesktopInbox } from '../hooks/useDesktopInbox'
 import { useDesktopShell } from '../hooks/useDesktopShell'
-import { useDesktopThreadQuery } from '../hooks/useDesktopThread'
 import { useToast } from '../hooks/useToast'
-import { createChatGroupQuery, getChatSidebarStateQuery } from '../query/desktop-query'
-import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
-import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
 import { deriveControllerViewModel } from './controller-view-model'
+import { useAppShellChatSidebar } from './useAppShellChatSidebar'
 import { useAppShellCommands } from './useAppShellCommands'
 import { useAppShellEffects } from './useAppShellEffects'
+import { useAppShellStateBundle } from './useAppShellStateBundle'
 import { useDesktopActionHandlers } from './useDesktopActionHandlers'
 import { useInboxAutoReadSync } from './useInboxAutoReadSync'
 import { useProjectRepoOriginRefresh } from './useProjectRepoOriginRefresh'
 import { useRunningTerminalSessions } from './useRunningTerminalSessions'
 import { useScopedProjectViewSync } from './useScopedProjectViewSync'
+import { useSelectedThreadData } from './useSelectedThreadData'
 
 export function useAppShellController() {
   const queryClient = useQueryClient()
-  const [appLaunchedAtMs] = useState(() => Date.now())
-  const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState)
-  const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([])
-  const [composerState, setComposerState] = useState<ComposerState | null>(null)
-  const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null)
-  const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null)
-  const [projectGitLoading, setProjectGitLoading] = useState(false)
-  const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false)
-  const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false)
-  const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
-  const [threadRefreshKey, setThreadRefreshKey] = useState(0)
-  const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0)
-  const [threadQueryDeferred, setThreadQueryDeferred] = useState(false)
-  const [selectedChatGroupId, setSelectedChatGroupId] = useState<string | null>(null)
-  const [chatSidebarState, setChatSidebarState] =
-    useState<Awaited<ReturnType<typeof getChatSidebarStateQuery>>>(null)
-  const [chatSidebarLoading, setChatSidebarLoading] = useState(false)
+  const bundle = useAppShellStateBundle()
+  const chatSidebar = useAppShellChatSidebar(bundle.state.activeView)
   const { toast, showToast } = useToast()
-  const {
-    shellState,
-    shellLoading,
-    loadArchivedThreads,
-    loadComposerState,
-    listComposerAttachmentEntries,
-    loadProjectGitState,
-    loadProjectThreads,
-    applyProjectOrder,
-    pickComposerAttachments,
-    refreshShellState,
-    scheduleShellStateRefresh,
-  } = useDesktopShell()
+  const desktopShell = useDesktopShell()
   const invokeDesktopAction = useDesktopBridge()
-  const projects = shellState?.projects ?? []
-  const threadQuery = useDesktopThreadQuery(
-    state.selectedSessionPath,
-    threadRefreshKey,
-    threadHistoryCompactions,
-    { enabled: !threadQueryDeferred },
-  )
-  const threadData = threadQuery.data ?? null
-  const selectedPersistedSessionPath = getPersistedSessionPath(state.selectedSessionPath)
-  const threadDataMatchesSelection = threadData?.sessionPath === selectedPersistedSessionPath
-  const activeThreadLoading = Boolean(
-    selectedPersistedSessionPath &&
-      (threadQuery.isLoading || threadQuery.isFetching) &&
-      !(liveThreadData?.sessionPath === selectedPersistedSessionPath || threadDataMatchesSelection),
-  )
-  const effectiveThreadData =
-    threadHistoryCompactions === 0 && liveThreadData?.sessionPath === state.selectedSessionPath
-      ? liveThreadData
-      : threadDataMatchesSelection
-        ? threadData
-        : null
+  const projects = desktopShell.shellState?.projects ?? []
+  const selectedThread = useSelectedThreadData({
+    liveThreadData: bundle.liveThreadData,
+    selectedSessionPath: bundle.state.selectedSessionPath,
+    threadHistoryCompactions: bundle.threadHistoryCompactions,
+    threadQueryDeferred: bundle.threadQueryDeferred,
+    threadRefreshKey: bundle.threadRefreshKey,
+  })
   const inboxQuery = useDesktopInbox()
   const inboxThreads = inboxQuery.data ?? []
   const selectedInboxThread = useMemo(
     () =>
-      inboxThreads.find((thread) => thread.sessionPath === state.selectedInboxSessionPath) ?? null,
-    [inboxThreads, state.selectedInboxSessionPath],
+      inboxThreads.find((thread) => thread.sessionPath === bundle.state.selectedInboxSessionPath) ??
+      null,
+    [inboxThreads, bundle.state.selectedInboxSessionPath],
   )
-  const { terminalRunningProjectIds, terminalRunningSessionPaths } = useRunningTerminalSessions()
-  const refreshChatSidebarState = useCallback(
-    async (groupId = selectedChatGroupId) => {
-      const nextState = await getChatSidebarStateQuery(groupId)
-      setChatSidebarState(nextState)
-      return nextState
-    },
-    [selectedChatGroupId],
-  )
-  const handleCreateChatGroup = async (name: string) => {
-    const nextState = await createChatGroupQuery(name)
-    setChatSidebarState(nextState)
-    if (nextState?.selectedGroupId) setSelectedChatGroupId(nextState.selectedGroupId)
-    return nextState
-  }
-
-  useEffect(() => {
-    if (state.activeView === 'chat') {
-      let cancelled = false
-      setChatSidebarLoading(true)
-
-      void getChatSidebarStateQuery(selectedChatGroupId)
-        .then((nextState) => {
-          if (!cancelled) {
-            setChatSidebarState(nextState)
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setChatSidebarLoading(false)
-          }
-        })
-
-      return () => {
-        cancelled = true
-      }
-    }
-  }, [state.activeView, selectedChatGroupId])
-
-  const {
-    activeComposerState,
-    activeThreadData,
-    collapsedProjectIds,
-    composerProjectId,
-    currentProjectName,
-    currentTitle,
-  } = useMemo(
+  const terminals = useRunningTerminalSessions()
+  const viewModel = useMemo(
     () =>
       deriveControllerViewModel({
         projects,
-        workspaceState: state,
-        threadData: effectiveThreadData,
-        shellCwd: shellState?.cwd,
-        composerState,
-        shellComposerState: shellState?.composer,
+        workspaceState: bundle.state,
+        threadData: selectedThread.effectiveThreadData,
+        shellCwd: desktopShell.shellState?.cwd,
+        composerState: bundle.composerState,
+        shellComposerState: desktopShell.shellState?.composer,
       }),
-    [composerState, effectiveThreadData, projects, shellState?.composer, shellState?.cwd, state],
+    [
+      bundle.composerState,
+      bundle.state,
+      desktopShell.shellState,
+      projects,
+      selectedThread.effectiveThreadData,
+    ],
   )
-
   useAppShellEffects({
     projects,
-    collapsedProjectIds,
-    workspaceState: state,
+    collapsedProjectIds: viewModel.collapsedProjectIds,
+    workspaceState: bundle.state,
     selectedInboxThread,
-    composerProjectId,
-    shellComposerState: shellState?.composer,
-    shellAppSettings: shellState?.appSettings,
-    loadProjectThreads,
-    loadArchivedThreads,
-    loadComposerState,
-    loadProjectGitState,
-    scheduleShellStateRefresh,
-    refreshChatSidebarState,
+    composerProjectId: viewModel.composerProjectId,
+    shellComposerState: desktopShell.shellState?.composer,
+    shellAppSettings: desktopShell.shellState?.appSettings,
+    loadProjectThreads: desktopShell.loadProjectThreads,
+    loadArchivedThreads: desktopShell.loadArchivedThreads,
+    loadComposerState: desktopShell.loadComposerState,
+    loadProjectGitState: desktopShell.loadProjectGitState,
+    scheduleShellStateRefresh: desktopShell.scheduleShellStateRefresh,
+    refreshChatSidebarState: chatSidebar.refreshChatSidebarState,
     queryClient,
-    dispatch,
-    setArchivedThreads,
-    setComposerState,
-    setChatSidebarState,
-    setLiveThreadData,
-    setProjectGitState,
-    setProjectGitLoading,
-    setThreadHistoryCompactions,
+    dispatch: bundle.dispatch,
+    setArchivedThreads: bundle.setArchivedThreads,
+    setComposerState: bundle.setComposerState,
+    setChatSidebarState: chatSidebar.setChatSidebarState,
+    setLiveThreadData: bundle.setLiveThreadData,
+    setProjectGitState: bundle.setProjectGitState,
+    setProjectGitLoading: bundle.setProjectGitLoading,
+    setThreadHistoryCompactions: bundle.setThreadHistoryCompactions,
   })
-
-  const { handleAction, runDesktopAction } = useDesktopActionHandlers({
-    activeView: state.activeView,
-    composerProjectId,
-    dispatch,
+  const actions = useDesktopActionHandlers({
+    activeView: bundle.state.activeView,
+    composerProjectId: viewModel.composerProjectId,
+    dispatch: bundle.dispatch,
     invokeDesktopAction,
-    loadArchivedThreads,
-    loadComposerState,
-    loadProjectGitState,
-    loadProjectThreads,
-    refreshShellState,
-    selectedSessionPath: state.selectedSessionPath,
-    setArchivedThreads,
-    setChatSidebarState,
-    setComposerState,
-    setLiveThreadData,
-    setProjectGitState,
+    loadArchivedThreads: desktopShell.loadArchivedThreads,
+    loadComposerState: desktopShell.loadComposerState,
+    loadProjectGitState: desktopShell.loadProjectGitState,
+    loadProjectThreads: desktopShell.loadProjectThreads,
+    refreshShellState: desktopShell.refreshShellState,
+    selectedSessionPath: bundle.state.selectedSessionPath,
+    setArchivedThreads: bundle.setArchivedThreads,
+    setChatSidebarState: chatSidebar.setChatSidebarState,
+    setComposerState: bundle.setComposerState,
+    setLiveThreadData: bundle.setLiveThreadData,
+    setProjectGitState: bundle.setProjectGitState,
     showToast,
-    workspaceState: state,
+    workspaceState: bundle.state,
   })
-
   useProjectRepoOriginRefresh({
     projects,
-    selectedProjectId: state.selectedProjectId,
-    runDesktopAction,
+    selectedProjectId: bundle.state.selectedProjectId,
+    runDesktopAction: actions.runDesktopAction,
   })
-
   useScopedProjectViewSync({
-    activeView: state.activeView,
-    extensionsProjectScopeActive,
-    setExtensionsProjectScopeActive,
-    setSkillsProjectScopeActive,
-    skillsProjectScopeActive,
+    activeView: bundle.state.activeView,
+    extensionsProjectScopeActive: bundle.extensionsProjectScopeActive,
+    setExtensionsProjectScopeActive: bundle.setExtensionsProjectScopeActive,
+    setSkillsProjectScopeActive: bundle.setSkillsProjectScopeActive,
+    skillsProjectScopeActive: bundle.skillsProjectScopeActive,
   })
-
   useInboxAutoReadSync({
-    dispatch,
+    dispatch: bundle.dispatch,
     inboxQueryIsSuccess: inboxQuery.isSuccess,
     inboxThreads,
     invokeDesktopAction,
-    loadProjectThreads,
+    loadProjectThreads: desktopShell.loadProjectThreads,
     queryClient,
-    workspaceState: state,
+    workspaceState: bundle.state,
   })
-
   const commands = useAppShellCommands({
-    applyProjectOrder,
-    collapsedProjectIds,
-    composerProjectId,
-    dispatch,
-    handleAction,
+    applyProjectOrder: desktopShell.applyProjectOrder,
+    collapsedProjectIds: viewModel.collapsedProjectIds,
+    composerProjectId: viewModel.composerProjectId,
+    dispatch: bundle.dispatch,
+    handleAction: actions.handleAction,
     queryClient,
-    runDesktopAction,
-    scheduleShellStateRefresh,
-    setSettingsOpenTarget,
-    setThreadHistoryCompactions,
-    setThreadRefreshKey,
-    setThreadQueryDeferred,
-    shellState,
-    workspaceState: state,
+    runDesktopAction: actions.runDesktopAction,
+    scheduleShellStateRefresh: desktopShell.scheduleShellStateRefresh,
+    setSettingsOpenTarget: bundle.setSettingsOpenTarget,
+    setThreadHistoryCompactions: bundle.setThreadHistoryCompactions,
+    setThreadRefreshKey: bundle.setThreadRefreshKey,
+    setThreadQueryDeferred: bundle.setThreadQueryDeferred,
+    shellState: desktopShell.shellState,
+    workspaceState: bundle.state,
   })
 
   return {
-    activeComposerState,
-    activeThreadData,
-    activeThreadLoading,
-    archivedThreads,
-    collapsedProjectIds,
-    composerProjectId,
-    currentProjectName,
-    currentTitle,
-    handleAction,
+    ...viewModel,
+    activeThreadLoading: selectedThread.activeThreadLoading,
+    archivedThreads: bundle.archivedThreads,
+    handleAction: actions.handleAction,
     ...commands,
     inboxThreads,
     inboxLoading: inboxQuery.isLoading,
-    handleSetSkillsProjectScopeActive: setSkillsProjectScopeActive,
-    handleSetExtensionsProjectScopeActive: setExtensionsProjectScopeActive,
-    handleLoadProjectThreads: loadProjectThreads,
-    listComposerAttachmentEntries,
-    pickComposerAttachments,
-    extensionsProjectScopeActive,
-    appLaunchedAtMs,
+    handleSetSkillsProjectScopeActive: bundle.setSkillsProjectScopeActive,
+    handleSetExtensionsProjectScopeActive: bundle.setExtensionsProjectScopeActive,
+    handleLoadProjectThreads: desktopShell.loadProjectThreads,
+    listComposerAttachmentEntries: desktopShell.listComposerAttachmentEntries,
+    pickComposerAttachments: desktopShell.pickComposerAttachments,
+    extensionsProjectScopeActive: bundle.extensionsProjectScopeActive,
+    appLaunchedAtMs: bundle.appLaunchedAtMs,
     projects,
-    projectGitState,
-    projectGitLoading,
-    shellState,
-    shellLoading,
-    settingsOpenTarget,
-    skillsProjectScopeActive,
-    state,
+    projectGitState: bundle.projectGitState,
+    projectGitLoading: bundle.projectGitLoading,
+    shellState: desktopShell.shellState,
+    shellLoading: desktopShell.shellLoading,
+    settingsOpenTarget: bundle.settingsOpenTarget,
+    skillsProjectScopeActive: bundle.skillsProjectScopeActive,
+    state: bundle.state,
     selectedInboxThread,
-    terminalRunningProjectIds,
-    terminalRunningSessionPaths,
+    terminalRunningProjectIds: terminals.terminalRunningProjectIds,
+    terminalRunningSessionPaths: terminals.terminalRunningSessionPaths,
     toast,
-    chatSidebarState,
-    chatSidebarLoading,
-    selectedChatGroupId,
-    handleCreateChatGroup,
-    handleSelectChatGroup: setSelectedChatGroupId,
-    refreshChatSidebarState,
+    chatSidebarState: chatSidebar.chatSidebarState,
+    chatSidebarLoading: chatSidebar.chatSidebarLoading,
+    selectedChatGroupId: chatSidebar.selectedChatGroupId,
+    handleCreateChatGroup: chatSidebar.handleCreateChatGroup,
+    handleSelectChatGroup: chatSidebar.setSelectedChatGroupId,
+    refreshChatSidebarState: chatSidebar.refreshChatSidebarState,
   }
 }
 
