@@ -9,7 +9,9 @@ import {
   SquareTerminal,
   X,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
+import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
 import type { DesktopActionInvoker, InboxThread } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import { EmptyStateCard } from '../../common/empty-state-card'
@@ -174,6 +176,8 @@ export function SidebarInboxSection({
   const clearPanelRef = useRef<HTMLDivElement>(null)
   const filterButtonRef = useRef<HTMLButtonElement>(null)
   const filterPanelRef = useRef<HTMLDivElement>(null)
+  const scrollRegionRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const dismissClear = useCallback(() => {
     setClearOpen(false)
@@ -195,6 +199,19 @@ export function SidebarInboxSection({
     refs: [filterButtonRef, filterPanelRef],
   })
 
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'sidebar.find') return
+      event.preventDefault()
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [])
+
   const visibleThreads = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
@@ -215,6 +232,15 @@ export function SidebarInboxSection({
   const filterIcon = getInboxFilterIcon(filterMode)
   const filterLabel = getInboxFilterLabel(filterMode)
 
+  useEffect(() => {
+    if (!selectedSessionPath) return
+    if (!visibleThreads.some((thread) => thread.sessionPath === selectedSessionPath)) return
+    const selectedRow = scrollRegionRef.current?.querySelector<HTMLElement>(
+      '[data-inbox-thread-selected="true"]',
+    )
+    selectedRow?.scrollIntoView({ block: 'nearest' })
+  }, [selectedSessionPath, visibleThreads])
+
   return (
     <section className="sidebar-section">
       <div className="sidebar-toolbar">
@@ -224,6 +250,7 @@ export function SidebarInboxSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -310,22 +337,28 @@ export function SidebarInboxSection({
       </div>
 
       {visibleThreads.length > 0 ? (
-        <div className="sidebar-scroll-region">
+        <div ref={scrollRegionRef} className="sidebar-scroll-region">
           <div className="sidebar-list">
             {visibleThreads.map((thread) => (
-              <InboxThreadRow
+              <div
                 key={thread.sessionPath}
-                age={thread.age}
-                preview={thread.preview}
-                projectName={thread.projectName}
-                running={thread.running}
-                terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
-                selected={selectedSessionPath === thread.sessionPath}
-                title={thread.title}
-                unread={thread.unread}
-                onDismiss={() => onDismissThread(thread)}
-                onSelect={() => onSelectThread(thread)}
-              />
+                data-inbox-thread-selected={
+                  selectedSessionPath === thread.sessionPath ? 'true' : 'false'
+                }
+              >
+                <InboxThreadRow
+                  age={thread.age}
+                  preview={thread.preview}
+                  projectName={thread.projectName}
+                  running={thread.running}
+                  terminalRunning={terminalRunningSessionPaths.has(thread.sessionPath)}
+                  selected={selectedSessionPath === thread.sessionPath}
+                  title={thread.title}
+                  unread={thread.unread}
+                  onDismiss={() => onDismissThread(thread)}
+                  onSelect={() => onSelectThread(thread)}
+                />
+              </div>
             ))}
           </div>
         </div>

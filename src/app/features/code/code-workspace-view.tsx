@@ -1,7 +1,11 @@
 import { FolderGit2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { defaultPiSettings } from '../../../../shared/default-pi-settings'
+import {
+  type HowcodeKeybindingCommandDetail,
+  howcodeKeybindingCommandEvent,
+} from '../../app-shell/keybinding-events'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
@@ -69,6 +73,8 @@ const FALLBACK_APP_SETTINGS = {
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
+  keybindings: {},
+  composerSendMode: 'enter',
 } satisfies AppSettings
 
 type CodeWorkspaceContentProps = CodeWorkspaceViewProps &
@@ -208,6 +214,8 @@ function CodeWorkspaceMainArea(props: CodeWorkspaceContentProps) {
                   piTuiTakeover: false,
                   hoverToFocus: true,
                   hoverToBlur: false,
+                  keybindings: {},
+                  composerSendMode: 'enter',
                 }
               }
               piSettings={shellState?.piSettings ?? defaultPiSettings}
@@ -437,6 +445,8 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       showDictationButton={appSettings.showDictationButton}
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
+      composerSendMode={appSettings.composerSendMode}
+      keybindings={appSettings.keybindings}
       diffRenderMode={diffRenderMode}
       diffComments={diffComments}
       diffCommentCount={diffCommentCount}
@@ -733,12 +743,23 @@ export function CodeWorkspaceView({
     gitOpsFileTreeVisibilityByThread[gitOpsFileTreeStateKey] ??
     shellState?.appSettings.gitDiffFileTreeDefaultVisible ??
     true
-  const toggleGitOpsFileTree = () => {
+  const toggleGitOpsFileTree = useCallback(() => {
     setGitOpsFileTreeVisibilityByThread((current) => ({
       ...current,
       [gitOpsFileTreeStateKey]: !(current[gitOpsFileTreeStateKey] ?? gitOpsFileTreeVisible),
     }))
-  }
+  }, [gitOpsFileTreeStateKey, gitOpsFileTreeVisible])
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'gitops.toggleChangedFiles' || state.activeView !== 'gitops') return
+      event.preventDefault()
+      toggleGitOpsFileTree()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [state.activeView, toggleGitOpsFileTree])
   const { error: diffLoadError } = useDesktopDiff(
     composerProjectId,
     diffBaseline,

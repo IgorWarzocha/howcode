@@ -71,6 +71,37 @@ type CodeWorkspaceMainViewProps = {
   onSelectProject: (projectId: string) => void
 }
 
+function CodeThreadMainView({
+  composerLayoutVersion,
+  composerOverlayHeight,
+  onLoadEarlierMessages,
+  threadData,
+  threadLoading,
+}: Pick<
+  CodeWorkspaceMainViewProps,
+  | 'composerLayoutVersion'
+  | 'composerOverlayHeight'
+  | 'onLoadEarlierMessages'
+  | 'threadData'
+  | 'threadLoading'
+>) {
+  return (
+    <ThreadView
+      key={threadData?.sessionPath ?? 'new-thread'}
+      messages={threadData?.messages ?? []}
+      previousMessageCount={threadData?.previousMessageCount ?? 0}
+      isStreaming={threadData?.isStreaming ?? false}
+      isCompacting={threadData?.isCompacting ?? false}
+      composerLayoutVersion={composerLayoutVersion}
+      composerOverlayHeight={composerOverlayHeight}
+      sessionPath={threadData?.sessionPath ?? null}
+      loading={threadLoading ?? false}
+      onLoadEarlierMessages={onLoadEarlierMessages}
+      onLoadAroundMessage={onLoadEarlierMessages}
+    />
+  )
+}
+
 export function CodeWorkspaceMainView({
   activeView,
   appSettings,
@@ -109,15 +140,11 @@ export function CodeWorkspaceMainView({
 }: CodeWorkspaceMainViewProps) {
   if (activeView === 'thread') {
     return (
-      <ThreadView
-        key={threadData?.sessionPath ?? 'new-thread'}
-        messages={threadData?.messages ?? []}
-        previousMessageCount={threadData?.previousMessageCount ?? 0}
-        isStreaming={threadData?.isStreaming ?? false}
-        isCompacting={threadData?.isCompacting ?? false}
+      <CodeThreadMainView
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
-        loading={threadLoading}
+        threadData={threadData}
+        threadLoading={threadLoading}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     )

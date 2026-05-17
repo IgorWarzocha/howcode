@@ -37,6 +37,7 @@ import type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from '../../../../shared/desktop-contracts'
 import type {
   TerminalEvent,
@@ -135,6 +136,7 @@ export type PiThreadsModule = {
     sessionPath: string,
     options?: { historyCompactions?: number },
   ) => Promise<ThreadData | null>
+  searchThread: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
   setWatchedSessionPath: (sessionPath: string | null) => Promise<void>
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void
 }

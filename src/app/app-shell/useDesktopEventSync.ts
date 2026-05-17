@@ -17,6 +17,7 @@ import {
   shouldAutoOpenStartedThread,
   shouldDisplayStartedThreadForLocalDraft,
 } from './desktop-event-sync'
+import { dispatchHowcodeKeybindingCommand } from './keybinding-events'
 import { applyThreadEventToSidebarState } from './sidebar-thread-sync'
 
 type QueryClientLike = {
@@ -310,6 +311,16 @@ function handleThreadUpdateEvent(
 function handleDesktopEvent(runtime: DesktopEventSyncRuntime, event: DesktopEvent) {
   if (event.type === 'shell-state-refresh') {
     runtime.scheduleShellStateRefresh()
+    return
+  }
+  if (event.type === 'keybinding-command') {
+    const { activeView } = runtime.desktopEventStateRef.current.workspaceState
+    const allowedOverSettings =
+      event.commandId === 'settings.open' ||
+      event.commandId === 'sidebar.toggle' ||
+      event.commandId === 'app.commandPalette'
+    if (activeView === 'settings' && !allowedOverSettings) return
+    dispatchHowcodeKeybindingCommand(event.commandId)
     return
   }
   if (event.type === 'composer-update') {

@@ -2,6 +2,9 @@ import { closestCorners, DndContext } from '@dnd-kit/core'
 import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Edit2, FolderPlus, Plus, Search } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
+import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
 import type {
   ChatGroup,
   ChatSidebarState,
@@ -38,6 +41,7 @@ export function SidebarChatSection({
   onRefresh,
   onAction,
 }: SidebarChatSectionProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const {
     containerRef,
     creating,
@@ -66,6 +70,19 @@ export function SidebarChatSection({
     ungroupedThreads,
   } = useChatSidebarController({ chatState, onCreateGroup, onRefresh, onAction })
 
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'sidebar.find') return
+      event.preventDefault()
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [])
+
   const renderThread = (thread: ChatThread, groupId: string | null) => (
     <ChatThreadDropItem
       key={thread.id}
@@ -88,6 +105,7 @@ export function SidebarChatSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search"

@@ -1,4 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
+import {
+  isKeybindingCommandId,
+  isValidAccelerator,
+  normalizeAccelerator,
+} from '../../../shared/keybindings'
 import type { DesktopAction } from '../desktop/actions'
 import type {
   ComposerThinkingLevel,
@@ -45,6 +50,8 @@ const optimisticSettingKeys = new Set([
   'piTuiTakeover',
   'hoverToFocus',
   'hoverToBlur',
+  'keybindings',
+  'composerSendMode',
 ])
 
 const isThinkingLevel = (value: unknown): value is ComposerThinkingLevel =>
@@ -168,6 +175,35 @@ function applyOptimisticBooleanSetting(
   if (payload.key === 'hoverToBlur') nextSettings.hoverToBlur = payload.value
 }
 
+function applyOptimisticKeybindingSetting(
+  nextSettings: ShellState['appSettings'],
+  payload: ActionPayload,
+) {
+  if (
+    payload.key === 'composerSendMode' &&
+    (payload.value === 'enter' || payload.value === 'cmd-enter')
+  ) {
+    nextSettings.composerSendMode = payload.value
+  }
+  if (payload.key === 'keybindings') nextSettings.keybindings = getOptimisticKeybindings(payload)
+}
+
+function getOptimisticKeybindings(
+  payload: ActionPayload,
+): ShellState['appSettings']['keybindings'] {
+  if (!(payload.value && typeof payload.value === 'object' && !Array.isArray(payload.value)))
+    return {}
+  const overrides: ShellState['appSettings']['keybindings'] = {}
+  for (const [key, value] of Object.entries(payload.value)) {
+    if (!isKeybindingCommandId(key)) continue
+    if (value === null) overrides[key] = null
+    else if (typeof value === 'string' && isValidAccelerator(value)) {
+      overrides[key] = normalizeAccelerator(value)
+    }
+  }
+  return overrides
+}
+
 function applyOptimisticComposerSetting(
   nextSettings: ShellState['appSettings'],
   payload: ActionPayload,
@@ -254,6 +290,7 @@ export function getOptimisticallyUpdatedShellState(
   applyOptimisticBooleanSetting(appSettings, payload)
   applyOptimisticScalarSetting(appSettings, payload)
   applyOptimisticGitSetting(appSettings, payload)
+  applyOptimisticKeybindingSetting(appSettings, payload)
 
   return { ...currentState, appSettings } satisfies ShellState
 }

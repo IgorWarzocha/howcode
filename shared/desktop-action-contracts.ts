@@ -56,7 +56,14 @@ export type DesktopActionPayloadFields = {
   text?: string | undefined
   threadId?: string | undefined
   threadIds?: string[] | undefined
-  value?: string | undefined | number | boolean | ProjectDiffDefaultBaseline | null
+  value?:
+    | string
+    | undefined
+    | number
+    | boolean
+    | ProjectDiffDefaultBaseline
+    | AppSettings['keybindings']
+    | null
 }
 
 export type DesktopActionPayloadInput = {
@@ -98,6 +105,8 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'piTuiTakeover'; value: boolean }
   | { key: 'hoverToFocus'; value: boolean }
   | { key: 'hoverToBlur'; value: boolean }
+  | { key: 'keybindings'; value: AppSettings['keybindings'] }
+  | { key: 'composerSendMode'; value: AppSettings['composerSendMode'] }
 
 export type DesktopActionPayloadMap = {
   'threads.collapse-all': EmptyActionPayload

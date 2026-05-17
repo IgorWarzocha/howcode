@@ -1,6 +1,6 @@
 ---
 name: agent-native-hardening
-description: "TypeScript/JavaScript codebase hardening: maintainability, code quality, architecture cleanup, repo scoring, agent-friendly structure, godfiles, feature folders, DRY, type safety, traversability, feedback loops, worktrees, subagents, swarm refactors."
+description: "TypeScript/JavaScript codebase hardening: maintainability, code quality, architecture cleanup, repo scoring, agent-friendly structure, godfiles, godfunctions, feature folders, DRY, type safety, traversability, feedback loops, worktrees, subagents, swarm refactors."
 ---
 
 # Agent Native Hardening
@@ -28,8 +28,10 @@ If a reference file is missing or unreadable, say so and continue with the close
 3. Keep tests light and deterministic; avoid flaky integration tests unless requested.
 4. Use lanes to separate evidence gathering and implementation. A lane can be a read-only exploration task, a direct coding pass, a subagent task, or a worktree branch depending on scope and risk.
 5. Keep each lane focused, low-overlap, and easy to verify.
-6. Prefer feature folders over catch-all files; godfiles must be extracted into clear feature-owned modules.
+6. Prefer feature folders over catch-all files; godfiles and godfunctions must be extracted into clear feature-owned modules and small typed flows.
 7. Push toward DRY and separation of concerns; remove copy-paste and mixed-responsibility modules without replacing them with new junk drawers.
+8. Treat feature velocity as a risk signal: cheap-feeling additions still spend finite complexity budget. Prefer explicit scope boundaries and reject bloat that does not serve the product's core job.
+9. Make the shortest agent path the correct path by writing concrete architecture invariants before adding features: ownership rules, extension points, message/event contracts, state-transition rules, and forbidden shortcuts.
 
 ## Required Scorecard
 
@@ -42,7 +44,7 @@ Always score these categories from 0-10 and explain evidence with file reference
 6. `self_documenting`
 
 Use rubric: `references/scoring-rubric.md`. Read it fully before assigning scores.
-Always call out godfiles, mixed-concern modules, duplication hotspots, and feature-boundary violations in the evidence.
+Always call out godfiles, godfunctions, mixed-concern modules, duplication hotspots, and feature-boundary violations in the evidence.
 
 ## Type Safety Policy
 
@@ -53,15 +55,27 @@ Always call out godfiles, mixed-concern modules, duplication hotspots, and featu
 5. Preserve types across DB, server, client, and event/queue boundaries when project tooling supports it.
 6. Prefer object parameters over positional arguments for functions with multiple ambiguous arguments.
 7. Penalize pervasive `any`, unsafe casts, manually duplicated DTOs, and type drift between layers.
+8. Penalize positional data models: arrays/tuples/string lists where field identity is implied by index, magic column numbers, parallel arrays, or flattened display rows passed through domain logic. Keep typed domain objects until the render/serialization boundary.
 
-## Godfile + Boundary Policy
+## State + Control-Flow Ownership Policy
+
+1. Application/root objects should route, compose, and own only truly global lifecycle state; feature/view-specific state belongs to feature/view-owned modules.
+2. Avoid global dispatch functions that accumulate per-feature conditionals. Prefer polymorphic handlers, feature-local keymaps/actions, reducers, or command registries with typed contracts.
+3. Adding a feature should usually mean adding a feature-owned file/folder, not adding branches to central handlers. If central changes are required, they should be small registration or routing changes.
+4. State transitions should be explicit and typed. Background/async work produces typed messages/events/results; one owner applies mutations in a predictable place.
+5. Render/view functions should be pure where the framework allows it: no I/O, channel operations, hidden mutation, or background task coordination.
+6. Watch for manual cleanup/reset patterns (`= null`, `= undefined`, `= []`, `= nil`) scattered across handlers; they often indicate missing state isolation or unmodeled lifecycle transitions.
+
+## Godfile, Godfunction + Boundary Policy
 
 1. Treat a file or folder as a godfile hotspot when it acts as a catch-all for unrelated responsibilities, mixes layers, or keeps absorbing unrelated edits.
 2. Godfiles must be broken apart into feature folders with clear ownership and small entrypoints.
-3. Extract by feature first, then by concern inside the feature: keep orchestration, domain logic, IO, schemas/types, UI, and tests separated when the codebase shape allows it.
-4. Enforce DRY by pulling repeated logic into the nearest stable shared boundary with a clear owner.
-5. Do not "fix" duplication by creating a generic `utils` or `helpers` dumping ground; shared code still needs an explicit domain or platform owner.
-6. Penalize codebases that retain godfiles, mixed-responsibility modules, or broad cross-feature coupling even if tests still pass.
+3. Treat a function as a godfunction when it handles unrelated responsibilities, mixes orchestration/domain logic/IO/rendering/mutation, grows feature-specific branches, or requires large local context to change safely.
+4. Godfunctions must be split into named steps with owned responsibilities: feature-local handlers, pure domain transforms, typed command/event boundaries, IO adapters, and small orchestration functions.
+5. Extract by feature first, then by concern inside the feature: keep orchestration, domain logic, IO, schemas/types, UI, and tests separated when the codebase shape allows it.
+6. Enforce DRY by pulling repeated logic into the nearest stable shared boundary with a clear owner.
+7. Do not "fix" duplication by creating a generic `utils` or `helpers` dumping ground; shared code still needs an explicit domain or platform owner.
+8. Penalize codebases that retain godfiles, godfunctions, mixed-responsibility modules, or broad cross-feature coupling even if tests still pass.
 
 ## Execution Workflow
 
@@ -73,7 +87,7 @@ Always call out godfiles, mixed-concern modules, duplication hotspots, and featu
 - For non-trivial repos, use read-only discovery lanes first. These may be explore-style subagents or your own direct inspection.
 - Discovery lanes return evidence only: files, commands, risks, ownership boundaries, and proposed next lanes.
 - Verify discovery findings yourself before edits.
-- Identify hotspots: oversized files, godfiles, missing feature boundaries, duplication, weak tests, stale docs.
+- Identify hotspots: oversized files, oversized/mixed-responsibility functions, godfiles, godfunctions, missing feature boundaries, duplication, weak tests, stale docs.
 
 3. Plan Lanes
 - Split work into 3-6 lanes with minimal overlap.
@@ -111,10 +125,12 @@ Avoid comments that restate obvious code.
 ## Structural Refactor Policy
 
 1. Default repo shape should favor feature folders over layerless file piles.
-2. When a file mixes multiple concerns, split it before adding more behavior.
+2. When a file or function mixes multiple concerns, split it before adding more behavior.
 3. When duplication appears across features, first check whether the behavior is truly shared and stable; if yes, extract it into an owned shared module, otherwise keep it feature-local.
 4. Prefer small, composable modules with obvious ownership over giant "central" files.
 5. In findings and final scoring, explicitly say whether the repo is moving toward or away from DRY and separation of concerns.
+6. Before implementing net-new features during hardening, identify the product/core-user scope boundary. Defer features that widen scope without strengthening architecture or the core workflow.
+7. Replace “special-case in the central path” changes with owned extension points: feature registration, typed messages, local handlers, or strategy objects.
 
 ## Minimal Documentation Policy
 

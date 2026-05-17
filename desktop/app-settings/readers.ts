@@ -9,6 +9,7 @@ import {
   chatThinkingLevelKey,
   codeModelKey,
   codeThinkingLevelKey,
+  composerSendModeKey,
   composerStreamingBehaviorKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
@@ -24,6 +25,7 @@ import {
   hoverToFocusKey,
   howcodeNativeAskQuestionsKey,
   initializeGitOnProjectCreateKey,
+  keybindingsKey,
   legacyDevUpdateBranchKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
@@ -37,12 +39,14 @@ import {
 import {
   type PreferenceRow,
   parseBooleanPreference,
+  parseComposerSendModePreference,
   parseComposerStreamingBehaviorPreference,
   parseDictationModelIdPreference,
   parseFavoriteFolders,
   parseGitDiffBaselineDefaultPreference,
   parseGitDiffRenderModePreference,
   parseGitOpsModePreference,
+  parseKeybindingOverrides,
   parseModelSelection,
   parseNumberPreference,
   parseProjectDeletionModePreference,
@@ -76,6 +80,13 @@ function getDevUpdateBranch(valueJson: string | undefined) {
 
 function getDevUpdateBranchValue(value: (key: string) => string | undefined) {
   return value(devUpdateBranchKey) ?? value(legacyDevUpdateBranchKey)
+}
+
+function loadKeybindingSettings(value: (key: string) => string | undefined) {
+  return {
+    keybindings: parseKeybindingOverrides(value(keybindingsKey)),
+    composerSendMode: parseComposerSendModePreference(value(composerSendModeKey)) ?? 'enter',
+  }
 }
 
 export function loadAppSettings(): AppSettings {
@@ -121,5 +132,6 @@ export function loadAppSettings(): AppSettings {
     piTuiTakeover: parseBooleanPreference(value(piTuiTakeoverKey)) ?? false,
     hoverToFocus: parseBooleanPreference(value(hoverToFocusKey)) ?? true,
     hoverToBlur: parseBooleanPreference(value(hoverToBlurKey)) ?? false,
+    ...loadKeybindingSettings(value),
   }
 }

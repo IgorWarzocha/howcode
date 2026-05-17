@@ -6,6 +6,7 @@ export const settingsCategories: SettingsCategory[] = [
   { id: 'pi-runtime', label: 'Pi Runtime' },
   { id: 'pi-tui', label: 'Pi TUI' },
   { id: 'dictation', label: 'Dictation' },
+  { id: 'keybindings', label: 'Keybindings' },
 ]
 
 export function filterSettings({

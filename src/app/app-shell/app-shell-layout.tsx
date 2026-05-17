@@ -11,6 +11,7 @@ import { cn } from '../utils/cn'
 import { AppShellOverlays } from './app-shell-overlays'
 import { AppShellWorkspace } from './app-shell-workspace'
 import { appShellRootClass } from './layout-classes'
+import { useAppKeybindings } from './useAppKeybindings'
 import type { AppShellController } from './useAppShellController'
 import { useAppShellLayoutState } from './useAppShellLayoutState'
 
@@ -245,6 +246,8 @@ const FALLBACK_APP_SETTINGS = {
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
+  keybindings: {},
+  composerSendMode: 'enter',
 } satisfies AppSettings
 
 function noopCloseCompactSidebar() {
@@ -974,6 +977,18 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     }
     setSidebarCollapsed((collapsed) => !collapsed)
   }, [sidebarCompactMode])
+
+  const handleOpenSidebar = useCallback(() => {
+    setSidebarCollapsed(false)
+    if (sidebarCompactMode) setSidebarOverlayOpen(true)
+  }, [sidebarCompactMode])
+
+  useAppKeybindings({
+    controller,
+    keybindings: controller.shellState?.appSettings.keybindings ?? {},
+    onOpenSidebar: handleOpenSidebar,
+    onToggleSidebar: handleToggleSidebar,
+  })
 
   return (
     <AppShellLayoutView

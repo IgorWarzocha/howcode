@@ -3,6 +3,10 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { type ITheme, Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
+import {
+  type HowcodeKeybindingCommandDetail,
+  howcodeKeybindingCommandEvent,
+} from '../../../app-shell/keybinding-events'
 import { piGuiThemeUpdatedEvent } from '../../../app-shell/usePiGuiTheme'
 import type { TerminalEvent } from '../../../desktop/types'
 import {
@@ -324,7 +328,8 @@ export function TerminalViewport({
     (history = '') => {
       const nextHistory = clampTerminalHistory(history)
       terminalHistoryRef.current = nextHistory
-      clearTerminal((data) => writeToTerminal(data))
+      if (nextHistory) clearTerminal((data) => writeToTerminal(data))
+      else terminalInstanceRef.current?.clear()
       if (nextHistory) {
         writeToTerminal(nextHistory)
       }
@@ -332,6 +337,18 @@ export function TerminalViewport({
     },
     [scheduleXtermBottomAlign, writeToTerminal],
   )
+
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'terminal.clear' || !isTerminalFocused()) return
+      event.preventDefault()
+      resetTerminal('')
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [isTerminalFocused, resetTerminal])
 
   const appendTerminalHistory = useCallback(
     (chunk: string) => {

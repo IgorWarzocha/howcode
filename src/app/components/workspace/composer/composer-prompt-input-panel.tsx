@@ -1,5 +1,11 @@
 import { Loader2 } from 'lucide-react'
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react'
+import {
+  type ComposerSendMode,
+  eventToAcceleratorCandidates,
+  type KeybindingOverrides,
+  normalizeAccelerator,
+} from '../../../../../shared/keybindings'
 import type { ComposerAttachment, DesktopActionInvoker } from '../../../desktop/types'
 import { getPathForFileQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
@@ -132,6 +138,8 @@ type ComposerKeyDownInput = {
   fileMentions: ComposerFileMentions
   skillMentions: ComposerSkillMentions
   setDraft: (value: string) => void
+  composerSendMode: ComposerSendMode
+  keybindings: KeybindingOverrides
 }
 
 function isCursorAtStart(textarea: HTMLTextAreaElement) {
@@ -209,6 +217,67 @@ function handleHorizontalBoundaryNavigation(
   return false
 }
 
+function isComposerSubmitKey(event: KeyboardEvent<HTMLTextAreaElement>, mode: ComposerSendMode) {
+  if (event.key !== 'Enter') return false
+  if (mode === 'cmd-enter') return event.metaKey || event.ctrlKey
+  return !(event.shiftKey || event.metaKey || event.ctrlKey)
+}
+
+function matchesComposerCommandKey(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+  commandId: 'composer.newline' | 'composer.submit',
+) {
+  const override = input.keybindings[commandId]
+  if (override === null) return false
+  const accelerators =
+    typeof override === 'string'
+      ? [override]
+      : getComposerDefaultAccelerators(commandId, input.composerSendMode)
+  const candidates = new Set(eventToAcceleratorCandidates(event))
+  return accelerators.some((accelerator) => candidates.has(normalizeAccelerator(accelerator)))
+}
+
+function insertComposerNewline(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  setDraft: (value: string) => void,
+) {
+  const textarea = event.currentTarget
+  const selectionStart = textarea.selectionStart
+  const selectionEnd = textarea.selectionEnd
+  const nextCursor = selectionStart + 1
+  const nextValue = `${textarea.value.slice(0, selectionStart)}\n${textarea.value.slice(selectionEnd)}`
+  event.preventDefault()
+  setDraft(nextValue)
+  window.requestAnimationFrame(() => textarea.setSelectionRange(nextCursor, nextCursor))
+}
+
+function handleComposerNewlineCommand(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  input: ComposerKeyDownInput,
+) {
+  if (!matchesComposerCommandKey(event, input, 'composer.newline')) return false
+  if (event.key !== 'Enter' || event.altKey || event.ctrlKey || event.metaKey) {
+    insertComposerNewline(event, input.setDraft)
+  }
+  return true
+}
+
+function composerCommandHasOverride(
+  input: ComposerKeyDownInput,
+  commandId: 'composer.newline' | 'composer.submit',
+) {
+  return Object.hasOwn(input.keybindings, commandId)
+}
+
+function getComposerDefaultAccelerators(
+  commandId: 'composer.newline' | 'composer.submit',
+  mode: ComposerSendMode,
+) {
+  if (commandId === 'composer.submit') return mode === 'cmd-enter' ? ['CmdOrCtrl+Enter'] : ['Enter']
+  return mode === 'cmd-enter' ? ['Enter'] : ['Shift+Enter']
+}
+
 function handleComposerTextKeyDown(
   event: KeyboardEvent<HTMLTextAreaElement>,
   input: ComposerKeyDownInput,
@@ -232,7 +301,14 @@ function handleComposerTextKeyDown(
   if (handleOpenAutocompleteKeyDown(event, input)) {
     return
   }
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (handleComposerNewlineCommand(event, input)) {
+    return
+  }
+  if (
+    matchesComposerCommandKey(event, input, 'composer.submit') ||
+    (!composerCommandHasOverride(input, 'composer.submit') &&
+      isComposerSubmitKey(event, input.composerSendMode))
+  ) {
     event.preventDefault()
     if (!input.onSubmitOverride?.()) input.slashCommands.submit()
     return
@@ -255,6 +331,8 @@ type ComposerPromptInputPanelProps = {
   inputLocked: boolean
   hoverToFocus: boolean
   hoverToBlur: boolean
+  composerSendMode: ComposerSendMode
+  keybindings: KeybindingOverrides
   favoriteFolders: string[]
   pickerLoading: boolean
   pickerOpen: boolean
@@ -304,6 +382,8 @@ export function ComposerPromptInputPanel({
   inputLocked,
   hoverToFocus,
   hoverToBlur,
+  composerSendMode,
+  keybindings,
   favoriteFolders,
   hoverBoundaryRef,
   pickerLoading,
@@ -377,6 +457,8 @@ export function ComposerPromptInputPanel({
                     dictationTranscribing,
                     fileMentions,
                     inputLocked,
+                    composerSendMode,
+                    keybindings,
                     onArrowNavigationOverride,
                     onEscapeOverride,
                     onSubmitOverride,

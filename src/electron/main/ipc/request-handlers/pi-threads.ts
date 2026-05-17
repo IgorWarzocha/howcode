@@ -31,11 +31,15 @@ type PiThreadsRequestHandlers = Pick<
   | 'getInboxThreads'
   | 'getArchivedThreads'
   | 'getThread'
+  | 'searchThread'
   | 'watchSession'
   | 'invokeAction'
 >
 
-export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRequestHandlers {
+export function createPiThreadsHandlers(
+  piThreads: PiThreadsModule,
+  onSettingsChanged?: (() => Promise<void> | void) | undefined,
+): PiThreadsRequestHandlers {
   return {
     getShellState: async () => piThreads.loadShellState(getDesktopWorkingDirectory()),
     getProjectGitState: ({ projectId }) => piThreads.loadProjectGitState(projectId),
@@ -80,6 +84,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     getArchivedThreads: () => piThreads.loadArchivedThreadList(),
     getThread: ({ sessionPath, historyCompactions = 0 }) =>
       piThreads.loadThread(sessionPath, { historyCompactions }),
+    searchThread: ({ sessionPath, query }) => piThreads.searchThread(sessionPath, query),
     watchSession: async ({ sessionPath }) => {
       await piThreads.setWatchedSessionPath(sessionPath)
       return { ok: true }
@@ -87,6 +92,7 @@ export function createPiThreadsHandlers(piThreads: PiThreadsModule): PiThreadsRe
     invokeAction: async ({ action, payload = {} }) => {
       try {
         const result = await piThreads.handleDesktopAction(action, payload)
+        if (action === 'settings.update') await onSettingsChanged?.()
         return {
           ok: true,
           at: new Date().toISOString(),

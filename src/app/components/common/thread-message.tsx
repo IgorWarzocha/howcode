@@ -14,6 +14,62 @@ import { MarkdownContent } from './markdown-content'
 
 const copyButtonClass =
   'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel)] text-[color:var(--muted)] opacity-0 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,background-color,color,transform] delay-300 duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 hover:delay-0 focus-visible:opacity-100 focus-visible:delay-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover/message:opacity-100 group-hover/message:delay-0 group-focus-within/message:opacity-100 group-focus-within/message:delay-0'
+const threadFindHighlightName = 'thread-find-match'
+
+function collectFindHighlightRanges(root: HTMLElement, query: string) {
+  const ranges: Range[] = []
+  const normalizedQuery = query.toLowerCase()
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement
+      if (!parent?.textContent) return NodeFilter.FILTER_REJECT
+      if (parent.closest('button, input, textarea, select, [data-no-find-highlight="true"]')) {
+        return NodeFilter.FILTER_REJECT
+      }
+      return NodeFilter.FILTER_ACCEPT
+    },
+  })
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    const text = node.textContent ?? ''
+    const normalizedText = text.toLowerCase()
+    let index = normalizedText.indexOf(normalizedQuery)
+    while (index !== -1) {
+      const range = document.createRange()
+      range.setStart(node, index)
+      range.setEnd(node, index + query.length)
+      ranges.push(range)
+      index = normalizedText.indexOf(normalizedQuery, index + query.length)
+    }
+  }
+
+  return ranges
+}
+
+function useThreadFindHighlight(input: {
+  active: boolean | undefined
+  query: string | undefined
+  rootRef: React.RefObject<HTMLDivElement | null>
+}) {
+  useEffect(() => {
+    if (!('Highlight' in window && 'highlights' in CSS)) return
+    const root = input.rootRef.current
+    const query = input.query?.trim()
+    if (!(input.active && root && query)) {
+      CSS.highlights.delete(threadFindHighlightName)
+      return
+    }
+
+    CSS.highlights.set(
+      threadFindHighlightName,
+      new Highlight(...collectFindHighlightRanges(root, query)),
+    )
+    return () => {
+      CSS.highlights.delete(threadFindHighlightName)
+    }
+  }, [input.active, input.query, input.rootRef])
+}
 
 function CopyMessageButton({ label, text }: { label: string; text: string }) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
@@ -60,6 +116,8 @@ function CopyMessageButton({ label, text }: { label: string; text: string }) {
 type ThreadMessageProps = {
   message: Message
   autoExpandThinking?: boolean | undefined
+  findQuery?: string | undefined
+  findActive?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
   firstCardOnly?: boolean | undefined
   disableInnerExpansion?: boolean | undefined
@@ -179,7 +237,7 @@ function AssistantThinkingBlock({
       }
     >
       {thinkingContent.length > 0 ? (
-        renderThinking(thinkingContent)
+        <div data-no-find-highlight="true">{renderThinking(thinkingContent)}</div>
       ) : (
         <div className="text-[12px] italic text-[color:var(--muted-2)]/82">
           This provider redacted the reasoning trace.
@@ -200,7 +258,13 @@ function SummaryBlock({ label, content }: { label: string; content: string[] }) 
   )
 }
 
-function UserMessageBlock({ message }: { message: ProseMessage }) {
+function UserMessageBlock({
+  message,
+}: {
+  message: ProseMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   return (
     <div className="group/message relative w-full min-w-0 rounded-2xl border border-[color:var(--accent-border)] bg-[color:var(--message-user-bg)] px-3 py-2 pr-11 text-[14px] leading-[1.58] text-[color:var(--text)] shadow-[inset_0_1px_0_var(--accent-bg-subtle)]">
       <div className="grid min-w-0 gap-3 [overflow-wrap:anywhere]">
@@ -336,7 +400,13 @@ function BashExecutionMessageBlock({ message }: { message: BashExecutionMessage 
   )
 }
 
-function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
+function CustomMessageBlock({
+  message,
+}: {
+  message: CustomThreadMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   const customStatusClassName = message.isError
     ? 'border-transparent bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] text-[color:var(--danger)]'
     : 'border-dashed border-[color:var(--border)] bg-[color:var(--message-tool-bg)] text-[color:var(--text)]/84'
@@ -353,7 +423,13 @@ function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
   )
 }
 
-function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
+function SystemMessageBlock({
+  message,
+}: {
+  message: SystemThreadMessage
+  findActive?: boolean | undefined
+  findQuery?: string | undefined
+}) {
   const isModelStatus = message.label === 'Model changed' || message.label === 'Reasoning changed'
 
   if (isModelStatus) {
@@ -379,7 +455,7 @@ function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
   )
 }
 
-function ThreadMessageComponent(props: ThreadMessageProps) {
+function renderThreadMessageContent(props: ThreadMessageProps) {
   const { message } = props
   if (message.role === 'user') return <UserMessageBlock message={message} />
   if (message.role === 'assistant') return <AssistantMessageBlock {...props} message={message} />
@@ -397,4 +473,16 @@ function ThreadMessageComponent(props: ThreadMessageProps) {
   }
   return null
 }
+
+function ThreadMessageComponent(props: ThreadMessageProps) {
+  const highlightRootRef = useRef<HTMLDivElement | null>(null)
+  useThreadFindHighlight({
+    active: props.findActive,
+    query: props.findQuery,
+    rootRef: highlightRootRef,
+  })
+
+  return <div ref={highlightRootRef}>{renderThreadMessageContent(props)}</div>
+}
+
 export const ThreadMessage = memo(ThreadMessageComponent)

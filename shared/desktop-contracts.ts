@@ -107,3 +107,19 @@ export type {
   ToolResultImage,
   ToolResultMessage,
 } from './desktop-thread-contracts'
+export type {
+  ComposerSendMode,
+  KeybindingCommandId,
+  KeybindingConflict,
+  KeybindingDefinition,
+  KeybindingOverrides,
+} from './keybindings'
+export {
+  bundledKeybindings,
+  getConflictForCommand,
+  getEffectiveAccelerators,
+  getKeybindingConflicts,
+  isKeybindingCommandId,
+  normalizeAccelerator,
+} from './keybindings'
+export type { ThreadSearchMatch, ThreadSearchResult } from './thread-search'

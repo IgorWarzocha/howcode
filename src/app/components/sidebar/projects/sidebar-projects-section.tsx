@@ -8,8 +8,10 @@ import {
   Star,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
+import type { HowcodeKeybindingCommandDetail } from '../../../app-shell/keybinding-events'
+import { howcodeKeybindingCommandEvent } from '../../../app-shell/keybinding-events'
 import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
@@ -261,6 +263,7 @@ export function SidebarProjectsSection({
     (activeView === 'extensions' || activeView === 'skills') && projectScopeLockActive
   const showProjectCreate = activeView !== 'extensions' && activeView !== 'skills'
   const [searchQuery, setSearchQuery] = useState('')
+  const deferredSearchQuery = useDeferredValue(searchQuery)
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>('all')
   const [filterOpen, setFilterOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -274,12 +277,13 @@ export function SidebarProjectsSection({
   const filterPanelRef = useRef<HTMLDivElement>(null)
   const createButtonRef = useRef<HTMLButtonElement>(null)
   const createPanelRef = useRef<HTMLDialogElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const { projects: visibleProjects, autoExpandedProjectIds } = useMemo(
     () =>
       getSidebarVisibleProjects({
         projects,
-        searchQuery,
+        searchQuery: deferredSearchQuery,
         filterMode,
         terminalRunningProjectIds,
         terminalRunningSessionPaths,
@@ -289,16 +293,20 @@ export function SidebarProjectsSection({
     [
       appLaunchedAtMs,
       createdProjectIds,
+      deferredSearchQuery,
       filterMode,
       projects,
-      searchQuery,
       terminalRunningProjectIds,
       terminalRunningSessionPaths,
     ],
   )
 
   useEffect(() => {
-    if (filterMode !== 'terminal' && filterMode !== 'recent' && searchQuery.trim().length === 0) {
+    if (
+      filterMode !== 'terminal' &&
+      filterMode !== 'recent' &&
+      deferredSearchQuery.trim().length === 0
+    ) {
       return
     }
 
@@ -306,7 +314,7 @@ export function SidebarProjectsSection({
     for (const project of visibleProjects) {
       const sourceProject = projectsById.get(project.id)
 
-      const shouldLoadSearchedProject = searchQuery.trim().length > 0
+      const shouldLoadSearchedProject = deferredSearchQuery.trim().length > 0
       const hasIndexedThreads = (sourceProject?.threadCount ?? project.threadCount ?? 0) > 0
 
       const threadsScope = activeView === 'chat' ? 'chat' : 'code'
@@ -319,10 +327,10 @@ export function SidebarProjectsSection({
 
       void onLoadProjectThreads(project.id, { chat: activeView === 'chat' })
     }
-  }, [activeView, filterMode, onLoadProjectThreads, projects, searchQuery, visibleProjects])
+  }, [activeView, deferredSearchQuery, filterMode, onLoadProjectThreads, projects, visibleProjects])
 
   const effectiveCollapsedProjectIds = useMemo(() => {
-    if (searchQuery.trim().length === 0) {
+    if (deferredSearchQuery.trim().length === 0) {
       return collapsedProjectIds
     }
 
@@ -330,7 +338,7 @@ export function SidebarProjectsSection({
       ...collapsedProjectIds,
       ...Object.fromEntries([...autoExpandedProjectIds].map((projectId) => [projectId, false])),
     }
-  }, [autoExpandedProjectIds, collapsedProjectIds, searchQuery])
+  }, [autoExpandedProjectIds, collapsedProjectIds, deferredSearchQuery])
 
   const filterLabel = getSidebarProjectFilterLabel(filterMode)
 
@@ -353,6 +361,19 @@ export function SidebarProjectsSection({
     onDismiss: dismissCreate,
     refs: [createButtonRef, createPanelRef],
   })
+
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'sidebar.find') return
+      event.preventDefault()
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [])
 
   const handleCreateProject = async (options?: { parentPath?: string | null }) => {
     const draft = prepareCreateProject({
@@ -439,6 +460,7 @@ export function SidebarProjectsSection({
         >
           <Search size={14} className="sidebar-search-icon" />
           <input
+            ref={searchInputRef}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -545,7 +567,7 @@ export function SidebarProjectsSection({
         onToggleProjectCollapse={onToggleProjectCollapse}
         pendingProject={pendingProject}
         protectedProjectId={protectedProjectId}
-        searchQuery={searchQuery}
+        searchQuery={deferredSearchQuery}
         selectedProjectId={selectedProjectId}
         selectedThreadId={selectedThreadId}
         selectionModeActive={selectionModeActive}

@@ -185,6 +185,8 @@ export function installDevWebDesktopBridge() {
     getArchivedThreads: () => invokeRequest('getArchivedThreads', {}),
     getThread: (sessionPath: string, historyCompactions = 0) =>
       invokeRequest('getThread', { sessionPath, historyCompactions }),
+    searchThread: (sessionPath: string, query: string) =>
+      invokeRequest('searchThread', { sessionPath, query }),
     watchSession: async (sessionPath: string | null) => {
       await invokeRequest('watchSession', { sessionPath })
     },

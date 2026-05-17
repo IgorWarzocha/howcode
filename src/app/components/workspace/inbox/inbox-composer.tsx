@@ -7,6 +7,10 @@ import {
   useRef,
   useState,
 } from 'react'
+import {
+  type HowcodeKeybindingCommandDetail,
+  howcodeKeybindingCommandEvent,
+} from '../../../app-shell/keybinding-events'
 import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type {
@@ -257,6 +261,18 @@ export function InboxComposer({
     }
   }
 
+  useEffect(() => {
+    const handleCommand = (event: Event) => {
+      const commandId = (event as CustomEvent<HowcodeKeybindingCommandDetail>).detail?.commandId
+      if (commandId !== 'dictation.toggle' || !showDictationButton) return
+      event.preventDefault()
+      void toggleDictation()
+    }
+
+    window.addEventListener(howcodeKeybindingCommandEvent, handleCommand)
+    return () => window.removeEventListener(howcodeKeybindingCommandEvent, handleCommand)
+  }, [showDictationButton, toggleDictation])
+
   const slashCommands = useComposerSlashCommands({
     draft,
     projectId: thread.projectId,
@@ -484,6 +500,7 @@ export function InboxComposer({
     <div
       ref={composerSurfaceRef}
       className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
+      data-composer-root="true"
     >
       <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
         <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
@@ -560,6 +577,8 @@ export function InboxComposer({
             handlePaste={handlePaste}
             hoverToFocus={appSettings.hoverToFocus}
             hoverToBlur={appSettings.hoverToBlur}
+            composerSendMode={appSettings.composerSendMode}
+            keybindings={appSettings.keybindings}
             hoverBoundaryRef={composerSurfaceRef}
             onAction={onAction}
             onOpenSettingsView={onOpenSettingsView}

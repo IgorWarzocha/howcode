@@ -68,6 +68,8 @@ const FALLBACK_APP_SETTINGS = {
   piTuiTakeover: false,
   hoverToFocus: true,
   hoverToBlur: false,
+  keybindings: {},
+  composerSendMode: 'enter',
 } satisfies AppSettings
 
 type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
@@ -153,10 +155,12 @@ function ChatWorkspaceMain(props: ChatWorkspaceContentProps) {
         isCompacting={activeThreadData?.isCompacting ?? false}
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
+        sessionPath={activeThreadData?.sessionPath ?? null}
         loading={
           controller.activeThreadLoading || (hasConversation && !shouldShowConversationContent)
         }
         onLoadEarlierMessages={handleLoadEarlierMessages}
+        onLoadAroundMessage={handleLoadEarlierMessages}
       />
     </main>
   )
@@ -255,6 +259,8 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       showDictationButton={appSettings.showDictationButton}
       hoverToFocus={appSettings.hoverToFocus}
       hoverToBlur={appSettings.hoverToBlur}
+      composerSendMode={appSettings.composerSendMode}
+      keybindings={appSettings.keybindings}
       diffRenderMode={diffRenderMode}
       diffComments={[]}
       diffCommentCount={0}

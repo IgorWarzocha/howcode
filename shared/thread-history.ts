@@ -110,7 +110,7 @@ function appendEntryMessage(
   switch (entry.type) {
     case 'message':
       if (entry.message) {
-        messages.push(entry.message)
+        messages.push({ ...(entry.message as object), id: entry.id } as unknown as AgentMessage)
       }
       return
     case 'custom_message':
@@ -119,6 +119,7 @@ function appendEntryMessage(
       }
 
       messages.push({
+        id: entry.id,
         role: 'custom',
         customType: entry.customType ?? 'custom',
         content: entry.content ?? '',
@@ -131,6 +132,7 @@ function appendEntryMessage(
       }
 
       messages.push({
+        id: entry.id,
         role: 'branchSummary',
         summary: entry.summary,
         timestamp: entry.timestamp ?? Date.now(),
@@ -147,6 +149,7 @@ function appendEntryMessage(
       }
 
       messages.push({
+        id: entry.id,
         role: 'compactionSummary',
         summary: entry.summary,
         tokensBefore: entry.tokensBefore ?? 0,

@@ -1,4 +1,5 @@
 import { Archive, ChevronDown, ChevronRight } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useAnimatedPresence } from '../../../hooks/useAnimatedPresence'
 import type { Project, View } from '../../../types'
@@ -136,46 +137,61 @@ export function ProjectThreadsList({
     ? project.threads.length > 0
     : (project.threadCount ?? 0) > 0
   const { recentThreads, oldThreads } = partitionProjectThreads(project)
+  const groupRef = useRef<HTMLDivElement>(null)
   const selectedOldThreadVisible = oldThreads.some((thread) => thread.id === selectedThreadId)
   const oldThreadsExpanded = revealOldThreads || selectedOldThreadVisible || expandedByUser
+  const selectedThreadInProject = project.threads.some((thread) => thread.id === selectedThreadId)
+
+  useEffect(() => {
+    if (!(isExpanded && selectedThreadId)) return
+    if (!(activeView === 'chat' || activeView === 'thread' || activeView === 'gitops')) return
+    if (!selectedThreadInProject) return
+    void oldThreadsExpanded
+    const selectedRow = groupRef.current?.querySelector<HTMLElement>(
+      '[data-project-thread-selected="true"]',
+    )
+    selectedRow?.scrollIntoView({ block: 'nearest' })
+  }, [activeView, isExpanded, oldThreadsExpanded, selectedThreadId, selectedThreadInProject])
+
   const renderThread = (thread: Project['threads'][number]) => {
     const isSelected =
       selectedThreadId === thread.id &&
       (activeView === 'chat' || activeView === 'thread' || activeView === 'gitops')
 
     return (
-      <ThreadRow
-        key={thread.id}
-        age={thread.age}
-        pinned={Boolean(thread.pinned)}
-        running={Boolean(thread.running)}
-        terminalRunning={Boolean(
-          thread.sessionPath && terminalRunningSessionPaths.has(thread.sessionPath),
-        )}
-        unread={Boolean(thread.unread)}
-        isSelected={isSelected}
-        title={thread.title}
-        onArchive={() =>
-          onAction('thread.archive', {
-            projectId: project.id,
-            threadId: thread.id,
-          })
-        }
-        onOpen={() => {
-          if (!thread.sessionPath) {
-            return
+      <div key={thread.id} data-project-thread-selected={isSelected ? 'true' : 'false'}>
+        <ThreadRow
+          age={thread.age}
+          pinned={Boolean(thread.pinned)}
+          running={Boolean(thread.running)}
+          terminalRunning={Boolean(
+            thread.sessionPath && terminalRunningSessionPaths.has(thread.sessionPath),
+          )}
+          unread={Boolean(thread.unread)}
+          isSelected={isSelected}
+          title={thread.title}
+          onArchive={() =>
+            onAction('thread.archive', {
+              projectId: project.id,
+              threadId: thread.id,
+            })
           }
+          onOpen={() => {
+            if (!thread.sessionPath) {
+              return
+            }
 
-          onThreadOpen(project.id, thread.id, thread.sessionPath)
-          onCloseProjectMenu()
-        }}
-        onPin={() =>
-          onAction('thread.pin', {
-            projectId: project.id,
-            threadId: thread.id,
-          })
-        }
-      />
+            onThreadOpen(project.id, thread.id, thread.sessionPath)
+            onCloseProjectMenu()
+          }}
+          onPin={() =>
+            onAction('thread.pin', {
+              projectId: project.id,
+              threadId: thread.id,
+            })
+          }
+        />
+      </div>
     )
   }
 
@@ -185,28 +201,30 @@ export function ProjectThreadsList({
       threadGroupId={threadGroupId}
       projectName={project.name}
     >
-      {hasThreads ? (
-        recentThreads.map(renderThread)
-      ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
-        <EmptyThreadsState />
-      ) : null}
+      <div ref={groupRef}>
+        {hasThreads ? (
+          recentThreads.map(renderThread)
+        ) : project.threadsLoaded || (project.threadCount ?? 0) === 0 ? (
+          <EmptyThreadsState />
+        ) : null}
 
-      {oldThreads.length > 0 ? (
-        <>
-          <OldSessionsRow
-            expanded={oldThreadsExpanded}
-            onToggle={() => onToggleOldThreads(oldThreadsExpanded)}
-            onArchiveAll={() => {
-              void onAction('thread.archive-many', {
-                projectId: project.id,
-                threadIds: oldThreads.map((thread) => thread.id),
-              })
-            }}
-          />
+        {oldThreads.length > 0 ? (
+          <>
+            <OldSessionsRow
+              expanded={oldThreadsExpanded}
+              onToggle={() => onToggleOldThreads(oldThreadsExpanded)}
+              onArchiveAll={() => {
+                void onAction('thread.archive-many', {
+                  projectId: project.id,
+                  threadIds: oldThreads.map((thread) => thread.id),
+                })
+              }}
+            />
 
-          {oldThreadsExpanded ? oldThreads.map(renderThread) : null}
-        </>
-      ) : null}
+            {oldThreadsExpanded ? oldThreads.map(renderThread) : null}
+          </>
+        ) : null}
+      </div>
     </ProjectThreadsGroup>
   )
 }

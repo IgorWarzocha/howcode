@@ -277,7 +277,9 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'betaUpdateBranch' ||
     payload.key === 'piTuiTakeover' ||
     payload.key === 'hoverToFocus' ||
-    payload.key === 'hoverToBlur'
+    payload.key === 'hoverToBlur' ||
+    payload.key === 'keybindings' ||
+    payload.key === 'composerSendMode'
     ? (payload.key as keyof AppSettings)
     : null
 }

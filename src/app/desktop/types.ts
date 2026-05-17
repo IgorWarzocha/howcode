@@ -41,6 +41,10 @@ export type {
   DictationTranscriptionResult,
   GitOpsMode,
   InboxThread,
+  KeybindingCommandId,
+  KeybindingConflict,
+  KeybindingDefinition,
+  KeybindingOverrides,
   ModelSelection,
   NativeAskQuestion,
   NativeAskQuestionOption,
@@ -74,6 +78,8 @@ export type {
   SkillCreatorSessionState,
   Thread,
   ThreadData,
+  ThreadSearchMatch,
+  ThreadSearchResult,
 } from '../../../shared/desktop-contracts.js'
 
 export type {

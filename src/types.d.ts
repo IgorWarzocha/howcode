@@ -51,6 +51,7 @@ import type {
   TerminalStatusSnapshot,
   Thread,
   ThreadData,
+  ThreadSearchResult,
 } from './app/desktop/types'
 
 declare global {
@@ -199,6 +200,7 @@ declare global {
       getInboxThreads?: () => Promise<InboxThread[]>
       getArchivedThreads?: () => Promise<ArchivedThread[]>
       getThread?: (sessionPath: string, historyCompactions?: number) => Promise<ThreadData | null>
+      searchThread?: (sessionPath: string, query: string) => Promise<ThreadSearchResult>
       watchSession?: (sessionPath: string | null) => Promise<void>
       listTerminals?: () => Promise<TerminalSessionSnapshot[]>
       openTerminal?: (request: TerminalOpenRequest) => Promise<TerminalSessionSnapshot>
