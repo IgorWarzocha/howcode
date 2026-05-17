@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getPersistedSessionPath, isLocalSessionPath } from '../../../shared/session-paths'
 import { defaultDiffBaseline } from '../components/workspace/composer/diff-baseline'
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
@@ -305,9 +305,7 @@ type AppShellLayoutProps = {
 export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const controllerRef = useRef(controller)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [sidebarCompactMode, setSidebarCompactMode] = useState(() =>
-    typeof window === 'undefined' ? false : window.innerWidth <= 1236,
-  )
+  const [sidebarCompactMode, setSidebarCompactMode] = useState(false)
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
   const [artifactDrawerOverlayVisible, setArtifactDrawerOverlayVisible] = useState(false)
   const [closeArtifactDrawerOverlay, setCloseArtifactDrawerOverlay] = useState<(() => void) | null>(
@@ -491,7 +489,7 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     }
   }, [state.activeView])
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const updateSidebarCompactMode = () => setSidebarCompactMode(window.innerWidth <= 1236)
     updateSidebarCompactMode()
     window.addEventListener('resize', updateSidebarCompactMode)

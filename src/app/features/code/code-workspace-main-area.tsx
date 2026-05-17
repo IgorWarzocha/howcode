@@ -30,7 +30,7 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
       diffRenderMode={props.diffRenderMode}
       layoutMode="main"
       showFileTree={props.gitOpsFileTreeVisible}
-      loading={props.controller.projectGitLoading && !props.projectGitState}
+      loading={props.controller.projectGitLoading}
     />
   )
 }
