@@ -11,21 +11,16 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
-import { getPiModule } from '../pi-module.ts'
 import { buildComposerAttachmentPrompt } from './attachments.ts'
+import { dequeueComposerPromptFromRuntime } from './composer-dequeue.ts'
 import {
-  buildComposerQueueSnapshotKey,
-  findQueuedPromptIndexById,
-  removeQueuedPromptById,
-  replayComposerQueue,
-} from './composer-queue'
-import {
-  buildComposerState,
-  buildComposerStateSnapshot,
-  clampThinkingLevel,
-  createComposerSnapshotSession,
-  getAvailableThinkingLevelsForModel,
-} from './composer-state.ts'
+  applyComposerModeSettings,
+  setDraftComposerModel,
+  setDraftComposerThinkingLevel,
+} from './composer-mode-settings.ts'
+import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
+import { buildComposerSendResult } from './composer-send-result.ts'
+import { buildComposerState, buildComposerStateSnapshot } from './composer-state.ts'
 import {
   abortRuntimeExtensionCommand,
   createRuntimeForNewSession,
@@ -73,139 +68,6 @@ function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
   return Boolean(runtime.session.extensionRunner.getCommand(commandName))
 }
 
-async function selectRequestedComposerModel(runtime: PiRuntime, request: ComposerStateRequest) {
-  const selection = request.composerModelSelection ?? null
-  if (selection?.provider) {
-    const model = runtime.session.modelRegistry.find(selection.provider, selection.id)
-    if (model) return model
-    const [fallbackModel] = await runtime.session.modelRegistry.getAvailable()
-    return fallbackModel ?? runtime.session.model
-  }
-  if (!request.composerUseDefaultModel) return runtime.session.model
-  const defaultComposer = await buildComposerStateSnapshot({
-    projectId: runtime.cwd,
-    composerSessionDir: request.composerSessionDir,
-  })
-  if (!defaultComposer.currentModel) return runtime.session.model
-  return (
-    runtime.session.modelRegistry.find(
-      defaultComposer.currentModel.provider,
-      defaultComposer.currentModel.id,
-    ) ?? runtime.session.model
-  )
-}
-
-async function getRequestedComposerThinkingLevel(
-  runtime: PiRuntime,
-  request: ComposerStateRequest,
-) {
-  if (request.composerThinkingLevel) return request.composerThinkingLevel
-  if (!Object.hasOwn(request, 'composerThinkingLevel')) return null
-  const defaultComposer = await buildComposerStateSnapshot({
-    projectId: runtime.cwd,
-    composerSessionDir: request.composerSessionDir,
-  })
-  return defaultComposer.currentThinkingLevel
-}
-
-async function applyComposerModeSettings(runtime: PiRuntime, request: ComposerStateRequest) {
-  const selectedModel = (await selectRequestedComposerModel(runtime, request)) ?? null
-  if (selectedModel && selectedModel !== runtime.session.model)
-    await runtime.session.setModel(selectedModel)
-  const thinkingLevel = await getRequestedComposerThinkingLevel(runtime, request)
-  if (thinkingLevel) {
-    runtime.session.setThinkingLevel(
-      clampThinkingLevel(thinkingLevel, getAvailableThinkingLevelsForModel(selectedModel ?? null)),
-    )
-  }
-}
-async function promptAndReturnAfterPreflight({
-  runtime,
-  message,
-  options,
-  request,
-}: {
-  runtime: PiRuntime
-  message: string
-  options?: Parameters<PiRuntime['session']['prompt']>[1]
-  request: ComposerStateRequest
-}) {
-  let resolvePreflight: (success: boolean) => void
-  const preflight = new Promise<boolean>((resolve) => {
-    resolvePreflight = resolve
-  })
-
-  const promptPromise = runtime.session.prompt(message, {
-    ...options,
-    preflightResult: (success) => resolvePreflight(success),
-  })
-
-  const accepted = await preflight
-  if (!accepted) {
-    await promptPromise
-    return
-  }
-
-  promptPromise
-    .catch((error) => {
-      console.error('Composer prompt failed after dispatch', error)
-      void emitComposerUpdate({
-        ...request,
-        sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
-      })
-    })
-    .finally(() => {
-      scheduleRuntimeDisposalForRuntime(runtime)
-    })
-}
-
-async function setDraftComposerModel(
-  request: ComposerStateRequest,
-  cwd: string,
-  provider: string,
-  modelId: string,
-) {
-  const { SettingsManager, getAgentDir } = await getPiModule()
-  const agentDir = getAgentDir()
-  const snapshot = await createComposerSnapshotSession({
-    ...request,
-    projectId: cwd,
-    sessionPath: null,
-  })
-
-  try {
-    const model = snapshot.session.modelRegistry.find(provider, modelId)
-
-    if (!model) {
-      throw new Error(`Unknown Pi model: ${provider}/${modelId}`)
-    }
-
-    const currentComposer = await buildComposerStateSnapshot({
-      ...request,
-      projectId: cwd,
-      sessionPath: null,
-    })
-    const nextThinkingLevel = clampThinkingLevel(
-      currentComposer.currentThinkingLevel,
-      getAvailableThinkingLevelsForModel(model),
-    )
-    const settingsManager = SettingsManager.create(cwd, agentDir)
-
-    settingsManager.setDefaultModelAndProvider(provider, modelId)
-    settingsManager.setDefaultThinkingLevel(nextThinkingLevel)
-  } finally {
-    snapshot.session.dispose()
-  }
-}
-
-async function setDraftComposerThinkingLevel(cwd: string, level: ComposerThinkingLevel) {
-  const { SettingsManager, getAgentDir } = await getPiModule()
-  const currentComposer = await buildComposerStateSnapshot({ projectId: cwd, sessionPath: null })
-  SettingsManager.create(cwd, getAgentDir()).setDefaultThinkingLevel(
-    clampThinkingLevel(level, currentComposer.availableThinkingLevels),
-  )
-}
-
 export { getLiveThread, subscribeDesktopEvents }
 
 export async function getComposerState(request: ComposerStateRequest = {}): Promise<ComposerState> {
@@ -237,12 +99,12 @@ export async function setComposerModel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
 
   if (!persistedSessionPath) {
-    await setDraftComposerModel(
-      request,
-      request.projectId ?? getDesktopWorkingDirectory(),
-      provider,
+    await setDraftComposerModel({
+      cwd: request.projectId ?? getDesktopWorkingDirectory(),
       modelId,
-    )
+      provider,
+      request,
+    })
     return emitComposerUpdate({ ...request, sessionPath: null })
   }
 
@@ -271,7 +133,10 @@ export async function setComposerThinkingLevel(
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
 
   if (!persistedSessionPath) {
-    await setDraftComposerThinkingLevel(request.projectId ?? getDesktopWorkingDirectory(), level)
+    await setDraftComposerThinkingLevel({
+      cwd: request.projectId ?? getDesktopWorkingDirectory(),
+      level,
+    })
     return emitComposerUpdate({ ...request, sessionPath: null })
   }
 
@@ -285,14 +150,6 @@ export async function setComposerThinkingLevel(
     scheduleRuntimeDisposalForRuntime(runtime)
     await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
   })
-}
-
-function buildComposerSendResult(runtime: PiRuntime, outcome: 'sent' | 'stopped') {
-  return {
-    outcome,
-    sessionPath: getPersistedSessionPath(runtime.session.sessionFile),
-    threadId: runtime.session.sessionId ?? null,
-  }
 }
 
 async function compactComposerRuntime(input: {
@@ -341,6 +198,7 @@ async function promptComposerRuntime(input: {
   }
   await runtime.attachmentFileAccess?.grantAttachments(request.attachments ?? [])
   await promptAndReturnAfterPreflight({
+    emitComposerUpdate,
     runtime,
     message,
     ...(runtime.session.isStreaming
@@ -351,6 +209,7 @@ async function promptComposerRuntime(input: {
         }
       : {}),
     request: { ...request, sessionPath: persistedSessionPath },
+    scheduleRuntimeDisposal: () => scheduleRuntimeDisposalForRuntime(runtime),
   })
   await publishThreadUpdate(runtime, 'update').catch((error) => {
     console.error('Composer prompt accepted but thread update publish failed', error)
@@ -463,44 +322,6 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   })
 }
 
-async function restoreQueueAfterReplayFailure(input: {
-  clearedQueue: ReturnType<PiRuntime['session']['clearQueue']>
-  error: unknown
-  request: ComposerStateRequest
-  runtime: PiRuntime
-  sessionPath: string
-}) {
-  input.runtime.session.clearQueue()
-  try {
-    await replayComposerQueue(input.runtime.session, input.clearedQueue)
-    await emitComposerUpdate({ ...input.request, sessionPath: input.sessionPath })
-  } catch (rollbackError) {
-    throw new Error(
-      rollbackError instanceof Error
-        ? `Could not restore queued prompts after dequeue replay failure: ${rollbackError.message}`
-        : 'Could not restore queued prompts after dequeue replay failure.',
-    )
-  }
-  throw input.error
-}
-
-async function replayDequeuedComposerQueue(input: {
-  clearedQueue: ReturnType<PiRuntime['session']['clearQueue']>
-  dequeueResult: NonNullable<ReturnType<typeof removeQueuedPromptById>>
-  request: ComposerStateRequest
-  runtime: PiRuntime
-  sessionPath: string
-}) {
-  try {
-    await replayComposerQueue(input.runtime.session, input.dequeueResult.nextQueue)
-    await emitComposerUpdate({ ...input.request, sessionPath: input.sessionPath })
-    return input.dequeueResult.dequeuedText
-  } catch (error) {
-    await restoreQueueAfterReplayFailure({ ...input, error })
-    return null
-  }
-}
-
 export async function dequeueComposerPrompt(
   request: ComposerStateRequest & {
     queueId: string
@@ -521,37 +342,8 @@ export async function dequeueComposerPrompt(
     })
 
     try {
-      const currentQueueSnapshot = {
-        steering: [...runtime.session.getSteeringMessages()],
-        followUp: [...runtime.session.getFollowUpMessages()],
-      }
-
-      if (buildComposerQueueSnapshotKey(currentQueueSnapshot) !== request.queueSnapshotKey) {
-        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-        return null
-      }
-
-      const currentQueue =
-        request.queueMode === 'steer'
-          ? currentQueueSnapshot.steering
-          : currentQueueSnapshot.followUp
-      if (findQueuedPromptIndexById(request.queueMode, currentQueue, request.queueId) === null) {
-        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-        return null
-      }
-
-      const clearedQueue = runtime.session.clearQueue()
-      const dequeueResult = removeQueuedPromptById(clearedQueue, request.queueMode, request.queueId)
-
-      if (!dequeueResult) {
-        await replayComposerQueue(runtime.session, clearedQueue)
-        await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-        return null
-      }
-
-      return await replayDequeuedComposerQueue({
-        clearedQueue,
-        dequeueResult,
+      return await dequeueComposerPromptFromRuntime({
+        emitComposerUpdate,
         request,
         runtime,
         sessionPath: persistedSessionPath,

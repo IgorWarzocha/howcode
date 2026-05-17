@@ -1,5 +1,3 @@
-const extensionSourceSuffixPattern = /\.(ts|js)$/
-
 import path from 'node:path'
 import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
@@ -7,9 +5,7 @@ import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask
 import { getPiModule } from '../pi-module.ts'
 import {
   abortHeadlessExtensionCommand,
-  bindHeadlessAgentSessionExtensions,
   isHeadlessExtensionCommandRunning,
-  refreshHeadlessAgentSessionExtensionBindings,
 } from '../runtime/agent-session-extensions.ts'
 import { createArtifactTools } from '../runtime/artifact-tools.ts'
 import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
@@ -20,17 +16,14 @@ import {
   createRuntimeSettingsManager,
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { emitDesktopEvent } from './host-events.ts'
 import { publishComposerUpdate } from './live-thread-publisher.ts'
 import { invokeMainRequest } from './main-request-client.ts'
 import { createNativeAskQuestionsTools } from './native-ask-questions-tool.ts'
+import {
+  bindRuntimeExtensionHandlers,
+  refreshRuntimeExtensionHandlers,
+} from './runtime-extension-bindings.ts'
 import { handleRuntimeSessionEvent } from './runtime-session-events.ts'
-
-function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
-  if (extensionPath.startsWith('command:')) return `/${extensionPath.slice('command:'.length)}`
-  if (extensionPath.startsWith('<')) return extensionPath.replace(/[<>]/g, '')
-  return path.basename(extensionPath).replace(extensionSourceSuffixPattern, '')
-}
 
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>
@@ -220,36 +213,9 @@ async function createRuntime(options: {
     }),
   )
 
-  await bindHeadlessAgentSessionExtensions(session, {
-    onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) =>
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          }),
-        )
-        .catch((error) => console.warn('Failed to publish extension command state', error))
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          })
-        }
-      }
-    },
-    onExtensionError: (error) => {
-      const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath)
-      emitDesktopEvent({
-        type: 'runtime-diagnostic',
-        severity: 'error',
-        message: `${extensionLabel} extension error: ${error.error}`,
-        details: { ...error, extensionLabel },
-        projectId: runtime.cwd,
-        sessionPath: runtime.session.sessionFile ?? null,
-      })
-    },
+  await bindRuntimeExtensionHandlers(runtime, {
+    isRuntimeExtensionCommandRunning,
+    reloadRuntimeSettingsIfSafe,
   })
   return runtime
 }
@@ -263,25 +229,9 @@ export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
 }
 
 export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
-  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
-    onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) =>
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          }),
-        )
-        .catch((error) => console.warn('Failed to publish extension command state', error))
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          })
-        }
-      }
-    },
+  await refreshRuntimeExtensionHandlers(runtime, {
+    isRuntimeExtensionCommandRunning,
+    reloadRuntimeSettingsIfSafe,
   })
 }
 

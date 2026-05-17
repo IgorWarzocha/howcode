@@ -1,0 +1,41 @@
+import type { ComposerStateRequest } from '../../shared/desktop-contracts.ts'
+import { getPersistedSessionPath } from '../../shared/session-paths.ts'
+import type { PiRuntime } from './types.ts'
+
+export async function promptAndReturnAfterPreflight(input: {
+  emitComposerUpdate: (request: ComposerStateRequest) => Promise<unknown>
+  message: string
+  options?: Parameters<PiRuntime['session']['prompt']>[1]
+  request: ComposerStateRequest
+  runtime: PiRuntime
+  scheduleRuntimeDisposal: (runtimeKey: string) => void
+}) {
+  let resolvePreflight: (success: boolean) => void
+  const preflight = new Promise<boolean>((resolve) => {
+    resolvePreflight = resolve
+  })
+
+  const promptPromise = input.runtime.session.prompt(input.message, {
+    ...input.options,
+    preflightResult: (success) => resolvePreflight(success),
+  })
+
+  const accepted = await preflight
+  if (!accepted) {
+    await promptPromise
+    return
+  }
+
+  promptPromise
+    .catch((error) => {
+      console.error('Composer prompt failed after dispatch', error)
+      void input.emitComposerUpdate({
+        ...input.request,
+        sessionPath: getPersistedSessionPath(input.runtime.session.sessionFile),
+      })
+    })
+    .finally(() => {
+      const runtimeKey = getPersistedSessionPath(input.runtime.session.sessionFile)
+      if (runtimeKey) input.scheduleRuntimeDisposal(runtimeKey)
+    })
+}
