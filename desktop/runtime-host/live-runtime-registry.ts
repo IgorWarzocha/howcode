@@ -21,16 +21,10 @@ import {
 } from '../runtime/isolated-settings-manager.ts'
 import type { PiRuntime } from '../runtime/types.ts'
 import { emitDesktopEvent } from './host-events.ts'
-import {
-  cancelLiveThreadUpdate,
-  deferLiveThreadUpdate,
-  publishComposerUpdate,
-  publishThreadUpdate,
-  scheduleLiveThreadUpdate,
-} from './live-thread-publisher.ts'
-import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from './live-tool-progress.ts'
+import { publishComposerUpdate } from './live-thread-publisher.ts'
 import { invokeMainRequest } from './main-request-client.ts'
 import { createNativeAskQuestionsTools } from './native-ask-questions-tool.ts'
+import { handleRuntimeSessionEvent } from './runtime-session-events.ts'
 
 function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
   if (extensionPath.startsWith('command:')) return `/${extensionPath.slice('command:'.length)}`
@@ -70,119 +64,6 @@ async function disposeRuntimeIfIdle(runtimeKey: string, record: RuntimeRecord) {
   }
 }
 
-function publishRuntimeComposerState(runtime: PiRuntime, warning: string) {
-  return buildComposerState(runtime)
-    .then((composer) =>
-      publishComposerUpdate(composer, {
-        projectId: runtime.cwd,
-        sessionPath: runtime.session.sessionFile,
-      }),
-    )
-    .catch((error) => console.warn(warning, error))
-}
-
-function getRuntimeToolProgressPartial(
-  event: Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-) {
-  if (event.type === 'tool_execution_update') return event.partialResult
-  if (event.type === 'tool_execution_end') return event.result
-  return undefined
-}
-
-function handleRuntimeMessageEnd(
-  runtime: PiRuntime,
-  runtimeKey: string | null,
-  event: Extract<
-    Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-    { type: 'message_end' }
-  >,
-) {
-  if (event.message.role === 'user') {
-    cancelLiveThreadUpdate(runtime)
-    void publishThreadUpdate(runtime, 'start')
-  } else {
-    if (event.message.role === 'toolResult') {
-      const toolCallId = 'toolCallId' in event.message ? event.message.toolCallId : undefined
-      clearRuntimeToolProgress(runtime, {
-        toolCallId: typeof toolCallId === 'string' ? toolCallId : undefined,
-        toolName: event.message.toolName,
-      })
-    }
-    deferLiveThreadUpdate(runtime, { requireStreaming: event.message.role === 'toolResult' })
-  }
-  if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
-}
-
-function handleRuntimeSessionEvent(
-  runtime: PiRuntime,
-  event: Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-) {
-  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-  if (runtimeKey) suspendRuntimeDisposal(runtimeKey)
-  switch (event.type) {
-    case 'message_start':
-    case 'message_update':
-      scheduleLiveThreadUpdate(runtime)
-      return
-    case 'message_end':
-      handleRuntimeMessageEnd(runtime, runtimeKey, event)
-      return
-    case 'agent_end':
-      cancelLiveThreadUpdate(runtime)
-      void publishThreadUpdate(runtime, 'end')
-      if (runtimeKey)
-        void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
-          scheduleRuntimeDisposal(runtimeKey),
-        )
-      return
-    case 'compaction_start':
-      cancelLiveThreadUpdate(runtime)
-      void publishThreadUpdate(runtime, 'compaction-start')
-      void publishRuntimeComposerState(
-        runtime,
-        'Failed to publish composer state after compaction start',
-      )
-      return
-    case 'compaction_end':
-      setTimeout(() => {
-        cancelLiveThreadUpdate(runtime)
-        void publishThreadUpdate(runtime, 'compaction')
-        void publishRuntimeComposerState(
-          runtime,
-          'Failed to publish composer state after compaction end',
-        ).finally(() => {
-          if (runtimeKey)
-            void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
-              scheduleRuntimeDisposal(runtimeKey),
-            )
-        })
-      }, 0)
-      return
-    case 'tool_execution_start':
-    case 'tool_execution_update':
-    case 'tool_execution_end':
-      rememberRuntimeToolProgress(runtime, {
-        toolCallId: event.toolCallId,
-        toolName: event.toolName,
-        args: 'args' in event ? event.args : undefined,
-        partialResult: getRuntimeToolProgressPartial(event),
-        isError: event.type === 'tool_execution_end' ? event.isError : false,
-        terminal: event.type === 'tool_execution_end',
-      })
-      scheduleLiveThreadUpdate(runtime)
-      return
-    case 'queue_update':
-      void publishRuntimeComposerState(
-        runtime,
-        'Failed to publish composer state after queue update',
-      ).finally(() => {
-        if (runtimeKey && !runtime.session.isStreaming) scheduleRuntimeDisposal(runtimeKey)
-      })
-      return
-    default:
-      return
-  }
-}
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey)
   if (!record?.disposeTimeout) return
@@ -190,7 +71,7 @@ function clearRuntimeDisposeTimeout(runtimeKey: string) {
   record.disposeTimeout = null
 }
 
-function suspendRuntimeDisposal(runtimeKey: string) {
+export function suspendRuntimeDisposal(runtimeKey: string) {
   clearRuntimeDisposeTimeout(runtimeKey)
 }
 
@@ -330,7 +211,14 @@ async function createRuntime(options: {
     }
   }
 
-  session.subscribe((event) => handleRuntimeSessionEvent(runtime, event))
+  session.subscribe((event) =>
+    handleRuntimeSessionEvent(runtime, event, {
+      isRuntimeExtensionCommandRunning,
+      reloadRuntimeSettingsIfSafe,
+      scheduleRuntimeDisposal,
+      suspendRuntimeDisposal,
+    }),
+  )
 
   await bindHeadlessAgentSessionExtensions(session, {
     onExtensionCommandStateChange: () => {
