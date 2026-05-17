@@ -30,6 +30,12 @@ import type {
   ProjectUsageSummary,
   ShellState,
   SkillCreatorSessionState,
+  TerminalCloseRequest,
+  TerminalEvent,
+  TerminalOpenRequest,
+  TerminalResizeRequest,
+  TerminalSessionFileStat,
+  TerminalSessionSnapshot,
   Thread,
   ThreadData,
   ThreadSearchResult,
@@ -75,6 +81,17 @@ export const desktopQueryKeys = {
   threadPrefix: (sessionPath: string) => ['desktop', 'thread', sessionPath] as const,
   thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
     ['desktop', 'thread', sessionPath, refreshKey, historyCompactions] as const,
+}
+
+export function hasDesktopBridgeQuery() {
+  return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
+}
+
+export async function invokeDesktopActionQuery(
+  action: import('../desktop/actions').DesktopAction,
+  payload: import('../desktop/types').AnyDesktopActionPayload = {},
+) {
+  return (await window.piDesktop?.invokeAction?.(action, payload)) ?? null
 }
 
 export async function getAppUpdateStateQuery(): Promise<AppUpdateState | null> {
@@ -450,4 +467,44 @@ export function subscribeDesktopEvents(
   listener: (event: import('../desktop/types').DesktopEvent) => void,
 ) {
   return window.piDesktop?.subscribe?.(listener) ?? (() => undefined)
+}
+
+export async function watchSessionQuery(sessionPath: string | null): Promise<void> {
+  await window.piDesktop?.watchSession?.(sessionPath)
+}
+
+export async function listDesktopTerminalsQuery(): Promise<TerminalSessionSnapshot[]> {
+  return (await window.piDesktop?.listTerminals?.()) ?? []
+}
+
+export async function openDesktopTerminalQuery(
+  request: TerminalOpenRequest,
+): Promise<TerminalSessionSnapshot | null> {
+  return (await window.piDesktop?.openTerminal?.(request)) ?? null
+}
+
+export async function writeDesktopTerminalQuery(sessionId: string, data: string): Promise<void> {
+  await window.piDesktop?.writeTerminal?.(sessionId, data)
+}
+
+export async function resizeDesktopTerminalQuery(request: TerminalResizeRequest): Promise<void> {
+  await window.piDesktop?.resizeTerminal?.(request)
+}
+
+export async function closeDesktopTerminalQuery(request: TerminalCloseRequest): Promise<void> {
+  await window.piDesktop?.closeTerminal?.(request)
+}
+
+export async function statDesktopTerminalSessionFileQuery(
+  sessionId: string,
+): Promise<TerminalSessionFileStat | null> {
+  return (await window.piDesktop?.statTerminalSessionFile?.(sessionId)) ?? null
+}
+
+export async function getDesktopTerminalStatusQuery(sessionId: string) {
+  return (await window.piDesktop?.getTerminalStatus?.(sessionId)) ?? null
+}
+
+export function subscribeDesktopTerminalQuery(listener: (event: TerminalEvent) => void) {
+  return window.piDesktop?.subscribeTerminal?.(listener) ?? (() => undefined)
 }

@@ -1,6 +1,7 @@
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
 import { getPersistedSessionPath } from '../../../shared/session-paths'
+import { watchSessionQuery } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import { isUtilityView } from '../state/workspace'
 
@@ -13,10 +14,6 @@ export function shouldCloseUtilityViewOnEscape(
 
 export function useWatchedSessionSync(workspaceState: WorkspaceState) {
   useEffect(() => {
-    if (!window.piDesktop?.watchSession) {
-      return
-    }
-
     const watchedSessionPath =
       workspaceState.activeView === 'chat' ||
       workspaceState.activeView === 'thread' ||
@@ -24,7 +21,7 @@ export function useWatchedSessionSync(workspaceState: WorkspaceState) {
         ? getPersistedSessionPath(workspaceState.selectedSessionPath)
         : null
 
-    void window.piDesktop.watchSession(watchedSessionPath).catch((error) => {
+    void watchSessionQuery(watchedSessionPath).catch((error) => {
       console.warn('Failed to update watched Pi session.', error)
     })
   }, [workspaceState.activeView, workspaceState.selectedSessionPath])
