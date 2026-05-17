@@ -1,5 +1,3 @@
-const whitespaceRunPattern = /\s+/
-
 import { parseCompactSlashCommand } from '../../shared/composer-slash-commands.ts'
 import type {
   ComposerAttachment,
@@ -11,16 +9,19 @@ import type {
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { loadAppSettings } from '../app-settings/readers.ts'
-import { buildComposerAttachmentPrompt } from './attachments.ts'
 import { dequeueComposerPromptFromRuntime } from './composer-dequeue.ts'
 import {
   applyComposerModeSettings,
   setDraftComposerModel,
   setDraftComposerThinkingLevel,
 } from './composer-mode-settings.ts'
-import { promptAndReturnAfterPreflight } from './composer-preflight.ts'
-import { buildComposerSendResult } from './composer-send-result.ts'
+import {
+  buildComposerPromptMessage,
+  compactComposerRuntime,
+  promptComposerRuntime,
+} from './composer-prompt-flow.ts'
 import { buildComposerState, buildComposerStateSnapshot } from './composer-state.ts'
+import { stopComposerRuntime } from './composer-stop.ts'
 import {
   abortRuntimeExtensionCommand,
   createRuntimeForNewSession,
@@ -36,7 +37,6 @@ import {
   publishThreadUpdate,
   subscribeDesktopEvents,
 } from './thread-publisher.ts'
-import type { PiRuntime } from './types.ts'
 
 async function emitComposerUpdate(request: ComposerStateRequest = {}) {
   const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
@@ -60,12 +60,6 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
     composer,
     runtime,
   }
-}
-
-function isExtensionCommandPrompt(runtime: PiRuntime, text: string) {
-  if (!text.startsWith('/')) return false
-  const commandName = text.slice(1).split(whitespaceRunPattern, 1)[0] ?? ''
-  return Boolean(runtime.session.extensionRunner.getCommand(commandName))
 }
 
 export { getLiveThread, subscribeDesktopEvents }
@@ -152,69 +146,17 @@ export async function setComposerThinkingLevel(
   })
 }
 
-async function compactComposerRuntime(input: {
-  compactInstructions: string
-  persistedSessionPath: string | null
-  request: ComposerStateRequest
-  runtime: PiRuntime
-}) {
-  const { compactInstructions, persistedSessionPath, request, runtime } = input
-  if (isRuntimeExtensionCommandRunning(runtime))
-    throw new Error('Wait for the current extension command to finish before compacting.')
-  if (runtime.session.isStreaming)
-    throw new Error('Wait for the current response to finish before compacting.')
-  if (runtime.session.isCompacting)
-    throw new Error('Wait for the current compaction to finish before compacting again.')
-  const entries = runtime.session.sessionManager.getBranch()
-  if (entries.filter((entry) => entry.type === 'message').length < 2)
-    throw new Error('Nothing to compact (no messages yet)')
-  await runtime.session.compact(compactInstructions.length > 0 ? compactInstructions : undefined)
-  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-  return buildComposerSendResult(runtime, 'sent')
+const composerPromptAdapters = {
+  emitComposerUpdate,
+  isRuntimeExtensionCommandRunning,
+  publishThreadUpdate,
+  scheduleRuntimeDisposal: scheduleRuntimeDisposalForRuntime,
 }
 
-async function promptComposerRuntime(input: {
-  message: string
-  persistedSessionPath: string | null
-  request: ComposerStateRequest & {
-    text: string
-    attachments?: ComposerAttachment[]
-    streamingBehavior?: ComposerStreamingBehavior | null
-  }
-  runtime: PiRuntime
-  streamingBehavior: ComposerStreamingBehavior
-}) {
-  const { message, persistedSessionPath, request, runtime, streamingBehavior } = input
-  if (runtime.session.isCompacting)
-    throw new Error('Wait for the current compaction to finish before sending another prompt.')
-  if (
-    runtime.session.isStreaming &&
-    streamingBehavior === 'stop' &&
-    !isExtensionCommandPrompt(runtime, request.text)
-  ) {
-    await runtime.session.abort()
-    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-    return buildComposerSendResult(runtime, 'stopped')
-  }
-  await runtime.attachmentFileAccess?.grantAttachments(request.attachments ?? [])
-  await promptAndReturnAfterPreflight({
-    emitComposerUpdate,
-    runtime,
-    message,
-    ...(runtime.session.isStreaming
-      ? {
-          options: {
-            streamingBehavior: streamingBehavior === 'stop' ? 'followUp' : streamingBehavior,
-          },
-        }
-      : {}),
-    request: { ...request, sessionPath: persistedSessionPath },
-    scheduleRuntimeDisposal: () => scheduleRuntimeDisposalForRuntime(runtime),
-  })
-  await publishThreadUpdate(runtime, 'update').catch((error) => {
-    console.error('Composer prompt accepted but thread update publish failed', error)
-  })
-  return buildComposerSendResult(runtime, 'sent')
+const composerStopAdapters = {
+  abortRuntimeExtensionCommand,
+  emitComposerUpdate,
+  scheduleRuntimeDisposal: scheduleRuntimeDisposalForRuntime,
 }
 
 export async function sendComposerPrompt(
@@ -231,19 +173,23 @@ export async function sendComposerPrompt(
     try {
       if (compactInstructions !== null) {
         return await compactComposerRuntime({
+          adapters: composerPromptAdapters,
           compactInstructions,
           persistedSessionPath,
           request,
           runtime,
         })
       }
-      const attachmentPrompt = buildComposerAttachmentPrompt(request.attachments ?? [])
-      const message = `${attachmentPrompt ? `${attachmentPrompt}\n\n` : ''}${request.text}`
+      const message = buildComposerPromptMessage({
+        attachments: request.attachments,
+        text: request.text,
+      })
       const streamingBehavior =
         request.streamingBehavior ??
         request.composerStreamingBehavior ??
         loadAppSettings().composerStreamingBehavior
       return await promptComposerRuntime({
+        adapters: composerPromptAdapters,
         message,
         persistedSessionPath,
         request,
@@ -293,15 +239,14 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
   const cachedRuntimePromise = getCachedRuntimeForSessionPath(persistedSessionPath)
   if (cachedRuntimePromise) {
     const cachedRuntime = await cachedRuntimePromise
-    const abortedExtensionCommand = abortRuntimeExtensionCommand(cachedRuntime)
-    if (abortedExtensionCommand || cachedRuntime.session.isStreaming) {
-      if (cachedRuntime.session.isStreaming) {
-        await cachedRuntime.session.abort()
-      }
-      scheduleRuntimeDisposalForRuntime(cachedRuntime)
-      await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
-      return
-    }
+    const stopped = await stopComposerRuntime({
+      abortWhenIdle: false,
+      adapters: composerStopAdapters,
+      request,
+      runtime: cachedRuntime,
+      sessionPath: persistedSessionPath,
+    })
+    if (stopped) return
   }
 
   await withRuntimeMutationLock(persistedSessionPath, async () => {
@@ -310,15 +255,13 @@ export async function stopComposerRun(request: ComposerStateRequest): Promise<vo
       settingsCwd: request.composerSessionDir ?? null,
       chatGroupId: request.chatGroupId ?? null,
     })
-
-    const abortedExtensionCommand = abortRuntimeExtensionCommand(runtime)
-    const wasStreaming = runtime.session.isStreaming
-    if (wasStreaming) {
-      await runtime.session.abort()
-    }
-    if (!(abortedExtensionCommand || wasStreaming)) await runtime.session.abort()
-    scheduleRuntimeDisposalForRuntime(runtime)
-    await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
+    await stopComposerRuntime({
+      abortWhenIdle: true,
+      adapters: composerStopAdapters,
+      request,
+      runtime,
+      sessionPath: persistedSessionPath,
+    })
   })
 }
 
