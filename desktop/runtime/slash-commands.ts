@@ -1,83 +1,14 @@
-import {
-  appNewSessionSlashCommand,
-  appSettingsSlashCommand,
-  compactSlashCommand,
-} from '../../shared/composer-slash-commands.ts'
 import type { ComposerSlashCommand, ComposerStateRequest } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { discoverHeadlessAgentSessionResources } from './agent-session-extensions.ts'
+import { mapSessionCommands } from './composer-slash-command-mapping.ts'
 import { createComposerSnapshotSession } from './composer-state.ts'
 import {
   getCachedRuntimeForSessionPath,
   reloadRuntimeSettingsIfSafe,
   scheduleRuntimeDisposalForRuntime,
 } from './runtime-registry.ts'
-import type { PiRuntime } from './types.ts'
-
-const reservedCommandNames = new Set([
-  appSettingsSlashCommand.name,
-  appNewSessionSlashCommand.name,
-  compactSlashCommand.name,
-])
-
-function mapSessionCommands(session: PiRuntime['session']): ComposerSlashCommand[] {
-  const commands: ComposerSlashCommand[] = [
-    appSettingsSlashCommand,
-    appNewSessionSlashCommand,
-    compactSlashCommand,
-  ]
-  const extensionCommandNames = new Set<string>()
-
-  for (const command of session.extensionRunner.getRegisteredCommands()) {
-    if (reservedCommandNames.has(command.invocationName)) {
-      continue
-    }
-
-    extensionCommandNames.add(command.invocationName)
-    commands.push({
-      name: command.invocationName,
-      description: command.description,
-      source: 'extension',
-      sourceInfo: command.sourceInfo,
-    })
-  }
-
-  for (const template of session.promptTemplates) {
-    if (reservedCommandNames.has(template.name) || extensionCommandNames.has(template.name)) {
-      continue
-    }
-
-    commands.push({
-      name: template.name,
-      description: template.description,
-      source: 'prompt',
-      sourceInfo: template.sourceInfo,
-    })
-  }
-
-  if (session.settingsManager.getEnableSkillCommands()) {
-    for (const skill of session.resourceLoader.getSkills().skills) {
-      const skillCommandName = `skill:${skill.name}`
-      if (
-        reservedCommandNames.has(skillCommandName) ||
-        extensionCommandNames.has(skillCommandName)
-      ) {
-        continue
-      }
-
-      commands.push({
-        name: skillCommandName,
-        description: skill.description,
-        source: 'skill',
-        sourceInfo: skill.sourceInfo,
-      })
-    }
-  }
-
-  return commands
-}
-
 export async function getComposerSlashCommands(
   request: ComposerStateRequest = {},
 ): Promise<ComposerSlashCommand[]> {
