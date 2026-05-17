@@ -224,6 +224,9 @@ jobs:
       - name: List channel release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
 
+      - name: Verify channel release assets
+        run: bun run release:verify-assets release-assets
+
       - name: Prepare channel release notes
         env:
           CHANNEL: ${{ github.ref_name }}
@@ -293,6 +296,9 @@ jobs:
 
       - name: List release assets
         run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
+
+      - name: Verify release assets
+        run: bun run release:verify-assets release-assets
 
       - name: Create or update GitHub release
         env:

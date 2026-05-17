@@ -46,7 +46,8 @@
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",
     "deadcode": "react-doctor . --offline --project howcode --dead-code --fail-on warning",
-    "react-doctor": "react-doctor . --offline --project howcode --dead-code"
+    "react-doctor": "react-doctor . --offline --project howcode --dead-code",
+    "release:verify-assets": "bun ./scripts/verify-release-assets.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [
