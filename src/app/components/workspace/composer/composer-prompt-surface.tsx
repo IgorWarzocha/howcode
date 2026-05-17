@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from 'react'
+import { type RefObject, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type { ComposerProps } from '../composer'
@@ -9,6 +9,10 @@ import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-contro
 import { useComposerController } from './controller/useComposerController'
 import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
 import { useComposerFileMentions } from './useComposerFileMentions'
+import {
+  useComposerAutocompleteEffects,
+  useComposerEscapeEffects,
+} from './useComposerPromptSurfaceEffects'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
 import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
@@ -204,145 +208,27 @@ export function ComposerPromptSurface({
     .map((file) => `${file.kind}:${file.path}`)
     .join('|')
 
-  useEffect(() => {
-    if (!(slashCommands.open || fileMentions.open || skillMentions.open)) {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (
-        !target ||
-        slashCommandPanelRef.current?.contains(target) ||
-        fileMentionPanelRef.current?.contains(target) ||
-        skillMentionPanelRef.current?.contains(target) ||
-        composerPanelRef.current?.contains(target) ||
-        stopButtonBoundaryRef.current?.contains(target)
-      ) {
-        return
-      }
-
-      if (slashCommands.open) slashCommands.dismiss({ clearDraft: true })
-      if (fileMentions.open) fileMentions.dismiss()
-      if (skillMentions.open) skillMentions.dismiss()
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown, true)
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true)
-    }
-  }, [composerPanelRef, fileMentions, skillMentions, slashCommands])
-
-  useEffect(() => {
-    if (!(slashCommands.open && slashCommands.activeDescendantId)) {
-      return
-    }
-
-    // Keep the effect tied to command content changes too: the active id can remain
-    // `...-0` while filtering swaps the actual first row underneath it.
-    void slashCommandListSignature
-
-    const panel = slashCommandPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`)
-    if (!(panel && option)) {
-      return
-    }
-
-    if (slashCommands.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-
-    const panelStyles = window.getComputedStyle(panel)
-    const paddingTop = Number.parseFloat(panelStyles.paddingTop) || 0
-    const paddingBottom = Number.parseFloat(panelStyles.paddingBottom) || 0
-    const visibleTop = panel.scrollTop + paddingTop
-    const visibleBottom = panel.scrollTop + panel.clientHeight - paddingBottom
-    const optionTop = option.offsetTop
-    const optionBottom = optionTop + option.offsetHeight
-
-    if (optionTop < visibleTop) {
-      panel.scrollTop = optionTop - paddingTop
-    } else if (optionBottom > visibleBottom) {
-      panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom
-    }
-  }, [
-    slashCommands.open,
-    slashCommands.activeDescendantId,
-    slashCommands.selectedIndex,
-    slashCommandListSignature,
-  ])
-
-  useEffect(() => {
-    if (!(fileMentions.open && fileMentions.activeDescendantId)) return
-    void fileMentionListSignature
-    const panel = fileMentionPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${fileMentions.activeDescendantId}`)
-    if (!(panel && option)) return
-    if (fileMentions.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-    option.scrollIntoView({ block: 'nearest' })
-  }, [
+  useComposerAutocompleteEffects({
+    composerPanelRef,
+    fileMentionPanelRef,
     fileMentionListSignature,
-    fileMentions.activeDescendantId,
-    fileMentions.open,
-    fileMentions.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!(skillMentions.open && skillMentions.activeDescendantId)) {
-      return
-    }
-
-    void skillMentionListSignature
-
-    const panel = skillMentionPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${skillMentions.activeDescendantId}`)
-    if (!(panel && option)) return
-
-    if (skillMentions.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-
-    option.scrollIntoView({ block: 'nearest' })
-  }, [
+    fileMentions,
+    skillMentionPanelRef,
     skillMentionListSignature,
-    skillMentions.activeDescendantId,
-    skillMentions.open,
-    skillMentions.selectedIndex,
-  ])
+    skillMentions,
+    slashCommandPanelRef,
+    slashCommandListSignature,
+    slashCommands,
+    stopButtonBoundaryRef,
+  })
 
-  useEffect(() => {
-    if (!(pickerOpen || dictationActive || dictationTranscribing)) {
-      return
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return
-      }
-
-      if (pickerOpen) {
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        setOpenMenu(null)
-        return
-      }
-
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      ;(document.activeElement as HTMLElement | null)?.blur?.()
-      void cancelDictation()
-    }
-
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu])
+  useComposerEscapeEffects({
+    cancelDictation,
+    dictationActive,
+    dictationTranscribing,
+    pickerOpen,
+    setOpenMenu,
+  })
 
   useGlobalComposerFileDrop(handleDrop)
 
