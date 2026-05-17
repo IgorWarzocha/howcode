@@ -234,35 +234,6 @@ function DiffPanelContentBody(input: {
   )
 }
 
-type RenderablePatch = ReturnType<typeof getRenderablePatch>
-
-function useIdleRenderablePatch(selectedPatch: string | undefined) {
-  const [renderablePatch, setRenderablePatch] = useState<RenderablePatch>(null)
-
-  useEffect(() => {
-    if (typeof selectedPatch !== 'string') {
-      setRenderablePatch(null)
-      return
-    }
-
-    let cancelled = false
-    const parsePatch = () => {
-      const nextPatch = getRenderablePatch(selectedPatch, 'diff-panel:dark')
-      if (!cancelled) {
-        setRenderablePatch(nextPatch)
-      }
-    }
-
-    const timeout = globalThis.setTimeout(parsePatch, 80)
-    return () => {
-      cancelled = true
-      globalThis.clearTimeout(timeout)
-    }
-  }, [selectedPatch])
-
-  return renderablePatch
-}
-
 export function DiffPanelContent({
   projectId,
   isGitRepo,
@@ -286,7 +257,10 @@ export function DiffPanelContent({
   const selectedPatch = diff?.diff
   const hasResolvedPatch = typeof selectedPatch === 'string'
   const hasNoNetChanges = hasResolvedPatch && selectedPatch.trim().length === 0
-  const renderablePatch = useIdleRenderablePatch(selectedPatch)
+  const renderablePatch = useMemo(
+    () => getRenderablePatch(selectedPatch, 'diff-panel:dark'),
+    [selectedPatch],
+  )
   const renderableFiles = useMemo(
     () =>
       renderablePatch && renderablePatch.kind === 'files'
