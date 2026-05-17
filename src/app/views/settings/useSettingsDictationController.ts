@@ -8,6 +8,13 @@ import type {
   DictationModelSummary,
   DictationState,
 } from '../../desktop/types'
+import {
+  getDictationStateQuery,
+  installDictationModelQuery,
+  listDictationModelsQuery,
+  removeDictationModelQuery,
+  subscribeDesktopEvents,
+} from '../../query/desktop-query'
 
 export type DictationPendingAction = {
   modelId: DictationModelId
@@ -80,8 +87,8 @@ export function useSettingsDictationController({
 
   const refreshDictationState = useCallback(async () => {
     const [nextDictationState, nextDictationModels] = await Promise.all([
-      window.piDesktop?.getDictationState?.().catch(() => null) ?? Promise.resolve(null),
-      window.piDesktop?.listDictationModels?.().catch(() => []) ?? Promise.resolve([]),
+      getDictationStateQuery(),
+      listDictationModelsQuery(),
     ])
 
     setDictationState(nextDictationState)
@@ -98,11 +105,7 @@ export function useSettingsDictationController({
   }, [refreshDictationState])
 
   useEffect(() => {
-    if (!window.piDesktop?.subscribe) {
-      return
-    }
-
-    return window.piDesktop.subscribe((event: DesktopEvent) => {
+    return subscribeDesktopEvents((event: DesktopEvent) => {
       if (event.type !== 'dictation-download-log') {
         return
       }
@@ -147,11 +150,6 @@ export function useSettingsDictationController({
   }, [appSettings.dictationModelId, dictationModels, dictationState?.modelId])
 
   const installDictationModel = async (modelId: DictationModelId) => {
-    if (!window.piDesktop?.installDictationModel) {
-      setDictationInstallError('Dictation model installs are unavailable in this runtime.')
-      return
-    }
-
     setDictationPendingAction({ modelId, kind: 'download' })
     setDictationInstallError(null)
     setDictationDownloadLogLines([])
@@ -159,11 +157,13 @@ export function useSettingsDictationController({
 
     try {
       appendDictationDownloadLogLine(`ui ${modelId}: calling desktop RPC…`)
-      const result = await window.piDesktop.installDictationModel(modelId)
-      appendDictationDownloadLogLine(`ui ${modelId}: RPC resolved (ok=${result.ok ? 'yes' : 'no'})`)
+      const result = await installDictationModelQuery(modelId)
+      appendDictationDownloadLogLine(
+        `ui ${modelId}: RPC resolved (ok=${result?.ok ? 'yes' : 'no'})`,
+      )
 
-      if (!result.ok) {
-        setDictationInstallError(result.error ?? 'Could not download dictation model.')
+      if (!result?.ok) {
+        setDictationInstallError(result?.error ?? 'Could not download dictation model.')
         await refreshDictationState()
         return
       }
@@ -215,23 +215,18 @@ export function useSettingsDictationController({
   }
 
   const deleteDictationModel = async (modelId: DictationModelId) => {
-    if (!window.piDesktop?.removeDictationModel) {
-      setDictationInstallError('Dictation model removal is unavailable in this runtime.')
-      return
-    }
-
     const activeModelId = getActiveDictationModelId()
     setDictationPendingAction({ modelId, kind: 'delete' })
     setDictationInstallError(null)
     appendDictationDownloadLogLine(`ui ${modelId}: delete requested`)
 
     try {
-      const result = await window.piDesktop.removeDictationModel(modelId)
+      const result = await removeDictationModelQuery(modelId)
       appendDictationDownloadLogLine(
-        `ui ${modelId}: delete resolved (ok=${result.ok ? 'yes' : 'no'})`,
+        `ui ${modelId}: delete resolved (ok=${result?.ok ? 'yes' : 'no'})`,
       )
-      if (!result.ok) {
-        setDictationInstallError(result.error ?? 'Could not remove dictation model.')
+      if (!result?.ok) {
+        setDictationInstallError(result?.error ?? 'Could not remove dictation model.')
         await refreshDictationState()
         return
       }

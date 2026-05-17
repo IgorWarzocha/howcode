@@ -6,6 +6,7 @@ import { Tooltip } from '../../../components/common/tooltip'
 import {
   closeSkillCreatorSessionQuery,
   continueSkillCreatorSessionQuery,
+  openPathQuery,
   startSkillCreatorSessionQuery,
 } from '../../../query/desktop-query'
 import { settingsInputClass } from '../../../ui/classes'
@@ -212,7 +213,7 @@ export function SkillCreatorSection({
                 className="inline-flex h-auto items-center gap-1 rounded-xl px-1.5 py-0 text-[12px]"
                 onClick={() => {
                   if (createdSkillPath) {
-                    void window.piDesktop?.openPath?.(createdSkillPath)
+                    void openPathQuery(createdSkillPath)
                   }
                 }}
                 disabled={!createdSkillPath}

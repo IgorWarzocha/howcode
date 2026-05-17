@@ -5,6 +5,7 @@ import { ConfirmPopover } from '../../../components/common/confirm-popover'
 import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredPackage } from '../../../desktop/types'
+import { openPathQuery } from '../../../query/desktop-query'
 import { compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { getConfiguredSourceLabel, isConfiguredSourcePath } from '../utils'
@@ -35,7 +36,7 @@ export function ConfiguredPackageRow({
                 className={compactRoundIconButtonClass}
                 onClick={() => {
                   if (configuredPackage.settingsPath) {
-                    void window.piDesktop?.openPath?.(configuredPackage.settingsPath)
+                    void openPathQuery(configuredPackage.settingsPath)
                   }
                 }}
                 aria-label="Open settings.json in default editor"

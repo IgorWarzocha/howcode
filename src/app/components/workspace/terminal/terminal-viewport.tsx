@@ -7,6 +7,7 @@ import { piGuiThemeUpdatedEvent } from '../../../app-shell/usePiGuiTheme'
 import type { TerminalEvent } from '../../../desktop/types'
 import { resizeDesktopTerminal, writeDesktopTerminal } from '../../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
+import { openExternalQuery } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
 import { buildXtermTheme } from './terminal-xterm-theme'
 import {
@@ -340,7 +341,7 @@ export function TerminalViewport({
         new WebLinksAddon((event, uri) => {
           terminal.focus()
           event.preventDefault()
-          void window.piDesktop?.openExternal?.(uri).then((opened) => {
+          void openExternalQuery(uri).then((opened) => {
             if (!opened) {
               writeSystemMessage((message) => writeToTerminal(message), `Unable to open ${uri}`)
             }

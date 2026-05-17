@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { Artifact } from '../../../desktop/types'
+import { subscribeDesktopEvents } from '../../../query/desktop-query'
 import type { ArtifactView } from './useArtifactPanelState'
 
 export function useArtifactSelection(input: {
@@ -60,8 +61,7 @@ export function useArtifactUpdateEvents(input: {
   } = input
 
   useEffect(() => {
-    if (!window.piDesktop?.subscribe) return
-    return window.piDesktop.subscribe((event) => {
+    return subscribeDesktopEvents((event) => {
       if (event.type !== 'artifact-update') return
       if (!conversationId || event.conversationId !== conversationId) return
       setArtifactLoadError(null)

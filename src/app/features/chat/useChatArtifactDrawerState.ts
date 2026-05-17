@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
+import { subscribeDesktopEvents } from '../../query/desktop-query'
 
 export const ARTIFACT_DRAWER_WIDTH = 'clamp(320px, calc(100% - 820px), 760px)'
 
@@ -107,9 +108,8 @@ export function useChatArtifactDrawerState({
   }, [artifactDrawerOverlay, artifactDrawerVisible])
 
   useEffect(() => {
-    if (!window.piDesktop?.subscribe) return
     if (!conversationId) return
-    return window.piDesktop.subscribe((event) => {
+    return subscribeDesktopEvents((event) => {
       if (event.type !== 'artifact-update') return
       if (event.conversationId !== conversationId) return
       setArtifactsVisibleByConversation((current) => ({

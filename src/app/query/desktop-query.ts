@@ -415,3 +415,39 @@ export async function searchThreadQuery(
     }
   )
 }
+
+export async function getDictationStateQuery() {
+  return (await window.piDesktop?.getDictationState?.().catch(() => null)) ?? null
+}
+
+export async function listDictationModelsQuery() {
+  return (await window.piDesktop?.listDictationModels?.().catch(() => [])) ?? []
+}
+
+export async function installDictationModelQuery(
+  modelId: import('../desktop/types').DictationModelId,
+) {
+  return (await window.piDesktop?.installDictationModel?.(modelId)) ?? null
+}
+
+export async function removeDictationModelQuery(
+  modelId: import('../desktop/types').DictationModelId,
+) {
+  return (await window.piDesktop?.removeDictationModel?.(modelId)) ?? null
+}
+
+export async function transcribeDictationQuery(
+  request: import('../desktop/types').DictationTranscriptionRequest,
+) {
+  return (await window.piDesktop?.transcribeDictation?.(request)) ?? null
+}
+
+export function canTranscribeDictationQuery() {
+  return typeof window.piDesktop?.transcribeDictation === 'function'
+}
+
+export function subscribeDesktopEvents(
+  listener: (event: import('../desktop/types').DesktopEvent) => void,
+) {
+  return window.piDesktop?.subscribe?.(listener) ?? (() => undefined)
+}
