@@ -8,6 +8,24 @@ import {
   getNodeExecutable,
   getRuntimeHostPath,
 } from './client-environment.ts'
+import {
+  clearHostIdleTimer,
+  createHostConnection,
+  desktopListeners,
+  forgetHost,
+  type HostConnection,
+  hostByAlias,
+  hosts,
+  isHostRunningOrStarting,
+  isRuntimeHostsShuttingDown,
+  markRuntimeHostsShuttingDown,
+  registerHostShutdownHandlers,
+  rejectPendingRequests,
+  rememberHostAlias,
+  scheduleThreadHostIdleStop,
+  serviceHost,
+  terminateHostProcess,
+} from './host-connections.ts'
 import { handleRuntimeHostMainRequest } from './main-request-handlers.ts'
 import type {
   RuntimeHostRequestMap,
@@ -17,129 +35,14 @@ import type {
 } from './protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
 
-type PendingRequest = {
-  name: RuntimeHostRequestName
-  resolve: (value: RuntimeHostResponseMap[RuntimeHostRequestName]) => void
-  reject: (error: Error) => void
-}
-
-type HostRole = 'service' | 'thread'
-
-type HostConnection = {
-  id: string
-  role: HostRole
-  label: string
-  aliases: Set<string>
-  pendingRequests: Map<string, PendingRequest>
-  process: ChildProcess | null
-  startPromise: Promise<ChildProcess> | null
-  idleTimer: ReturnType<typeof setTimeout> | null
-  busy: boolean
-}
-
-type RuntimeHostBrokerState = {
-  desktopListeners: Set<(event: DesktopEvent) => void>
-  hostByAlias: Map<string, HostConnection>
-  hosts: Set<HostConnection>
-  serviceHost: HostConnection | null
-}
-
-const brokerStateKey = Symbol.for('howcode.runtimeHostBrokerState')
-const runtimeHostGlobal = globalThis as typeof globalThis & {
-  [brokerStateKey]?: RuntimeHostBrokerState
-}
-
-if (!runtimeHostGlobal[brokerStateKey]) {
-  runtimeHostGlobal[brokerStateKey] = {
-    desktopListeners: new Set<(event: DesktopEvent) => void>(),
-    hostByAlias: new Map<string, HostConnection>(),
-    hosts: new Set<HostConnection>(),
-    serviceHost: null,
-  }
-}
-
-const brokerState = runtimeHostGlobal[brokerStateKey]
-
-const desktopListeners = brokerState.desktopListeners
-const hostByAlias = brokerState.hostByAlias
-const hosts = brokerState.hosts
-
-const THREAD_HOST_IDLE_MS = 5 * 60 * 1000
-
-let registeredHostShutdownHandlers = false
-let runtimeHostsShuttingDown = false
-
-function terminateHostProcess(child: ChildProcess | null | undefined) {
-  if (!child || child.killed || child.exitCode !== null) return
-
-  if (process.platform === 'win32' && child.pid) {
-    const taskkill = spawn('taskkill.exe', ['/pid', String(child.pid), '/t', '/f'], {
-      stdio: 'ignore',
-      windowsHide: true,
-    })
-    taskkill.unref()
-    return
-  }
-
-  child.kill('SIGTERM')
-}
-
-function killAllRuntimeHosts() {
-  for (const host of hosts) {
-    terminateHostProcess(host.process)
-  }
-}
-
-function registerHostShutdownHandlers() {
-  if (registeredHostShutdownHandlers) return
-  registeredHostShutdownHandlers = true
-  process.once('exit', killAllRuntimeHosts)
-  process.once('SIGTERM', () => {
-    killAllRuntimeHosts()
-    process.exit(0)
-  })
-  process.once('SIGINT', () => {
-    killAllRuntimeHosts()
-    process.exit(0)
-  })
-}
-
-const serviceHost: HostConnection =
-  brokerState.serviceHost ?? createHostConnection('service', 'service')
-brokerState.serviceHost = serviceHost
-
-function createHostConnection(role: HostRole, label: string): HostConnection {
-  const host: HostConnection = {
-    id: randomUUID(),
-    role,
-    label,
-    aliases: new Set(),
-    pendingRequests: new Map(),
-    process: null,
-    startPromise: null,
-    idleTimer: null,
-    busy: false,
-  }
-  hosts.add(host)
-  return host
-}
-
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
     listener(event)
   }
 }
 
-function rejectPendingRequests(host: HostConnection, error: Error) {
-  host.busy = false
-  for (const [, pending] of host.pendingRequests) {
-    pending.reject(error)
-  }
-  host.pendingRequests.clear()
-}
-
 export function shutdownRuntimeHosts() {
-  runtimeHostsShuttingDown = true
+  markRuntimeHostsShuttingDown()
 
   for (const host of hosts) {
     if (host.idleTimer) {
@@ -155,47 +58,6 @@ export function shutdownRuntimeHosts() {
   hostByAlias.clear()
   hosts.clear()
   hosts.add(serviceHost)
-}
-
-function rememberHostAlias(host: HostConnection, alias: string | null | undefined) {
-  const normalized = alias?.trim()
-  if (!normalized) return
-  host.aliases.add(normalized)
-  hostByAlias.set(normalized, host)
-}
-
-function forgetHost(host: HostConnection) {
-  for (const alias of host.aliases) {
-    if (hostByAlias.get(alias) === host) {
-      hostByAlias.delete(alias)
-    }
-  }
-  host.aliases.clear()
-  if (host !== serviceHost) {
-    hosts.delete(host)
-  }
-}
-
-function scheduleThreadHostIdleStop(host: HostConnection) {
-  if (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy) return
-  if (host.idleTimer) clearTimeout(host.idleTimer)
-  host.idleTimer = setTimeout(() => {
-    if (host.pendingRequests.size > 0) return
-    terminateHostProcess(host.process)
-    forgetHost(host)
-  }, THREAD_HOST_IDLE_MS)
-}
-
-function clearHostIdleTimer(host: HostConnection) {
-  if (!host.idleTimer) return
-  clearTimeout(host.idleTimer)
-  host.idleTimer = null
-}
-
-function isHostRunningOrStarting(host: HostConnection) {
-  return Boolean(
-    host.startPromise || (host.process && !host.process.killed && host.process.exitCode === null),
-  )
 }
 
 function handleHostDesktopEventMessage(
@@ -295,7 +157,7 @@ function handleHostExit(
 }
 
 async function ensureRuntimeHost(host: HostConnection) {
-  if (runtimeHostsShuttingDown) {
+  if (isRuntimeHostsShuttingDown()) {
     throw new Error('Pi runtime host is shutting down.')
   }
 
@@ -312,7 +174,7 @@ async function ensureRuntimeHost(host: HostConnection) {
   clearHostIdleTimer(host)
   host.startPromise = (async () => {
     const nodeExecutable = await getNodeExecutable()
-    if (runtimeHostsShuttingDown) {
+    if (isRuntimeHostsShuttingDown()) {
       throw new Error('Pi runtime host is shutting down.')
     }
 
@@ -343,7 +205,7 @@ async function ensureRuntimeHost(host: HostConnection) {
       }
 
       child.once('spawn', () => {
-        if (runtimeHostsShuttingDown) {
+        if (isRuntimeHostsShuttingDown()) {
           terminateHostProcess(child)
           settleFailure(new Error('Pi runtime host is shutting down.'))
           return

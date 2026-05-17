@@ -7,7 +7,6 @@ import type {
 } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { discoverHeadlessAgentSessionResources } from '../runtime/agent-session-extensions.ts'
 import { dequeueComposerPromptFromRuntime } from '../runtime/composer-dequeue.ts'
 import {
   applyComposerModeSettings,
@@ -23,14 +22,11 @@ import {
   expandRuntimeDollarSkillReferences,
   mapSessionSkills,
 } from '../runtime/composer-skill-references.ts'
-import {
-  buildComposerState,
-  buildComposerStateSnapshot,
-  createComposerSnapshotSession,
-} from '../runtime/composer-state.ts'
+import { buildComposerState, buildComposerStateSnapshot } from '../runtime/composer-state.ts'
 import { stopComposerRuntime } from '../runtime/composer-stop.ts'
 import { answerNativeAskQuestions as answerNativeAskQuestionsForRuntime } from '../runtime/native-ask-questions-state.ts'
 import type { PiRuntime } from '../runtime/types.ts'
+import { getComposerSessionResources } from './composer-resource-service.ts'
 import {
   abortRuntimeExtensionCommand,
   createRuntimeForNewSession,
@@ -61,61 +57,11 @@ async function emitComposerUpdate(request: ComposerStateRequest = {}) {
 }
 
 export async function getComposerSlashCommands(request: ComposerStateRequest = {}) {
-  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
-  if (persistedSessionPath) {
-    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-      suspendDisposal: true,
-      settingsCwd: request.composerSessionDir ?? null,
-      chatGroupId: request.chatGroupId ?? null,
-    })
-    await reloadRuntimeSettingsIfSafe(persistedSessionPath)
-    scheduleRuntimeDisposal(persistedSessionPath)
-    return mapSessionCommands(runtime.session)
-  }
-
-  const snapshot = await createComposerSnapshotSession({
-    ...request,
-    projectId: request.projectId ?? getDesktopWorkingDirectory(),
-    sessionPath: persistedSessionPath,
-  })
-
-  try {
-    await discoverHeadlessAgentSessionResources(snapshot.session).catch((error) => {
-      console.warn('Pi extension resource discovery failed', error)
-    })
-    return mapSessionCommands(snapshot.session)
-  } finally {
-    snapshot.session.dispose()
-  }
+  return await getComposerSessionResources(request, mapSessionCommands)
 }
 
 export async function getComposerSkills(request: ComposerStateRequest = {}) {
-  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
-  if (persistedSessionPath) {
-    const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
-      suspendDisposal: true,
-      settingsCwd: request.composerSessionDir ?? null,
-      chatGroupId: request.chatGroupId ?? null,
-    })
-    await reloadRuntimeSettingsIfSafe(persistedSessionPath)
-    scheduleRuntimeDisposal(persistedSessionPath)
-    return mapSessionSkills(runtime.session)
-  }
-
-  const snapshot = await createComposerSnapshotSession({
-    ...request,
-    projectId: request.projectId ?? getDesktopWorkingDirectory(),
-    sessionPath: persistedSessionPath,
-  })
-
-  try {
-    await discoverHeadlessAgentSessionResources(snapshot.session).catch((error) => {
-      console.warn('Pi extension resource discovery failed', error)
-    })
-    return mapSessionSkills(snapshot.session)
-  } finally {
-    snapshot.session.dispose()
-  }
+  return await getComposerSessionResources(request, mapSessionSkills)
 }
 
 export async function getComposerState(request: ComposerStateRequest = {}) {

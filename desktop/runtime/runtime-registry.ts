@@ -16,26 +16,19 @@ import {
   createRuntimeSettingsManager,
 } from './isolated-settings-manager.ts'
 import {
-  cancelLiveThreadUpdate,
-  deferLiveThreadUpdate,
   deleteRuntimeRecordIfCurrent,
   getRuntimeRecord,
   getRuntimeRecordSnapshots,
   registerRuntime,
-  scheduleLiveThreadUpdate,
   scheduleRuntimeDisposal,
   suspendRuntimeDisposal,
   withRuntimeMutationLock,
 } from './registry/runtime-registry-state.ts'
+import { handleRuntimeSessionEvent } from './runtime-session-events.ts'
 import { normalizeRuntimeSettingsCwd } from './runtime-settings-cwd.ts'
 import { rememberSessionPath } from './session-path-index.ts'
 import { createRuntimeSettingsRefreshController, isRuntimeBusy } from './settings-refresh.ts'
-import {
-  clearRuntimeToolProgress,
-  publishComposerUpdate,
-  publishThreadUpdate,
-  rememberRuntimeToolProgress,
-} from './thread-publisher.ts'
+import { publishComposerUpdate, publishThreadUpdate } from './thread-publisher.ts'
 
 export { withRuntimeMutationLock } from './registry/runtime-registry-state.ts'
 
@@ -82,10 +75,6 @@ function handleExtensionCommandStateChange(runtime: PiRuntime) {
   }
 }
 
-function publishLiveThreadUpdate(runtime: PiRuntime) {
-  void publishThreadUpdate(runtime, 'update')
-}
-
 export async function reloadRuntimeSettingsIfSafe(
   sessionPath: string,
   options: { useMutationLock?: boolean | undefined } = {},
@@ -112,100 +101,6 @@ export async function markRuntimeSettingsStaleForSettingsCwd(
   settingsCwd?: string | undefined | null | undefined,
 ) {
   settingsRefreshController.markStaleForSettingsCwd(settingsCwd)
-}
-
-type RuntimeSessionEvent = Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0]
-
-function getRuntimeToolProgressPartial(event: RuntimeSessionEvent) {
-  if (event.type === 'tool_execution_update') return event.partialResult
-  if (event.type === 'tool_execution_end') return event.result
-  return undefined
-}
-
-function handleRuntimeMessageEnd(
-  runtime: PiRuntime,
-  runtimeKey: string | null,
-  event: Extract<RuntimeSessionEvent, { type: 'message_end' }>,
-) {
-  if (event.message.role === 'user') {
-    cancelLiveThreadUpdate(runtime)
-    void publishThreadUpdate(runtime, 'start')
-  } else {
-    if (event.message.role === 'toolResult') {
-      const toolCallId = 'toolCallId' in event.message ? event.message.toolCallId : undefined
-      clearRuntimeToolProgress(runtime, {
-        toolCallId: typeof toolCallId === 'string' ? toolCallId : undefined,
-        toolName: event.message.toolName,
-      })
-    }
-    deferLiveThreadUpdate(runtime, publishLiveThreadUpdate, {
-      requireStreaming: event.message.role === 'toolResult',
-    })
-  }
-  if (runtimeKey) scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy)
-}
-
-function handleRuntimeAgentEnd(runtime: PiRuntime, runtimeKey: string | null) {
-  cancelLiveThreadUpdate(runtime)
-  void publishThreadUpdate(runtime, 'end')
-  if (runtimeKey && settingsRefreshController.isStale(runtimeKey))
-    void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => undefined)
-  if (runtimeKey) scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy)
-}
-
-function handleRuntimeCompactionEnd(runtime: PiRuntime, runtimeKey: string | null) {
-  setTimeout(() => {
-    cancelLiveThreadUpdate(runtime)
-    void publishThreadUpdate(runtime, 'compaction')
-    void publishRuntimeComposerState(runtime)
-  }, 0)
-  if (runtimeKey && settingsRefreshController.isStale(runtimeKey))
-    void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => undefined)
-}
-
-function handleRuntimeToolEvent(
-  runtime: PiRuntime,
-  event: Extract<
-    RuntimeSessionEvent,
-    { type: 'tool_execution_start' | 'tool_execution_update' | 'tool_execution_end' }
-  >,
-) {
-  rememberRuntimeToolProgress(runtime, {
-    toolCallId: event.toolCallId,
-    toolName: event.toolName,
-    args: 'args' in event ? event.args : undefined,
-    partialResult: getRuntimeToolProgressPartial(event),
-    isError: event.type === 'tool_execution_end' ? event.isError : false,
-    terminal: event.type === 'tool_execution_end',
-  })
-  scheduleLiveThreadUpdate(runtime, publishLiveThreadUpdate)
-}
-
-function handleRuntimeSessionEvent(runtime: PiRuntime, event: RuntimeSessionEvent) {
-  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-  if (runtimeKey) suspendRuntimeDisposal(runtimeKey)
-  if (event.type === 'message_start' || event.type === 'message_update')
-    return scheduleLiveThreadUpdate(runtime, publishLiveThreadUpdate)
-  if (event.type === 'message_end') return handleRuntimeMessageEnd(runtime, runtimeKey, event)
-  if (event.type === 'agent_end') return handleRuntimeAgentEnd(runtime, runtimeKey)
-  if (event.type === 'compaction_start') {
-    cancelLiveThreadUpdate(runtime)
-    void publishThreadUpdate(runtime, 'compaction-start')
-    void publishRuntimeComposerState(runtime)
-    return
-  }
-  if (event.type === 'compaction_end') return handleRuntimeCompactionEnd(runtime, runtimeKey)
-  if (
-    event.type === 'tool_execution_start' ||
-    event.type === 'tool_execution_update' ||
-    event.type === 'tool_execution_end'
-  )
-    return handleRuntimeToolEvent(runtime, event)
-  if (event.type === 'queue_update')
-    void publishRuntimeComposerState(runtime).finally(() => {
-      if (runtimeKey && !runtime.session.isStreaming)
-        scheduleRuntimeDisposal(runtimeKey, isHowcodeRuntimeBusy)
-    })
 }
 
 async function createRuntime(options: {
@@ -282,7 +177,15 @@ async function createRuntime(options: {
 
   rememberSessionPath(session.sessionFile, options.cwd)
 
-  session.subscribe((event) => handleRuntimeSessionEvent(runtime, event))
+  session.subscribe((event) =>
+    handleRuntimeSessionEvent(runtime, event, {
+      isRuntimeBusy: isHowcodeRuntimeBusy,
+      reloadRuntimeSettingsIfSafe,
+      isRuntimeSettingsStale: (runtimeKey) => settingsRefreshController.isStale(runtimeKey),
+      publishComposerUpdate,
+      publishThreadUpdate,
+    }),
+  )
 
   await bindHeadlessAgentSessionExtensions(session, {
     onExtensionCommandStateChange: () => {
