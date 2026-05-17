@@ -1,6 +1,6 @@
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
-import { Terminal as XTerm } from '@xterm/xterm'
+import { type ITheme, Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
@@ -15,7 +15,6 @@ import {
 } from '../../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
 import { cn } from '../../../utils/cn'
-import { buildXtermTheme } from './terminal-xterm-theme'
 import {
   cancelScheduledTerminalClose,
   scheduleTerminalClose,
@@ -56,6 +55,24 @@ type TerminalViewportProps = {
   className?: string | undefined
 }
 
+const XTERM_THEME_COLOR_KEYS = [
+  'black',
+  'red',
+  'green',
+  'yellow',
+  'blue',
+  'magenta',
+  'cyan',
+  'white',
+  'brightBlack',
+  'brightRed',
+  'brightGreen',
+  'brightYellow',
+  'brightBlue',
+  'brightMagenta',
+  'brightCyan',
+  'brightWhite',
+] as const
 const XTERM_STICKY_BOTTOM_THRESHOLD_ROWS = 2
 
 function isXtermNearBottom(terminal: XTerm) {
@@ -63,6 +80,40 @@ function isXtermNearBottom(terminal: XTerm) {
     terminal.buffer.active.baseY - terminal.buffer.active.viewportY <=
     XTERM_STICKY_BOTTOM_THRESHOLD_ROWS
   )
+}
+
+function resolveCssColor(element: HTMLElement, value: string, fallback: string) {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return fallback
+
+  const probe = element.ownerDocument.createElement('span')
+  Object.assign(probe.style, { color: trimmedValue, display: 'none' })
+  element.appendChild(probe)
+  const resolvedColor = getComputedStyle(probe).color
+  probe.remove()
+
+  return resolvedColor || trimmedValue || fallback
+}
+
+function buildXtermTheme(element: HTMLElement): ITheme {
+  const styles = getComputedStyle(element)
+  const resolve = (value: string, fallback: string) => resolveCssColor(element, value, fallback)
+  const color = (cssVar: string, fallback: string) =>
+    resolve(styles.getPropertyValue(cssVar), fallback)
+  const theme: ITheme = {
+    background: color('--term-bg', '#171923'),
+    foreground: color('--term-fg', '#d5daed'),
+    cursor: color('--term-cursor', '#b9bff3'),
+    cursorAccent: color('--term-bg', '#171923'),
+    selectionBackground: color('--terminal-selection', 'rgba(185, 191, 243, 0.18)'),
+    selectionInactiveBackground: color('--terminal-selection', 'rgba(185, 191, 243, 0.18)'),
+  }
+
+  for (const [index, key] of XTERM_THEME_COLOR_KEYS.entries()) {
+    theme[key] = color(`--term-color-${index}`, theme.foreground ?? '#d5daed')
+  }
+
+  return theme
 }
 
 function cleanupTerminalSessionOnUnmount(input: {

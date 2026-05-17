@@ -2,9 +2,9 @@ import { defaultPiSettings } from '../../../../shared/default-pi-settings'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { DiffPanel } from '../../components/workspace/diff-panel'
 import { mainPanelClass } from '../../ui/classes'
-import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'
 import type { CodeWorkspaceContentProps } from './code-workspace-view'
+import { FALLBACK_APP_SETTINGS } from './code-workspace-view'
 
 function getMainPanelClass(
   activeView: AppShellController['state']['activeView'],
