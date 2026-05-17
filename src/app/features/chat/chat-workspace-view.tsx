@@ -1,19 +1,22 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '../../../../shared/session-paths'
 import type { AppShellController } from '../../app-shell/useAppShellController'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
 import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../../desktop/types'
-import { useAnimatedPresence } from '../../hooks/useAnimatedPresence'
 import type { Message } from '../../types'
 import { cn } from '../../utils/cn'
 import { DesktopComposerStatusModelPicker } from '../code/desktop-composer-status'
 import { useQueuedPromptRestore } from '../code/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code/useWorkspaceFooterHeight'
 import { ChatView } from './chat-view'
+import {
+  type ChatArtifactDrawerState,
+  useChatArtifactDrawerState,
+} from './useChatArtifactDrawerState'
 
 const ArtifactPanel = lazy(() =>
   import('./artifacts/artifact-panel').then((module) => ({ default: module.ArtifactPanel })),
@@ -38,7 +41,6 @@ type ChatWorkspaceViewProps = {
     | undefined
 }
 
-const ARTIFACT_DRAWER_WIDTH = 'clamp(320px, calc(100% - 820px), 760px)'
 const NEW_CHAT_COMPOSER_TOP = '60%'
 const FALLBACK_APP_SETTINGS = {
   chatModel: null,
@@ -75,18 +77,9 @@ const FALLBACK_APP_SETTINGS = {
 type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
   ReturnType<typeof useQueuedPromptRestore> & {
     rootRef: RefObject<HTMLDivElement | null>
-    desktopContentRef: RefObject<HTMLDivElement | null>
-    artifactDrawerRef: RefObject<HTMLDivElement | null>
     footerRef: RefObject<HTMLElement | null>
     mainViewRef: RefObject<HTMLElement | null>
-    artifactsFullscreen: boolean
-    setArtifactsFullscreen: Dispatch<SetStateAction<boolean>>
-    artifactDrawerInsetStyle: { right: string } | undefined
-    artifactDrawerStyle: { width: string } | undefined
-    artifactDrawerPresent: boolean
-    artifactDrawerVisible: boolean
-    artifactsVisible: boolean
-    showDesktopArtifactDrawer: boolean
+    artifactDrawer: ChatArtifactDrawerState
     hasConversation: boolean
     hasConversationLayout: boolean
     shouldShowConversationContent: boolean
@@ -99,7 +92,6 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
     conversationId: string | null | undefined
     hasPersistedChatSession: boolean
     draftChatGroupId: string | null
-    setArtifactsVisibleByConversation: Dispatch<SetStateAction<Record<string, boolean>>>
     handleAction: AppShellController['handleAction']
     handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
     handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
@@ -107,7 +99,6 @@ type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
     listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
     shellState: AppShellController['shellState']
     state: AppShellController['state']
-    handleCloseArtifacts: () => void
   }
 
 function getReplyActivityKey(messages: readonly Message[]) {
@@ -173,13 +164,9 @@ function getChatGroupId(props: ChatWorkspaceContentProps) {
 }
 
 function getToggleArtifacts(props: ChatWorkspaceContentProps) {
-  const { hasConversationLayout, conversationId, setArtifactsVisibleByConversation } = props
-  if (!(hasConversationLayout && conversationId)) return undefined
-  return () =>
-    setArtifactsVisibleByConversation((current: Record<string, boolean>) => ({
-      ...current,
-      [conversationId]: !(current[conversationId] ?? false),
-    }))
+  const { hasConversationLayout, artifactDrawer } = props
+  if (!hasConversationLayout) return undefined
+  return artifactDrawer.toggleArtifacts
 }
 
 function ChatQueuedPrompts(props: ChatWorkspaceContentProps) {
@@ -226,7 +213,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
     handleToggleTerminal,
     hasConversationLayout,
     hasConversation,
-    artifactsVisible,
+    artifactDrawer,
     listComposerAttachmentEntries,
     handleAction,
     controller,
@@ -289,7 +276,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       onToggleArtifacts={getToggleArtifacts(props)}
       artifactsAvailable={hasConversation}
       showTerminalControls={false}
-      artifactsVisible={artifactsVisible}
+      artifactsVisible={artifactDrawer.artifactsVisible}
       terminalVisible={state.terminalVisible}
       preferSideFilePicker={!hasConversationLayout}
       preferSideModelPopover={!hasConversationLayout}
@@ -312,7 +299,7 @@ function ChatComposerDock(props: ChatWorkspaceContentProps) {
   const {
     sidebarAutoHidden,
     sidebarCompactMode,
-    showDesktopArtifactDrawer,
+    artifactDrawer,
     activeComposerState,
     composerProjectId,
     terminalSessionPath,
@@ -325,7 +312,7 @@ function ChatComposerDock(props: ChatWorkspaceContentProps) {
       center={<ChatComposerCenter {...props} />}
       rightClassName={cn(
         'opacity-0 min-[1400px]:opacity-100',
-        showDesktopArtifactDrawer && 'invisible',
+        artifactDrawer.showDesktopArtifactDrawer && 'invisible',
       )}
       right={
         <DesktopComposerStatusModelPicker
@@ -345,22 +332,17 @@ function ChatComposerDock(props: ChatWorkspaceContentProps) {
 }
 
 function ChatDesktopContent(props: ChatWorkspaceContentProps) {
-  const {
-    desktopContentRef,
-    artifactsFullscreen,
-    artifactDrawerInsetStyle,
-    hasConversationLayout,
-    footerHeight,
-    footerRef,
-  } = props
+  const { artifactDrawer, hasConversationLayout, footerHeight, footerRef } = props
   return (
     <div
-      ref={desktopContentRef}
+      ref={artifactDrawer.desktopContentRef}
       className={cn(
         'motion-terminal-drawer-offset absolute inset-0 min-h-0 overflow-hidden',
-        artifactsFullscreen && 'hidden',
+        artifactDrawer.artifactsFullscreen && 'hidden',
       )}
-      style={artifactsFullscreen ? undefined : artifactDrawerInsetStyle}
+      style={
+        artifactDrawer.artifactsFullscreen ? undefined : artifactDrawer.artifactDrawerInsetStyle
+      }
     >
       <div
         className="absolute inset-x-0 top-0 overflow-hidden px-5"
@@ -387,34 +369,25 @@ function ChatDesktopContent(props: ChatWorkspaceContentProps) {
 }
 
 function ChatArtifactDrawer(props: ChatWorkspaceContentProps) {
-  const {
-    artifactDrawerPresent,
-    artifactsFullscreen,
-    artifactDrawerStyle,
-    artifactDrawerRef,
-    artifactDrawerVisible,
-    conversationId,
-    handleCloseArtifacts,
-    setArtifactsFullscreen,
-  } = props
-  if (!(artifactDrawerPresent && !artifactsFullscreen)) return null
+  const { artifactDrawer, conversationId } = props
+  if (!(artifactDrawer.artifactDrawerPresent && !artifactDrawer.artifactsFullscreen)) return null
   return (
     <div
       className="pointer-events-none absolute top-0 right-0 bottom-0 z-20 max-w-full overflow-hidden"
-      style={artifactDrawerStyle}
+      style={artifactDrawer.artifactDrawerStyle}
     >
       <div
-        ref={artifactDrawerRef}
-        data-open={artifactDrawerVisible ? 'true' : 'false'}
-        className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${artifactDrawerVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        ref={artifactDrawer.artifactDrawerRef}
+        data-open={artifactDrawer.artifactDrawerVisible ? 'true' : 'false'}
+        className={`motion-terminal-drawer absolute inset-0 min-h-0 min-w-0 ${artifactDrawer.artifactDrawerVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
       >
         <Suspense fallback={null}>
           <ArtifactPanel
             conversationId={conversationId ?? null}
-            visible={artifactDrawerPresent}
+            visible={artifactDrawer.artifactDrawerPresent}
             fullscreen={false}
-            onToggleFullscreen={() => setArtifactsFullscreen(true)}
-            onClose={handleCloseArtifacts}
+            onToggleFullscreen={() => artifactDrawer.setArtifactsFullscreen(true)}
+            onClose={artifactDrawer.handleCloseArtifacts}
           />
         </Suspense>
       </div>
@@ -423,23 +396,17 @@ function ChatArtifactDrawer(props: ChatWorkspaceContentProps) {
 }
 
 function ChatArtifactFullscreen(props: ChatWorkspaceContentProps) {
-  const {
-    artifactsFullscreen,
-    conversationId,
-    artifactsVisible,
-    handleCloseArtifacts,
-    setArtifactsFullscreen,
-  } = props
-  if (!artifactsFullscreen) return null
+  const { artifactDrawer, conversationId } = props
+  if (!artifactDrawer.artifactsFullscreen) return null
   return (
     <div className="absolute inset-0 z-20 min-h-0 overflow-hidden">
       <Suspense fallback={null}>
         <ArtifactPanel
           conversationId={conversationId ?? null}
-          visible={artifactsVisible}
-          fullscreen={artifactsFullscreen}
-          onToggleFullscreen={() => setArtifactsFullscreen(false)}
-          onClose={handleCloseArtifacts}
+          visible={artifactDrawer.artifactsVisible}
+          fullscreen={artifactDrawer.artifactsFullscreen}
+          onToggleFullscreen={() => artifactDrawer.setArtifactsFullscreen(false)}
+          onClose={artifactDrawer.handleCloseArtifacts}
         />
       </Suspense>
     </div>
@@ -476,14 +443,7 @@ export function ChatWorkspaceView({
   const [composerPromptResetKey] = useState(0)
   const [composerLayoutVersion, setComposerLayoutVersion] = useState(0)
   const [composerOverlayHeight, setComposerOverlayHeight] = useState(0)
-  const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
-    Record<string, boolean>
-  >({})
-  const [artifactsFullscreen, setArtifactsFullscreen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const desktopContentRef = useRef<HTMLDivElement>(null)
-  const artifactDrawerRef = useRef<HTMLDivElement>(null)
-  const artifactOverlayPreviousFocusRef = useRef<HTMLElement | null>(null)
   const footerRef = useRef<HTMLElement>(null)
   const mainViewRef = useRef<HTMLElement>(null)
   const {
@@ -501,140 +461,13 @@ export function ChatWorkspaceView({
   const hasConversationLayout = hasConversation
   const hasPersistedChatSession = getPersistedSessionPath(terminalSessionPath) !== null
   const draftChatGroupId = getLocalDraftChatGroupId(terminalSessionPath)
-  const artifactsVisible = conversationId
-    ? (artifactsVisibleByConversation[conversationId] ?? false)
-    : false
-  const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen
-  const artifactDrawerOverlay = sidebarCompactMode
-  const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay
-  const artifactDrawerPresent = useAnimatedPresence(artifactDrawerVisible)
-  const artifactDrawerInsetStyle = showDesktopArtifactDrawer
-    ? { right: ARTIFACT_DRAWER_WIDTH }
-    : undefined
-  const artifactDrawerStyle = artifactDrawerPresent
-    ? { width: artifactDrawerOverlay ? '100%' : ARTIFACT_DRAWER_WIDTH }
-    : undefined
-  const previousConversationIdRef = useRef<string | null | undefined>(conversationId)
   const shouldShowConversationContent = hasConversation
-  const handleCloseArtifacts = useCallback(() => {
-    if (conversationId) {
-      setArtifactsVisibleByConversation((current: Record<string, boolean>) => ({
-        ...current,
-        [conversationId]: false,
-      }))
-    }
-    setArtifactsFullscreen(false)
-  }, [conversationId])
-
-  useEffect(() => {
-    const desktopContentElement = desktopContentRef.current
-    if (!desktopContentElement) return
-    const shouldInertDesktopContent = artifactDrawerOverlay && artifactDrawerVisible
-    if (shouldInertDesktopContent) {
-      desktopContentElement.setAttribute('inert', '')
-      desktopContentElement.setAttribute('aria-hidden', 'true')
-      return () => {
-        desktopContentElement.removeAttribute('inert')
-        desktopContentElement.removeAttribute('aria-hidden')
-      }
-    }
-
-    desktopContentElement.removeAttribute('inert')
-    desktopContentElement.removeAttribute('aria-hidden')
-  }, [artifactDrawerOverlay, artifactDrawerVisible])
-
-  useEffect(() => {
-    if (!(artifactDrawerOverlay && artifactDrawerVisible)) return
-    const drawerElement = artifactDrawerRef.current
-    if (!drawerElement) return
-    if (document.activeElement && drawerElement.contains(document.activeElement)) return
-    artifactOverlayPreviousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null
-
-    const animationFrame = window.requestAnimationFrame(() => {
-      const focusTarget = drawerElement.querySelector<HTMLElement>(
-        'button:not([disabled]), select:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      focusTarget?.focus()
-    })
-    return () => {
-      window.cancelAnimationFrame(animationFrame)
-      const previousFocus = artifactOverlayPreviousFocusRef.current
-      artifactOverlayPreviousFocusRef.current = null
-      if (!previousFocus?.isConnected) return
-      if (
-        document.activeElement instanceof HTMLElement &&
-        drawerElement.contains(document.activeElement)
-      ) {
-        previousFocus.focus()
-      }
-    }
-  }, [artifactDrawerOverlay, artifactDrawerVisible])
-
-  useEffect(() => {
-    if (!window.piDesktop?.subscribe) return
-    if (!conversationId) return
-    return window.piDesktop.subscribe((event) => {
-      if (event.type !== 'artifact-update') return
-      if (event.conversationId !== conversationId) return
-      setArtifactsVisibleByConversation((current: Record<string, boolean>) => ({
-        ...current,
-        [conversationId]: true,
-      }))
-    })
-  }, [conversationId])
-
-  if (previousConversationIdRef.current !== conversationId) {
-    previousConversationIdRef.current = conversationId
-    if (artifactsFullscreen) setArtifactsFullscreen(false)
-  }
-
-  useEffect(() => {
-    if (!artifactsVisible) setArtifactsFullscreen(false)
-  }, [artifactsVisible])
-
-  useEffect(() => {
-    const overlayVisible = artifactDrawerVisible && artifactDrawerOverlay
-    onArtifactDrawerOverlayChange?.(
-      overlayVisible,
-      overlayVisible ? handleCloseArtifacts : undefined,
-    )
-    return () => onArtifactDrawerOverlayChange?.(false)
-  }, [
-    artifactDrawerOverlay,
-    artifactDrawerVisible,
-    handleCloseArtifacts,
-    onArtifactDrawerOverlayChange,
-  ])
-
-  useEffect(() => {
-    if (!(artifactsVisible && (artifactDrawerOverlay || artifactsFullscreen))) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (state.settingsOpen) return
-      event.preventDefault()
-      event.stopPropagation()
-      if (artifactsFullscreen) {
-        setArtifactsFullscreen(false)
-        return
-      }
-      if (!conversationId) return
-      setArtifactsVisibleByConversation((current: Record<string, boolean>) => ({
-        ...current,
-        [conversationId]: false,
-      }))
-    }
-
-    window.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [
-    artifactsFullscreen,
-    artifactDrawerOverlay,
-    artifactsVisible,
+  const artifactDrawer = useChatArtifactDrawerState({
     conversationId,
-    state.settingsOpen,
-  ])
+    sidebarCompactMode,
+    settingsOpen: state.settingsOpen,
+    onArtifactDrawerOverlayChange,
+  })
   const {
     handleEditQueuedPrompt,
     handleRemoveQueuedPrompt,
@@ -650,9 +483,7 @@ export function ChatWorkspaceView({
   return (
     <ChatWorkspaceViewContent
       rootRef={rootRef}
-      desktopContentRef={desktopContentRef}
-      artifactsFullscreen={artifactsFullscreen}
-      artifactDrawerInsetStyle={artifactDrawerInsetStyle}
+      artifactDrawer={artifactDrawer}
       hasConversationLayout={hasConversationLayout}
       footerHeight={footerHeight}
       mainViewRef={mainViewRef}
@@ -690,17 +521,8 @@ export function ChatWorkspaceView({
       handleToggleTerminal={handleToggleTerminal}
       markRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
       conversationId={conversationId ?? null}
-      setArtifactsVisibleByConversation={setArtifactsVisibleByConversation}
-      artifactsVisible={artifactsVisible}
       listComposerAttachmentEntries={listComposerAttachmentEntries}
       handleAction={handleAction}
-      showDesktopArtifactDrawer={showDesktopArtifactDrawer}
-      artifactDrawerPresent={artifactDrawerPresent}
-      artifactDrawerStyle={artifactDrawerStyle}
-      artifactDrawerRef={artifactDrawerRef}
-      artifactDrawerVisible={artifactDrawerVisible}
-      handleCloseArtifacts={handleCloseArtifacts}
-      setArtifactsFullscreen={setArtifactsFullscreen}
     />
   )
 }

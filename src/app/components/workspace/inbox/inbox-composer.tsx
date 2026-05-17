@@ -1,4 +1,3 @@
-import { ArrowUpRight, Bot, Paperclip, Square, X } from 'lucide-react'
 import {
   type Dispatch,
   type RefObject,
@@ -21,14 +20,7 @@ import type {
   InboxThread,
 } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
-import { compactIconButtonClass } from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
-import { IconButton } from '../../common/icon-button'
-import { ToolbarButton } from '../../common/toolbar-button'
-import { Tooltip } from '../../common/tooltip'
-import { ComposerContextMeter } from '../composer/composer-context-meter'
-import { ComposerModelPopover } from '../composer/composer-model-popover'
 import { ComposerPromptInputPanel } from '../composer/composer-prompt-input-panel'
 import { useComposerAttachmentPicker } from '../composer/useComposerAttachmentPicker'
 import { useComposerClipboardHandlers } from '../composer/useComposerClipboardHandlers'
@@ -36,20 +28,8 @@ import { useComposerDictation } from '../composer/useComposerDictation'
 import { useComposerFileMentions } from '../composer/useComposerFileMentions'
 import { useComposerSkillMentions } from '../composer/useComposerSkillMentions'
 import { useComposerSlashCommands } from '../composer/useComposerSlashCommands'
-import {
-  workspaceFooterRowClass,
-  workspaceFooterTextClass,
-  workspaceFooterTrailingGroupClass,
-} from '../footer/workspace-footer-primitives'
-
-const thinkingLevelLabels: Record<ComposerThinkingLevel, string> = {
-  off: 'Off',
-  minimal: 'Minimal',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  xhigh: 'X-High',
-}
+import { InboxComposerFooter } from './inbox-composer-footer'
+import { InboxAttachmentRail, InboxStopRail } from './inbox-composer-rails'
 
 function isTargetWithinRefs(target: Node, refs: RefObject<Node | null>[]) {
   return refs.some((ref) => ref.current?.contains(target))
@@ -493,43 +473,17 @@ export function InboxComposer({
       className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
       data-composer-root="true"
     >
-      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-        <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
-          {attachments.length > 0 ? (
-            <>
-              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg-subtle)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
-                {attachments.length}
-              </span>
-              <button
-                type="button"
-                className={cn(compactIconButtonClass, 'h-5 w-5 shrink-0 rounded-full')}
-                onClick={clearAttachments}
-                aria-label="Clear attachments"
-                data-tooltip="Clear attachments"
-              >
-                <X size={12} />
-              </button>
-            </>
-          ) : null}
-          <button
-            ref={pickerButtonRef}
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-            onClick={() => {
-              if (slashCommands.open) {
-                slashCommands.dismiss({ clearDraft: true })
-              }
-              void pickAttachments()
-            }}
-            aria-label={attachments.length > 0 ? 'Manage attachments' : 'Add attachment'}
-            data-tooltip={attachments.length > 0 ? 'Manage attachments' : 'Add attachment'}
-          >
-            <span className={cn(compactIconButtonClass, 'h-7 w-7 shrink-0 rounded-full')}>
-              <Paperclip size={15} />
-            </span>
-          </button>
-        </div>
-      </div>
+      <InboxAttachmentRail
+        attachmentCount={attachments.length}
+        pickerButtonRef={pickerButtonRef}
+        onClearAttachments={clearAttachments}
+        onPickAttachments={() => {
+          if (slashCommands.open) {
+            slashCommands.dismiss({ clearDraft: true })
+          }
+          void pickAttachments()
+        }}
+      />
 
       <div className="relative grid gap-0 overflow-visible">
         <section
@@ -589,97 +543,49 @@ export function InboxComposer({
 
           <div className="h-px bg-[color:var(--border)]" />
 
-          <div className={workspaceFooterRowClass}>
-            <div className="relative inline-flex h-7 items-center">
-              <ToolbarButton
-                ref={modelButtonRef}
-                label="Agent"
-                tooltip="Model settings"
-                icon={<Bot size={14} />}
-                className={cn(workspaceFooterTextClass, 'pr-8')}
-                onClick={() => setOpenMenu((current) => (current === 'model' ? null : 'model'))}
-                aria-haspopup="menu"
-                aria-expanded={openMenu === 'model'}
-                aria-controls="composer-model-menu"
-              />
-              <div className="absolute top-0 right-0">
-                <ComposerContextMeter
-                  contextUsage={contextUsage}
-                  compactDisabled={
-                    isStreaming || isCompacting || localActionPending || !thread.sessionPath
-                  }
-                  isCompacting={isCompacting}
-                  onCompact={() => void compact()}
-                />
-              </div>
-              {openMenu === 'model' ? (
-                <ComposerModelPopover
-                  anchorRef={modelButtonRef}
-                  availableModels={availableModels}
-                  availableThinkingLevels={availableThinkingLevels}
-                  currentModel={currentModel}
-                  currentThinkingLevel={currentThinkingLevel}
-                  panelRef={modelMenuRef}
-                  thinkingLevelLabels={thinkingLevelLabels}
-                  onSelectModel={(availableModel) => {
-                    void updateComposerOption('composer.model', {
-                      provider: availableModel.provider,
-                      modelId: availableModel.id,
-                      projectId: thread.projectId,
-                      sessionPath: thread.sessionPath,
-                    })
-                  }}
-                  onSelectThinkingLevel={(level) => {
-                    void updateComposerOption('composer.thinking', {
-                      level,
-                      projectId: thread.projectId,
-                      sessionPath: thread.sessionPath,
-                    })
-                  }}
-                />
-              ) : null}
-            </div>
-            <div className={workspaceFooterTrailingGroupClass}>
-              <Tooltip content="Dismiss">
-                <IconButton
-                  tooltip={null}
-                  label="Dismiss"
-                  icon={<X size={14} />}
-                  onClick={onDismiss}
-                />
-              </Tooltip>
-              <Tooltip content="Open thread">
-                <IconButton
-                  tooltip={null}
-                  label="Open thread"
-                  icon={<ArrowUpRight size={14} />}
-                  onClick={onOpenThread}
-                />
-              </Tooltip>
-            </div>
-          </div>
+          <InboxComposerFooter
+            availableModels={availableModels}
+            availableThinkingLevels={availableThinkingLevels}
+            contextUsage={contextUsage}
+            currentModel={currentModel}
+            currentThinkingLevel={currentThinkingLevel}
+            isCompacting={isCompacting}
+            isStreaming={isStreaming}
+            localActionPending={localActionPending}
+            modelButtonRef={modelButtonRef}
+            modelMenuOpen={openMenu === 'model'}
+            modelMenuRef={modelMenuRef}
+            sessionPath={thread.sessionPath}
+            onCompact={() => void compact()}
+            onDismiss={onDismiss}
+            onOpenThread={onOpenThread}
+            onSelectModel={(availableModel) => {
+              void updateComposerOption('composer.model', {
+                provider: availableModel.provider,
+                modelId: availableModel.id,
+                projectId: thread.projectId,
+                sessionPath: thread.sessionPath,
+              })
+            }}
+            onSelectThinkingLevel={(level) => {
+              void updateComposerOption('composer.thinking', {
+                level,
+                projectId: thread.projectId,
+                sessionPath: thread.sessionPath,
+              })
+            }}
+            onToggleModelMenu={() =>
+              setOpenMenu((current) => (current === 'model' ? null : 'model'))
+            }
+          />
         </section>
       </div>
-      <div className="relative h-full min-h-[7rem] w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-        <div className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center">
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              'h-7 w-7 shrink-0 rounded-full text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]',
-              isStreaming && !isSending && !localActionPending
-                ? 'bg-[color:var(--danger-bg)] opacity-80'
-                : 'bg-transparent opacity-25 hover:opacity-45',
-            )}
-            onClick={onStop}
-            disabled={!isStreaming || isSending || localActionPending}
-            aria-label="Stop Pi"
-            data-tooltip="Stop Pi"
-          >
-            <Square size={11} fill="currentColor" />
-          </button>
-        </div>
-      </div>
+      <InboxStopRail
+        isStreaming={isStreaming}
+        isSending={isSending}
+        localActionPending={localActionPending}
+        onStop={onStop}
+      />
     </div>
   )
 }

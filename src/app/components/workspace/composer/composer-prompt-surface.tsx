@@ -1,18 +1,17 @@
-import { Paperclip, X } from 'lucide-react'
-import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
+import { type RefObject, useEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
-import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
 import { AskQuestionsCard } from './ask-questions-card'
 import { ComposerFooter } from './composer-footer'
-import { hasFilePayloadInClipboardData } from './composer-paste-attachments'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
+import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
+import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import { useComposerSkillMentions } from './useComposerSkillMentions'
 import { useComposerSlashCommands } from './useComposerSlashCommands'
+import { useGlobalComposerFileDrop } from './useGlobalComposerFileDrop'
 
 type ComposerPromptSurfaceProps = ComposerProps & {
   composerPanelRef: RefObject<HTMLDivElement | null>
@@ -156,7 +155,6 @@ export function ComposerPromptSurface({
   const skillMentionPanelRef = useRef<HTMLDivElement>(null)
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
-  const lastAskQuestionsOverlayHeightRef = useRef(0)
   const showAskQuestions = nativeAskQuestionsRequest !== null
   const answerNativeQuestions = async (answers: string[][] | null) => {
     if (!nativeAskQuestionsRequest) return false
@@ -346,64 +344,13 @@ export function ComposerPromptSurface({
     }
   }, [cancelDictation, dictationActive, dictationTranscribing, pickerOpen, setOpenMenu])
 
-  useEffect(() => {
-    const handleGlobalFileDrag = (event: DragEvent) => {
-      if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
-        return
-      }
+  useGlobalComposerFileDrop(handleDrop)
 
-      event.preventDefault()
-      if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = 'copy'
-      }
-    }
-
-    const handleGlobalDrop = (event: DragEvent) => {
-      if (!hasFilePayloadInClipboardData(event.dataTransfer)) {
-        return
-      }
-
-      event.preventDefault()
-      void handleDrop(event.dataTransfer)
-    }
-
-    window.addEventListener('dragenter', handleGlobalFileDrag, true)
-    window.addEventListener('dragover', handleGlobalFileDrag, true)
-    window.addEventListener('drop', handleGlobalDrop, true)
-
-    return () => {
-      window.removeEventListener('dragenter', handleGlobalFileDrag, true)
-      window.removeEventListener('dragover', handleGlobalFileDrag, true)
-      window.removeEventListener('drop', handleGlobalDrop, true)
-    }
-  }, [handleDrop])
-
-  useLayoutEffect(() => {
-    if (!showAskQuestions) {
-      if (lastAskQuestionsOverlayHeightRef.current !== 0) {
-        lastAskQuestionsOverlayHeightRef.current = 0
-        onOverlayHeightChange?.(0)
-      }
-      return
-    }
-
-    const overlay = askQuestionsOverlayRef.current
-    if (!overlay) return
-
-    const reportIfChanged = () => {
-      const nextHeight = Math.ceil(overlay.getBoundingClientRect().height)
-      if (lastAskQuestionsOverlayHeightRef.current === nextHeight) return
-      lastAskQuestionsOverlayHeightRef.current = nextHeight
-      onOverlayHeightChange?.(nextHeight)
-    }
-
-    reportIfChanged()
-
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(reportIfChanged)
-    observer.observe(overlay)
-    return () => observer.disconnect()
-  }, [onOverlayHeightChange, showAskQuestions])
+  useAskQuestionsOverlayHeight({
+    overlayRef: askQuestionsOverlayRef,
+    visible: showAskQuestions,
+    onOverlayHeightChange,
+  })
 
   const extensionRunning = extensionCommandRunning
   const askQuestionsArrowNavigationRef = useRef<
@@ -430,46 +377,18 @@ export function ComposerPromptSurface({
       className="relative grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible"
       data-composer-root="true"
     >
-      <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-        <div className="absolute bottom-[3.55rem] left-0 flex w-7 flex-col-reverse items-center gap-1">
-          {attachments.length > 0 ? (
-            <>
-              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--accent-bg)] px-1.5 py-0.5 text-[11px] text-[color:var(--text)]">
-                {attachments.length}
-              </span>
-              <button
-                type="button"
-                className={cn(
-                  compactIconButtonClass,
-                  'h-5 w-5 rounded-full opacity-70 hover:opacity-100',
-                )}
-                onClick={clearAttachments}
-                aria-label="Clear attachments"
-                data-tooltip="Clear attachments"
-              >
-                <X size={11} />
-              </button>
-            </>
-          ) : null}
-          <button
-            ref={pickerButtonRef}
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-            onClick={() => {
-              if (slashCommands.open) {
-                slashCommands.dismiss({ clearDraft: true })
-              }
-              pickAttachments()
-            }}
-            aria-label={attachmentButtonLabel}
-            data-tooltip={attachmentButtonLabel}
-          >
-            <span className={cn(compactRoundIconButtonClass, 'shrink-0')}>
-              <Paperclip size={15} />
-            </span>
-          </button>
-        </div>
-      </div>
+      <ComposerAttachmentRail
+        attachmentCount={attachments.length}
+        attachmentButtonLabel={attachmentButtonLabel}
+        pickerButtonRef={pickerButtonRef}
+        onClearAttachments={clearAttachments}
+        onPickAttachments={() => {
+          if (slashCommands.open) {
+            slashCommands.dismiss({ clearDraft: true })
+          }
+          pickAttachments()
+        }}
+      />
 
       <div className="relative grid gap-0 overflow-visible">
         {showAskQuestions ? (
@@ -652,46 +571,11 @@ export function ComposerPromptSurface({
         </section>
       </div>
 
-      <div className="relative h-full min-h-0 w-8 shrink-0 self-stretch text-[color:var(--muted)]">
-        <div
-          ref={stopButtonBoundaryRef}
-          className="absolute right-0 bottom-[3.55rem] flex w-7 items-center justify-center"
-        >
-          <button
-            type="button"
-            className={cn(
-              compactIconButtonClass,
-              'composer-stop-button relative h-7 w-7 shrink-0 text-[color:var(--danger)] hover:bg-[color:var(--danger-bg)] hover:text-[color:var(--danger)]',
-              canStopComposer
-                ? 'composer-stop-button--active bg-[color:var(--danger-bg)] opacity-95'
-                : 'bg-transparent opacity-25 hover:opacity-45',
-            )}
-            onClick={() => void stop()}
-            disabled={!canStopComposer}
-            aria-label="Stop Pi"
-            data-tooltip="Stop Pi"
-          >
-            {canStopComposer ? (
-              <svg
-                className="composer-stop-button__spinner absolute text-white/50"
-                viewBox="0 0 28 28"
-                aria-hidden="true"
-              >
-                <g className="activity-spinner__rotor" fill="currentColor">
-                  <circle cx="14" cy="1.5" r="1.3" opacity=".14" />
-                  <circle cx="20.2" cy="3.05" r="1.3" opacity=".29" />
-                  <circle cx="24.95" cy="7.8" r="1.3" opacity=".43" />
-                  <circle cx="26.5" cy="14" r="1.3" opacity=".57" />
-                  <circle cx="24.95" cy="20.2" r="1.3" opacity=".71" />
-                  <circle cx="20.2" cy="24.95" r="1.3" opacity=".86" />
-                  <circle cx="14" cy="26.5" r="1.3" />
-                </g>
-              </svg>
-            ) : null}
-            <span className="composer-stop-button__square" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+      <ComposerStopRail
+        boundaryRef={stopButtonBoundaryRef}
+        canStopComposer={canStopComposer}
+        onStop={() => void stop()}
+      />
     </div>
   )
 }

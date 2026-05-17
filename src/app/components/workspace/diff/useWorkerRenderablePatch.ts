@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getRenderablePatch } from './diff-panel-content.rendering'
 import type { RenderablePatch } from './diff-panel-content.types'
 
 type DiffParseResponse = {
@@ -8,6 +9,7 @@ type DiffParseResponse = {
 
 type DiffParseWorker = Worker & {
   onmessage: ((event: MessageEvent<DiffParseResponse>) => void) | null
+  onmessageerror: ((event: MessageEvent) => void) | null
 }
 
 function createDiffParseWorker(): DiffParseWorker {
@@ -30,14 +32,41 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
 
     const requestId = requestIdRef.current + 1
     requestIdRef.current = requestId
+    setRenderablePatch(null)
 
-    const worker = workerRef.current ?? createDiffParseWorker()
+    const parseOnMainThread = () => {
+      if (requestId !== requestIdRef.current) return
+      setRenderablePatch(getRenderablePatch(selectedPatch, 'diff-panel:dark'))
+    }
+    const fallbackFromFailedWorker = () => {
+      if (workerRef.current === worker) {
+        worker.terminate()
+        workerRef.current = null
+      }
+      parseOnMainThread()
+    }
+
+    let worker: DiffParseWorker
+    try {
+      worker = workerRef.current ?? createDiffParseWorker()
+    } catch {
+      workerRef.current = null
+      parseOnMainThread()
+      return
+    }
     workerRef.current = worker
     worker.onmessage = (event) => {
       if (event.data.id !== requestIdRef.current) return
       setRenderablePatch(event.data.patch)
     }
-    worker.postMessage({ id: requestId, patch: selectedPatch, cacheScope: 'diff-panel:dark' })
+    worker.onerror = fallbackFromFailedWorker
+    worker.onmessageerror = fallbackFromFailedWorker
+
+    try {
+      worker.postMessage({ id: requestId, patch: selectedPatch, cacheScope: 'diff-panel:dark' })
+    } catch {
+      fallbackFromFailedWorker()
+    }
   }, [selectedPatch])
 
   useEffect(
