@@ -362,7 +362,11 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const utilityViewActive = isUtilityView(state.activeView)
   const compactSidebarButtonEdgeMode =
     state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible
-  const terminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
+  const animatedTerminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
+  const terminalDrawerPresent =
+    sidebarCompactMode && terminalHiddenByCompactResize
+      ? terminalDrawerVisible
+      : animatedTerminalDrawerPresent
   const diffBaseline = getEffectiveDiffBaseline({
     activeThreadId,
     composerProjectId,

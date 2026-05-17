@@ -2,42 +2,30 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { Terminal as XTerm } from '@xterm/xterm'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import { piGuiThemeUpdatedEvent } from '../../../app-shell/usePiGuiTheme'
 import type { TerminalEvent } from '../../../desktop/types'
-import {
-  closeDesktopTerminal,
-  openDesktopTerminal,
-  resizeDesktopTerminal,
-  subscribeDesktopTerminal,
-  writeDesktopTerminal,
-} from '../../../hooks/useDesktopTerminal'
+import { resizeDesktopTerminal, writeDesktopTerminal } from '../../../hooks/useDesktopTerminal'
 import { useHoverToFocus } from '../../../hooks/useHoverToFocus'
 import { cn } from '../../../utils/cn'
 import { buildXtermTheme } from './terminal-xterm-theme'
-import {
-  cancelScheduledTerminalClose,
-  scheduleTerminalClose,
-  scheduleTerminalCloseAfterSessionFileIdle,
-} from './terminalViewportSessionLifecycle'
 import {
   clampTerminalHistory,
   clearTerminal,
   DEFAULT_MAX_KEEP_ALIVE_MS_ON_UNMOUNT,
   DEFAULT_TERMINAL_COLS,
   DEFAULT_TERMINAL_ROWS,
-  hasVisibleTerminalHistory,
   isUsableTerminalSize,
-  MAX_PENDING_TERMINAL_EVENTS,
-  MIN_INITIAL_TERMINAL_COLS,
-  MIN_INITIAL_TERMINAL_ROWS,
   normalizeTerminalDimension,
   type TerminalBackgroundCssVar,
   terminalStyleVars,
   terminalWrapperStyle,
   writeSystemMessage,
 } from './terminalViewportUtils'
+import {
+  getTerminalPersistedSessionPath,
+  useTerminalSessionLifecycle,
+} from './useTerminalSessionLifecycle'
 
 type TerminalViewportProps = {
   projectId: string
@@ -63,45 +51,6 @@ function isXtermNearBottom(terminal: XTerm) {
     terminal.buffer.active.baseY - terminal.buffer.active.viewportY <=
     XTERM_STICKY_BOTTOM_THRESHOLD_ROWS
   )
-}
-
-function cleanupTerminalSessionOnUnmount(input: {
-  closeWhenSessionFileIdleMs: number
-  effectiveLaunchMode: NonNullable<TerminalViewportProps['launchMode']>
-  keepAliveMsOnUnmount: number
-  maxKeepAliveMsOnUnmount: number
-  preserveSessionOnUnmount: boolean
-  scheduleTerminalClose: (sessionId: string, keepAliveMs: number) => void
-  sessionId: string | null
-  terminalHistory: string
-  terminalPersistedSessionPath: string | null
-}) {
-  if (!input.sessionId) return
-  const shouldCloseEmptyPreservedSession =
-    input.preserveSessionOnUnmount &&
-    input.effectiveLaunchMode === 'shell' &&
-    !hasVisibleTerminalHistory(input.terminalHistory)
-  if (input.preserveSessionOnUnmount && !shouldCloseEmptyPreservedSession) return
-  if (
-    !shouldCloseEmptyPreservedSession &&
-    input.closeWhenSessionFileIdleMs > 0 &&
-    input.terminalPersistedSessionPath
-  ) {
-    void scheduleTerminalCloseAfterSessionFileIdle(
-      input.sessionId,
-      input.closeWhenSessionFileIdleMs,
-      input.maxKeepAliveMsOnUnmount,
-    )
-    return
-  }
-  if (!shouldCloseEmptyPreservedSession && input.keepAliveMsOnUnmount > 0) {
-    input.scheduleTerminalClose(input.sessionId, input.keepAliveMsOnUnmount)
-    return
-  }
-  void closeDesktopTerminal({
-    sessionId: input.sessionId,
-    deleteHistory: shouldCloseEmptyPreservedSession,
-  })
 }
 
 export function TerminalViewport({
@@ -145,9 +94,11 @@ export function TerminalViewport({
   }
   const terminalSessionPath =
     effectiveLaunchMode === 'pi-session' ? piSessionPathRef.current?.value : sessionPath
-  const terminalPersistedSessionPath =
-    getPersistedSessionPath(terminalSessionPath) ??
-    (effectiveLaunchMode === 'pi-session' ? getPersistedSessionPath(sessionPath) : null)
+  const terminalPersistedSessionPath = getTerminalPersistedSessionPath({
+    effectiveLaunchMode,
+    sessionPath,
+    terminalSessionPath,
+  })
   const viewportStyle = useMemo(() => terminalWrapperStyle(backgroundCssVar), [backgroundCssVar])
   const terminalStyle = useMemo(() => terminalStyleVars(backgroundCssVar), [backgroundCssVar])
   const focusTerminal = useCallback(() => {
@@ -544,200 +495,71 @@ export function TerminalViewport({
     terminalReadyRevision,
   ])
 
-  useEffect(() => {
-    if (terminalReadyRevision === 0) {
-      return
-    }
-
+  const getCurrentTerminalSize = useCallback(() => {
     const terminal = terminalInstanceRef.current
-    if (!terminal) {
-      return
+    fitAddonRef.current?.fit()
+
+    return {
+      cols: normalizeTerminalDimension(
+        terminal?.cols ?? lastKnownSizeRef.current.cols,
+        lastKnownSizeRef.current.cols,
+      ),
+      rows: normalizeTerminalDimension(
+        terminal?.rows ?? lastKnownSizeRef.current.rows,
+        lastKnownSizeRef.current.rows,
+      ),
     }
+  }, [])
 
-    let cancelled = false
-    attachFailedRef.current = false
-    sessionIdRef.current = null
-    lastSentSizeRef.current = null
-    pendingEventsRef.current = []
-    replayingBufferedEventsRef.current = false
-    terminalHistoryRef.current = ''
-    resetTerminal()
-
-    const bufferPendingEvent = (event: TerminalEvent) => {
-      pendingEventsRef.current.push(event)
-
-      if (pendingEventsRef.current.length > MAX_PENDING_TERMINAL_EVENTS) {
-        pendingEventsRef.current.splice(
-          0,
-          pendingEventsRef.current.length - MAX_PENDING_TERMINAL_EVENTS,
-        )
-      }
-    }
-
-    const applyTerminalEvent = (event: TerminalEvent) => {
-      switch (event.type) {
-        case 'output':
-          appendTerminalHistory(event.data)
-          break
-        case 'error':
-          appendTerminalHistory(`\r\n[terminal] ${event.message}\r\n`)
-          break
-        case 'exited':
-          appendTerminalHistory(
-            `\r\n[terminal] Process exited${event.exitCode === null ? '' : ` (${event.exitCode})`}.\r\n`,
-          )
-          onProcessExit?.()
-          break
-        case 'cleared':
-          terminalHistoryRef.current = ''
-          clearTerminal((message) => writeToTerminal(message))
-          scheduleXtermBottomAlign()
-          break
-        case 'started':
-        case 'restarted':
-          resetTerminal(event.snapshot.history)
-          break
-        default:
-          break
-      }
-    }
-
-    const replayBufferedEvents = (sessionId: string) => {
-      replayingBufferedEventsRef.current = true
-
-      while (pendingEventsRef.current.length > 0) {
-        const pendingEvents = pendingEventsRef.current.splice(0, pendingEventsRef.current.length)
-
-        for (const event of pendingEvents) {
-          if (event.sessionId !== sessionId) {
-            continue
-          }
-
-          applyTerminalEvent(event)
-        }
-      }
-
-      replayingBufferedEventsRef.current = false
-    }
-
-    const unsubscribe = subscribeDesktopTerminal((event: TerminalEvent) => {
-      const sessionId = sessionIdRef.current
-
-      if (!sessionId || replayingBufferedEventsRef.current) {
-        if (!attachFailedRef.current) {
-          bufferPendingEvent(event)
-        }
-        return
-      }
-
-      if (event.sessionId !== sessionId) {
-        return
-      }
-
-      applyTerminalEvent(event)
-    })
-
-    const getCurrentSize = () => {
-      fitAddonRef.current?.fit()
-
-      return {
-        cols: normalizeTerminalDimension(terminal.cols, lastKnownSizeRef.current.cols),
-        rows: normalizeTerminalDimension(terminal.rows, lastKnownSizeRef.current.rows),
-      }
-    }
-
-    const openSession = async () => {
-      const initialSize = getCurrentSize()
-      const size = {
-        cols: Math.max(initialSize.cols, MIN_INITIAL_TERMINAL_COLS),
-        rows: Math.max(initialSize.rows, MIN_INITIAL_TERMINAL_ROWS),
-      }
-      const snapshot = await openDesktopTerminal({
-        projectId,
-        sessionPath: terminalSessionPath,
-        launchMode: effectiveLaunchMode,
-        cols: size.cols,
-        rows: size.rows,
-      })
-
-      if (cancelled || !snapshot) {
-        return
-      }
-
-      attachFailedRef.current = false
-      sessionIdRef.current = snapshot.sessionId
-      lastSentSizeRef.current = {
-        sessionId: snapshot.sessionId,
-        cols: snapshot.cols,
-        rows: snapshot.rows,
-      }
-      cancelScheduledTerminalClose(snapshot.sessionId)
-      resetTerminal(snapshot.history)
-
-      if (snapshot.status === 'exited') {
-        writeSystemMessage(
-          (message) => writeToTerminal(message),
-          `Process exited${snapshot.exitCode === null ? '' : ` (${snapshot.exitCode})`}.`,
-        )
-      }
-
-      replayBufferedEvents(snapshot.sessionId)
-      terminalInstanceRef.current?.focus()
-
-      const resizedSize = getCurrentSize()
-      if (resizedSize.cols !== snapshot.cols || resizedSize.rows !== snapshot.rows) {
-        handleTerminalResize(resizedSize.cols, resizedSize.rows)
-      }
-      scheduleTerminalResizeSettlingPasses()
-    }
-
-    void openSession().catch((error) => {
-      attachFailedRef.current = true
-      pendingEventsRef.current = []
-      writeSystemMessage(
-        (message) => writeToTerminal(message),
-        error instanceof Error ? error.message : 'Unable to open terminal.',
-      )
-    })
-
-    return () => {
-      cancelled = true
-      const sessionId = sessionIdRef.current
-      sessionIdRef.current = null
-      pendingEventsRef.current = []
-      replayingBufferedEventsRef.current = false
-      lastSentSizeRef.current = null
-      unsubscribe()
-      cleanupTerminalSessionOnUnmount({
-        closeWhenSessionFileIdleMs,
-        effectiveLaunchMode,
-        keepAliveMsOnUnmount,
-        maxKeepAliveMsOnUnmount,
-        preserveSessionOnUnmount,
-        scheduleTerminalClose,
-        sessionId,
-        terminalHistory: terminalHistoryRef.current,
-        terminalPersistedSessionPath,
-      })
-    }
-  }, [
-    effectiveLaunchMode,
-    appendTerminalHistory,
-    closeWhenSessionFileIdleMs,
-    handleTerminalResize,
-    keepAliveMsOnUnmount,
-    maxKeepAliveMsOnUnmount,
-    onProcessExit,
-    preserveSessionOnUnmount,
-    terminalPersistedSessionPath,
-    projectId,
-    resetTerminal,
-    scheduleTerminalResizeSettlingPasses,
-    scheduleXtermBottomAlign,
-    terminalReadyRevision,
-    terminalSessionPath,
-    writeToTerminal,
-  ])
+  const terminalSessionLifecycle = useMemo(
+    () => ({
+      appendTerminalHistory,
+      attachFailedRef,
+      closeWhenSessionFileIdleMs,
+      effectiveLaunchMode,
+      focusTerminal,
+      getCurrentSize: getCurrentTerminalSize,
+      handleTerminalResize,
+      keepAliveMsOnUnmount,
+      lastSentSizeRef,
+      maxKeepAliveMsOnUnmount,
+      onProcessExit,
+      pendingEventsRef,
+      preserveSessionOnUnmount,
+      projectId,
+      replayingBufferedEventsRef,
+      resetTerminal,
+      scheduleTerminalResizeSettlingPasses,
+      scheduleXtermBottomAlign,
+      sessionIdRef,
+      terminalHistoryRef,
+      terminalPersistedSessionPath,
+      terminalReadyRevision,
+      terminalSessionPath: terminalSessionPath ?? null,
+      writeToTerminal,
+    }),
+    [
+      appendTerminalHistory,
+      closeWhenSessionFileIdleMs,
+      effectiveLaunchMode,
+      focusTerminal,
+      getCurrentTerminalSize,
+      handleTerminalResize,
+      keepAliveMsOnUnmount,
+      maxKeepAliveMsOnUnmount,
+      onProcessExit,
+      preserveSessionOnUnmount,
+      projectId,
+      resetTerminal,
+      scheduleTerminalResizeSettlingPasses,
+      scheduleXtermBottomAlign,
+      terminalPersistedSessionPath,
+      terminalReadyRevision,
+      terminalSessionPath,
+      writeToTerminal,
+    ],
+  )
+  useTerminalSessionLifecycle(terminalSessionLifecycle)
 
   return (
     <div
