@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react'
+import { type Dispatch, type SetStateAction, useRef, useState } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import { getDesktopActionErrorMessage } from '../../../desktop/action-results'
 import { getErrorMessage } from '../../../desktop/error-messages'
@@ -23,7 +23,12 @@ import { useComposerSkillMentions } from '../composer/useComposerSkillMentions'
 import { useComposerSlashCommands } from '../composer/useComposerSlashCommands'
 import { InboxComposerFooter } from './inbox-composer-footer'
 import { InboxAttachmentRail, InboxStopRail } from './inbox-composer-rails'
+import {
+  useInboxMentionActiveOptionScroll,
+  useInboxSlashCommandActiveOptionScroll,
+} from './useInboxComposerActiveOptionScroll'
 import { useInboxComposerMentionDismiss } from './useInboxComposerMentionDismiss'
+import { useInboxComposerPickerDismiss } from './useInboxComposerPickerDismiss'
 import { useInboxComposerStateRefs } from './useInboxComposerStateRefs'
 
 type InboxComposerProps = {
@@ -113,46 +118,13 @@ export function InboxComposer({
     refs: [modelButtonRef, modelMenuRef],
   })
 
-  useEffect(() => {
-    if (openMenu !== 'picker') {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-
-      if (!target) {
-        return
-      }
-
-      if (pickerButtonRef.current?.contains(target) || pickerPanelRef.current?.contains(target)) {
-        return
-      }
-
-      if (composerSurfaceRef.current?.contains(target)) {
-        return
-      }
-
-      setOpenMenu((current) => (current === 'picker' ? null : current))
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return
-      }
-
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      setOpenMenu((current) => (current === 'picker' ? null : current))
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [openMenu])
+  useInboxComposerPickerDismiss({
+    composerSurfaceRef,
+    openMenu,
+    pickerButtonRef,
+    pickerPanelRef,
+    setOpenMenu,
+  })
 
   const {
     attachPickerAttachments,
@@ -263,83 +235,21 @@ export function InboxComposer({
     slashCommands,
   })
 
-  useEffect(() => {
-    if (!(slashCommands.open && slashCommands.activeDescendantId)) {
-      return
-    }
-
-    void slashCommandListSignature
-
-    const panel = slashCommandPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${slashCommands.activeDescendantId}`)
-    if (!(panel && option)) {
-      return
-    }
-
-    if (slashCommands.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-
-    const panelStyles = window.getComputedStyle(panel)
-    const paddingTop = Number.parseFloat(panelStyles.paddingTop) || 0
-    const paddingBottom = Number.parseFloat(panelStyles.paddingBottom) || 0
-    const visibleTop = panel.scrollTop + paddingTop
-    const visibleBottom = panel.scrollTop + panel.clientHeight - paddingBottom
-    const optionTop = option.offsetTop
-    const optionBottom = optionTop + option.offsetHeight
-
-    if (optionTop < visibleTop) {
-      panel.scrollTop = optionTop - paddingTop
-    } else if (optionBottom > visibleBottom) {
-      panel.scrollTop = optionBottom - panel.clientHeight + paddingBottom
-    }
-  }, [
-    slashCommands.open,
-    slashCommands.activeDescendantId,
-    slashCommands.selectedIndex,
-    slashCommandListSignature,
-  ])
-
-  useEffect(() => {
-    if (!(fileMentions.open && fileMentions.activeDescendantId)) return
-    void fileMentionListSignature
-    const panel = fileMentionPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${fileMentions.activeDescendantId}`)
-    if (!(panel && option)) return
-    if (fileMentions.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-    option.scrollIntoView({ block: 'nearest' })
-  }, [
-    fileMentionListSignature,
-    fileMentions.activeDescendantId,
-    fileMentions.open,
-    fileMentions.selectedIndex,
-  ])
-
-  useEffect(() => {
-    if (!(skillMentions.open && skillMentions.activeDescendantId)) {
-      return
-    }
-
-    void skillMentionListSignature
-
-    const panel = skillMentionPanelRef.current
-    const option = panel?.querySelector<HTMLElement>(`#${skillMentions.activeDescendantId}`)
-    if (!(panel && option)) return
-    if (skillMentions.selectedIndex === 0) {
-      panel.scrollTop = 0
-      return
-    }
-    option.scrollIntoView({ block: 'nearest' })
-  }, [
-    skillMentionListSignature,
-    skillMentions.activeDescendantId,
-    skillMentions.open,
-    skillMentions.selectedIndex,
-  ])
+  useInboxSlashCommandActiveOptionScroll({
+    listSignature: slashCommandListSignature,
+    panelRef: slashCommandPanelRef,
+    state: slashCommands,
+  })
+  useInboxMentionActiveOptionScroll({
+    listSignature: fileMentionListSignature,
+    panelRef: fileMentionPanelRef,
+    state: fileMentions,
+  })
+  useInboxMentionActiveOptionScroll({
+    listSignature: skillMentionListSignature,
+    panelRef: skillMentionPanelRef,
+    state: skillMentions,
+  })
 
   const compact = async () => {
     if (sendLockRef.current || isSending || isStreaming || isCompacting || !thread.sessionPath) {
