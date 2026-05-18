@@ -37,6 +37,8 @@ export {
   updateArtifactQuery,
 } from './desktop-artifact-query'
 export {
+  canSearchPiPackagesQuery,
+  canSearchPiSkillsQuery,
   closeSkillCreatorSessionQuery,
   continueSkillCreatorSessionQuery,
   getConfiguredPiPackagesQuery,
@@ -288,7 +290,9 @@ export async function transcribeDictationQuery(
 }
 
 export function canTranscribeDictationQuery() {
-  return typeof window.piDesktop?.transcribeDictation === 'function'
+  return (
+    typeof window !== 'undefined' && typeof window.piDesktop?.transcribeDictation === 'function'
+  )
 }
 
 export function subscribeDesktopEvents(

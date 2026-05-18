@@ -8,6 +8,14 @@ import type {
   SkillCreatorSessionState,
 } from '../desktop/types'
 
+export function canSearchPiPackagesQuery() {
+  return typeof window !== 'undefined' && typeof window.piDesktop?.searchPiPackages === 'function'
+}
+
+export function canSearchPiSkillsQuery() {
+  return typeof window !== 'undefined' && typeof window.piDesktop?.searchPiSkills === 'function'
+}
+
 export async function searchPiPackagesQuery(
   request: {
     query?: string | null | undefined
