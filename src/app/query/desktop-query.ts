@@ -2,7 +2,6 @@ const pathSeparatorPattern = /[\\/]/
 
 import { fallbackAppSlashCommands } from '../../../shared/composer-slash-commands'
 import type { DesktopRequestMap } from '../../../shared/desktop-ipc'
-import { getPersistedSessionPath } from '../../../shared/session-paths'
 import type {
   AppUpdateState,
   ArchivedThread,
@@ -15,12 +14,6 @@ import type {
   DesktopClipboardFilePaths,
   DesktopClipboardSnapshot,
   InboxThread,
-  PiConfiguredPackage,
-  PiConfiguredSkill,
-  PiPackageCatalogPage,
-  PiPackageMutationResult,
-  PiSkillCatalogPage,
-  PiSkillMutationResult,
   ProjectCommitEntry,
   ProjectDiffBaseline,
   ProjectDiffResolvedBaseline,
@@ -29,59 +22,44 @@ import type {
   ProjectGitState,
   ProjectUsageSummary,
   ShellState,
-  SkillCreatorSessionState,
-  TerminalCloseRequest,
-  TerminalEvent,
-  TerminalOpenRequest,
-  TerminalResizeRequest,
-  TerminalSessionFileStat,
-  TerminalSessionSnapshot,
   Thread,
   ThreadData,
   ThreadSearchResult,
 } from '../desktop/types'
 
-export const desktopQueryKeys = {
-  appUpdateState: () => ['desktop', 'appUpdateState'] as const,
-  shellState: () => ['desktop', 'shellState'] as const,
-  piPackageCatalog: (query: string) => ['desktop', 'piPackages', 'catalog', query] as const,
-  configuredPiPackages: (projectPath?: string | null | undefined, chat = false) =>
-    ['desktop', 'piPackages', 'configured', projectPath ?? null, chat] as const,
-  piSkillCatalog: (query: string) => ['desktop', 'piSkills', 'catalog', query] as const,
-  configuredPiSkills: (projectPath?: string | null | undefined, chat = false) =>
-    ['desktop', 'piSkills', 'configured', projectPath ?? null, chat] as const,
-  projectThreads: (projectId: string, chat = false) =>
-    ['desktop', 'projectThreads', projectId, chat] as const,
-  chatSidebarState: (selectedGroupId?: string | null) =>
-    ['desktop', 'chatSidebarState', selectedGroupId ?? null] as const,
-  inboxThreads: () => ['desktop', 'inboxThreads'] as const,
-  archivedThreads: () => ['desktop', 'archivedThreads'] as const,
-  composerState: (request: ComposerStateRequest) =>
-    [
-      'desktop',
-      'composerState',
-      request.projectId ?? null,
-      getPersistedSessionPath(request.sessionPath),
-      request.composerMode ?? null,
-      request.chatGroupId ?? null,
-    ] as const,
-  projectGitState: (projectId: string) => ['desktop', 'projectGitState', projectId] as const,
-  projectUsageSummary: (projectId: string) =>
-    ['desktop', 'projectUsageSummary', projectId] as const,
-  projectDiffPrefix: (projectId: string) => ['desktop', 'projectDiff', projectId] as const,
-  projectDiff: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiff', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
-  projectDiffStatsPrefix: (projectId: string) =>
-    ['desktop', 'projectDiffStats', projectId] as const,
-  projectDiffStats: (projectId: string, baseline: ProjectDiffBaseline | null = null) =>
-    ['desktop', 'projectDiffStats', projectId, baseline?.kind ?? 'head', baseline ?? null] as const,
-  projectCommitsPrefix: (projectId: string) => ['desktop', 'projectCommits', projectId] as const,
-  projectCommits: (projectId: string, limit = 50) =>
-    ['desktop', 'projectCommits', projectId, limit] as const,
-  threadPrefix: (sessionPath: string) => ['desktop', 'thread', sessionPath] as const,
-  thread: (sessionPath: string, refreshKey = 0, historyCompactions = 0) =>
-    ['desktop', 'thread', sessionPath, refreshKey, historyCompactions] as const,
-}
+export {
+  compileReactArtifactQuery,
+  editArtifactQuery,
+  getArtifactQuery,
+  listArtifactsQuery,
+  listArtifactVersionsQuery,
+  saveTextToDownloadsQuery,
+  updateArtifactQuery,
+} from './desktop-artifact-query'
+export {
+  closeSkillCreatorSessionQuery,
+  continueSkillCreatorSessionQuery,
+  getConfiguredPiPackagesQuery,
+  getConfiguredPiSkillsQuery,
+  installPiPackageQuery,
+  installPiSkillQuery,
+  removePiPackageQuery,
+  removePiSkillQuery,
+  searchPiPackagesQuery,
+  searchPiSkillsQuery,
+  startSkillCreatorSessionQuery,
+} from './desktop-extension-query'
+export { desktopQueryKeys } from './desktop-query-keys'
+export {
+  closeDesktopTerminalQuery,
+  getDesktopTerminalStatusQuery,
+  listDesktopTerminalsQuery,
+  openDesktopTerminalQuery,
+  resizeDesktopTerminalQuery,
+  statDesktopTerminalSessionFileQuery,
+  subscribeDesktopTerminalQuery,
+  writeDesktopTerminalQuery,
+} from './desktop-terminal-query'
 
 export function hasDesktopBridgeQuery() {
   return typeof window !== 'undefined' && typeof window.piDesktop?.invokeAction === 'function'
@@ -126,58 +104,6 @@ export async function getChatSidebarStateQuery(
 
 export async function createChatGroupQuery(name: string): Promise<ChatSidebarState | null> {
   return (await window.piDesktop?.createChatGroup?.(name)) ?? null
-}
-
-export async function listArtifactsQuery(conversationId?: string | null) {
-  return (await window.piDesktop?.listArtifacts?.(conversationId ?? null)) ?? []
-}
-
-export async function getArtifactQuery(artifactSlug: string, conversationId?: string | null) {
-  return (await window.piDesktop?.getArtifact?.(artifactSlug, conversationId ?? null)) ?? null
-}
-
-export async function updateArtifactQuery(
-  artifactSlug: string,
-  content: string,
-  conversationId?: string | null | undefined,
-) {
-  return (
-    (await window.piDesktop?.updateArtifact?.(artifactSlug, content, conversationId ?? null)) ??
-    null
-  )
-}
-
-export async function editArtifactQuery(
-  artifactSlug: string,
-  edits: Array<{ oldText: string; newText: string }>,
-  conversationId?: string | null | undefined,
-) {
-  return (
-    (await window.piDesktop?.editArtifact?.(artifactSlug, edits, conversationId ?? null)) ?? null
-  )
-}
-
-export async function listArtifactVersionsQuery(artifactSlug: string) {
-  return (await window.piDesktop?.listArtifactVersions?.(artifactSlug)) ?? []
-}
-
-export async function compileReactArtifactQuery(source: string) {
-  return (
-    (await window.piDesktop?.compileReactArtifact?.(source)) ?? {
-      ok: false as const,
-      error: 'Artifact compiler is unavailable.',
-      warnings: [],
-    }
-  )
-}
-
-export async function saveTextToDownloadsQuery(fileName: string, content: string) {
-  return (
-    (await window.piDesktop?.saveTextToDownloads?.(fileName, content)) ?? {
-      ok: false as const,
-      error: 'Desktop downloads are unavailable.',
-    }
-  )
 }
 
 export async function getInboxThreadsQuery(): Promise<InboxThread[]> {
@@ -239,104 +165,6 @@ export async function listProjectCommitsQuery(
   limit = 50,
 ): Promise<ProjectCommitEntry[]> {
   return (await window.piDesktop?.listProjectCommits?.(projectId, limit)) ?? []
-}
-
-export async function searchPiPackagesQuery(
-  request: {
-    query?: string | null | undefined
-    cursor?: number | null | undefined
-    pageSize?: number | null | undefined
-  } = {},
-): Promise<PiPackageCatalogPage> {
-  return (
-    (await window.piDesktop?.searchPiPackages?.(request)) ?? {
-      query: request.query?.trim() ?? '',
-      sort: 'monthlyDownloads-desc',
-      total: 0,
-      nextCursor: null,
-      items: [],
-    }
-  )
-}
-
-export async function searchPiSkillsQuery(
-  request: { query?: string | null | undefined; limit?: number | null | undefined } = {},
-): Promise<PiSkillCatalogPage> {
-  return (
-    (await window.piDesktop?.searchPiSkills?.(request)) ?? {
-      query: request.query?.trim() ?? '',
-      total: 0,
-      items: [],
-    }
-  )
-}
-
-export async function getConfiguredPiPackagesQuery(
-  request: { projectPath?: string | null | undefined; chat?: boolean | undefined } = {},
-): Promise<PiConfiguredPackage[]> {
-  return (await window.piDesktop?.getConfiguredPiPackages?.(request)) ?? []
-}
-
-export async function installPiPackageQuery(request: {
-  source: string
-  kind?: 'npm' | 'git' | undefined
-  local?: boolean | undefined
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<PiPackageMutationResult | null> {
-  return (await window.piDesktop?.installPiPackage?.(request)) ?? null
-}
-
-export async function removePiPackageQuery(request: {
-  source: string
-  local?: boolean | undefined
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<PiPackageMutationResult | null> {
-  return (await window.piDesktop?.removePiPackage?.(request)) ?? null
-}
-
-export async function getConfiguredPiSkillsQuery(
-  request: { projectPath?: string | null | undefined; chat?: boolean | undefined } = {},
-): Promise<PiConfiguredSkill[]> {
-  return (await window.piDesktop?.getConfiguredPiSkills?.(request)) ?? []
-}
-
-export async function installPiSkillQuery(request: {
-  source: string
-  local?: boolean | undefined
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<PiSkillMutationResult | null> {
-  return (await window.piDesktop?.installPiSkill?.(request)) ?? null
-}
-
-export async function removePiSkillQuery(request: {
-  installedPath: string
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<PiSkillMutationResult | null> {
-  return (await window.piDesktop?.removePiSkill?.(request)) ?? null
-}
-
-export async function startSkillCreatorSessionQuery(request: {
-  prompt: string
-  local?: boolean | undefined
-  projectPath?: string | null
-  chat?: boolean | undefined
-}): Promise<SkillCreatorSessionState | null> {
-  return (await window.piDesktop?.startSkillCreatorSession?.(request)) ?? null
-}
-
-export async function continueSkillCreatorSessionQuery(request: {
-  sessionId: string
-  prompt: string
-}): Promise<SkillCreatorSessionState | null> {
-  return (await window.piDesktop?.continueSkillCreatorSession?.(request)) ?? null
-}
-
-export async function closeSkillCreatorSessionQuery(sessionId: string): Promise<void> {
-  await window.piDesktop?.closeSkillCreatorSession?.(sessionId)
 }
 
 export async function pickComposerAttachmentsQuery(
@@ -471,40 +299,4 @@ export function subscribeDesktopEvents(
 
 export async function watchSessionQuery(sessionPath: string | null): Promise<void> {
   await window.piDesktop?.watchSession?.(sessionPath)
-}
-
-export async function listDesktopTerminalsQuery(): Promise<TerminalSessionSnapshot[]> {
-  return (await window.piDesktop?.listTerminals?.()) ?? []
-}
-
-export async function openDesktopTerminalQuery(
-  request: TerminalOpenRequest,
-): Promise<TerminalSessionSnapshot | null> {
-  return (await window.piDesktop?.openTerminal?.(request)) ?? null
-}
-
-export async function writeDesktopTerminalQuery(sessionId: string, data: string): Promise<void> {
-  await window.piDesktop?.writeTerminal?.(sessionId, data)
-}
-
-export async function resizeDesktopTerminalQuery(request: TerminalResizeRequest): Promise<void> {
-  await window.piDesktop?.resizeTerminal?.(request)
-}
-
-export async function closeDesktopTerminalQuery(request: TerminalCloseRequest): Promise<void> {
-  await window.piDesktop?.closeTerminal?.(request)
-}
-
-export async function statDesktopTerminalSessionFileQuery(
-  sessionId: string,
-): Promise<TerminalSessionFileStat | null> {
-  return (await window.piDesktop?.statTerminalSessionFile?.(sessionId)) ?? null
-}
-
-export async function getDesktopTerminalStatusQuery(sessionId: string) {
-  return (await window.piDesktop?.getTerminalStatus?.(sessionId)) ?? null
-}
-
-export function subscribeDesktopTerminalQuery(listener: (event: TerminalEvent) => void) {
-  return window.piDesktop?.subscribeTerminal?.(listener) ?? (() => undefined)
 }
