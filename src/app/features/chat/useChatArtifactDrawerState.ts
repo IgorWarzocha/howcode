@@ -24,15 +24,19 @@ export function useChatArtifactDrawerState({
   const [artifactsVisibleByConversation, setArtifactsVisibleByConversation] = useState<
     Record<string, boolean>
   >({})
-  const [artifactsFullscreen, setArtifactsFullscreen] = useState(false)
+  const [artifactFullscreenConversationId, setArtifactFullscreenConversationId] = useState<
+    string | null
+  >(null)
   const desktopContentRef = useRef<HTMLDivElement>(null)
   const artifactDrawerRef = useRef<HTMLDivElement>(null)
   const artifactOverlayPreviousFocusRef = useRef<HTMLElement | null>(null)
-  const previousConversationIdRef = useRef<string | null | undefined>(conversationId)
 
   const artifactsVisible = conversationId
     ? (artifactsVisibleByConversation[conversationId] ?? false)
     : false
+  const artifactsFullscreen = Boolean(
+    conversationId && artifactFullscreenConversationId === conversationId,
+  )
   const artifactDrawerVisible = artifactsVisible && !artifactsFullscreen
   const artifactDrawerOverlay = sidebarCompactMode
   const showDesktopArtifactDrawer = artifactDrawerVisible && !artifactDrawerOverlay
@@ -44,6 +48,13 @@ export function useChatArtifactDrawerState({
     ? { width: artifactDrawerOverlay ? '100%' : ARTIFACT_DRAWER_WIDTH }
     : undefined
 
+  const setArtifactsFullscreen = useCallback(
+    (fullscreen: boolean) => {
+      setArtifactFullscreenConversationId(fullscreen && conversationId ? conversationId : null)
+    },
+    [conversationId],
+  )
+
   const handleCloseArtifacts = useCallback(() => {
     if (conversationId) {
       setArtifactsVisibleByConversation((current) => ({
@@ -52,7 +63,7 @@ export function useChatArtifactDrawerState({
       }))
     }
     setArtifactsFullscreen(false)
-  }, [conversationId])
+  }, [conversationId, setArtifactsFullscreen])
 
   const toggleArtifacts = useCallback(() => {
     if (!conversationId) return
@@ -119,14 +130,9 @@ export function useChatArtifactDrawerState({
     })
   }, [conversationId])
 
-  if (previousConversationIdRef.current !== conversationId) {
-    previousConversationIdRef.current = conversationId
-    if (artifactsFullscreen) setArtifactsFullscreen(false)
-  }
-
   useEffect(() => {
     if (!artifactsVisible) setArtifactsFullscreen(false)
-  }, [artifactsVisible])
+  }, [artifactsVisible, setArtifactsFullscreen])
 
   useEffect(() => {
     const overlayVisible = artifactDrawerVisible && artifactDrawerOverlay
@@ -165,6 +171,7 @@ export function useChatArtifactDrawerState({
     artifactsVisible,
     handleCloseArtifacts,
     settingsOpen,
+    setArtifactsFullscreen,
   ])
 
   return {

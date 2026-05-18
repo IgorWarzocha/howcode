@@ -7,6 +7,7 @@ import type {
 } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
 import { createLocalThreadDraft, getPersistedSessionPath } from '../../shared/session-paths.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import { dequeueComposerPromptFromRuntime } from '../runtime/composer-dequeue.ts'
 import {
   applyComposerModeSettings,
@@ -181,7 +182,9 @@ export async function sendComposerPrompt(
         text: skillExpandedText,
       })
       const streamingBehavior =
-        request.streamingBehavior ?? request.composerStreamingBehavior ?? 'followUp'
+        request.streamingBehavior ??
+        request.composerStreamingBehavior ??
+        loadAppSettings().composerStreamingBehavior
       return await promptComposerRuntime({
         adapters: composerPromptAdapters,
         message,
