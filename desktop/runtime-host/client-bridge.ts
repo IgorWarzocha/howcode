@@ -65,7 +65,7 @@ function handleHostDesktopEventMessage(
   message: Extract<RuntimeHostToMainMessage, { type: 'desktop-event' }>,
 ) {
   if (message.event.type === 'thread-update') {
-    rememberHostAlias(host, message.event.sessionPath)
+    if (host.role === 'thread') rememberHostAlias(host, message.event.sessionPath)
     host.busy = message.event.thread.isStreaming || message.event.thread.isCompacting
     if (host.busy) clearHostIdleTimer(host)
     else scheduleThreadHostIdleStop(host)
@@ -147,6 +147,7 @@ function handleHostExit(
 ) {
   if (host.process === child) host.process = null
   host.startPromise = null
+  host.terminating = false
   rejectPendingRequests(
     host,
     new Error(
@@ -162,6 +163,10 @@ async function ensureRuntimeHost(host: HostConnection) {
   }
 
   registerHostShutdownHandlers()
+  if (host.terminating) {
+    throw new Error(`Pi runtime host ${host.label} is stopping.`)
+  }
+
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host)
     return host.process
@@ -198,6 +203,7 @@ async function ensureRuntimeHost(host: HostConnection) {
         settled = true
         host.startPromise = null
         host.process = null
+        host.terminating = false
         if (host.role === 'thread') {
           forgetHost(host)
         }
@@ -245,7 +251,7 @@ function getHostForRequest<TName extends RuntimeHostRequestName>(
   }
 
   const existingHost = sessionPath ? hostByAlias.get(sessionPath) : null
-  if (existingHost) {
+  if (existingHost?.role === 'thread' && !existingHost.terminating) {
     return existingHost
   }
 

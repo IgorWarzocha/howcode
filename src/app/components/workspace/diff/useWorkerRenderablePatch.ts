@@ -34,7 +34,14 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
     requestIdRef.current = requestId
     setRenderablePatch(null)
 
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+    const clearFallbackTimer = () => {
+      if (!fallbackTimer) return
+      clearTimeout(fallbackTimer)
+      fallbackTimer = null
+    }
     const parseOnMainThread = () => {
+      clearFallbackTimer()
       if (requestId !== requestIdRef.current) return
       setRenderablePatch(getRenderablePatch(selectedPatch, 'diff-panel:dark'))
     }
@@ -57,6 +64,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
     workerRef.current = worker
     worker.onmessage = (event) => {
       if (event.data.id !== requestIdRef.current) return
+      clearFallbackTimer()
       setRenderablePatch(event.data.patch)
     }
     worker.onerror = fallbackFromFailedWorker
@@ -64,6 +72,7 @@ export function useWorkerRenderablePatch(selectedPatch: string | undefined) {
 
     try {
       worker.postMessage({ id: requestId, patch: selectedPatch, cacheScope: 'diff-panel:dark' })
+      fallbackTimer = setTimeout(fallbackFromFailedWorker, 2_000)
     } catch {
       fallbackFromFailedWorker()
     }

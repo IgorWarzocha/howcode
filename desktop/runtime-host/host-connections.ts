@@ -21,6 +21,7 @@ export type HostConnection = {
   startPromise: Promise<ChildProcess> | null
   idleTimer: ReturnType<typeof setTimeout> | null
   busy: boolean
+  terminating: boolean
 }
 
 type RuntimeHostBrokerState = {
@@ -108,6 +109,7 @@ export function createHostConnection(role: HostRole, label: string): HostConnect
     startPromise: null,
     idleTimer: null,
     busy: false,
+    terminating: false,
   }
   hosts.add(host)
   return host
@@ -126,6 +128,7 @@ export function rejectPendingRequests(host: HostConnection, error: Error) {
 }
 
 export function rememberHostAlias(host: HostConnection, alias: string | null | undefined) {
+  if (host.terminating || !hosts.has(host)) return
   const normalized = alias?.trim()
   if (!normalized) return
   host.aliases.add(normalized)
@@ -133,6 +136,7 @@ export function rememberHostAlias(host: HostConnection, alias: string | null | u
 }
 
 export function forgetHost(host: HostConnection) {
+  host.terminating = false
   for (const alias of host.aliases) {
     if (hostByAlias.get(alias) === host) {
       hostByAlias.delete(alias)
@@ -145,12 +149,13 @@ export function forgetHost(host: HostConnection) {
 }
 
 export function scheduleThreadHostIdleStop(host: HostConnection) {
-  if (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy) return
+  if (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy || host.terminating)
+    return
   if (host.idleTimer) clearTimeout(host.idleTimer)
   host.idleTimer = setTimeout(() => {
     if (host.pendingRequests.size > 0) return
+    host.terminating = true
     terminateHostProcess(host.process)
-    forgetHost(host)
   }, THREAD_HOST_IDLE_MS)
 }
 
@@ -162,6 +167,8 @@ export function clearHostIdleTimer(host: HostConnection) {
 
 export function isHostRunningOrStarting(host: HostConnection) {
   return Boolean(
-    host.startPromise || (host.process && !host.process.killed && host.process.exitCode === null),
+    !host.terminating &&
+      (host.startPromise ||
+        (host.process && !host.process.killed && host.process.exitCode === null)),
   )
 }
