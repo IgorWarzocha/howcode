@@ -1,22 +1,11 @@
-import {
-  Clock3,
-  FolderPlus,
-  Github,
-  ListFilter,
-  Search,
-  SquareTerminal,
-  Star,
-  X,
-} from 'lucide-react'
+import { FolderPlus, Search, X } from 'lucide-react'
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { parseGitHubRepositoryUrl } from '../../../../../shared/github-repository-url'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
-import type { AppSettings, DesktopActionInvoker } from '../../../desktop/types'
+import type { DesktopActionInvoker } from '../../../desktop/types'
 import { useDesktopBridgeAvailable } from '../../../hooks/useDesktopBridge'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Project, View } from '../../../types'
 import { cn } from '../../../utils/cn'
-import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { IconButton } from '../../common/icon-button'
 import { ProjectTree } from '../project-tree'
 import { SidebarProjectsSkeleton } from '../sidebar-skeletons'
@@ -26,17 +15,17 @@ import {
 } from './sidebar-projects.helpers'
 import { SidebarProjectsCreatePopover } from './sidebar-projects-create-popover'
 import { SidebarProjectsFilterMenu } from './sidebar-projects-filter-menu'
-import { getSidebarFolderProjectName } from './sidebar-projects-folder-browser'
-
-type PendingProject = {
-  key: string
-  name: string
-}
+import {
+  getSidebarProjectFilterIcon,
+  getSidebarProjectFilterLabel,
+  shouldShowSidebarProjects,
+} from './sidebar-projects-filter-ui'
+import { type PendingProject, useSidebarProjectCreation } from './useSidebarProjectCreation'
 
 type SidebarProjectsSectionProps = {
   activeView: View
   appLaunchedAtMs: number
-  appSettings: AppSettings
+  appSettings: import('../../../desktop/types').AppSettings
   protectedProjectId?: string | null
   projectScopeLockActive: boolean
   projects: Project[]
@@ -48,86 +37,14 @@ type SidebarProjectsSectionProps = {
   collapsedProjectIds: Record<string, boolean>
   onAction: DesktopActionInvoker
   onLoadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
-  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
+  onOpenSettingsPanel: (
+    target?: import('../../../views/settings/settingsTypes').SettingsOpenTarget,
+  ) => void
   onProjectSelect: (projectId: string) => void
   onProjectPrimeSelection: (projectId: string) => void
   onProjectReorder: (projectIds: string[]) => void
   onThreadOpen: (projectId: string, threadId: string, sessionPath: string) => void
   onToggleProjectCollapse: (projectId: string) => void
-}
-
-function shouldShowSidebarProjects(activeView: View) {
-  return activeView !== 'inbox' && activeView !== 'claw' && activeView !== 'work'
-}
-
-function getSidebarProjectFilterLabel(filterMode: SidebarProjectsFilterMode) {
-  if (filterMode === 'favourites') return 'Show favourites'
-  if (filterMode === 'github') return 'Show GitHub projects'
-  if (filterMode === 'terminal') return 'Show threads with running terminals'
-  if (filterMode === 'recent') return 'Show threads active since launch'
-  return 'Filter projects'
-}
-
-function getSidebarProjectFilterIcon(filterMode: SidebarProjectsFilterMode) {
-  if (filterMode === 'favourites') return <Star size={15} className="fill-current" />
-  if (filterMode === 'github') return <Github size={15} />
-  if (filterMode === 'terminal') return <SquareTerminal size={15} />
-  if (filterMode === 'recent') return <Clock3 size={15} />
-  return <ListFilter size={15} />
-}
-
-function restoreCreateProjectDraft(input: {
-  draft: string
-  setCreateOpen: (open: boolean) => void
-  setPendingProject: (project: PendingProject | null) => void
-  setProjectNameDraft: (draft: string) => void
-}) {
-  input.setProjectNameDraft(input.draft)
-  input.setCreateOpen(true)
-  input.setPendingProject(null)
-}
-
-function recordCreatedProject(input: {
-  result: Awaited<ReturnType<DesktopActionInvoker>>
-  setCreatedProjectIds: React.Dispatch<React.SetStateAction<string[]>>
-}) {
-  const projectId =
-    typeof input.result?.result?.projectId === 'string' ? input.result.result.projectId : null
-  if (projectId)
-    input.setCreatedProjectIds((current) => [
-      projectId,
-      ...current.filter((id) => id !== projectId),
-    ])
-}
-
-function prepareCreateProject(input: {
-  appSettings: AppSettings
-  createBusy: boolean
-  parentPath?: string | null | undefined
-  onOpenSettingsPanel: (target?: SettingsOpenTarget) => void
-  projectNameDraft: string
-  setCreateErrorMessage: (message: string | null) => void
-  setCreateOpen: (open: boolean) => void
-}) {
-  if (input.createBusy) return null
-  input.setCreateErrorMessage(null)
-  if (!(input.parentPath || input.appSettings.preferredProjectLocation)) {
-    input.setCreateOpen(false)
-    input.onOpenSettingsPanel({ category: 'projects', settingId: 'projects.default-location' })
-    return null
-  }
-  const draft = input.projectNameDraft.trim()
-  return draft || null
-}
-
-function getCreateProjectPayload(draft: string, parentPath?: string | null) {
-  const repository = parseGitHubRepositoryUrl(draft)
-  return {
-    pendingProjectName: repository?.folderName ?? draft,
-    payload: repository
-      ? { repoUrl: repository.canonicalUrl, parentPath: parentPath ?? undefined }
-      : { projectName: draft, parentPath: parentPath ?? undefined },
-  }
 }
 
 function PendingProjectRow({ pendingProject }: { pendingProject: PendingProject }) {
@@ -265,12 +182,19 @@ export function SidebarProjectsSection({
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const [filterMode, setFilterMode] = useState<SidebarProjectsFilterMode>('all')
   const [filterOpen, setFilterOpen] = useState(false)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [projectNameDraft, setProjectNameDraft] = useState('')
-  const [createBusy, setCreateBusy] = useState(false)
-  const [createErrorMessage, setCreateErrorMessage] = useState<string | null>(null)
-  const [createdProjectIds, setCreatedProjectIds] = useState<string[]>([])
-  const [pendingProject, setPendingProject] = useState<PendingProject | null>(null)
+  const {
+    createBusy,
+    createErrorMessage,
+    createdProjectIds,
+    createOpen,
+    handleAddFolderProject,
+    handleCreateProject,
+    pendingProject,
+    projectNameDraft,
+    setCreateErrorMessage,
+    setCreateOpen,
+    setProjectNameDraft,
+  } = useSidebarProjectCreation({ appSettings, onAction, onOpenSettingsPanel })
   const desktopBridgeAvailable = useDesktopBridgeAvailable()
   const filterButtonRef = useRef<HTMLButtonElement>(null)
   const filterPanelRef = useRef<HTMLDivElement>(null)
@@ -347,7 +271,7 @@ export function SidebarProjectsSection({
 
   const dismissCreate = useCallback(() => {
     setCreateOpen(false)
-  }, [])
+  }, [setCreateOpen])
 
   useDismissibleLayer({
     open: filterOpen,
@@ -366,78 +290,6 @@ export function SidebarProjectsSection({
     searchInputRef.current?.focus()
     searchInputRef.current?.select()
   })
-
-  const handleCreateProject = async (options?: { parentPath?: string | null }) => {
-    const draft = prepareCreateProject({
-      appSettings,
-      createBusy,
-      parentPath: options?.parentPath,
-      onOpenSettingsPanel,
-      projectNameDraft,
-      setCreateErrorMessage,
-      setCreateOpen,
-    })
-    if (!draft) return
-
-    const { payload, pendingProjectName } = getCreateProjectPayload(draft, options?.parentPath)
-    setPendingProject({ key: `${Date.now()}:${draft}`, name: pendingProjectName })
-    setProjectNameDraft('')
-    setCreateOpen(false)
-    setCreateBusy(true)
-
-    try {
-      const result = await onAction('project.add', payload)
-      const error = typeof result?.result?.error === 'string' ? result.result.error : null
-
-      if (error) {
-        setCreateErrorMessage(error)
-        restoreCreateProjectDraft({ draft, setCreateOpen, setPendingProject, setProjectNameDraft })
-        return
-      }
-
-      recordCreatedProject({ result, setCreatedProjectIds })
-      setPendingProject(null)
-    } catch (error) {
-      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
-      restoreCreateProjectDraft({ draft, setCreateOpen, setPendingProject, setProjectNameDraft })
-    } finally {
-      setCreateBusy(false)
-    }
-  }
-
-  const handleAddFolderProject = async (projectPath: string, options?: { create?: boolean }) => {
-    if (createBusy) return
-    const pendingProjectName = getSidebarFolderProjectName(projectPath)
-    setCreateErrorMessage(null)
-    setPendingProject({ key: `${Date.now()}:${projectPath}`, name: pendingProjectName })
-    setProjectNameDraft('')
-    setCreateOpen(false)
-    setCreateBusy(true)
-
-    try {
-      const result = await onAction('project.add', {
-        projectPath,
-        createIfMissing: options?.create === true,
-      })
-      const error = typeof result?.result?.error === 'string' ? result.result.error : null
-
-      if (error) {
-        setCreateErrorMessage(error)
-        setCreateOpen(true)
-        setPendingProject(null)
-        return
-      }
-
-      recordCreatedProject({ result, setCreatedProjectIds })
-      setPendingProject(null)
-    } catch (error) {
-      setCreateErrorMessage(error instanceof Error ? error.message : 'Unable to add project.')
-      setCreateOpen(true)
-      setPendingProject(null)
-    } finally {
-      setCreateBusy(false)
-    }
-  }
 
   if (!showProjects) {
     return <section className="sidebar-section" aria-hidden="true" />
