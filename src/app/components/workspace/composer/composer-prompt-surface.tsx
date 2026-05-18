@@ -5,9 +5,14 @@ import type { ComposerProps } from '../composer'
 import { AskQuestionsCard } from './ask-questions-card'
 import { ComposerFooter } from './composer-footer'
 import { ComposerPromptInputPanel } from './composer-prompt-input-panel'
+import {
+  getComposerPlaceholderText,
+  isConversationComposerView,
+} from './composer-prompt-surface-helpers'
 import { ComposerAttachmentRail, ComposerStopRail } from './composer-side-controls'
 import { useComposerController } from './controller/useComposerController'
 import { useAskQuestionsOverlayHeight } from './useAskQuestionsOverlayHeight'
+import { useComposerAskQuestionsActions } from './useComposerAskQuestionsActions'
 import { useComposerFileMentions } from './useComposerFileMentions'
 import {
   useComposerAutocompleteEffects,
@@ -22,25 +27,6 @@ type ComposerPromptSurfaceProps = ComposerProps & {
   mainViewRef: RefObject<HTMLElement | null>
   workspaceFooterRef: RefObject<HTMLElement | null>
   onOpenGitOps: () => void
-}
-
-function getComposerPlaceholderText(input: {
-  activeView: ComposerProps['activeView']
-  errorMessage: string | null
-  showAskQuestions: boolean
-}) {
-  if (input.errorMessage) return input.errorMessage
-  if (input.showAskQuestions) {
-    return 'Type Other · Enter replies · empty Enter advances · ←/→ questions · Esc dismisses'
-  }
-  if (input.activeView === 'chat' || input.activeView === 'thread') {
-    return 'Hover to type · Enter sends · Shift+Enter for a new line'
-  }
-  return 'Hover to type · / commands · @ files · Enter sends'
-}
-
-function isConversationComposerView(activeView: ComposerProps['activeView']) {
-  return activeView === 'chat' || activeView === 'thread'
 }
 
 export function ComposerPromptSurface({
@@ -160,17 +146,14 @@ export function ComposerPromptSurface({
   const stopButtonBoundaryRef = useRef<HTMLDivElement>(null)
   const askQuestionsOverlayRef = useRef<HTMLDivElement>(null)
   const showAskQuestions = nativeAskQuestionsRequest !== null
-  const answerNativeQuestions = async (answers: string[][] | null) => {
-    if (!nativeAskQuestionsRequest) return false
-    return await runComposerAction('composer.answer-native-questions', {
-      projectId,
-      sessionPath,
-      composerMode,
-      chatGroupId,
-      requestId: nativeAskQuestionsRequest.id,
-      answers,
-    })
-  }
+  const { answerNativeQuestions } = useComposerAskQuestionsActions({
+    chatGroupId,
+    composerMode,
+    nativeAskQuestionsRequest,
+    projectId,
+    runComposerAction,
+    sessionPath,
+  })
   const startNewSession = () => {
     void runComposerAction('thread.new', { projectId, chatGroupId, composerMode })
   }
