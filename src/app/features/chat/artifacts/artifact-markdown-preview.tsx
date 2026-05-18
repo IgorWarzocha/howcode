@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import { openExternalQuery } from '../../../query/desktop-query'
 import remarkGfm from 'remark-gfm'
 
 export function HistoricalMarkdownPreview({ content }: { content: string }) {
@@ -33,7 +34,7 @@ export function HistoricalMarkdownPreview({ content }: { content: string }) {
               onClick={(event) => {
                 if (!(href?.startsWith('http://') || href?.startsWith('https://'))) return
                 event.preventDefault()
-                void window.piDesktop?.openExternal?.(href)
+                void openExternalQuery(href)
               }}
             >
               {children}

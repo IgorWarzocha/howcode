@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildHtmlPreview, buildReactPreview } from './artifactPreviewBuilders'
 
 describe('artifact preview builders', () => {
-  it('wraps HTML fragments in a complete preview document', () => {
+  it('wraps HTML fragments in a complete preview document with diagnostics', () => {
     const preview = buildHtmlPreview('<h1>Hello</h1>')
 
     expect(preview).toContain('<!doctype html>')
@@ -10,7 +10,7 @@ describe('artifact preview builders', () => {
     expect(preview).toContain('howcode-artifact-preview')
   })
 
-  it('injects preview diagnostics into uppercase HTML heads', () => {
+  it('injects preview diagnostics into existing uppercase HTML heads', () => {
     const preview = buildHtmlPreview('<!doctype html><HTML><HEAD></HEAD><BODY>Hi</BODY></HTML>')
 
     expect(preview).toContain('<head>')

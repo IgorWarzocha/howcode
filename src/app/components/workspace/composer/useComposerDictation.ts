@@ -10,6 +10,11 @@ import {
 import { getErrorMessage } from '../../../desktop/error-messages'
 import type { DictationState } from '../../../desktop/types'
 import {
+  canTranscribeDictationQuery,
+  getDictationStateQuery,
+  transcribeDictationQuery,
+} from '../../../query/desktop-query'
+import {
   appendDictatedText,
   canUseLocalDictationCapture,
   type LocalDictationCaptureSession,
@@ -55,18 +60,14 @@ async function transcribeCapturedAudio(input: {
     input.setErrorMessage('No speech was captured.')
     return
   }
-  if (!window.piDesktop?.transcribeDictation) {
-    input.setErrorMessage('Local dictation is unavailable in this runtime.')
-    return
-  }
-  const result = await window.piDesktop.transcribeDictation({
+  const result = await transcribeDictationQuery({
     audioBase64: audio.audioBase64,
     sampleRate: audio.sampleRate,
     language: navigator.language || null,
   })
   if (!isCurrentDictationSession(input.refs, input.identity)) return
-  if (!result.ok) {
-    input.setErrorMessage(result.error ?? 'Could not transcribe dictation.')
+  if (!result?.ok) {
+    input.setErrorMessage(result?.error ?? 'Could not transcribe dictation.')
     return
   }
   if (result.text.trim()) {
@@ -79,10 +80,9 @@ async function readDictationAvailability(
   currentState: DictationState | null,
   setErrorMessage: Dispatch<SetStateAction<string | null>>,
 ) {
-  const getDictationState = window.piDesktop?.getDictationState
-  if (!getDictationState) return currentState
+  if (!canTranscribeDictationQuery()) return currentState
   try {
-    return await getDictationState()
+    return await getDictationStateQuery()
   } catch {
     setErrorMessage('Could not verify local dictation availability in this runtime.')
     return 'unavailable'
@@ -213,12 +213,11 @@ export function useComposerDictation({
 
     void dictationModelId
 
-    if (!window.piDesktop?.getDictationState) {
+    if (!canTranscribeDictationQuery()) {
       return
     }
 
-    void window.piDesktop
-      .getDictationState()
+    void getDictationStateQuery()
       .then((state) => {
         if (!disposed) {
           setDictationState(state)
@@ -239,7 +238,7 @@ export function useComposerDictation({
   const dictationSupported = useMemo(
     () =>
       canUseLocalDictationCapture() &&
-      typeof window.piDesktop?.transcribeDictation === 'function' &&
+      canTranscribeDictationQuery() &&
       (dictationState?.available ?? true),
     [dictationState],
   )
@@ -255,7 +254,7 @@ export function useComposerDictation({
       return 'stopped' as const
     }
 
-    if (!(canUseLocalDictationCapture() && window.piDesktop?.transcribeDictation)) {
+    if (!(canUseLocalDictationCapture() && canTranscribeDictationQuery())) {
       setErrorMessage('Local dictation is unavailable in this runtime.')
       return 'unavailable' as const
     }

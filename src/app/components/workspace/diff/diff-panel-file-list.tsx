@@ -9,6 +9,7 @@ import {
 } from '@pierre/diffs/react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { ChevronDown, ChevronRight, MessageSquarePlus } from 'lucide-react'
+import { openPathQuery } from '../../../query/desktop-query'
 import {
   DIFF_PANEL_UNSAFE_CSS,
   type DiffCommentMetadata,
@@ -172,16 +173,14 @@ function DiffPanelFileRow({
       onPointerDownCapture={(event) => handleFilePointerDownCapture(event, fileKey, filePath)}
       onClickCapture={(event) => {
         if (!isDiffHeaderClick(event)) return
-        const openPathPromise = window.piDesktop?.openPath?.(
-          joinProjectFilePath(projectId, filePath),
-        )
-        void openPathPromise?.catch(() => undefined)
+        void openPathQuery(joinProjectFilePath(projectId, filePath)).catch(() => undefined)
       }}
     >
       <FileDiff<DiffCommentMetadata>
         fileDiff={fileDiff}
         lineAnnotations={commentAnnotationsByFile.get(fileKey) ?? []}
         selectedLines={selectedLines}
+        style={{ visibility: 'hidden' }}
         renderCustomHeader={(currentFileDiff) => (
           <DiffPanelFileHeader
             fileDiff={currentFileDiff}
@@ -223,6 +222,9 @@ function DiffPanelFileRow({
           lineHoverHighlight: 'both',
           onLineClick: fileInteractionHandlers.onLineClick,
           onLineNumberClick: fileInteractionHandlers.onLineNumberClick,
+          onPostRender: (node) => {
+            node.style.visibility = 'visible'
+          },
         }}
       />
     </div>

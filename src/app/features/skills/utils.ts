@@ -1,5 +1,6 @@
 import { getSafeExternalUrl } from '../../../../shared/external-url'
 import type { PiConfiguredSkill, PiSkillCatalogItem } from '../../desktop/types'
+import { canSearchPiSkillsQuery, openExternalQuery } from '../../query/desktop-query'
 import { getActionError } from '../../utils/action-error'
 
 const compactNumberFormatter = new Intl.NumberFormat('en', {
@@ -30,7 +31,7 @@ export function getCatalogSkillSource(skill: Pick<PiSkillCatalogItem, 'source' |
 }
 
 export function isDesktopSkillsAvailable() {
-  return typeof window !== 'undefined' && Boolean(window.piDesktop?.searchPiSkills)
+  return canSearchPiSkillsQuery()
 }
 
 export async function openExternalUrl(url: string) {
@@ -39,9 +40,7 @@ export async function openExternalUrl(url: string) {
     return false
   }
 
-  if (window.piDesktop?.openExternal) {
-    return window.piDesktop.openExternal(safeUrl)
-  }
+  if (await openExternalQuery(safeUrl)) return true
 
   window.open(safeUrl, '_blank', 'noopener,noreferrer')
   return true

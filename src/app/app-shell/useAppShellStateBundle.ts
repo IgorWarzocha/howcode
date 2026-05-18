@@ -1,0 +1,48 @@
+import { useReducer, useState } from 'react'
+import type { ArchivedThread, ComposerState, ProjectGitState, ThreadData } from '../desktop/types'
+import { createInitialWorkspaceState, workspaceReducer } from '../state/workspace'
+import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
+
+export function useAppShellStateBundle() {
+  const [appLaunchedAtMs] = useState(() => Date.now())
+  const [state, dispatch] = useReducer(workspaceReducer, [], createInitialWorkspaceState)
+  const [archivedThreads, setArchivedThreads] = useState<ArchivedThread[]>([])
+  const [composerState, setComposerState] = useState<ComposerState | null>(null)
+  const [liveThreadData, setLiveThreadData] = useState<ThreadData | null>(null)
+  const [projectGitState, setProjectGitState] = useState<ProjectGitState | null>(null)
+  const [projectGitLoading, setProjectGitLoading] = useState(false)
+  const [extensionsProjectScopeActive, setExtensionsProjectScopeActive] = useState(false)
+  const [skillsProjectScopeActive, setSkillsProjectScopeActive] = useState(false)
+  const [settingsOpenTarget, setSettingsOpenTarget] = useState<SettingsOpenTarget | null>(null)
+  const [threadRefreshKey, setThreadRefreshKey] = useState(0)
+  const [threadHistoryCompactions, setThreadHistoryCompactions] = useState(0)
+  const [threadQueryDeferred, setThreadQueryDeferred] = useState(false)
+
+  return {
+    appLaunchedAtMs,
+    archivedThreads,
+    composerState,
+    dispatch,
+    extensionsProjectScopeActive,
+    liveThreadData,
+    projectGitLoading,
+    projectGitState,
+    setArchivedThreads,
+    setComposerState,
+    setExtensionsProjectScopeActive,
+    setLiveThreadData,
+    setProjectGitLoading,
+    setProjectGitState,
+    setSettingsOpenTarget,
+    setSkillsProjectScopeActive,
+    setThreadHistoryCompactions,
+    setThreadQueryDeferred,
+    setThreadRefreshKey,
+    settingsOpenTarget,
+    skillsProjectScopeActive,
+    state,
+    threadHistoryCompactions,
+    threadQueryDeferred,
+    threadRefreshKey,
+  }
+}

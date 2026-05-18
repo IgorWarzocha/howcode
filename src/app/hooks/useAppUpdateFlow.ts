@@ -6,6 +6,7 @@ import {
   getAppUpdateStateQuery,
   installAppUpdateQuery,
   restartAppUpdateQuery,
+  subscribeDesktopEvents,
 } from '../query/desktop-query'
 
 const fallbackUpdateState: AppUpdateState = {
@@ -40,7 +41,7 @@ export function useAppUpdateFlow() {
 
   useEffect(() => {
     let cancelled = false
-    const unsubscribe = window.piDesktop?.subscribe?.((event) => {
+    const unsubscribe = subscribeDesktopEvents((event) => {
       if (event.type === 'app-update') setState(event.state)
     })
     void getAppUpdateStateQuery().then((nextState) => {
@@ -49,7 +50,7 @@ export function useAppUpdateFlow() {
 
     return () => {
       cancelled = true
-      unsubscribe?.()
+      unsubscribe()
     }
   }, [])
 

@@ -6,6 +6,7 @@ import { EmptyStateCard } from '../../../components/common/empty-state-card'
 import { TextButton } from '../../../components/common/text-button'
 import { Tooltip } from '../../../components/common/tooltip'
 import type { PiConfiguredSkill } from '../../../desktop/types'
+import { openPathQuery } from '../../../query/desktop-query'
 import { compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
@@ -39,7 +40,7 @@ export function InstalledSkillsSection({
               <Tooltip content="Open SKILL.md in default editor">
                 <TextButton
                   className={compactRoundIconButtonClass}
-                  onClick={() => void window.piDesktop?.openPath?.(configuredSkill.skillFilePath)}
+                  onClick={() => void openPathQuery(configuredSkill.skillFilePath)}
                   aria-label="Open SKILL.md in default editor"
                 >
                   <FilePenLine size={13} />

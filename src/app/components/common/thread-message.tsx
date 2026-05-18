@@ -1,4 +1,3 @@
-import { Check, Clipboard } from 'lucide-react'
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import type {
   BashExecutionMessage,
@@ -11,107 +10,8 @@ import type { Message } from '../../types'
 import { getThinkingPreview } from '../../utils/thread-previews'
 import { ExpandablePanel } from './expandable-panel'
 import { MarkdownContent } from './markdown-content'
-
-const copyButtonClass =
-  'inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel)] text-[color:var(--muted)] opacity-0 shadow-[var(--shadow)] backdrop-blur-sm transition-[opacity,background-color,color,transform] delay-300 duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100 hover:delay-0 focus-visible:opacity-100 focus-visible:delay-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-border)] active:scale-[0.96] group-hover/message:opacity-100 group-hover/message:delay-0 group-focus-within/message:opacity-100 group-focus-within/message:delay-0'
-const threadFindHighlightName = 'thread-find-match'
-
-function collectFindHighlightRanges(root: HTMLElement, query: string) {
-  const ranges: Range[] = []
-  const normalizedQuery = query.toLowerCase()
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode: (node) => {
-      const parent = node.parentElement
-      if (!parent?.textContent) return NodeFilter.FILTER_REJECT
-      if (parent.closest('button, input, textarea, select, [data-no-find-highlight="true"]')) {
-        return NodeFilter.FILTER_REJECT
-      }
-      return NodeFilter.FILTER_ACCEPT
-    },
-  })
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode
-    const text = node.textContent ?? ''
-    const normalizedText = text.toLowerCase()
-    let index = normalizedText.indexOf(normalizedQuery)
-    while (index !== -1) {
-      const range = document.createRange()
-      range.setStart(node, index)
-      range.setEnd(node, index + query.length)
-      ranges.push(range)
-      index = normalizedText.indexOf(normalizedQuery, index + query.length)
-    }
-  }
-
-  return ranges
-}
-
-function useThreadFindHighlight(input: {
-  active: boolean | undefined
-  query: string | undefined
-  rootRef: React.RefObject<HTMLDivElement | null>
-}) {
-  useEffect(() => {
-    if (!('Highlight' in window && 'highlights' in CSS)) return
-    const root = input.rootRef.current
-    const query = input.query?.trim()
-    if (!(input.active && root && query)) {
-      CSS.highlights.delete(threadFindHighlightName)
-      return
-    }
-
-    CSS.highlights.set(
-      threadFindHighlightName,
-      new Highlight(...collectFindHighlightRanges(root, query)),
-    )
-    return () => {
-      CSS.highlights.delete(threadFindHighlightName)
-    }
-  }, [input.active, input.query, input.rootRef])
-}
-
-function CopyMessageButton({ label, text }: { label: string; text: string }) {
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
-
-  useEffect(() => {
-    if (copyState === 'idle') {
-      return
-    }
-
-    const timeout = window.setTimeout(() => setCopyState('idle'), 1400)
-    return () => window.clearTimeout(timeout)
-  }, [copyState])
-
-  if (text.trim().length === 0) {
-    return null
-  }
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyState('copied')
-    } catch {
-      setCopyState('failed')
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      className={copyButtonClass}
-      onClick={(event) => {
-        event.stopPropagation()
-        void handleCopy()
-      }}
-      aria-label={copyState === 'copied' ? `Copied ${label}` : `Copy ${label}`}
-      title={copyState === 'failed' ? 'Copy failed' : copyState === 'copied' ? 'Copied' : 'Copy'}
-      data-no-row-toggle="true"
-    >
-      {copyState === 'copied' ? <Check size={13} /> : <Clipboard size={13} />}
-    </button>
-  )
-}
+import { CopyMessageButton, renderProse, renderThinking } from './thread-message-utils'
+import { useThreadFindHighlight } from './useThreadFindHighlight'
 
 type ThreadMessageProps = {
   message: Message
@@ -122,44 +22,6 @@ type ThreadMessageProps = {
   firstCardOnly?: boolean | undefined
   disableInnerExpansion?: boolean | undefined
   primaryToggleAction?: (() => void) | undefined
-}
-
-function renderProse(content: string[], format: 'prose' | 'list' = 'prose') {
-  if (format === 'list') {
-    return (
-      <MarkdownContent
-        markdown={content.map((item) => `- ${item}`).join('\n')}
-        className="gap-1.5 text-pretty"
-      />
-    )
-  }
-
-  return (
-    <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
-      {content.map((paragraph) => (
-        <MarkdownContent key={paragraph} markdown={paragraph} />
-      ))}
-    </div>
-  )
-}
-
-function renderThinking(content: string[]) {
-  return (
-    <div className="grid min-w-0 gap-2 [overflow-wrap:anywhere]">
-      {content.map((paragraph) => (
-        <div key={paragraph} className="group/message relative min-w-0 pr-9">
-          <MarkdownContent
-            markdown={paragraph}
-            tone="thinking"
-            className="gap-1 text-[13px] leading-[1.62]"
-          />
-          <div className="absolute top-0 right-0">
-            <CopyMessageButton label="thinking paragraph" text={paragraph} />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 function AssistantThinkingBlock({

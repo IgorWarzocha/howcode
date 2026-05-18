@@ -4,36 +4,15 @@ import type {
   ProjectDiffStatsResult,
 } from '../../shared/desktop-contracts.ts'
 import {
-  formatGitCommandError,
-  hasHeadCommit,
-  runGitWithOptions,
-  withTemporaryIndex,
-} from './git-runner.ts'
+  countNonEmptyLines,
+  loadCommitContextOutputsForMode,
+  parseShortStat,
+} from './commit-message-context.ts'
+import { formatGitCommandError } from './git-runner.ts'
 import { resolveProjectDiffBaseline } from './project-diff-baselines.ts'
-import { getBranch, getOriginUrl, isGitRepository } from './project-state.ts'
+import { isGitRepository } from './project-state.ts'
 import type { CommitMessageContext } from './types.ts'
 import { loadWorktreeSnapshot, loadWorktreeStats } from './worktree-snapshot.ts'
-
-const shortStatInsertionsPattern = /(\d+)\s+insertions?\(\+\)/
-const shortStatDeletionsPattern = /(\d+)\s+deletions?\(-\)/
-
-function parseShortStat(output: string) {
-  const insertionsMatch = output.match(shortStatInsertionsPattern)
-  const deletionsMatch = output.match(shortStatDeletionsPattern)
-
-  return {
-    insertions: insertionsMatch ? Number.parseInt(insertionsMatch[1] ?? '0', 10) : 0,
-    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1] ?? '0', 10) : 0,
-  }
-}
-
-function countNonEmptyLines(output: string) {
-  return output
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean).length
-}
-
 export function buildDefaultCommitMessage(context: { fileCount: number }) {
   if (context.fileCount <= 0) {
     return 'Update workspace'
@@ -50,98 +29,7 @@ export async function prepareCommitMessageContext(
     return null
   }
 
-  const diffArguments = (hasHead: boolean, extraArgs: string[]) => [
-    'diff',
-    '--cached',
-    ...(hasHead ? [] : ['--root']),
-    ...extraArgs,
-    '--',
-  ]
-
-  const loadContextOutputs = async (options?: {
-    env?: NodeJS.ProcessEnv
-    hasHead?: boolean | undefined
-  }) => {
-    const hasHead = options?.hasHead ?? (await hasHeadCommit(projectId))
-
-    const [
-      branch,
-      originUrl,
-      shortStatOutput,
-      diffStatOutput,
-      nameStatusOutput,
-      numStatOutput,
-      patchOutput,
-    ] = await Promise.all([
-      getBranch(projectId),
-      getOriginUrl(projectId),
-      runGitWithOptions(projectId, diffArguments(hasHead, ['--shortstat']), {
-        env: options?.env ?? process.env,
-        timeout: 10_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => '',
-      ),
-      runGitWithOptions(projectId, diffArguments(hasHead, ['--stat=200,200', '--find-renames']), {
-        env: options?.env ?? process.env,
-        timeout: 10_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => '',
-      ),
-      runGitWithOptions(projectId, diffArguments(hasHead, ['--name-status', '--find-renames']), {
-        env: options?.env ?? process.env,
-        timeout: 10_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => '',
-      ),
-      runGitWithOptions(projectId, diffArguments(hasHead, ['--numstat', '--find-renames']), {
-        env: options?.env ?? process.env,
-        timeout: 10_000,
-        maxBuffer: 1024 * 1024 * 4,
-      }).then(
-        ({ stdout }) => stdout.trim(),
-        () => '',
-      ),
-      runGitWithOptions(
-        projectId,
-        diffArguments(hasHead, ['--unified=1', '--no-color', '--no-ext-diff', '--find-renames']),
-        {
-          env: options?.env ?? process.env,
-          timeout: 10_000,
-          maxBuffer: 1024 * 1024 * 12,
-        },
-      ).then(
-        ({ stdout }) => stdout.trim(),
-        () => '',
-      ),
-    ])
-
-    return {
-      branch,
-      originUrl,
-      shortStatOutput,
-      diffStatOutput,
-      nameStatusOutput,
-      numStatOutput,
-      patchOutput,
-    }
-  }
-
-  const outputs = includeUnstaged
-    ? await withTemporaryIndex(projectId, async ({ env, hasHead }) => {
-        await runGitWithOptions(projectId, ['add', '-A', '--', '.'], {
-          env,
-          timeout: 10_000,
-          maxBuffer: 1024 * 1024 * 4,
-        })
-        return loadContextOutputs({ env, hasHead })
-      })
-    : await loadContextOutputs()
+  const outputs = await loadCommitContextOutputsForMode(projectId, includeUnstaged)
 
   const {
     branch,

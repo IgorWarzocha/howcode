@@ -1,42 +1,18 @@
-const extensionSourceSuffixPattern = /\.(ts|js)$/
-
 import path from 'node:path'
-import { normalizeModelRegistryContextWindows } from '../../shared/model-context-window-normalization.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { ensureAskQuestionsExtensionRuntimePath } from '../native-extensions/ask-questions-extension-path.ts'
 import { getPiModule } from '../pi-module.ts'
-import {
-  abortHeadlessExtensionCommand,
-  bindHeadlessAgentSessionExtensions,
-  isHeadlessExtensionCommandRunning,
-  refreshHeadlessAgentSessionExtensionBindings,
-} from '../runtime/agent-session-extensions.ts'
-import { createArtifactTools } from '../runtime/artifact-tools.ts'
-import { createAttachmentFileTools } from '../runtime/attachment-file-tools.ts'
-import { getRuntimeSystemPrompt } from '../runtime/chat-system-prompt.ts'
 import { buildComposerState } from '../runtime/composer-state.ts'
-import {
-  createIsolatedRuntimeResourceLoader,
-  createRuntimeSettingsManager,
-} from '../runtime/isolated-settings-manager.ts'
+import { normalizeRuntimeSettingsCwd } from '../runtime/runtime-settings-cwd.ts'
 import type { PiRuntime } from '../runtime/types.ts'
-import { emitDesktopEvent } from './host-events.ts'
 import {
-  cancelLiveThreadUpdate,
-  deferLiveThreadUpdate,
-  publishComposerUpdate,
-  publishThreadUpdate,
-  scheduleLiveThreadUpdate,
-} from './live-thread-publisher.ts'
-import { clearRuntimeToolProgress, rememberRuntimeToolProgress } from './live-tool-progress.ts'
-import { invokeMainRequest } from './main-request-client.ts'
-import { createNativeAskQuestionsTools } from './native-ask-questions-tool.ts'
+  abortRuntimeExtensionCommand,
+  createLiveRuntime,
+  isRuntimeExtensionCommandRunning,
+  refreshRuntimeExtensionBindings as refreshRuntimeExtensionBindingsWithReload,
+} from './live-runtime-factory.ts'
+import { publishComposerUpdate } from './live-thread-publisher.ts'
 
-function getRuntimeDiagnosticExtensionLabel(extensionPath: string) {
-  if (extensionPath.startsWith('command:')) return `/${extensionPath.slice('command:'.length)}`
-  if (extensionPath.startsWith('<')) return extensionPath.replace(/[<>]/g, '')
-  return path.basename(extensionPath).replace(extensionSourceSuffixPattern, '')
-}
+export { abortRuntimeExtensionCommand, isRuntimeExtensionCommandRunning }
 
 type RuntimeRecord = {
   runtimePromise: Promise<PiRuntime>
@@ -49,6 +25,16 @@ const RUNTIME_IDLE_TIMEOUT_MS = 15 * 60 * 1_000
 const runtimeRecords = new Map<string, RuntimeRecord>()
 const runtimeMutationTails = new Map<string, Promise<void>>()
 const staleRuntimeGenerations = new Map<string, number>()
+
+const liveRuntimeFactoryHandlers = {
+  reloadRuntimeSettingsIfSafe,
+  scheduleRuntimeDisposal,
+  suspendRuntimeDisposal,
+}
+
+export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
+  await refreshRuntimeExtensionBindingsWithReload(runtime, reloadRuntimeSettingsIfSafe)
+}
 
 async function disposeRuntimeIfIdle(runtimeKey: string, record: RuntimeRecord) {
   const currentRecord = runtimeRecords.get(runtimeKey)
@@ -70,119 +56,6 @@ async function disposeRuntimeIfIdle(runtimeKey: string, record: RuntimeRecord) {
   }
 }
 
-function publishRuntimeComposerState(runtime: PiRuntime, warning: string) {
-  return buildComposerState(runtime)
-    .then((composer) =>
-      publishComposerUpdate(composer, {
-        projectId: runtime.cwd,
-        sessionPath: runtime.session.sessionFile,
-      }),
-    )
-    .catch((error) => console.warn(warning, error))
-}
-
-function getRuntimeToolProgressPartial(
-  event: Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-) {
-  if (event.type === 'tool_execution_update') return event.partialResult
-  if (event.type === 'tool_execution_end') return event.result
-  return undefined
-}
-
-function handleRuntimeMessageEnd(
-  runtime: PiRuntime,
-  runtimeKey: string | null,
-  event: Extract<
-    Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-    { type: 'message_end' }
-  >,
-) {
-  if (event.message.role === 'user') {
-    cancelLiveThreadUpdate(runtime)
-    void publishThreadUpdate(runtime, 'start')
-  } else {
-    if (event.message.role === 'toolResult') {
-      const toolCallId = 'toolCallId' in event.message ? event.message.toolCallId : undefined
-      clearRuntimeToolProgress(runtime, {
-        toolCallId: typeof toolCallId === 'string' ? toolCallId : undefined,
-        toolName: event.message.toolName,
-      })
-    }
-    deferLiveThreadUpdate(runtime, { requireStreaming: event.message.role === 'toolResult' })
-  }
-  if (runtimeKey) scheduleRuntimeDisposal(runtimeKey)
-}
-
-function handleRuntimeSessionEvent(
-  runtime: PiRuntime,
-  event: Parameters<Parameters<PiRuntime['session']['subscribe']>[0]>[0],
-) {
-  const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-  if (runtimeKey) suspendRuntimeDisposal(runtimeKey)
-  switch (event.type) {
-    case 'message_start':
-    case 'message_update':
-      scheduleLiveThreadUpdate(runtime)
-      return
-    case 'message_end':
-      handleRuntimeMessageEnd(runtime, runtimeKey, event)
-      return
-    case 'agent_end':
-      cancelLiveThreadUpdate(runtime)
-      void publishThreadUpdate(runtime, 'end')
-      if (runtimeKey)
-        void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
-          scheduleRuntimeDisposal(runtimeKey),
-        )
-      return
-    case 'compaction_start':
-      cancelLiveThreadUpdate(runtime)
-      void publishThreadUpdate(runtime, 'compaction-start')
-      void publishRuntimeComposerState(
-        runtime,
-        'Failed to publish composer state after compaction start',
-      )
-      return
-    case 'compaction_end':
-      setTimeout(() => {
-        cancelLiveThreadUpdate(runtime)
-        void publishThreadUpdate(runtime, 'compaction')
-        void publishRuntimeComposerState(
-          runtime,
-          'Failed to publish composer state after compaction end',
-        ).finally(() => {
-          if (runtimeKey)
-            void reloadRuntimeSettingsIfSafe(runtimeKey).finally(() =>
-              scheduleRuntimeDisposal(runtimeKey),
-            )
-        })
-      }, 0)
-      return
-    case 'tool_execution_start':
-    case 'tool_execution_update':
-    case 'tool_execution_end':
-      rememberRuntimeToolProgress(runtime, {
-        toolCallId: event.toolCallId,
-        toolName: event.toolName,
-        args: 'args' in event ? event.args : undefined,
-        partialResult: getRuntimeToolProgressPartial(event),
-        isError: event.type === 'tool_execution_end' ? event.isError : false,
-        terminal: event.type === 'tool_execution_end',
-      })
-      scheduleLiveThreadUpdate(runtime)
-      return
-    case 'queue_update':
-      void publishRuntimeComposerState(
-        runtime,
-        'Failed to publish composer state after queue update',
-      ).finally(() => {
-        if (runtimeKey && !runtime.session.isStreaming) scheduleRuntimeDisposal(runtimeKey)
-      })
-      return
-    default:
-      return
-  }
-}
 function clearRuntimeDisposeTimeout(runtimeKey: string) {
   const record = runtimeRecords.get(runtimeKey)
   if (!record?.disposeTimeout) return
@@ -190,7 +63,7 @@ function clearRuntimeDisposeTimeout(runtimeKey: string) {
   record.disposeTimeout = null
 }
 
-function suspendRuntimeDisposal(runtimeKey: string) {
+export function suspendRuntimeDisposal(runtimeKey: string) {
   clearRuntimeDisposeTimeout(runtimeKey)
 }
 
@@ -203,204 +76,6 @@ export function scheduleRuntimeDisposal(runtimeKey: string) {
   }, RUNTIME_IDLE_TIMEOUT_MS)
 }
 
-async function getEnabledNativeExtensionsForRuntime(options: {
-  sessionManager?: PiRuntime['session']['sessionManager']
-}) {
-  const sessionPath = options.sessionManager?.getSessionFile?.() ?? null
-  if (sessionPath) {
-    const enabled = await invokeMainRequest('getSessionNativeExtensions', { sessionPath })
-    if (enabled) return enabled
-    const defaultEnabled = await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-    await invokeMainRequest('setSessionNativeExtensions', {
-      sessionPath,
-      enabled: defaultEnabled,
-    })
-    return defaultEnabled
-  }
-
-  return await invokeMainRequest('snapshotDefaultNativeExtensions', {})
-}
-
-async function createRuntime(options: {
-  cwd: string
-  sessionDir?: string | undefined | null | undefined
-  settingsCwd?: string | undefined | null | undefined
-  chatGroupId?: string | undefined | null | undefined
-  sessionManager?: PiRuntime['session']['sessionManager']
-}): Promise<PiRuntime> {
-  const {
-    AuthStorage,
-    ModelRegistry,
-    SessionManager,
-    SettingsManager,
-    DefaultResourceLoader,
-    createAgentSession,
-    defineTool,
-    getAgentDir,
-  } = await getPiModule()
-  const agentDir = getAgentDir()
-  const authStorage = AuthStorage.create()
-  const modelRegistry = normalizeModelRegistryContextWindows(
-    ModelRegistry.create(authStorage, `${agentDir}/models.json`),
-  )
-  const settingsManager = createRuntimeSettingsManager({
-    SettingsManager,
-    cwd: options.cwd,
-    agentDir,
-    settingsCwd: options.settingsCwd,
-  })
-  const sessionDir = options.sessionDir ?? settingsManager.getSessionDir() ?? undefined
-  const resourceLoader = await createIsolatedRuntimeResourceLoader({
-    DefaultResourceLoader,
-    cwd: options.cwd,
-    agentDir,
-    settingsCwd: options.settingsCwd,
-    settingsManager,
-    systemPrompt: getRuntimeSystemPrompt({ settingsCwd: options.settingsCwd }),
-  })
-  let runtime: PiRuntime | null = null
-  const enabledNativeExtensions = await getEnabledNativeExtensionsForRuntime(
-    options.sessionManager ? { sessionManager: options.sessionManager } : {},
-  )
-  const nativeAskQuestionTools = enabledNativeExtensions.includes('askQuestions')
-    ? await createNativeAskQuestionsTools({
-        defineTool,
-        extensionPath: ensureAskQuestionsExtensionRuntimePath() ?? '',
-        getRuntime: () => runtime,
-        onStateChange: () => {
-          if (!runtime) return
-          const activeRuntime = runtime
-          void buildComposerState(activeRuntime).then((composer) => {
-            publishComposerUpdate(composer, {
-              projectId: activeRuntime.cwd,
-              sessionPath: activeRuntime.session.sessionFile,
-            })
-          })
-        },
-      })
-    : []
-  const attachmentFileTools = options.settingsCwd
-    ? createAttachmentFileTools({
-        cwd: options.cwd,
-        autoResizeImages: settingsManager.getImageAutoResize(),
-      })
-    : null
-  const { session } = await createAgentSession({
-    cwd: options.cwd,
-    agentDir,
-    authStorage,
-    modelRegistry,
-    settingsManager,
-    ...(resourceLoader ? { resourceLoader } : {}),
-    sessionManager: options.sessionManager ?? SessionManager.create(options.cwd, sessionDir),
-    ...(options.settingsCwd
-      ? {
-          noTools: 'builtin' as const,
-          customTools: [
-            ...(attachmentFileTools?.tools ?? []),
-            ...createArtifactTools({
-              createArtifact: (input) => invokeMainRequest('createArtifact', input),
-              editArtifact: (input) => invokeMainRequest('editArtifact', input),
-              getArtifact: ({ conversationId, slug }) =>
-                invokeMainRequest('getArtifact', { artifactSlug: slug, conversationId }),
-              listArtifacts: (conversationId) =>
-                invokeMainRequest('listArtifacts', { conversationId }),
-            }),
-            ...nativeAskQuestionTools,
-          ],
-        }
-      : nativeAskQuestionTools.length > 0
-        ? { customTools: nativeAskQuestionTools }
-        : {}),
-  })
-  runtime = {
-    cwd: options.cwd,
-    session,
-    chatGroupId: options.chatGroupId ?? null,
-    attachmentFileAccess: attachmentFileTools?.access,
-  } satisfies PiRuntime
-
-  if (!options.sessionManager) {
-    const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-    if (runtimeKey) {
-      await invokeMainRequest('setSessionNativeExtensions', {
-        sessionPath: runtimeKey,
-        enabled: enabledNativeExtensions,
-      })
-    }
-  }
-
-  session.subscribe((event) => handleRuntimeSessionEvent(runtime, event))
-
-  await bindHeadlessAgentSessionExtensions(session, {
-    onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) =>
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          }),
-        )
-        .catch((error) => console.warn('Failed to publish extension command state', error))
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          })
-        }
-      }
-    },
-    onExtensionError: (error) => {
-      const extensionLabel = getRuntimeDiagnosticExtensionLabel(error.extensionPath)
-      emitDesktopEvent({
-        type: 'runtime-diagnostic',
-        severity: 'error',
-        message: `${extensionLabel} extension error: ${error.error}`,
-        details: { ...error, extensionLabel },
-        projectId: runtime.cwd,
-        sessionPath: runtime.session.sessionFile ?? null,
-      })
-    },
-  })
-  return runtime
-}
-
-export function abortRuntimeExtensionCommand(runtime: PiRuntime) {
-  return abortHeadlessExtensionCommand(runtime.session)
-}
-
-export function isRuntimeExtensionCommandRunning(runtime: PiRuntime) {
-  return isHeadlessExtensionCommandRunning(runtime.session)
-}
-
-export async function refreshRuntimeExtensionBindings(runtime: PiRuntime) {
-  await refreshHeadlessAgentSessionExtensionBindings(runtime.session, {
-    onExtensionCommandStateChange: () => {
-      void buildComposerState(runtime)
-        .then((composer) =>
-          publishComposerUpdate(composer, {
-            projectId: runtime.cwd,
-            sessionPath: runtime.session.sessionFile,
-          }),
-        )
-        .catch((error) => console.warn('Failed to publish extension command state', error))
-      if (!isRuntimeExtensionCommandRunning(runtime)) {
-        const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
-        if (runtimeKey) {
-          void reloadRuntimeSettingsIfSafe(runtimeKey).catch(() => {
-            // Keep stale settings marked; the next safe point retries silently.
-          })
-        }
-      }
-    },
-  })
-}
-
-function normalizeSettingsCwd(settingsCwd?: string | undefined | null | undefined) {
-  return settingsCwd ? path.resolve(settingsCwd) : null
-}
-
 function registerRuntime(
   runtimeKey: string,
   runtimePromise: Promise<PiRuntime>,
@@ -410,7 +85,7 @@ function registerRuntime(
   const record: RuntimeRecord = {
     runtimePromise,
     disposeTimeout: null,
-    settingsCwd: normalizeSettingsCwd(settingsCwd),
+    settingsCwd: normalizeRuntimeSettingsCwd(settingsCwd),
   }
   runtimeRecords.set(runtimeKey, record)
   return record
@@ -434,7 +109,7 @@ export async function getOrCreateRuntimeForSessionPath(
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   if (!persistedSessionPath)
     throw new Error('A persisted session path is required to open a live runtime.')
-  const settingsCwd = normalizeSettingsCwd(options.settingsCwd)
+  const settingsCwd = normalizeRuntimeSettingsCwd(options.settingsCwd)
   const existingRuntime = runtimeRecords.get(persistedSessionPath)
   if (existingRuntime) {
     if (existingRuntime.settingsCwd === settingsCwd) {
@@ -449,12 +124,15 @@ export async function getOrCreateRuntimeForSessionPath(
   const { SessionManager } = await getPiModule()
   const sessionManager = SessionManager.open(persistedSessionPath)
   let record: RuntimeRecord | null = null
-  const runtimePromise = createRuntime({
-    cwd: sessionManager.getCwd(),
-    settingsCwd,
-    chatGroupId: options.chatGroupId ?? null,
-    sessionManager,
-  }).catch((error) => {
+  const runtimePromise = createLiveRuntime(
+    {
+      cwd: sessionManager.getCwd(),
+      settingsCwd,
+      chatGroupId: options.chatGroupId ?? null,
+      sessionManager,
+    },
+    liveRuntimeFactoryHandlers,
+  ).catch((error) => {
     if (record && runtimeRecords.get(persistedSessionPath) === record)
       runtimeRecords.delete(persistedSessionPath)
     staleRuntimeGenerations.delete(persistedSessionPath)
@@ -469,12 +147,15 @@ export async function createRuntimeForNewSession(
   sessionDir?: string | undefined | null | undefined,
   options: { chatGroupId?: string | undefined | null | undefined } = {},
 ) {
-  const runtime = await createRuntime({
-    cwd,
-    sessionDir,
-    settingsCwd: sessionDir ?? null,
-    chatGroupId: options.chatGroupId ?? null,
-  })
+  const runtime = await createLiveRuntime(
+    {
+      cwd,
+      sessionDir,
+      settingsCwd: sessionDir ?? null,
+      chatGroupId: options.chatGroupId ?? null,
+    },
+    liveRuntimeFactoryHandlers,
+  )
   const runtimeKey = getPersistedSessionPath(runtime.session.sessionFile)
   if (runtimeKey) {
     registerRuntime(runtimeKey, Promise.resolve(runtime), sessionDir ?? null)

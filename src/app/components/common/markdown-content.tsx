@@ -11,6 +11,7 @@ import {
 } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { openExternalQuery } from '../../query/desktop-query'
 import { inlineCodeClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
@@ -59,7 +60,7 @@ function MarkdownLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
 
         if (href.startsWith('http://') || href.startsWith('https://')) {
           event.preventDefault()
-          void window.piDesktop?.openExternal?.(href)
+          void openExternalQuery(href)
         }
       }}
       target={href?.startsWith('http') ? '_blank' : undefined}

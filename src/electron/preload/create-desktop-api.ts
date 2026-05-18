@@ -39,14 +39,17 @@ function subscribeToEvent<K extends DesktopEventChannel>(
   }
 }
 
-export function createDesktopApi() {
+function createAppUpdateApi() {
   return {
-    platform: process.platform,
     getAppUpdateState: () => invokeRequest('getAppUpdateState', {}),
     checkAppUpdate: () => invokeRequest('checkAppUpdate', {}),
     installAppUpdate: () => invokeRequest('installAppUpdate', {}),
     restartAppUpdate: () => invokeRequest('restartAppUpdate', {}),
-    clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
+  }
+}
+
+function createProjectApi() {
+  return {
     getShellState: () => invokeRequest('getShellState', {}),
     getProjectGitState: (projectId: string) => invokeRequest('getProjectGitState', { projectId }),
     getProjectUsageSummary: (projectId: string) =>
@@ -59,6 +62,16 @@ export function createDesktopApi() {
       invokeRequest('captureProjectDiffBaseline', { projectId }),
     listProjectCommits: (projectId: string, limit: number | null = null) =>
       invokeRequest('listProjectCommits', { projectId, limit }),
+    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
+      invokeRequest(
+        'getProjectThreads',
+        request.chat === undefined ? { projectId } : { projectId, chat: request.chat },
+      ),
+  }
+}
+
+function createPackageAndSkillApi() {
+  return {
     searchPiPackages: (request = {}) => invokeRequest('searchPiPackages', request),
     getConfiguredPiPackages: (request = {}) => invokeRequest('getConfiguredPiPackages', request),
     installPiPackage: (request: {
@@ -87,6 +100,11 @@ export function createDesktopApi() {
       projectPath?: string | null
       chat?: boolean
     }) => invokeRequest('removePiSkill', request),
+  }
+}
+
+function createSkillCreatorApi() {
+  return {
     startSkillCreatorSession: (request: {
       prompt: string
       local?: boolean
@@ -97,6 +115,12 @@ export function createDesktopApi() {
       invokeRequest('continueSkillCreatorSession', request),
     closeSkillCreatorSession: (sessionId: string) =>
       invokeRequest('closeSkillCreatorSession', { sessionId }),
+  }
+}
+
+function createComposerAndClipboardApi() {
+  return {
+    clearClipboardImages: () => invokeRequest('clearClipboardImages', {}),
     pickComposerAttachments: (projectId: string | null = null) =>
       invokeRequest('pickComposerAttachments', { projectId }),
     listProjectDirectoryEntries: (request = {}) =>
@@ -121,6 +145,11 @@ export function createDesktopApi() {
     getComposerState: (request = {}) => invokeRequest('getComposerState', request),
     getComposerSlashCommands: (request = {}) => invokeRequest('getComposerSlashCommands', request),
     getComposerSkills: (request = {}) => invokeRequest('getComposerSkills', request),
+  }
+}
+
+function createDictationApi() {
+  return {
     getDictationState: () => invokeRequest('getDictationState', {}),
     listDictationModels: () => invokeRequest('listDictationModels', {}),
     installDictationModel: (modelId: 'tiny.en' | 'base.en' | 'small.en') =>
@@ -132,11 +161,11 @@ export function createDesktopApi() {
       sampleRate: number
       language?: string | null
     }) => invokeRequest('transcribeDictation', request),
-    getProjectThreads: (projectId: string, request: { chat?: boolean } = {}) =>
-      invokeRequest(
-        'getProjectThreads',
-        request.chat === undefined ? { projectId } : { projectId, chat: request.chat },
-      ),
+  }
+}
+
+function createArtifactAndThreadApi() {
+  return {
     getChatSidebarState: (selectedGroupId: string | null = null) =>
       invokeRequest('getChatSidebarState', { selectedGroupId }),
     createChatGroup: (name: string) => invokeRequest('createChatGroup', { name }),
@@ -163,6 +192,11 @@ export function createDesktopApi() {
     watchSession: async (sessionPath: string | null) => {
       await invokeRequest('watchSession', { sessionPath })
     },
+  }
+}
+
+function createTerminalAndSystemApi() {
+  return {
     invokeAction: (action: DesktopAction, payload: AnyDesktopActionPayload = {}) =>
       invokeRequest('invokeAction', { action, payload }),
     listTerminals: () => invokeRequest('listTerminals', {}),
@@ -187,5 +221,19 @@ export function createDesktopApi() {
       subscribeToEvent('desktopEvent', listener),
     subscribeTerminal: (listener: (event: TerminalEvent) => void) =>
       subscribeToEvent('terminalEvent', listener),
+  }
+}
+
+export function createDesktopApi() {
+  return {
+    platform: process.platform,
+    ...createAppUpdateApi(),
+    ...createProjectApi(),
+    ...createPackageAndSkillApi(),
+    ...createSkillCreatorApi(),
+    ...createComposerAndClipboardApi(),
+    ...createDictationApi(),
+    ...createArtifactAndThreadApi(),
+    ...createTerminalAndSystemApi(),
   }
 }

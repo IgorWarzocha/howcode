@@ -1,6 +1,6 @@
 import { getLocalDraftProjectId, getPersistedSessionPath } from '../../../shared/session-paths'
 import type { DesktopEvent } from '../desktop/types'
-import { desktopQueryKeys } from '../query/desktop-query'
+import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
 import type { WorkspaceState } from '../state/workspace'
 
 type QueryClientLike = {
@@ -77,7 +77,7 @@ export async function refreshVisibleInboxThread({
   loadProjectThreads: (projectId: string) => Promise<unknown>
   queryClient: QueryClientLike
 }) {
-  await window.piDesktop?.invokeAction('inbox.mark-read', {
+  await invokeDesktopActionQuery('inbox.mark-read', {
     sessionPath: event.sessionPath,
     projectId: event.projectId,
   })

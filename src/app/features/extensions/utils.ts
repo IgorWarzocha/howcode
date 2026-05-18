@@ -1,5 +1,6 @@
 import { getSafeExternalUrl, pickSafeExternalUrl } from '../../../../shared/external-url'
 import type { PiConfiguredPackage } from '../../desktop/types'
+import { canSearchPiPackagesQuery, openExternalQuery } from '../../query/desktop-query'
 import { getActionError } from '../../utils/action-error'
 
 const compactNumberFormatter = new Intl.NumberFormat('en', {
@@ -14,7 +15,7 @@ export function formatDownloads(downloads: number) {
 }
 
 export function isDesktopPackagesAvailable() {
-  return typeof window !== 'undefined' && Boolean(window.piDesktop?.searchPiPackages)
+  return canSearchPiPackagesQuery()
 }
 
 export async function openExternalUrl(url: string) {
@@ -23,10 +24,7 @@ export async function openExternalUrl(url: string) {
     return false
   }
 
-  if (window.piDesktop?.openExternal) {
-    await window.piDesktop.openExternal(safeUrl)
-    return true
-  }
+  if (await openExternalQuery(safeUrl)) return true
 
   window.open(safeUrl, '_blank', 'noopener,noreferrer')
   return true

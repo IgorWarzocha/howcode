@@ -2,136 +2,38 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { getPersistedSessionPath } from '../../shared/session-paths.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
-import {
-  createArtifact,
-  editArtifact,
-  getArtifact,
-  listArtifacts,
-  updateArtifact,
-} from '../artifact-state-db.ts'
-import { getSessionNativeExtensions, setSessionNativeExtensions } from '../thread-state-db.ts'
 import {
   getBundledSkillsPath,
   getElectronResourcesPath,
   getNodeExecutable,
   getRuntimeHostPath,
 } from './client-environment.ts'
+import {
+  clearHostIdleTimer,
+  createHostConnection,
+  desktopListeners,
+  forgetHost,
+  type HostConnection,
+  hostByAlias,
+  hosts,
+  isHostRunningOrStarting,
+  isRuntimeHostsShuttingDown,
+  markRuntimeHostsShuttingDown,
+  registerHostShutdownHandlers,
+  rejectPendingRequests,
+  rememberHostAlias,
+  scheduleThreadHostIdleStop,
+  serviceHost,
+  terminateHostProcess,
+} from './host-connections.ts'
+import { handleRuntimeHostMainRequest } from './main-request-handlers.ts'
 import type {
-  RuntimeHostMainRequestMessage,
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
   RuntimeHostResponseMap,
   RuntimeHostToMainMessage,
 } from './protocol.ts'
-
-type PendingRequest = {
-  name: RuntimeHostRequestName
-  resolve: (value: RuntimeHostResponseMap[RuntimeHostRequestName]) => void
-  reject: (error: Error) => void
-}
-
-type HostRole = 'service' | 'thread'
-
-type HostConnection = {
-  id: string
-  role: HostRole
-  label: string
-  aliases: Set<string>
-  pendingRequests: Map<string, PendingRequest>
-  process: ChildProcess | null
-  startPromise: Promise<ChildProcess> | null
-  idleTimer: ReturnType<typeof setTimeout> | null
-  busy: boolean
-}
-
-type RuntimeHostBrokerState = {
-  desktopListeners: Set<(event: DesktopEvent) => void>
-  hostByAlias: Map<string, HostConnection>
-  hosts: Set<HostConnection>
-  serviceHost: HostConnection | null
-}
-
-const brokerStateKey = Symbol.for('howcode.runtimeHostBrokerState')
-const runtimeHostGlobal = globalThis as typeof globalThis & {
-  [brokerStateKey]?: RuntimeHostBrokerState
-}
-
-if (!runtimeHostGlobal[brokerStateKey]) {
-  runtimeHostGlobal[brokerStateKey] = {
-    desktopListeners: new Set<(event: DesktopEvent) => void>(),
-    hostByAlias: new Map<string, HostConnection>(),
-    hosts: new Set<HostConnection>(),
-    serviceHost: null,
-  }
-}
-
-const brokerState = runtimeHostGlobal[brokerStateKey]
-
-const desktopListeners = brokerState.desktopListeners
-const hostByAlias = brokerState.hostByAlias
-const hosts = brokerState.hosts
-
-const THREAD_HOST_IDLE_MS = 5 * 60 * 1000
-
-let registeredHostShutdownHandlers = false
-let runtimeHostsShuttingDown = false
-
-function terminateHostProcess(child: ChildProcess | null | undefined) {
-  if (!child || child.killed || child.exitCode !== null) return
-
-  if (process.platform === 'win32' && child.pid) {
-    const taskkill = spawn('taskkill.exe', ['/pid', String(child.pid), '/t', '/f'], {
-      stdio: 'ignore',
-      windowsHide: true,
-    })
-    taskkill.unref()
-    return
-  }
-
-  child.kill('SIGTERM')
-}
-
-function killAllRuntimeHosts() {
-  for (const host of hosts) {
-    terminateHostProcess(host.process)
-  }
-}
-
-function registerHostShutdownHandlers() {
-  if (registeredHostShutdownHandlers) return
-  registeredHostShutdownHandlers = true
-  process.once('exit', killAllRuntimeHosts)
-  process.once('SIGTERM', () => {
-    killAllRuntimeHosts()
-    process.exit(0)
-  })
-  process.once('SIGINT', () => {
-    killAllRuntimeHosts()
-    process.exit(0)
-  })
-}
-
-const serviceHost: HostConnection =
-  brokerState.serviceHost ?? createHostConnection('service', 'service')
-brokerState.serviceHost = serviceHost
-
-function createHostConnection(role: HostRole, label: string): HostConnection {
-  const host: HostConnection = {
-    id: randomUUID(),
-    role,
-    label,
-    aliases: new Set(),
-    pendingRequests: new Map(),
-    process: null,
-    startPromise: null,
-    idleTimer: null,
-    busy: false,
-  }
-  hosts.add(host)
-  return host
-}
+import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
 
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
@@ -139,16 +41,8 @@ function emitDesktopEvent(event: DesktopEvent) {
   }
 }
 
-function rejectPendingRequests(host: HostConnection, error: Error) {
-  host.busy = false
-  for (const [, pending] of host.pendingRequests) {
-    pending.reject(error)
-  }
-  host.pendingRequests.clear()
-}
-
 export function shutdownRuntimeHosts() {
-  runtimeHostsShuttingDown = true
+  markRuntimeHostsShuttingDown()
 
   for (const host of hosts) {
     if (host.idleTimer) {
@@ -166,53 +60,12 @@ export function shutdownRuntimeHosts() {
   hosts.add(serviceHost)
 }
 
-function rememberHostAlias(host: HostConnection, alias: string | null | undefined) {
-  const normalized = alias?.trim()
-  if (!normalized) return
-  host.aliases.add(normalized)
-  hostByAlias.set(normalized, host)
-}
-
-function forgetHost(host: HostConnection) {
-  for (const alias of host.aliases) {
-    if (hostByAlias.get(alias) === host) {
-      hostByAlias.delete(alias)
-    }
-  }
-  host.aliases.clear()
-  if (host !== serviceHost) {
-    hosts.delete(host)
-  }
-}
-
-function scheduleThreadHostIdleStop(host: HostConnection) {
-  if (host.role !== 'thread' || host.pendingRequests.size > 0 || host.busy) return
-  if (host.idleTimer) clearTimeout(host.idleTimer)
-  host.idleTimer = setTimeout(() => {
-    if (host.pendingRequests.size > 0) return
-    terminateHostProcess(host.process)
-    forgetHost(host)
-  }, THREAD_HOST_IDLE_MS)
-}
-
-function clearHostIdleTimer(host: HostConnection) {
-  if (!host.idleTimer) return
-  clearTimeout(host.idleTimer)
-  host.idleTimer = null
-}
-
-function isHostRunningOrStarting(host: HostConnection) {
-  return Boolean(
-    host.startPromise || (host.process && !host.process.killed && host.process.exitCode === null),
-  )
-}
-
 function handleHostDesktopEventMessage(
   host: HostConnection,
   message: Extract<RuntimeHostToMainMessage, { type: 'desktop-event' }>,
 ) {
   if (message.event.type === 'thread-update') {
-    rememberHostAlias(host, message.event.sessionPath)
+    if (host.role === 'thread') rememberHostAlias(host, message.event.sessionPath)
     host.busy = message.event.thread.isStreaming || message.event.thread.isCompacting
     if (host.busy) clearHostIdleTimer(host)
     else scheduleThreadHostIdleStop(host)
@@ -268,56 +121,12 @@ function handleHostMessage(host: HostConnection, message: RuntimeHostToMainMessa
   }
   if (message.type === 'response') handleHostResponseMessage(host, message)
 }
-async function handleHostMainRequest(host: HostConnection, message: RuntimeHostMainRequestMessage) {
+async function handleHostMainRequest(
+  host: HostConnection,
+  message: Extract<RuntimeHostToMainMessage, { type: 'main-request' }>,
+) {
   try {
-    let result: unknown
-    switch (message.name) {
-      case 'getSessionNativeExtensions': {
-        const payload = message.payload as { sessionPath: string }
-        result = getSessionNativeExtensions(payload.sessionPath)
-        break
-      }
-      case 'setSessionNativeExtensions': {
-        const payload = message.payload as { sessionPath: string; enabled: string[] }
-        setSessionNativeExtensions(payload.sessionPath, payload.enabled)
-        result = { ok: true }
-        break
-      }
-      case 'snapshotDefaultNativeExtensions': {
-        result = loadAppSettings().howcodeNativeAskQuestions ? ['askQuestions'] : []
-        break
-      }
-      case 'createArtifact': {
-        const payload = message.payload as Parameters<typeof createArtifact>[0]
-        result = createArtifact(payload)
-        break
-      }
-      case 'updateArtifact': {
-        const payload = message.payload as Parameters<typeof updateArtifact>[0]
-        result = updateArtifact(payload)
-        break
-      }
-      case 'editArtifact': {
-        const payload = message.payload as Parameters<typeof editArtifact>[0]
-        result = editArtifact(payload)
-        break
-      }
-      case 'getArtifact': {
-        const payload = message.payload as {
-          artifactSlug: string
-          conversationId?: string | undefined | null | undefined
-        }
-        result = getArtifact(payload.artifactSlug, payload.conversationId)
-        break
-      }
-      case 'listArtifacts': {
-        const payload = message.payload as { conversationId: string }
-        result = listArtifacts(payload.conversationId)
-        break
-      }
-      default:
-        throw new Error(`Unknown runtime host main request: ${message.name}`)
-    }
+    const result = handleRuntimeHostMainRequest(message)
     host.process?.send?.({ type: 'main-response', id: message.id, ok: true, result })
   } catch (error) {
     host.process?.send?.({
@@ -338,6 +147,7 @@ function handleHostExit(
 ) {
   if (host.process === child) host.process = null
   host.startPromise = null
+  host.terminating = false
   rejectPendingRequests(
     host,
     new Error(
@@ -348,11 +158,15 @@ function handleHostExit(
 }
 
 async function ensureRuntimeHost(host: HostConnection) {
-  if (runtimeHostsShuttingDown) {
+  if (isRuntimeHostsShuttingDown()) {
     throw new Error('Pi runtime host is shutting down.')
   }
 
   registerHostShutdownHandlers()
+  if (host.terminating) {
+    throw new Error(`Pi runtime host ${host.label} is stopping.`)
+  }
+
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host)
     return host.process
@@ -365,7 +179,7 @@ async function ensureRuntimeHost(host: HostConnection) {
   clearHostIdleTimer(host)
   host.startPromise = (async () => {
     const nodeExecutable = await getNodeExecutable()
-    if (runtimeHostsShuttingDown) {
+    if (isRuntimeHostsShuttingDown()) {
       throw new Error('Pi runtime host is shutting down.')
     }
 
@@ -389,6 +203,7 @@ async function ensureRuntimeHost(host: HostConnection) {
         settled = true
         host.startPromise = null
         host.process = null
+        host.terminating = false
         if (host.role === 'thread') {
           forgetHost(host)
         }
@@ -396,7 +211,7 @@ async function ensureRuntimeHost(host: HostConnection) {
       }
 
       child.once('spawn', () => {
-        if (runtimeHostsShuttingDown) {
+        if (isRuntimeHostsShuttingDown()) {
           terminateHostProcess(child)
           settleFailure(new Error('Pi runtime host is shutting down.'))
           return
@@ -426,41 +241,17 @@ async function ensureRuntimeHost(host: HostConnection) {
   return host.startPromise
 }
 
-function getRequestSessionPath<TName extends RuntimeHostRequestName>(
-  name: TName,
-  payload: RuntimeHostRequestMap[TName],
-) {
-  if (name === 'startNewThread' || name === 'selectProjectRuntime') return null
-  if ('request' in payload) return payload.request.sessionPath ?? null
-  if ('sessionPath' in payload) return payload.sessionPath ?? null
-  return null
-}
-
-function shouldUseThreadHost<TName extends RuntimeHostRequestName>(
-  name: TName,
-  payload: RuntimeHostRequestMap[TName],
-) {
-  if (name === 'startNewThread' || name === 'selectProjectRuntime') return false
-  if (name === 'loadThreadSnapshot') return false
-  if (
-    (name === 'getComposerSlashCommands' || name === 'getComposerSkills') &&
-    !getRequestSessionPath(name, payload)
-  )
-    return false
-  return Boolean(getPersistedSessionPath(getRequestSessionPath(name, payload)))
-}
-
 function getHostForRequest<TName extends RuntimeHostRequestName>(
   name: TName,
   payload: RuntimeHostRequestMap[TName],
 ) {
-  const sessionPath = getPersistedSessionPath(getRequestSessionPath(name, payload))
-  if (!shouldUseThreadHost(name, payload)) {
+  const sessionPath = getRuntimeHostRequestSessionPath(name, payload)
+  if (!shouldUseThreadRuntimeHost(name, payload)) {
     return serviceHost
   }
 
   const existingHost = sessionPath ? hostByAlias.get(sessionPath) : null
-  if (existingHost) {
+  if (existingHost?.role === 'thread' && !existingHost.terminating) {
     return existingHost
   }
 

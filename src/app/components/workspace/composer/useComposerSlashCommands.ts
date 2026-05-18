@@ -8,51 +8,20 @@ import type { ComposerSlashCommand } from '../../../desktop/types'
 import { getComposerSlashCommandsQuery } from '../../../query/desktop-query'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 
-const slashCommandSourceOrder: Record<ComposerSlashCommand['source'], number> = {
-  prompt: 0,
-  app: 1,
-  builtin: 1,
-  skill: 2,
-  extension: 3,
-}
+import { handleOpenSlashCommandKey } from './composer-slash-command-keydown'
+import { getOpenSelectedCommand, tryResolveSlashDraft } from './composer-slash-command-resolution'
+import {
+  composerSlashCommandListboxId,
+  filterComposerSlashCommands,
+  getComposerSlashCommandOptionId,
+  getSlashCommandFilter,
+  whitespaceRunPattern,
+} from './composer-slash-command-utils'
 
-const slashCommandSourceLabels: Record<ComposerSlashCommand['source'], string> = {
-  app: 'System',
-  builtin: 'System',
-  extension: 'Extensions',
-  prompt: 'Prompts',
-  skill: 'Skills',
-}
-const whitespaceCharacterPattern = /\s/
-const whitespaceRunPattern = /\s+/
-
-export function getComposerSlashCommandGroupLabel(command: ComposerSlashCommand) {
-  return slashCommandSourceLabels[command.source]
-}
-
-export const composerSlashCommandListboxId = 'composer-slash-command-listbox'
-
-export function getComposerSlashCommandOptionId(index: number) {
-  return `composer-slash-command-${index}`
-}
-
-function getSlashCommandFilter(draft: string) {
-  if (!draft.startsWith('/')) {
-    return null
-  }
-
-  const query = draft.slice(1)
-  if (whitespaceCharacterPattern.test(query)) {
-    return null
-  }
-
-  return query.toLowerCase()
-}
-
-function shouldWaitForSlashCommands(draft: string) {
-  const trimmedDraft = draft.trim()
-  return trimmedDraft.startsWith('/') && !trimmedDraft.includes(' ') && trimmedDraft !== '/settings'
-}
+export {
+  getComposerSlashCommandGroupLabel,
+  getComposerSlashCommandOptionId,
+} from './composer-slash-command-utils'
 
 type UseComposerSlashCommandsOptions = {
   draft: string
@@ -67,125 +36,6 @@ type UseComposerSlashCommandsOptions = {
 }
 
 export type ComposerSlashCommands = ReturnType<typeof useComposerSlashCommands>
-
-function resolveSlashCommandAfterLoad(input: {
-  commandScopeKey: string
-  commandScopeKeyRef: { current: string }
-  composerMode: 'chat' | 'code'
-  draft: string
-  draftRef: { current: string }
-  projectId: string
-  send: () => void
-  sendExtensionCommand: (() => void) | undefined
-  sessionPath: string | null
-}) {
-  void getComposerSlashCommandsQuery({
-    projectId: input.projectId,
-    sessionPath: input.sessionPath,
-    composerMode: input.composerMode,
-  })
-    .then((nextCommands) => {
-      if (
-        input.draftRef.current !== input.draft ||
-        input.commandScopeKeyRef.current !== input.commandScopeKey
-      )
-        return
-      const commandName = input.draft.trim().slice(1).split(whitespaceRunPattern, 1)[0]
-      const resolvedCommand = nextCommands.find((command) => command.name === commandName)
-      if (resolvedCommand?.source === 'extension') input.sendExtensionCommand?.()
-      else if (resolvedCommand) input.send()
-    })
-    .catch(() => {
-      // Keep slash text in the editor rather than leaking an unresolved command to the model.
-    })
-}
-
-function tryResolveSlashDraft(input: {
-  commandScopeKey: string
-  commandScopeKeyRef: { current: string }
-  commands: ComposerSlashCommand[]
-  composerMode: 'chat' | 'code'
-  dismiss: () => void
-  draft: string
-  draftCommand: ComposerSlashCommand | null
-  draftRef: { current: string }
-  loading: boolean
-  projectId: string
-  send: () => void
-  sendExtensionCommand: (() => void) | undefined
-  sessionPath: string | null
-}) {
-  if (!input.draft.trim().startsWith('/')) return false
-  input.dismiss()
-  if (input.draftCommand?.source === 'extension' && input.sendExtensionCommand) {
-    input.sendExtensionCommand()
-    return true
-  }
-  if (
-    input.draftCommand ||
-    !input.sendExtensionCommand ||
-    !(input.loading || input.commands.length === 0)
-  )
-    return false
-  resolveSlashCommandAfterLoad(input)
-  return true
-}
-
-function getOpenSelectedCommand(input: {
-  filteredCommands: ComposerSlashCommand[]
-  loading: boolean
-  open: boolean
-  selectedIndex: number
-  draft: string
-}) {
-  if (!input.open) return undefined
-  const selectedCommand = input.filteredCommands[input.selectedIndex]
-  if (selectedCommand) return selectedCommand
-  return input.loading && shouldWaitForSlashCommands(input.draft) ? null : undefined
-}
-
-function handleOpenSlashCommandKey(input: {
-  completeCommand: (command: ComposerSlashCommand) => void
-  draft: string
-  event: KeyboardEvent<HTMLTextAreaElement>
-  filteredCommands: ComposerSlashCommand[]
-  loading: boolean
-  selectedIndex: number
-  selectCommand: (command: ComposerSlashCommand) => void
-  setSelectedIndex: (updater: (current: number) => number) => void
-  submit: () => void
-}) {
-  if (input.event.key === 'Escape') return false
-  if (input.event.key === 'ArrowDown') {
-    input.event.preventDefault()
-    input.setSelectedIndex((current) =>
-      Math.min(current + 1, Math.max(0, input.filteredCommands.length - 1)),
-    )
-    return true
-  }
-  if (input.event.key === 'ArrowUp') {
-    input.event.preventDefault()
-    input.setSelectedIndex((current) => Math.max(0, current - 1))
-    return true
-  }
-  const selectedCommand = input.filteredCommands[input.selectedIndex]
-  if (input.event.key === 'Tab' && !input.event.shiftKey && selectedCommand) {
-    input.event.preventDefault()
-    input.completeCommand(selectedCommand)
-    return true
-  }
-  if (input.event.key === 'Enter' && !input.event.shiftKey && selectedCommand) {
-    input.event.preventDefault()
-    input.selectCommand(selectedCommand)
-    return true
-  }
-  if (input.event.key !== 'Enter' || input.event.shiftKey) return false
-  if (input.draft !== '/settings' && !(input.loading && shouldWaitForSlashCommands(input.draft)))
-    return false
-  input.event.preventDefault()
-  if (input.draft === '/settings' || input.draft === '/new') input.submit()
-  return true
-}
 
 export function useComposerSlashCommands({
   draft,
@@ -210,23 +60,10 @@ export function useComposerSlashCommands({
   const commandScopeKeyRef = useRef(commandScopeKey)
   draftRef.current = draft
   commandScopeKeyRef.current = commandScopeKey
-  const filteredCommands = useMemo(() => {
-    if (filter === null) {
-      return []
-    }
-
-    return commands
-      .filter((command) => command.name.toLowerCase().includes(filter))
-      .sort((left, right) => {
-        const sourceOrder =
-          slashCommandSourceOrder[left.source] - slashCommandSourceOrder[right.source]
-        if (sourceOrder !== 0) {
-          return sourceOrder
-        }
-
-        return left.name.localeCompare(right.name)
-      })
-  }, [commands, filter])
+  const filteredCommands = useMemo(
+    () => filterComposerSlashCommands(commands, filter),
+    [commands, filter],
+  )
 
   const isExactCommandDraft = (command: ComposerSlashCommand) =>
     draft.trim() === `/${command.name}` && !draft.endsWith(' ')
