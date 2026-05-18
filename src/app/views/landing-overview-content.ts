@@ -7,7 +7,7 @@ type LandingOverviewSection = {
   markdown: string
 }
 
-type LandingOverviewContent = {
+export type LandingOverviewContent = {
   title: string
   sections: readonly LandingOverviewSection[]
 }
