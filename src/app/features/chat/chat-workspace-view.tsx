@@ -1,22 +1,13 @@
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
-import { lazy, Suspense, useRef, useState } from 'react'
+import { lazy, type RefObject, Suspense, useRef, useState } from 'react'
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '../../../../shared/session-paths'
 import type { AppShellController } from '../../app-shell/useAppShellController'
-import { Composer } from '../../components/workspace/composer'
-import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
-import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
-import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../../desktop/types'
-import type { Message } from '../../types'
+import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../../desktop/types'
 import { cn } from '../../utils/cn'
-import { DesktopComposerStatusModelPicker } from '../code/desktop-composer-status'
 import { useQueuedPromptRestore } from '../code/useQueuedPromptRestore'
 import { useWorkspaceFooterHeight } from '../code/useWorkspaceFooterHeight'
 import { ChatView } from './chat-view'
-import {
-  type ChatArtifactDrawerState,
-  useChatArtifactDrawerState,
-} from './useChatArtifactDrawerState'
+import { ChatComposerDock, type ChatWorkspaceComposerProps } from './chat-workspace-composer'
+import { useChatArtifactDrawerState } from './useChatArtifactDrawerState'
 
 const ArtifactPanel = lazy(() =>
   import('./artifacts/artifact-panel').then((module) => ({ default: module.ArtifactPanel })),
@@ -42,100 +33,27 @@ type ChatWorkspaceViewProps = {
 }
 
 const NEW_CHAT_COMPOSER_TOP = '60%'
-const FALLBACK_APP_SETTINGS = {
-  chatModel: null,
-  chatThinkingLevel: null,
-  codeModel: null,
-  codeThinkingLevel: null,
-  gitCommitMessageModel: null,
-  gitCommitMessageThinkingLevel: 'off',
-  skillCreatorModel: null,
-  skillCreatorThinkingLevel: 'off',
-  composerStreamingBehavior: 'followUp',
-  dictationModelId: null,
-  dictationMaxDurationSeconds: 180,
-  showDictationButton: true,
-  favoriteFolders: [],
-  projectImportState: null,
-  preferredProjectLocation: null,
-  initializeGitOnProjectCreate: false,
-  gitOpsDefaultMode: 'commit',
-  gitDiffBaselineDefault: { kind: 'head' },
-  gitDiffRenderModeDefault: 'stacked',
-  gitDiffFileTreeDefaultVisible: true,
-  projectDeletionMode: 'pi-only',
-  useAgentsSkillsPaths: false,
-  howcodeNativeAskQuestions: false,
-  devUpdateBranch: false,
-  piTuiTakeover: false,
-  hoverToFocus: true,
-  hoverToBlur: false,
-  keybindings: {},
-  composerSendMode: 'enter',
-} satisfies AppSettings
-
 type ChatWorkspaceContentProps = ChatWorkspaceViewProps &
-  ReturnType<typeof useQueuedPromptRestore> & {
+  ChatWorkspaceComposerProps & {
     rootRef: RefObject<HTMLDivElement | null>
-    footerRef: RefObject<HTMLElement | null>
-    mainViewRef: RefObject<HTMLElement | null>
-    artifactDrawer: ChatArtifactDrawerState
-    hasConversation: boolean
-    hasConversationLayout: boolean
-    shouldShowConversationContent: boolean
     footerHeight: number
+    shouldShowConversationContent: boolean
     composerLayoutVersion: number
-    setComposerLayoutVersion: Dispatch<SetStateAction<number>>
     composerOverlayHeight: number
-    setComposerOverlayHeight: Dispatch<SetStateAction<number>>
-    composerPromptResetKey: number
-    conversationId: string | null | undefined
-    hasPersistedChatSession: boolean
-    draftChatGroupId: string | null
-    handleAction: AppShellController['handleAction']
     handleLoadEarlierMessages: AppShellController['handleLoadEarlierMessages']
-    handleShowTakeoverTerminal: AppShellController['handleShowTakeoverTerminal']
-    handleToggleTerminal: AppShellController['handleToggleTerminal']
-    listComposerAttachmentEntries: AppShellController['listComposerAttachmentEntries']
-    shellState: AppShellController['shellState']
-    state: AppShellController['state']
+    conversationId: string | null | undefined
   }
 
-function getReplyActivityKey(messages: readonly Message[]) {
-  const replyMessageIds: string[] = []
-  for (const message of messages) {
-    if (message.role !== 'user') replyMessageIds.push(message.id)
-  }
-  return replyMessageIds.join('|')
-}
-
-function SidebarToggleButton(props: ChatWorkspaceContentProps) {
-  const { sidebarCollapsed, onToggleSidebar } = props
-  return (
-    <button
-      type="button"
-      className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted)] opacity-70 transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] hover:opacity-100"
-      onClick={onToggleSidebar}
-      aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-      data-tooltip-placement="right"
-    >
-      {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-    </button>
-  )
-}
-
-function ChatWorkspaceMain(props: ChatWorkspaceContentProps) {
-  const {
-    mainViewRef,
-    activeThreadData,
-    shouldShowConversationContent,
-    composerLayoutVersion,
-    composerOverlayHeight,
-    controller,
-    hasConversation,
-    handleLoadEarlierMessages,
-  } = props
+function ChatWorkspaceMain({
+  mainViewRef,
+  activeThreadData,
+  shouldShowConversationContent,
+  composerLayoutVersion,
+  composerOverlayHeight,
+  controller,
+  hasConversation,
+  handleLoadEarlierMessages,
+}: ChatWorkspaceContentProps) {
   return (
     <main ref={mainViewRef} className="h-full min-h-0 overflow-hidden pt-1.5">
       <ChatView
@@ -154,180 +72,6 @@ function ChatWorkspaceMain(props: ChatWorkspaceContentProps) {
         onLoadAroundMessage={handleLoadEarlierMessages}
       />
     </main>
-  )
-}
-
-function getChatGroupId(props: ChatWorkspaceContentProps) {
-  const { hasPersistedChatSession, draftChatGroupId, controller } = props
-  if (hasPersistedChatSession) return null
-  return draftChatGroupId ?? controller.selectedChatGroupId
-}
-
-function getToggleArtifacts(props: ChatWorkspaceContentProps) {
-  const { hasConversationLayout, artifactDrawer } = props
-  if (!hasConversationLayout) return undefined
-  return artifactDrawer.toggleArtifacts
-}
-
-function ChatQueuedPrompts(props: ChatWorkspaceContentProps) {
-  const {
-    activeComposerState,
-    pendingQueuedPromptIdsForSession,
-    handleEditQueuedPrompt,
-    handleRemoveQueuedPrompt,
-  } = props
-  return (
-    <QueuedPromptsCard
-      prompts={activeComposerState?.queuedPrompts ?? []}
-      pendingPromptIds={pendingQueuedPromptIdsForSession}
-      onEditPrompt={(prompt) => {
-        void handleEditQueuedPrompt(prompt)
-      }}
-      onRemovePrompt={(prompt) => {
-        void handleRemoveQueuedPrompt(prompt)
-      }}
-    />
-  )
-}
-
-function ChatComposer(props: ChatWorkspaceContentProps) {
-  const {
-    activeComposerState,
-    state,
-    activeThreadData,
-    scopedRestoredQueuedPrompt,
-    shellState,
-    composerProjectId,
-    diffBaseline,
-    terminalSessionPath,
-    diffRenderMode,
-    onSetDiffBaseline,
-    onSetDiffRenderMode,
-    composerPromptResetKey,
-    setComposerLayoutVersion,
-    setComposerOverlayHeight,
-    mainViewRef,
-    footerRef,
-    handleShowTakeoverTerminal,
-    markRestoredQueuedPromptApplied,
-    handleToggleTerminal,
-    hasConversationLayout,
-    hasConversation,
-    artifactDrawer,
-    listComposerAttachmentEntries,
-    handleAction,
-    controller,
-  } = props
-  const appSettings = shellState?.appSettings ?? FALLBACK_APP_SETTINGS
-  return (
-    <Composer
-      activeView={state.activeView}
-      model={activeComposerState?.currentModel ?? null}
-      contextUsage={activeComposerState?.contextUsage ?? null}
-      messages={activeThreadData?.messages}
-      availableModels={activeComposerState?.availableModels ?? []}
-      isStreaming={activeThreadData?.isStreaming ?? false}
-      replyActivityKey={getReplyActivityKey(activeThreadData?.messages ?? [])}
-      isCompacting={activeComposerState?.isCompacting ?? false}
-      isExtensionCommandRunning={activeComposerState?.isExtensionCommandRunning ?? false}
-      nativeAskQuestionsRequest={activeComposerState?.nativeAskQuestionsRequest ?? null}
-      thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
-      restoredQueuedPrompt={scopedRestoredQueuedPrompt}
-      streamingBehaviorPreference={appSettings.composerStreamingBehavior}
-      availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-      projectId={composerProjectId}
-      chatGroupId={getChatGroupId(props)}
-      projectGitState={null}
-      diffBaseline={diffBaseline}
-      sessionPath={terminalSessionPath}
-      dictationModelId={appSettings.dictationModelId}
-      dictationMaxDurationSeconds={appSettings.dictationMaxDurationSeconds}
-      favoriteFolders={appSettings.favoriteFolders}
-      showDictationButton={appSettings.showDictationButton}
-      hoverToFocus={appSettings.hoverToFocus}
-      hoverToBlur={appSettings.hoverToBlur}
-      composerSendMode={appSettings.composerSendMode}
-      keybindings={appSettings.keybindings}
-      diffRenderMode={diffRenderMode}
-      diffComments={[]}
-      diffCommentCount={0}
-      diffCommentsSending={false}
-      diffCommentError={null}
-      onSetDiffBaseline={onSetDiffBaseline}
-      onSetDiffRenderMode={onSetDiffRenderMode}
-      onSendDiffComments={() => {
-        /* Diff comments are disabled in chat workspace mode. */
-      }}
-      onSelectDiffComment={() => {
-        /* Diff comments are disabled in chat workspace mode. */
-      }}
-      promptResetKey={composerPromptResetKey}
-      onLayoutChange={() => setComposerLayoutVersion((current: number) => current + 1)}
-      onOverlayHeightChange={setComposerOverlayHeight}
-      mainViewRef={mainViewRef}
-      workspaceFooterRef={footerRef}
-      onOpenTakeoverTerminal={handleShowTakeoverTerminal}
-      onOpenGitOpsView={() => {
-        /* Already in chat workspace. */
-      }}
-      onOpenSettingsView={(target) => controller.handleShowView('settings', target)}
-      onRestoredQueuedPromptApplied={markRestoredQueuedPromptApplied}
-      onToggleTerminal={handleToggleTerminal}
-      onToggleArtifacts={getToggleArtifacts(props)}
-      artifactsAvailable={hasConversation}
-      showTerminalControls={false}
-      artifactsVisible={artifactDrawer.artifactsVisible}
-      terminalVisible={state.terminalVisible}
-      preferSideFilePicker={!hasConversationLayout}
-      preferSideModelPopover={!hasConversationLayout}
-      onListAttachmentEntries={listComposerAttachmentEntries}
-      onAction={handleAction}
-    />
-  )
-}
-
-function ChatComposerCenter(props: ChatWorkspaceContentProps) {
-  return (
-    <div className="grid gap-0">
-      <ChatQueuedPrompts {...props} />
-      <ChatComposer {...props} />
-    </div>
-  )
-}
-
-function ChatComposerDock(props: ChatWorkspaceContentProps) {
-  const {
-    sidebarAutoHidden,
-    sidebarCompactMode,
-    artifactDrawer,
-    activeComposerState,
-    composerProjectId,
-    terminalSessionPath,
-    handleAction,
-  } = props
-  return (
-    <WorkspaceComposerDock
-      compactControls={sidebarAutoHidden}
-      left={sidebarCompactMode ? null : <SidebarToggleButton {...props} />}
-      center={<ChatComposerCenter {...props} />}
-      rightClassName={cn(
-        'opacity-0 min-[1400px]:opacity-100',
-        artifactDrawer.showDesktopArtifactDrawer && 'invisible',
-      )}
-      right={
-        <DesktopComposerStatusModelPicker
-          availableModels={activeComposerState?.availableModels ?? []}
-          availableThinkingLevels={activeComposerState?.availableThinkingLevels ?? ['off']}
-          composerMode="chat"
-          contextUsage={activeComposerState?.contextUsage ?? null}
-          model={activeComposerState?.currentModel ?? null}
-          projectId={composerProjectId}
-          sessionPath={terminalSessionPath}
-          thinkingLevel={activeComposerState?.currentThinkingLevel ?? 'off'}
-          onAction={handleAction}
-        />
-      }
-    />
   )
 }
 
