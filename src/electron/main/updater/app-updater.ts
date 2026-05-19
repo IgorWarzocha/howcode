@@ -365,6 +365,15 @@ function getRunningCachedVersionDir(versionsRoot: string) {
   return null
 }
 
+function isSameRelease(
+  left: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+  right: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+) {
+  return (
+    left.channel === right.channel && left.version === right.version && left.hash === right.hash
+  )
+}
+
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
   private readonly getUpdateChannel: () => Promise<UpdateChannel>
@@ -436,17 +445,6 @@ export class AppUpdater {
         return this.state
       }
 
-      await this.restoreInstalledUpdate()
-      if (this.installedUpdate) {
-        this.setState({
-          status: 'ready',
-          latestVersion: this.installedUpdate.version,
-          channel: this.installedUpdate.channel,
-          error: null,
-        })
-        return this.state
-      }
-
       this.setState({ status: 'checking', error: null })
       const target = getTarget()
       if (target.os === 'win') {
@@ -458,8 +456,34 @@ export class AppUpdater {
         })
         return this.state
       }
-      const release = await resolveLatestRelease(target, channel)
+      let release: ReleaseInfo
+      try {
+        release = await resolveLatestRelease(target, channel)
+      } catch (error) {
+        await this.restoreInstalledUpdate()
+        if (this.installedUpdate) {
+          this.setState({
+            status: 'ready',
+            latestVersion: this.installedUpdate.version,
+            channel: this.installedUpdate.channel,
+            error: null,
+          })
+          return this.state
+        }
+        throw error
+      }
       this.latestRelease = release
+      await this.restoreInstalledUpdate()
+      if (this.installedUpdate && isSameRelease(this.installedUpdate, release)) {
+        this.setState({
+          status: 'ready',
+          latestVersion: release.version,
+          channel: release.channel,
+          error: null,
+        })
+        return this.state
+      }
+      this.installedUpdate = null
       const hasUpdate = this.isUpdateCandidate(release)
       this.setState({
         status: hasUpdate ? 'available' : 'up-to-date',

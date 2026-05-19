@@ -11,6 +11,7 @@ files:
   - "!node_modules/**/*.map"
   - "!node_modules/lucide-react/**"
 asar: true
+afterPack: scripts/after-pack-electron.cjs
 extraResources:
   - from: desktop/resources
     to: resources

@@ -1,3 +1,17 @@
+### 0.1.66
+
+- Added configurable app keybindings.
+- Added thread find, result navigation, and inline highlights.
+- Added sidebar find / project filtering shortcuts.
+- Tightened shortcut behavior in the composer, terminal, GitOps, inbox, and thread cycling.
+- Made GitOps diffs less likely to freeze the UI.
+- Split a bunch of app shell, composer, terminal, diff, inbox, settings, and runtime-host code into smaller pieces.
+- Added more runtime, composer, desktop action, and tool-progress tests.
+- Fixed dev-channel updater checks getting stuck on an already-cached archive instead of noticing the newer dev archive.
+- Fixed packaged macOS terminal startup by making node-pty spawn-helper patching idempotent and executable.
+
+Snapshot: May 19, 2026.
+
 ### 0.1.65
 
 - Added sidebar project search.
