@@ -245,6 +245,31 @@ function openThreadState(
   }
 }
 
+function startProjectThreadState(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'start-project-thread' }>,
+): WorkspaceState {
+  return {
+    ...state,
+    ...getTerminalStateForNextView(state, 'project'),
+    activeView: 'project',
+    selectedProjectId: action.projectId,
+    hasSelectedProject: true,
+    landingVisible: false,
+    selectedThreadId: action.threadId,
+    selectedSessionPath: action.sessionPath,
+    terminalVisible: getTerminalVisibilityForSession(
+      state.terminalVisibleBySession,
+      action.sessionPath,
+    ),
+    selectedDiffFilePath: null,
+    takeoverVisible: false,
+    gitOpsReturnView: 'project',
+    utilityViewReturnState: null,
+    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+  }
+}
+
 function previewThreadState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'preview-thread' }>,
@@ -384,6 +409,7 @@ export const workspaceActionHandlers = {
     hasSelectedProject: true,
     landingVisible: false,
   }),
+  'start-project-thread': startProjectThreadState,
   'preview-thread': previewThreadState,
   'open-thread': openThreadState,
   'open-gitops': openGitOpsState,

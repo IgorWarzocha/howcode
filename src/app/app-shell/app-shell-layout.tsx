@@ -30,13 +30,23 @@ function isLocalToPersistedTakeoverTransition(
 }
 
 function getThreadSessionPath(state: AppShellController['state']) {
-  if (state.activeView === 'chat' || state.activeView === 'thread' || state.activeView === 'gitops')
+  if (
+    state.activeView === 'chat' ||
+    state.activeView === 'thread' ||
+    state.activeView === 'gitops' ||
+    state.activeView === 'project'
+  )
     return state.selectedSessionPath
   return null
 }
 
 function getThreadId(state: AppShellController['state']) {
-  if (state.activeView === 'chat' || state.activeView === 'thread' || state.activeView === 'gitops')
+  if (
+    state.activeView === 'chat' ||
+    state.activeView === 'thread' ||
+    state.activeView === 'gitops' ||
+    state.activeView === 'project'
+  )
     return state.selectedThreadId
   return null
 }

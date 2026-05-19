@@ -30,7 +30,10 @@ export function buildContextualActionPayload({
         sessionPath:
           action === 'thread.new'
             ? null
-            : activeView === 'chat' || activeView === 'thread' || activeView === 'gitops'
+            : activeView === 'chat' ||
+                activeView === 'thread' ||
+                activeView === 'gitops' ||
+                activeView === 'project'
               ? selectedSessionPath
               : null,
         composerMode: activeView === 'chat' ? 'chat' : 'code',

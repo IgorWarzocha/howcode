@@ -20,7 +20,8 @@ export type DesktopEventSelectionState = Pick<
 export function getVisibleDesktopSessionPath(workspaceState: DesktopEventSelectionState) {
   return workspaceState.activeView === 'chat' ||
     workspaceState.activeView === 'thread' ||
-    workspaceState.activeView === 'gitops'
+    workspaceState.activeView === 'gitops' ||
+    workspaceState.activeView === 'project'
     ? getPersistedSessionPath(workspaceState.selectedSessionPath)
     : workspaceState.activeView === 'inbox'
       ? (workspaceState.selectedInboxSessionPath ?? null)
@@ -64,7 +65,8 @@ export function shouldDisplayStartedThreadForLocalDraft({
 
   return (
     (workspaceState.activeView === 'chat' && isChat === true) ||
-    (workspaceState.activeView === 'thread' && isChat !== true)
+    ((workspaceState.activeView === 'thread' || workspaceState.activeView === 'project') &&
+      isChat !== true)
   )
 }
 

@@ -13,6 +13,7 @@
 - Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
 - Fixed packaged macOS terminal startup (thank you, BlockedPath)
 - Fixed code landing/project dashboard routing and added a setting to turn the project dashboard off.
+- Fixed new-thread handling so empty dashboard threads do not pile up or lose the project cwd.
 - Quieted missing-session usage summary noise and stopped settings checkboxes from shifting layout.
 - Fixed dev-channel updater checks so same-version builds compare hashes, and made update failures point to F12 logs.
 

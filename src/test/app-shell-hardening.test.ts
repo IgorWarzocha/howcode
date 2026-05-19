@@ -5,8 +5,10 @@ import {
   getOptimisticallyUpdatedShellState,
 } from '../app/app-shell/controller-optimistic-updates'
 import { applyDiffPreferencesToThread } from '../app/app-shell/controller-post-action-effects'
+import { deriveControllerViewModel } from '../app/app-shell/controller-view-model'
 import { getDiffPreferencesPatch } from '../app/app-shell/post-effects/diff-preferences'
 import type { ThreadData } from '../app/desktop/types'
+import type { WorkspaceState } from '../app/state/workspace'
 
 function createShellState() {
   return {
@@ -33,6 +35,31 @@ function createShellState() {
       { id: '/repo/b', name: 'b', pinned: false, threads: [] },
     ],
   } as never
+}
+
+function createWorkspaceState(overrides: Partial<WorkspaceState> = {}): WorkspaceState {
+  return {
+    activeView: 'project',
+    selectedProjectId: '',
+    hasSelectedProject: false,
+    landingVisible: false,
+    selectedInboxSessionPath: null,
+    selectedThreadId: null,
+    selectedSessionPath: null,
+    terminalVisible: false,
+    projectTerminalVisibleByProject: {},
+    terminalVisibleBySession: {},
+    restoreTerminalVisibleOnGitOpsClose: false,
+    takeoverVisible: false,
+    takeoverOverrides: {},
+    gitOpsReturnView: 'project',
+    selectedDiffFilePath: null,
+    utilityViewReturnState: null,
+    settingsOpen: false,
+    settingsPanelOpen: false,
+    collapsedProjectIds: {},
+    ...overrides,
+  }
 }
 
 describe('app shell hardening helpers', () => {
@@ -105,5 +132,22 @@ describe('app shell hardening helpers', () => {
         nextRenderMode: null,
       })?.diffPreferences,
     ).toEqual({ baseline: { kind: 'previous' }, renderMode: 'split' })
+  })
+
+  it('keeps selected project cwd for composer actions while project list is stale', () => {
+    const viewModel = deriveControllerViewModel({
+      projects: [],
+      workspaceState: createWorkspaceState({
+        selectedProjectId: '/home/igorw/Work/howcode',
+        hasSelectedProject: true,
+      }),
+      threadData: null,
+      shellCwd: '/home/igorw',
+      composerState: null,
+      shellComposerState: null,
+    })
+
+    expect(viewModel.composerProjectId).toBe('/home/igorw/Work/howcode')
+    expect(viewModel.currentProjectName).toBe('howcode')
   })
 })
