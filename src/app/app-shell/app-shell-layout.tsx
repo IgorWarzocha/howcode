@@ -17,11 +17,10 @@ type TakeoverTerminalKeyState = {
 function isLocalToPersistedTakeoverTransition(
   previous: TakeoverTerminalKeyState,
   nextProjectId: string,
+  _nextThreadId: string | null,
   nextSessionPath: string | null,
-  nextActiveView: AppShellController['state']['activeView'],
 ) {
   return (
-    nextActiveView === 'project' &&
     previous.projectId === nextProjectId &&
     isLocalSessionPath(previous.sessionPath) &&
     getPersistedSessionPath(nextSessionPath) !== null
@@ -77,8 +76,8 @@ function updateTakeoverTerminalKey(options: {
     isLocalToPersistedTakeoverTransition(
       current,
       options.composerProjectId,
+      options.state.selectedThreadId,
       options.terminalSessionPath,
-      options.state.activeView,
     )
   if (options.takeoverVisible && current === null)
     options.takeoverTerminalKeyRef.current = options.nextTakeoverTerminalKeyState

@@ -10,7 +10,7 @@ export type TerminalSessionRecord = {
   suppressOutputVisibilityUntilInput: boolean
   persistTimer: ReturnType<typeof setTimeout> | null
   tuiSessionDetection: {
-    submittedAtMs: number | null
+    startedAtMs: number
     submittedPrompts: string[]
     resolvedSessionPath: string | null
     refreshTimer: ReturnType<typeof setTimeout> | null

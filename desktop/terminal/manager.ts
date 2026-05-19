@@ -115,7 +115,7 @@ function createTuiSessionDetection(
   if ((request.launchMode ?? 'shell') !== 'pi-session') return null
   if (getPersistedSessionPath(request.sessionPath)) return null
   return {
-    submittedAtMs: null,
+    startedAtMs: Date.now(),
     submittedPrompts: [],
     resolvedSessionPath: null,
     refreshTimer: null,
@@ -139,10 +139,7 @@ function hasDetectedPrompt(input: {
 }
 
 function shouldKeepDetecting(detection: NonNullable<TerminalSessionRecord['tuiSessionDetection']>) {
-  return Boolean(
-    detection.submittedAtMs !== null &&
-      Date.now() - detection.submittedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS,
-  )
+  return Date.now() - detection.startedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS
 }
 
 function rememberSubmittedPrompts(record: TerminalSessionRecord, submittedLines: string[]) {
@@ -153,7 +150,6 @@ function rememberSubmittedPrompts(record: TerminalSessionRecord, submittedLines:
     const prompt = line.trim()
     if (prompt && prompt !== 'clear' && !detection.submittedPrompts.includes(prompt)) {
       detection.submittedPrompts.push(prompt)
-      detection.submittedAtMs = Date.now()
     }
   }
 }
@@ -165,8 +161,7 @@ async function findStartedTuiSession(record: TerminalSessionRecord) {
   const candidates = sessions.filter(
     (session) =>
       (session.cwd || record.snapshot.projectId) === record.snapshot.projectId &&
-      detection.submittedAtMs !== null &&
-      session.created.getTime() >= detection.submittedAtMs - 1_000,
+      session.created.getTime() >= detection.startedAtMs - 1_000,
   )
 
   for (const session of candidates) {
@@ -219,9 +214,6 @@ async function bindDetectedTuiSession(record: TerminalSessionRecord) {
     })
   } catch (error) {
     console.warn('Failed to detect Pi TUI session started from takeover.', error)
-    if (shouldKeepDetecting(detection)) {
-      scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
-    }
   } finally {
     detection.inFlight = false
   }

@@ -1,5 +1,4 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { isLocalSessionPath } from '../../../shared/session-paths'
 import type {
   ChatSidebarState,
   ComposerState,
@@ -144,7 +143,6 @@ function getThreadEventFlags(input: {
     reason: input.event.reason,
     projectId: input.event.projectId,
     isChat: input.event.isChat,
-    replacesSessionPath: input.event.replacesSessionPath,
     workspaceState: input.latestWorkspaceState,
   })
   return {
@@ -268,27 +266,6 @@ function refreshThreadEndState(input: {
   }
 }
 
-function rememberLocalDraftSessionAlias(input: {
-  event: Extract<DesktopEvent, { type: 'thread-update' }>
-  flags: ReturnType<typeof getThreadEventFlags>
-  latestWorkspaceState: DesktopEventSelectionState
-  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
-}) {
-  if (input.flags.shouldDisplayLocalDraftThread && input.latestWorkspaceState.selectedSessionPath) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      input.latestWorkspaceState.selectedSessionPath,
-    )
-  }
-  const replacesSessionPath = input.event.replacesSessionPath
-  if (typeof replacesSessionPath === 'string' && isLocalSessionPath(replacesSessionPath)) {
-    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      input.event.sessionPath,
-      replacesSessionPath,
-    )
-  }
-}
-
 function handleThreadUpdateEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'thread-update' }>,
@@ -298,13 +275,12 @@ function handleThreadUpdateEvent(
   const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
   const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
   const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleSessionPath })
-  rememberLocalDraftSessionAlias({
-    event,
-    flags,
-    latestWorkspaceState,
-    localDraftSessionPathByPersistedSessionPathRef:
-      runtime.localDraftSessionPathByPersistedSessionPathRef,
-  })
+  if (flags.shouldDisplayLocalDraftThread && latestWorkspaceState.selectedSessionPath) {
+    runtime.localDraftSessionPathByPersistedSessionPathRef.current.set(
+      event.sessionPath,
+      latestWorkspaceState.selectedSessionPath,
+    )
+  }
   const aliasedLocalDraftSessionPath =
     runtime.localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null
   updateLiveThreadData({
