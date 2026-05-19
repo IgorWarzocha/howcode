@@ -1,11 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback } from 'react'
+import { isLocalSessionPath } from '../../../shared/session-paths'
 import type { DesktopActionResult, InboxThread, ShellState } from '../desktop/types'
+import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import { desktopQueryKeys } from '../query/desktop-query'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { View } from '../types'
 import type { SettingsOpenTarget } from '../views/settings/settingsTypes'
+import { removeProjectThreadFromShellState } from './project-thread-cache'
 import { getProjectSelectionAction } from './scoped-project-view'
 import { THREAD_CYCLE_OPEN_ACTION_DELAY_MS, useScheduledThreadOpen } from './useScheduledThreadOpen'
 
@@ -110,12 +113,23 @@ export function useAppShellCommands({
     void handleAction(nextCollapsed ? 'project.collapse' : 'project.expand', { projectId })
   }
 
+  const clearSelectedUnstartedDraft = () => {
+    const selectedSessionPath = workspaceState.selectedSessionPath
+    const selectedProjectId = workspaceState.selectedProjectId
+    if (!(selectedProjectId && isLocalSessionPath(selectedSessionPath))) return
+
+    const localSessionPath = selectedSessionPath ?? ''
+    forgetLocalDraftThread(selectedProjectId, localSessionPath)
+    removeProjectThreadFromShellState(queryClient, selectedProjectId, localSessionPath)
+  }
+
   const handleThreadOpen = (
     projectId: string,
     threadId: string,
     sessionPath: string,
     view?: 'chat' | 'thread' | undefined,
   ) => {
+    clearSelectedUnstartedDraft()
     setThreadHistoryCompactions(0)
     dispatch({ type: 'open-thread', projectId, threadId, sessionPath, view })
     scheduleThreadOpenAction({ projectId, threadId, sessionPath, view })

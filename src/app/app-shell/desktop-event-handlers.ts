@@ -29,7 +29,10 @@ type UseDesktopEventSyncInput = {
   workspaceState: WorkspaceState
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean | undefined },
+    options?: {
+      chat?: boolean | undefined
+      replaceLocalDraftSessionPath?: string | null | undefined
+    },
   ) => Promise<unknown>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   scheduleShellStateRefresh: () => void

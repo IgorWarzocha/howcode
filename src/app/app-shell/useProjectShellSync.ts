@@ -12,7 +12,10 @@ type UseProjectShellSyncInput = {
   selectedProjectId: WorkspaceState['selectedProjectId']
   selectedSessionPath: WorkspaceState['selectedSessionPath']
   takeoverVisible: WorkspaceState['takeoverVisible']
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   dispatch: Dispatch<WorkspaceAction>
   setArchivedThreads: (threads: ArchivedThread[]) => void
@@ -63,7 +66,9 @@ export function useProjectShellSync({
 
     let cancelled = false
     const pollProjectThreads = () => {
-      void loadProjectThreads(selectedProjectId).finally(() => {
+      void loadProjectThreads(selectedProjectId, {
+        replaceLocalDraftSessionPath: selectedSessionPath,
+      }).finally(() => {
         if (!cancelled) timeoutId = window.setTimeout(pollProjectThreads, 1000)
       })
     }

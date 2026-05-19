@@ -63,7 +63,10 @@ export function useAppShellEffects({
   shellAppSettings: AppSettings | null | undefined
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean | undefined },
+    options?: {
+      chat?: boolean | undefined
+      replaceLocalDraftSessionPath?: string | null | undefined
+    },
   ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {

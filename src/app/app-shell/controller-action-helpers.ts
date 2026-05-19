@@ -1,3 +1,4 @@
+import { getPersistedSessionPath } from '../../../shared/session-paths'
 import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, ArchivedThread } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace'
@@ -32,6 +33,37 @@ function isContextualThreadView(activeView: WorkspaceState['activeView']) {
   )
 }
 
+function buildComposerSendPayload({
+  activeView,
+  composerProjectId,
+  payload,
+  selectedSessionPath,
+}: {
+  activeView: WorkspaceState['activeView']
+  composerProjectId: string
+  payload: AnyDesktopActionPayload
+  selectedSessionPath: string | null
+}) {
+  const composerMode = activeView === 'chat' ? 'chat' : 'code'
+  const explicitPersistedSessionPath =
+    typeof payload.sessionPath === 'string' ? getPersistedSessionPath(payload.sessionPath) : null
+  if (explicitPersistedSessionPath) {
+    return {
+      projectId: composerProjectId,
+      composerMode,
+      ...payload,
+      sessionPath: explicitPersistedSessionPath,
+    }
+  }
+
+  return {
+    ...payload,
+    projectId: composerProjectId,
+    sessionPath: selectedSessionPath,
+    composerMode,
+  }
+}
+
 export function buildContextualActionPayload({
   action,
   payload,
@@ -46,12 +78,7 @@ export function buildContextualActionPayload({
   selectedSessionPath: string | null
 }) {
   if (action === 'composer.send' && isContextualThreadView(activeView)) {
-    return {
-      ...payload,
-      projectId: composerProjectId,
-      sessionPath: selectedSessionPath,
-      composerMode: activeView === 'chat' ? 'chat' : 'code',
-    }
+    return buildComposerSendPayload({ activeView, composerProjectId, payload, selectedSessionPath })
   }
 
   return action === 'composer.model' ||

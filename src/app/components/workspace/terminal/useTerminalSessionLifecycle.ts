@@ -1,6 +1,6 @@
 import type { MutableRefObject } from 'react'
 import { useEffect } from 'react'
-import { getPersistedSessionPath } from '../../../../../shared/session-paths'
+import { getPersistedSessionPath, isLocalSessionPath } from '../../../../../shared/session-paths'
 import type { TerminalEvent } from '../../../desktop/types'
 import {
   closeDesktopTerminal,
@@ -60,7 +60,12 @@ export function getTerminalPersistedSessionPath(input: {
   terminalSessionPath: string | null | undefined
 }) {
   if (input.effectiveLaunchMode === 'pi-session') {
-    return getPersistedSessionPath(input.terminalSessionPath ?? null)
+    return (
+      getPersistedSessionPath(input.terminalSessionPath ?? null) ??
+      (isLocalSessionPath(input.terminalSessionPath)
+        ? getPersistedSessionPath(input.sessionPath)
+        : null)
+    )
   }
 
   return getPersistedSessionPath(input.terminalSessionPath ?? input.sessionPath)

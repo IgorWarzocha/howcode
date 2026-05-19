@@ -114,20 +114,64 @@ function createTuiSessionDetection(
 ): TerminalSessionRecord['tuiSessionDetection'] {
   if ((request.launchMode ?? 'shell') !== 'pi-session') return null
   if (getPersistedSessionPath(request.sessionPath)) return null
-  return { startedAtMs: Date.now(), resolvedSessionPath: null, refreshTimer: null, inFlight: false }
+  return {
+    startedAtMs: Date.now(),
+    submittedPrompts: [],
+    resolvedSessionPath: null,
+    refreshTimer: null,
+    inFlight: false,
+  }
+}
+
+function getThreadUserPrompts(snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>) {
+  return snapshot.thread.messages.flatMap((message) =>
+    message.role === 'user' ? message.content.map((content) => content.trim()).filter(Boolean) : [],
+  )
+}
+
+function hasDetectedPrompt(input: {
+  snapshot: Awaited<ReturnType<typeof loadThreadSnapshot>>
+  submittedPrompts: string[]
+}) {
+  if (input.submittedPrompts.length === 0) return false
+  const userPrompts = getThreadUserPrompts(input.snapshot)
+  return input.submittedPrompts.some((prompt) => userPrompts.includes(prompt))
+}
+
+function shouldKeepDetecting(detection: NonNullable<TerminalSessionRecord['tuiSessionDetection']>) {
+  return Date.now() - detection.startedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS
+}
+
+function rememberSubmittedPrompts(record: TerminalSessionRecord, submittedLines: string[]) {
+  const detection = record.tuiSessionDetection
+  if (!detection) return
+
+  for (const line of submittedLines) {
+    const prompt = line.trim()
+    if (prompt && prompt !== 'clear' && !detection.submittedPrompts.includes(prompt)) {
+      detection.submittedPrompts.push(prompt)
+    }
+  }
 }
 
 async function findStartedTuiSession(record: TerminalSessionRecord) {
   const detection = record.tuiSessionDetection
   if (!detection) return null
   const { sessions } = await listAllSessionsStrict()
-  return (
-    sessions.find(
-      (session) =>
-        (session.cwd || record.snapshot.projectId) === record.snapshot.projectId &&
-        session.created.getTime() >= detection.startedAtMs - 1_000,
-    ) ?? null
+  const candidates = sessions.filter(
+    (session) =>
+      (session.cwd || record.snapshot.projectId) === record.snapshot.projectId &&
+      session.created.getTime() >= detection.startedAtMs - 1_000,
   )
+
+  for (const session of candidates) {
+    const snapshot = await loadThreadSnapshot(session.path)
+    if (hasDetectedPrompt({ snapshot, submittedPrompts: detection.submittedPrompts })) {
+      return { session, snapshot }
+    }
+  }
+
+  return null
 }
 
 async function bindDetectedTuiSession(record: TerminalSessionRecord) {
@@ -136,21 +180,14 @@ async function bindDetectedTuiSession(record: TerminalSessionRecord) {
   detection.inFlight = true
 
   try {
-    const session = await findStartedTuiSession(record)
-    if (!session) {
-      if (Date.now() - detection.startedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS) {
+    const detected = await findStartedTuiSession(record)
+    if (!detected) {
+      if (shouldKeepDetecting(detection)) {
         scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
       }
       return
     }
-
-    const snapshot = await loadThreadSnapshot(session.path)
-    if (!snapshot.thread.messages.some((message) => message.role === 'user')) {
-      if (Date.now() - detection.startedAtMs < TUI_SESSION_DETECT_MAX_AGE_MS) {
-        scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
-      }
-      return
-    }
+    const { session, snapshot } = detected
 
     const replacesSessionPath = isLocalSessionPath(record.snapshot.sessionPath)
       ? record.snapshot.sessionPath
@@ -369,6 +406,7 @@ export async function writeTerminal(sessionId: string, data: string) {
   if (record && input) {
     record.inputBuffer = input.nextBuffer
     if (input.submittedLines.some((line) => line.trim() && line.trim() !== 'clear')) {
+      rememberSubmittedPrompts(record, input.submittedLines)
       record.suppressOutputVisibilityUntilInput = false
       markTerminalVisible(record)
       scheduleTuiSessionDetection(record)

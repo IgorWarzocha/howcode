@@ -11,6 +11,7 @@ export type TerminalSessionRecord = {
   persistTimer: ReturnType<typeof setTimeout> | null
   tuiSessionDetection: {
     startedAtMs: number
+    submittedPrompts: string[]
     resolvedSessionPath: string | null
     refreshTimer: ReturnType<typeof setTimeout> | null
     inFlight: boolean

@@ -65,7 +65,11 @@ function handleHostDesktopEventMessage(
   message: Extract<RuntimeHostToMainMessage, { type: 'desktop-event' }>,
 ) {
   if (message.event.type === 'thread-update') {
-    rememberHostAlias(host, message.event.sessionPath)
+    const hostOwnsActiveSend = [...host.pendingRequests.values()].some(
+      (pending) => pending.name === 'sendComposerPrompt',
+    )
+    if (host.role === 'thread' || hostOwnsActiveSend)
+      rememberHostAlias(host, message.event.sessionPath)
     host.busy = message.event.thread.isStreaming || message.event.thread.isCompacting
     if (host.busy) clearHostIdleTimer(host)
     else scheduleThreadHostIdleStop(host)
@@ -251,7 +255,11 @@ function getHostForRequest<TName extends RuntimeHostRequestName>(
   }
 
   const existingHost = sessionPath ? hostByAlias.get(sessionPath) : null
-  if (existingHost && !existingHost.terminating) {
+  if (
+    existingHost &&
+    !existingHost.terminating &&
+    (existingHost.role === 'thread' || name === 'sendComposerPrompt')
+  ) {
     return existingHost
   }
 

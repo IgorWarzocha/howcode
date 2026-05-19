@@ -20,7 +20,10 @@ type NewThreadPostEffectInput = {
   queryClient: QueryClient
   dispatch: Dispatch<WorkspaceAction>
   refreshShellState: () => Promise<unknown>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   loadComposerState: (request?: {
     projectId?: string | null
     composerMode?: 'chat' | 'code' | null
