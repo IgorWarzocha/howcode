@@ -3,12 +3,14 @@
 - Added configurable app keybindings.
 - Added thread find, result navigation, and inline highlights.
 - Added sidebar find / project filtering shortcuts.
-- Tightened shortcut behavior in the composer, terminal, GitOps, inbox, and thread cycling.
+- Polished composer hints and small alignment details.
+- Fixed just-created project threads disappearing during stale refreshes and view switches.
 - Made GitOps diffs less likely to freeze the UI.
 - Split a bunch of app shell, composer, terminal, diff, inbox, settings, and runtime-host code into smaller pieces.
-- Added more runtime, composer, desktop action, and tool-progress tests.
-- Fixed dev-channel updater checks getting stuck on an already-cached archive instead of noticing the newer dev archive.
-- Fixed packaged macOS terminal startup by making node-pty spawn-helper patching idempotent and executable.
+- Updated dependencies.
+- Made Electron installs verify extraction and fall back when system `unzip` is missing.
+- Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
+- Fixed packaged macOS terminal startup (thank you, BlockedPath)
 
 Snapshot: May 19, 2026.
 
