@@ -4,9 +4,11 @@ import type { KeybindingRuntime } from './keybinding-runtime'
 export const rendererCommandIds = new Set<KeybindingCommandId>([
   'app.commandPalette',
   'gitops.toggleChangedFiles',
+  'terminal.focus',
   'terminal.clear',
   'thread.find',
   'sidebar.find',
+  'composer.focus',
   'dictation.toggle',
 ])
 
@@ -53,6 +55,10 @@ function interactiveLayerIsOpen() {
   )
 }
 
+function modalOrSettingsLayerIsOpen() {
+  return document.querySelector('dialog[open], [aria-modal="true"], [role="dialog"]') !== null
+}
+
 export function appLevelShortcutsAreBlocked(
   commandId: KeybindingCommandId,
   runtime: KeybindingRuntime,
@@ -61,6 +67,14 @@ export function appLevelShortcutsAreBlocked(
     return false
   }
   const { state } = runtime.appController
+  if (commandId === 'composer.focus' || commandId === 'terminal.focus') {
+    return (
+      state.activeView === 'settings' ||
+      state.settingsOpen ||
+      state.settingsPanelOpen ||
+      modalOrSettingsLayerIsOpen()
+    )
+  }
   if (commandId === 'terminal.toggle') {
     return state.activeView === 'settings' || state.settingsOpen || state.settingsPanelOpen
   }

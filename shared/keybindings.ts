@@ -8,6 +8,7 @@ export type KeybindingCommandId =
   | 'sidebar.find'
   | 'sidebar.toggle'
   | 'terminal.toggle'
+  | 'terminal.focus'
   | 'terminal.clear'
   | 'gitops.open'
   | 'gitops.toggleChangedFiles'
@@ -15,6 +16,7 @@ export type KeybindingCommandId =
   | 'thread.nextInProject'
   | 'composer.submit'
   | 'composer.newline'
+  | 'composer.focus'
   | 'agent.interrupt'
   | 'dictation.toggle'
 
@@ -40,6 +42,7 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   { id: 'sidebar.find', label: 'Find in sidebar', defaults: ['CmdOrCtrl+Shift+F'] },
   { id: 'sidebar.toggle', label: 'Toggle sidebar', defaults: ['CmdOrCtrl+B'] },
   { id: 'terminal.toggle', label: 'Toggle terminal', defaults: ['CmdOrCtrl+J'] },
+  { id: 'terminal.focus', label: 'Open and focus terminal', defaults: ['Ctrl+Shift+/'] },
   { id: 'terminal.clear', label: 'Clear terminal', defaults: ['Ctrl+L'] },
   { id: 'gitops.open', label: 'Open GitOps', defaults: ['CmdOrCtrl+G'] },
   {
@@ -59,6 +62,7 @@ export const bundledKeybindings: readonly KeybindingDefinition[] = [
   },
   { id: 'composer.submit', label: 'Submit prompt', defaults: ['Enter'] },
   { id: 'composer.newline', label: 'Insert newline', defaults: ['Shift+Enter'] },
+  { id: 'composer.focus', label: 'Focus prompt', defaults: ['Ctrl+/'] },
   { id: 'agent.interrupt', label: 'Interrupt active run', defaults: ['Escape Escape'] },
   { id: 'dictation.toggle', label: 'Toggle dictation', defaults: ['Ctrl+M'] },
 ]

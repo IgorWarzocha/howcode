@@ -94,7 +94,13 @@ function extractZip(zipPath, distPath) {
     return
   }
 
-  childProcess.execFileSync('unzip', ['-q', zipPath, '-d', distPath], { stdio: 'inherit' })
+  try {
+    childProcess.execFileSync('unzip', ['-q', zipPath, '-d', distPath], { stdio: 'inherit' })
+  } catch (error) {
+    if (error && error.code !== 'ENOENT') throw error
+    console.warn('[howcode] System unzip not found; falling back to bundled JS zip extraction.')
+    require('extract-zip')(zipPath, { dir: distPath })
+  }
 }
 
 async function installElectron() {

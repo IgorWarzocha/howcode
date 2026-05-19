@@ -1,6 +1,9 @@
-import { type RefObject, useRef } from 'react'
+import { type RefObject, useEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
-import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
+import {
+  howcodeDismissTransientUiEvent,
+  useHowcodeKeybindingCommand,
+} from '../../../app-shell/keybinding-events'
 import type { ComposerProps } from '../composer'
 import { AskQuestionsCard } from './ask-questions-card'
 import { ComposerFooter } from './composer-footer'
@@ -226,19 +229,45 @@ export function ComposerPromptSurface({
     ((direction: 'previous' | 'next') => boolean) | null
   >(null)
   const askQuestionsSubmitRef = useRef<(() => boolean) | null>(null)
-  const placeholderText = getComposerPlaceholderText({ activeView, errorMessage, showAskQuestions })
+  const placeholderText = getComposerPlaceholderText({
+    activeView,
+    composerSendMode,
+    errorMessage,
+    showAskQuestions,
+  })
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
+  const dismissComposerTransientUi = () => {
+    setOpenMenu(null)
+    slashCommands.dismiss()
+    fileMentions.dismiss()
+    skillMentions.dismiss()
+  }
 
   useHowcodeKeybindingCommand('composer.submit', (event) => {
     event.preventDefault()
     void send()
   })
+  useHowcodeKeybindingCommand('composer.focus', (event) => {
+    event.preventDefault()
+    dismissComposerTransientUi()
+    const textarea = composerPanelRef.current?.querySelector('textarea')
+    if (!(textarea instanceof HTMLTextAreaElement)) return
+    textarea.focus()
+    const cursorPosition = textarea.value.length
+    textarea.setSelectionRange(cursorPosition, cursorPosition)
+  })
   useHowcodeKeybindingCommand('dictation.toggle', (event) => {
     if (!showDictationButton) return
     event.preventDefault()
     void toggleDictation()
+  })
+
+  useEffect(() => {
+    window.addEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
+    return () =>
+      window.removeEventListener(howcodeDismissTransientUiEvent, dismissComposerTransientUi)
   })
 
   return (

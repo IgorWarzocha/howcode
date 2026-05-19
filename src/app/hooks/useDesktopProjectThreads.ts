@@ -33,7 +33,10 @@ export function preserveLocalDraftThreads(
   const localDrafts = [...cachedThreads, ...currentThreads].filter((thread) =>
     localDraftMatchesScope(thread, threadsScope),
   )
-  const preservedDrafts = localDrafts.filter((draft) => !hasSameThread(fetchedThreads, draft))
+  const uniqueLocalDrafts = localDrafts.filter(
+    (draft, index) => !hasSameThread(localDrafts.slice(0, index), draft),
+  )
+  const preservedDrafts = uniqueLocalDrafts.filter((draft) => !hasSameThread(fetchedThreads, draft))
   return [...preservedDrafts, ...fetchedThreads]
 }
 

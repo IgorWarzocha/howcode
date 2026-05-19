@@ -412,7 +412,15 @@ export class AppUpdater {
 
   async restoreInstalledUpdate() {
     if (this.restorePromise) return this.restorePromise
+    const latestRelease = this.latestRelease
     this.restorePromise = this.readInstalledUpdate().finally(() => {
+      if (
+        latestRelease &&
+        this.installedUpdate &&
+        !isSameRelease(this.installedUpdate, latestRelease)
+      ) {
+        this.latestRelease = latestRelease
+      }
       this.restorePromise = null
     })
     return this.restorePromise

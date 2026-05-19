@@ -55,4 +55,15 @@ describe('desktop project thread loading', () => {
 
     expect(preserveLocalDraftThreads([], [], 'code', [codeDraft])).toEqual([codeDraft])
   })
+
+  it('deduplicates the same draft from current and cached project threads', () => {
+    const draft: Thread = {
+      id: 'local-code-thread',
+      title: 'Code thread',
+      age: 'Now',
+      sessionPath: 'local://project-a/code-draft',
+    }
+
+    expect(preserveLocalDraftThreads([], [draft], 'code', [draft])).toEqual([draft])
+  })
 })

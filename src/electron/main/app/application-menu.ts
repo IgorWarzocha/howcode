@@ -38,6 +38,11 @@ function keybindingMenuItem(input: {
   }
 }
 
+function toggleDevTools(mainWindow: BrowserWindow | null) {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.webContents.toggleDevTools()
+}
+
 export async function installApplicationMenu(input: {
   getMainWindow: () => BrowserWindow | null
   piThreads: PiThreadsModule
@@ -75,6 +80,18 @@ export async function installApplicationMenu(input: {
       {
         label: 'View',
         submenu: [
+          {
+            label: 'Toggle Developer Tools',
+            accelerator: 'F12',
+            click: () => toggleDevTools(input.getMainWindow()),
+          },
+          {
+            label: 'Toggle Developer Tools (Chrome)',
+            accelerator: 'CommandOrControl+Shift+I',
+            visible: false,
+            click: () => toggleDevTools(input.getMainWindow()),
+          },
+          { type: 'separator' },
           keybindingMenuItem({
             label: 'Toggle Sidebar',
             commandId: 'sidebar.toggle',

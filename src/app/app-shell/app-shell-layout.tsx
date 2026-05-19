@@ -249,9 +249,24 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
     if (sidebarCompactMode) setSidebarOverlayOpen(true)
   }, [sidebarCompactMode])
 
+  const handleFocusComposer = useCallback(() => {
+    if (!sidebarCompactMode) return
+    setSidebarOverlayOpen(false)
+    if (controllerRef.current.state.terminalVisible) {
+      controllerRef.current.handleCloseTerminalDrawer()
+    }
+  }, [sidebarCompactMode])
+
+  const handleFocusTerminal = useCallback(() => {
+    if (!sidebarCompactMode) return
+    setSidebarOverlayOpen(false)
+  }, [sidebarCompactMode])
+
   useAppKeybindings({
     controller,
     keybindings: controller.shellState?.appSettings.keybindings ?? {},
+    onFocusComposer: handleFocusComposer,
+    onFocusTerminal: handleFocusTerminal,
     onOpenSidebar: handleOpenSidebar,
     onToggleSidebar: handleToggleSidebar,
   })

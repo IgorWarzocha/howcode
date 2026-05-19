@@ -9,6 +9,7 @@
 - Split a bunch of app shell, composer, terminal, diff, inbox, settings, and runtime-host code into smaller pieces.
 - Updated dependencies.
 - Made Electron installs verify extraction and fall back when system `unzip` is missing.
+- Added DevTools shortcuts for debugging blank app windows.
 - Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
 - Fixed packaged macOS terminal startup (thank you, BlockedPath)
 
