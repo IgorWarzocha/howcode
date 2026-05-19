@@ -37,21 +37,15 @@ export function preserveLocalDraftThreads(
   const uniqueLocalDrafts = localDrafts.filter(
     (draft, index) => !hasSameThread(localDrafts.slice(0, index), draft),
   )
+  const hasPersistedFetchedThread = fetchedThreads.some(
+    (thread) => thread.sessionPath && !isLocalSessionPath(thread.sessionPath),
+  )
   const preservedDrafts = uniqueLocalDrafts.filter((draft) => {
     if (hasSameThread(fetchedThreads, draft)) return false
-    if (
-      replaceLocalDraftSessionPath === null ||
-      draft.sessionPath !== replaceLocalDraftSessionPath
-    ) {
-      return true
-    }
-
-    const draftStartedAt = draft.lastModifiedMs ?? Number.POSITIVE_INFINITY
-    return !fetchedThreads.some(
-      (thread) =>
-        thread.sessionPath &&
-        !isLocalSessionPath(thread.sessionPath) &&
-        (thread.lastModifiedMs ?? 0) >= draftStartedAt - 1000,
+    return !(
+      hasPersistedFetchedThread &&
+      replaceLocalDraftSessionPath !== null &&
+      draft.sessionPath === replaceLocalDraftSessionPath
     )
   })
   return [...preservedDrafts, ...fetchedThreads]
