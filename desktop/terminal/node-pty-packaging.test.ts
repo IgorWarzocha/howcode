@@ -1,13 +1,14 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
-const { NODE_PTY_UNIX_TERMINAL_PATTERN, patchUnixTerminal, unpackAsarPath } =
+const { NODE_PTY_UNIX_TERMINAL_PATTERN, patchPackagedNodePty, patchUnixTerminal, unpackAsarPath } =
   require('../../scripts/patch-node-pty-helper.cjs') as {
     NODE_PTY_UNIX_TERMINAL_PATTERN: string
+    patchPackagedNodePty: (resourcesPath: string) => { executableHelpers: string[] }
     patchUnixTerminal: (unixTerminalPath: string) => { patched: boolean; reason?: string }
     unpackAsarPath: (value: string, marker: string) => string
   }
@@ -48,5 +49,21 @@ describe('node-pty helper packaging patch', () => {
       patched: false,
       reason: 'already-patched',
     })
+  })
+
+  it('accepts prebuilt macOS spawn-helper without requiring build/Release', () => {
+    const resourcesPath = mkdtempSync(path.join(tmpdir(), 'howcode-node-pty-package-'))
+    const nodePtyRoot = path.join(resourcesPath, 'app.asar.unpacked', 'node_modules', 'node-pty')
+    const unixTerminalPath = path.join(nodePtyRoot, 'lib', 'unixTerminal.js')
+    const prebuiltHelperPath = path.join(nodePtyRoot, 'prebuilds', 'darwin-arm64', 'spawn-helper')
+    mkdirSync(path.dirname(unixTerminalPath), { recursive: true })
+    mkdirSync(path.dirname(prebuiltHelperPath), { recursive: true })
+    writeFileSync(unixTerminalPath, `${NODE_PTY_UNIX_TERMINAL_PATTERN}\n`, 'utf8')
+    writeFileSync(prebuiltHelperPath, '', 'utf8')
+
+    const result = patchPackagedNodePty(resourcesPath)
+
+    expect(result.executableHelpers).toEqual([prebuiltHelperPath])
+    expect(statSync(prebuiltHelperPath).mode & 0o111).not.toBe(0)
   })
 })

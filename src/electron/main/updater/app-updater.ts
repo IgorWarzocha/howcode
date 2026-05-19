@@ -484,6 +484,7 @@ export class AppUpdater {
         return this.state
       }
       this.installedUpdate = null
+      this.latestRelease = release
       const hasUpdate = this.isUpdateCandidate(release)
       this.setState({
         status: hasUpdate ? 'available' : 'up-to-date',
