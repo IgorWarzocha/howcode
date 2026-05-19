@@ -31,6 +31,24 @@ describe('buildContextualActionPayload', () => {
         activeView: 'inbox',
         selectedSessionPath: null,
       }),
-    ).toMatchObject({ sessionPath: persistedSessionPath })
+    ).toMatchObject({ projectId, sessionPath: persistedSessionPath })
+  })
+
+  it('preserves explicit targets for thread open actions', () => {
+    expect(
+      buildContextualActionPayload({
+        action: 'thread.open',
+        payload: {
+          projectId: '/repo/project-b',
+          sessionPath: '/sessions/project-b/thread.jsonl',
+        },
+        composerProjectId: projectId,
+        activeView: 'project',
+        selectedSessionPath: persistedSessionPath,
+      }),
+    ).toMatchObject({
+      projectId: '/repo/project-b',
+      sessionPath: '/sessions/project-b/thread.jsonl',
+    })
   })
 })

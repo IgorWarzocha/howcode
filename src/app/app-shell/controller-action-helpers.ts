@@ -23,6 +23,15 @@ function getContextualSessionPath({
   return typeof payload.sessionPath === 'string' ? payload.sessionPath : null
 }
 
+function isContextualThreadView(activeView: WorkspaceState['activeView']) {
+  return (
+    activeView === 'chat' ||
+    activeView === 'thread' ||
+    activeView === 'gitops' ||
+    activeView === 'project'
+  )
+}
+
 export function buildContextualActionPayload({
   action,
   payload,
@@ -36,6 +45,15 @@ export function buildContextualActionPayload({
   activeView: WorkspaceState['activeView']
   selectedSessionPath: string | null
 }) {
+  if (action === 'composer.send' && isContextualThreadView(activeView)) {
+    return {
+      ...payload,
+      projectId: composerProjectId,
+      sessionPath: selectedSessionPath,
+      composerMode: activeView === 'chat' ? 'chat' : 'code',
+    }
+  }
+
   return action === 'composer.model' ||
     action === 'composer.dequeue' ||
     action === 'composer.send' ||
@@ -47,13 +65,13 @@ export function buildContextualActionPayload({
     action === 'workspace.commit-options' ||
     action === 'workspace.diff-preferences'
     ? {
-        ...payload,
         projectId: composerProjectId,
         sessionPath:
           action === 'thread.new'
             ? null
             : getContextualSessionPath({ activeView, payload, selectedSessionPath }),
         composerMode: activeView === 'chat' ? 'chat' : 'code',
+        ...payload,
       }
     : payload
 }
