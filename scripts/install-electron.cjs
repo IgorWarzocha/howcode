@@ -74,7 +74,7 @@ function getInstallTarget() {
   return { platform, arch }
 }
 
-function extractZip(zipPath, distPath) {
+async function extractZip(zipPath, distPath) {
   // Electron's upstream installer uses extract-zip, which can silently stop after
   // the first entry under Node 26. The Electron archives are ordinary zip files,
   // so use OS-provided archive tools and verify the executable afterward.
@@ -99,7 +99,7 @@ function extractZip(zipPath, distPath) {
   } catch (error) {
     if (error && error.code !== 'ENOENT') throw error
     console.warn('[howcode] System unzip not found; falling back to bundled JS zip extraction.')
-    require('extract-zip')(zipPath, { dir: distPath })
+    await require('extract-zip')(zipPath, { dir: distPath })
   }
 }
 
@@ -126,7 +126,7 @@ async function installElectron() {
   fs.rmSync(distPath, { recursive: true, force: true })
   fs.mkdirSync(distPath, { recursive: true })
 
-  extractZip(zipPath, distPath)
+  await extractZip(zipPath, distPath)
 
   const typeDefPath = path.join(distPath, 'electron.d.ts')
   if (fs.existsSync(typeDefPath)) {
