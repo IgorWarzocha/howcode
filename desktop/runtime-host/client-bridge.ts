@@ -60,15 +60,22 @@ export function shutdownRuntimeHosts() {
   hosts.add(serviceHost)
 }
 
+const SERVICE_HOST_SEND_ALIAS_WINDOW_MS = 30_000
+
+function hostOwnsRecentSendComposerPrompt(host: HostConnection) {
+  return Boolean(
+    [...host.pendingRequests.values()].some((pending) => pending.name === 'sendComposerPrompt') ||
+      (host.lastSendComposerPromptAtMs !== null &&
+        Date.now() - host.lastSendComposerPromptAtMs < SERVICE_HOST_SEND_ALIAS_WINDOW_MS),
+  )
+}
+
 function handleHostDesktopEventMessage(
   host: HostConnection,
   message: Extract<RuntimeHostToMainMessage, { type: 'desktop-event' }>,
 ) {
   if (message.event.type === 'thread-update') {
-    const hostOwnsActiveSend = [...host.pendingRequests.values()].some(
-      (pending) => pending.name === 'sendComposerPrompt',
-    )
-    if (host.role === 'thread' || hostOwnsActiveSend)
+    if (host.role === 'thread' || hostOwnsRecentSendComposerPrompt(host))
       rememberHostAlias(host, message.event.sessionPath)
     host.busy = message.event.thread.isStreaming || message.event.thread.isCompacting
     if (host.busy) clearHostIdleTimer(host)
@@ -279,6 +286,7 @@ export async function invokeRuntimeHost<TName extends RuntimeHostRequestName>(
   return await new Promise<RuntimeHostResponseMap[TName]>((resolve, reject) => {
     if (name === 'sendComposerPrompt') {
       host.busy = true
+      host.lastSendComposerPromptAtMs = Date.now()
       clearHostIdleTimer(host)
     }
 
@@ -295,6 +303,7 @@ export async function invokeRuntimeHost<TName extends RuntimeHostRequestName>(
       host.pendingRequests.delete(id)
       if (name === 'sendComposerPrompt') {
         host.busy = false
+        host.lastSendComposerPromptAtMs = null
       }
       scheduleThreadHostIdleStop(host)
       reject(error)
