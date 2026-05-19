@@ -214,6 +214,9 @@ async function bindDetectedTuiSession(record: TerminalSessionRecord) {
     })
   } catch (error) {
     console.warn('Failed to detect Pi TUI session started from takeover.', error)
+    if (shouldKeepDetecting(detection)) {
+      scheduleTuiSessionDetection(record, TUI_SESSION_DETECT_RETRY_MS)
+    }
   } finally {
     detection.inFlight = false
   }
