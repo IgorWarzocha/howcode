@@ -1,3 +1,20 @@
+### 0.1.66
+
+- Added configurable app keybindings.
+- Added thread find, result navigation, and inline highlights.
+- Added sidebar find / project filtering shortcuts.
+- Polished composer hints and small alignment details.
+- Fixed just-created project threads disappearing during stale refreshes and view switches.
+- Made GitOps diffs less likely to freeze the UI.
+- Split a bunch of app shell, composer, terminal, diff, inbox, settings, and runtime-host code into smaller pieces.
+- Updated dependencies.
+- Made Electron installs verify extraction and fall back when system `unzip` is missing.
+- Added DevTools shortcuts for debugging blank app windows.
+- Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
+- Fixed packaged macOS terminal startup (thank you, BlockedPath)
+
+Snapshot: May 19, 2026.
+
 ### 0.1.65
 
 - Added sidebar project search.

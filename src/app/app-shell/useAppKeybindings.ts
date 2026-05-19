@@ -61,8 +61,17 @@ export function useAppKeybindings(input: {
   keybindings: KeybindingOverrides
   onToggleSidebar: () => void
   onOpenSidebar: () => void
+  onFocusComposer: () => void
+  onFocusTerminal: () => void
 }) {
-  const { controller, keybindings, onOpenSidebar, onToggleSidebar } = input
+  const {
+    controller,
+    keybindings,
+    onFocusComposer,
+    onFocusTerminal,
+    onOpenSidebar,
+    onToggleSidebar,
+  } = input
   const acceleratorToCommand = useMemo(() => {
     const map = new Map<string, KeybindingCommandId>()
     for (const [commandId, accelerators] of getEffectiveAccelerators(keybindings)) {
@@ -78,6 +87,8 @@ export function useAppKeybindings(input: {
     acceleratorToCommand,
     appController: controller,
     cycleSelectionRef,
+    onFocusComposer,
+    onFocusTerminal,
     onOpenSidebar,
     onToggleSidebar,
   })

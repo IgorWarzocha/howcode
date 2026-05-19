@@ -1,6 +1,9 @@
 import type { KeybindingCommandId } from '../../../shared/keybindings'
 import { appLevelShortcutsAreBlocked, rendererCommandIds } from './keybinding-context'
-import { dispatchHowcodeKeybindingCommand } from './keybinding-events'
+import {
+  dispatchHowcodeDismissTransientUi,
+  dispatchHowcodeKeybindingCommand,
+} from './keybinding-events'
 import type { KeybindingRuntime } from './keybinding-runtime'
 import { handleThreadCycleCommand } from './keybinding-thread-cycle'
 
@@ -46,6 +49,25 @@ function handleTerminalToggleCommand(runtime: KeybindingRuntime) {
   return true
 }
 
+function handleTerminalFocusCommand(runtime: KeybindingRuntime) {
+  const { selectedProjectId, selectedSessionPath, terminalVisible } = runtime.appController.state
+  if (!(selectedProjectId || selectedSessionPath)) return false
+  dispatchHowcodeDismissTransientUi()
+  runtime.onFocusTerminal()
+  if (!terminalVisible) runtime.appController.handleToggleTerminal()
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => dispatchHowcodeKeybindingCommand('terminal.focus'))
+  })
+  return true
+}
+
+function handleComposerFocusCommand(runtime: KeybindingRuntime) {
+  dispatchHowcodeDismissTransientUi()
+  runtime.onFocusComposer()
+  window.requestAnimationFrame(() => dispatchHowcodeKeybindingCommand('composer.focus'))
+  return true
+}
+
 function handleNewThreadCommand(runtime: KeybindingRuntime) {
   const controller = runtime.appController
   if (controller.state.activeView === 'chat') {
@@ -76,9 +98,11 @@ export function runAppCommand(commandId: KeybindingCommandId, runtime: Keybindin
     runtime.onOpenSidebar()
     window.requestAnimationFrame(() => dispatchHowcodeKeybindingCommand(commandId))
   } else if (commandId === 'terminal.toggle') return handleTerminalToggleCommand(runtime)
+  else if (commandId === 'terminal.focus') return handleTerminalFocusCommand(runtime)
   else if (commandId === 'gitops.open') return handleGitOpsCommand(runtime)
   else if (commandId === 'thread.new') return handleNewThreadCommand(runtime)
   else if (commandId === 'agent.interrupt') return stopActiveRun(runtime)
+  else if (commandId === 'composer.focus') return handleComposerFocusCommand(runtime)
   else if (handleRendererCommand(commandId)) return true
   else return false
   return true

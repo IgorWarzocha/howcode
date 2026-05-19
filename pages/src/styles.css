@@ -199,6 +199,69 @@ h2 {
   gap: var(--space-md);
 }
 
+.channel-switcher {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: fit-content;
+  margin: 0;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: oklch(99% 0.006 285 / 52%);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.channel-switcher button {
+  min-width: 88px;
+  min-height: 34px;
+  padding: 0 var(--space-md);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition-property: background-color, color, box-shadow, transform;
+  transition-duration: 170ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.channel-switcher button:hover {
+  color: var(--ink);
+}
+
+.channel-switcher button.active {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 8px 18px oklch(22% 0.026 272 / 16%);
+}
+
+.channel-switcher button:active {
+  transform: scale(0.96);
+}
+
+.channel-switcher button:focus-visible {
+  outline: 2px solid oklch(58% 0.09 285 / 62%);
+  outline-offset: 3px;
+}
+
+.hero-channel-switcher {
+  width: 100%;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -256,6 +319,14 @@ h2 {
   box-shadow:
     var(--shadow),
     inset 0 0 0 1px oklch(100% 0 0 / 9%);
+}
+
+.hero-installer {
+  display: grid;
+  gap: var(--space-md);
+  width: min(100%, 416px);
+  align-self: center;
+  justify-self: end;
 }
 
 .terminal-top {
@@ -399,6 +470,77 @@ code {
   padding-top: var(--space-4xl);
 }
 
+.dependencies-hero {
+  display: grid;
+  gap: var(--space-xl);
+  padding: var(--space-xl) 0 var(--space-4xl);
+}
+
+.dependency-groups {
+  display: grid;
+  gap: var(--space-2xl);
+  padding-bottom: var(--space-5xl);
+}
+
+.dependency-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  padding: var(--space-2xl);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    var(--shadow);
+}
+
+.dependency-card h2 {
+  margin: var(--space-md) 0 var(--space-lg);
+  font-size: clamp(1.8rem, 3.6vw, 3.4rem);
+}
+
+.dependency-card p {
+  max-width: 42ch;
+  color: var(--ink-soft);
+}
+
+.dependency-list {
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.dependency-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: var(--space-lg);
+  align-items: baseline;
+  min-height: 42px;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--line);
+  background: oklch(99% 0.006 285 / 44%);
+}
+
+.dependency-row:last-child {
+  border-bottom: 0;
+}
+
+.dependency-row code {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.dependency-row span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 .two-column {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -445,6 +587,12 @@ li {
 .about-copy {
   display: grid;
   gap: var(--space-xl);
+}
+
+.install-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
 }
 
 .install-command {
@@ -576,6 +724,7 @@ footer {
   .hero,
   .section,
   .two-column,
+  .dependency-card,
   .screenshot-grid {
     grid-template-columns: 1fr;
   }

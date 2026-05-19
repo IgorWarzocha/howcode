@@ -31,7 +31,7 @@ Do not treat every issue as immediately buildable. First decide whether it is a 
 - Choose the PR shape deliberately: small related changes should usually become layers in a stack; big unrelated features should be separate PRs or separate stacks; GitHub epics usually become a stacked PR series rather than one giant PR.
 - Use the `gh-stack` skill as the operating manual when stacked PR mode is selected; this skill owns the issue/PR policy and stack-vs-single decision.
 - Only use auto-closing keywords such as `Closes #123` for issues that are fully resolved by the PR. Use `Refs #123` for anything partial. In stacked mode, use `Refs` on intermediate layers and reserve `Closes` for the layer/PR whose merge completes the issue.
-- Before any build or release pass in this flow, refresh the landing changelog in `src/app/views/landing-overview-content.ts` from recent merged PRs / `origin/dev` commits so the shipped app does not carry stale release notes.
+- Before opening or updating a PR, update `docs/changelog.md` unless the PR is genuinely changelog-free. Err on the side of including user-visible fixes, dependency updates, packaging/release changes, website changes, and workflow changes. The changelog is optimistic: the top section is the current dev release and normally stays one version above latest stable.
 
 ## When to use
 - The user gives issue numbers like `#123` or `123`.
@@ -158,11 +158,12 @@ Branch naming should be issue-oriented and easy to trace. For stacks, prefer a s
 3. Repeat until the review comes back clean or the remaining tradeoffs are explicitly accepted.
 4. If the user shares review findings in chat instead of rerunning the command, resolve them the same way.
 
-### 6.5. Refresh the landing changelog before builds
-1. If you are about to make a build, package, release artifact, or other ship-intended output, update `src/app/views/landing-overview-content.ts` first.
-2. Base the changelog on actual merged PRs and recent `origin/dev` commits, not memory.
-3. Keep it terse and user-facing; do not dump issue numbers or internal workflow noise into the app UI.
-4. If nothing user-visible changed since the last refresh, say so explicitly instead of inventing changelog churn.
+### 6.5. Refresh the changelog before PR submission
+1. Before opening or updating a PR, check whether `docs/changelog.md` needs a bullet.
+2. Usually update it for user-visible changes, bug fixes, dependency updates, packaging/release changes, website changes, and workflow changes. Do not talk yourself out of a useful bullet just because the change feels small.
+3. The changelog is optimistic: the top section is the current dev release and should normally be one version above latest stable. Add bullets to that existing top section unless the user is explicitly preparing a new release section.
+4. Keep bullets short, concrete, and in Igor's voice: plain English, a little human, no corporate release-note sludge. See `docs/AGENTS.md` and the current top changelog section for tone.
+5. Skip the changelog only for genuinely invisible changes such as tests-only edits, docs-only edits outside release notes, or internal cleanup with no practical user/release impact. If skipped, mention that in the PR body.
 
 ### 7. Open clean PRs with good hygiene
 1. Push the branch or submit the stack if needed.
@@ -172,6 +173,7 @@ Branch naming should be issue-oriented and easy to trace. For stacks, prefer a s
    - a concise summary of the change
    - notable implementation details if they matter to reviewers
    - any validation or review loop summary worth preserving
+   - whether `docs/changelog.md` was updated or why it was skipped
    - `Closes #n` for fully resolved issues
    - `Refs #n` for related but not fully closed issues
 4. Prefer a squash-merge-ready PR description from the start.
@@ -246,7 +248,7 @@ gh pr view <pr-number-or-url> --comments
 - The PR targets `dev` explicitly, or the stack bottom ultimately targets `dev` with upper PRs targeting the layer below.
 - The PR body clearly distinguishes `Closes` from `Refs`.
 - The user's `/review` findings were addressed or explicitly called out.
-- If the flow included a build or release pass, `src/app/views/landing-overview-content.ts` was refreshed first from real merged PRs / `origin/dev` history.
+- `docs/changelog.md` was updated for practical user/release-facing changes, or the PR body explains why it was skipped.
 - If the flow touched GitHub Actions workflows, artifact retention and upload behavior still match `references/actions-artifact-retention.md`.
 - Codex was asked for review; in stacked mode, each layer received the stack-aware review request.
 - The PR link was returned to the user after posting the review request.

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { KeybindingCommandId } from '../../../shared/keybindings'
 
 export const howcodeKeybindingCommandEvent = 'howcode:keybinding-command'
+export const howcodeDismissTransientUiEvent = 'howcode:dismiss-transient-ui'
 
 export type HowcodeKeybindingCommandDetail = {
   commandId: KeybindingCommandId
@@ -14,6 +15,10 @@ export function dispatchHowcodeKeybindingCommand(commandId: KeybindingCommandId)
       detail: { commandId },
     }),
   )
+}
+
+export function dispatchHowcodeDismissTransientUi() {
+  window.dispatchEvent(new CustomEvent(howcodeDismissTransientUiEvent))
 }
 
 export function useHowcodeKeybindingCommand(

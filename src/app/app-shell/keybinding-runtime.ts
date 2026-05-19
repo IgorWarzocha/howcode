@@ -15,4 +15,6 @@ export type KeybindingRuntime = {
   cycleSelectionRef: MutableRefObject<ThreadCycleSelection | null>
   onToggleSidebar: () => void
   onOpenSidebar: () => void
+  onFocusComposer: () => void
+  onFocusTerminal: () => void
 }

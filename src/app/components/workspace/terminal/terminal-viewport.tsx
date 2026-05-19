@@ -154,6 +154,11 @@ export function TerminalViewport({
     resetTerminal('')
   })
 
+  useHowcodeKeybindingCommand('terminal.focus', (event) => {
+    event.preventDefault()
+    focusTerminal()
+  })
+
   const appendTerminalHistory = useCallback(
     (chunk: string) => {
       const nextHistory = clampTerminalHistory(terminalHistoryRef.current + chunk)

@@ -14,3 +14,5 @@
 
 josxa
 kikaraage gogogogo!
+
+BlockedPath macOS terminal report #253

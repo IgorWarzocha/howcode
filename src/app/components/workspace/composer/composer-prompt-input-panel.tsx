@@ -245,7 +245,7 @@ export function ComposerPromptInputPanel({
             </div>
           </div>
 
-          <div className="inline-flex h-8 items-center justify-end gap-2">
+          <div className="inline-flex h-6 items-center justify-end gap-2 self-start">
             {extensionRunning ? (
               <div className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--panel-2)] px-2.5 text-[12px] text-[color:var(--muted)]">
                 <Loader2 size={12} className="animate-spin" />

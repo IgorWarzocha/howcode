@@ -365,6 +365,15 @@ function getRunningCachedVersionDir(versionsRoot: string) {
   return null
 }
 
+function isSameRelease(
+  left: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+  right: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>,
+) {
+  return (
+    left.channel === right.channel && left.version === right.version && left.hash === right.hash
+  )
+}
+
 export class AppUpdater {
   private readonly listeners = new Set<AppUpdaterListener>()
   private readonly getUpdateChannel: () => Promise<UpdateChannel>
@@ -403,7 +412,15 @@ export class AppUpdater {
 
   async restoreInstalledUpdate() {
     if (this.restorePromise) return this.restorePromise
+    const latestRelease = this.latestRelease
     this.restorePromise = this.readInstalledUpdate().finally(() => {
+      if (
+        latestRelease &&
+        this.installedUpdate &&
+        !isSameRelease(this.installedUpdate, latestRelease)
+      ) {
+        this.latestRelease = latestRelease
+      }
       this.restorePromise = null
     })
     return this.restorePromise
@@ -436,17 +453,6 @@ export class AppUpdater {
         return this.state
       }
 
-      await this.restoreInstalledUpdate()
-      if (this.installedUpdate) {
-        this.setState({
-          status: 'ready',
-          latestVersion: this.installedUpdate.version,
-          channel: this.installedUpdate.channel,
-          error: null,
-        })
-        return this.state
-      }
-
       this.setState({ status: 'checking', error: null })
       const target = getTarget()
       if (target.os === 'win') {
@@ -458,7 +464,34 @@ export class AppUpdater {
         })
         return this.state
       }
-      const release = await resolveLatestRelease(target, channel)
+      let release: ReleaseInfo
+      try {
+        release = await resolveLatestRelease(target, channel)
+      } catch (error) {
+        await this.restoreInstalledUpdate()
+        if (this.installedUpdate) {
+          this.setState({
+            status: 'ready',
+            latestVersion: this.installedUpdate.version,
+            channel: this.installedUpdate.channel,
+            error: null,
+          })
+          return this.state
+        }
+        throw error
+      }
+      this.latestRelease = release
+      await this.restoreInstalledUpdate()
+      if (this.installedUpdate && isSameRelease(this.installedUpdate, release)) {
+        this.setState({
+          status: 'ready',
+          latestVersion: release.version,
+          channel: release.channel,
+          error: null,
+        })
+        return this.state
+      }
+      this.installedUpdate = null
       this.latestRelease = release
       const hasUpdate = this.isUpdateCandidate(release)
       this.setState({
@@ -574,6 +607,15 @@ export class AppUpdater {
       await this.restoreInstalledUpdate()
       if (!this.installedUpdate) {
         this.setState({ status: 'idle', latestVersion: null, error: null })
+        return this.state
+      }
+      if (this.latestRelease && !isSameRelease(this.installedUpdate, this.latestRelease)) {
+        this.installedUpdate = null
+        this.setState({
+          status: 'available',
+          latestVersion: this.latestRelease.version,
+          error: null,
+        })
         return this.state
       }
       this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })

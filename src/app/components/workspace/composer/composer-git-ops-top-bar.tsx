@@ -1,7 +1,8 @@
-import { GitBranch, Github } from 'lucide-react'
+import { GitBranch } from 'lucide-react'
 import type { ProjectGitState } from '../../../desktop/types'
 import { compactCardClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
 import type { GitOpsCommentCard } from './composer-git-ops.helpers'
 
 type ComposerGitOpsTopBarProps = {
@@ -36,7 +37,7 @@ export function ComposerGitOpsTopBar({
             aria-label="Repository origin"
             data-tooltip="Repository origin"
           >
-            {isGitHubOrigin ? <Github size={12} /> : null}
+            {isGitHubOrigin ? <GitHubInvertocatMark size={12} /> : null}
             {projectGitState?.originName ?? 'origin'}
           </button>
         ) : null}
