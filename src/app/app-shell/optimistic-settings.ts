@@ -28,6 +28,7 @@ const optimisticSettingKeys = new Set([
   'projectImportState',
   'preferredProjectLocation',
   'initializeGitOnProjectCreate',
+  'projectDashboardEnabled',
   'gitOpsDefaultMode',
   'gitDiffBaselineDefault',
   'gitDiffRenderModeDefault',
@@ -152,6 +153,8 @@ function applyOptimisticBooleanSetting(
   if (payload.key === 'showDictationButton') nextSettings.showDictationButton = payload.value
   if (payload.key === 'initializeGitOnProjectCreate')
     nextSettings.initializeGitOnProjectCreate = payload.value
+  if (payload.key === 'projectDashboardEnabled')
+    nextSettings.projectDashboardEnabled = payload.value
   if (payload.key === 'gitDiffFileTreeDefaultVisible')
     nextSettings.gitDiffFileTreeDefaultVisible = payload.value
   if (payload.key === 'useAgentsSkillsPaths') nextSettings.useAgentsSkillsPaths = payload.value

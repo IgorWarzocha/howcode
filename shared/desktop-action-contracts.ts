@@ -93,6 +93,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'projectImportState'; imported: boolean | null }
   | { key: 'preferredProjectLocation'; value: string | null }
   | { key: 'initializeGitOnProjectCreate'; value: boolean }
+  | { key: 'projectDashboardEnabled'; value: boolean }
   | { key: 'gitOpsDefaultMode'; value: GitOpsMode }
   | { key: 'gitDiffBaselineDefault'; value: ProjectDiffDefaultBaseline }
   | { key: 'gitDiffRenderModeDefault'; value: ProjectDiffRenderMode }

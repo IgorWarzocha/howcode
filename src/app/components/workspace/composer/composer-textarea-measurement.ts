@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 const COLLAPSED_VISIBLE_LINE_COUNT = 5
 const EXPANDED_VISIBLE_LINE_COUNT = 15
@@ -116,6 +116,7 @@ export function useComposerTextareaHeight(input: {
   const [reservedHeight, setReservedHeight] = useState<number | null>(null)
   const [textareaLayoutVersion, setTextareaLayoutVersion] = useState(0)
   const [canExpandField, setCanExpandField] = useState(false)
+  const observedTextareaWidthRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
     void textareaLayoutVersion
@@ -158,7 +159,10 @@ export function useComposerTextareaHeight(input: {
     const textarea = input.textareaRef.current
     if (!textarea) return
     if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver((entries) => {
+      const nextWidth = entries[0]?.contentRect.width ?? textarea.clientWidth
+      if (observedTextareaWidthRef.current === nextWidth) return
+      observedTextareaWidthRef.current = nextWidth
       setTextareaLayoutVersion((current) => current + 1)
     })
     observer.observe(textarea)

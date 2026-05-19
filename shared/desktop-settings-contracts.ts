@@ -36,6 +36,7 @@ export type AppSettings = {
   projectImportState: boolean | null
   preferredProjectLocation: string | null
   initializeGitOnProjectCreate: boolean
+  projectDashboardEnabled: boolean
   gitOpsDefaultMode: GitOpsMode
   gitDiffBaselineDefault: ProjectDiffDefaultBaseline
   gitDiffRenderModeDefault: ProjectDiffRenderMode

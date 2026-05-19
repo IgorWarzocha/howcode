@@ -44,6 +44,7 @@ import {
   setKeybindings,
   setPiTuiTakeover,
   setPreferredProjectLocation,
+  setProjectDashboardEnabled,
   setProjectDeletionMode,
   setProjectImportState,
   setShowDictationButton,
@@ -162,6 +163,8 @@ const settingsUpdateHandlers = {
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
   initializeGitOnProjectCreate: (payload) =>
     setOptionalBooleanSetting(payload, setInitializeGitOnProjectCreate),
+  projectDashboardEnabled: (payload) =>
+    setOptionalBooleanSetting(payload, setProjectDashboardEnabled),
   gitOpsDefaultMode: (payload) => {
     const value = payload.value
     if (value === 'commit' || value === 'commit-push') setGitOpsDefaultMode(value)

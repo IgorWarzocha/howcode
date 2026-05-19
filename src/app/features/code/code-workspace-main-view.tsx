@@ -241,21 +241,25 @@ export function CodeWorkspaceMainView({
     )
   }
 
+  const showProjectDashboard = appSettings.projectDashboardEnabled || !selectedProjectId
+
   return (
     <div
       className={`relative grid h-full min-h-0 w-full justify-items-center overflow-hidden ${selectedProjectId ? 'px-0' : 'px-4'}`}
     >
-      <LandingView
-        appSettings={appSettings}
-        className={workspaceContentClass}
-        projectName={currentProjectName}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        composerOverlayHeight={composerOverlayHeight}
-        onAction={onAction}
-        onOpenThread={onOpenThread}
-        onSelectProject={onSelectProject}
-      />
+      {showProjectDashboard ? (
+        <LandingView
+          appSettings={appSettings}
+          className={workspaceContentClass}
+          projectName={currentProjectName}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          composerOverlayHeight={composerOverlayHeight}
+          onAction={onAction}
+          onOpenThread={onOpenThread}
+          onSelectProject={onSelectProject}
+        />
+      ) : null}
     </div>
   )
 }

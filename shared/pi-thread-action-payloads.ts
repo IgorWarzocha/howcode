@@ -266,6 +266,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'projectImportState' ||
     payload.key === 'preferredProjectLocation' ||
     payload.key === 'initializeGitOnProjectCreate' ||
+    payload.key === 'projectDashboardEnabled' ||
     payload.key === 'gitOpsDefaultMode' ||
     payload.key === 'gitDiffBaselineDefault' ||
     payload.key === 'gitDiffRenderModeDefault' ||
