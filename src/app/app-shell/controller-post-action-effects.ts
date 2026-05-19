@@ -53,7 +53,10 @@ type RunPostDesktopActionEffectsInput = {
     composerMode?: 'chat' | 'code' | null
   }) => Promise<ComposerState | null>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
   setArchivedThreads: (threads: ArchivedThread[]) => void
   setChatSidebarState: (

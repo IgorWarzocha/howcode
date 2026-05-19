@@ -50,6 +50,12 @@ export type WorkspaceAction =
   | { type: 'select-inbox-thread'; sessionPath: string | null }
   | { type: 'clear-thread-selection' }
   | { type: 'select-project'; projectId: string }
+  | {
+      type: 'start-project-thread'
+      projectId: string
+      threadId: string
+      sessionPath: string
+    }
   | { type: 'set-selected-project'; projectId: string }
   | {
       type: 'open-thread'

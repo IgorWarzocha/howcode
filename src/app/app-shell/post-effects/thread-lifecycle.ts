@@ -21,7 +21,10 @@ type ThreadLifecycleInput = {
   queryClient: QueryClient
   dispatch: Dispatch<WorkspaceAction>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   refreshShellState: () => Promise<unknown>
   setArchivedThreads: (threads: ArchivedThread[]) => void
   invalidateInboxThreads: () => Promise<unknown>

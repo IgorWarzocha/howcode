@@ -21,6 +21,7 @@ export type HostConnection = {
   startPromise: Promise<ChildProcess> | null
   idleTimer: ReturnType<typeof setTimeout> | null
   busy: boolean
+  lastSendComposerPromptAtMs: number | null
   terminating: boolean
 }
 
@@ -109,6 +110,7 @@ export function createHostConnection(role: HostRole, label: string): HostConnect
     startPromise: null,
     idleTimer: null,
     busy: false,
+    lastSendComposerPromptAtMs: null,
     terminating: false,
   }
   hosts.add(host)
@@ -121,6 +123,7 @@ brokerState.serviceHost = serviceHost
 
 export function rejectPendingRequests(host: HostConnection, error: Error) {
   host.busy = false
+  host.lastSendComposerPromptAtMs = null
   for (const [, pending] of host.pendingRequests) {
     pending.reject(error)
   }
@@ -143,6 +146,7 @@ export function forgetHost(host: HostConnection) {
     }
   }
   host.aliases.clear()
+  host.lastSendComposerPromptAtMs = null
   if (host !== serviceHost) {
     hosts.delete(host)
   }

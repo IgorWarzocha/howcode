@@ -29,6 +29,7 @@ export function preserveLocalDraftThreads(
   currentThreads: Thread[],
   threadsScope: ThreadsScope,
   cachedThreads: Thread[] = [],
+  replaceLocalDraftSessionPath: string | null = null,
 ) {
   const localDrafts = [...cachedThreads, ...currentThreads].filter((thread) =>
     localDraftMatchesScope(thread, threadsScope),
@@ -36,7 +37,23 @@ export function preserveLocalDraftThreads(
   const uniqueLocalDrafts = localDrafts.filter(
     (draft, index) => !hasSameThread(localDrafts.slice(0, index), draft),
   )
-  const preservedDrafts = uniqueLocalDrafts.filter((draft) => !hasSameThread(fetchedThreads, draft))
+  const preservedDrafts = uniqueLocalDrafts.filter((draft) => {
+    if (hasSameThread(fetchedThreads, draft)) return false
+    if (
+      replaceLocalDraftSessionPath === null ||
+      draft.sessionPath !== replaceLocalDraftSessionPath
+    ) {
+      return true
+    }
+
+    const draftStartedAt = draft.lastModifiedMs ?? Number.POSITIVE_INFINITY
+    return !fetchedThreads.some(
+      (thread) =>
+        thread.sessionPath &&
+        !isLocalSessionPath(thread.sessionPath) &&
+        (thread.lastModifiedMs ?? 0) >= draftStartedAt - 1000,
+    )
+  })
   return [...preservedDrafts, ...fetchedThreads]
 }
 
@@ -89,10 +106,25 @@ function updateLocalDraftCache(
   })
 }
 
+export function forgetLocalDraftThread(projectId: string, sessionPath: string | null | undefined) {
+  if (!sessionPath) return
+  const cache = getLocalDraftCache(projectId)
+  setLocalDraftCache(projectId, {
+    chat: cache.chat.filter((thread) => thread.sessionPath !== sessionPath),
+    code: cache.code.filter((thread) => thread.sessionPath !== sessionPath),
+  })
+}
+
 export function useDesktopProjectThreads() {
   const queryClient = useQueryClient()
   return useCallback(
-    async (projectId: string, options: { chat?: boolean | undefined } = {}) => {
+    async (
+      projectId: string,
+      options: {
+        chat?: boolean | undefined
+        replaceLocalDraftSessionPath?: string | null | undefined
+      } = {},
+    ) => {
       const threadsScope = options.chat ? 'chat' : 'code'
       const threads = await queryClient.fetchQuery({
         queryKey: desktopQueryKeys.projectThreads(projectId, options.chat === true),
@@ -111,6 +143,7 @@ export function useDesktopProjectThreads() {
               project.threads,
               threadsScope,
               getLocalDraftCache(projectId)[threadsScope],
+              options.replaceLocalDraftSessionPath ?? null,
             )
             updateLocalDraftCache(projectId, threadsScope, threads, mergedThreads)
             return {

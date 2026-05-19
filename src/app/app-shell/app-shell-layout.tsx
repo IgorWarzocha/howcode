@@ -17,26 +17,35 @@ type TakeoverTerminalKeyState = {
 function isLocalToPersistedTakeoverTransition(
   previous: TakeoverTerminalKeyState,
   nextProjectId: string,
-  nextThreadId: string | null,
   nextSessionPath: string | null,
+  nextActiveView: AppShellController['state']['activeView'],
 ) {
   return (
+    nextActiveView === 'project' &&
     previous.projectId === nextProjectId &&
-    previous.threadId !== null &&
-    previous.threadId === nextThreadId &&
     isLocalSessionPath(previous.sessionPath) &&
     getPersistedSessionPath(nextSessionPath) !== null
   )
 }
 
 function getThreadSessionPath(state: AppShellController['state']) {
-  if (state.activeView === 'chat' || state.activeView === 'thread' || state.activeView === 'gitops')
+  if (
+    state.activeView === 'chat' ||
+    state.activeView === 'thread' ||
+    state.activeView === 'gitops' ||
+    state.activeView === 'project'
+  )
     return state.selectedSessionPath
   return null
 }
 
 function getThreadId(state: AppShellController['state']) {
-  if (state.activeView === 'chat' || state.activeView === 'thread' || state.activeView === 'gitops')
+  if (
+    state.activeView === 'chat' ||
+    state.activeView === 'thread' ||
+    state.activeView === 'gitops' ||
+    state.activeView === 'project'
+  )
     return state.selectedThreadId
   return null
 }
@@ -61,18 +70,28 @@ function updateTakeoverTerminalKey(options: {
   terminalSessionPath: string | null
 }) {
   const current = options.takeoverTerminalKeyRef.current
+  const preservingLocalToPersistedTakeover =
+    options.takeoverVisible &&
+    current !== null &&
+    current.key !== options.nextTakeoverTerminalKey &&
+    isLocalToPersistedTakeoverTransition(
+      current,
+      options.composerProjectId,
+      options.terminalSessionPath,
+      options.state.activeView,
+    )
   if (options.takeoverVisible && current === null)
     options.takeoverTerminalKeyRef.current = options.nextTakeoverTerminalKeyState
+  else if (preservingLocalToPersistedTakeover)
+    options.takeoverTerminalKeyRef.current = {
+      ...options.nextTakeoverTerminalKeyState,
+      key: current.key,
+    }
   else if (
     options.takeoverVisible &&
     current !== null &&
     current.key !== options.nextTakeoverTerminalKey &&
-    !isLocalToPersistedTakeoverTransition(
-      current,
-      options.composerProjectId,
-      options.state.selectedThreadId,
-      options.terminalSessionPath,
-    )
+    !preservingLocalToPersistedTakeover
   )
     options.takeoverTerminalKeyRef.current = options.nextTakeoverTerminalKeyState
   else if (!(options.takeoverVisible || options.takeoverPresent))

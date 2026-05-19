@@ -48,6 +48,7 @@ export type DesktopEvent =
       projectId: string
       threadId: string
       sessionPath: string
+      replacesSessionPath?: string | undefined | null | undefined
       chatGroupId?: string | undefined | null | undefined
       isChat?: boolean | undefined
       thread: ThreadData

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import type { ShellState } from '../desktop/types'
 import { desktopQueryKeys, getShellStateQuery } from '../query/desktop-query'
 
-function mergeShellStateProjects(
+export function mergeShellStateProjects(
   currentState: ShellState | null | undefined,
   nextState: ShellState | null,
 ): ShellState | null {
@@ -23,6 +23,10 @@ function mergeShellStateProjects(
         ...project,
         threads: currentProject.threads,
         threadCount: Math.max(project.threadCount ?? 0, currentProject.threads.length),
+        latestModifiedMs: Math.max(
+          project.latestModifiedMs ?? 0,
+          currentProject.latestModifiedMs ?? 0,
+        ),
         threadsLoaded: true,
         threadsScope: currentProject.threadsScope,
       }

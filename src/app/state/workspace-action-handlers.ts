@@ -10,6 +10,7 @@ import {
   getTerminalStateForNextView,
   getTerminalVisibilityForSession,
   migrateTakeoverOverride,
+  migrateTerminalVisibility,
   setTerminalVisibleState,
   shouldMigrateTerminalVisibilityForOpenedThread,
   shouldRestoreTerminalOnGitOpsClose,
@@ -245,6 +246,41 @@ function openThreadState(
   }
 }
 
+function startProjectThreadState(
+  state: WorkspaceState,
+  action: Extract<WorkspaceAction, { type: 'start-project-thread' }>,
+): WorkspaceState {
+  const nextTerminalVisibleBySession = migrateTerminalVisibility(
+    state.terminalVisibleBySession,
+    state.selectedSessionPath,
+    action.sessionPath,
+  )
+  return {
+    ...state,
+    ...getTerminalStateForNextView(state, 'project'),
+    activeView: 'project',
+    selectedProjectId: action.projectId,
+    hasSelectedProject: true,
+    landingVisible: false,
+    selectedThreadId: action.threadId,
+    selectedSessionPath: action.sessionPath,
+    terminalVisible: getTerminalVisibilityForSession(
+      nextTerminalVisibleBySession,
+      action.sessionPath,
+    ),
+    terminalVisibleBySession: nextTerminalVisibleBySession,
+    takeoverOverrides: migrateTakeoverOverride(
+      state.takeoverOverrides,
+      state.selectedSessionPath,
+      action.sessionPath,
+    ),
+    selectedDiffFilePath: null,
+    gitOpsReturnView: 'project',
+    utilityViewReturnState: null,
+    collapsedProjectIds: { ...state.collapsedProjectIds, [action.projectId]: false },
+  }
+}
+
 function previewThreadState(
   state: WorkspaceState,
   action: Extract<WorkspaceAction, { type: 'preview-thread' }>,
@@ -384,6 +420,7 @@ export const workspaceActionHandlers = {
     hasSelectedProject: true,
     landingVisible: false,
   }),
+  'start-project-thread': startProjectThreadState,
   'preview-thread': previewThreadState,
   'open-thread': openThreadState,
   'open-gitops': openGitOpsState,

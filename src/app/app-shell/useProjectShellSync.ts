@@ -1,5 +1,6 @@
 import type { Dispatch } from 'react'
 import { useEffect } from 'react'
+import { isLocalSessionPath } from '../../../shared/session-paths'
 import type { ArchivedThread } from '../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import type { Project } from '../types'
@@ -8,7 +9,13 @@ type UseProjectShellSyncInput = {
   projects: Project[]
   collapsedProjectIds: Record<string, boolean>
   activeView: WorkspaceState['activeView']
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  selectedProjectId: WorkspaceState['selectedProjectId']
+  selectedSessionPath: WorkspaceState['selectedSessionPath']
+  takeoverVisible: WorkspaceState['takeoverVisible']
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   dispatch: Dispatch<WorkspaceAction>
   setArchivedThreads: (threads: ArchivedThread[]) => void
@@ -18,6 +25,9 @@ export function useProjectShellSync({
   projects,
   collapsedProjectIds,
   activeView,
+  selectedProjectId,
+  selectedSessionPath,
+  takeoverVisible,
   loadProjectThreads,
   loadArchivedThreads,
   dispatch,
@@ -43,6 +53,32 @@ export function useProjectShellSync({
       void loadProjectThreads(project.id, { chat: activeView === 'chat' })
     }
   }, [activeView, collapsedProjectIds, loadProjectThreads, projects])
+
+  useEffect(() => {
+    if (
+      !takeoverVisible ||
+      activeView === 'chat' ||
+      !selectedProjectId ||
+      !isLocalSessionPath(selectedSessionPath)
+    ) {
+      return
+    }
+
+    let cancelled = false
+    const pollProjectThreads = () => {
+      void loadProjectThreads(selectedProjectId, {
+        replaceLocalDraftSessionPath: selectedSessionPath,
+      }).finally(() => {
+        if (!cancelled) timeoutId = window.setTimeout(pollProjectThreads, 1000)
+      })
+    }
+    let timeoutId = window.setTimeout(pollProjectThreads, 1000)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [activeView, loadProjectThreads, selectedProjectId, selectedSessionPath, takeoverVisible])
 
   useEffect(() => {
     if (activeView !== 'archived') {

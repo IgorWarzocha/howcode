@@ -28,6 +28,24 @@ export function getTerminalVisibilityForSession(
   return sessionPath ? (terminalVisibleBySession[sessionPath] ?? false) : false
 }
 
+export function migrateTerminalVisibility(
+  terminalVisibleBySession: Record<string, boolean>,
+  fromSessionPath: string | null,
+  toSessionPath: string,
+) {
+  if (!fromSessionPath || fromSessionPath === toSessionPath) return terminalVisibleBySession
+  if (!isLocalSessionPath(fromSessionPath) || isLocalSessionPath(toSessionPath)) {
+    return terminalVisibleBySession
+  }
+  if (Object.hasOwn(terminalVisibleBySession, toSessionPath)) return terminalVisibleBySession
+  if (!Object.hasOwn(terminalVisibleBySession, fromSessionPath)) return terminalVisibleBySession
+
+  return {
+    ...terminalVisibleBySession,
+    [toSessionPath]: terminalVisibleBySession[fromSessionPath] ?? false,
+  }
+}
+
 export function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
   return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'project')
 }
@@ -60,10 +78,17 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
 }
 
 export function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
-  const getProjectTerminalVisible = () =>
-    state.selectedProjectId
+  const getProjectTerminalVisible = () => {
+    if (state.selectedSessionPath) {
+      return getTerminalVisibilityForSession(
+        state.terminalVisibleBySession,
+        state.selectedSessionPath,
+      )
+    }
+    return state.selectedProjectId
       ? (state.projectTerminalVisibleByProject[state.selectedProjectId] ?? false)
       : false
+  }
 
   if (state.activeView !== 'gitops') {
     return {

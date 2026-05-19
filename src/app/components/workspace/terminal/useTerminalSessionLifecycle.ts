@@ -1,6 +1,6 @@
 import type { MutableRefObject } from 'react'
 import { useEffect } from 'react'
-import { getPersistedSessionPath } from '../../../../../shared/session-paths'
+import { getPersistedSessionPath, isLocalSessionPath } from '../../../../../shared/session-paths'
 import type { TerminalEvent } from '../../../desktop/types'
 import {
   closeDesktopTerminal,
@@ -59,10 +59,16 @@ export function getTerminalPersistedSessionPath(input: {
   sessionPath: string | null
   terminalSessionPath: string | null | undefined
 }) {
-  return (
-    getPersistedSessionPath(input.terminalSessionPath ?? null) ??
-    (input.effectiveLaunchMode === 'pi-session' ? getPersistedSessionPath(input.sessionPath) : null)
-  )
+  if (input.effectiveLaunchMode === 'pi-session') {
+    return (
+      getPersistedSessionPath(input.terminalSessionPath ?? null) ??
+      (isLocalSessionPath(input.terminalSessionPath)
+        ? getPersistedSessionPath(input.sessionPath)
+        : null)
+    )
+  }
+
+  return getPersistedSessionPath(input.terminalSessionPath ?? input.sessionPath)
 }
 
 function cleanupTerminalSessionOnUnmount(input: {

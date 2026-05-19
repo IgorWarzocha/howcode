@@ -63,7 +63,10 @@ export function useAppShellEffects({
   shellAppSettings: AppSettings | null | undefined
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean | undefined },
+    options?: {
+      chat?: boolean | undefined
+      replaceLocalDraftSessionPath?: string | null | undefined
+    },
   ) => Promise<unknown>
   loadArchivedThreads: () => Promise<ArchivedThread[]>
   loadComposerState: (request?: {
@@ -88,6 +91,9 @@ export function useAppShellEffects({
     projects,
     collapsedProjectIds,
     activeView: workspaceState.activeView,
+    selectedProjectId: workspaceState.selectedProjectId,
+    selectedSessionPath: workspaceState.selectedSessionPath,
+    takeoverVisible: workspaceState.takeoverVisible,
     loadProjectThreads,
     loadArchivedThreads,
     dispatch,

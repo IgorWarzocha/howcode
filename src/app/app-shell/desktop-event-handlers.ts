@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { isLocalSessionPath } from '../../../shared/session-paths'
 import type {
   ChatSidebarState,
   ComposerState,
@@ -29,7 +30,10 @@ type UseDesktopEventSyncInput = {
   workspaceState: WorkspaceState
   loadProjectThreads: (
     projectId: string,
-    options?: { chat?: boolean | undefined },
+    options?: {
+      chat?: boolean | undefined
+      replaceLocalDraftSessionPath?: string | null | undefined
+    },
   ) => Promise<unknown>
   loadProjectGitState: (projectId: string) => Promise<ProjectGitState | null>
   scheduleShellStateRefresh: () => void
@@ -140,6 +144,7 @@ function getThreadEventFlags(input: {
     reason: input.event.reason,
     projectId: input.event.projectId,
     isChat: input.event.isChat,
+    replacesSessionPath: input.event.replacesSessionPath,
     workspaceState: input.latestWorkspaceState,
   })
   return {
@@ -192,6 +197,19 @@ function dispatchThreadOpenIfNeeded(input: {
   flags: ReturnType<typeof getThreadEventFlags>
   latestWorkspaceState: DesktopEventSelectionState
 }) {
+  if (
+    input.flags.shouldDisplayLocalDraftThread &&
+    input.latestWorkspaceState.activeView === 'project'
+  ) {
+    input.dispatch({
+      type: 'start-project-thread',
+      projectId: input.event.projectId,
+      threadId: input.event.threadId,
+      sessionPath: input.event.sessionPath,
+    })
+    return
+  }
+
   if (
     input.flags.shouldAutoOpenThread ||
     (input.flags.shouldDisplayLocalDraftThread && input.flags.hasVisibleAssistantActivity)
@@ -250,6 +268,27 @@ function refreshThreadEndState(input: {
   }
 }
 
+function rememberLocalDraftSessionAlias(input: {
+  event: Extract<DesktopEvent, { type: 'thread-update' }>
+  flags: ReturnType<typeof getThreadEventFlags>
+  latestWorkspaceState: DesktopEventSelectionState
+  localDraftSessionPathByPersistedSessionPathRef: React.RefObject<Map<string, string>>
+}) {
+  if (input.flags.shouldDisplayLocalDraftThread && input.latestWorkspaceState.selectedSessionPath) {
+    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
+      input.event.sessionPath,
+      input.latestWorkspaceState.selectedSessionPath,
+    )
+  }
+  const replacesSessionPath = input.event.replacesSessionPath
+  if (typeof replacesSessionPath === 'string' && isLocalSessionPath(replacesSessionPath)) {
+    input.localDraftSessionPathByPersistedSessionPathRef.current.set(
+      input.event.sessionPath,
+      replacesSessionPath,
+    )
+  }
+}
+
 function handleThreadUpdateEvent(
   runtime: DesktopEventSyncRuntime,
   event: Extract<DesktopEvent, { type: 'thread-update' }>,
@@ -259,12 +298,13 @@ function handleThreadUpdateEvent(
   const visibleSessionPath = getVisibleDesktopSessionPath(latestWorkspaceState)
   const threadWithPreferences = mergeThreadPreferences({ event, queryClient: runtime.queryClient })
   const flags = getThreadEventFlags({ event, latestWorkspaceState, visibleSessionPath })
-  if (flags.shouldDisplayLocalDraftThread && latestWorkspaceState.selectedSessionPath) {
-    runtime.localDraftSessionPathByPersistedSessionPathRef.current.set(
-      event.sessionPath,
-      latestWorkspaceState.selectedSessionPath,
-    )
-  }
+  rememberLocalDraftSessionAlias({
+    event,
+    flags,
+    latestWorkspaceState,
+    localDraftSessionPathByPersistedSessionPathRef:
+      runtime.localDraftSessionPathByPersistedSessionPathRef,
+  })
   const aliasedLocalDraftSessionPath =
     runtime.localDraftSessionPathByPersistedSessionPathRef.current.get(event.sessionPath) ?? null
   updateLiveThreadData({
@@ -276,7 +316,11 @@ function handleThreadUpdateEvent(
   })
   if (flags.isCompactionThreadUpdate && flags.isVisibleThreadUpdate)
     runtime.setThreadHistoryCompactions(0)
-  if (event.composer && event.sessionPath === visibleSessionPath)
+  if (
+    event.composer &&
+    (event.sessionPath === visibleSessionPath ||
+      aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
+  )
     runtime.setComposerState(event.composer)
   if (
     event.reason === 'start' ||

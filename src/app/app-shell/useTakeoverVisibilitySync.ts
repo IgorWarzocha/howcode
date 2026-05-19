@@ -18,7 +18,8 @@ export function useTakeoverVisibilitySync({
 
   useLayoutEffect(() => {
     const visibleThreadKey =
-      workspaceState.activeView === 'thread' && workspaceState.selectedSessionPath
+      (workspaceState.activeView === 'thread' || workspaceState.activeView === 'project') &&
+      workspaceState.selectedSessionPath
         ? workspaceState.selectedSessionPath
         : null
 

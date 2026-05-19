@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { Dispatch } from 'react'
+import { getLocalDraftProjectId } from '../../../../shared/session-paths'
 import type { ComposerState, DesktopActionResult } from '../../desktop/types'
 import type { WorkspaceAction, WorkspaceState } from '../../state/workspace'
 import {
@@ -19,7 +20,10 @@ type NewThreadPostEffectInput = {
   queryClient: QueryClient
   dispatch: Dispatch<WorkspaceAction>
   refreshShellState: () => Promise<unknown>
-  loadProjectThreads: (projectId: string, options?: { chat?: boolean }) => Promise<unknown>
+  loadProjectThreads: (
+    projectId: string,
+    options?: { chat?: boolean; replaceLocalDraftSessionPath?: string | null },
+  ) => Promise<unknown>
   loadComposerState: (request?: {
     projectId?: string | null
     composerMode?: 'chat' | 'code' | null
@@ -54,7 +58,26 @@ function shouldStayOnCodeDashboard(input: NewThreadPostEffectInput) {
   )
 }
 
-function applyAndOpenOptimisticThread(
+function shouldShowCodeDashboard(input: NewThreadPostEffectInput) {
+  return input.action === 'project.add' || input.contextualPayload.composerMode === 'code'
+}
+
+function getComposerModeForNextView(input: NewThreadPostEffectInput): 'chat' | 'code' {
+  if (input.action === 'project.add') return 'code'
+  return input.workspaceState.activeView === 'chat' ? 'chat' : 'code'
+}
+
+function shouldReuseActiveProjectDraft(input: NewThreadPostEffectInput, projectId: string | null) {
+  return (
+    input.action === 'thread.new' &&
+    input.workspaceState.activeView === 'project' &&
+    input.contextualPayload.composerMode === 'code' &&
+    projectId !== null &&
+    getLocalDraftProjectId(input.workspaceState.selectedSessionPath) === projectId
+  )
+}
+
+function applyOptimisticThread(
   input: NewThreadPostEffectInput,
   thread: { projectId: string; threadId: string; sessionPath: string },
 ) {
@@ -68,8 +91,30 @@ function applyAndOpenOptimisticThread(
   applyProjectThreadToShellState(input.queryClient, thread.projectId, optimisticThread, {
     revealProject: true,
   })
+  return optimisticThread
+}
+
+function openOptimisticThread(
+  input: NewThreadPostEffectInput,
+  thread: { projectId: string; threadId: string; sessionPath: string },
+) {
+  const optimisticThread = applyOptimisticThread(input, thread)
   input.dispatch({
     type: 'open-thread',
+    projectId: thread.projectId,
+    threadId: thread.threadId,
+    sessionPath: thread.sessionPath,
+  })
+  return optimisticThread
+}
+
+function startOptimisticProjectThread(
+  input: NewThreadPostEffectInput,
+  thread: { projectId: string; threadId: string; sessionPath: string },
+) {
+  const optimisticThread = applyOptimisticThread(input, thread)
+  input.dispatch({
+    type: 'start-project-thread',
     projectId: thread.projectId,
     threadId: thread.threadId,
     sessionPath: thread.sessionPath,
@@ -82,8 +127,17 @@ async function handleNewThreadBridgeResult(
   result: ReturnType<typeof getNewThreadResult>,
 ) {
   const nextProjectId = result.resultProjectId ?? result.projectId
+  if (shouldReuseActiveProjectDraft(input, nextProjectId)) return true
   if (!(nextProjectId && result.threadId && result.sessionPath)) return false
-  const optimisticThread = applyAndOpenOptimisticThread(input, {
+  if (shouldShowCodeDashboard(input)) {
+    startOptimisticProjectThread(input, {
+      projectId: nextProjectId,
+      threadId: result.threadId,
+      sessionPath: result.sessionPath,
+    })
+    return true
+  }
+  const optimisticThread = openOptimisticThread(input, {
     projectId: nextProjectId,
     threadId: result.threadId,
     sessionPath: result.sessionPath,
@@ -105,11 +159,10 @@ async function handleNewThreadNavigation(
   if (await handleNewThreadBridgeResult(input, result)) return
   if (shouldStayOnCodeDashboard(input) && nextProjectId) {
     input.dispatch({ type: 'select-project', projectId: nextProjectId })
-    await input.loadProjectThreads(nextProjectId)
     return
   }
   if (result.localFallback) {
-    applyAndOpenOptimisticThread(input, {
+    openOptimisticThread(input, {
       projectId: result.localFallback.projectId,
       threadId: result.localFallback.threadId,
       sessionPath: result.localFallback.sessionPath,
@@ -118,7 +171,6 @@ async function handleNewThreadNavigation(
   }
   if (nextProjectId) {
     input.dispatch({ type: 'select-project', projectId: nextProjectId })
-    await input.loadProjectThreads(nextProjectId)
     return
   }
   input.dispatch({ type: 'show-view', view: 'code' })
@@ -129,9 +181,11 @@ export async function applyNewThreadPostEffect(input: NewThreadPostEffectInput) 
   if (input.action === 'project.add') await input.refreshShellState()
   await handleNewThreadNavigation(input, result)
   if (result.localFallback) return
-  const nextComposerState = await input.loadComposerState({
-    projectId: result.resultProjectId ?? result.projectId,
-    composerMode: input.workspaceState.activeView === 'chat' ? 'chat' : 'code',
-  })
+  const nextComposerState =
+    (input.action === 'thread.new' ? input.actionResult?.result?.composer : null) ??
+    (await input.loadComposerState({
+      projectId: result.resultProjectId ?? result.projectId,
+      composerMode: getComposerModeForNextView(input),
+    }))
   if (nextComposerState) input.setComposerState(nextComposerState)
 }

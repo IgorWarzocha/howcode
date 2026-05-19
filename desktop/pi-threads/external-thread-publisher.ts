@@ -50,12 +50,14 @@ function normalizeExternalThreadData(thread: ThreadData) {
 export async function publishExternalThreadUpdate({
   lastModifiedMs,
   projectId,
+  replacesSessionPath,
   sessionPath,
   thread,
   threadId,
 }: {
   lastModifiedMs: number
   projectId: string
+  replacesSessionPath?: string | undefined | null | undefined
   sessionPath: string
   thread: ThreadData
   threadId: string
@@ -95,6 +97,7 @@ export async function publishExternalThreadUpdate({
     projectId,
     threadId,
     sessionPath,
+    replacesSessionPath: replacesSessionPath ?? null,
     thread,
     composer: null,
   })
