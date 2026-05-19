@@ -57,6 +57,10 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
+function logUpdateFailure(operation: string, error: unknown) {
+  console.error(`[howcode updater] ${operation} failed`, error)
+}
+
 function getTarget(): UpdateTarget {
   const arch = process.arch === 'arm64' ? 'arm64' : process.arch === 'x64' ? 'x64' : null
   if (!arch) throw new Error(`Unsupported architecture: ${process.arch}`)
@@ -138,6 +142,16 @@ function hasPackagedAppBundle(installDir: string, target: UpdateTarget) {
     existsSync(path.join(resourcesPath, 'app.asar')) ||
     existsSync(path.join(resourcesPath, 'app', 'package.json'))
   )
+}
+
+function getMissingPackagedBundleMessage(installDir: string, target: UpdateTarget) {
+  const resourcesPath = getAppResourcesPath(installDir, target)
+  const appAsarPath = path.join(resourcesPath, 'app.asar')
+  const unpackedAppPath = path.join(resourcesPath, 'app', 'package.json')
+  return [
+    'Downloaded archive did not contain the packaged app bundle.',
+    `Checked ${appAsarPath} and ${unpackedAppPath}.`,
+  ].join(' ')
 }
 
 async function isValidInstall(paths: ReturnType<typeof getInstallPaths>, target: UpdateTarget) {
@@ -501,6 +515,7 @@ export class AppUpdater {
         error: null,
       })
     } catch (error) {
+      logUpdateFailure('check', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     }
     return this.state
@@ -566,7 +581,7 @@ export class AppUpdater {
           throw new Error(`Downloaded archive did not contain ${target.executable}.`)
         }
         if (!hasPackagedAppBundle(tempInstallDir, target)) {
-          throw new Error('Downloaded archive did not contain the packaged app bundle.')
+          throw new Error(getMissingPackagedBundleMessage(tempInstallDir, target))
         }
         await rm(paths.installDir, { recursive: true, force: true })
         await mkdir(path.dirname(paths.installDir), { recursive: true })
@@ -590,6 +605,7 @@ export class AppUpdater {
         error: null,
       })
     } catch (error) {
+      logUpdateFailure('install', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     } finally {
       await Promise.all([
@@ -622,6 +638,7 @@ export class AppUpdater {
       await spawnDetached(this.installedUpdate.executablePath)
       app.quit()
     } catch (error) {
+      logUpdateFailure('restart', error)
       this.setState({ status: 'error', error: getErrorMessage(error) })
     }
     return this.state
@@ -654,18 +671,17 @@ export class AppUpdater {
   }
 
   private isUpdateCandidate(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
+    const runningRelease = getRunningReleaseFingerprint()
+
+    if (release.channel === 'dev') {
+      return !(runningRelease?.version === release.version && runningRelease.hash === release.hash)
+    }
+
     const versionDiff = compareVersions(release.version, this.state.currentVersion)
     if (versionDiff > 0) return true
     if (versionDiff < 0) return false
 
-    const runningRelease = getRunningReleaseFingerprint()
-    if (release.channel === 'main') return false
-
-    if (runningRelease?.version === release.version && runningRelease.hash === release.hash) {
-      return false
-    }
-
-    return true
+    return false
   }
 
   private async getPruneKeepDirs(installDir: string) {

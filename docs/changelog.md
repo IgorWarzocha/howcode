@@ -14,6 +14,7 @@
 - Fixed packaged macOS terminal startup (thank you, BlockedPath)
 - Fixed code landing/project dashboard routing and added a setting to turn the project dashboard off.
 - Quieted missing-session usage summary noise and stopped settings checkboxes from shifting layout.
+- Fixed dev-channel updater checks so same-version builds compare hashes, and made update failures point to F12 logs.
 
 Snapshot: May 19, 2026.
 
