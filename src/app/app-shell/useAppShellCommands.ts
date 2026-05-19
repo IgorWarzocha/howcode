@@ -116,7 +116,11 @@ export function useAppShellCommands({
   const clearSelectedUnstartedDraft = () => {
     const selectedSessionPath = workspaceState.selectedSessionPath
     const selectedProjectId = workspaceState.selectedProjectId
-    if (!(selectedProjectId && isLocalSessionPath(selectedSessionPath))) return
+    if (
+      workspaceState.takeoverVisible ||
+      !(selectedProjectId && isLocalSessionPath(selectedSessionPath))
+    )
+      return
 
     const localSessionPath = selectedSessionPath ?? ''
     forgetLocalDraftThread(selectedProjectId, localSessionPath)
