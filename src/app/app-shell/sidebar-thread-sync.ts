@@ -318,13 +318,18 @@ export function applyThreadEventToSidebarState({
   const eventIsChat = event.isChat === true
   const eventReplacementSessionPath =
     typeof event.replacesSessionPath === 'string' ? event.replacesSessionPath : null
+  const explicitReplacementSessionPath = isLocalSessionPath(eventReplacementSessionPath)
+    ? eventReplacementSessionPath
+    : null
   const replaceSessionPath =
-    (isLocalSessionPath(eventReplacementSessionPath) ? eventReplacementSessionPath : null) ??
-    getDraftReplacementSessionPath(
-      workspaceState.selectedSessionPath,
-      workspaceState.selectedProjectId,
-      event.projectId,
-    )
+    explicitReplacementSessionPath ??
+    (event.reason === 'start'
+      ? getDraftReplacementSessionPath(
+          workspaceState.selectedSessionPath,
+          workspaceState.selectedProjectId,
+          event.projectId,
+        )
+      : null)
   const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === 'chat')
   if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
   upsertSidebarThread({

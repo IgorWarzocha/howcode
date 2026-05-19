@@ -1,4 +1,8 @@
-import { getLocalDraftProjectId, getPersistedSessionPath } from '../../../shared/session-paths'
+import {
+  getLocalDraftProjectId,
+  getPersistedSessionPath,
+  isLocalSessionPath,
+} from '../../../shared/session-paths'
 import type { DesktopEvent } from '../desktop/types'
 import { desktopQueryKeys, invokeDesktopActionQuery } from '../query/desktop-query'
 import type { WorkspaceState } from '../state/workspace'
@@ -51,15 +55,24 @@ export function shouldDisplayStartedThreadForLocalDraft({
   reason,
   projectId,
   isChat,
+  replacesSessionPath,
   workspaceState,
 }: {
   reason: Extract<DesktopEvent, { type: 'thread-update' }>['reason']
   projectId: string
   isChat?: boolean | undefined
+  replacesSessionPath?: string | null | undefined
   workspaceState: DesktopEventSelectionState
 }) {
+  const explicitlyReplacesSelectedDraft =
+    isLocalSessionPath(replacesSessionPath) &&
+    replacesSessionPath === workspaceState.selectedSessionPath
+  if (reason !== 'start' && !explicitlyReplacesSelectedDraft) {
+    return false
+  }
+
   const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath)
-  if ((reason !== 'start' && reason !== 'external') || localDraftProjectId !== projectId) {
+  if (localDraftProjectId !== projectId) {
     return false
   }
 
