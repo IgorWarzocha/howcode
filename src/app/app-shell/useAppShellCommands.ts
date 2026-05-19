@@ -23,6 +23,7 @@ type HandleAction = (
     | 'project.collapse'
     | 'project.expand'
     | 'thread.open'
+    | 'thread.new'
     | 'inbox.mark-read'
     | 'inbox.dismiss'
     | 'composer.reload-settings',
@@ -222,7 +223,15 @@ export function useAppShellCommands({
     })
   }
 
-  const handleShowTakeoverTerminal = () => {
+  const handleShowTakeoverTerminal = async () => {
+    if (
+      workspaceState.activeView === 'project' &&
+      composerProjectId &&
+      !workspaceState.selectedSessionPath
+    ) {
+      await handleAction('thread.new', { projectId: composerProjectId })
+    }
+
     dispatch({ type: 'set-takeover-visible', visible: true })
     setTakeoverOverrideForSelectedSession(true)
   }
