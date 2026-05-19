@@ -160,7 +160,7 @@ async function findStartedTuiSession(record: TerminalSessionRecord) {
   const { sessions } = await listAllSessionsStrict()
   const candidates = sessions.filter(
     (session) =>
-      (session.cwd || record.snapshot.projectId) === record.snapshot.projectId &&
+      session.cwd === record.snapshot.projectId &&
       session.created.getTime() >= detection.startedAtMs - 1_000,
   )
 
