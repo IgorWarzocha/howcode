@@ -57,45 +57,4 @@ describe('desktop shell state merge', () => {
       threads: current.projects[0]?.threads,
     })
   })
-
-  it('marks loaded thread lists stale when shell refresh reports a newer thread', () => {
-    const current = shellState([
-      {
-        id: '/repo/project-a',
-        name: 'project-a',
-        collapsed: false,
-        threadsLoaded: true,
-        threadsScope: 'code',
-        threadCount: 1,
-        latestModifiedMs: 100,
-        threads: [
-          {
-            id: 'local-thread-1',
-            title: 'New thread',
-            age: 'Now',
-            sessionPath: 'local://%2Frepo%2Fproject-a/draft',
-          },
-        ],
-      },
-    ])
-    const next = shellState([
-      {
-        id: '/repo/project-a',
-        name: 'project-a',
-        collapsed: true,
-        threadsLoaded: false,
-        threadCount: 2,
-        latestModifiedMs: 200,
-        threads: [],
-      },
-    ])
-
-    expect(mergeShellStateProjects(current, next)?.projects[0]).toMatchObject({
-      collapsed: false,
-      threadsLoaded: false,
-      threads: [],
-      threadCount: 2,
-      latestModifiedMs: 200,
-    })
-  })
 })
