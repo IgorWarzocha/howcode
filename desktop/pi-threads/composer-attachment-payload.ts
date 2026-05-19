@@ -1,5 +1,6 @@
 const windowsDrivePathPattern = /^[A-Za-z]:[\\/]/
 
+import type { Stats } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 import { getAttachmentKind, normalizeComposerAttachments } from '../../shared/composer-attachments'
@@ -14,7 +15,7 @@ function hasControlCharacters(value: string) {
   })
 }
 
-type StatLike = Pick<Awaited<ReturnType<typeof stat>>, 'isDirectory'>
+type StatLike = Pick<Stats, 'isDirectory'>
 
 type AttachmentStat = (path: string) => Promise<StatLike>
 

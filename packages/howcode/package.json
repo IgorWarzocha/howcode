@@ -22,7 +22,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "tar": "^7.5.1"
+    "tar": "^7.5.15"
   },
   "engines": {
     "node": ">=18"

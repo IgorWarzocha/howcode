@@ -1,5 +1,6 @@
-import { Check, Clock3, Github, SquareTerminal, Star } from 'lucide-react'
+import { Check, Clock3, SquareTerminal, Star } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
+import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
 import { SurfacePanel } from '../../common/surface-panel'
 import type { SidebarProjectsFilterMode } from './sidebar-projects.helpers'
 
@@ -14,7 +15,7 @@ type SidebarProjectsFilterMenuProps = {
 const items: Array<{ id: SidebarProjectsFilterMode; label: string; icon: ReactNode }> = [
   { id: 'all', label: 'All', icon: null },
   { id: 'favourites', label: 'Favourites', icon: <Star size={14} /> },
-  { id: 'github', label: 'GitHub', icon: <Github size={14} /> },
+  { id: 'github', label: 'GitHub', icon: <GitHubInvertocatMark size={14} /> },
   { id: 'terminal', label: 'Terminals', icon: <SquareTerminal size={14} /> },
   { id: 'recent', label: 'Since launch', icon: <Clock3 size={14} /> },
 ]

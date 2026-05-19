@@ -1,5 +1,6 @@
-import { Clock3, Github, ListFilter, SquareTerminal, Star } from 'lucide-react'
+import { Clock3, ListFilter, SquareTerminal, Star } from 'lucide-react'
 import type { View } from '../../../types'
+import { GitHubInvertocatMark } from '../../common/github-invertocat-mark'
 import type { SidebarProjectsFilterMode } from './sidebar-projects.helpers'
 
 export function shouldShowSidebarProjects(activeView: View) {
@@ -16,7 +17,7 @@ export function getSidebarProjectFilterLabel(filterMode: SidebarProjectsFilterMo
 
 export function getSidebarProjectFilterIcon(filterMode: SidebarProjectsFilterMode) {
   if (filterMode === 'favourites') return <Star size={15} className="fill-current" />
-  if (filterMode === 'github') return <Github size={15} />
+  if (filterMode === 'github') return <GitHubInvertocatMark size={15} />
   if (filterMode === 'terminal') return <SquareTerminal size={15} />
   if (filterMode === 'recent') return <Clock3 size={15} />
   return <ListFilter size={15} />

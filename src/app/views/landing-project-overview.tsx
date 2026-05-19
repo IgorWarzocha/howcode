@@ -1,5 +1,6 @@
-import { CircleDot, ExternalLink, GitBranch, Github } from 'lucide-react'
+import { CircleDot, ExternalLink, GitBranch } from 'lucide-react'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
+import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
 import type {
   ProjectGitState,
@@ -230,7 +231,7 @@ export function ProjectOverview({
           <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               {githubLink ? (
-                <Github size={14} className="text-[color:var(--muted)]" aria-hidden="true" />
+                <GitHubInvertocatMark size={14} className="text-[color:var(--muted)]" />
               ) : (
                 <GitBranch size={14} className="text-[color:var(--muted)]" aria-hidden="true" />
               )}
