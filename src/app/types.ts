@@ -1,8 +1,10 @@
 export type { ArchivedThread, Message, Project, Thread } from '../../shared/desktop-contracts.js'
 
 export type View =
+  | 'landing'
   | 'inbox'
   | 'code'
+  | 'project'
   | 'thread'
   | 'gitops'
   | 'archived'

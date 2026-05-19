@@ -220,7 +220,12 @@ function CompactWorkspaceSidebarButton(props: AppShellLayoutViewProps) {
   } = props
   if (!(sidebarCompactMode && !sidebarOverlayOpen && !utilityViewActive) || props.takeoverVisible)
     return null
-  if (props.state.activeView === 'code' && props.state.selectedProjectId) return null
+  if (
+    (props.state.activeView === 'code' || props.state.activeView === 'project') &&
+    props.state.selectedProjectId
+  ) {
+    return null
+  }
   const closeVisible = artifactDrawerOverlayVisible && closeArtifactDrawerOverlay
   const workspaceDockStyle = {
     '--dock-left-lane': 'max(2rem, calc((100cqw - 800px - 1rem) / 2))',

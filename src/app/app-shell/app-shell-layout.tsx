@@ -123,12 +123,12 @@ export function AppShellLayout({ controller }: AppShellLayoutProps) {
   const activeThreadId = getThreadId(state)
   const takeoverVisible = state.takeoverVisible
   const terminalDrawerVisible =
-    (state.activeView === 'thread' || state.activeView === 'code') &&
+    (state.activeView === 'thread' || state.activeView === 'project') &&
     state.terminalVisible &&
     !(sidebarCompactMode && terminalHiddenByCompactResize)
   const utilityViewActive = isUtilityView(state.activeView)
   const compactSidebarButtonEdgeMode =
-    state.activeView === 'code' || terminalDrawerVisible || artifactDrawerOverlayVisible
+    state.activeView === 'project' || terminalDrawerVisible || artifactDrawerOverlayVisible
   const animatedTerminalDrawerPresent = useAnimatedPresence(terminalDrawerVisible)
   const terminalDrawerPresent =
     sidebarCompactMode && terminalHiddenByCompactResize

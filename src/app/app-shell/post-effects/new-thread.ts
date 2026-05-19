@@ -49,7 +49,9 @@ function getNewThreadResult(input: NewThreadPostEffectInput) {
 }
 
 function shouldStayOnCodeDashboard(input: NewThreadPostEffectInput) {
-  return input.contextualPayload.composerMode === 'code'
+  return (
+    input.contextualPayload.composerMode === 'code' && input.workspaceState.activeView === 'project'
+  )
 }
 
 function applyAndOpenOptimisticThread(
@@ -100,12 +102,12 @@ async function handleNewThreadNavigation(
   result: ReturnType<typeof getNewThreadResult>,
 ) {
   const nextProjectId = result.resultProjectId ?? result.projectId
+  if (await handleNewThreadBridgeResult(input, result)) return
   if (shouldStayOnCodeDashboard(input) && nextProjectId) {
     input.dispatch({ type: 'select-project', projectId: nextProjectId })
     await input.loadProjectThreads(nextProjectId)
     return
   }
-  if (await handleNewThreadBridgeResult(input, result)) return
   if (result.localFallback) {
     applyAndOpenOptimisticThread(input, {
       projectId: result.localFallback.projectId,

@@ -1,7 +1,9 @@
 import type { ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { ChatWorkspaceView } from '../features/chat/chat-workspace-view'
+import { FALLBACK_APP_SETTINGS } from '../features/code/code-workspace-defaults'
 import { CodeWorkspaceView } from '../features/code/code-workspace-view'
 import { mainPanelClass } from '../ui/classes'
+import { LandingView } from '../views/landing-view'
 import { MainView } from '../views/main-view'
 import type { AppShellController } from './useAppShellController'
 
@@ -49,6 +51,25 @@ export function AppShellWorkspace({
   onArtifactDrawerOverlayChange,
 }: AppShellWorkspaceProps) {
   const { state } = controller
+
+  if (state.activeView === 'landing') {
+    return (
+      <div className="relative min-h-0 flex-1 px-5 pt-1.5">
+        <main className="h-full min-h-0 overflow-hidden pt-1.5">
+          <LandingView
+            appSettings={controller.shellState?.appSettings ?? FALLBACK_APP_SETTINGS}
+            projectName={currentProjectName}
+            projects={controller.projects}
+            selectedProjectId=""
+            composerOverlayHeight={0}
+            onAction={controller.handleAction}
+            onOpenThread={controller.handleThreadOpen}
+            onSelectProject={controller.handleProjectSelect}
+          />
+        </main>
+      </div>
+    )
+  }
 
   if (state.activeView === 'chat') {
     return (

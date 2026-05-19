@@ -37,6 +37,10 @@ function CodeWorkspaceDiffMain(props: CodeWorkspaceContentProps) {
 
 function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
   const appSettings = props.shellState?.appSettings ?? FALLBACK_APP_SETTINGS
+  const selectedProjectId =
+    props.controller.state.activeView === 'project' && props.controller.state.hasSelectedProject
+      ? props.controller.state.selectedProjectId
+      : ''
   return (
     <CodeWorkspaceMainView
       activeView={props.state.activeView}
@@ -54,7 +58,7 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       selectedInboxThread={props.controller.selectedInboxThread}
       projects={props.controller.projects}
       settingsOpenTarget={props.controller.settingsOpenTarget}
-      selectedProjectId={props.controller.state.selectedProjectId}
+      selectedProjectId={selectedProjectId}
       workspaceContentClass={props.workspaceContentClass}
       threadData={props.activeThreadData}
       threadLoading={props.threadTimelineLoading}

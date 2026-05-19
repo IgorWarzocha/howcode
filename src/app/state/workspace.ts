@@ -8,6 +8,7 @@ export type UtilityViewReturnState = {
   activeView: View
   selectedProjectId: string
   hasSelectedProject: boolean
+  landingVisible: boolean
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -23,6 +24,7 @@ export type WorkspaceState = {
   activeView: View
   selectedProjectId: string
   hasSelectedProject: boolean
+  landingVisible: boolean
   selectedInboxSessionPath: string | null
   selectedThreadId: string | null
   selectedSessionPath: string | null
@@ -83,9 +85,10 @@ export type WorkspaceAction =
 // stays deterministic even before we add persisted desktop state.
 export function createInitialWorkspaceState(projects: Project[]): WorkspaceState {
   return {
-    activeView: 'code',
+    activeView: 'landing',
     selectedProjectId: '',
     hasSelectedProject: false,
+    landingVisible: true,
     selectedInboxSessionPath: null,
     selectedThreadId: null,
     selectedSessionPath: null,
@@ -133,6 +136,14 @@ export function selectThread(
 }
 
 export function getCurrentTitle(activeView: View, selectedThread: Thread | undefined): string {
+  if (activeView === 'landing') {
+    return 'About'
+  }
+
+  if (activeView === 'project') {
+    return 'Project overview'
+  }
+
   if (activeView === 'gitops') {
     return 'Git ops'
   }
