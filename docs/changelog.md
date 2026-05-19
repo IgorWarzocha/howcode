@@ -1,22 +1,22 @@
 ### 0.1.66
 
 - Added configurable app keybindings.
-- Added thread find, result navigation, and inline highlights.
-- Added sidebar find / project filtering shortcuts.
+- Added thread find and result highlights.
+- Added sidebar find shortcuts.
 - Polished composer hints and small alignment details.
-- Fixed just-created project threads disappearing during stale refreshes and view switches.
+- Fixed new project threads vanishing during refreshes.
 - Made GitOps diffs less likely to freeze the UI.
-- Split a bunch of app shell, composer, terminal, diff, inbox, settings, and runtime-host code into smaller pieces.
+- Split up app shell, composer, terminal, diff, inbox, settings, and runtime-host code.
 - Updated dependencies.
-- Made Electron installs verify extraction and fall back when system `unzip` is missing.
+- Made Electron installs recover when `unzip` is missing.
 - Added DevTools shortcuts for debugging blank app windows.
-- Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
+- Fixed dev-channel updater checks getting stuck on stale archives.
 - Fixed packaged macOS terminal startup (thank you, BlockedPath)
-- Fixed code landing/project dashboard routing and added a setting to turn the project dashboard off.
-- Fixed new-thread handling so empty dashboard threads do not pile up or lose the project cwd.
-- Fixed Pi TUI new-thread handoff so the sidebar replaces drafts instead of leaving ghost sessions around.
-- Quieted missing-session usage summary noise and stopped settings checkboxes from shifting layout.
-- Fixed dev-channel updater checks so same-version builds compare hashes, and made update failures point to F12 logs.
+- Fixed code landing/project dashboard routing.
+- Fixed empty dashboard threads piling up.
+- Fixed Pi TUI new-thread sidebar handoff.
+- Quieted missing-session usage noise and checkbox layout shifts.
+- Fixed same-version update hash checks and F12 failure hints.
 
 Snapshot: May 19, 2026.
 
