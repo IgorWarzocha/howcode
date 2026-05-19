@@ -65,7 +65,7 @@ function handleHostDesktopEventMessage(
   message: Extract<RuntimeHostToMainMessage, { type: 'desktop-event' }>,
 ) {
   if (message.event.type === 'thread-update') {
-    if (host.role === 'thread') rememberHostAlias(host, message.event.sessionPath)
+    rememberHostAlias(host, message.event.sessionPath)
     host.busy = message.event.thread.isStreaming || message.event.thread.isCompacting
     if (host.busy) clearHostIdleTimer(host)
     else scheduleThreadHostIdleStop(host)
@@ -251,7 +251,7 @@ function getHostForRequest<TName extends RuntimeHostRequestName>(
   }
 
   const existingHost = sessionPath ? hostByAlias.get(sessionPath) : null
-  if (existingHost?.role === 'thread' && !existingHost.terminating) {
+  if (existingHost && !existingHost.terminating) {
     return existingHost
   }
 

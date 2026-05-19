@@ -193,6 +193,19 @@ function dispatchThreadOpenIfNeeded(input: {
   latestWorkspaceState: DesktopEventSelectionState
 }) {
   if (
+    input.flags.shouldDisplayLocalDraftThread &&
+    input.latestWorkspaceState.activeView === 'project'
+  ) {
+    input.dispatch({
+      type: 'start-project-thread',
+      projectId: input.event.projectId,
+      threadId: input.event.threadId,
+      sessionPath: input.event.sessionPath,
+    })
+    return
+  }
+
+  if (
     input.flags.shouldAutoOpenThread ||
     (input.flags.shouldDisplayLocalDraftThread && input.flags.hasVisibleAssistantActivity)
   ) {
@@ -276,7 +289,11 @@ function handleThreadUpdateEvent(
   })
   if (flags.isCompactionThreadUpdate && flags.isVisibleThreadUpdate)
     runtime.setThreadHistoryCompactions(0)
-  if (event.composer && event.sessionPath === visibleSessionPath)
+  if (
+    event.composer &&
+    (event.sessionPath === visibleSessionPath ||
+      aliasedLocalDraftSessionPath === latestWorkspaceState.selectedSessionPath)
+  )
     runtime.setComposerState(event.composer)
   if (
     event.reason === 'start' ||

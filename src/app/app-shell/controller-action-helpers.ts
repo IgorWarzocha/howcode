@@ -2,6 +2,27 @@ import type { DesktopAction } from '../desktop/actions'
 import type { AnyDesktopActionPayload, ArchivedThread } from '../desktop/types'
 import type { WorkspaceState } from '../state/workspace'
 
+function getContextualSessionPath({
+  activeView,
+  payload,
+  selectedSessionPath,
+}: {
+  activeView: WorkspaceState['activeView']
+  payload: AnyDesktopActionPayload
+  selectedSessionPath: string | null
+}) {
+  if (
+    activeView === 'chat' ||
+    activeView === 'thread' ||
+    activeView === 'gitops' ||
+    activeView === 'project'
+  ) {
+    return selectedSessionPath
+  }
+
+  return typeof payload.sessionPath === 'string' ? payload.sessionPath : null
+}
+
 export function buildContextualActionPayload({
   action,
   payload,
@@ -26,18 +47,13 @@ export function buildContextualActionPayload({
     action === 'workspace.commit-options' ||
     action === 'workspace.diff-preferences'
     ? {
+        ...payload,
         projectId: composerProjectId,
         sessionPath:
           action === 'thread.new'
             ? null
-            : activeView === 'chat' ||
-                activeView === 'thread' ||
-                activeView === 'gitops' ||
-                activeView === 'project'
-              ? selectedSessionPath
-              : null,
+            : getContextualSessionPath({ activeView, payload, selectedSessionPath }),
         composerMode: activeView === 'chat' ? 'chat' : 'code',
-        ...payload,
       }
     : payload
 }
