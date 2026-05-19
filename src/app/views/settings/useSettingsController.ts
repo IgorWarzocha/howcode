@@ -232,6 +232,11 @@ export function useSettingsController({
         key: 'initializeGitOnProjectCreate',
         value: !appSettings.initializeGitOnProjectCreate,
       }),
+    toggleProjectDashboardEnabled: () =>
+      void onAction('settings.update', {
+        key: 'projectDashboardEnabled',
+        value: !appSettings.projectDashboardEnabled,
+      }),
     setProjectDeletionMode: (value: AppSettings['projectDeletionMode']) =>
       void onAction('settings.update', {
         key: 'projectDeletionMode',

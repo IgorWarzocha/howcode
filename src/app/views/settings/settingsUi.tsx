@@ -23,7 +23,7 @@ export function ToggleBox({
       aria-label={label}
       aria-pressed={checked}
     >
-      {checked ? <Check size={13} /> : null}
+      <Check size={13} className={checked ? 'opacity-100' : 'opacity-0'} />
     </button>
   )
 }

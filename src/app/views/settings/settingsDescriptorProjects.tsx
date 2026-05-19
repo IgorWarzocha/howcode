@@ -59,6 +59,20 @@ export function buildProjectsSettingsDescriptors({
       ),
     },
     {
+      id: 'projects.dashboard',
+      category: 'projects',
+      title: 'Project dashboard',
+      description: 'Show the project dashboard when a project is selected in Code.',
+      keywords: 'project dashboard overview code landing performance disable',
+      render: () => (
+        <ToggleBox
+          checked={appSettings.projectDashboardEnabled}
+          label="Show project dashboard"
+          onClick={controller.toggleProjectDashboardEnabled}
+        />
+      ),
+    },
+    {
       id: 'projects.gitops-default',
       category: 'projects',
       title: 'GitOps default',

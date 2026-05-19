@@ -28,10 +28,10 @@ function getAdjacentIndex(currentIndex: number, length: number, direction: -1 | 
 
 function openAdjacentThread(runtime: KeybindingRuntime, direction: -1 | 1) {
   const controller = runtime.appController
-  if (!(controller.state.activeView === 'thread' || controller.state.activeView === 'code')) {
+  if (!(controller.state.activeView === 'thread' || controller.state.activeView === 'project')) {
     return false
   }
-  if (controller.state.activeView === 'code' && !controller.state.selectedProjectId) return false
+  if (controller.state.activeView === 'project' && !controller.state.selectedProjectId) return false
   const project =
     controller.projects.find(
       (item) => item.id === (controller.state.selectedProjectId || controller.composerProjectId),

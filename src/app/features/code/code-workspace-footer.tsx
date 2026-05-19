@@ -53,7 +53,7 @@ function CodeSidebarFooterButton(props: CodeWorkspaceContentProps) {
 
 function CodeFooterLeft(props: CodeWorkspaceContentProps) {
   const { state, sidebarCompactMode } = props
-  if (state.activeView === 'code') {
+  if (state.activeView === 'project') {
     return <CodeSidebarToggleButton {...props} />
   }
   if (
@@ -302,10 +302,10 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       ref={footerRef}
       className={cn(
         'motion-terminal-drawer-offset pointer-events-none absolute inset-x-0 z-10 px-5 pb-4',
-        centerThreadFooter || state.activeView === 'code'
+        centerThreadFooter || state.activeView === 'project'
           ? 'transition-[top,transform] duration-300 ease-out'
           : 'bottom-0',
-        (centerThreadFooter || state.activeView === 'code') && '-translate-y-1/2',
+        (centerThreadFooter || state.activeView === 'project') && '-translate-y-1/2',
         showThreadFooter && !centerThreadFooter && 'translate-y-0',
       )}
       style={threadFooterStyle}

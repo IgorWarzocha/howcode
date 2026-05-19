@@ -39,6 +39,7 @@ import {
   keybindingsKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
+  projectDashboardEnabledKey,
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
@@ -204,6 +205,15 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {
   writeAppPreference(initializeGitOnProjectCreateKey, JSON.stringify(enabled))
+}
+
+export function setProjectDashboardEnabled(enabled: boolean) {
+  if (enabled) {
+    deleteAppPreference(projectDashboardEnabledKey)
+    return
+  }
+
+  writeAppPreference(projectDashboardEnabledKey, JSON.stringify(false))
 }
 
 export function setGitOpsDefaultMode(mode: GitOpsMode) {

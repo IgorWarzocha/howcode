@@ -84,7 +84,7 @@ function shouldShowDesktopTerminalDrawer(
   terminalDrawerOverlay: boolean,
 ) {
   return (
-    (activeView === 'thread' || activeView === 'code') &&
+    (activeView === 'thread' || activeView === 'project') &&
     terminalDrawerVisible &&
     !terminalDrawerOverlay
   )
@@ -117,7 +117,7 @@ function getFloatingFooterLayoutState(input: {
 }) {
   const hasThreadConversation = input.showThreadFooter && (input.activeThreadData?.length ?? 0) > 0
   const hasThreadConversationLayout = hasThreadConversation || input.activeThreadLoading
-  const centerDashboardFooter = input.activeView === 'code'
+  const centerDashboardFooter = input.activeView === 'project'
   const centerThreadFooter = input.showThreadFooter && !hasThreadConversationLayout
   return {
     centerDashboardFooter,
@@ -128,14 +128,19 @@ function getFloatingFooterLayoutState(input: {
 
 function getCodeWorkspaceFlags(input: {
   activeView: AppShellController['state']['activeView']
+  hasSelectedProject: boolean
   selectedProjectId: string
 }) {
-  const showCodeDashboardFooter = input.activeView === 'code' && Boolean(input.selectedProjectId)
+  const selectedProjectIdForView =
+    input.activeView === 'project' && input.hasSelectedProject ? input.selectedProjectId : ''
   return {
     showWorkspaceFooter:
-      input.activeView === 'thread' || input.activeView === 'gitops' || showCodeDashboardFooter,
+      input.activeView === 'thread' ||
+      input.activeView === 'gitops' ||
+      input.activeView === 'project',
     showThreadFooter: input.activeView === 'thread',
-    showCodeSidebarFooter: input.activeView === 'code' && !input.selectedProjectId,
+    showCodeSidebarFooter:
+      (input.activeView === 'code' || input.activeView === 'landing') && !selectedProjectIdForView,
     showUtilitySidebarButton: isCodeUtilityView(input.activeView),
     showDiffInMainView: input.activeView === 'gitops',
   }
@@ -189,6 +194,7 @@ export function CodeWorkspaceView({
     showDiffInMainView,
   } = getCodeWorkspaceFlags({
     activeView: state.activeView,
+    hasSelectedProject: state.hasSelectedProject,
     selectedProjectId: state.selectedProjectId,
   })
   const showDesktopTerminalDrawer = shouldShowDesktopTerminalDrawer(

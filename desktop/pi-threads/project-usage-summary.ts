@@ -1,4 +1,5 @@
 import { createReadStream } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
 import type {
   ProjectUsageSessionSummary,
@@ -105,6 +106,21 @@ function parseUsageEntry(line: string) {
   }
 }
 
+function isMissingFileError(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
+}
+
+async function sessionFileExists(sessionPath: string) {
+  try {
+    await access(sessionPath)
+    return true
+  } catch (error) {
+    if (isMissingFileError(error)) return false
+
+    throw error
+  }
+}
+
 async function summarizeSession(input: {
   threadId: string
   title: string
@@ -112,6 +128,8 @@ async function summarizeSession(input: {
   lastModifiedMs?: number | undefined
 }) {
   const summary = emptySessionSummary(input)
+  if (!(await sessionFileExists(input.sessionPath))) return summary
+
   const lines = createInterface({
     input: createReadStream(input.sessionPath, { encoding: 'utf8' }),
     crlfDelay: Number.POSITIVE_INFINITY,
@@ -218,7 +236,9 @@ async function summarizeThreads(projectId: string, threads: ReturnType<typeof li
         )
         return summary
       } catch (error) {
-        console.warn(`Failed to summarize project usage for ${thread.sessionPath}.`, error)
+        if (!isMissingFileError(error)) {
+          console.warn(`Failed to summarize project usage for ${thread.sessionPath}.`, error)
+        }
         return emptySessionSummary({
           threadId: thread.id,
           title: thread.title,

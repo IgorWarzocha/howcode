@@ -12,6 +12,8 @@
 - Added DevTools shortcuts for debugging blank app windows.
 - Fixed dev-channel updater checks and restarts getting stuck on stale cached archives (hopefully).
 - Fixed packaged macOS terminal startup (thank you, BlockedPath)
+- Fixed code landing/project dashboard routing and added a setting to turn the project dashboard off.
+- Quieted missing-session usage summary noise and stopped settings checkboxes from shifting layout.
 
 Snapshot: May 19, 2026.
 

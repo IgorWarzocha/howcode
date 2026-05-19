@@ -29,7 +29,7 @@ export function getTerminalVisibilityForSession(
 }
 
 export function shouldRestoreTerminalOnGitOpsClose(state: WorkspaceState) {
-  return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'code')
+  return state.terminalVisible && (state.activeView === 'thread' || state.activeView === 'project')
 }
 
 export function shouldMigrateTerminalVisibilityForOpenedThread(
@@ -37,7 +37,7 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
   action: Extract<WorkspaceAction, { type: 'open-thread' }>,
 ) {
   if (
-    state.activeView === 'code' &&
+    state.activeView === 'project' &&
     state.selectedProjectId === action.projectId &&
     (state.projectTerminalVisibleByProject[action.projectId] ?? false)
   ) {
@@ -73,7 +73,7 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
               state.terminalVisibleBySession,
               state.selectedSessionPath,
             )
-          : nextView === 'code'
+          : nextView === 'project'
             ? getProjectTerminalVisible()
             : state.terminalVisible,
       restoreTerminalVisibleOnGitOpsClose: state.restoreTerminalVisibleOnGitOpsClose,
@@ -89,7 +89,8 @@ export function getTerminalStateForNextView(state: WorkspaceState, nextView: Vie
 
   return {
     terminalVisible:
-      (nextView === 'thread' || nextView === 'code') && state.restoreTerminalVisibleOnGitOpsClose,
+      (nextView === 'thread' || nextView === 'project') &&
+      state.restoreTerminalVisibleOnGitOpsClose,
     restoreTerminalVisibleOnGitOpsClose: false,
   }
 }

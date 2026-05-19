@@ -16,6 +16,7 @@ import type { Project, View } from '../../types'
 import { ArchivedThreadsView } from '../../views/archived-threads-view'
 import { InboxView } from '../../views/inbox-view'
 import { LandingView } from '../../views/landing-view'
+import { ProjectOverviewView } from '../../views/project-overview-view'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { SettingsView } from '../../views/settings-view'
 import { ThreadView } from '../../views/thread-view'
@@ -99,6 +100,59 @@ function CodeThreadMainView({
       onLoadEarlierMessages={onLoadEarlierMessages}
       onLoadAroundMessage={onLoadEarlierMessages}
     />
+  )
+}
+
+function CodeWorkspaceProjectOrEmptyView({
+  appSettings,
+  composerOverlayHeight,
+  currentProjectName,
+  onAction,
+  onOpenThread,
+  onSelectProject,
+  projects,
+  selectedProjectId,
+  workspaceContentClass,
+}: Pick<
+  CodeWorkspaceMainViewProps,
+  | 'appSettings'
+  | 'composerOverlayHeight'
+  | 'currentProjectName'
+  | 'onAction'
+  | 'onOpenThread'
+  | 'onSelectProject'
+  | 'projects'
+  | 'selectedProjectId'
+  | 'workspaceContentClass'
+>) {
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null
+  const showProjectDashboard = Boolean(selectedProject && appSettings.projectDashboardEnabled)
+  const showLandingPage = !selectedProject
+
+  return (
+    <div
+      className={`relative grid h-full min-h-0 w-full justify-items-center overflow-hidden ${selectedProjectId ? 'px-0' : 'px-4'}`}
+    >
+      {showLandingPage ? (
+        <LandingView
+          appSettings={appSettings}
+          className={workspaceContentClass}
+          projectName={currentProjectName}
+          projects={projects}
+          selectedProjectId=""
+          composerOverlayHeight={composerOverlayHeight}
+          onAction={onAction}
+          onOpenThread={onOpenThread}
+          onSelectProject={onSelectProject}
+        />
+      ) : showProjectDashboard && selectedProject ? (
+        <ProjectOverviewView
+          composerOverlayHeight={composerOverlayHeight}
+          project={selectedProject}
+          onOpenThread={onOpenThread}
+        />
+      ) : null}
+    </div>
   )
 }
 
@@ -242,20 +296,16 @@ export function CodeWorkspaceMainView({
   }
 
   return (
-    <div
-      className={`relative grid h-full min-h-0 w-full justify-items-center overflow-hidden ${selectedProjectId ? 'px-0' : 'px-4'}`}
-    >
-      <LandingView
-        appSettings={appSettings}
-        className={workspaceContentClass}
-        projectName={currentProjectName}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        composerOverlayHeight={composerOverlayHeight}
-        onAction={onAction}
-        onOpenThread={onOpenThread}
-        onSelectProject={onSelectProject}
-      />
-    </div>
+    <CodeWorkspaceProjectOrEmptyView
+      appSettings={appSettings}
+      composerOverlayHeight={composerOverlayHeight}
+      currentProjectName={currentProjectName}
+      onAction={onAction}
+      onOpenThread={onOpenThread}
+      onSelectProject={onSelectProject}
+      projects={projects}
+      selectedProjectId={selectedProjectId}
+      workspaceContentClass={workspaceContentClass}
+    />
   )
 }

@@ -29,6 +29,7 @@ import {
   legacyDevUpdateBranchKey,
   piTuiTakeoverKey,
   preferredProjectLocationKey,
+  projectDashboardEnabledKey,
   projectDeletionModeKey,
   projectImportStateKey,
   showDictationButtonKey,
@@ -89,6 +90,14 @@ function loadKeybindingSettings(value: (key: string) => string | undefined) {
   }
 }
 
+function loadProjectUiSettings(value: (key: string) => string | undefined) {
+  return {
+    initializeGitOnProjectCreate:
+      parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
+    projectDashboardEnabled: parseBooleanPreference(value(projectDashboardEnabledKey)) ?? true,
+  }
+}
+
 export function loadAppSettings(): AppSettings {
   const rows = loadPreferenceRows()
   const value = (key: string) => rows.get(key)?.valueJson
@@ -114,8 +123,7 @@ export function loadAppSettings(): AppSettings {
     favoriteFolders: parseFavoriteFolders(value(favoriteFoldersKey)),
     projectImportState: parseBooleanPreference(value(projectImportStateKey)),
     preferredProjectLocation: parseStringPreference(value(preferredProjectLocationKey)),
-    initializeGitOnProjectCreate:
-      parseBooleanPreference(value(initializeGitOnProjectCreateKey)) ?? false,
+    ...loadProjectUiSettings(value),
     gitOpsDefaultMode: parseGitOpsModePreference(value(gitOpsDefaultModeKey)) ?? 'commit',
     gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(
       value(gitDiffBaselineDefaultKey),

@@ -17,6 +17,7 @@ export const FALLBACK_APP_SETTINGS = {
   projectImportState: null,
   preferredProjectLocation: null,
   initializeGitOnProjectCreate: false,
+  projectDashboardEnabled: true,
   gitOpsDefaultMode: 'commit',
   gitDiffBaselineDefault: { kind: 'head' },
   gitDiffRenderModeDefault: 'stacked',
