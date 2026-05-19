@@ -63,7 +63,7 @@ function createRuntime(input: {
       },
       dispatch: vi.fn(),
       loadProjectThreads: vi.fn(),
-      loadProjectGitState: vi.fn(),
+      loadProjectGitState: vi.fn(async () => null),
       queryClient,
       refreshChatSidebarState: vi.fn(),
       scheduleShellStateRefresh: vi.fn(),
@@ -79,7 +79,10 @@ function createRuntime(input: {
 }
 
 describe('desktop event handlers', () => {
-  it('reassigns project-dashboard local drafts to the persisted thread on start updates', () => {
+  it.each([
+    'start',
+    'external',
+  ] as const)('reassigns project-dashboard local drafts to the persisted thread on %s updates', (reason) => {
     const projectId = '/repo/project-a'
     const localDraft = createLocalThreadDraft(projectId, 'draft')
     const persistedSessionPath = '/sessions/project-a/thread.jsonl'
@@ -111,7 +114,7 @@ describe('desktop event handlers', () => {
 
     handleDesktopEvent(runtime, {
       type: 'thread-update',
-      reason: 'start',
+      reason,
       projectId,
       threadId: 'persisted-thread-1',
       sessionPath: persistedSessionPath,

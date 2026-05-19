@@ -4,7 +4,19 @@ import { useCallback, useEffect, useMemo } from 'react'
 import type { ShellState } from '../desktop/types'
 import { desktopQueryKeys, getShellStateQuery } from '../query/desktop-query'
 
-function mergeShellStateProjects(
+function shouldReloadLoadedProjectThreads(
+  currentProject: ShellState['projects'][number],
+  nextProject: ShellState['projects'][number],
+) {
+  if (!currentProject.threadsLoaded || nextProject.threadsLoaded) return false
+  return (
+    (nextProject.threadCount ?? 0) >
+      (currentProject.threadCount ?? currentProject.threads.length) ||
+    (nextProject.latestModifiedMs ?? 0) > (currentProject.latestModifiedMs ?? 0)
+  )
+}
+
+export function mergeShellStateProjects(
   currentState: ShellState | null | undefined,
   nextState: ShellState | null,
 ): ShellState | null {
@@ -19,6 +31,12 @@ function mergeShellStateProjects(
     projects: nextState.projects.map((project) => {
       const currentProject = currentProjectsById.get(project.id)
       if (!currentProject?.threadsLoaded || project.threadsLoaded) return project
+      if (shouldReloadLoadedProjectThreads(currentProject, project)) {
+        return {
+          ...project,
+          collapsed: currentProject.collapsed ?? project.collapsed,
+        }
+      }
       return {
         ...project,
         threads: currentProject.threads,

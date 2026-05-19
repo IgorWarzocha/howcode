@@ -66,7 +66,6 @@ function TerminalPanelComponent({
           projectId={projectId}
           sessionPath={sessionPath}
           launchMode="pi-session"
-          onProcessExit={onClose}
           keepAliveMsOnUnmount={PI_TUI_KEEP_ALIVE_MS}
           closeWhenSessionFileIdleMs={PI_TUI_SESSION_FILE_IDLE_POLL_MS}
           backgroundCssVar="--workspace"

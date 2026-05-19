@@ -59,7 +59,7 @@ export function shouldDisplayStartedThreadForLocalDraft({
   workspaceState: DesktopEventSelectionState
 }) {
   const localDraftProjectId = getLocalDraftProjectId(workspaceState.selectedSessionPath)
-  if (reason !== 'start' || localDraftProjectId !== projectId) {
+  if ((reason !== 'start' && reason !== 'external') || localDraftProjectId !== projectId) {
     return false
   }
 

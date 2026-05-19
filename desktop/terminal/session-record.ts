@@ -9,5 +9,11 @@ export type TerminalSessionRecord = {
   inputBuffer: string
   suppressOutputVisibilityUntilInput: boolean
   persistTimer: ReturnType<typeof setTimeout> | null
+  tuiSessionDetection: {
+    startedAtMs: number
+    resolvedSessionPath: string | null
+    refreshTimer: ReturnType<typeof setTimeout> | null
+    inFlight: boolean
+  } | null
   cleanup: Array<() => void>
 }

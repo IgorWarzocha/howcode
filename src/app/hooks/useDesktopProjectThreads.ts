@@ -36,7 +36,16 @@ export function preserveLocalDraftThreads(
   const uniqueLocalDrafts = localDrafts.filter(
     (draft, index) => !hasSameThread(localDrafts.slice(0, index), draft),
   )
-  const preservedDrafts = uniqueLocalDrafts.filter((draft) => !hasSameThread(fetchedThreads, draft))
+  const preservedDrafts = uniqueLocalDrafts.filter((draft) => {
+    const draftStartedAt = draft.lastModifiedMs ?? Number.POSITIVE_INFINITY
+    const replacementExists = fetchedThreads.some(
+      (thread) =>
+        hasSameThread([thread], draft) ||
+        (!isLocalSessionPath(thread.sessionPath) &&
+          (thread.lastModifiedMs ?? 0) >= draftStartedAt - 1000),
+    )
+    return !replacementExists
+  })
   return [...preservedDrafts, ...fetchedThreads]
 }
 
@@ -86,6 +95,15 @@ function updateLocalDraftCache(
     ...cache,
     [threadsScope]: nextScopeDrafts,
     [otherScope]: otherScopeDrafts,
+  })
+}
+
+export function forgetLocalDraftThread(projectId: string, sessionPath: string | null | undefined) {
+  if (!sessionPath) return
+  const cache = getLocalDraftCache(projectId)
+  setLocalDraftCache(projectId, {
+    chat: cache.chat.filter((thread) => thread.sessionPath !== sessionPath),
+    code: cache.code.filter((thread) => thread.sessionPath !== sessionPath),
   })
 }
 

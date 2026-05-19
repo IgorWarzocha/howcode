@@ -59,10 +59,11 @@ export function getTerminalPersistedSessionPath(input: {
   sessionPath: string | null
   terminalSessionPath: string | null | undefined
 }) {
-  return (
-    getPersistedSessionPath(input.terminalSessionPath ?? null) ??
-    (input.effectiveLaunchMode === 'pi-session' ? getPersistedSessionPath(input.sessionPath) : null)
-  )
+  if (input.effectiveLaunchMode === 'pi-session') {
+    return getPersistedSessionPath(input.terminalSessionPath ?? null)
+  }
+
+  return getPersistedSessionPath(input.terminalSessionPath ?? input.sessionPath)
 }
 
 function cleanupTerminalSessionOnUnmount(input: {

@@ -10,6 +10,7 @@ export type SessionSummary = {
   id: string
   name?: string | undefined
   firstMessage?: string | undefined
+  created: Date
   modified: Date
   path: string
   cwd?: string | undefined
@@ -196,10 +197,14 @@ async function readSessionSummary(filePath: string): Promise<SessionSummaryReadR
     return { summary: null, failed: true }
   }
 
+  const headerTimestampMs =
+    typeof header.timestamp === 'string' ? Date.parse(header.timestamp) : Number.NaN
+
   return {
     summary: {
       id: header.id,
       cwd: typeof header.cwd === 'string' ? header.cwd : undefined,
+      created: Number.isNaN(headerTimestampMs) ? fileStat.birthtime : new Date(headerTimestampMs),
       path: filePath,
       name,
       firstMessage,

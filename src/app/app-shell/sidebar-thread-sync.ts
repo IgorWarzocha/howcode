@@ -6,6 +6,7 @@ import type {
   Thread,
   ThreadData,
 } from '../desktop/types'
+import { forgetLocalDraftThread } from '../hooks/useDesktopProjectThreads'
 import type { WorkspaceAction, WorkspaceState } from '../state/workspace'
 import {
   applyChatThreadToSidebarState,
@@ -314,13 +315,18 @@ export function applyThreadEventToSidebarState({
   queryClient: QueryClientLike
   setChatSidebarState: SetChatSidebarState
 }) {
-  const replaceSessionPath = getDraftReplacementSessionPath(
-    workspaceState.selectedSessionPath,
-    workspaceState.selectedProjectId,
-    event.projectId,
-  )
   const eventIsChat = event.isChat === true
+  const eventReplacementSessionPath =
+    typeof event.replacesSessionPath === 'string' ? event.replacesSessionPath : null
+  const replaceSessionPath =
+    (isLocalSessionPath(eventReplacementSessionPath) ? eventReplacementSessionPath : null) ??
+    getDraftReplacementSessionPath(
+      workspaceState.selectedSessionPath,
+      workspaceState.selectedProjectId,
+      event.projectId,
+    )
   const projectThreadScopeMatchesView = eventIsChat === (workspaceState.activeView === 'chat')
+  if (replaceSessionPath) forgetLocalDraftThread(event.projectId, replaceSessionPath)
   upsertSidebarThread({
     queryClient,
     setChatSidebarState,
