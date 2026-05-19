@@ -14,6 +14,10 @@ function hasSameThread(threads: Thread[], candidate: Thread) {
 
 type ThreadsScope = 'chat' | 'code'
 
+type ProjectDraftCache = Record<ThreadsScope, Thread[]>
+
+const localDraftCacheByProject = new Map<string, ProjectDraftCache>()
+
 function localDraftMatchesScope(thread: Thread, threadsScope: ThreadsScope) {
   if (!(thread.sessionPath && isLocalSessionPath(thread.sessionPath))) return false
   const chatGroupId = getLocalDraftChatGroupId(thread.sessionPath)
@@ -24,12 +28,62 @@ export function preserveLocalDraftThreads(
   fetchedThreads: Thread[],
   currentThreads: Thread[],
   threadsScope: ThreadsScope,
+  cachedThreads: Thread[] = [],
 ) {
-  const localDrafts = currentThreads.filter((thread) =>
+  const localDrafts = [...cachedThreads, ...currentThreads].filter((thread) =>
     localDraftMatchesScope(thread, threadsScope),
   )
   const preservedDrafts = localDrafts.filter((draft) => !hasSameThread(fetchedThreads, draft))
   return [...preservedDrafts, ...fetchedThreads]
+}
+
+function getLocalDraftCache(projectId: string) {
+  return localDraftCacheByProject.get(projectId) ?? { chat: [], code: [] }
+}
+
+function setLocalDraftCache(projectId: string, cache: ProjectDraftCache) {
+  if (cache.chat.length === 0 && cache.code.length === 0) {
+    localDraftCacheByProject.delete(projectId)
+    return
+  }
+  localDraftCacheByProject.set(projectId, cache)
+}
+
+function rememberLocalDrafts(projectId: string, threads: Thread[]) {
+  const cache = getLocalDraftCache(projectId)
+  const nextCache: ProjectDraftCache = { chat: [...cache.chat], code: [...cache.code] }
+
+  for (const thread of threads) {
+    if (localDraftMatchesScope(thread, 'chat') && !hasSameThread(nextCache.chat, thread)) {
+      nextCache.chat.push(thread)
+    }
+    if (localDraftMatchesScope(thread, 'code') && !hasSameThread(nextCache.code, thread)) {
+      nextCache.code.push(thread)
+    }
+  }
+
+  setLocalDraftCache(projectId, nextCache)
+}
+
+function updateLocalDraftCache(
+  projectId: string,
+  threadsScope: ThreadsScope,
+  fetchedThreads: Thread[],
+  preservedThreads: Thread[],
+) {
+  const cache = getLocalDraftCache(projectId)
+  const nextScopeDrafts = preservedThreads.filter((thread) =>
+    localDraftMatchesScope(thread, threadsScope),
+  )
+  const otherScope = threadsScope === 'chat' ? 'code' : 'chat'
+  const otherScopeDrafts = cache[otherScope].filter(
+    (draft) => !hasSameThread(fetchedThreads, draft),
+  )
+  setLocalDraftCache(projectId, {
+    ...cache,
+    [threadsScope]: nextScopeDrafts,
+    [otherScope]: otherScopeDrafts,
+  })
 }
 
 export function useDesktopProjectThreads() {
@@ -48,7 +102,14 @@ export function useDesktopProjectThreads() {
           ...currentState,
           projects: currentState.projects.map((project) => {
             if (project.id !== projectId) return project
-            const mergedThreads = preserveLocalDraftThreads(threads, project.threads, threadsScope)
+            rememberLocalDrafts(projectId, project.threads)
+            const mergedThreads = preserveLocalDraftThreads(
+              threads,
+              project.threads,
+              threadsScope,
+              getLocalDraftCache(projectId)[threadsScope],
+            )
+            updateLocalDraftCache(projectId, threadsScope, threads, mergedThreads)
             return {
               ...project,
               threads: mergedThreads,

@@ -601,6 +601,15 @@ export class AppUpdater {
         this.setState({ status: 'idle', latestVersion: null, error: null })
         return this.state
       }
+      if (this.latestRelease && !isSameRelease(this.installedUpdate, this.latestRelease)) {
+        this.installedUpdate = null
+        this.setState({
+          status: 'available',
+          latestVersion: this.latestRelease.version,
+          error: null,
+        })
+        return this.state
+      }
       this.setState({ status: 'restarting', channel: this.installedUpdate.channel, error: null })
       await spawnDetached(this.installedUpdate.executablePath)
       app.quit()

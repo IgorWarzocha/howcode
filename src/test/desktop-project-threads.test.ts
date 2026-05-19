@@ -44,4 +44,15 @@ describe('desktop project thread loading', () => {
     expect(preserveLocalDraftThreads([], [codeDraft, chatDraft], 'code')).toEqual([codeDraft])
     expect(preserveLocalDraftThreads([], [codeDraft, chatDraft], 'chat')).toEqual([chatDraft])
   })
+
+  it('can restore drafts cached before switching thread scopes', () => {
+    const codeDraft: Thread = {
+      id: 'local-code-thread',
+      title: 'Code thread',
+      age: 'Now',
+      sessionPath: 'local://project-a/code-draft',
+    }
+
+    expect(preserveLocalDraftThreads([], [], 'code', [codeDraft])).toEqual([codeDraft])
+  })
 })
