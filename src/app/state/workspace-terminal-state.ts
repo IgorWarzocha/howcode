@@ -78,10 +78,17 @@ export function shouldMigrateTerminalVisibilityForOpenedThread(
 }
 
 export function getTerminalStateForNextView(state: WorkspaceState, nextView: View) {
-  const getProjectTerminalVisible = () =>
-    state.selectedProjectId
+  const getProjectTerminalVisible = () => {
+    if (state.selectedSessionPath) {
+      return getTerminalVisibilityForSession(
+        state.terminalVisibleBySession,
+        state.selectedSessionPath,
+      )
+    }
+    return state.selectedProjectId
       ? (state.projectTerminalVisibleByProject[state.selectedProjectId] ?? false)
       : false
+  }
 
   if (state.activeView !== 'gitops') {
     return {
