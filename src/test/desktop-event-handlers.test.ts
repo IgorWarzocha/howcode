@@ -80,9 +80,12 @@ function createRuntime(input: {
 
 describe('desktop event handlers', () => {
   it.each([
-    'start',
-    'external',
-  ] as const)('reassigns project-dashboard local drafts to the persisted thread on %s updates', (reason) => {
+    { reason: 'start' as const, replacesSessionPath: undefined },
+    { reason: 'external' as const, replacesSessionPath: 'draft' },
+  ])('reassigns project-dashboard local drafts to the persisted thread on $reason updates', ({
+    reason,
+    replacesSessionPath,
+  }) => {
     const projectId = '/repo/project-a'
     const localDraft = createLocalThreadDraft(projectId, 'draft')
     const persistedSessionPath = '/sessions/project-a/thread.jsonl'
@@ -121,6 +124,7 @@ describe('desktop event handlers', () => {
       isChat: false,
       chatGroupId: null,
       thread: createThreadData(persistedSessionPath),
+      replacesSessionPath: replacesSessionPath === 'draft' ? localDraft.sessionPath : undefined,
       composer,
     })
 
