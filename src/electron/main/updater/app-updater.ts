@@ -671,17 +671,16 @@ export class AppUpdater {
   }
 
   private isUpdateCandidate(release: Pick<ReleaseInfo, 'channel' | 'version' | 'hash'>) {
-    const runningRelease = getRunningReleaseFingerprint()
-
-    if (release.channel === 'dev') {
-      return !(runningRelease?.version === release.version && runningRelease.hash === release.hash)
-    }
-
     const versionDiff = compareVersions(release.version, this.state.currentVersion)
     if (versionDiff > 0) return true
     if (versionDiff < 0) return false
 
-    return false
+    const runningRelease = getRunningReleaseFingerprint()
+    return Boolean(
+      runningRelease &&
+        runningRelease.version === release.version &&
+        runningRelease.hash !== release.hash,
+    )
   }
 
   private async getPruneKeepDirs(installDir: string) {

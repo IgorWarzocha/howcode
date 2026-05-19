@@ -35,11 +35,31 @@ function getStoredDuplicateThreadRows(
     .all(session.id, `${escapeLikePattern(session.id)}:%`, session.sessionPath) as ThreadIdPathRow[]
 }
 
+function getStoredThreadRowForPath(
+  db: ReturnType<typeof getThreadStateDatabase>,
+  sessionPath: string,
+) {
+  return db
+    .prepare(
+      `
+        SELECT id, session_path AS sessionPath
+        FROM threads
+        WHERE session_path = ?
+      `,
+    )
+    .get(sessionPath) as ThreadIdPathRow | undefined
+}
+
 function getIndexedSessionThreadId(
   db: ReturnType<typeof getThreadStateDatabase>,
   session: SessionSummaryRecord,
   duplicateSessionIds: Set<string>,
 ) {
+  const storedThreadForPath = getStoredThreadRowForPath(db, session.sessionPath)
+  if (storedThreadForPath?.id && storedThreadForPath.id !== session.id) {
+    return storedThreadForPath.id
+  }
+
   if (duplicateSessionIds.has(session.id)) return getDisambiguatedThreadId(session)
   return getStoredDuplicateThreadRows(db, session).length > 0
     ? getDisambiguatedThreadId(session)
@@ -108,15 +128,7 @@ export function upsertThreadSummary(session: SessionSummaryRecord) {
   const db = getThreadStateDatabase()
   ensureProject(session.cwd)
 
-  const storedThreadForPath = db
-    .prepare(
-      `
-        SELECT id, session_path AS sessionPath
-        FROM threads
-        WHERE session_path = ?
-      `,
-    )
-    .get(session.sessionPath) as ThreadIdPathRow | undefined
+  const storedThreadForPath = getStoredThreadRowForPath(db, session.sessionPath)
   const storedDuplicateIdRows = getStoredDuplicateThreadRows(db, session)
 
   const threadId =
