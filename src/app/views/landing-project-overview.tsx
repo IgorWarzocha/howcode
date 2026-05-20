@@ -208,12 +208,13 @@ function BranchSwitchPopover({
     if (!anchor) return
     const updatePosition = () => {
       const rect = anchor.getBoundingClientRect()
+      const width = 256
       setPosition({
         background: 'var(--panel)',
-        left: rect.left,
+        left: Math.min(rect.left, window.innerWidth - width - 8),
         opacity: 1,
         top: rect.bottom + 6,
-        width: 256,
+        width,
       })
     }
     updatePosition()
@@ -230,7 +231,7 @@ function BranchSwitchPopover({
   return createPortal(
     <div
       ref={panelRef}
-      className="fixed z-[160] isolate grid gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      className="fixed z-[160] isolate grid gap-2 overflow-hidden rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
       style={position}
     >
       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
@@ -244,7 +245,7 @@ function BranchSwitchPopover({
           if (event.key === 'Enter') onSubmitBranchSwitch()
           if (event.key === 'Escape') onSetBranchSwitchOpen(false)
         }}
-        className={settingsInputClass}
+        className={cn(settingsInputClass, 'w-full flex-none rounded-lg px-2 py-1.5 text-[11px]')}
         placeholder="Search branches"
       />
       <div className="grid max-h-36 gap-0.5 overflow-y-auto">
