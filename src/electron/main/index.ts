@@ -36,7 +36,10 @@ async function bootstrap() {
   logDevtoolsRemoteDebugging(devtoolsDebuggingPort)
 
   const runtime = await loadDesktopRuntimeModules()
-  const appUpdater = new AppUpdater(async () => 'dev')
+  const appUpdater = new AppUpdater(async () => {
+    const appSettings = await runtime.piThreads.loadAppSettings()
+    return appSettings.devUpdateBranch ? 'dev' : 'main'
+  })
   const installMenu = () =>
     installApplicationMenu({ getMainWindow: () => currentMainWindow, piThreads: runtime.piThreads })
   registerDesktopRuntimeShutdown(runtime)
