@@ -1,0 +1,158 @@
+import { type ChildProcess, spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
+import type { DesktopEvent } from '../../shared/desktop-contracts'
+import type { TerminalEvent } from '../../shared/terminal-contracts'
+
+type PendingRequest = {
+  resolve: (value: unknown) => void
+  reject: (error: Error) => void
+  timeout: ReturnType<typeof setTimeout>
+}
+
+export type DesktopServiceMessage =
+  | { type: 'ready'; diagnostics?: Record<string, unknown> }
+  | { type: 'response'; id: string; ok: boolean; result?: unknown; error?: string; stack?: string }
+  | { type: 'desktop-event'; event: DesktopEvent }
+  | { type: 'terminal-event'; event: TerminalEvent }
+
+export type DesktopServiceClientOptions = {
+  nodeExecutable: string
+  serviceHostPath: string
+  cwd: string
+  env?: NodeJS.ProcessEnv | undefined
+  requestTimeoutMs?: number | undefined
+}
+
+const defaultRequestTimeoutMs = 60_000
+
+export class DesktopServiceClient {
+  private readonly options: DesktopServiceClientOptions
+  private process: ChildProcess | null = null
+  private startPromise: Promise<ChildProcess> | null = null
+  private readonly pendingRequests = new Map<string, PendingRequest>()
+  private readonly desktopListeners = new Set<(event: DesktopEvent) => void>()
+  private readonly terminalListeners = new Set<(event: TerminalEvent) => void>()
+
+  constructor(options: DesktopServiceClientOptions) {
+    this.options = options
+  }
+
+  async dispose() {
+    for (const [, pending] of this.pendingRequests) {
+      clearTimeout(pending.timeout)
+      pending.reject(new Error('Desktop service is shutting down.'))
+    }
+    this.pendingRequests.clear()
+    this.process?.kill('SIGTERM')
+    this.process = null
+    this.startPromise = null
+  }
+
+  subscribeDesktopEvents(listener: (event: DesktopEvent) => void) {
+    this.desktopListeners.add(listener)
+    return () => this.desktopListeners.delete(listener)
+  }
+
+  subscribeTerminalEvents(listener: (event: TerminalEvent) => void) {
+    this.terminalListeners.add(listener)
+    return () => this.terminalListeners.delete(listener)
+  }
+
+  async invoke(moduleName: string, method: string, args: unknown[] = []) {
+    const child = await this.ensureStarted()
+    const id = randomUUID()
+    const result = new Promise<unknown>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id)
+        reject(new Error(`Timed out waiting for desktop service method ${moduleName}.${method}.`))
+      }, this.options.requestTimeoutMs ?? defaultRequestTimeoutMs)
+      this.pendingRequests.set(id, { resolve, reject, timeout })
+    })
+
+    child.send({ type: 'request', id, module: moduleName, method, args })
+    return await result
+  }
+
+  private async ensureStarted() {
+    if (this.process && !this.process.killed && this.process.exitCode === null) return this.process
+    if (this.startPromise) return await this.startPromise
+
+    this.startPromise = new Promise<ChildProcess>((resolve, reject) => {
+      const child = spawn(this.options.nodeExecutable, [this.options.serviceHostPath], {
+        cwd: this.options.cwd,
+        env: {
+          ...process.env,
+          ...this.options.env,
+          HOWCODE_HANDLE_MAIN_REQUESTS_IN_HOST: '1',
+          HOWCODE_REPO_ROOT: this.options.cwd,
+        },
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+      })
+
+      let ready = false
+      child.stdout?.on('data', (chunk) => process.stdout.write(chunk))
+      child.stderr?.on('data', (chunk) => process.stderr.write(chunk))
+      child.on('message', (message: DesktopServiceMessage) => this.handleMessage(message))
+      child.once('error', reject)
+      child.once('exit', () => {
+        this.rejectPending(new Error('Desktop service exited.'))
+        if (this.process === child) this.process = null
+      })
+      child.on('message', (message: DesktopServiceMessage) => {
+        if (message?.type === 'ready' && !ready) {
+          ready = true
+          console.info('Desktop service ready.', message.diagnostics ?? {})
+          this.process = child
+          this.startPromise = null
+          resolve(child)
+        }
+      })
+    })
+
+    return await this.startPromise
+  }
+
+  private rejectPending(error: Error) {
+    for (const [, pending] of this.pendingRequests) {
+      clearTimeout(pending.timeout)
+      pending.reject(error)
+    }
+    this.pendingRequests.clear()
+  }
+
+  private handleServiceEvent(
+    message: Extract<DesktopServiceMessage, { type: 'desktop-event' | 'terminal-event' }>,
+  ) {
+    if (message.type === 'desktop-event') {
+      for (const listener of this.desktopListeners) listener(message.event)
+      return
+    }
+
+    for (const listener of this.terminalListeners) listener(message.event)
+  }
+
+  private handleServiceResponse(message: Extract<DesktopServiceMessage, { type: 'response' }>) {
+    const pending = this.pendingRequests.get(message.id)
+    if (!pending) return
+    this.pendingRequests.delete(message.id)
+    clearTimeout(pending.timeout)
+    if (message.ok) {
+      pending.resolve(message.result)
+      return
+    }
+
+    const error = new Error(message.error ?? 'Desktop service request failed.')
+    if (message.stack) error.stack = message.stack
+    pending.reject(error)
+  }
+
+  private handleMessage(message: DesktopServiceMessage) {
+    if (!message || message.type === 'ready') return
+    if (message.type === 'desktop-event' || message.type === 'terminal-event') {
+      this.handleServiceEvent(message)
+      return
+    }
+
+    this.handleServiceResponse(message)
+  }
+}

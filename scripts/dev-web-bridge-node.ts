@@ -4,11 +4,7 @@ import { mkdir, open, readdir, realpath, stat } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
-import * as piSkills from '../desktop/pi-skills.ts'
-import * as piThreads from '../desktop/pi-threads.ts'
-import * as skillCreator from '../desktop/skill-creator-session.ts'
 import { openPathWithSystem } from '../desktop/system-open-path.ts'
-import * as terminalManager from '../desktop/terminal/manager.ts'
 import packageJson from '../package.json'
 import { getAttachmentKind } from '../shared/composer-attachments'
 import type {
@@ -22,6 +18,13 @@ import {
   listComposerAttachmentEntries,
   searchComposerAttachmentEntries,
 } from '../src/desktop-host/composer-attachments'
+import { DesktopServiceClient } from '../src/desktop-host/desktop-service-client'
+import type {
+  PiSkillsModule,
+  PiThreadsModule,
+  SkillCreatorModule,
+  TerminalManagerModule,
+} from '../src/electron/main/runtime/desktop-runtime-contracts'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -41,6 +44,32 @@ const devAppUpdateState = {
   channel: null,
   error: null,
 }
+
+const desktopService = new DesktopServiceClient({
+  nodeExecutable: getProcessEnvironmentVariable('HOWCODE_NODE_PATH')?.trim() || 'node',
+  serviceHostPath: path.join(process.cwd(), 'build', 'desktop', 'service-host.mjs'),
+  cwd: getDesktopWorkingDirectory(),
+})
+
+function proxyServiceModule<T extends Record<string, unknown>>(moduleName: string) {
+  return new Proxy(
+    {},
+    {
+      get(_target, property) {
+        if (property === 'subscribeDesktopEvents')
+          return desktopService.subscribeDesktopEvents.bind(desktopService)
+        if (property === 'subscribeTerminalEvents')
+          return desktopService.subscribeTerminalEvents.bind(desktopService)
+        return (...args: unknown[]) => desktopService.invoke(moduleName, String(property), args)
+      },
+    },
+  ) as T
+}
+
+const piThreads = proxyServiceModule<PiThreadsModule>('piThreads')
+const piSkills = proxyServiceModule<PiSkillsModule>('piSkills')
+const skillCreator = proxyServiceModule<SkillCreatorModule>('skillCreator')
+const terminalManager = proxyServiceModule<TerminalManagerModule>('terminalManager')
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,

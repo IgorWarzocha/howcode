@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import crypto from 'node:crypto'
-import { rmSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -19,6 +19,7 @@ const projectRoot = process.cwd()
 const devRepoRoot = projectRoot
 const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIVE_PATH)
 const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
+const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
 const bridgeToken = crypto.randomUUID()
 
 let bridge: { child: ChildProcess; port: number } | null = null
@@ -64,6 +65,9 @@ async function shutdown(exitCode = 0) {
 
 async function startDevWebBridge() {
   await buildDevWebBridge()
+  while (!existsSync(serviceHostBuildPath)) {
+    await delay(150)
+  }
 
   const nodeExecutable = getProcessEnvironmentVariable('HOWCODE_NODE_PATH')?.trim() || 'node'
   const child = spawn(nodeExecutable, [bridgeBuildPath], {
