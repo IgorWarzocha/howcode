@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { GitBranch, GitCompareArrows, Search } from 'lucide-react'
+import { GitCompareArrows, Search } from 'lucide-react'
 import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
@@ -17,7 +17,6 @@ import {
 import { popoverPanelClass, settingsInputClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import { SurfacePanel } from '../../common/surface-panel'
-import { Tooltip } from '../../common/tooltip'
 import {
   BaselineOption,
   baselineOptions,
@@ -121,10 +120,12 @@ function BaselineBranchButton({
   open,
   panelId,
   onOpen,
+  onSwitchBranch,
 }: {
   branchAnchorRef: RefObject<HTMLButtonElement | null>
   branchLabel: string
   onOpen: () => void
+  onSwitchBranch?: ((branchName: string) => void) | undefined
   open: boolean
   panelId: string
 }) {
@@ -140,34 +141,17 @@ function BaselineBranchButton({
         open &&
           'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
       )}
-      onClick={onOpen}
+      onClick={() => {
+        if (!onSwitchBranch) {
+          onOpen()
+          return
+        }
+        const nextBranch = window.prompt('Switch to branch', branchLabel)
+        if (nextBranch?.trim()) onSwitchBranch(nextBranch.trim())
+      }}
     >
       <span className="truncate">{branchLabel}</span>
     </button>
-  )
-}
-
-function BranchSwitchButton({
-  branchLabel,
-  onSwitchBranch,
-}: {
-  branchLabel: string
-  onSwitchBranch: (branchName: string) => void
-}) {
-  return (
-    <Tooltip content="Switch branch">
-      <button
-        type="button"
-        className="composer-branch-switch inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96]"
-        onClick={() => {
-          const nextBranch = window.prompt('Switch to branch', branchLabel)
-          if (nextBranch?.trim()) onSwitchBranch(nextBranch.trim())
-        }}
-        aria-label="Switch branch"
-      >
-        <GitBranch size={14} aria-hidden="true" />
-      </button>
-    </Tooltip>
   )
 }
 
@@ -383,10 +367,8 @@ export function ComposerDiffBaselineSelector({
           open={open}
           panelId={panelId}
           onOpen={() => togglePopover('branch')}
+          onSwitchBranch={onSwitchBranch}
         />
-      ) : null}
-      {showBranchChip && onSwitchBranch ? (
-        <BranchSwitchButton branchLabel={branchLabel} onSwitchBranch={onSwitchBranch} />
       ) : null}
       <button
         ref={compactAnchorRef}

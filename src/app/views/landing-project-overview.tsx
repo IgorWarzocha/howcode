@@ -230,7 +230,7 @@ export function ProjectOverview({
           />
         </div>
 
-        <section className="col-start-2 grid w-full gap-2">
+        <section className="relative z-20 col-start-2 grid w-full gap-2">
           <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               {githubLink ? (
@@ -256,7 +256,7 @@ export function ProjectOverview({
               {gitState?.isGitRepo ? (
                 <button
                   type="button"
-                  className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
+                  className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
                   onClick={() => {
                     const nextBranch = window.prompt('Switch to branch', gitState.branch ?? '')
                     if (nextBranch?.trim()) {
