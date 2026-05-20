@@ -20,6 +20,8 @@ import {
   getSettingsThinkingLevel,
 } from '../../shared/pi-thread-action-payloads.ts'
 import { parseKeybindingOverrides } from '../app-settings/parsers.ts'
+import { normalizeOptionalSettingsPath } from '../app-settings/path-normalization.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import {
   setChatModelSelection,
   setChatThinkingLevel,
@@ -84,7 +86,11 @@ async function clearClipboardImageTempFiles() {
   }
 }
 
-type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => void
+type SettingsUpdateHandler = (payload: AnyDesktopActionPayload) => unknown
+
+function isSettingsUpdateResult(value: unknown) {
+  return typeof value === 'object' && value !== null
+}
 
 function setOptionalBooleanSetting(
   payload: AnyDesktopActionPayload,
@@ -164,8 +170,17 @@ const settingsUpdateHandlers = {
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
   customPiDirectory: (payload) => {
-    setCustomPiDirectory(getSettingsPreferredProjectLocation(payload))
+    const currentCustomPiDirectory = normalizeOptionalSettingsPath(
+      loadAppSettings().customPiDirectory,
+    )
+    const nextCustomPiDirectory = normalizeOptionalSettingsPath(
+      getSettingsPreferredProjectLocation(payload),
+    )
+    if (currentCustomPiDirectory === nextCustomPiDirectory) return { didMutate: false }
+
+    setCustomPiDirectory(nextCustomPiDirectory)
     restartRuntimeHostsForEnvironmentChange()
+    return { didMutate: true }
   },
   initializeGitOnProjectCreate: (payload) =>
     setOptionalBooleanSetting(payload, setInitializeGitOnProjectCreate),
@@ -214,6 +229,6 @@ export async function handleSettingsDesktopAction(
   if (action !== 'settings.update') return unhandledAction()
 
   const key = getSettingsKey(payload)
-  if (key) settingsUpdateHandlers[key]?.(payload)
-  return handledAction()
+  const result = key ? settingsUpdateHandlers[key]?.(payload) : undefined
+  return handledAction(isSettingsUpdateResult(result) ? result : undefined)
 }

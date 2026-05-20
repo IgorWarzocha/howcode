@@ -15,6 +15,11 @@ import {
 } from './helpers'
 import { useSettingsDictationController } from './useSettingsDictationController'
 
+function normalizeOptionalSettingsPath(value: string | null | undefined) {
+  const normalizedValue = value?.trim() ?? ''
+  return normalizedValue.length > 0 ? normalizedValue : null
+}
+
 export function useSettingsController({
   appSettings,
   resolvedPiDirectory,
@@ -102,9 +107,15 @@ export function useSettingsController({
   }
 
   const saveCustomPiDirectory = () => {
+    const nextCustomPiDirectory = normalizeOptionalSettingsPath(customPiDirectoryDraft)
+    const currentCustomPiDirectory = normalizeOptionalSettingsPath(appSettings.customPiDirectory)
+    if (nextCustomPiDirectory === currentCustomPiDirectory) {
+      return
+    }
+
     void onAction('settings.update', {
       key: 'customPiDirectory',
-      value: customPiDirectoryDraft,
+      value: nextCustomPiDirectory,
     })
   }
 

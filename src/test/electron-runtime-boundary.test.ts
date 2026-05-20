@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const projectRoot = path.resolve(__dirname, '..', '..')
+const electronMainRoot = path.join(projectRoot, 'src/electron/main')
+const sourceFileExtensionPattern = /\.ts$/
 const forbiddenElectronMainImports = [
   'better-sqlite3',
   'desktop/app-settings',
@@ -18,21 +20,29 @@ const forbiddenElectronMainImports = [
   'desktop/thread-state-db',
 ]
 
-function listFiles(command: string) {
-  const { execFileSync } = require('node:child_process') as typeof import('node:child_process')
-  return execFileSync('bash', ['-lc', command], { cwd: projectRoot, encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean)
+function walkFiles(dir: string): string[] {
+  const files: string[] = []
+  for (const entry of readdirSync(dir)) {
+    const absolute = path.join(dir, entry)
+    const stat = statSync(absolute)
+    if (stat.isDirectory()) {
+      files.push(...walkFiles(absolute))
+    } else if (sourceFileExtensionPattern.test(entry)) {
+      files.push(absolute)
+    }
+  }
+  return files
 }
 
 describe('Electron runtime boundary', () => {
   it('keeps Electron main from importing desktop runtime and native DB modules', () => {
-    const files = listFiles("find src/electron/main -type f -name '*.ts'")
+    const files = walkFiles(electronMainRoot)
     const violations: string[] = []
     for (const file of files) {
-      const source = readFileSync(path.join(projectRoot, file), 'utf8')
+      const source = readFileSync(file, 'utf8')
+      const repoPath = path.relative(projectRoot, file).replaceAll(path.sep, '/')
       for (const forbidden of forbiddenElectronMainImports) {
-        if (source.includes(forbidden)) violations.push(`${file}: ${forbidden}`)
+        if (source.includes(forbidden)) violations.push(`${repoPath}: ${forbidden}`)
       }
     }
 

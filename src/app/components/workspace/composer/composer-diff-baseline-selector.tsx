@@ -48,6 +48,7 @@ type ComposerDiffBaselineSelectorProps = {
 function useComposerBaselinePopoverControls({
   activeAnchorRef,
   branchSwitchOpen,
+  canSwitchBranch,
   open,
   setBranchSwitchInput,
   setBranchSwitchOpen,
@@ -55,6 +56,7 @@ function useComposerBaselinePopoverControls({
 }: {
   activeAnchorRef: RefObject<BaselineAnchorKind>
   branchSwitchOpen: boolean
+  canSwitchBranch: boolean
   open: boolean
   setBranchSwitchInput: (input: string) => void
   setBranchSwitchOpen: (open: boolean) => void
@@ -72,6 +74,11 @@ function useComposerBaselinePopoverControls({
     setOpen((current) => !current)
   }
   const openBranchSwitchPopover = () => {
+    if (!canSwitchBranch) {
+      openBaselinePopover('branch')
+      return
+    }
+
     activeAnchorRef.current = 'branch'
     setOpen(false)
     setBranchSwitchInput('')
@@ -271,13 +278,18 @@ function BaselineBranchButton({
   panelId: string
 }) {
   const openBranchSwitch = () => {
+    if (!onSwitchBranch) {
+      onOpen()
+      return
+    }
+
     onOpen()
   }
 
   const submitBranchSwitch = () => {
     const nextBranch = branchSwitchInput.trim()
-    if (!nextBranch) return
-    onSwitchBranch?.(nextBranch)
+    if (!(nextBranch && onSwitchBranch)) return
+    onSwitchBranch(nextBranch)
     onSetBranchSwitchOpen(false)
   }
   const filteredBranches = branches.filter((branch) =>
@@ -344,7 +356,8 @@ function BaselineBranchButton({
                           'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
                       )}
                       onClick={() => {
-                        onSwitchBranch?.(branch)
+                        if (!onSwitchBranch) return
+                        onSwitchBranch(branch)
                         onSetBranchSwitchOpen(false)
                       }}
                     >
@@ -549,6 +562,7 @@ export function ComposerDiffBaselineSelector({
   } = useComposerBaselinePopoverControls({
     activeAnchorRef,
     branchSwitchOpen,
+    canSwitchBranch: Boolean(onSwitchBranch),
     open,
     setBranchSwitchInput,
     setBranchSwitchOpen,

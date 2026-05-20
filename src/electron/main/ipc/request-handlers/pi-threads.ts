@@ -98,7 +98,8 @@ export function createPiThreadsHandlers(
           payload &&
           typeof payload === 'object' &&
           'key' in payload &&
-          payload.key === 'customPiDirectory'
+          payload.key === 'customPiDirectory' &&
+          result?.didMutate
         ) {
           await piThreads.disposeDesktopRuntime?.()
         }

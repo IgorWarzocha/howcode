@@ -1,5 +1,6 @@
 export type PiModule = typeof import('@earendil-works/pi-coding-agent')
 
+import { normalizeOptionalSettingsPath } from './app-settings/path-normalization.ts'
 import { loadAppSettings } from './app-settings/readers.ts'
 
 let piModulePromise: Promise<PiModule> | undefined
@@ -9,7 +10,7 @@ function setProcessEnvironmentVariable(name: string, value: string) {
 }
 
 function applyCustomPiDirectoryEnvironment() {
-  const customPiDirectory = loadAppSettings().customPiDirectory?.trim()
+  const customPiDirectory = normalizeOptionalSettingsPath(loadAppSettings().customPiDirectory)
   if (customPiDirectory) setProcessEnvironmentVariable('PI_CODING_AGENT_DIR', customPiDirectory)
 }
 
