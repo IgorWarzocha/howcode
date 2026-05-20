@@ -61,6 +61,7 @@ function updateComposerTextareaHeight(input: {
   onHeightChange: ((height: number) => void) | undefined
   reservedHeight: number | null
   reservedLineCount: number
+  canExpandField: boolean
   setCanExpandField: React.Dispatch<React.SetStateAction<boolean>>
   setFieldExpanded: React.Dispatch<React.SetStateAction<boolean>>
   setReservedHeight: React.Dispatch<React.SetStateAction<number | null>>
@@ -72,9 +73,9 @@ function updateComposerTextareaHeight(input: {
   const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20
   input.lineHeightRef.current = lineHeight
   const nextReservedHeight = Math.ceil(lineHeight * input.reservedLineCount)
-  input.setReservedHeight((current) =>
-    current === nextReservedHeight ? current : nextReservedHeight,
-  )
+  if (input.reservedHeight !== nextReservedHeight) {
+    input.setReservedHeight(nextReservedHeight)
+  }
   const maxVisibleLineCount = input.fieldExpanded
     ? EXPANDED_VISIBLE_LINE_COUNT
     : COLLAPSED_VISIBLE_LINE_COUNT
@@ -87,9 +88,9 @@ function updateComposerTextareaHeight(input: {
     overflowY: scrollHeight > nextHeight + 1 ? 'auto' : 'hidden',
   })
   const nextCanExpandField = scrollHeight > Math.ceil(lineHeight * COLLAPSED_VISIBLE_LINE_COUNT) + 1
-  input.setCanExpandField((current) =>
-    current === nextCanExpandField ? current : nextCanExpandField,
-  )
+  if (input.canExpandField !== nextCanExpandField) {
+    input.setCanExpandField(nextCanExpandField)
+  }
   if (!nextCanExpandField && input.fieldExpanded) input.setFieldExpanded(false)
   window.requestAnimationFrame(() => {
     const reportedHeight = input.wrapperRef.current?.getBoundingClientRect().height ?? nextHeight
@@ -124,6 +125,7 @@ export function useComposerTextareaHeight(input: {
     if (!textarea) return
     updateComposerTextareaHeight({
       fieldExpanded: input.fieldExpanded,
+      canExpandField,
       lastReportedHeightRef: input.lastReportedHeightRef,
       lineHeightRef: input.lineHeightRef,
       onExpandedChange: input.onExpandedChange,
@@ -138,12 +140,17 @@ export function useComposerTextareaHeight(input: {
       wrapperRef: input.wrapperRef,
     })
   }, [
-    input,
+    canExpandField,
     input.fieldExpanded,
     input.onExpandedChange,
+    input.lastReportedHeightRef,
+    input.lineHeightRef,
     input.onHeightChange,
     input.reservedLineCount,
+    input.setFieldExpanded,
+    input.textareaRef,
     input.value,
+    input.wrapperRef,
     reservedHeight,
     textareaLayoutVersion,
   ])
