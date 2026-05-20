@@ -18,7 +18,10 @@ import {
   listComposerAttachmentEntries,
   searchComposerAttachmentEntries,
 } from '../src/desktop-host/composer-attachments'
-import { DesktopServiceClient } from '../src/desktop-host/desktop-service-client'
+import {
+  DesktopServiceClient,
+  type DesktopServiceModuleName,
+} from '../src/desktop-host/desktop-service-client'
 import type {
   PiSkillsModule,
   PiThreadsModule,
@@ -51,7 +54,9 @@ const desktopService = new DesktopServiceClient({
   cwd: getDesktopWorkingDirectory(),
 })
 
-function proxyServiceModule<T extends Record<string, unknown>>(moduleName: string) {
+function proxyServiceModule<T extends Record<string, unknown>>(
+  moduleName: DesktopServiceModuleName,
+) {
   return new Proxy(
     {},
     {
@@ -60,7 +65,8 @@ function proxyServiceModule<T extends Record<string, unknown>>(moduleName: strin
           return desktopService.subscribeDesktopEvents.bind(desktopService)
         if (property === 'subscribeTerminalEvents')
           return desktopService.subscribeTerminalEvents.bind(desktopService)
-        return (...args: unknown[]) => desktopService.invoke(moduleName, String(property), args)
+        return (...args: unknown[]) =>
+          desktopService.invokeDynamic(moduleName, String(property), args)
       },
     },
   ) as T

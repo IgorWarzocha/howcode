@@ -2,6 +2,19 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import type { TerminalEvent } from '../../shared/terminal-contracts'
+import type { DesktopRuntimeModules } from '../electron/main/runtime/desktop-runtime-contracts'
+
+export type DesktopServiceApi = DesktopRuntimeModules
+export type DesktopServiceModuleName = keyof DesktopServiceApi
+type ServiceMethod<M extends DesktopServiceModuleName> = {
+  [K in keyof DesktopServiceApi[M]]: DesktopServiceApi[M][K] extends (...args: never[]) => unknown
+    ? K
+    : never
+}[keyof DesktopServiceApi[M]]
+type ServiceFunction<M extends DesktopServiceModuleName, K extends ServiceMethod<M>> = Extract<
+  DesktopServiceApi[M][K],
+  (...args: never[]) => unknown
+>
 
 type PendingRequest = {
   resolve: (value: unknown) => void
@@ -58,13 +71,27 @@ export class DesktopServiceClient {
     return () => this.terminalListeners.delete(listener)
   }
 
-  async invoke(moduleName: string, method: string, args: unknown[] = []) {
+  async invoke<M extends DesktopServiceModuleName, K extends ServiceMethod<M> & string>(
+    moduleName: M,
+    method: K,
+    args: Parameters<ServiceFunction<M, K>> = [] as unknown as Parameters<ServiceFunction<M, K>>,
+  ): Promise<Awaited<ReturnType<ServiceFunction<M, K>>>> {
+    return (await this.invokeDynamic(moduleName, method, args)) as Awaited<
+      ReturnType<ServiceFunction<M, K>>
+    >
+  }
+
+  async invokeDynamic(moduleName: DesktopServiceModuleName, method: string, args: unknown[] = []) {
     const child = await this.ensureStarted()
     const id = randomUUID()
     const result = new Promise<unknown>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id)
-        reject(new Error(`Timed out waiting for desktop service method ${moduleName}.${method}.`))
+        reject(
+          new Error(
+            `Timed out waiting for desktop service method ${moduleName}.${String(method)}.`,
+          ),
+        )
       }, this.options.requestTimeoutMs ?? defaultRequestTimeoutMs)
       this.pendingRequests.set(id, { resolve, reject, timeout })
     })

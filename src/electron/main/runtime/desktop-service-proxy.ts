@@ -24,7 +24,7 @@ function getServiceHostPath() {
 
 function proxyModule<T extends Record<string, unknown>>(
   service: DesktopServiceClient,
-  moduleName: string,
+  moduleName: keyof DesktopRuntimeModules,
 ) {
   return new Proxy(
     {},
@@ -36,7 +36,7 @@ function proxyModule<T extends Record<string, unknown>>(
           return service.subscribeTerminalEvents.bind(service)
         if (property === 'disposeDesktopRuntime') return service.dispose.bind(service)
         if (property === 'closeAllTerminals') return service.dispose.bind(service)
-        return (...args: unknown[]) => service.invoke(moduleName, String(property), args)
+        return (...args: unknown[]) => service.invokeDynamic(moduleName, String(property), args)
       },
     },
   ) as T
