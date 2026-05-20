@@ -185,10 +185,9 @@ function BaselineBranchButton({
         <span className="truncate">{branchLabel}</span>
       </button>
       {branchSwitchOpen ? (
-        <SurfacePanel
+        <div
           ref={branchSwitchPanelRef}
-          data-open="true"
-          className="absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl bg-[color:var(--panel)] p-2 opacity-100 backdrop-blur-none"
+          className="absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[#20222d] p-2 opacity-100 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
         >
           <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
             Switch branch
@@ -232,7 +231,7 @@ function BaselineBranchButton({
               </div>
             )}
           </div>
-        </SurfacePanel>
+        </div>
       ) : null}
     </span>
   )

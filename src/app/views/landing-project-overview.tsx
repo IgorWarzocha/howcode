@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
-import { SurfacePanel } from '../components/common/surface-panel'
 import type {
   DesktopActionInvoker,
   ProjectGitState,
@@ -218,9 +217,9 @@ function BranchSwitchPopover({
   if (!position || typeof document === 'undefined') return null
 
   return createPortal(
-    <SurfacePanel
+    <div
       ref={panelRef}
-      className="fixed z-[160] grid gap-2 rounded-xl bg-[color:var(--panel)] p-2 opacity-100 backdrop-blur-none"
+      className="fixed z-[160] grid gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[#20222d] p-2 opacity-100 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
       style={position}
     >
       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
@@ -267,7 +266,7 @@ function BranchSwitchPopover({
           </div>
         )}
       </div>
-    </SurfacePanel>,
+    </div>,
     document.body,
   )
 }
