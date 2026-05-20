@@ -64,9 +64,20 @@ function rebuildServiceNativeDependencies(resourcesPath) {
     })
 
     if (result.status !== 0) {
-      throw new Error(
-        `Failed to build service native dependencies for stock Node: ${serviceNativePackages.join(', ')}.`,
+      console.warn(
+        `Service native dependency install exited with ${result.status}; checking required built files before failing.`,
       )
+    }
+
+    for (const packageName of serviceNativePackages) {
+      const sourcePackagePath = path.join(tempRoot, 'node_modules', packageName)
+      const destinationPackagePath = path.join(unpackedAppPath, 'node_modules', packageName)
+      if (!existsSync(sourcePackagePath)) {
+        throw new Error(`Missing installed service native package: ${sourcePackagePath}`)
+      }
+      rmSync(destinationPackagePath, { recursive: true, force: true })
+      mkdirSync(path.dirname(destinationPackagePath), { recursive: true })
+      cpSync(sourcePackagePath, destinationPackagePath, { recursive: true })
     }
 
     for (const relativePath of nativeRuntimeFiles) {
