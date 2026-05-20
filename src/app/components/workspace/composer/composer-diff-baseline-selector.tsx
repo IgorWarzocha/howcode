@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { GitCompareArrows, Search } from 'lucide-react'
+import { Check, GitCompareArrows, Search } from 'lucide-react'
 import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
@@ -116,6 +116,7 @@ function BaselineSummaryButton({
 
 function BaselineBranchButton({
   branchLabel,
+  branches,
   branchAnchorRef,
   branchSwitchPanelRef,
   branchSwitchInputRef,
@@ -132,6 +133,7 @@ function BaselineBranchButton({
   branchSwitchPanelRef: RefObject<HTMLDivElement | null>
   branchSwitchInputRef: RefObject<HTMLInputElement | null>
   branchLabel: string
+  branches: readonly string[]
   branchSwitchInput: string
   branchSwitchOpen: boolean
   onOpen: () => void
@@ -156,6 +158,9 @@ function BaselineBranchButton({
     onSwitchBranch?.(nextBranch)
     onSetBranchSwitchOpen(false)
   }
+  const filteredBranches = branches.filter((branch) =>
+    branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
+  )
 
   return (
     <span className="relative inline-flex">
@@ -197,8 +202,36 @@ function BaselineBranchButton({
               if (event.key === 'Escape') onSetBranchSwitchOpen(false)
             }}
             className={settingsInputClass}
-            placeholder="branch-name"
+            placeholder="Search branches"
           />
+          <div className="grid max-h-56 gap-0.5 overflow-y-auto">
+            {filteredBranches.length > 0 ? (
+              filteredBranches.map((branch) => (
+                <button
+                  key={branch}
+                  type="button"
+                  className={cn(
+                    'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                    branch === branchLabel &&
+                      'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+                  )}
+                  onClick={() => {
+                    onSwitchBranch?.(branch)
+                    onSetBranchSwitchOpen(false)
+                  }}
+                >
+                  <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+                    {branch === branchLabel ? <Check size={13} /> : null}
+                  </span>
+                  <span className="truncate">{branch}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
+                Press Enter to check out “{branchSwitchInput.trim()}”
+              </div>
+            )}
+          </div>
         </SurfacePanel>
       ) : null}
     </span>
@@ -432,6 +465,7 @@ export function ComposerDiffBaselineSelector({
           branchSwitchInput={branchSwitchInput}
           branchSwitchOpen={branchSwitchOpen}
           branchSwitchPanelRef={branchSwitchPanelRef}
+          branches={projectGitState?.branches ?? []}
           branchLabel={branchLabel}
           open={open}
           panelId={panelId}

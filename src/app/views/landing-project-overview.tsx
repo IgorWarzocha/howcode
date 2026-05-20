@@ -1,5 +1,5 @@
-import { CircleDot, ExternalLink, GitBranch } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Check, CircleDot, ExternalLink, GitBranch } from 'lucide-react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
@@ -171,31 +171,98 @@ function TopSessionsSection({
   )
 }
 
-export function ProjectOverview({
-  composerOverlayHeight,
-  project,
+function BranchSwitchPopover({
+  branchSwitchInput,
+  currentBranch,
+  filteredBranches,
+  inputRef,
+  panelRef,
+  projectId,
+  onAction,
+  onSetBranchSwitchInput,
+  onSetBranchSwitchOpen,
+  onSubmitBranchSwitch,
+}: {
+  branchSwitchInput: string
+  currentBranch: string | null | undefined
+  filteredBranches: readonly string[]
+  inputRef: RefObject<HTMLInputElement | null>
+  panelRef: RefObject<HTMLDivElement | null>
+  projectId: string
+  onAction: DesktopActionInvoker
+  onSetBranchSwitchInput: (value: string) => void
+  onSetBranchSwitchOpen: (open: boolean) => void
+  onSubmitBranchSwitch: () => void
+}) {
+  return (
+    <SurfacePanel
+      ref={panelRef}
+      data-open="true"
+      className="motion-popover absolute top-[calc(100%+0.35rem)] left-0 z-[80] grid w-64 gap-2 rounded-xl p-2"
+    >
+      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+        Switch branch
+      </div>
+      <input
+        ref={inputRef}
+        value={branchSwitchInput}
+        onChange={(event) => onSetBranchSwitchInput(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onSubmitBranchSwitch()
+          if (event.key === 'Escape') onSetBranchSwitchOpen(false)
+        }}
+        className={settingsInputClass}
+        placeholder="Search branches"
+      />
+      <div className="grid max-h-56 gap-0.5 overflow-y-auto">
+        {filteredBranches.length > 0 ? (
+          filteredBranches.map((branch) => (
+            <button
+              key={branch}
+              type="button"
+              className={cn(
+                'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                branch === currentBranch && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+              )}
+              onClick={() => {
+                onSetBranchSwitchOpen(false)
+                void onAction('workspace.switch-branch', {
+                  projectId,
+                  value: branch,
+                })
+              }}
+            >
+              <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+                {branch === currentBranch ? <Check size={13} /> : null}
+              </span>
+              <span className="truncate">{branch}</span>
+            </button>
+          ))
+        ) : (
+          <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
+            Press Enter to check out “{branchSwitchInput.trim()}”
+          </div>
+        )}
+      </div>
+    </SurfacePanel>
+  )
+}
+
+function ProjectRepositorySection({
+  branchLabel,
   gitState,
-  usageLoading,
-  usageSummary,
-  onOpenThread,
+  gitSummary,
+  githubLink,
+  project,
   onAction,
 }: {
-  composerOverlayHeight: number
-  project: Project
+  branchLabel: string
   gitState: ProjectGitState | null | undefined
-  usageLoading: boolean
-  usageSummary: ProjectUsageSummary | null | undefined
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  gitSummary: string | null
+  githubLink: ReturnType<typeof getGitHubRepositoryLink>
+  project: Project
   onAction: DesktopActionInvoker
 }) {
-  const githubLink = getGitHubRepositoryLink(project, gitState)
-  const sessionCount = usageSummary?.sessionCount ?? project.threadCount ?? project.threads.length
-  const sessionsWithUsageCount = usageSummary?.sessionsWithUsageCount ?? 0
-  const branchLabel = gitState?.isGitRepo ? (gitState.branch ?? 'Detached HEAD') : 'No branch'
-  const gitSummary = formatGitSummary(gitState)
-  const assistantTurnCount = usageSummary?.assistantTurnCount ?? 0
-  const measuredComposerHeight = Math.max(composerOverlayHeight, 132)
-  const overviewHeight = `calc(60% - ${measuredComposerHeight / 2}px - 0.5rem)`
   const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
   const [branchSwitchInput, setBranchSwitchInput] = useState('')
   const branchSwitchButtonRef = useRef<HTMLButtonElement>(null)
@@ -206,6 +273,10 @@ export function ProjectOverview({
     setBranchSwitchInput(gitState?.branch ?? '')
     setBranchSwitchOpen(true)
   }
+
+  const filteredBranches = (gitState?.branches ?? []).filter((branch) =>
+    branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
+  )
 
   const submitBranchSwitch = () => {
     const nextBranch = branchSwitchInput.trim()
@@ -231,6 +302,120 @@ export function ProjectOverview({
     })
   }, [branchSwitchOpen])
 
+  return (
+    <section className="relative z-20 col-start-2 grid w-full gap-2">
+      <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          {githubLink ? (
+            <GitHubInvertocatMark size={14} className="text-[color:var(--muted)]" />
+          ) : (
+            <GitBranch size={14} className="text-[color:var(--muted)]" aria-hidden="true" />
+          )}
+          <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
+            {githubLink ? `${githubLink.owner}/${githubLink.repo}` : (gitSummary ?? branchLabel)}
+          </span>
+          {githubLink ? (
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96] max-[520px]:hidden"
+              onClick={() => void openExternalQuery(githubLink.canonicalUrl)}
+              aria-label={`Open ${githubLink.owner}/${githubLink.repo} on GitHub`}
+            >
+              <ExternalLink size={12} aria-hidden="true" />
+            </button>
+          ) : null}
+          {gitState?.isGitRepo ? (
+            <span className="relative inline-flex min-w-0 shrink">
+              <button
+                ref={branchSwitchButtonRef}
+                type="button"
+                className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
+                onPointerDownCapture={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  openBranchSwitch()
+                }}
+                onClick={openBranchSwitch}
+                aria-label="Switch branch"
+                aria-expanded={branchSwitchOpen}
+                aria-haspopup="dialog"
+              >
+                {branchLabel}
+              </button>
+              {branchSwitchOpen ? (
+                <BranchSwitchPopover
+                  branchSwitchInput={branchSwitchInput}
+                  currentBranch={gitState.branch}
+                  filteredBranches={filteredBranches}
+                  inputRef={branchSwitchInputRef}
+                  panelRef={branchSwitchPanelRef}
+                  projectId={project.id}
+                  onAction={onAction}
+                  onSetBranchSwitchInput={setBranchSwitchInput}
+                  onSetBranchSwitchOpen={setBranchSwitchOpen}
+                  onSubmitBranchSwitch={submitBranchSwitch}
+                />
+              ) : null}
+            </span>
+          ) : null}
+        </div>
+        {githubLink ? (
+          <div className="flex min-w-0 shrink-0 items-center gap-1 max-[600px]:hidden">
+            <button
+              type="button"
+              className={cn(
+                ghostButtonClass,
+                'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
+              )}
+              onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/issues`)}
+            >
+              <CircleDot size={12} aria-hidden="true" /> Issues
+            </button>
+            <button
+              type="button"
+              className={cn(
+                ghostButtonClass,
+                'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
+              )}
+              onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/pulls`)}
+            >
+              <CircleDot size={12} aria-hidden="true" /> PRs
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {gitSummary ? (
+        <div className="px-1 text-[12px] text-[color:var(--muted)]">{gitSummary}</div>
+      ) : null}
+    </section>
+  )
+}
+
+export function ProjectOverview({
+  composerOverlayHeight,
+  project,
+  gitState,
+  usageLoading,
+  usageSummary,
+  onOpenThread,
+  onAction,
+}: {
+  composerOverlayHeight: number
+  project: Project
+  gitState: ProjectGitState | null | undefined
+  usageLoading: boolean
+  usageSummary: ProjectUsageSummary | null | undefined
+  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onAction: DesktopActionInvoker
+}) {
+  const githubLink = getGitHubRepositoryLink(project, gitState)
+  const sessionCount = usageSummary?.sessionCount ?? project.threadCount ?? project.threads.length
+  const sessionsWithUsageCount = usageSummary?.sessionsWithUsageCount ?? 0
+  const branchLabel = gitState?.isGitRepo ? (gitState.branch ?? 'Detached HEAD') : 'No branch'
+  const gitSummary = formatGitSummary(gitState)
+  const assistantTurnCount = usageSummary?.assistantTurnCount ?? 0
+  const measuredComposerHeight = Math.max(composerOverlayHeight, 132)
+  const overviewHeight = `calc(60% - ${measuredComposerHeight / 2}px - 0.5rem)`
   return (
     <div
       className="mx-auto grid min-h-0 w-full grid-cols-[minmax(2rem,1fr)_minmax(0,800px)_minmax(2rem,1fr)] content-end gap-x-2 overflow-y-auto px-0 text-left [scrollbar-gutter:stable]"
@@ -267,101 +452,14 @@ export function ProjectOverview({
           />
         </div>
 
-        <section className="relative z-20 col-start-2 grid w-full gap-2">
-          <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              {githubLink ? (
-                <GitHubInvertocatMark size={14} className="text-[color:var(--muted)]" />
-              ) : (
-                <GitBranch size={14} className="text-[color:var(--muted)]" aria-hidden="true" />
-              )}
-              <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
-                {githubLink
-                  ? `${githubLink.owner}/${githubLink.repo}`
-                  : (gitSummary ?? branchLabel)}
-              </span>
-              {githubLink ? (
-                <button
-                  type="button"
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] active:scale-[0.96] max-[520px]:hidden"
-                  onClick={() => void openExternalQuery(githubLink.canonicalUrl)}
-                  aria-label={`Open ${githubLink.owner}/${githubLink.repo} on GitHub`}
-                >
-                  <ExternalLink size={12} aria-hidden="true" />
-                </button>
-              ) : null}
-              {gitState?.isGitRepo ? (
-                <span className="relative inline-flex min-w-0 shrink">
-                  <button
-                    ref={branchSwitchButtonRef}
-                    type="button"
-                    className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
-                    onPointerDownCapture={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      openBranchSwitch()
-                    }}
-                    onClick={openBranchSwitch}
-                    aria-label="Switch branch"
-                    aria-expanded={branchSwitchOpen}
-                    aria-haspopup="dialog"
-                  >
-                    {branchLabel}
-                  </button>
-                  {branchSwitchOpen ? (
-                    <SurfacePanel
-                      ref={branchSwitchPanelRef}
-                      data-open="true"
-                      className="motion-popover absolute top-[calc(100%+0.35rem)] left-0 z-[80] grid w-64 gap-2 rounded-xl p-2"
-                    >
-                      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-                        Switch branch
-                      </div>
-                      <input
-                        ref={branchSwitchInputRef}
-                        value={branchSwitchInput}
-                        onChange={(event) => setBranchSwitchInput(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') submitBranchSwitch()
-                          if (event.key === 'Escape') setBranchSwitchOpen(false)
-                        }}
-                        className={settingsInputClass}
-                        placeholder="branch-name"
-                      />
-                    </SurfacePanel>
-                  ) : null}
-                </span>
-              ) : null}
-            </div>
-            {githubLink ? (
-              <div className="flex min-w-0 shrink-0 items-center gap-1 max-[600px]:hidden">
-                <button
-                  type="button"
-                  className={cn(
-                    ghostButtonClass,
-                    'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
-                  )}
-                  onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/issues`)}
-                >
-                  <CircleDot size={12} aria-hidden="true" /> Issues
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    ghostButtonClass,
-                    'inline-flex h-7 items-center gap-1.5 px-2 active:scale-[0.96]',
-                  )}
-                  onClick={() => void openExternalQuery(`${githubLink.canonicalUrl}/pulls`)}
-                >
-                  <CircleDot size={12} aria-hidden="true" /> PRs
-                </button>
-              </div>
-            ) : null}
-          </div>
-          {gitSummary ? (
-            <div className="px-1 text-[12px] text-[color:var(--muted)]">{gitSummary}</div>
-          ) : null}
-        </section>
+        <ProjectRepositorySection
+          branchLabel={branchLabel}
+          gitState={gitState}
+          gitSummary={gitSummary}
+          githubLink={githubLink}
+          project={project}
+          onAction={onAction}
+        />
 
         <TopSessionsSection
           loading={usageLoading}

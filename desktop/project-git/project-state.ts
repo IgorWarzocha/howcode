@@ -137,6 +137,25 @@ export async function getBranch(projectId: string) {
   return null
 }
 
+async function getBranches(projectId: string) {
+  try {
+    const { stdout } = await runGitWithOptions(
+      projectId,
+      ['branch', '--format=%(refname:short)', '--sort=-committerdate'],
+      {
+        timeout: 10_000,
+        maxBuffer: 1024 * 1024,
+      },
+    )
+    return stdout
+      .split('\n')
+      .map((branch) => branch.trim())
+      .filter((branch) => branch.length > 0)
+  } catch {
+    return []
+  }
+}
+
 async function getDiffStats(projectId: string) {
   try {
     const args = (await hasHeadCommit(projectId))
@@ -160,6 +179,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
       projectId,
       isGitRepo: false,
       branch: null,
+      branches: [],
       fileCount: 0,
       stagedFileCount: 0,
       unstagedFileCount: 0,
@@ -172,8 +192,9 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     }
   }
 
-  const [branch, statusSummary, originUrl, stats] = await Promise.all([
+  const [branch, branches, statusSummary, originUrl, stats] = await Promise.all([
     getBranch(projectId),
+    getBranches(projectId),
     getStatusSummary(projectId),
     getOriginUrl(projectId),
     getDiffStats(projectId),
@@ -183,6 +204,7 @@ export async function loadProjectGitState(projectId: string): Promise<ProjectGit
     projectId,
     isGitRepo: true,
     branch,
+    branches,
     fileCount: statusSummary.fileCount,
     stagedFileCount: statusSummary.stagedFileCount,
     unstagedFileCount: statusSummary.unstagedFileCount,

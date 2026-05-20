@@ -12,6 +12,7 @@ export type ProjectGitState = {
   projectId: string
   isGitRepo: boolean
   branch: string | null
+  branches: string[]
   fileCount: number
   stagedFileCount: number
   unstagedFileCount: number
