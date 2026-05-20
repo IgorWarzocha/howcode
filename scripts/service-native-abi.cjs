@@ -29,6 +29,24 @@ function getAbiBundleRoot(resourcesPath, abi = process.versions.modules) {
   return path.join(getUnpackedAppPath(resourcesPath), nativeServiceAbiDirectoryName, String(abi))
 }
 
+function validateServiceNativeInstallResult(result, npmExecutable) {
+  if (result.error) {
+    throw new Error(
+      `Failed to run ${npmExecutable} for service native dependencies: ${result.error.message}`,
+    )
+  }
+  if (result.signal) {
+    throw new Error(
+      `Service native dependency install was terminated by ${result.signal}: ${serviceNativePackages.join(', ')}.`,
+    )
+  }
+  if (result.status !== 0) {
+    console.warn(
+      `Service native dependency install exited with ${result.status}; checking required built files before failing.`,
+    )
+  }
+}
+
 function rebuildServiceNativeDependencies(resourcesPath) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
   if (!existsSync(unpackedAppPath)) {
@@ -54,7 +72,8 @@ function rebuildServiceNativeDependencies(resourcesPath) {
       `${JSON.stringify({ private: true, dependencies }, null, 2)}\n`,
     )
 
-    const result = spawnSync('npm', ['install', '--no-audit', '--no-fund'], {
+    const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+    const result = spawnSync(npmExecutable, ['install', '--no-audit', '--no-fund'], {
       cwd: tempRoot,
       env: {
         ...process.env,
@@ -63,11 +82,7 @@ function rebuildServiceNativeDependencies(resourcesPath) {
       stdio: 'inherit',
     })
 
-    if (result.status !== 0) {
-      console.warn(
-        `Service native dependency install exited with ${result.status}; checking required built files before failing.`,
-      )
-    }
+    validateServiceNativeInstallResult(result, npmExecutable)
 
     for (const packageName of serviceNativePackages) {
       const sourcePackagePath = path.join(tempRoot, 'node_modules', packageName)
