@@ -14,7 +14,12 @@ import {
 } from '../../shared/pi-thread-action-payloads.ts'
 import { getPersistedSessionPath } from '../../shared/session-paths.ts'
 import { generateGitCommitMessage } from '../git-commit-message.ts'
-import { commitProjectChanges, initializeProjectGit, setProjectOrigin } from '../project-git.ts'
+import {
+  commitProjectChanges,
+  initializeProjectGit,
+  setProjectOrigin,
+  switchProjectBranch,
+} from '../project-git.ts'
 import {
   setProjectGitOpsMode,
   setProjectRepoOrigin,
@@ -99,6 +104,11 @@ export async function handleWorkspaceDesktopAction(
       return handleCommitOptionsWorkspaceAction(payload)
     case 'workspace.diff-preferences':
       return handleDiffPreferencesWorkspaceAction(payload)
+    case 'workspace.switch-branch': {
+      const projectId = getProjectId(payload)
+      if (!projectId) return handledAction()
+      return handledAction(await switchProjectBranch(projectId, String(payload.value ?? '')))
+    }
 
     default:
       return unhandledAction()

@@ -150,6 +150,7 @@ function CodeWorkspaceProjectOrEmptyView({
           composerOverlayHeight={composerOverlayHeight}
           project={selectedProject}
           onOpenThread={onOpenThread}
+          onAction={onAction}
         />
       ) : null}
     </div>

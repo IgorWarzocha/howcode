@@ -147,6 +147,50 @@ function isValidInstall(paths, target) {
   return fs.existsSync(paths.executablePath) && hasPackagedAppBundle(paths.installDir, target)
 }
 
+function getLinuxCommandLauncherPath() {
+  return path.join(process.env.XDG_BIN_HOME || path.join(os.homedir(), '.local', 'bin'), APP_NAME)
+}
+
+function shellSingleQuote(value) {
+  return `'${value.replace(/'/g, `'"'"'`)}'`
+}
+
+async function writeLinuxCommandLauncher(paths) {
+  const launcherPath = getLinuxCommandLauncherPath()
+  const launcherDirectory = path.dirname(launcherPath)
+  const launcherContents = [
+    '#!/bin/sh',
+    `export HOWCODE_REPO_ROOT=${shellSingleQuote(process.env.HOWCODE_REPO_ROOT || process.cwd())}`,
+    `exec ${shellSingleQuote(paths.executablePath)} "$@"`,
+    '',
+  ].join('\n')
+
+  await fsp.mkdir(launcherDirectory, { recursive: true })
+  await fsp.writeFile(launcherPath, launcherContents, { encoding: 'utf8', mode: 0o755 })
+  await fsp.chmod(launcherPath, 0o755)
+
+  const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean)
+  if (!pathEntries.includes(launcherDirectory)) {
+    console.warn(`${APP_NAME}: created ${launcherPath}, but ${launcherDirectory} is not in PATH.`)
+    console.warn(`${APP_NAME}: add it to PATH or relaunch your shell before running ${APP_NAME}.`)
+  }
+}
+
+async function ensureLinuxLaunchIntegration(target, paths) {
+  if (target.os !== 'linux') {
+    return true
+  }
+
+  try {
+    await writeLinuxCommandLauncher(paths)
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`${APP_NAME}: could not create command launcher: ${message}`)
+    return false
+  }
+}
+
 function getWindowsStartMenuShortcutPath() {
   const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming')
   return path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', `${APP_NAME}.lnk`)
@@ -239,7 +283,11 @@ async function createWindowsStartMenuShortcut(paths) {
   return shortcutPath
 }
 
-async function ensureWindowsLaunchIntegration(target, paths) {
+async function ensureCommandLaunchIntegration(target, paths) {
+  if (target.os === 'linux') {
+    return ensureLinuxLaunchIntegration(target, paths)
+  }
+
   if (target.os !== 'win') {
     return true
   }
@@ -523,7 +571,7 @@ async function main() {
       if (!isValidInstall(currentPaths, target)) {
         throw error
       }
-      await ensureWindowsLaunchIntegration(target, {
+      await ensureCommandLaunchIntegration(target, {
         ...currentPaths,
       })
       await launch(current.executablePath)
@@ -539,7 +587,7 @@ async function main() {
     await installRelease(target, releaseInfo, paths)
   }
 
-  const launchIntegrationReady = await ensureWindowsLaunchIntegration(target, paths)
+  const launchIntegrationReady = await ensureCommandLaunchIntegration(target, paths)
   if (target.os === 'win' && didInstall && launchIntegrationReady) {
     console.log(`${APP_NAME}: installed. You can relaunch it from the Windows Start Menu.`)
   }

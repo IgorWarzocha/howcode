@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
+import { loadAppSettings } from '../app-settings/readers.ts'
 import {
   getBundledSkillsPath,
   getElectronResourcesPath,
@@ -195,6 +196,7 @@ async function ensureRuntimeHost(host: HostConnection) {
     }
 
     return await new Promise<ChildProcess>((resolve, reject) => {
+      const customPiDirectory = loadAppSettings().customPiDirectory?.trim()
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
         env: {
@@ -202,6 +204,7 @@ async function ensureRuntimeHost(host: HostConnection) {
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
+          ...(customPiDirectory ? { PI_CODING_AGENT_DIR: customPiDirectory } : {}),
         },
         stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       }) as ChildProcess
@@ -332,6 +335,23 @@ export async function invalidateRuntimeHostSettings(
       }),
     ),
   )
+}
+
+export function restartRuntimeHostsForEnvironmentChange() {
+  for (const host of hosts) {
+    if (host.idleTimer) {
+      clearTimeout(host.idleTimer)
+      host.idleTimer = null
+    }
+    rejectPendingRequests(host, new Error('Pi runtime host environment changed.'))
+    terminateHostProcess(host.process)
+    host.process = null
+    host.startPromise = null
+  }
+
+  hostByAlias.clear()
+  hosts.clear()
+  hosts.add(serviceHost)
 }
 
 async function invokeRuntimeHostOnHost<TName extends RuntimeHostRequestName>(

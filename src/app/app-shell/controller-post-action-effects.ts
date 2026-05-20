@@ -24,6 +24,7 @@ import {
 } from './post-effects/thread-lifecycle'
 import {
   applyCommitOptionsPostEffect,
+  applySwitchBranchPostEffect,
   applyWorkspaceCommitPostEffect,
 } from './post-effects/workspace'
 import { reconcileComposerThreadResult } from './sidebar-thread-sync'
@@ -156,6 +157,16 @@ async function handleCommitOptionsEffects(ctx: PostEffectsContext) {
   })
 }
 
+async function handleSwitchBranchEffects(ctx: PostEffectsContext) {
+  if (hasActionError(ctx.actionResult)) return
+  await applySwitchBranchPostEffect({
+    contextualPayload: ctx.contextualPayload,
+    queryClient: ctx.queryClient,
+    loadProjectGitState: ctx.loadProjectGitState,
+    setProjectGitState: ctx.setProjectGitState,
+  })
+}
+
 type PostEffectHandler = {
   matches: (ctx: PostEffectsContext) => boolean
   run: (ctx: PostEffectsContext) => Promise<void> | void
@@ -225,6 +236,7 @@ const postEffectHandlers: PostEffectHandler[] = [
     run: handleNewThreadOrProjectEffects,
   },
   { matches: (ctx) => ctx.action === 'workspace.commit-options', run: handleCommitOptionsEffects },
+  { matches: (ctx) => ctx.action === 'workspace.switch-branch', run: handleSwitchBranchEffects },
   {
     matches: (ctx) => ctx.action === 'workspace.diff-preferences',
     run: handleDiffPreferencesEffects,

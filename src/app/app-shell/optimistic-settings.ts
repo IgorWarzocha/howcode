@@ -27,6 +27,7 @@ const optimisticSettingKeys = new Set([
   'favoriteFolders',
   'projectImportState',
   'preferredProjectLocation',
+  'customPiDirectory',
   'initializeGitOnProjectCreate',
   'projectDashboardEnabled',
   'gitOpsDefaultMode',
@@ -242,6 +243,9 @@ function applyOptimisticScalarSetting(
     nextSettings.projectImportState = payload.imported
   if (payload.key === 'preferredProjectLocation')
     nextSettings.preferredProjectLocation =
+      typeof payload.value === 'string' ? payload.value.trim() || null : null
+  if (payload.key === 'customPiDirectory')
+    nextSettings.customPiDirectory =
       typeof payload.value === 'string' ? payload.value.trim() || null : null
 }
 

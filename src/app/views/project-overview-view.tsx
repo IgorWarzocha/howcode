@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ProjectGitState, ProjectUsageSummary } from '../desktop/types'
+import type { DesktopActionInvoker, ProjectGitState, ProjectUsageSummary } from '../desktop/types'
 import {
   desktopQueryKeys,
   getProjectGitStateQuery,
@@ -12,12 +12,14 @@ type ProjectOverviewViewProps = {
   composerOverlayHeight: number
   project: Project
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onAction: DesktopActionInvoker
 }
 
 export function ProjectOverviewView({
   composerOverlayHeight,
   project,
   onOpenThread,
+  onAction,
 }: ProjectOverviewViewProps) {
   const projectUsageQuery = useQuery<ProjectUsageSummary | null>({
     queryKey: desktopQueryKeys.projectUsageSummary(project.id),
@@ -37,6 +39,7 @@ export function ProjectOverviewView({
       usageLoading={projectUsageQuery.isLoading}
       usageSummary={projectUsageQuery.data}
       onOpenThread={onOpenThread}
+      onAction={onAction}
     />
   )
 }

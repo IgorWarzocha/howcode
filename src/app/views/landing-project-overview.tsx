@@ -3,6 +3,7 @@ import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
 import type {
+  DesktopActionInvoker,
   ProjectGitState,
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
@@ -174,6 +175,7 @@ export function ProjectOverview({
   usageLoading,
   usageSummary,
   onOpenThread,
+  onAction,
 }: {
   composerOverlayHeight: number
   project: Project
@@ -181,6 +183,7 @@ export function ProjectOverview({
   usageLoading: boolean
   usageSummary: ProjectUsageSummary | null | undefined
   onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
+  onAction: DesktopActionInvoker
 }) {
   const githubLink = getGitHubRepositoryLink(project, gitState)
   const sessionCount = usageSummary?.sessionCount ?? project.threadCount ?? project.threads.length
@@ -251,9 +254,22 @@ export function ProjectOverview({
                 </button>
               ) : null}
               {gitState?.isGitRepo ? (
-                <span className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--muted)] max-[900px]:hidden">
+                <button
+                  type="button"
+                  className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)] max-[900px]:hidden"
+                  onClick={() => {
+                    const nextBranch = window.prompt('Switch to branch', gitState.branch ?? '')
+                    if (nextBranch?.trim()) {
+                      void onAction('workspace.switch-branch', {
+                        projectId: project.id,
+                        value: nextBranch.trim(),
+                      })
+                    }
+                  }}
+                  aria-label="Switch branch"
+                >
                   {branchLabel}
-                </span>
+                </button>
               ) : null}
             </div>
             {githubLink ? (

@@ -38,6 +38,7 @@ type ComposerDiffBaselineSelectorProps = {
   branch?: string | null
   selectedBaseline: ProjectDiffBaseline
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  onSwitchBranch?: ((branchName: string) => void) | undefined
 }
 
 function BaselineSummaryButton({
@@ -119,10 +120,12 @@ function BaselineBranchButton({
   open,
   panelId,
   onOpen,
+  onSwitchBranch,
 }: {
   branchAnchorRef: RefObject<HTMLButtonElement | null>
   branchLabel: string
   onOpen: () => void
+  onSwitchBranch?: ((branchName: string) => void) | undefined
   open: boolean
   panelId: string
 }) {
@@ -138,7 +141,14 @@ function BaselineBranchButton({
         open &&
           'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
       )}
-      onClick={onOpen}
+      onClick={() => {
+        if (!onSwitchBranch) {
+          onOpen()
+          return
+        }
+        const nextBranch = window.prompt('Switch to branch', branchLabel)
+        if (nextBranch?.trim()) onSwitchBranch(nextBranch.trim())
+      }}
     >
       <span className="truncate">{branchLabel}</span>
     </button>
@@ -250,6 +260,7 @@ export function ComposerDiffBaselineSelector({
   branch,
   selectedBaseline,
   onSelectBaseline,
+  onSwitchBranch,
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -356,6 +367,7 @@ export function ComposerDiffBaselineSelector({
           open={open}
           panelId={panelId}
           onOpen={() => togglePopover('branch')}
+          onSwitchBranch={onSwitchBranch}
         />
       ) : null}
       <button

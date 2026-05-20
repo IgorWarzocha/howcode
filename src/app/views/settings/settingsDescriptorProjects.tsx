@@ -1,4 +1,4 @@
-import { FolderPlus, Trash2 } from 'lucide-react'
+import { FolderCog, FolderPlus, Trash2 } from 'lucide-react'
 import type { AppSettings } from '../../desktop/types'
 import { composerTextActionButtonClass, settingsInputClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
@@ -40,6 +40,36 @@ export function buildProjectsSettingsDescriptors({
             className={cn(settingsInputClass, 'w-full pl-9')}
             placeholder="Paste an absolute folder path"
             aria-label="Default project location"
+          />
+        </div>
+      ),
+    },
+    {
+      id: 'projects.custom-pi-directory',
+      category: 'projects',
+      title: 'Custom Pi directory',
+      description: 'Override the Pi agent directory used across the app.',
+      keywords: 'pi directory agent dir custom path settings sessions models',
+      render: () => (
+        <div className="relative w-[22rem] max-w-full">
+          <FolderCog
+            size={14}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
+          />
+          <input
+            type="text"
+            value={controller.customPiDirectoryDraft}
+            onChange={(event) => controller.setCustomPiDirectoryDraft(event.target.value)}
+            onBlur={controller.saveCustomPiDirectory}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                controller.saveCustomPiDirectory()
+              }
+            }}
+            className={cn(settingsInputClass, 'w-full pl-9')}
+            placeholder="Default: ~/.pi/agent"
+            aria-label="Custom Pi directory"
           />
         </div>
       ),

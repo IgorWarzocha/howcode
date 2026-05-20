@@ -26,6 +26,9 @@ export function useSettingsController({
   const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
     appSettings.preferredProjectLocation ?? '',
   )
+  const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
+    appSettings.customPiDirectory ?? '',
+  )
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
   const [favoriteFolderDraft, setFavoriteFolderDraft] = useState('')
@@ -47,6 +50,10 @@ export function useSettingsController({
   useEffect(() => {
     setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? '')
   }, [appSettings.preferredProjectLocation])
+
+  useEffect(() => {
+    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
+  }, [appSettings.customPiDirectory])
 
   const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false)
@@ -89,6 +96,13 @@ export function useSettingsController({
     void onAction('settings.update', {
       key: 'preferredProjectLocation',
       value: preferredProjectLocationDraft,
+    })
+  }
+
+  const saveCustomPiDirectory = () => {
+    void onAction('settings.update', {
+      key: 'customPiDirectory',
+      value: customPiDirectoryDraft,
     })
   }
 
@@ -169,6 +183,7 @@ export function useSettingsController({
     dictationState: dictation.dictationState,
     clearImagesBusy,
     clearImagesStatusMessage,
+    customPiDirectoryDraft,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
@@ -184,6 +199,7 @@ export function useSettingsController({
     preferredProjectLocationDraft,
     refreshDictationState: dictation.refreshDictationState,
     savePreferredProjectLocation,
+    saveCustomPiDirectory,
     setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
       void onAction('settings.update', {
         key: 'composerStreamingBehavior',
@@ -218,6 +234,7 @@ export function useSettingsController({
     selectSkillCreatorModel: (id: string) =>
       selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
     setFavoriteFolderDraft,
+    setCustomPiDirectoryDraft,
     setGitCommitMenuOpen,
     setPreferredProjectLocationDraft,
     setSkillCreatorMenuOpen,

@@ -22,6 +22,7 @@ import {
   codeThinkingLevelKey,
   composerSendModeKey,
   composerStreamingBehaviorKey,
+  customPiDirectoryKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -201,6 +202,16 @@ export function setPreferredProjectLocation(preferredProjectLocation: string | n
   }
 
   writeAppPreference(preferredProjectLocationKey, JSON.stringify(normalizedLocation))
+}
+
+export function setCustomPiDirectory(customPiDirectory: string | null) {
+  const normalizedDirectory = customPiDirectory?.trim() ?? ''
+  if (normalizedDirectory.length === 0) {
+    deleteAppPreference(customPiDirectoryKey)
+    return
+  }
+
+  writeAppPreference(customPiDirectoryKey, JSON.stringify(normalizedDirectory))
 }
 
 export function setInitializeGitOnProjectCreate(enabled: boolean) {

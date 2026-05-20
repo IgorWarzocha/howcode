@@ -27,6 +27,7 @@ import {
   setCodeThinkingLevel,
   setComposerSendMode,
   setComposerStreamingBehavior,
+  setCustomPiDirectory,
   setDevUpdateBranch,
   setDictationMaxDurationSeconds,
   setDictationModelId,
@@ -52,6 +53,7 @@ import {
   setSkillCreatorThinkingLevel,
   setUseAgentsSkillsPaths,
 } from '../app-settings/writers.ts'
+import { restartRuntimeHostsForEnvironmentChange } from '../runtime-host/client-bridge.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -161,6 +163,10 @@ const settingsUpdateHandlers = {
   },
   preferredProjectLocation: (payload) =>
     setPreferredProjectLocation(getSettingsPreferredProjectLocation(payload)),
+  customPiDirectory: (payload) => {
+    setCustomPiDirectory(getSettingsPreferredProjectLocation(payload))
+    restartRuntimeHostsForEnvironmentChange()
+  },
   initializeGitOnProjectCreate: (payload) =>
     setOptionalBooleanSetting(payload, setInitializeGitOnProjectCreate),
   projectDashboardEnabled: (payload) =>
