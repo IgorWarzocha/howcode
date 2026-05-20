@@ -1,4 +1,7 @@
 const path = require('node:path')
+const {
+  buildReleaseServiceNativeAbiBundles,
+} = require('./build-release-service-native-abi-bundles.cjs')
 const { patchPackagedNodePty } = require('./patch-node-pty-helper.cjs')
 const {
   copyCurrentNativeDependenciesToAbiBundle,
@@ -18,6 +21,10 @@ exports.default = async function afterPack(context) {
   if (rebuildServiceNativeDependencies(resourcesPath)) {
     copyCurrentNativeDependenciesToAbiBundle(resourcesPath)
     validateCurrentNativeDependenciesLoad(resourcesPath)
+  }
+
+  if (process.env.HOWCODE_BUILD_ALL_SERVICE_NATIVE_ABIS === '1') {
+    buildReleaseServiceNativeAbiBundles(resourcesPath)
   }
 
   if (context.electronPlatformName === 'win32') return

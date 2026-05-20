@@ -25,7 +25,7 @@
     "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",
     "build:launcher-artifacts": "bun ./scripts/package-launcher-artifacts.ts",
     "build:service-native-abi-bundles": "node ./scripts/build-release-service-native-abi-bundles.cjs",
-    "release:prepare": "bun run build:release && bun run build:service-native-abi-bundles && bun run build:launcher-artifacts",
+    "release:prepare": "HOWCODE_BUILD_ALL_SERVICE_NATIVE_ABIS=1 bun run build:release && bun run build:launcher-artifacts",
     "pack:howcode": "bun ./scripts/pack-howcode-launcher.ts main pack",
     "publish:howcode:dry-run": "bun ./scripts/pack-howcode-launcher.ts main publish-dry-run",
     "preview": "vite preview",

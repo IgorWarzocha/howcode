@@ -38,35 +38,45 @@ function runBundleBuilderWithNode(nodeExecutable, targetResourcesPath) {
   ])
 }
 
-const resourcesPath =
-  process.argv[2] ||
-  capture(process.execPath, [path.join(__dirname, 'resolve-packaged-resources-path.cjs')])
+function buildReleaseServiceNativeAbiBundles(resourcesPath) {
+  for (const major of supportedServiceNodeMajors) {
+    if (currentNodeMajor() === major) {
+      runBundleBuilderWithNode(process.execPath, resourcesPath)
+      continue
+    }
 
-if (!resourcesPath) {
-  console.error('Could not resolve packaged resources path. Run `bun run build:release` first.')
-  process.exit(1)
+    const envNodePath = envNodePathForMajor(major)
+    if (envNodePath) {
+      runBundleBuilderWithNode(envNodePath, resourcesPath)
+      continue
+    }
+
+    const miseNodePath = resolveMiseNode(major)
+    if (miseNodePath) {
+      runBundleBuilderWithNode(miseNodePath, resourcesPath)
+      continue
+    }
+
+    console.error(
+      `Missing Node ${major} for service native ABI bundle. Install it with mise, or set HOWCODE_NODE_${major}_PATH to an absolute node executable.`,
+    )
+    process.exit(1)
+  }
 }
 
-for (const major of supportedServiceNodeMajors) {
-  if (currentNodeMajor() === major) {
-    runBundleBuilderWithNode(process.execPath, resourcesPath)
-    continue
-  }
-
-  const envNodePath = envNodePathForMajor(major)
-  if (envNodePath) {
-    runBundleBuilderWithNode(envNodePath, resourcesPath)
-    continue
-  }
-
-  const miseNodePath = resolveMiseNode(major)
-  if (miseNodePath) {
-    runBundleBuilderWithNode(miseNodePath, resourcesPath)
-    continue
-  }
-
-  console.error(
-    `Missing Node ${major} for service native ABI bundle. Install it with mise, or set HOWCODE_NODE_${major}_PATH to an absolute node executable.`,
-  )
-  process.exit(1)
+function resolveDefaultResourcesPath() {
+  return capture(process.execPath, [path.join(__dirname, 'resolve-packaged-resources-path.cjs')])
 }
+
+if (require.main === module) {
+  const resourcesPath = process.argv[2] || resolveDefaultResourcesPath()
+
+  if (!resourcesPath) {
+    console.error('Could not resolve packaged resources path. Run `bun run build:release` first.')
+    process.exit(1)
+  }
+
+  buildReleaseServiceNativeAbiBundles(resourcesPath)
+}
+
+module.exports = { buildReleaseServiceNativeAbiBundles }

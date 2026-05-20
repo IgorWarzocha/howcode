@@ -76,6 +76,26 @@ jobs:
         if: matrix.name == 'windows-arm64'
         run: npm install --no-save --ignore-scripts --no-audit --no-fund @rollup/rollup-win32-arm64-msvc@4.60.2
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 25.9.0
+
+      - name: Capture Node 25 path
+        shell: bash
+        run: echo "HOWCODE_NODE_25_PATH=$(command -v node)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.1.0
+
+      - name: Capture Node 26 path
+        shell: bash
+        run: echo "HOWCODE_NODE_26_PATH=$(command -v node)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+
       - name: Verify release version alignment
         shell: bash
         run: |
@@ -90,27 +110,13 @@ jobs:
 
       - name: Build stable desktop release
         shell: bash
+        env:
+          HOWCODE_BUILD_ALL_SERVICE_NATIVE_ABIS: '1'
         run: |
           if [ "${RUNNER_OS}" = "macOS" ]; then
             ulimit -n 65536 || ulimit -n 10240 || true
           fi
           bun run build:release
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 25.9.0
-
-      - name: Build Node 25 service native bundle
-        shell: bash
-        run: node scripts/build-service-native-abi-bundle.cjs "$(node scripts/resolve-packaged-resources-path.cjs)"
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 26.1.0
-
-      - name: Build Node 26 service native bundle
-        shell: bash
-        run: node scripts/build-service-native-abi-bundle.cjs "$(node scripts/resolve-packaged-resources-path.cjs)"
 
       - name: Build launcher archives
         env:
@@ -127,6 +133,8 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload main artifacts
         if: github.event_name == 'push' && github.ref_name == 'main'
@@ -138,6 +146,8 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
@@ -149,6 +159,8 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
       - name: Upload release files
         if: github.event_name == 'push' && github.ref_type == 'tag'
@@ -160,6 +172,8 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
+            artifacts/electron/*.AppImage
+            artifacts/electron/*.exe
 
   cleanup-dev-artifacts:
     name: Cleanup old dev artifacts
@@ -231,7 +245,7 @@ jobs:
           path: release-assets
 
       - name: List channel release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
 
       - name: Prepare channel release notes
         env:
@@ -258,7 +272,7 @@ jobs:
           CHANNEL: ${{ github.ref_name }}
         run: |
           RELEASE_TAG="channel-$CHANNEL"
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1
@@ -274,7 +288,7 @@ jobs:
           release_title=$(cat channel-release-title.txt)
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz)$"))')
+            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
             for old_asset in "${old_assets[@]}"; do
               gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
             done
@@ -301,13 +315,13 @@ jobs:
           path: release-assets
 
       - name: List release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1
