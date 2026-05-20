@@ -36,6 +36,10 @@ import type {
 } from './protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
 
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
     listener(event)
@@ -197,10 +201,13 @@ async function ensureRuntimeHost(host: HostConnection) {
 
     return await new Promise<ChildProcess>((resolve, reject) => {
       const customPiDirectory = loadAppSettings().customPiDirectory?.trim()
+      const useElectronNode =
+        getProcessEnvironmentVariable('HOWCODE_RUNTIME_HOST_ELECTRON_NODE') === '1'
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
         env: {
           ...process.env,
+          ...(useElectronNode ? { ELECTRON_RUN_AS_NODE: '1' } : {}),
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),

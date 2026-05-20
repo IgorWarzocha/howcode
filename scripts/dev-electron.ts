@@ -52,6 +52,8 @@ async function startElectronProcess() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: projectRoot,
+      HOWCODE_NODE_PATH: electronBinary,
+      HOWCODE_RUNTIME_HOST_ELECTRON_NODE: '1',
       HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_VIEWPORT: getRequestedViewport() ?? '',
     },
