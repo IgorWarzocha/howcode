@@ -148,7 +148,7 @@ function BaselineBranchButton({
       onOpen()
       return
     }
-    onSetBranchSwitchInput(branchLabel === 'Detached' ? '' : branchLabel)
+    onSetBranchSwitchInput('')
     onSetBranchSwitchOpen(true)
   }
 
@@ -420,7 +420,6 @@ export function ComposerDiffBaselineSelector({
     if (!branchSwitchOpen) return
     window.requestAnimationFrame(() => {
       branchSwitchInputRef.current?.focus()
-      branchSwitchInputRef.current?.select()
     })
   }, [branchSwitchOpen])
 

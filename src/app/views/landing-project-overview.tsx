@@ -270,7 +270,7 @@ function ProjectRepositorySection({
   const branchSwitchInputRef = useRef<HTMLInputElement>(null)
 
   const openBranchSwitch = () => {
-    setBranchSwitchInput(gitState?.branch ?? '')
+    setBranchSwitchInput('')
     setBranchSwitchOpen(true)
   }
 
@@ -298,7 +298,6 @@ function ProjectRepositorySection({
     if (!branchSwitchOpen) return
     window.requestAnimationFrame(() => {
       branchSwitchInputRef.current?.focus()
-      branchSwitchInputRef.current?.select()
     })
   }, [branchSwitchOpen])
 
