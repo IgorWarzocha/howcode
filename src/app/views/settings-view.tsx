@@ -33,6 +33,7 @@ type SettingsViewProps = {
   availableThinkingLevels: ComposerThinkingLevel[]
   currentModel: ComposerModel | null
   projects: Project[]
+  resolvedPiDirectory?: string | null | undefined
   onAction: DesktopActionInvoker
   onClose: () => void
   openTarget?: SettingsOpenTarget | null | undefined
@@ -50,11 +51,12 @@ export function SettingsView({
   availableThinkingLevels,
   currentModel,
   projects,
+  resolvedPiDirectory,
   onAction,
   onClose,
   openTarget = null,
 }: SettingsViewProps) {
-  const controller = useSettingsController({ appSettings, projects, onAction })
+  const controller = useSettingsController({ appSettings, projects, resolvedPiDirectory, onAction })
   const [draftPiSettings, setDraftPiSettings] = useState(piSettings)
   const piSettingsRef = useRef(piSettings)
   const draftPiSettingsRef = useRef(draftPiSettings)

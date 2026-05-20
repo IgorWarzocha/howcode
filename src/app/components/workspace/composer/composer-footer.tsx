@@ -40,6 +40,7 @@ type ComposerFooterProps = {
   onOpenTakeoverTerminal: () => void
   onCompact: () => void
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
+  onSwitchBranch?: ((branchName: string) => void) | undefined
   onSelectModel: (model: ComposerModel) => void
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void
   onSetOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
@@ -73,6 +74,7 @@ export function ComposerFooter({
   onOpenTakeoverTerminal,
   onCompact,
   onSelectBaseline,
+  onSwitchBranch,
   onSelectModel,
   onSelectThinkingLevel,
   onSetOpenMenu,
@@ -161,6 +163,7 @@ export function ComposerFooter({
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}
             onSelectBaseline={onSelectBaseline}
+            onSwitchBranch={onSwitchBranch}
           />
         ) : null}
         {showTerminalControls ? (

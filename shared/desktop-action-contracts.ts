@@ -92,6 +92,7 @@ export type DesktopSettingsUpdatePayload =
   | { key: 'favoriteFolders'; folders: string[] }
   | { key: 'projectImportState'; imported: boolean | null }
   | { key: 'preferredProjectLocation'; value: string | null }
+  | { key: 'customPiDirectory'; value: string | null }
   | { key: 'initializeGitOnProjectCreate'; value: boolean }
   | { key: 'projectDashboardEnabled'; value: boolean }
   | { key: 'gitOpsDefaultMode'; value: GitOpsMode }
@@ -180,6 +181,7 @@ export type DesktopActionPayloadMap = {
     diffBaseline?: ProjectDiffBaseline | null
     diffRenderMode?: ProjectDiffRenderMode | null
   }
+  'workspace.switch-branch': { projectId?: string | undefined | null | undefined; value: string }
   'composer.model': {
     projectId?: string | undefined | null | undefined
     sessionPath?: string | undefined | null | undefined

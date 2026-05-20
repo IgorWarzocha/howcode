@@ -25,8 +25,8 @@
     "build:release": "vite build && bun run build:runtime && electron-builder --config electron-builder.yml --publish never",
     "build:launcher-artifacts": "bun ./scripts/package-launcher-artifacts.ts",
     "release:prepare": "bun run build:release && bun run build:launcher-artifacts",
-    "pack:howcode": "cd packages/howcode && npm pack",
-    "publish:howcode:dry-run": "cd packages/howcode && npm publish --dry-run",
+    "pack:howcode": "bun ./scripts/pack-howcode-launcher.ts main pack",
+    "publish:howcode:dry-run": "bun ./scripts/pack-howcode-launcher.ts main publish-dry-run",
     "preview": "vite preview",
     "prepare": "test -d .git && husky || true",
     "postinstall": "node ./scripts/install-electron.cjs && electron-builder install-app-deps",
@@ -46,7 +46,11 @@
     "pages:build": "vite build --config pages/vite.config.ts",
     "pages:preview": "vite preview --config pages/vite.config.ts",
     "deadcode": "react-doctor . --offline --project howcode --dead-code --fail-on warning",
-    "react-doctor": "react-doctor . --offline --project howcode --dead-code"
+    "react-doctor": "react-doctor . --offline --project howcode --dead-code",
+    "pack:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev pack 0.1.68-dev.1",
+    "publish:howcode:dev:dry-run": "bun ./scripts/pack-howcode-launcher.ts dev publish-dry-run 0.1.68-dev.1",
+    "publish:howcode": "bun ./scripts/pack-howcode-launcher.ts main publish",
+    "publish:howcode:dev": "bun ./scripts/pack-howcode-launcher.ts dev publish 0.1.68-dev.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cts,mts,cjs,mjs,json,css,md}": [

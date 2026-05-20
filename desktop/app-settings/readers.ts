@@ -11,6 +11,7 @@ import {
   codeThinkingLevelKey,
   composerSendModeKey,
   composerStreamingBehaviorKey,
+  customPiDirectoryKey,
   devUpdateBranchKey,
   dictationMaxDurationSecondsKey,
   dictationModelIdKey,
@@ -123,6 +124,7 @@ export function loadAppSettings(): AppSettings {
     favoriteFolders: parseFavoriteFolders(value(favoriteFoldersKey)),
     projectImportState: parseBooleanPreference(value(projectImportStateKey)),
     preferredProjectLocation: parseStringPreference(value(preferredProjectLocationKey)),
+    customPiDirectory: parseStringPreference(value(customPiDirectoryKey)),
     ...loadProjectUiSettings(value),
     gitOpsDefaultMode: parseGitOpsModePreference(value(gitOpsDefaultModeKey)) ?? 'commit',
     gitDiffBaselineDefault: parseGitDiffBaselineDefaultPreference(

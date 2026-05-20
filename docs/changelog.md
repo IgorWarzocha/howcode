@@ -1,5 +1,7 @@
 ### 0.1.66
 
+- Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
+- Added custom Pi directory settings and branch switching/selectors in the dashboard and composer.
 - Added configurable app keybindings.
 - Added thread find and result highlights.
 - Added sidebar find shortcuts.

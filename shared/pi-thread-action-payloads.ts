@@ -265,6 +265,7 @@ export function getSettingsKey(payload: DesktopActionPayloadInput) {
     payload.key === 'favoriteFolders' ||
     payload.key === 'projectImportState' ||
     payload.key === 'preferredProjectLocation' ||
+    payload.key === 'customPiDirectory' ||
     payload.key === 'initializeGitOnProjectCreate' ||
     payload.key === 'projectDashboardEnabled' ||
     payload.key === 'gitOpsDefaultMode' ||

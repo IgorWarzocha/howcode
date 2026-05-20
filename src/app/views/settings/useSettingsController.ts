@@ -15,16 +15,45 @@ import {
 } from './helpers'
 import { useSettingsDictationController } from './useSettingsDictationController'
 
+function normalizeOptionalSettingsPath(value: string | null | undefined) {
+  const normalizedValue = value?.trim() ?? ''
+  return normalizedValue.length > 0 ? normalizedValue : null
+}
+
+function normalizeCustomPiDirectoryDraft(
+  draftValue: string | null | undefined,
+  currentValue: string | null | undefined,
+) {
+  const normalizedDraft = normalizeOptionalSettingsPath(draftValue)
+  if (!normalizedDraft) return null
+  const normalizedCurrent = normalizeOptionalSettingsPath(currentValue)
+  if (!(normalizedCurrent && (normalizedDraft === '~' || normalizedDraft.startsWith('~/')))) {
+    return normalizedDraft
+  }
+
+  const suffix = normalizedDraft === '~' ? '' : normalizedDraft.slice(1)
+  if (normalizedDraft === '~' || normalizedCurrent.endsWith(suffix)) {
+    return `${normalizedCurrent.slice(0, normalizedCurrent.length - suffix.length)}${suffix}`
+  }
+
+  return normalizedDraft
+}
+
 export function useSettingsController({
   appSettings,
+  resolvedPiDirectory,
   onAction,
 }: {
   appSettings: AppSettings
+  resolvedPiDirectory?: string | null | undefined
   projects: Project[]
   onAction: DesktopActionInvoker
 }) {
   const [preferredProjectLocationDraft, setPreferredProjectLocationDraft] = useState(
     appSettings.preferredProjectLocation ?? '',
+  )
+  const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
+    appSettings.customPiDirectory ?? '',
   )
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
@@ -47,6 +76,10 @@ export function useSettingsController({
   useEffect(() => {
     setPreferredProjectLocationDraft(appSettings.preferredProjectLocation ?? '')
   }, [appSettings.preferredProjectLocation])
+
+  useEffect(() => {
+    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
+  }, [appSettings.customPiDirectory])
 
   const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false)
@@ -89,6 +122,22 @@ export function useSettingsController({
     void onAction('settings.update', {
       key: 'preferredProjectLocation',
       value: preferredProjectLocationDraft,
+    })
+  }
+
+  const saveCustomPiDirectory = () => {
+    const nextCustomPiDirectory = normalizeCustomPiDirectoryDraft(
+      customPiDirectoryDraft,
+      appSettings.customPiDirectory,
+    )
+    const currentCustomPiDirectory = normalizeOptionalSettingsPath(appSettings.customPiDirectory)
+    if (nextCustomPiDirectory === currentCustomPiDirectory) {
+      return
+    }
+
+    void onAction('settings.update', {
+      key: 'customPiDirectory',
+      value: nextCustomPiDirectory,
     })
   }
 
@@ -169,6 +218,8 @@ export function useSettingsController({
     dictationState: dictation.dictationState,
     clearImagesBusy,
     clearImagesStatusMessage,
+    customPiDirectoryDraft,
+    resolvedPiDirectory,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),
@@ -184,6 +235,7 @@ export function useSettingsController({
     preferredProjectLocationDraft,
     refreshDictationState: dictation.refreshDictationState,
     savePreferredProjectLocation,
+    saveCustomPiDirectory,
     setComposerStreamingBehavior: (value: AppSettings['composerStreamingBehavior']) =>
       void onAction('settings.update', {
         key: 'composerStreamingBehavior',
@@ -218,6 +270,7 @@ export function useSettingsController({
     selectSkillCreatorModel: (id: string) =>
       selectModel('skillCreatorModel', id, closeSkillCreatorMenu),
     setFavoriteFolderDraft,
+    setCustomPiDirectoryDraft,
     setGitCommitMenuOpen,
     setPreferredProjectLocationDraft,
     setSkillCreatorMenuOpen,

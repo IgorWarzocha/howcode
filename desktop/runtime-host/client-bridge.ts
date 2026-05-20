@@ -26,7 +26,6 @@ import {
   serviceHost,
   terminateHostProcess,
 } from './host-connections.ts'
-import { handleRuntimeHostMainRequest } from './main-request-handlers.ts'
 import type {
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
@@ -34,6 +33,10 @@ import type {
   RuntimeHostToMainMessage,
 } from './protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
+
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
 
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
@@ -136,18 +139,12 @@ async function handleHostMainRequest(
   host: HostConnection,
   message: Extract<RuntimeHostToMainMessage, { type: 'main-request' }>,
 ) {
-  try {
-    const result = handleRuntimeHostMainRequest(message)
-    host.process?.send?.({ type: 'main-response', id: message.id, ok: true, result })
-  } catch (error) {
-    host.process?.send?.({
-      type: 'main-response',
-      id: message.id,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-  }
+  host.process?.send?.({
+    type: 'main-response',
+    id: message.id,
+    ok: false,
+    error: `Runtime host-local service request ${message.name} must be handled inside the runtime host.`,
+  })
 }
 
 function handleHostExit(
@@ -178,13 +175,13 @@ async function ensureRuntimeHost(host: HostConnection) {
     throw new Error(`Pi runtime host ${host.label} is stopping.`)
   }
 
+  if (host.startPromise) {
+    return host.startPromise
+  }
+
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host)
     return host.process
-  }
-
-  if (host.startPromise) {
-    return host.startPromise
   }
 
   clearHostIdleTimer(host)
@@ -195,16 +192,20 @@ async function ensureRuntimeHost(host: HostConnection) {
     }
 
     return await new Promise<ChildProcess>((resolve, reject) => {
+      const customPiDirectory = getProcessEnvironmentVariable('PI_CODING_AGENT_DIR')?.trim()
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
         env: {
           ...process.env,
+          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
+          ...(customPiDirectory ? { PI_CODING_AGENT_DIR: customPiDirectory } : {}),
         },
         stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       }) as ChildProcess
+      host.process = child
 
       let settled = false
       const settleFailure = (error: Error) => {
@@ -229,7 +230,6 @@ async function ensureRuntimeHost(host: HostConnection) {
         }
 
         settled = true
-        host.process = child
         host.startPromise = null
         resolve(child)
       })
@@ -332,6 +332,23 @@ export async function invalidateRuntimeHostSettings(
       }),
     ),
   )
+}
+
+export function restartRuntimeHostsForEnvironmentChange() {
+  for (const host of hosts) {
+    if (host.idleTimer) {
+      clearTimeout(host.idleTimer)
+      host.idleTimer = null
+    }
+    rejectPendingRequests(host, new Error('Pi runtime host environment changed.'))
+    terminateHostProcess(host.process)
+    host.process = null
+    host.startPromise = null
+  }
+
+  hostByAlias.clear()
+  hosts.clear()
+  hosts.add(serviceHost)
 }
 
 async function invokeRuntimeHostOnHost<TName extends RuntimeHostRequestName>(

@@ -16,6 +16,7 @@ export const FALLBACK_APP_SETTINGS = {
   favoriteFolders: [],
   projectImportState: null,
   preferredProjectLocation: null,
+  customPiDirectory: null,
   initializeGitOnProjectCreate: false,
   projectDashboardEnabled: true,
   gitOpsDefaultMode: 'commit',

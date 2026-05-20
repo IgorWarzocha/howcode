@@ -14,6 +14,12 @@ const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
 const launcherOutputRoot = path.join(artifactRoot, 'npm-launcher')
 
+const requiredUnpackedRuntimePaths = [
+  path.join('build', 'desktop', 'service-host.mjs'),
+  path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
+  path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
+]
+
 type Target = {
   os: 'macos' | 'linux' | 'win'
   arch: 'arm64' | 'x64'
@@ -145,6 +151,16 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
     )
   ) {
     throw new Error(`Packaged Electron bundle is missing app.asar/app in ${resourcesPath}.`)
+  }
+
+  const unpackedRoot = path.join(resourcesPath, 'app.asar.unpacked')
+  const missingUnpackedRuntimePaths = requiredUnpackedRuntimePaths.filter(
+    (relativePath) => !existsSync(path.join(unpackedRoot, relativePath)),
+  )
+  if (missingUnpackedRuntimePaths.length > 0) {
+    throw new Error(
+      `Packaged Electron bundle is missing unpacked runtime dependencies: ${missingUnpackedRuntimePaths.join(', ')}.`,
+    )
   }
 
   const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {

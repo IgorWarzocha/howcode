@@ -5,10 +5,10 @@ import {
   getDesktopEventIpcChannel,
   getDesktopRequestIpcChannel,
 } from '../../../../shared/desktop-ipc'
+import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
 import { resolveConfiguredDevServerUrl } from '../../../../shared/dev-server'
 import { isTrustedRendererUrl } from '../app/navigation-security'
 import { getRendererDistDirectory } from '../runtime/app-paths'
-import type { DesktopRuntimeModules } from '../runtime/desktop-runtime-contracts'
 import type { AppUpdater } from '../updater/app-updater'
 import { createAppUpdateHandlers } from './request-handlers/app-update'
 import { createPiPackagesHandlers } from './request-handlers/pi-packages'
@@ -65,7 +65,7 @@ function registerRequestHandlers(
 
 export function registerDesktopIpc(
   getMainWindow: () => BrowserWindow | null,
-  runtime: DesktopRuntimeModules,
+  runtime: DesktopServiceRuntime,
   appUpdater: AppUpdater,
   onSettingsChanged?: (() => Promise<void> | void) | undefined,
 ) {

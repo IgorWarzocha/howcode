@@ -1,4 +1,4 @@
-import type { DesktopAction } from '../../../../shared/desktop-actions'
+import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
   AppSettings,
@@ -38,15 +38,15 @@ import type {
   Thread,
   ThreadData,
   ThreadSearchResult,
-} from '../../../../shared/desktop-contracts'
+} from './desktop-contracts'
 import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
-} from '../../../../shared/terminal-contracts'
+} from './terminal-contracts'
 
-export type PiThreadsModule = {
+export type PiThreadsService = {
   disposeDesktopRuntime?: () => Promise<void> | void
   handleDesktopAction: (
     action: DesktopAction,
@@ -141,7 +141,7 @@ export type PiThreadsModule = {
   subscribeDesktopEvents: (listener: (event: DesktopEvent) => void) => () => void
 }
 
-export type TerminalManagerModule = {
+export type TerminalService = {
   closeAllTerminals?: () => Promise<void>
   closeTerminal: (request: {
     sessionId: string
@@ -156,7 +156,7 @@ export type TerminalManagerModule = {
   writeTerminal: (sessionId: string, data: string) => Promise<void>
 }
 
-export type PiSkillsModule = {
+export type PiSkillsService = {
   searchPiSkills: (request?: {
     query?: string | null | undefined
     limit?: number | null | undefined
@@ -178,7 +178,7 @@ export type PiSkillsModule = {
   }) => Promise<PiSkillMutationResult>
 }
 
-export type SkillCreatorModule = {
+export type SkillCreatorService = {
   startSkillCreatorSession: (request: {
     prompt: string
     local?: boolean | undefined
@@ -192,9 +192,9 @@ export type SkillCreatorModule = {
   closeSkillCreatorSession: (request: { sessionId: string }) => Promise<{ ok: boolean }>
 }
 
-export type DesktopRuntimeModules = {
-  piThreads: PiThreadsModule
-  piSkills: PiSkillsModule
-  skillCreator: SkillCreatorModule
-  terminalManager: TerminalManagerModule
+export type DesktopServiceRuntime = {
+  piThreads: PiThreadsService
+  piSkills: PiSkillsService
+  skillCreator: SkillCreatorService
+  terminalManager: TerminalService
 }

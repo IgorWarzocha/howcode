@@ -35,6 +35,7 @@ export type AppSettings = {
   favoriteFolders: string[]
   projectImportState: boolean | null
   preferredProjectLocation: string | null
+  customPiDirectory: string | null
   initializeGitOnProjectCreate: boolean
   projectDashboardEnabled: boolean
   gitOpsDefaultMode: GitOpsMode

@@ -6,6 +6,23 @@ import type {
   RuntimeHostMainResponseMessage,
 } from './protocol.ts'
 
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
+async function invokeLocalMainRequest<TName extends RuntimeHostMainRequestName>(
+  name: TName,
+  payload: RuntimeHostMainRequestMap[TName],
+): Promise<RuntimeHostMainResponseMap[TName]> {
+  const { handleRuntimeHostMainRequest } = await import('./main-request-handlers.ts')
+  return handleRuntimeHostMainRequest({
+    type: 'main-request',
+    id: 'local',
+    name,
+    payload,
+  })
+}
+
 const mainRequestTimeoutMs = 30_000
 
 const pendingMainRequests = new Map<
@@ -35,15 +52,21 @@ export async function invokeMainRequest<TName extends RuntimeHostMainRequestName
   name: TName,
   payload: RuntimeHostMainRequestMap[TName],
 ): Promise<RuntimeHostMainResponseMap[TName]> {
+  if (getProcessEnvironmentVariable('HOWCODE_HANDLE_LOCAL_HOST_REQUESTS') === '1') {
+    return await invokeLocalMainRequest(name, payload)
+  }
+
   if (!process.send) {
-    throw new Error(`Cannot invoke main request ${name}: runtime host IPC is unavailable.`)
+    throw new Error(
+      `Cannot invoke host-local service request ${name}: runtime host IPC is unavailable.`,
+    )
   }
 
   const id = randomUUID()
   const result = new Promise<RuntimeHostMainResponseMap[TName]>((resolve, reject) => {
     const timeout = setTimeout(() => {
       pendingMainRequests.delete(id)
-      reject(new Error(`Timed out waiting for main request ${name}.`))
+      reject(new Error(`Timed out waiting for host-local service request ${name}.`))
     }, mainRequestTimeoutMs)
 
     pendingMainRequests.set(id, {
