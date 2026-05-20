@@ -283,6 +283,7 @@ function BaselineBranchButton({
   const filteredBranches = branches.filter((branch) =>
     branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
   )
+  const visibleBranches = filteredBranches.slice(0, 5)
 
   return (
     <span className="relative inline-flex">
@@ -331,20 +332,9 @@ function BaselineBranchButton({
               <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
                 Switch branch
               </div>
-              <input
-                ref={branchSwitchInputRef}
-                value={branchSwitchInput}
-                onChange={(event) => onSetBranchSwitchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') submitBranchSwitch()
-                  if (event.key === 'Escape') onSetBranchSwitchOpen(false)
-                }}
-                className={settingsInputClass}
-                placeholder="Search branches"
-              />
               <div className="grid min-h-0 gap-0.5 overflow-y-auto pb-0.5">
-                {filteredBranches.length > 0 ? (
-                  filteredBranches.map((branch) => (
+                {visibleBranches.length > 0 ? (
+                  visibleBranches.map((branch) => (
                     <button
                       key={branch}
                       type="button"
@@ -370,6 +360,17 @@ function BaselineBranchButton({
                   </div>
                 )}
               </div>
+              <input
+                ref={branchSwitchInputRef}
+                value={branchSwitchInput}
+                onChange={(event) => onSetBranchSwitchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') submitBranchSwitch()
+                  if (event.key === 'Escape') onSetBranchSwitchOpen(false)
+                }}
+                className={settingsInputClass}
+                placeholder="Search branches"
+              />
               <div
                 className="grid min-h-[92px] gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3"
                 {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
