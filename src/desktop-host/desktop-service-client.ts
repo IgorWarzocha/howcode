@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
 import type { DesktopServiceRuntime } from '../../shared/desktop-service-contracts'
 import type { TerminalEvent } from '../../shared/terminal-contracts'
+import { prepareServiceNativeRuntime } from './service-native-runtime'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = keyof DesktopServiceApi
@@ -177,6 +178,11 @@ export class DesktopServiceClient {
         typeof this.options.nodeExecutable === 'function'
           ? await this.options.nodeExecutable()
           : this.options.nodeExecutable
+      const nodeRuntime = await prepareServiceNativeRuntime({
+        nodeExecutable,
+        // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
+        resourcesPath: this.options.env?.['HOWCODE_ELECTRON_RESOURCES_PATH'],
+      })
 
       return await new Promise<ChildProcess>((resolve, reject) => {
         const child = spawn(nodeExecutable, [this.options.serviceHostPath], {
@@ -186,6 +192,8 @@ export class DesktopServiceClient {
             ...this.options.env,
             HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
             HOWCODE_REPO_ROOT: this.options.cwd,
+            HOWCODE_SERVICE_NODE_ABI: nodeRuntime.abi,
+            HOWCODE_SERVICE_NODE_VERSION: nodeRuntime.version,
           },
           stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
         })

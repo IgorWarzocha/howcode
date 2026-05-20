@@ -96,6 +96,22 @@ jobs:
           fi
           bun run build:release
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 25.9.0
+
+      - name: Build Node 25 service native bundle
+        shell: bash
+        run: node scripts/build-service-native-abi-bundle.cjs "$(node scripts/resolve-packaged-resources-path.cjs)"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26.1.0
+
+      - name: Build Node 26 service native bundle
+        shell: bash
+        run: node scripts/build-service-native-abi-bundle.cjs "$(node scripts/resolve-packaged-resources-path.cjs)"
+
       - name: Build launcher archives
         env:
           HOWCODE_RELEASE_ASSET_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_type == 'tag' && github.ref_name || format('channel-{0}', github.ref_name) }}

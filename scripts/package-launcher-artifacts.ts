@@ -5,10 +5,18 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { copyFile, cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 
 const appName = 'howcode'
+const require = createRequire(import.meta.url)
+const { supportedServiceNodeAbis, serviceNativePackages, nativeServiceAbiDirectoryName } =
+  require('./service-native-abi.cjs') as {
+    supportedServiceNodeAbis: string[]
+    serviceNativePackages: string[]
+    nativeServiceAbiDirectoryName: string
+  }
 
 const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
@@ -19,8 +27,6 @@ const requiredUnpackedRuntimePaths = [
   path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
   path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
 ]
-
-const nativeServiceRuntimePackages = ['better-sqlite3', 'node-pty']
 
 type Target = {
   os: 'macos' | 'linux' | 'win'
@@ -165,7 +171,7 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
     )
   }
 
-  validateUnpackedNativeRuntime(unpackedRoot)
+  validateUnpackedNativeRuntimeBundles(unpackedRoot)
 
   const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {
     stdio: 'inherit',
@@ -180,23 +186,43 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   return archivePath
 }
 
-function validateUnpackedNativeRuntime(unpackedRoot: string) {
-  const nodeModulesPath = path.join(unpackedRoot, 'node_modules')
+function validateUnpackedNativeRuntimeBundles(unpackedRoot: string) {
+  const missingAbiBundles = supportedServiceNodeAbis.filter((abi) =>
+    serviceNativePackages.some(
+      (packageName) =>
+        !existsSync(
+          path.join(unpackedRoot, nativeServiceAbiDirectoryName, abi, 'node_modules', packageName),
+        ),
+    ),
+  )
+  if (missingAbiBundles.length > 0) {
+    throw new Error(
+      `Packaged Electron bundle is missing service native dependency bundles for Node ABI: ${missingAbiBundles.join(', ')}.`,
+    )
+  }
+
+  const currentAbi = process.versions.modules
+  if (!supportedServiceNodeAbis.includes(currentAbi)) return
+
+  const currentAbiNodeModulesPath = path.join(
+    unpackedRoot,
+    nativeServiceAbiDirectoryName,
+    currentAbi,
+    'node_modules',
+  )
+  const currentAbiRoot = path.dirname(currentAbiNodeModulesPath)
+  const fallbackNodeModulesPath = path.join(unpackedRoot, 'node_modules')
   const result = spawnSync(
     process.execPath,
     [
       '-e',
-      `
-        for (const packageName of ${JSON.stringify(nativeServiceRuntimePackages)}) {
-          require(packageName)
-        }
-      `,
+      `for (const packageName of ${JSON.stringify(serviceNativePackages)}) require(packageName)`,
     ],
     {
-      cwd: unpackedRoot,
+      cwd: currentAbiRoot,
       env: {
         ...process.env,
-        NODE_PATH: nodeModulesPath,
+        NODE_PATH: [currentAbiNodeModulesPath, fallbackNodeModulesPath].join(path.delimiter),
       },
       encoding: 'utf8',
     },
@@ -205,7 +231,7 @@ function validateUnpackedNativeRuntime(unpackedRoot: string) {
   if (result.status !== 0) {
     throw new Error(
       [
-        `Packaged native service dependencies do not load under stock Node ${process.version} (ABI ${process.versions.modules}).`,
+        `Packaged native service dependency bundle for ABI ${currentAbi} does not load under ${process.version}.`,
         result.stdout.trim(),
         result.stderr.trim(),
       ]

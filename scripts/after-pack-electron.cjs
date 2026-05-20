@@ -1,34 +1,10 @@
-const { spawnSync } = require('node:child_process')
 const path = require('node:path')
-const { existsSync } = require('node:fs')
 const { patchPackagedNodePty } = require('./patch-node-pty-helper.cjs')
-
-const serviceNativePackages = ['better-sqlite3', 'node-pty']
-
-function runNpmRebuildForServiceRuntime(resourcesPath) {
-  const unpackedAppPath = path.join(resourcesPath, 'app.asar.unpacked')
-  if (!existsSync(unpackedAppPath)) {
-    console.warn(`Skipping service native rebuild: ${unpackedAppPath} does not exist.`)
-    return
-  }
-
-  const result = spawnSync('npm', ['rebuild', ...serviceNativePackages, '--build-from-source'], {
-    cwd: unpackedAppPath,
-    env: {
-      ...process.env,
-      npm_config_runtime: 'node',
-      npm_config_target: process.versions.node,
-      npm_config_disturl: 'https://nodejs.org/download/release',
-    },
-    stdio: 'inherit',
-  })
-
-  if (result.status !== 0) {
-    throw new Error(
-      `Failed to rebuild packaged service native dependencies for stock Node: ${serviceNativePackages.join(', ')}.`,
-    )
-  }
-}
+const {
+  copyCurrentNativeDependenciesToAbiBundle,
+  rebuildServiceNativeDependencies,
+  validateCurrentNativeDependenciesLoad,
+} = require('./service-native-abi.cjs')
 
 exports.default = async function afterPack(context) {
   const resourcesPath =
@@ -39,7 +15,10 @@ exports.default = async function afterPack(context) {
         )
       : path.join(context.appOutDir, 'resources')
 
-  runNpmRebuildForServiceRuntime(resourcesPath)
+  if (rebuildServiceNativeDependencies(resourcesPath)) {
+    copyCurrentNativeDependenciesToAbiBundle(resourcesPath)
+    validateCurrentNativeDependenciesLoad(resourcesPath)
+  }
 
   if (context.electronPlatformName === 'win32') return
 
