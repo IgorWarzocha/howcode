@@ -54,14 +54,11 @@ function rebuildServiceNativeDependencies(resourcesPath) {
       `${JSON.stringify({ private: true, dependencies }, null, 2)}\n`,
     )
 
-    const result = spawnSync('npm', ['install', '--build-from-source', '--no-audit', '--no-fund'], {
+    const result = spawnSync('npm', ['install', '--no-audit', '--no-fund'], {
       cwd: tempRoot,
       env: {
         ...process.env,
         PATH: `${path.dirname(process.execPath)}${path.delimiter}${process.env.PATH || ''}`,
-        npm_config_runtime: 'node',
-        npm_config_target: process.versions.node,
-        npm_config_disturl: 'https://nodejs.org/download/release',
       },
       stdio: 'inherit',
     })
