@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { existsSync, unwatchFile, watchFile } from 'node:fs'
 import path from 'node:path'
+import { getDevUserDataPath } from './dev-user-data-path'
 import { ensureElectronBinary } from './electron-binary'
 
 function getProcessEnvironmentVariable(name: string) {
@@ -51,6 +52,7 @@ async function startElectronProcess() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: projectRoot,
+      HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_VIEWPORT: getRequestedViewport() ?? '',
     },
   })

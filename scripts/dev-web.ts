@@ -14,6 +14,7 @@ import {
   DEV_SERVER_METADATA_RELATIVE_PATH,
   DEV_SERVER_START_PORT,
 } from '../shared/dev-server'
+import { getDevUserDataPath } from './dev-user-data-path'
 
 const projectRoot = process.cwd()
 const devRepoRoot = projectRoot
@@ -68,6 +69,7 @@ async function startDevWebBridge() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: devRepoRoot,
+      HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
       HOWCODE_DEV_WEB_BRIDGE_PORT: '0',
       HOWCODE_DEV_WEB_BRIDGE_TOKEN: bridgeToken,
