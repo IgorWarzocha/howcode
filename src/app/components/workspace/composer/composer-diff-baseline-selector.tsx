@@ -309,15 +309,14 @@ function BaselineBranchButton({
       </button>
       {branchSwitchOpen && typeof document !== 'undefined'
         ? createPortal(
-            <div
+            <SurfacePanel
               id={panelId}
               ref={branchSwitchPanelRef}
-              role="dialog"
               data-open={positionReady ? 'true' : 'false'}
               aria-label="Branch selector"
               className={cn(
                 popoverPanelClass,
-                'fixed isolate z-[160] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2 rounded-2xl bg-[color:var(--panel)] p-2 opacity-100 shadow-[var(--shadow)] transition-[opacity,transform] duration-150 ease-out',
+                'motion-popover fixed z-[160] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2 rounded-2xl p-2 transition-[opacity,transform] duration-150 ease-out',
                 positionReady
                   ? 'translate-y-0 opacity-100'
                   : 'pointer-events-none translate-y-1 opacity-0',
@@ -350,7 +349,7 @@ function BaselineBranchButton({
                       key={branch}
                       type="button"
                       className={cn(
-                        'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                        'grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
                         branch === branchLabel &&
                           'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
                       )}
@@ -372,7 +371,7 @@ function BaselineBranchButton({
                 )}
               </div>
               <div
-                className="grid gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3"
+                className="grid min-h-[92px] gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3"
                 {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -402,7 +401,7 @@ function BaselineBranchButton({
                   </div>
                 </div>
               </div>
-            </div>,
+            </SurfacePanel>,
             document.body,
           )
         : null}
