@@ -195,7 +195,9 @@ function getValidationNodeExecutable() {
     : undefined
   return (
     preferredNodePath?.trim() ||
+    // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
     process.env['HOWCODE_NODE_PATH']?.trim() ||
+    // biome-ignore lint/complexity/useLiteralKeys: ProcessEnv is an index-signature type.
     process.env['NODE']?.trim() ||
     'node'
   )
@@ -203,12 +205,12 @@ function getValidationNodeExecutable() {
 
 function validateUnpackedNativeRuntimeBundles(unpackedRoot: string) {
   const resourcesPath = path.dirname(unpackedRoot)
+  const validationNodeExecutable = getValidationNodeExecutable()
+  validateCurrentNativeDependenciesLoad(resourcesPath, validationNodeExecutable)
+
   for (const abi of supportedServiceNodeAbis) {
     validateAbiBundle(resourcesPath, abi)
   }
-
-  const validationNodeExecutable = getValidationNodeExecutable()
-  validateCurrentNativeDependenciesLoad(resourcesPath, validationNodeExecutable)
 }
 
 async function createUpdateMetadata(archivePath: string, target: Target, version: string) {

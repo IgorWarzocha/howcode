@@ -142,10 +142,12 @@ function probeNodeAbi(nodeExecutable) {
   const result = spawnSync(nodeExecutable, ['-p', 'process.versions.modules'], {
     encoding: 'utf8',
   })
-  if (result.status !== 0) {
+  if (result.error || result.signal || result.status !== 0) {
     throw new Error(
       [
         `Failed to probe Node ABI for ${nodeExecutable}.`,
+        result.error ? `error: ${result.error.message}` : '',
+        result.signal ? `signal: ${result.signal}` : '',
         result.stdout.trim(),
         result.stderr.trim(),
       ]
@@ -168,6 +170,15 @@ function getNativeValidationScript() {
     if (process.platform === 'win32') {
       const shell = process.env.ComSpec || 'cmd.exe'
       const pty = nodePty.spawn(shell, ['/d', '/s', '/c', 'exit 0'], {
+        cols: 80,
+        rows: 24,
+        cwd: process.cwd(),
+        env: process.env,
+      })
+      setTimeout(() => pty.kill(), 2000).unref?.()
+      pty.onExit(() => process.exit(0))
+    } else {
+      const pty = nodePty.spawn('/bin/sh', ['-lc', 'exit 0'], {
         cols: 80,
         rows: 24,
         cwd: process.cwd(),
@@ -198,10 +209,12 @@ function validateCurrentNativeDependenciesLoad(resourcesPath, nodeExecutable = p
     timeout: 10_000,
   })
 
-  if (result.status !== 0) {
+  if (result.error || result.signal || result.status !== 0) {
     throw new Error(
       [
         `Packaged native service dependency bundle for ABI ${abi} does not load under stock Node ${nodeExecutable}.`,
+        result.error ? `error: ${result.error.message}` : '',
+        result.signal ? `signal: ${result.signal}` : '',
         result.stdout.trim(),
         result.stderr.trim(),
       ]

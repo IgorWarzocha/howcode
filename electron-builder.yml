@@ -16,11 +16,13 @@ extraResources:
   - from: desktop/resources
     to: resources
 mac:
+  artifactName: ${productName}-${version}-${arch}.${ext}
   category: public.app-category.developer-tools
   extendInfo:
     NSMicrophoneUsageDescription: Howcode needs microphone access for local dictation.
   target:
     - dir
+    - zip
 linux:
   target:
     - dir

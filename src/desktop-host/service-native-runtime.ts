@@ -14,6 +14,20 @@ export function getSupportedServiceNodeAbiLabel() {
   return [...supportedServiceNodeAbis].join(', ')
 }
 
+function parseNodeRuntimeProbe(stdout: string): NodeRuntimeProbe {
+  const parsed = JSON.parse(stdout.trim()) as Partial<NodeRuntimeProbe>
+  if (typeof parsed.version !== 'string' || typeof parsed.abi !== 'string') {
+    throw new Error('probe did not return version/abi')
+  }
+  return { version: parsed.version, abi: parsed.abi }
+}
+
+function rejectNodeProbeExit(nodeExecutable: string, stderr: string, code: number | null) {
+  return new Error(
+    `Failed to probe Node runtime ${nodeExecutable} (exit ${code ?? 'unknown'}): ${stderr.trim()}`,
+  )
+}
+
 export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRuntimeProbe> {
   return await new Promise((resolve, reject) => {
     const child = spawn(
@@ -23,10 +37,20 @@ export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRunt
     )
     let stdout = ''
     let stderr = ''
+    let settled = false
+
+    const finish = (callback: () => void) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      callback()
+    }
+
     const timeout = setTimeout(() => {
       child.kill('SIGTERM')
-      reject(new Error(`Timed out probing Node runtime: ${nodeExecutable}`))
+      finish(() => reject(new Error(`Timed out probing Node runtime: ${nodeExecutable}`)))
     }, 3_000)
+
     child.stdout?.setEncoding('utf8')
     child.stderr?.setEncoding('utf8')
     child.stdout?.on('data', (chunk) => {
@@ -36,24 +60,20 @@ export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRunt
       stderr += chunk
     })
     child.once('error', (error) => {
-      clearTimeout(timeout)
-      reject(error)
+      finish(() => reject(error))
     })
     child.once('exit', (code) => {
-      clearTimeout(timeout)
-      if (code !== 0) {
-        reject(new Error(`Failed to probe Node runtime ${nodeExecutable}: ${stderr.trim()}`))
-        return
-      }
-      try {
-        const parsed = JSON.parse(stdout.trim()) as Partial<NodeRuntimeProbe>
-        if (typeof parsed.version !== 'string' || typeof parsed.abi !== 'string') {
-          throw new Error('probe did not return version/abi')
+      finish(() => {
+        if (code !== 0) {
+          reject(rejectNodeProbeExit(nodeExecutable, stderr, code))
+          return
         }
-        resolve({ version: parsed.version, abi: parsed.abi })
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error(String(error)))
-      }
+        try {
+          resolve(parseNodeRuntimeProbe(stdout))
+        } catch (error) {
+          reject(error instanceof Error ? error : new Error(String(error)))
+        }
+      })
     })
   })
 }
@@ -109,7 +129,11 @@ export async function prepareServiceNativeRuntime(input: {
   }
 
   const resourcesPath = input.resourcesPath?.trim()
-  if (resourcesPath && existsSync(path.join(resourcesPath, 'app.asar.unpacked'))) {
+  if (resourcesPath) {
+    const unpackedAppPath = path.join(resourcesPath, 'app.asar.unpacked')
+    if (!existsSync(unpackedAppPath)) {
+      throw new Error(`Packaged resources path is missing app.asar.unpacked: ${unpackedAppPath}`)
+    }
     validateAbiNativeDependencies(resourcesPath, runtime.abi)
   }
 
