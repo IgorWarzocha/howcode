@@ -69,8 +69,6 @@ async function startDevWebBridge() {
     env: {
       ...process.env,
       HOWCODE_REPO_ROOT: devRepoRoot,
-      HOWCODE_NODE_PATH: electronPath,
-      HOWCODE_RUNTIME_HOST_ELECTRON_NODE: '1',
       HOWCODE_USER_DATA_PATH: getDevUserDataPath(),
       HOWCODE_DEV_WEB_BRIDGE_HOST: DEV_SERVER_HOST,
       HOWCODE_DEV_WEB_BRIDGE_PORT: '0',
