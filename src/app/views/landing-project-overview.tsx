@@ -1,58 +1,20 @@
-import { Check, CircleDot, ExternalLink, GitBranch, GitPullRequestDraft } from 'lucide-react'
-import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { CircleDot, ExternalLink, GitBranch } from 'lucide-react'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
-import { SkeletonBlock } from '../components/common/skeleton'
-import type {
-  DesktopActionInvoker,
-  ProjectGitState,
-  ProjectUsageSessionSummary,
-  ProjectUsageSummary,
-} from '../desktop/types'
-import {
-  getFeatureStatusBadgeClass,
-  getFeatureStatusDataAttributes,
-} from '../features/feature-status'
-import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
+import type { DesktopActionInvoker, ProjectGitState, ProjectUsageSummary } from '../desktop/types'
 import { openExternalQuery } from '../query/desktop-query'
 import type { Project } from '../types'
 import { ghostButtonClass } from '../ui/classes'
 import { cn } from '../utils/cn'
-
-const tokenFormatter = new Intl.NumberFormat('en', {
-  notation: 'compact',
-  maximumFractionDigits: 1,
-})
-const numberFormatter = new Intl.NumberFormat('en')
-const costFormatter = new Intl.NumberFormat('en', {
-  currency: 'USD',
-  maximumFractionDigits: 4,
-  style: 'currency',
-})
-
-const dashboardBranchPopoverInputClass =
-  'box-border block h-8 w-full min-w-0 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 text-[11px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]'
-
-function formatTokens(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—'
-  return tokenFormatter.format(value)
-}
-
-function formatExactNumber(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—'
-  return numberFormatter.format(value)
-}
-
-function formatCost(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—'
-  return costFormatter.format(value)
-}
-
-function formatAverageCost(total: number | null | undefined, count: number) {
-  if (total === null || total === undefined || count <= 0) return '—'
-  return formatCost(total / count)
-}
+import { DashboardBranchSwitcher } from './project-overview/dashboard-branch-switcher'
+import {
+  formatAverageCost,
+  formatCost,
+  formatExactNumber,
+  formatTokens,
+} from './project-overview/overview-formatters'
+import { ProjectMetric } from './project-overview/project-metric'
+import { TopSessionsSection } from './project-overview/top-sessions-section'
 
 function formatGitSummary(gitState: ProjectGitState | null | undefined) {
   if (!gitState) return 'Checking repository…'
@@ -63,262 +25,6 @@ function formatGitSummary(gitState: ProjectGitState | null | undefined) {
 function getGitHubRepositoryLink(project: Project, gitState: ProjectGitState | null | undefined) {
   const url = gitState === undefined ? (project.repoOriginUrl ?? null) : gitState?.originUrl
   return url ? parseGitHubRepositoryUrl(url) : null
-}
-
-function TopSessionsSkeleton() {
-  return (
-    <div className="grid max-h-[9.75rem] w-full gap-1.5 overflow-hidden pr-8 [@media(max-height:760px)]:max-h-[3.25rem]">
-      {['top-session-a', 'top-session-b', 'top-session-c'].map((rowId) => (
-        <div
-          key={rowId}
-          className="grid min-h-11 w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-lg border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2"
-        >
-          <SkeletonBlock className="h-3.5 w-[min(18rem,72%)] rounded-md" />
-          <SkeletonBlock className="h-3 w-24 rounded-md opacity-60" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ProjectMetric({
-  detail,
-  label,
-  loading,
-  value,
-}: {
-  detail: string
-  label: string
-  loading: boolean
-  value: string
-}) {
-  return (
-    <div className="grid min-w-0 gap-1">
-      <div className="text-[11px] font-medium tracking-[0.08em] text-[color:var(--muted)] uppercase">
-        {label}
-      </div>
-      {loading ? (
-        <>
-          <SkeletonBlock className="h-[17px] w-20 rounded-md" />
-          <SkeletonBlock className="h-3 w-[min(11rem,80%)] rounded-md opacity-60" />
-        </>
-      ) : (
-        <>
-          <div className="font-mono text-[17px] leading-none font-medium text-[color:var(--text)] tabular-nums">
-            {value}
-          </div>
-          <div className="truncate text-[12px] text-[color:var(--muted-2)]">{detail}</div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function TopSessionRow({
-  projectId,
-  session,
-  onOpenThread,
-}: {
-  projectId: string
-  session: ProjectUsageSessionSummary
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      className="grid min-h-11 w-full min-w-0 grid-cols-[minmax(0,1fr)] items-center gap-1 rounded-lg border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-left text-[12px] shadow-[var(--shadow)] transition-colors hover:bg-[rgba(255,255,255,0.04)] active:scale-[0.99] min-[560px]:grid-cols-[minmax(0,1fr)_auto] min-[560px]:gap-4"
-      onClick={() => onOpenThread(projectId, session.threadId, session.sessionPath)}
-    >
-      <span className="min-w-0 truncate text-[13px] font-medium text-[color:var(--text)]">
-        {session.title}
-      </span>
-      <span className="min-w-0 truncate font-mono text-[color:var(--muted)] tabular-nums max-[559px]:justify-self-start">
-        {formatCost(session.costTotal)} · {formatTokens(session.totalTokens)}
-      </span>
-    </button>
-  )
-}
-
-function TopSessionsSection({
-  loading,
-  projectId,
-  sessions,
-  onOpenThread,
-}: {
-  loading: boolean
-  projectId: string
-  sessions: ProjectUsageSessionSummary[]
-  onOpenThread: (projectId: string, threadId: string, sessionPath: string) => void
-}) {
-  return (
-    <section className="col-span-2 col-start-2 grid gap-2 [@media(max-height:560px)]:hidden">
-      <h2 className="m-0 w-[calc(100%-2.5rem)] px-1 text-[13px] font-medium text-[color:var(--text)]">
-        Top sessions by cost
-      </h2>
-      {loading ? (
-        <TopSessionsSkeleton />
-      ) : sessions.length > 0 ? (
-        <div className="grid max-h-[9.75rem] w-full gap-1.5 overflow-y-auto overflow-x-hidden pr-8 [scrollbar-gutter:stable] max-[560px]:max-h-[3.25rem] [@media(max-height:760px)]:max-h-[3.25rem]">
-          {sessions.map((session) => (
-            <TopSessionRow
-              key={session.sessionPath}
-              projectId={projectId}
-              session={session}
-              onOpenThread={onOpenThread}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-[rgba(169,178,215,0.12)] px-3 py-4 text-[12px] text-[color:var(--muted)]">
-          No usage recorded yet. Start a session below and Pi usage will appear here after the first
-          assistant response.
-        </div>
-      )}
-    </section>
-  )
-}
-
-function BranchSwitchPopover({
-  anchorRef,
-  branchSwitchInput,
-  currentBranch,
-  filteredBranches,
-  inputRef,
-  panelRef,
-  projectId,
-  onAction,
-  onSetBranchSwitchInput,
-  onSetBranchSwitchOpen,
-  onSubmitBranchSwitch,
-}: {
-  anchorRef: RefObject<HTMLElement | null>
-  branchSwitchInput: string
-  currentBranch: string | null | undefined
-  filteredBranches: readonly string[]
-  inputRef: RefObject<HTMLInputElement | null>
-  panelRef: RefObject<HTMLDivElement | null>
-  projectId: string
-  onAction: DesktopActionInvoker
-  onSetBranchSwitchInput: (value: string) => void
-  onSetBranchSwitchOpen: (open: boolean) => void
-  onSubmitBranchSwitch: () => void
-}) {
-  const [position, setPosition] = useState<CSSProperties | null>(null)
-  const visibleBranches = filteredBranches.slice(0, 5)
-
-  useEffect(() => {
-    const anchor = anchorRef.current
-    if (!anchor) return
-    const updatePosition = () => {
-      const rect = anchor.getBoundingClientRect()
-      const width = Math.min(320, window.innerWidth - 16)
-      setPosition({
-        background: 'var(--panel)',
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-        opacity: 1,
-        top: rect.bottom + 6,
-        width,
-      })
-    }
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [anchorRef])
-
-  if (!position || typeof document === 'undefined') return null
-
-  return createPortal(
-    <div
-      ref={panelRef}
-      className="fixed z-[160] isolate grid min-w-0 gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
-      style={{ ...position, boxSizing: 'border-box' }}
-    >
-      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-        Switch branch
-      </div>
-      <input
-        ref={inputRef}
-        value={branchSwitchInput}
-        onChange={(event) => onSetBranchSwitchInput(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') onSubmitBranchSwitch()
-          if (event.key === 'Escape') onSetBranchSwitchOpen(false)
-        }}
-        className={dashboardBranchPopoverInputClass}
-        placeholder="Search branches"
-      />
-      <div className="grid max-h-36 min-w-0 gap-0.5 overflow-y-auto">
-        {visibleBranches.length > 0 ? (
-          visibleBranches.map((branch) => (
-            <button
-              key={branch}
-              type="button"
-              className={cn(
-                'grid min-h-7 w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 py-1 text-left text-[10.5px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-                branch === currentBranch && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
-              )}
-              style={{ fontSize: 10.5, lineHeight: '16px' }}
-              onClick={() => {
-                onSetBranchSwitchOpen(false)
-                void onAction('workspace.switch-branch', {
-                  projectId,
-                  value: branch,
-                })
-              }}
-            >
-              <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                {branch === currentBranch ? <Check size={12} /> : null}
-              </span>
-              <span className="min-w-0 truncate">{branch}</span>
-            </button>
-          ))
-        ) : (
-          <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
-            Press Enter to check out “{branchSwitchInput.trim()}”
-          </div>
-        )}
-      </div>
-      <div
-        className="grid min-h-[86px] min-w-0 gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-2.5"
-        style={{ boxSizing: 'border-box' }}
-        {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
-      >
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] text-[color:var(--muted)]">
-              <GitPullRequestDraft size={12} />
-            </span>
-            <div className="min-w-0">
-              <div className="truncate text-[11px] font-medium text-[color:var(--text)]">
-                Worktrees
-              </div>
-              <div className="truncate text-[10.5px] text-[color:var(--muted)]">
-                Reserved for branch workspaces.
-              </div>
-            </div>
-          </div>
-          <span
-            className={cn(getFeatureStatusBadgeClass('feature:composer.worktrees'), 'shrink-0')}
-          >
-            Mock
-          </span>
-        </div>
-        <div className="grid min-w-0 grid-cols-2 gap-1.5 text-[10.5px] text-[color:var(--muted)]">
-          <div className="min-w-0 truncate rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Create
-          </div>
-          <div className="min-w-0 truncate rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Open
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  )
 }
 
 function ProjectRepositorySection({
@@ -336,44 +42,6 @@ function ProjectRepositorySection({
   project: Project
   onAction: DesktopActionInvoker
 }) {
-  const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
-  const [branchSwitchInput, setBranchSwitchInput] = useState('')
-  const branchSwitchButtonRef = useRef<HTMLButtonElement>(null)
-  const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
-  const branchSwitchInputRef = useRef<HTMLInputElement>(null)
-
-  const toggleBranchSwitch = () => {
-    setBranchSwitchInput('')
-    setBranchSwitchOpen((open) => !open)
-  }
-
-  const filteredBranches = (gitState?.branches ?? []).filter((branch) =>
-    branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
-  )
-
-  const submitBranchSwitch = () => {
-    const nextBranch = branchSwitchInput.trim()
-    if (!nextBranch) return
-    setBranchSwitchOpen(false)
-    void onAction('workspace.switch-branch', {
-      projectId: project.id,
-      value: nextBranch,
-    })
-  }
-
-  useDismissibleLayer({
-    open: branchSwitchOpen,
-    onDismiss: () => setBranchSwitchOpen(false),
-    refs: [branchSwitchButtonRef, branchSwitchPanelRef],
-  })
-
-  useEffect(() => {
-    if (!branchSwitchOpen) return
-    window.requestAnimationFrame(() => {
-      branchSwitchInputRef.current?.focus()
-    })
-  }, [branchSwitchOpen])
-
   return (
     <section className="relative z-20 col-start-2 grid w-full gap-2">
       <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.02)] px-3">
@@ -397,41 +65,12 @@ function ProjectRepositorySection({
             </button>
           ) : null}
           {gitState?.isGitRepo ? (
-            <span className="relative inline-flex min-w-0 shrink">
-              <button
-                ref={branchSwitchButtonRef}
-                type="button"
-                className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
-                onPointerDownCapture={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  toggleBranchSwitch()
-                }}
-                onClick={(event) => {
-                  if (event.detail === 0) toggleBranchSwitch()
-                }}
-                aria-label="Switch branch"
-                aria-expanded={branchSwitchOpen}
-                aria-haspopup="dialog"
-              >
-                {branchLabel}
-              </button>
-              {branchSwitchOpen ? (
-                <BranchSwitchPopover
-                  anchorRef={branchSwitchButtonRef}
-                  branchSwitchInput={branchSwitchInput}
-                  currentBranch={gitState.branch}
-                  filteredBranches={filteredBranches}
-                  inputRef={branchSwitchInputRef}
-                  panelRef={branchSwitchPanelRef}
-                  projectId={project.id}
-                  onAction={onAction}
-                  onSetBranchSwitchInput={setBranchSwitchInput}
-                  onSetBranchSwitchOpen={setBranchSwitchOpen}
-                  onSubmitBranchSwitch={submitBranchSwitch}
-                />
-              ) : null}
-            </span>
+            <DashboardBranchSwitcher
+              branchLabel={branchLabel}
+              gitState={gitState}
+              project={project}
+              onAction={onAction}
+            />
           ) : null}
         </div>
         {githubLink ? (

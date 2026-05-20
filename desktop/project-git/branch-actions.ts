@@ -1,3 +1,4 @@
+import { createBranchSwitchPlan } from './branch-switch-plan.ts'
 import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
 
 async function listLocalBranches(projectId: string) {
@@ -32,11 +33,6 @@ async function listRemoteBranches(projectId: string, branchName: string) {
     .filter((branch) => branch.length > 0 && !branch.endsWith('/HEAD'))
 }
 
-function chooseRemoteBranch(remoteBranches: string[], branchName: string) {
-  const originBranch = `origin/${branchName}`
-  return remoteBranches.includes(originBranch) ? originBranch : remoteBranches[0]
-}
-
 async function validateNewBranchName(projectId: string, branchName: string) {
   await runGitWithOptions(projectId, ['check-ref-format', '--branch', branchName], {
     timeout: 10_000,
@@ -62,29 +58,23 @@ export async function switchProjectBranch(projectId: string, branchName: string)
 
   try {
     const localBranches = await listLocalBranches(projectId)
-    let checkoutArgs = localBranches.has(normalizedBranchName)
-      ? ['switch', normalizedBranchName]
-      : null
+    let remoteBranches: string[] = []
 
-    if (!checkoutArgs) {
+    if (!localBranches.has(normalizedBranchName)) {
       await validateNewBranchName(projectId, normalizedBranchName)
-      let remoteBranch = chooseRemoteBranch(
-        await listRemoteBranches(projectId, normalizedBranchName),
-        normalizedBranchName,
-      )
-      if (!remoteBranch) {
+      remoteBranches = await listRemoteBranches(projectId, normalizedBranchName)
+      if (remoteBranches.length === 0) {
         await fetchRemoteBranches(projectId)
-        remoteBranch = chooseRemoteBranch(
-          await listRemoteBranches(projectId, normalizedBranchName),
-          normalizedBranchName,
-        )
+        remoteBranches = await listRemoteBranches(projectId, normalizedBranchName)
       }
-      checkoutArgs = remoteBranch
-        ? ['switch', '--track', remoteBranch]
-        : ['switch', '--create', normalizedBranchName]
     }
+    const plan = createBranchSwitchPlan({
+      branchName: normalizedBranchName,
+      localBranches,
+      remoteBranches,
+    })
 
-    await runGitWithOptions(projectId, checkoutArgs, {
+    await runGitWithOptions(projectId, plan.args, {
       timeout: 10_000,
       maxBuffer: 1024 * 1024,
     })
