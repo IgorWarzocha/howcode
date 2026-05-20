@@ -1,4 +1,4 @@
-import { Check, CircleDot, ExternalLink, GitBranch } from 'lucide-react'
+import { Check, CircleDot, ExternalLink, GitBranch, GitPullRequestDraft } from 'lucide-react'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
@@ -10,6 +10,10 @@ import type {
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
 } from '../desktop/types'
+import {
+  getFeatureStatusBadgeClass,
+  getFeatureStatusDataAttributes,
+} from '../features/feature-status'
 import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import { openExternalQuery } from '../query/desktop-query'
 import type { Project } from '../types'
@@ -197,6 +201,7 @@ function BranchSwitchPopover({
   onSubmitBranchSwitch: () => void
 }) {
   const [position, setPosition] = useState<CSSProperties | null>(null)
+  const visibleBranches = filteredBranches.slice(0, 5)
 
   useEffect(() => {
     const anchor = anchorRef.current
@@ -242,14 +247,14 @@ function BranchSwitchPopover({
         className={settingsInputClass}
         placeholder="Search branches"
       />
-      <div className="grid max-h-56 gap-0.5 overflow-y-auto">
-        {filteredBranches.length > 0 ? (
-          filteredBranches.map((branch) => (
+      <div className="grid max-h-36 gap-0.5 overflow-y-auto">
+        {visibleBranches.length > 0 ? (
+          visibleBranches.map((branch) => (
             <button
               key={branch}
               type="button"
               className={cn(
-                'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                'grid min-h-7 w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 py-1 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
                 branch === currentBranch && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
               )}
               onClick={() => {
@@ -261,7 +266,7 @@ function BranchSwitchPopover({
               }}
             >
               <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                {branch === currentBranch ? <Check size={13} /> : null}
+                {branch === currentBranch ? <Check size={12} /> : null}
               </span>
               <span className="truncate">{branch}</span>
             </button>
@@ -271,6 +276,35 @@ function BranchSwitchPopover({
             Press Enter to check out “{branchSwitchInput.trim()}”
           </div>
         )}
+      </div>
+      <div
+        className="grid min-h-[86px] gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-2.5"
+        {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] text-[color:var(--muted)]">
+              <GitPullRequestDraft size={12} />
+            </span>
+            <div className="min-w-0">
+              <div className="truncate text-[11px] font-medium text-[color:var(--text)]">
+                Worktrees
+              </div>
+              <div className="truncate text-[10.5px] text-[color:var(--muted)]">
+                Reserved for branch workspaces.
+              </div>
+            </div>
+          </div>
+          <span className={getFeatureStatusBadgeClass('feature:composer.worktrees')}>Mock</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 text-[10.5px] text-[color:var(--muted)]">
+          <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
+            Create
+          </div>
+          <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
+            Open
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
