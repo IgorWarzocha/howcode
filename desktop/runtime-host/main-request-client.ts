@@ -6,6 +6,23 @@ import type {
   RuntimeHostMainResponseMessage,
 } from './protocol.ts'
 
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
+
+async function invokeLocalMainRequest<TName extends RuntimeHostMainRequestName>(
+  name: TName,
+  payload: RuntimeHostMainRequestMap[TName],
+): Promise<RuntimeHostMainResponseMap[TName]> {
+  const { handleRuntimeHostMainRequest } = await import('./main-request-handlers.ts')
+  return handleRuntimeHostMainRequest({
+    type: 'main-request',
+    id: 'local',
+    name,
+    payload,
+  })
+}
+
 const mainRequestTimeoutMs = 30_000
 
 const pendingMainRequests = new Map<
@@ -35,6 +52,10 @@ export async function invokeMainRequest<TName extends RuntimeHostMainRequestName
   name: TName,
   payload: RuntimeHostMainRequestMap[TName],
 ): Promise<RuntimeHostMainResponseMap[TName]> {
+  if (getProcessEnvironmentVariable('HOWCODE_HANDLE_MAIN_REQUESTS_IN_HOST') === '1') {
+    return await invokeLocalMainRequest(name, payload)
+  }
+
   if (!process.send) {
     throw new Error(`Cannot invoke main request ${name}: runtime host IPC is unavailable.`)
   }

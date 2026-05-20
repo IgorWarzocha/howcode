@@ -2,7 +2,6 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts.ts'
 import { getDesktopWorkingDirectory } from '../../shared/desktop-working-directory.ts'
-import { loadAppSettings } from '../app-settings/readers.ts'
 import {
   getBundledSkillsPath,
   getElectronResourcesPath,
@@ -27,7 +26,6 @@ import {
   serviceHost,
   terminateHostProcess,
 } from './host-connections.ts'
-import { handleRuntimeHostMainRequest } from './main-request-handlers.ts'
 import type {
   RuntimeHostRequestMap,
   RuntimeHostRequestName,
@@ -35,6 +33,10 @@ import type {
   RuntimeHostToMainMessage,
 } from './protocol.ts'
 import { getRuntimeHostRequestSessionPath, shouldUseThreadRuntimeHost } from './request-routing.ts'
+
+function getProcessEnvironmentVariable(name: string) {
+  return process.env[name]
+}
 
 function emitDesktopEvent(event: DesktopEvent) {
   for (const listener of desktopListeners) {
@@ -137,18 +139,12 @@ async function handleHostMainRequest(
   host: HostConnection,
   message: Extract<RuntimeHostToMainMessage, { type: 'main-request' }>,
 ) {
-  try {
-    const result = handleRuntimeHostMainRequest(message)
-    host.process?.send?.({ type: 'main-response', id: message.id, ok: true, result })
-  } catch (error) {
-    host.process?.send?.({
-      type: 'main-response',
-      id: message.id,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-  }
+  host.process?.send?.({
+    type: 'main-response',
+    id: message.id,
+    ok: false,
+    error: `Runtime host main request ${message.name} must be handled inside the runtime host.`,
+  })
 }
 
 function handleHostExit(
@@ -196,11 +192,12 @@ async function ensureRuntimeHost(host: HostConnection) {
     }
 
     return await new Promise<ChildProcess>((resolve, reject) => {
-      const customPiDirectory = loadAppSettings().customPiDirectory?.trim()
+      const customPiDirectory = getProcessEnvironmentVariable('PI_CODING_AGENT_DIR')?.trim()
       const child = spawn(nodeExecutable, [getRuntimeHostPath()], {
         cwd: getDesktopWorkingDirectory(),
         env: {
           ...process.env,
+          HOWCODE_HANDLE_MAIN_REQUESTS_IN_HOST: '1',
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),

@@ -24,6 +24,7 @@ const buildTargets = [
     entrypoints: [
       path.join(projectRoot, 'desktop', 'pi-threads.ts'),
       path.join(projectRoot, 'desktop', 'pi-skills.ts'),
+      path.join(projectRoot, 'desktop', 'service-host.ts'),
       path.join(projectRoot, 'desktop', 'skill-creator-session.ts'),
       path.join(projectRoot, 'desktop', 'runtime-host', 'worker.ts'),
     ],

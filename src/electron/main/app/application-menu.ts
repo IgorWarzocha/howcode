@@ -4,13 +4,11 @@ import {
   getEffectiveAccelerators,
   isValidAccelerator,
   type KeybindingCommandId,
+  type KeybindingOverrides,
 } from '../../../../shared/keybindings'
 import type { PiThreadsModule } from '../runtime/desktop-runtime-contracts'
 
-function getPrimaryAccelerator(
-  commandId: KeybindingCommandId,
-  keybindings: Awaited<ReturnType<PiThreadsModule['loadAppSettings']>>['keybindings'],
-) {
+function getPrimaryAccelerator(commandId: KeybindingCommandId, keybindings: KeybindingOverrides) {
   return getEffectiveAccelerators(keybindings)
     .get(commandId)
     ?.find((accelerator) => !accelerator.includes(' ') && isValidAccelerator(accelerator))
@@ -47,7 +45,7 @@ export async function installApplicationMenu(input: {
   getMainWindow: () => BrowserWindow | null
   piThreads: PiThreadsModule
 }) {
-  const appSettings = await input.piThreads.loadAppSettings()
+  const appSettings = { keybindings: {} satisfies KeybindingOverrides }
   const accelerator = (commandId: KeybindingCommandId) =>
     getPrimaryAccelerator(commandId, appSettings.keybindings)
 
