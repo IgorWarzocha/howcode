@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Check, GitCompareArrows, GitPullRequestDraft, Search } from 'lucide-react'
-import { type ReactNode, type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ProjectCommitEntry,
@@ -20,7 +20,9 @@ import {
 } from '../../../query/desktop-query'
 import { popoverPanelClass, settingsInputClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { SurfacePanel } from '../../common/surface-panel'
 import {
+  BaselineOption,
   baselineOptions,
   CommitOption,
   getBaselineCounts,
@@ -41,72 +43,6 @@ type ComposerDiffBaselineSelectorProps = {
   selectedBaseline: ProjectDiffBaseline
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
-}
-
-type ComposerPopoverPosition = { left: number; bottom: number; width: number; maxHeight: number }
-
-const COMPOSER_SELECTOR_PANEL_HEIGHT = 360
-const composerSelectorHeaderClass =
-  'px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]'
-const composerSelectorScrollClass = 'grid min-h-0 gap-0.5 overflow-y-auto pb-0.5'
-const composerSelectorFooterClass =
-  'min-h-[104px] rounded-xl border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] p-2'
-const composerSelectorOptionClass =
-  'grid min-h-11 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]'
-const composerSelectorOptionSelectedClass = 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]'
-const composerSelectorCompactOptionClass =
-  'grid min-h-8 grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]'
-
-function getComposerPopoverStyle(position: ComposerPopoverPosition) {
-  const height = Math.min(COMPOSER_SELECTOR_PANEL_HEIGHT, position.maxHeight)
-
-  return {
-    bottom: `${position.bottom}px`,
-    height: `${height}px`,
-    left: `${position.left}px`,
-    maxHeight: `${position.maxHeight}px`,
-    width: `${position.width}px`,
-  }
-}
-
-function ComposerSelectorPanel({
-  ariaLabel,
-  children,
-  className,
-  panelId,
-  panelPosition,
-  panelRef,
-  positionReady,
-  zIndexClass = 'z-[120]',
-}: {
-  ariaLabel: string
-  children: ReactNode
-  className?: string
-  panelId: string
-  panelPosition: ComposerPopoverPosition
-  panelRef: RefObject<HTMLDivElement | null>
-  positionReady: boolean
-  zIndexClass?: string
-}) {
-  return (
-    <div
-      id={panelId}
-      ref={panelRef}
-      role="dialog"
-      data-open={positionReady ? 'true' : 'false'}
-      aria-label={ariaLabel}
-      className={cn(
-        popoverPanelClass,
-        'fixed isolate grid overflow-hidden rounded-2xl bg-[color:var(--panel)] p-2 opacity-100 shadow-[var(--shadow)] transition-[opacity,transform] duration-150 ease-out',
-        zIndexClass,
-        className,
-        positionReady ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
-      )}
-      style={getComposerPopoverStyle(panelPosition)}
-    >
-      {children}
-    </div>
-  )
 }
 
 function useComposerBaselinePopoverControls({
@@ -299,32 +235,6 @@ function BaselineSummaryButton({
   )
 }
 
-function BaselinePresetOption({
-  label,
-  selected,
-  onSelect,
-}: {
-  label: string
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        composerSelectorCompactOptionClass,
-        selected && composerSelectorOptionSelectedClass,
-      )}
-      onClick={onSelect}
-    >
-      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-        {selected ? <Check size={12} /> : null}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  )
-}
-
 function BaselineBranchButton({
   branchLabel,
   branches,
@@ -381,7 +291,7 @@ function BaselineBranchButton({
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open || branchSwitchOpen}
-        aria-controls={open || branchSwitchOpen ? panelId : undefined}
+        aria-controls={open ? panelId : undefined}
         className={cn(
           'composer-branch-chip composer-footer-text pointer-events-auto relative z-20 inline-flex h-7 max-w-[12rem] cursor-pointer select-none items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
           (open || branchSwitchOpen) &&
@@ -399,16 +309,29 @@ function BaselineBranchButton({
       </button>
       {branchSwitchOpen && typeof document !== 'undefined'
         ? createPortal(
-            <ComposerSelectorPanel
-              ariaLabel="Branch selector"
-              className="grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2"
-              panelId={panelId}
-              panelPosition={panelPosition}
-              panelRef={branchSwitchPanelRef}
-              positionReady={positionReady}
-              zIndexClass="z-[160]"
+            <div
+              id={panelId}
+              ref={branchSwitchPanelRef}
+              role="dialog"
+              data-open={positionReady ? 'true' : 'false'}
+              aria-label="Branch selector"
+              className={cn(
+                popoverPanelClass,
+                'fixed isolate z-[160] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2 rounded-2xl bg-[color:var(--panel)] p-2 opacity-100 shadow-[var(--shadow)] transition-[opacity,transform] duration-150 ease-out',
+                positionReady
+                  ? 'translate-y-0 opacity-100'
+                  : 'pointer-events-none translate-y-1 opacity-0',
+              )}
+              style={{
+                bottom: `${panelPosition.bottom}px`,
+                left: `${panelPosition.left}px`,
+                maxHeight: `${panelPosition.maxHeight}px`,
+                width: `${panelPosition.width}px`,
+              }}
             >
-              <div className={composerSelectorHeaderClass}>Switch branch</div>
+              <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+                Switch branch
+              </div>
               <input
                 ref={branchSwitchInputRef}
                 value={branchSwitchInput}
@@ -420,15 +343,16 @@ function BaselineBranchButton({
                 className={settingsInputClass}
                 placeholder="Search branches"
               />
-              <div className={composerSelectorScrollClass}>
+              <div className="grid min-h-0 gap-0.5 overflow-y-auto pb-0.5">
                 {filteredBranches.length > 0 ? (
                   filteredBranches.map((branch) => (
                     <button
                       key={branch}
                       type="button"
                       className={cn(
-                        composerSelectorOptionClass,
-                        branch === branchLabel && composerSelectorOptionSelectedClass,
+                        'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                        branch === branchLabel &&
+                          'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
                       )}
                       onClick={() => {
                         onSwitchBranch?.(branch)
@@ -448,7 +372,7 @@ function BaselineBranchButton({
                 )}
               </div>
               <div
-                className={cn(composerSelectorFooterClass, 'grid content-start gap-2')}
+                className="grid gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3"
                 {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -469,16 +393,16 @@ function BaselineBranchButton({
                     Mock
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px] text-[color:var(--muted)]">
-                  <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] px-2 py-1.5">
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-[color:var(--muted)]">
+                  <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
                     Create worktree
                   </div>
-                  <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] px-2 py-1.5">
+                  <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
                     Open existing
                   </div>
                 </div>
               </div>
-            </ComposerSelectorPanel>,
+            </div>,
             document.body,
           )
         : null}
@@ -514,29 +438,30 @@ function BaselineSelectorPortal({
   visibleCommits: ProjectCommitEntry[]
 }) {
   if (typeof document === 'undefined') return null
+  const panelLeft = `${panelPosition.left}px`
+  const panelWidth = `${panelPosition.width}px`
   return createPortal(
-    <ComposerSelectorPanel
-      ariaLabel="Diff baseline selector"
-      className="grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2"
-      panelId={panelId}
-      panelPosition={panelPosition}
-      panelRef={panelRef}
-      positionReady={positionReady}
+    <SurfacePanel
+      id={panelId}
+      ref={panelRef}
+      data-open={positionReady ? 'true' : 'false'}
+      aria-label="Diff baseline selector"
+      className={cn(
+        popoverPanelClass,
+        'motion-popover fixed z-[120] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-2 rounded-2xl p-2 transition-[opacity,transform] duration-150 ease-out',
+        positionReady ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-1',
+      )}
+      style={{
+        bottom: `${panelPosition.bottom}px`,
+        left: panelLeft,
+        maxHeight: `${panelPosition.maxHeight}px`,
+        width: panelWidth,
+      }}
     >
-      <div className={composerSelectorHeaderClass}>Changes since</div>
-      <label className="relative block">
-        <Search
-          size={14}
-          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
-        />
-        <input
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search commits"
-          className={cn(settingsInputClass, 'w-full pl-9')}
-        />
-      </label>
-      <div className={composerSelectorScrollClass}>
+      <div className="px-2 pt-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+        Changes since
+      </div>
+      <div className="grid min-h-0 gap-0.5 overflow-y-auto pb-0.5">
         {visibleCommits.length > 0 ? (
           visibleCommits.map((commit) => (
             <CommitOption
@@ -555,20 +480,30 @@ function BaselineSelectorPortal({
           </div>
         )}
       </div>
-      <div className={cn(composerSelectorFooterClass, 'grid grid-cols-2 content-start gap-1')}>
-        {baselineOptions.map((option) => (
-          <BaselinePresetOption
-            key={option.key}
-            label={option.label}
-            selected={selectedBaseline.kind === option.key}
-            onSelect={() => {
-              onSelectBaseline(option.baseline)
-              setOpen(false)
-            }}
-          />
-        ))}
-      </div>
-    </ComposerSelectorPanel>,
+      <label className="relative block">
+        <Search
+          size={14}
+          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
+        />
+        <input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search commits"
+          className={cn(settingsInputClass, 'w-full pl-9')}
+        />
+      </label>
+      {baselineOptions.map((option) => (
+        <BaselineOption
+          key={option.key}
+          label={option.label}
+          selected={selectedBaseline.kind === option.key}
+          onSelect={() => {
+            onSelectBaseline(option.baseline)
+            setOpen(false)
+          }}
+        />
+      ))}
+    </SurfacePanel>,
     document.body,
   )
 }
