@@ -1,16 +1,19 @@
 import { CircleDot, ExternalLink, GitBranch } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
+import { SurfacePanel } from '../components/common/surface-panel'
 import type {
   DesktopActionInvoker,
   ProjectGitState,
   ProjectUsageSessionSummary,
   ProjectUsageSummary,
 } from '../desktop/types'
+import { useDismissibleLayer } from '../hooks/useDismissibleLayer'
 import { openExternalQuery } from '../query/desktop-query'
 import type { Project } from '../types'
-import { ghostButtonClass } from '../ui/classes'
+import { ghostButtonClass, settingsInputClass } from '../ui/classes'
 import { cn } from '../utils/cn'
 
 const tokenFormatter = new Intl.NumberFormat('en', {
@@ -193,6 +196,35 @@ export function ProjectOverview({
   const assistantTurnCount = usageSummary?.assistantTurnCount ?? 0
   const measuredComposerHeight = Math.max(composerOverlayHeight, 132)
   const overviewHeight = `calc(60% - ${measuredComposerHeight / 2}px - 0.5rem)`
+  const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
+  const [branchSwitchInput, setBranchSwitchInput] = useState('')
+  const branchSwitchButtonRef = useRef<HTMLButtonElement>(null)
+  const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
+  const branchSwitchInputRef = useRef<HTMLInputElement>(null)
+
+  const submitBranchSwitch = () => {
+    const nextBranch = branchSwitchInput.trim()
+    if (!nextBranch) return
+    setBranchSwitchOpen(false)
+    void onAction('workspace.switch-branch', {
+      projectId: project.id,
+      value: nextBranch,
+    })
+  }
+
+  useDismissibleLayer({
+    open: branchSwitchOpen,
+    onDismiss: () => setBranchSwitchOpen(false),
+    refs: [branchSwitchButtonRef, branchSwitchPanelRef],
+  })
+
+  useEffect(() => {
+    if (!branchSwitchOpen) return
+    window.requestAnimationFrame(() => {
+      branchSwitchInputRef.current?.focus()
+      branchSwitchInputRef.current?.select()
+    })
+  }, [branchSwitchOpen])
 
   return (
     <div
@@ -254,22 +286,44 @@ export function ProjectOverview({
                 </button>
               ) : null}
               {gitState?.isGitRepo ? (
-                <button
-                  type="button"
-                  className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
-                  onClick={() => {
-                    const nextBranch = window.prompt('Switch to branch', gitState.branch ?? '')
-                    if (nextBranch?.trim()) {
-                      void onAction('workspace.switch-branch', {
-                        projectId: project.id,
-                        value: nextBranch.trim(),
-                      })
-                    }
-                  }}
-                  aria-label="Switch branch"
-                >
-                  {branchLabel}
-                </button>
+                <span className="relative inline-flex min-w-0 shrink">
+                  <button
+                    ref={branchSwitchButtonRef}
+                    type="button"
+                    className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => {
+                      setBranchSwitchInput(gitState.branch ?? '')
+                      setBranchSwitchOpen(true)
+                    }}
+                    aria-label="Switch branch"
+                    aria-expanded={branchSwitchOpen}
+                    aria-haspopup="dialog"
+                  >
+                    {branchLabel}
+                  </button>
+                  {branchSwitchOpen ? (
+                    <SurfacePanel
+                      ref={branchSwitchPanelRef}
+                      className="motion-popover absolute top-[calc(100%+0.35rem)] left-0 z-[80] grid w-64 gap-2 rounded-xl p-2"
+                    >
+                      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+                        Switch branch
+                      </div>
+                      <input
+                        ref={branchSwitchInputRef}
+                        value={branchSwitchInput}
+                        onChange={(event) => setBranchSwitchInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') submitBranchSwitch()
+                          if (event.key === 'Escape') setBranchSwitchOpen(false)
+                        }}
+                        className={settingsInputClass}
+                        placeholder="branch-name"
+                      />
+                    </SurfacePanel>
+                  ) : null}
+                </span>
               ) : null}
             </div>
             {githubLink ? (

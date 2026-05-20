@@ -117,41 +117,84 @@ function BaselineSummaryButton({
 function BaselineBranchButton({
   branchLabel,
   branchAnchorRef,
+  branchSwitchPanelRef,
+  branchSwitchInputRef,
+  branchSwitchInput,
+  branchSwitchOpen,
   open,
   panelId,
   onOpen,
+  onSetBranchSwitchInput,
+  onSetBranchSwitchOpen,
   onSwitchBranch,
 }: {
   branchAnchorRef: RefObject<HTMLButtonElement | null>
+  branchSwitchPanelRef: RefObject<HTMLDivElement | null>
+  branchSwitchInputRef: RefObject<HTMLInputElement | null>
   branchLabel: string
+  branchSwitchInput: string
+  branchSwitchOpen: boolean
   onOpen: () => void
+  onSetBranchSwitchInput: (value: string) => void
+  onSetBranchSwitchOpen: (open: boolean) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
   open: boolean
   panelId: string
 }) {
+  const submitBranchSwitch = () => {
+    const nextBranch = branchSwitchInput.trim()
+    if (!nextBranch) return
+    onSwitchBranch?.(nextBranch)
+    onSetBranchSwitchOpen(false)
+  }
+
   return (
-    <button
-      ref={branchAnchorRef}
-      type="button"
-      aria-haspopup="dialog"
-      aria-expanded={open}
-      aria-controls={open ? panelId : undefined}
-      className={cn(
-        'composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-        open &&
-          'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
-      )}
-      onClick={() => {
-        if (!onSwitchBranch) {
-          onOpen()
-          return
-        }
-        const nextBranch = window.prompt('Switch to branch', branchLabel)
-        if (nextBranch?.trim()) onSwitchBranch(nextBranch.trim())
-      }}
-    >
-      <span className="truncate">{branchLabel}</span>
-    </button>
+    <span className="relative inline-flex">
+      <button
+        ref={branchAnchorRef}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open || branchSwitchOpen}
+        aria-controls={open ? panelId : undefined}
+        className={cn(
+          'composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          (open || branchSwitchOpen) &&
+            'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+        )}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => {
+          if (!onSwitchBranch) {
+            onOpen()
+            return
+          }
+          onSetBranchSwitchInput(branchLabel === 'Detached' ? '' : branchLabel)
+          onSetBranchSwitchOpen(true)
+        }}
+      >
+        <span className="truncate">{branchLabel}</span>
+      </button>
+      {branchSwitchOpen ? (
+        <SurfacePanel
+          ref={branchSwitchPanelRef}
+          className="motion-popover absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl p-2"
+        >
+          <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+            Switch branch
+          </div>
+          <input
+            ref={branchSwitchInputRef}
+            value={branchSwitchInput}
+            onChange={(event) => onSetBranchSwitchInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') submitBranchSwitch()
+              if (event.key === 'Escape') onSetBranchSwitchOpen(false)
+            }}
+            className={settingsInputClass}
+            placeholder="branch-name"
+          />
+        </SurfacePanel>
+      ) : null}
+    </span>
   )
 }
 
@@ -263,10 +306,14 @@ export function ComposerDiffBaselineSelector({
   onSwitchBranch,
 }: ComposerDiffBaselineSelectorProps) {
   const [open, setOpen] = useState(false)
+  const [branchSwitchOpen, setBranchSwitchOpen] = useState(false)
+  const [branchSwitchInput, setBranchSwitchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const panelId = useId()
   const anchorRef = useRef<HTMLButtonElement>(null)
   const branchAnchorRef = useRef<HTMLButtonElement>(null)
+  const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
+  const branchSwitchInputRef = useRef<HTMLInputElement>(null)
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
@@ -321,10 +368,21 @@ export function ComposerDiffBaselineSelector({
   }
 
   useDismissibleLayer({
-    open,
-    onDismiss: closePopover,
-    refs: [anchorRef, branchAnchorRef, compactAnchorRef, panelRef],
+    open: open || branchSwitchOpen,
+    onDismiss: () => {
+      closePopover()
+      setBranchSwitchOpen(false)
+    },
+    refs: [anchorRef, branchAnchorRef, branchSwitchPanelRef, compactAnchorRef, panelRef],
   })
+
+  useEffect(() => {
+    if (!branchSwitchOpen) return
+    window.requestAnimationFrame(() => {
+      branchSwitchInputRef.current?.focus()
+      branchSwitchInputRef.current?.select()
+    })
+  }, [branchSwitchOpen])
 
   useEffect(() => {
     if (!open) {
@@ -363,10 +421,16 @@ export function ComposerDiffBaselineSelector({
       {showBranchChip ? (
         <BaselineBranchButton
           branchAnchorRef={branchAnchorRef}
+          branchSwitchInputRef={branchSwitchInputRef}
+          branchSwitchInput={branchSwitchInput}
+          branchSwitchOpen={branchSwitchOpen}
+          branchSwitchPanelRef={branchSwitchPanelRef}
           branchLabel={branchLabel}
           open={open}
           panelId={panelId}
           onOpen={() => togglePopover('branch')}
+          onSetBranchSwitchInput={setBranchSwitchInput}
+          onSetBranchSwitchOpen={setBranchSwitchOpen}
           onSwitchBranch={onSwitchBranch}
         />
       ) : null}
