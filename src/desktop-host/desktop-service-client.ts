@@ -34,9 +34,11 @@ export type DesktopServiceClientOptions = {
   cwd: string
   env?: NodeJS.ProcessEnv | undefined
   requestTimeoutMs?: number | undefined
+  startupTimeoutMs?: number | undefined
 }
 
 const defaultRequestTimeoutMs = 60_000
+const defaultStartupTimeoutMs = 15_000
 
 function createDesktopServiceDiagnosticEvent(input: {
   severity: 'warning' | 'error'
@@ -115,6 +117,10 @@ export class DesktopServiceClient {
     if (this.process === child) this.process = null
   }
 
+  private clearServiceStartupTimeout(timer: ReturnType<typeof setTimeout> | null) {
+    if (timer) clearTimeout(timer)
+  }
+
   async invoke<M extends DesktopServiceModuleName, K extends ServiceMethod<M> & string>(
     moduleName: M,
     method: K,
@@ -185,10 +191,21 @@ export class DesktopServiceClient {
         })
 
         let ready = false
+        const startupTimeout = setTimeout(() => {
+          this.startPromise = null
+          if (this.process === child) this.process = null
+          child.kill('SIGTERM')
+          reject(new Error('Timed out waiting for desktop service startup.'))
+        }, this.options.startupTimeoutMs ?? defaultStartupTimeoutMs)
+        startupTimeout.unref?.()
+
         child.stdout?.on('data', (chunk) => process.stdout.write(chunk))
         child.stderr?.on('data', (chunk) => process.stderr.write(chunk))
         child.on('message', (message: DesktopServiceMessage) => this.handleMessage(message))
         child.once('error', (error) => {
+          this.clearServiceStartupTimeout(startupTimeout)
+          this.startPromise = null
+          if (this.process === child) this.process = null
           this.emitDesktopDiagnostic({
             severity: 'error',
             message: 'Desktop runtime service failed to start.',
@@ -197,11 +214,13 @@ export class DesktopServiceClient {
           reject(error)
         })
         child.once('exit', (code, signal) => {
+          this.clearServiceStartupTimeout(startupTimeout)
           this.handleServiceProcessExit(child, ready, code, signal, reject)
         })
         child.on('message', (message: DesktopServiceMessage) => {
           if (message?.type === 'ready' && !ready) {
             ready = true
+            this.clearServiceStartupTimeout(startupTimeout)
             console.info('Desktop service ready.', message.diagnostics ?? {})
             this.process = child
             this.startPromise = null

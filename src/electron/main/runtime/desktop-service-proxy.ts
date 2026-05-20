@@ -15,6 +15,22 @@ function getServiceHostPath() {
   return path.join(getDesktopBuildDirectory(), 'service-host.mjs')
 }
 
+function getElectronResourcesPath() {
+  const processWithResourcesPath = process as NodeJS.Process & {
+    resourcesPath?: string | undefined
+  }
+  return (
+    process.env['HOWCODE_ELECTRON_RESOURCES_PATH']?.trim() ||
+    processWithResourcesPath.resourcesPath ||
+    ''
+  )
+}
+
+function getBundledSkillsPath() {
+  const resourcesPath = getElectronResourcesPath()
+  return resourcesPath ? path.join(resourcesPath, 'resources', 'skills') : ''
+}
+
 function proxyModule<T extends Record<string, unknown>>(
   service: DesktopServiceClient,
   moduleName: keyof DesktopServiceRuntime,
@@ -28,7 +44,6 @@ function proxyModule<T extends Record<string, unknown>>(
         if (property === 'subscribeTerminalEvents')
           return service.subscribeTerminalEvents.bind(service)
         if (property === 'disposeDesktopRuntime') return service.dispose.bind(service)
-        if (property === 'closeAllTerminals') return service.dispose.bind(service)
         return (...args: unknown[]) => service.invokeDynamic(moduleName, String(property), args)
       },
     },
@@ -40,6 +55,10 @@ export function createDesktopServiceRuntime(): DesktopServiceRuntime {
     nodeExecutable: getSystemNodeExecutable,
     serviceHostPath: getServiceHostPath(),
     cwd: getDesktopWorkingDirectory(),
+    env: {
+      HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
+      HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),
+    },
   })
   return {
     piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),

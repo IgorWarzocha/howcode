@@ -256,7 +256,7 @@ export function ProjectOverview({
               {gitState?.isGitRepo ? (
                 <button
                   type="button"
-                  className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)] max-[900px]:hidden"
+                  className="min-w-0 max-w-[14rem] shrink truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
                   onClick={() => {
                     const nextBranch = window.prompt('Switch to branch', gitState.branch ?? '')
                     if (nextBranch?.trim()) {
