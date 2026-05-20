@@ -20,6 +20,8 @@ const requiredUnpackedRuntimePaths = [
   path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
 ]
 
+const nativeServiceRuntimePackages = ['better-sqlite3', 'node-pty']
+
 type Target = {
   os: 'macos' | 'linux' | 'win'
   arch: 'arm64' | 'x64'
@@ -163,6 +165,8 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
     )
   }
 
+  validateUnpackedNativeRuntime(unpackedRoot)
+
   const tarResult = spawnSync('tar', ['-czf', archivePath, '-C', tempRoot, normalizedBundleName], {
     stdio: 'inherit',
   })
@@ -174,6 +178,41 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   }
 
   return archivePath
+}
+
+function validateUnpackedNativeRuntime(unpackedRoot: string) {
+  const nodeModulesPath = path.join(unpackedRoot, 'node_modules')
+  const result = spawnSync(
+    process.execPath,
+    [
+      '-e',
+      `
+        for (const packageName of ${JSON.stringify(nativeServiceRuntimePackages)}) {
+          require(packageName)
+        }
+      `,
+    ],
+    {
+      cwd: unpackedRoot,
+      env: {
+        ...process.env,
+        NODE_PATH: nodeModulesPath,
+      },
+      encoding: 'utf8',
+    },
+  )
+
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `Packaged native service dependencies do not load under stock Node ${process.version} (ABI ${process.versions.modules}).`,
+        result.stdout.trim(),
+        result.stderr.trim(),
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    )
+  }
 }
 
 async function createUpdateMetadata(archivePath: string, target: Target, version: string) {
