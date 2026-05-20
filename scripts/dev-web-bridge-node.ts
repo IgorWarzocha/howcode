@@ -7,6 +7,7 @@ import path from 'node:path'
 import { openPathWithSystem } from '../desktop/system-open-path.ts'
 import packageJson from '../package.json'
 import { getAttachmentKind } from '../shared/composer-attachments'
+import type { DesktopActionResultData } from '../shared/desktop-contracts'
 import type {
   DesktopEventMap,
   DesktopRequestChannel,
@@ -76,6 +77,12 @@ const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
 const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
 const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
 const terminalManager = proxyServiceModule<TerminalService>('terminalManager')
+
+function didDesktopActionMutate(result: DesktopActionResultData | null | undefined) {
+  return Boolean(
+    result && typeof result === 'object' && 'didMutate' in result && result.didMutate === true,
+  )
+}
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,
@@ -265,7 +272,8 @@ const handlers: DesktopRequestHandlerMap = {
         payload &&
         typeof payload === 'object' &&
         'key' in payload &&
-        payload.key === 'customPiDirectory'
+        payload.key === 'customPiDirectory' &&
+        didDesktopActionMutate(result)
       ) {
         await desktopService.dispose()
       }

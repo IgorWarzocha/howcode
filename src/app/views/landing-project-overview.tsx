@@ -342,9 +342,9 @@ function ProjectRepositorySection({
   const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
   const branchSwitchInputRef = useRef<HTMLInputElement>(null)
 
-  const openBranchSwitch = () => {
+  const toggleBranchSwitch = () => {
     setBranchSwitchInput('')
-    setBranchSwitchOpen(true)
+    setBranchSwitchOpen((open) => !open)
   }
 
   const filteredBranches = (gitState?.branches ?? []).filter((branch) =>
@@ -405,9 +405,11 @@ function ProjectRepositorySection({
                 onPointerDownCapture={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
-                  openBranchSwitch()
+                  toggleBranchSwitch()
                 }}
-                onClick={openBranchSwitch}
+                onClick={(event) => {
+                  if (event.detail === 0) toggleBranchSwitch()
+                }}
                 aria-label="Switch branch"
                 aria-expanded={branchSwitchOpen}
                 aria-haspopup="dialog"

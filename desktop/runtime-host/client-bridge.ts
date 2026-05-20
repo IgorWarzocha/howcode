@@ -205,6 +205,7 @@ async function ensureRuntimeHost(host: HostConnection) {
         },
         stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
       }) as ChildProcess
+      host.process = child
 
       let settled = false
       const settleFailure = (error: Error) => {
@@ -229,7 +230,6 @@ async function ensureRuntimeHost(host: HostConnection) {
         }
 
         settled = true
-        host.process = child
         host.startPromise = null
         resolve(child)
       })

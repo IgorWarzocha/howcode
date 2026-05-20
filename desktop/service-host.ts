@@ -23,17 +23,24 @@ type ServiceResponse = {
   stack?: string
 }
 
-const modules: Record<string, Record<string, unknown>> = {
+const modules = {
   piThreads,
   piSkills,
   skillCreator,
   terminalManager,
-}
+} satisfies Record<string, Record<string, unknown>>
 
 type ServiceModuleName = keyof typeof modules
 
 function isServiceModuleName(value: string): value is ServiceModuleName {
-  return value in modules
+  return Object.hasOwn(modules, value)
+}
+
+function getServiceMethod(moduleName: ServiceModuleName, methodName: string) {
+  const targetModule: Record<string, unknown> = modules[moduleName]
+  if (!Object.hasOwn(targetModule, methodName)) return null
+  const target = targetModule[methodName]
+  return typeof target === 'function' ? target : null
 }
 
 async function getServiceDiagnostics() {
@@ -70,9 +77,8 @@ async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> 
       throw new Error(`Unknown desktop service module: ${message.module}`)
     }
 
-    const targetModule = modules[message.module]
-    const target = targetModule?.[message.method]
-    if (typeof target !== 'function') {
+    const target = getServiceMethod(message.module, message.method)
+    if (!target) {
       throw new Error(`Unknown desktop service method: ${message.module}.${message.method}`)
     }
 

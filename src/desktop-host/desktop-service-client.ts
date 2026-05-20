@@ -189,6 +189,7 @@ export class DesktopServiceClient {
           },
           stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
         })
+        this.process = child
 
         let ready = false
         const startupTimeout = setTimeout(() => {
