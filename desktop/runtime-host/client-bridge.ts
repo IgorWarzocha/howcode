@@ -143,7 +143,7 @@ async function handleHostMainRequest(
     type: 'main-response',
     id: message.id,
     ok: false,
-    error: `Runtime host main request ${message.name} must be handled inside the runtime host.`,
+    error: `Runtime host-local service request ${message.name} must be handled inside the runtime host.`,
   })
 }
 
@@ -197,7 +197,7 @@ async function ensureRuntimeHost(host: HostConnection) {
         cwd: getDesktopWorkingDirectory(),
         env: {
           ...process.env,
-          HOWCODE_HANDLE_MAIN_REQUESTS_IN_HOST: '1',
+          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
           HOWCODE_REPO_ROOT: getDesktopWorkingDirectory(),
           HOWCODE_ELECTRON_RESOURCES_PATH: getElectronResourcesPath(),
           HOWCODE_BUNDLED_SKILLS_PATH: getBundledSkillsPath(),

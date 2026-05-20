@@ -110,7 +110,7 @@ export class DesktopServiceClient {
         env: {
           ...process.env,
           ...this.options.env,
-          HOWCODE_HANDLE_MAIN_REQUESTS_IN_HOST: '1',
+          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
           HOWCODE_REPO_ROOT: this.options.cwd,
         },
         stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
