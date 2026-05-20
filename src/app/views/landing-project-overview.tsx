@@ -211,7 +211,7 @@ function BranchSwitchPopover({
       const width = 256
       setPosition({
         background: 'var(--panel)',
-        left: Math.min(rect.left, window.innerWidth - width - 8),
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
         opacity: 1,
         top: rect.bottom + 6,
         width,
@@ -231,7 +231,7 @@ function BranchSwitchPopover({
   return createPortal(
     <div
       ref={panelRef}
-      className="fixed z-[160] isolate grid gap-2 overflow-hidden rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      className="fixed z-[160] isolate grid gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
       style={position}
     >
       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
