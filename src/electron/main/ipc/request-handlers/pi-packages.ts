@@ -1,12 +1,12 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { PiThreadsModule } from '../../runtime/desktop-runtime-contracts'
+import type { PiThreadsService } from '../../runtime/desktop-runtime-contracts'
 
 type PiPackagesRequestHandlers = Pick<
   DesktopRequestHandlerMap,
   'searchPiPackages' | 'getConfiguredPiPackages' | 'installPiPackage' | 'removePiPackage'
 >
 
-export function createPiPackagesHandlers(piThreads: PiThreadsModule): PiPackagesRequestHandlers {
+export function createPiPackagesHandlers(piThreads: PiThreadsService): PiPackagesRequestHandlers {
   return {
     searchPiPackages: (request) => piThreads.searchPiPackages(request),
     getConfiguredPiPackages: (request) => piThreads.listConfiguredPiPackages(request),

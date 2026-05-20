@@ -3,11 +3,11 @@ import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-d
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
 import { getDesktopBuildDirectory } from './app-paths'
 import type {
-  DesktopRuntimeModules,
-  PiSkillsModule,
-  PiThreadsModule,
-  SkillCreatorModule,
-  TerminalManagerModule,
+  DesktopServiceRuntime,
+  PiSkillsService,
+  PiThreadsService,
+  SkillCreatorService,
+  TerminalService,
 } from './desktop-runtime-contracts'
 
 function getProcessEnvironmentVariable(name: string) {
@@ -24,7 +24,7 @@ function getServiceHostPath() {
 
 function proxyModule<T extends Record<string, unknown>>(
   service: DesktopServiceClient,
-  moduleName: keyof DesktopRuntimeModules,
+  moduleName: keyof DesktopServiceRuntime,
 ) {
   return new Proxy(
     {},
@@ -42,16 +42,16 @@ function proxyModule<T extends Record<string, unknown>>(
   ) as T
 }
 
-export function createDesktopServiceRuntime(): DesktopRuntimeModules {
+export function createDesktopServiceRuntime(): DesktopServiceRuntime {
   const service = new DesktopServiceClient({
     nodeExecutable: getNodeExecutable(),
     serviceHostPath: getServiceHostPath(),
     cwd: getDesktopWorkingDirectory(),
   })
   return {
-    piThreads: proxyModule<PiThreadsModule>(service, 'piThreads'),
-    piSkills: proxyModule<PiSkillsModule>(service, 'piSkills'),
-    skillCreator: proxyModule<SkillCreatorModule>(service, 'skillCreator'),
-    terminalManager: proxyModule<TerminalManagerModule>(service, 'terminalManager'),
+    piThreads: proxyModule<PiThreadsService>(service, 'piThreads'),
+    piSkills: proxyModule<PiSkillsService>(service, 'piSkills'),
+    skillCreator: proxyModule<SkillCreatorService>(service, 'skillCreator'),
+    terminalManager: proxyModule<TerminalService>(service, 'terminalManager'),
   }
 }

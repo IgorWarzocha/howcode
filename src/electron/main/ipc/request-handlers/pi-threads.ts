@@ -1,6 +1,6 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
 import { getDesktopWorkingDirectory } from '../../../../../shared/desktop-working-directory'
-import type { PiThreadsModule } from '../../runtime/desktop-runtime-contracts'
+import type { PiThreadsService } from '../../runtime/desktop-runtime-contracts'
 
 type PiThreadsRequestHandlers = Pick<
   DesktopRequestHandlerMap,
@@ -37,7 +37,7 @@ type PiThreadsRequestHandlers = Pick<
 >
 
 export function createPiThreadsHandlers(
-  piThreads: PiThreadsModule,
+  piThreads: PiThreadsService,
   onSettingsChanged?: (() => Promise<void> | void) | undefined,
 ): PiThreadsRequestHandlers {
   return {

@@ -23,10 +23,10 @@ import {
   type DesktopServiceModuleName,
 } from '../src/desktop-host/desktop-service-client'
 import type {
-  PiSkillsModule,
-  PiThreadsModule,
-  SkillCreatorModule,
-  TerminalManagerModule,
+  PiSkillsService,
+  PiThreadsService,
+  SkillCreatorService,
+  TerminalService,
 } from '../src/electron/main/runtime/desktop-runtime-contracts'
 
 function getProcessEnvironmentVariable(name: string) {
@@ -72,10 +72,10 @@ function proxyServiceModule<T extends Record<string, unknown>>(
   ) as T
 }
 
-const piThreads = proxyServiceModule<PiThreadsModule>('piThreads')
-const piSkills = proxyServiceModule<PiSkillsModule>('piSkills')
-const skillCreator = proxyServiceModule<SkillCreatorModule>('skillCreator')
-const terminalManager = proxyServiceModule<TerminalManagerModule>('terminalManager')
+const piThreads = proxyServiceModule<PiThreadsService>('piThreads')
+const piSkills = proxyServiceModule<PiSkillsService>('piSkills')
+const skillCreator = proxyServiceModule<SkillCreatorService>('skillCreator')
+const terminalManager = proxyServiceModule<TerminalService>('terminalManager')
 
 function sendSseEvent<TChannel extends keyof DesktopEventMap>(
   clients: Set<http.ServerResponse>,

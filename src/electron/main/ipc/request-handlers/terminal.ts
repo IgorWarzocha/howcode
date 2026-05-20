@@ -1,5 +1,5 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { TerminalManagerModule } from '../../runtime/desktop-runtime-contracts'
+import type { TerminalService } from '../../runtime/desktop-runtime-contracts'
 
 type TerminalRequestHandlers = Pick<
   DesktopRequestHandlerMap,
@@ -12,9 +12,7 @@ type TerminalRequestHandlers = Pick<
   | 'terminalStatus'
 >
 
-export function createTerminalHandlers(
-  terminalManager: TerminalManagerModule,
-): TerminalRequestHandlers {
+export function createTerminalHandlers(terminalManager: TerminalService): TerminalRequestHandlers {
   return {
     listTerminals: () => terminalManager.listTerminals(),
     terminalOpen: (request) => terminalManager.openTerminal(request),

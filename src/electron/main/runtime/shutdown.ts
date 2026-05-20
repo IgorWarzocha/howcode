@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import type { DesktopRuntimeModules } from './desktop-runtime-contracts'
+import type { DesktopServiceRuntime } from './desktop-runtime-contracts'
 
 const SHUTDOWN_TIMEOUT_MS = 2_000
 
@@ -17,7 +17,7 @@ function withShutdownTimeout(task: Promise<unknown>) {
   })
 }
 
-export function registerDesktopRuntimeShutdown(runtime: DesktopRuntimeModules) {
+export function registerDesktopRuntimeShutdown(runtime: DesktopServiceRuntime) {
   let cleanupStarted = false
   let cleanupFinished = false
 

@@ -5,11 +5,11 @@ import {
   isValidAccelerator,
   type KeybindingCommandId,
 } from '../../../../shared/keybindings'
-import type { PiThreadsModule } from '../runtime/desktop-runtime-contracts'
+import type { PiThreadsService } from '../runtime/desktop-runtime-contracts'
 
 function getPrimaryAccelerator(
   commandId: KeybindingCommandId,
-  keybindings: Awaited<ReturnType<PiThreadsModule['loadAppSettings']>>['keybindings'],
+  keybindings: Awaited<ReturnType<PiThreadsService['loadAppSettings']>>['keybindings'],
 ) {
   return getEffectiveAccelerators(keybindings)
     .get(commandId)
@@ -45,7 +45,7 @@ function toggleDevTools(mainWindow: BrowserWindow | null) {
 
 export async function installApplicationMenu(input: {
   getMainWindow: () => BrowserWindow | null
-  piThreads: PiThreadsModule
+  piThreads: PiThreadsService
 }) {
   const appSettings = await input.piThreads.loadAppSettings()
   const accelerator = (commandId: KeybindingCommandId) =>
