@@ -2,7 +2,11 @@
 const { spawnSync } = require('node:child_process')
 const { existsSync } = require('node:fs')
 const path = require('node:path')
-const { supportedServiceNodeMajors } = require('./service-native-abi.cjs')
+const {
+  copyCurrentNativeDependenciesToAbiBundle,
+  rebuildServiceNativeDependencies,
+  supportedServiceNodeMajors,
+} = require('./service-native-abi.cjs')
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: 'inherit', shell: false, ...options })
@@ -62,6 +66,16 @@ function buildReleaseServiceNativeAbiBundles(resourcesPath) {
     )
     process.exit(1)
   }
+
+  // The ABI bundles are what the packaged desktop service loads at runtime, but
+  // each rebuild also updates the root unpacked node_modules tree. Leave that
+  // root tree matching the Node that is running electron-builder rather than
+  // whichever supported ABI happened to be built last.
+  if (!rebuildServiceNativeDependencies(resourcesPath)) {
+    console.error(`Could not restore root service native dependencies in ${resourcesPath}.`)
+    process.exit(1)
+  }
+  copyCurrentNativeDependenciesToAbiBundle(resourcesPath)
 }
 
 function resolveDefaultResourcesPath() {
