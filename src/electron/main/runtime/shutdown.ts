@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import type { DesktopServiceRuntime } from './desktop-runtime-contracts'
+import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
 
 const SHUTDOWN_TIMEOUT_MS = 2_000
 

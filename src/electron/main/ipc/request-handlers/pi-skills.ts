@@ -1,5 +1,5 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { PiSkillsService } from '../../runtime/desktop-runtime-contracts'
+import type { PiSkillsService } from '../../../../../shared/desktop-service-contracts'
 
 type PiSkillsRequestHandlers = Pick<
   DesktopRequestHandlerMap,

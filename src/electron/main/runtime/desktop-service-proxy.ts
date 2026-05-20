@@ -1,15 +1,15 @@
 import path from 'node:path'
-import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
-import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
-import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
-import { getDesktopBuildDirectory } from './app-paths'
 import type {
   DesktopServiceRuntime,
   PiSkillsService,
   PiThreadsService,
   SkillCreatorService,
   TerminalService,
-} from './desktop-runtime-contracts'
+} from '../../../../shared/desktop-service-contracts'
+import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
+import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
+import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
+import { getDesktopBuildDirectory } from './app-paths'
 
 function getServiceHostPath() {
   return path.join(getDesktopBuildDirectory(), 'service-host.mjs')

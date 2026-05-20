@@ -1,5 +1,5 @@
 import type { DesktopRequestHandlerMap } from '../../../../../shared/desktop-ipc'
-import type { SkillCreatorService } from '../../runtime/desktop-runtime-contracts'
+import type { SkillCreatorService } from '../../../../../shared/desktop-service-contracts'
 
 type SkillCreatorRequestHandlers = Pick<
   DesktopRequestHandlerMap,

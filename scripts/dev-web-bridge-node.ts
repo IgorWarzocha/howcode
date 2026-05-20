@@ -12,6 +12,12 @@ import type {
   DesktopRequestChannel,
   DesktopRequestHandlerMap,
 } from '../shared/desktop-ipc'
+import type {
+  PiSkillsService,
+  PiThreadsService,
+  SkillCreatorService,
+  TerminalService,
+} from '../shared/desktop-service-contracts'
 import { getDesktopWorkingDirectory } from '../shared/desktop-working-directory'
 import { getSafeExternalUrl } from '../shared/external-url'
 import {
@@ -22,12 +28,6 @@ import {
   DesktopServiceClient,
   type DesktopServiceModuleName,
 } from '../src/desktop-host/desktop-service-client'
-import type {
-  PiSkillsService,
-  PiThreadsService,
-  SkillCreatorService,
-  TerminalService,
-} from '../src/electron/main/runtime/desktop-runtime-contracts'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]

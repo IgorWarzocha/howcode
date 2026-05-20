@@ -1,4 +1,4 @@
-import type { DesktopAction } from '../../../../shared/desktop-actions'
+import type { DesktopAction } from './desktop-actions'
 import type {
   AnyDesktopActionPayload,
   AppSettings,
@@ -38,13 +38,13 @@ import type {
   Thread,
   ThreadData,
   ThreadSearchResult,
-} from '../../../../shared/desktop-contracts'
+} from './desktop-contracts'
 import type {
   TerminalEvent,
   TerminalOpenRequest,
   TerminalSessionSnapshot,
   TerminalStatusSnapshot,
-} from '../../../../shared/terminal-contracts'
+} from './terminal-contracts'
 
 export type PiThreadsService = {
   disposeDesktopRuntime?: () => Promise<void> | void

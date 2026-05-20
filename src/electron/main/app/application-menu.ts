@@ -1,11 +1,11 @@
 import { type BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { getDesktopEventIpcChannel } from '../../../../shared/desktop-ipc'
+import type { PiThreadsService } from '../../../../shared/desktop-service-contracts'
 import {
   getEffectiveAccelerators,
   isValidAccelerator,
   type KeybindingCommandId,
 } from '../../../../shared/keybindings'
-import type { PiThreadsService } from '../runtime/desktop-runtime-contracts'
 
 function getPrimaryAccelerator(
   commandId: KeybindingCommandId,

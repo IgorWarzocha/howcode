@@ -1,4 +1,4 @@
-import type { DesktopServiceRuntime } from './desktop-runtime-contracts'
+import type { DesktopServiceRuntime } from '../../../../shared/desktop-service-contracts'
 import { createDesktopServiceRuntime } from './desktop-service-proxy'
 
 export async function loadDesktopServiceRuntime(): Promise<DesktopServiceRuntime> {

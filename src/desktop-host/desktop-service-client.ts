@@ -1,8 +1,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import type { DesktopEvent } from '../../shared/desktop-contracts'
+import type { DesktopServiceRuntime } from '../../shared/desktop-service-contracts'
 import type { TerminalEvent } from '../../shared/terminal-contracts'
-import type { DesktopServiceRuntime } from '../electron/main/runtime/desktop-runtime-contracts'
 
 export type DesktopServiceApi = DesktopServiceRuntime
 export type DesktopServiceModuleName = keyof DesktopServiceApi
