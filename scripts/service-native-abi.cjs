@@ -15,6 +15,7 @@ const path = require('node:path')
 const {
   nativeServiceAbiDirectoryName,
   nativeRuntimeFiles,
+  requiredNativeRuntimeFiles = nativeRuntimeFiles,
   serviceNativePackages,
   supportedServiceNodeAbis,
   supportedServiceNodeMajors,
@@ -75,7 +76,10 @@ function rebuildServiceNativeDependencies(resourcesPath) {
       const sourcePath = path.join(tempRoot, relativePath)
       const destinationPath = path.join(unpackedAppPath, relativePath)
       if (!existsSync(sourcePath)) {
-        throw new Error(`Missing built native dependency: ${sourcePath}`)
+        if (requiredNativeRuntimeFiles.includes(relativePath)) {
+          throw new Error(`Missing built native dependency: ${sourcePath}`)
+        }
+        continue
       }
       mkdirSync(path.dirname(destinationPath), { recursive: true })
       copyFileSync(sourcePath, destinationPath)
@@ -102,14 +106,19 @@ function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.v
     cpSync(sourcePackagePath, destinationPackagePath, { recursive: true })
   }
 
+  const copiedFiles = []
   for (const relativePath of nativeRuntimeFiles) {
     const sourcePath = path.join(unpackedAppPath, relativePath)
     const destinationPath = path.join(abiBundleRoot, relativePath)
     if (!existsSync(sourcePath)) {
-      throw new Error(`Missing rebuilt native dependency: ${sourcePath}`)
+      if (requiredNativeRuntimeFiles.includes(relativePath)) {
+        throw new Error(`Missing rebuilt native dependency: ${sourcePath}`)
+      }
+      continue
     }
     mkdirSync(path.dirname(destinationPath), { recursive: true })
     copyFileSync(sourcePath, destinationPath)
+    copiedFiles.push(relativePath)
   }
 
   writeFileSync(
@@ -119,7 +128,7 @@ function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.v
         abi: String(abi),
         nodeVersion: process.version,
         packages: serviceNativePackages,
-        files: nativeRuntimeFiles,
+        files: copiedFiles,
       },
       null,
       2,
@@ -129,32 +138,70 @@ function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.v
   return abiBundleRoot
 }
 
-function validateCurrentNativeDependenciesLoad(resourcesPath) {
+function probeNodeAbi(nodeExecutable) {
+  const result = spawnSync(nodeExecutable, ['-p', 'process.versions.modules'], {
+    encoding: 'utf8',
+  })
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `Failed to probe Node ABI for ${nodeExecutable}.`,
+        result.stdout.trim(),
+        result.stderr.trim(),
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    )
+  }
+  return result.stdout.trim()
+}
+
+function getNativeValidationScript() {
+  return `
+    const betterSqlite3 = require('better-sqlite3')
+    const Database = betterSqlite3.default || betterSqlite3
+    const db = new Database(':memory:')
+    db.prepare('select 1').get()
+    db.close()
+
+    const nodePty = require('node-pty')
+    if (process.platform === 'win32') {
+      const shell = process.env.ComSpec || 'cmd.exe'
+      const pty = nodePty.spawn(shell, ['/d', '/s', '/c', 'exit 0'], {
+        cols: 80,
+        rows: 24,
+        cwd: process.cwd(),
+        env: process.env,
+      })
+      setTimeout(() => pty.kill(), 2000).unref?.()
+      pty.onExit(() => process.exit(0))
+    }
+  `
+}
+
+function validateCurrentNativeDependenciesLoad(resourcesPath, nodeExecutable = process.execPath) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
-  const result = spawnSync(
-    process.execPath,
-    [
-      '-e',
-      `
-        for (const packageName of ${JSON.stringify(serviceNativePackages)}) {
-          require(packageName)
-        }
-      `,
-    ],
-    {
-      cwd: unpackedAppPath,
-      env: {
-        ...process.env,
-        NODE_PATH: path.join(unpackedAppPath, 'node_modules'),
-      },
-      encoding: 'utf8',
+  const abi = probeNodeAbi(nodeExecutable)
+  const abiBundleRoot = getAbiBundleRoot(resourcesPath, abi)
+  validateAbiBundle(resourcesPath, abi)
+
+  const result = spawnSync(nodeExecutable, ['-e', getNativeValidationScript()], {
+    cwd: abiBundleRoot,
+    env: {
+      ...process.env,
+      NODE_PATH: [
+        path.join(abiBundleRoot, 'node_modules'),
+        path.join(unpackedAppPath, 'node_modules'),
+      ].join(path.delimiter),
     },
-  )
+    encoding: 'utf8',
+    timeout: 10_000,
+  })
 
   if (result.status !== 0) {
     throw new Error(
       [
-        `Packaged native service dependencies do not load under stock Node ${process.version} (ABI ${process.versions.modules}).`,
+        `Packaged native service dependency bundle for ABI ${abi} does not load under stock Node ${nodeExecutable}.`,
         result.stdout.trim(),
         result.stderr.trim(),
       ]
@@ -175,6 +222,31 @@ function readAbiManifest(resourcesPath, abi) {
   return JSON.parse(readFileSync(manifestPath, 'utf8'))
 }
 
+function assertManifestFileExists(abiBundleRoot, abi, relativePath) {
+  const filePath = path.join(abiBundleRoot, relativePath)
+  if (!existsSync(filePath)) {
+    throw new Error(`Missing service native dependency for Node ABI ${abi}: ${filePath}`)
+  }
+}
+
+function validateAbiManifestFiles(abiBundleRoot, abi, manifestPath, manifestFiles) {
+  for (const relativePath of requiredNativeRuntimeFiles) {
+    if (!manifestFiles.includes(relativePath)) {
+      throw new Error(`Service native ABI manifest ${manifestPath} is missing ${relativePath}.`)
+    }
+    assertManifestFileExists(abiBundleRoot, abi, relativePath)
+  }
+
+  for (const relativePath of manifestFiles) {
+    if (!nativeRuntimeFiles.includes(relativePath)) {
+      throw new Error(
+        `Service native ABI manifest ${manifestPath} lists unexpected file ${relativePath}.`,
+      )
+    }
+    assertManifestFileExists(abiBundleRoot, abi, relativePath)
+  }
+}
+
 function validateAbiBundle(resourcesPath, abi) {
   const abiBundleRoot = getAbiBundleRoot(resourcesPath, abi)
   const manifestPath = path.join(abiBundleRoot, 'manifest.json')
@@ -188,15 +260,7 @@ function validateAbiBundle(resourcesPath, abi) {
   }
 
   const manifestFiles = Array.isArray(manifest.files) ? manifest.files : []
-  for (const relativePath of nativeRuntimeFiles) {
-    if (!manifestFiles.includes(relativePath)) {
-      throw new Error(`Service native ABI manifest ${manifestPath} is missing ${relativePath}.`)
-    }
-    const filePath = path.join(abiBundleRoot, relativePath)
-    if (!existsSync(filePath)) {
-      throw new Error(`Missing service native dependency for Node ABI ${abi}: ${filePath}`)
-    }
-  }
+  validateAbiManifestFiles(abiBundleRoot, abi, manifestPath, manifestFiles)
 
   for (const packageName of serviceNativePackages) {
     const packageJsonPath = path.join(abiBundleRoot, 'node_modules', packageName, 'package.json')
@@ -210,6 +274,7 @@ function validateAbiBundle(resourcesPath, abi) {
 
 module.exports = {
   nativeRuntimeFiles,
+  requiredNativeRuntimeFiles,
   nativeServiceAbiDirectoryName,
   serviceNativePackages,
   supportedServiceNodeMajors,

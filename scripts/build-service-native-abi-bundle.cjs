@@ -13,7 +13,12 @@ if (!resourcesPath) {
 }
 
 const resolvedResourcesPath = path.resolve(resourcesPath)
-rebuildServiceNativeDependencies(resolvedResourcesPath)
+if (!rebuildServiceNativeDependencies(resolvedResourcesPath)) {
+  console.error(
+    `Could not rebuild service native dependencies: ${resolvedResourcesPath} is not a packaged resources path with app.asar.unpacked.`,
+  )
+  process.exit(1)
+}
 const bundleRoot = copyCurrentNativeDependenciesToAbiBundle(resolvedResourcesPath)
 validateCurrentNativeDependenciesLoad(resolvedResourcesPath)
 console.log(

@@ -5,6 +5,24 @@
   "supportedServiceNodeAbis": ["137", "141", "147"],
   "nativeRuntimeFiles": [
     "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+    "node_modules/node-pty/build/Release/pty.node",
+    "node_modules/node-pty/build/Release/conpty.node",
+    "node_modules/node-pty/build/Release/conpty_console_list.node",
+    "node_modules/node-pty/build/Release/winpty.dll",
+    "node_modules/node-pty/build/Release/winpty-agent.exe",
+    "node_modules/node-pty/prebuilds/win32-x64/pty.node",
+    "node_modules/node-pty/prebuilds/win32-x64/conpty.node",
+    "node_modules/node-pty/prebuilds/win32-x64/conpty_console_list.node",
+    "node_modules/node-pty/prebuilds/win32-x64/winpty.dll",
+    "node_modules/node-pty/prebuilds/win32-x64/winpty-agent.exe",
+    "node_modules/node-pty/prebuilds/win32-arm64/pty.node",
+    "node_modules/node-pty/prebuilds/win32-arm64/conpty.node",
+    "node_modules/node-pty/prebuilds/win32-arm64/conpty_console_list.node",
+    "node_modules/node-pty/prebuilds/win32-arm64/winpty.dll",
+    "node_modules/node-pty/prebuilds/win32-arm64/winpty-agent.exe"
+  ],
+  "requiredNativeRuntimeFiles": [
+    "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
     "node_modules/node-pty/build/Release/pty.node"
   ]
 }

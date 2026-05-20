@@ -89,7 +89,7 @@ function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
     throw new Error(`Invalid packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
   }
 
-  for (const relativePath of serviceNativeAbi.nativeRuntimeFiles) {
+  for (const relativePath of serviceNativeAbi.requiredNativeRuntimeFiles) {
     const sourcePath = path.join(abiBundleRoot, relativePath)
     if (!existsSync(sourcePath)) {
       throw new Error(`Missing packaged native dependency for ABI ${abi}: ${sourcePath}`)

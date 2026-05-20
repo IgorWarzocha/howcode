@@ -10,18 +10,15 @@ import os from 'node:os'
 import path from 'node:path'
 
 const appName = 'howcode'
+const nodeMajorVersionPattern = /^v?(\d+)/
+
 const require = createRequire(import.meta.url)
-const {
-  nativeServiceAbiDirectoryName,
-  serviceNativePackages,
-  supportedServiceNodeAbis,
-  validateAbiBundle,
-} = require('./service-native-abi.cjs') as {
-  supportedServiceNodeAbis: string[]
-  serviceNativePackages: string[]
-  nativeServiceAbiDirectoryName: string
-  validateAbiBundle: (resourcesPath: string, abi: string) => void
-}
+const { supportedServiceNodeAbis, validateAbiBundle, validateCurrentNativeDependenciesLoad } =
+  require('./service-native-abi.cjs') as {
+    supportedServiceNodeAbis: string[]
+    validateAbiBundle: (resourcesPath: string, abi: string) => void
+    validateCurrentNativeDependenciesLoad: (resourcesPath: string, nodeExecutable?: string) => void
+  }
 
 const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
@@ -191,50 +188,27 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
   return archivePath
 }
 
+function getValidationNodeExecutable() {
+  const currentMajor = process.version.match(nodeMajorVersionPattern)?.[1]
+  const preferredNodePath = currentMajor
+    ? process.env[`HOWCODE_NODE_${currentMajor}_PATH`]
+    : undefined
+  return (
+    preferredNodePath?.trim() ||
+    process.env['HOWCODE_NODE_PATH']?.trim() ||
+    process.env['NODE']?.trim() ||
+    'node'
+  )
+}
+
 function validateUnpackedNativeRuntimeBundles(unpackedRoot: string) {
   const resourcesPath = path.dirname(unpackedRoot)
   for (const abi of supportedServiceNodeAbis) {
     validateAbiBundle(resourcesPath, abi)
   }
 
-  const currentAbi = process.versions.modules
-  if (!supportedServiceNodeAbis.includes(currentAbi)) return
-
-  const currentAbiNodeModulesPath = path.join(
-    unpackedRoot,
-    nativeServiceAbiDirectoryName,
-    currentAbi,
-    'node_modules',
-  )
-  const currentAbiRoot = path.dirname(currentAbiNodeModulesPath)
-  const fallbackNodeModulesPath = path.join(unpackedRoot, 'node_modules')
-  const result = spawnSync(
-    process.execPath,
-    [
-      '-e',
-      `for (const packageName of ${JSON.stringify(serviceNativePackages)}) require(packageName)`,
-    ],
-    {
-      cwd: currentAbiRoot,
-      env: {
-        ...process.env,
-        NODE_PATH: [currentAbiNodeModulesPath, fallbackNodeModulesPath].join(path.delimiter),
-      },
-      encoding: 'utf8',
-    },
-  )
-
-  if (result.status !== 0) {
-    throw new Error(
-      [
-        `Packaged native service dependency bundle for ABI ${currentAbi} does not load under ${process.version}.`,
-        result.stdout.trim(),
-        result.stderr.trim(),
-      ]
-        .filter(Boolean)
-        .join('\n'),
-    )
-  }
+  const validationNodeExecutable = getValidationNodeExecutable()
+  validateCurrentNativeDependenciesLoad(resourcesPath, validationNodeExecutable)
 }
 
 async function createUpdateMetadata(archivePath: string, target: Target, version: string) {
