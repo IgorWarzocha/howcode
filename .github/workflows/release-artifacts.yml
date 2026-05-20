@@ -82,7 +82,7 @@ jobs:
 
       - name: Capture Node 25 path
         shell: bash
-        run: echo "HOWCODE_NODE_25_PATH=$(node -p \"process.execPath\")" >> "$GITHUB_ENV"
+        run: echo "HOWCODE_NODE_25_PATH=$(node -p 'process.execPath')" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v6
         with:
@@ -90,7 +90,7 @@ jobs:
 
       - name: Capture Node 26 path
         shell: bash
-        run: echo "HOWCODE_NODE_26_PATH=$(node -p \"process.execPath\")" >> "$GITHUB_ENV"
+        run: echo "HOWCODE_NODE_26_PATH=$(node -p 'process.execPath')" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v6
         with:
