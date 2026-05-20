@@ -60,8 +60,10 @@ function updateComposerTextareaHeight(input: {
   onExpandedChange: ((expanded: boolean) => void) | undefined
   onHeightChange: ((height: number) => void) | undefined
   reservedHeight: number | null
+  reservedHeightRef: React.MutableRefObject<number | null>
   reservedLineCount: number
-  canExpandField: boolean
+  canExpandFieldRef: React.MutableRefObject<boolean>
+  lastExpandedRef: React.MutableRefObject<boolean | null>
   setCanExpandField: React.Dispatch<React.SetStateAction<boolean>>
   setFieldExpanded: React.Dispatch<React.SetStateAction<boolean>>
   setReservedHeight: React.Dispatch<React.SetStateAction<number | null>>
@@ -73,7 +75,8 @@ function updateComposerTextareaHeight(input: {
   const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20
   input.lineHeightRef.current = lineHeight
   const nextReservedHeight = Math.ceil(lineHeight * input.reservedLineCount)
-  if (input.reservedHeight !== nextReservedHeight) {
+  if (input.reservedHeightRef.current !== nextReservedHeight) {
+    input.reservedHeightRef.current = nextReservedHeight
     input.setReservedHeight(nextReservedHeight)
   }
   const maxVisibleLineCount = input.fieldExpanded
@@ -88,7 +91,8 @@ function updateComposerTextareaHeight(input: {
     overflowY: scrollHeight > nextHeight + 1 ? 'auto' : 'hidden',
   })
   const nextCanExpandField = scrollHeight > Math.ceil(lineHeight * COLLAPSED_VISIBLE_LINE_COUNT) + 1
-  if (input.canExpandField !== nextCanExpandField) {
+  if (input.canExpandFieldRef.current !== nextCanExpandField) {
+    input.canExpandFieldRef.current = nextCanExpandField
     input.setCanExpandField(nextCanExpandField)
   }
   if (!nextCanExpandField && input.fieldExpanded) input.setFieldExpanded(false)
@@ -98,7 +102,11 @@ function updateComposerTextareaHeight(input: {
     input.lastReportedHeightRef.current = reportedHeight
     input.onHeightChange?.(reportedHeight)
   })
-  input.onExpandedChange?.(nextHeight > (input.reservedHeight ?? 0) + 1)
+  const nextExpanded = nextHeight > (input.reservedHeightRef.current ?? 0) + 1
+  if (input.lastExpandedRef.current !== nextExpanded) {
+    input.lastExpandedRef.current = nextExpanded
+    input.onExpandedChange?.(nextExpanded)
+  }
   if (input.value.length === 0) input.textarea.scrollTop = 0
 }
 
@@ -117,6 +125,9 @@ export function useComposerTextareaHeight(input: {
   const [reservedHeight, setReservedHeight] = useState<number | null>(null)
   const [textareaLayoutVersion, setTextareaLayoutVersion] = useState(0)
   const [canExpandField, setCanExpandField] = useState(false)
+  const reservedHeightRef = useRef<number | null>(null)
+  const canExpandFieldRef = useRef(false)
+  const lastExpandedRef = useRef<boolean | null>(null)
   const observedTextareaWidthRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
@@ -125,12 +136,14 @@ export function useComposerTextareaHeight(input: {
     if (!textarea) return
     updateComposerTextareaHeight({
       fieldExpanded: input.fieldExpanded,
-      canExpandField,
+      canExpandFieldRef,
+      lastExpandedRef,
       lastReportedHeightRef: input.lastReportedHeightRef,
       lineHeightRef: input.lineHeightRef,
       onExpandedChange: input.onExpandedChange,
       onHeightChange: input.onHeightChange,
       reservedHeight,
+      reservedHeightRef,
       reservedLineCount: input.reservedLineCount,
       setCanExpandField,
       setFieldExpanded: input.setFieldExpanded,
@@ -140,7 +153,6 @@ export function useComposerTextareaHeight(input: {
       wrapperRef: input.wrapperRef,
     })
   }, [
-    canExpandField,
     input.fieldExpanded,
     input.onExpandedChange,
     input.lastReportedHeightRef,
