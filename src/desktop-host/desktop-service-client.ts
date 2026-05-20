@@ -29,7 +29,7 @@ export type DesktopServiceMessage =
   | { type: 'terminal-event'; event: TerminalEvent }
 
 export type DesktopServiceClientOptions = {
-  nodeExecutable: string
+  nodeExecutable: string | (() => Promise<string> | string)
   serviceHostPath: string
   cwd: string
   env?: NodeJS.ProcessEnv | undefined
@@ -104,37 +104,48 @@ export class DesktopServiceClient {
     if (this.process && !this.process.killed && this.process.exitCode === null) return this.process
     if (this.startPromise) return await this.startPromise
 
-    this.startPromise = new Promise<ChildProcess>((resolve, reject) => {
-      const child = spawn(this.options.nodeExecutable, [this.options.serviceHostPath], {
-        cwd: this.options.cwd,
-        env: {
-          ...process.env,
-          ...this.options.env,
-          HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
-          HOWCODE_REPO_ROOT: this.options.cwd,
-        },
-        stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-      })
+    this.startPromise = (async () => {
+      const nodeExecutable =
+        typeof this.options.nodeExecutable === 'function'
+          ? await this.options.nodeExecutable()
+          : this.options.nodeExecutable
 
-      let ready = false
-      child.stdout?.on('data', (chunk) => process.stdout.write(chunk))
-      child.stderr?.on('data', (chunk) => process.stderr.write(chunk))
-      child.on('message', (message: DesktopServiceMessage) => this.handleMessage(message))
-      child.once('error', reject)
-      child.once('exit', () => {
-        this.rejectPending(new Error('Desktop service exited.'))
-        if (this.process === child) this.process = null
+      return await new Promise<ChildProcess>((resolve, reject) => {
+        const child = spawn(nodeExecutable, [this.options.serviceHostPath], {
+          cwd: this.options.cwd,
+          env: {
+            ...process.env,
+            ...this.options.env,
+            HOWCODE_HANDLE_LOCAL_HOST_REQUESTS: '1',
+            HOWCODE_REPO_ROOT: this.options.cwd,
+          },
+          stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+        })
+
+        let ready = false
+        child.stdout?.on('data', (chunk) => process.stdout.write(chunk))
+        child.stderr?.on('data', (chunk) => process.stderr.write(chunk))
+        child.on('message', (message: DesktopServiceMessage) => this.handleMessage(message))
+        child.once('error', reject)
+        child.once('exit', () => {
+          this.rejectPending(new Error('Desktop service exited.'))
+          if (!ready) {
+            this.startPromise = null
+            reject(new Error('Desktop service exited before startup.'))
+          }
+          if (this.process === child) this.process = null
+        })
+        child.on('message', (message: DesktopServiceMessage) => {
+          if (message?.type === 'ready' && !ready) {
+            ready = true
+            console.info('Desktop service ready.', message.diagnostics ?? {})
+            this.process = child
+            this.startPromise = null
+            resolve(child)
+          }
+        })
       })
-      child.on('message', (message: DesktopServiceMessage) => {
-        if (message?.type === 'ready' && !ready) {
-          ready = true
-          console.info('Desktop service ready.', message.diagnostics ?? {})
-          this.process = child
-          this.startPromise = null
-          resolve(child)
-        }
-      })
-    })
+    })()
 
     return await this.startPromise
   }

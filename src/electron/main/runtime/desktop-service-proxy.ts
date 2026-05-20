@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { getDesktopWorkingDirectory } from '../../../../shared/desktop-working-directory'
 import { DesktopServiceClient } from '../../../desktop-host/desktop-service-client'
+import { getSystemNodeExecutable } from '../../../desktop-host/node-discovery'
 import { getDesktopBuildDirectory } from './app-paths'
 import type {
   DesktopServiceRuntime,
@@ -9,14 +10,6 @@ import type {
   SkillCreatorService,
   TerminalService,
 } from './desktop-runtime-contracts'
-
-function getProcessEnvironmentVariable(name: string) {
-  return process.env[name]
-}
-
-function getNodeExecutable() {
-  return getProcessEnvironmentVariable('HOWCODE_NODE_PATH')?.trim() || 'node'
-}
 
 function getServiceHostPath() {
   return path.join(getDesktopBuildDirectory(), 'service-host.mjs')
@@ -44,7 +37,7 @@ function proxyModule<T extends Record<string, unknown>>(
 
 export function createDesktopServiceRuntime(): DesktopServiceRuntime {
   const service = new DesktopServiceClient({
-    nodeExecutable: getNodeExecutable(),
+    nodeExecutable: getSystemNodeExecutable,
     serviceHostPath: getServiceHostPath(),
     cwd: getDesktopWorkingDirectory(),
   })
