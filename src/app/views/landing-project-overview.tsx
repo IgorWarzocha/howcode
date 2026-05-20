@@ -311,6 +311,7 @@ export function ProjectOverview({
                   {branchSwitchOpen ? (
                     <SurfacePanel
                       ref={branchSwitchPanelRef}
+                      data-open="true"
                       className="motion-popover absolute top-[calc(100%+0.35rem)] left-0 z-[80] grid w-64 gap-2 rounded-xl p-2"
                     >
                       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
