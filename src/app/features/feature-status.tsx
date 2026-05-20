@@ -9,6 +9,7 @@ export const featureStatusById = {
   'feature:header.commit-options': { status: 'partial', label: 'Partial' },
   'feature:composer.git-ops': { status: 'partial', label: 'Partial' },
   'feature:composer.terminal-toggle': { status: 'partial', label: 'Partial' },
+  'feature:composer.worktrees': { status: 'mock', label: 'Mock' },
   'feature:skills.create': { status: 'partial', label: 'Partial' },
   'feature:diff.panel': { status: 'partial', label: 'Partial' },
   'feature:terminal.panel': { status: 'partial', label: 'Partial' },
