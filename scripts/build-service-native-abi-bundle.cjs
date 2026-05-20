@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const path = require('node:path')
 const { patchNodePtyRoot } = require('./patch-node-pty-helper.cjs')
+const { getPatchableNodePtyRoots } = require('./service-native/platform.cjs')
 const {
   copyCurrentNativeDependenciesToAbiBundle,
   rebuildServiceNativeDependencies,
@@ -21,8 +22,8 @@ if (!rebuildServiceNativeDependencies(resolvedResourcesPath)) {
   process.exit(1)
 }
 const bundleRoot = copyCurrentNativeDependenciesToAbiBundle(resolvedResourcesPath)
-if (process.platform !== 'win32') {
-  patchNodePtyRoot(path.join(bundleRoot, 'node_modules', 'node-pty'))
+for (const nodePtyRoot of getPatchableNodePtyRoots(bundleRoot)) {
+  patchNodePtyRoot(nodePtyRoot)
 }
 validateCurrentNativeDependenciesLoad(resolvedResourcesPath)
 console.log(

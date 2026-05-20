@@ -2,7 +2,8 @@ const path = require('node:path')
 const {
   buildReleaseServiceNativeAbiBundles,
 } = require('./build-release-service-native-abi-bundles.cjs')
-const { patchNodePtyRoot, patchPackagedNodePty } = require('./patch-node-pty-helper.cjs')
+const { patchNodePtyRoot } = require('./patch-node-pty-helper.cjs')
+const { getPatchableNodePtyRoots } = require('./service-native/platform.cjs')
 const {
   copyCurrentNativeDependenciesToAbiBundle,
   getAbiBundleRoot,
@@ -20,20 +21,17 @@ exports.default = async function afterPack(context) {
         )
       : path.join(context.appOutDir, 'resources')
 
-  const shouldPatchNodePty = context.electronPlatformName !== 'win32'
   const patchNodePtyBundles = () => {
-    if (!shouldPatchNodePty) return
-
-    const patchResults = [patchPackagedNodePty(resourcesPath)]
+    const patchResults = []
+    for (const nodePtyRoot of getPatchableNodePtyRoots(
+      path.join(resourcesPath, 'app.asar.unpacked'),
+    )) {
+      patchResults.push(patchNodePtyRoot(nodePtyRoot, { optional: true }))
+    }
     for (const abi of supportedServiceNodeAbis) {
-      patchResults.push(
-        patchNodePtyRoot(
-          path.join(getAbiBundleRoot(resourcesPath, abi), 'node_modules', 'node-pty'),
-          {
-            optional: true,
-          },
-        ),
-      )
+      for (const nodePtyRoot of getPatchableNodePtyRoots(getAbiBundleRoot(resourcesPath, abi))) {
+        patchResults.push(patchNodePtyRoot(nodePtyRoot, { optional: true }))
+      }
     }
     for (const result of patchResults) {
       console.log(
