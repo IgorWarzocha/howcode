@@ -203,7 +203,13 @@ function BranchSwitchPopover({
     if (!anchor) return
     const updatePosition = () => {
       const rect = anchor.getBoundingClientRect()
-      setPosition({ left: rect.left, top: rect.bottom + 6, width: 256 })
+      setPosition({
+        background: 'var(--panel)',
+        left: rect.left,
+        opacity: 1,
+        top: rect.bottom + 6,
+        width: 256,
+      })
     }
     updatePosition()
     window.addEventListener('resize', updatePosition)
@@ -219,7 +225,7 @@ function BranchSwitchPopover({
   return createPortal(
     <div
       ref={panelRef}
-      className="fixed z-[160] grid gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[#20222d] p-2 opacity-100 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      className="fixed z-[160] isolate grid gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
       style={position}
     >
       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">

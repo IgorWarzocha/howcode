@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { Check, GitCompareArrows, Search } from 'lucide-react'
-import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type RefObject,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ProjectCommitEntry,
@@ -143,6 +151,8 @@ function BaselineBranchButton({
   open: boolean
   panelId: string
 }) {
+  const [panelPosition, setPanelPosition] = useState<CSSProperties | null>(null)
+
   const openBranchSwitch = () => {
     if (!onSwitchBranch) {
       onOpen()
@@ -161,6 +171,31 @@ function BaselineBranchButton({
   const filteredBranches = branches.filter((branch) =>
     branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
   )
+
+  useEffect(() => {
+    if (!branchSwitchOpen) return
+    const anchor = branchAnchorRef.current
+    if (!anchor) return
+
+    const updatePosition = () => {
+      const rect = anchor.getBoundingClientRect()
+      setPanelPosition({
+        background: 'var(--panel)',
+        bottom: window.innerHeight - rect.top + 6,
+        left: Math.max(8, rect.right - 256),
+        opacity: 1,
+        width: 256,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [branchAnchorRef, branchSwitchOpen])
 
   return (
     <span className="relative inline-flex">
@@ -184,55 +219,59 @@ function BaselineBranchButton({
       >
         <span className="truncate">{branchLabel}</span>
       </button>
-      {branchSwitchOpen ? (
-        <div
-          ref={branchSwitchPanelRef}
-          className="absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[#20222d] p-2 opacity-100 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
-        >
-          <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-            Switch branch
-          </div>
-          <input
-            ref={branchSwitchInputRef}
-            value={branchSwitchInput}
-            onChange={(event) => onSetBranchSwitchInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') submitBranchSwitch()
-              if (event.key === 'Escape') onSetBranchSwitchOpen(false)
-            }}
-            className={settingsInputClass}
-            placeholder="Search branches"
-          />
-          <div className="grid max-h-56 gap-0.5 overflow-y-auto">
-            {filteredBranches.length > 0 ? (
-              filteredBranches.map((branch) => (
-                <button
-                  key={branch}
-                  type="button"
-                  className={cn(
-                    'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-                    branch === branchLabel &&
-                      'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
-                  )}
-                  onClick={() => {
-                    onSwitchBranch?.(branch)
-                    onSetBranchSwitchOpen(false)
-                  }}
-                >
-                  <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                    {branch === branchLabel ? <Check size={13} /> : null}
-                  </span>
-                  <span className="truncate">{branch}</span>
-                </button>
-              ))
-            ) : (
-              <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
-                Press Enter to check out “{branchSwitchInput.trim()}”
+      {branchSwitchOpen && panelPosition && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={branchSwitchPanelRef}
+              className="fixed isolate z-[160] grid gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+              style={panelPosition}
+            >
+              <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
+                Switch branch
               </div>
-            )}
-          </div>
-        </div>
-      ) : null}
+              <input
+                ref={branchSwitchInputRef}
+                value={branchSwitchInput}
+                onChange={(event) => onSetBranchSwitchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') submitBranchSwitch()
+                  if (event.key === 'Escape') onSetBranchSwitchOpen(false)
+                }}
+                className={settingsInputClass}
+                placeholder="Search branches"
+              />
+              <div className="grid max-h-56 gap-0.5 overflow-y-auto">
+                {filteredBranches.length > 0 ? (
+                  filteredBranches.map((branch) => (
+                    <button
+                      key={branch}
+                      type="button"
+                      className={cn(
+                        'grid min-h-8 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
+                        branch === branchLabel &&
+                          'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+                      )}
+                      onClick={() => {
+                        onSwitchBranch?.(branch)
+                        onSetBranchSwitchOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
+                        {branch === branchLabel ? <Check size={13} /> : null}
+                      </span>
+                      <span className="truncate">{branch}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
+                    Press Enter to check out “{branchSwitchInput.trim()}”
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </span>
   )
 }
