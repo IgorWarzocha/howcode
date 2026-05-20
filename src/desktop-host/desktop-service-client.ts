@@ -38,6 +38,19 @@ export type DesktopServiceClientOptions = {
 
 const defaultRequestTimeoutMs = 60_000
 
+function createDesktopServiceDiagnosticEvent(input: {
+  severity: 'warning' | 'error'
+  message: string
+  details?: unknown
+}): DesktopEvent {
+  return {
+    type: 'runtime-diagnostic',
+    severity: input.severity,
+    message: input.message,
+    ...(input.details === undefined ? {} : { details: input.details }),
+  }
+}
+
 export class DesktopServiceClient {
   private readonly options: DesktopServiceClientOptions
   private process: ChildProcess | null = null
@@ -69,6 +82,37 @@ export class DesktopServiceClient {
   subscribeTerminalEvents(listener: (event: TerminalEvent) => void) {
     this.terminalListeners.add(listener)
     return () => this.terminalListeners.delete(listener)
+  }
+
+  private emitDesktopDiagnostic(input: {
+    severity: 'warning' | 'error'
+    message: string
+    details?: unknown
+  }) {
+    const event = createDesktopServiceDiagnosticEvent(input)
+    for (const listener of this.desktopListeners) listener(event)
+  }
+
+  private handleServiceProcessExit(
+    child: ChildProcess,
+    ready: boolean,
+    code: number | null,
+    signal: NodeJS.Signals | null,
+    reject: (error: Error) => void,
+  ) {
+    this.emitDesktopDiagnostic({
+      severity: ready ? 'warning' : 'error',
+      message: ready
+        ? 'Desktop runtime service exited. It will restart on the next request.'
+        : 'Desktop runtime service exited before startup.',
+      details: { code, signal },
+    })
+    this.rejectPending(new Error('Desktop service exited.'))
+    if (!ready) {
+      this.startPromise = null
+      reject(new Error('Desktop service exited before startup.'))
+    }
+    if (this.process === child) this.process = null
   }
 
   async invoke<M extends DesktopServiceModuleName, K extends ServiceMethod<M> & string>(
@@ -126,14 +170,16 @@ export class DesktopServiceClient {
         child.stdout?.on('data', (chunk) => process.stdout.write(chunk))
         child.stderr?.on('data', (chunk) => process.stderr.write(chunk))
         child.on('message', (message: DesktopServiceMessage) => this.handleMessage(message))
-        child.once('error', reject)
-        child.once('exit', () => {
-          this.rejectPending(new Error('Desktop service exited.'))
-          if (!ready) {
-            this.startPromise = null
-            reject(new Error('Desktop service exited before startup.'))
-          }
-          if (this.process === child) this.process = null
+        child.once('error', (error) => {
+          this.emitDesktopDiagnostic({
+            severity: 'error',
+            message: 'Desktop runtime service failed to start.',
+            details: error.message,
+          })
+          reject(error)
+        })
+        child.once('exit', (code, signal) => {
+          this.handleServiceProcessExit(child, ready, code, signal, reject)
         })
         child.on('message', (message: DesktopServiceMessage) => {
           if (message?.type === 'ready' && !ready) {
