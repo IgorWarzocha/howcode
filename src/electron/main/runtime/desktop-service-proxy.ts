@@ -20,7 +20,7 @@ type PendingRequest = {
 }
 
 type ServiceMessage =
-  | { type: 'ready' }
+  | { type: 'ready'; diagnostics?: Record<string, unknown> }
   | { type: 'response'; id: string; ok: boolean; result?: unknown; error?: string; stack?: string }
   | { type: 'desktop-event'; event: DesktopEvent }
   | { type: 'terminal-event'; event: TerminalEvent }
@@ -109,6 +109,7 @@ export class DesktopServiceProxy {
       child.on('message', (message: ServiceMessage) => {
         if (message?.type === 'ready' && !ready) {
           ready = true
+          console.info('Desktop service ready.', message.diagnostics ?? {})
           this.process = child
           this.startPromise = null
           resolve(child)

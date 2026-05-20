@@ -1,7 +1,10 @@
+import { loadAppSettings } from './app-settings/readers.ts'
+import { getPiModule } from './pi-module.ts'
 import * as piSkills from './pi-skills.ts'
 import * as piThreads from './pi-threads.ts'
 import * as skillCreator from './skill-creator-session.ts'
 import * as terminalManager from './terminal/manager.ts'
+import { getDesktopUserDataPath } from './user-data-path.ts'
 
 type ServiceRequest = {
   type: 'request'
@@ -27,6 +30,32 @@ const modules: Record<string, Record<string, unknown>> = {
   terminalManager,
 }
 
+type ServiceModuleName = keyof typeof modules
+
+function isServiceModuleName(value: string): value is ServiceModuleName {
+  return value in modules
+}
+
+async function getServiceDiagnostics() {
+  let piAgentDir: string | null = null
+  try {
+    const { getAgentDir } = await getPiModule()
+    piAgentDir = getAgentDir()
+  } catch {
+    piAgentDir = null
+  }
+
+  return {
+    nodeExecPath: process.execPath,
+    nodeVersion: process.version,
+    nodeAbi: process.versions.modules,
+    cwd: process.cwd(),
+    userDataPath: getDesktopUserDataPath(),
+    piAgentDir,
+    customPiDirectory: loadAppSettings().customPiDirectory,
+  }
+}
+
 piThreads.subscribeDesktopEvents((event) => {
   process.send?.({ type: 'desktop-event', event })
 })
@@ -37,6 +66,10 @@ terminalManager.subscribeTerminalEvents((event) => {
 
 async function handleRequest(message: ServiceRequest): Promise<ServiceResponse> {
   try {
+    if (!isServiceModuleName(message.module)) {
+      throw new Error(`Unknown desktop service module: ${message.module}`)
+    }
+
     const targetModule = modules[message.module]
     const target = targetModule?.[message.method]
     if (typeof target !== 'function') {
@@ -74,4 +107,6 @@ process.once('disconnect', () => void shutdown())
 process.once('SIGTERM', () => void shutdown())
 process.once('SIGINT', () => void shutdown())
 
-process.send?.({ type: 'ready' })
+void getServiceDiagnostics().then((diagnostics) => {
+  process.send?.({ type: 'ready', diagnostics })
+})
