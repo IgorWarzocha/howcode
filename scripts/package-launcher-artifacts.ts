@@ -27,7 +27,6 @@ const launcherOutputRoot = path.join(artifactRoot, 'npm-launcher')
 const requiredUnpackedRuntimePaths = [
   path.join('build', 'desktop', 'service-host.mjs'),
   path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-  path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
 ]
 
 type Target = {
