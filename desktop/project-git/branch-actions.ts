@@ -1,4 +1,4 @@
-import { formatGitCommandError, runGitWithOptions } from './git-runner.ts'
+import { formatGitCommandError, getNonInteractiveGitEnv, runGitWithOptions } from './git-runner.ts'
 
 async function listLocalBranches(projectId: string) {
   const { stdout } = await runGitWithOptions(
@@ -44,6 +44,18 @@ async function validateNewBranchName(projectId: string, branchName: string) {
   })
 }
 
+async function fetchRemoteBranches(projectId: string) {
+  try {
+    await runGitWithOptions(projectId, ['fetch', '--all', '--prune'], {
+      env: getNonInteractiveGitEnv(),
+      timeout: 30_000,
+      maxBuffer: 1024 * 1024,
+    })
+  } catch {
+    // Keep branch creation usable offline or in repos with unreachable remotes.
+  }
+}
+
 export async function switchProjectBranch(projectId: string, branchName: string) {
   const normalizedBranchName = branchName.trim()
   if (!normalizedBranchName) return { error: 'Branch name is required.' }
@@ -56,10 +68,17 @@ export async function switchProjectBranch(projectId: string, branchName: string)
 
     if (!checkoutArgs) {
       await validateNewBranchName(projectId, normalizedBranchName)
-      const remoteBranch = chooseRemoteBranch(
+      let remoteBranch = chooseRemoteBranch(
         await listRemoteBranches(projectId, normalizedBranchName),
         normalizedBranchName,
       )
+      if (!remoteBranch) {
+        await fetchRemoteBranches(projectId)
+        remoteBranch = chooseRemoteBranch(
+          await listRemoteBranches(projectId, normalizedBranchName),
+          normalizedBranchName,
+        )
+      }
       checkoutArgs = remoteBranch
         ? ['switch', '--track', remoteBranch]
         : ['switch', '--create', normalizedBranchName]

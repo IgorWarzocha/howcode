@@ -20,6 +20,25 @@ function normalizeOptionalSettingsPath(value: string | null | undefined) {
   return normalizedValue.length > 0 ? normalizedValue : null
 }
 
+function normalizeCustomPiDirectoryDraft(
+  draftValue: string | null | undefined,
+  currentValue: string | null | undefined,
+) {
+  const normalizedDraft = normalizeOptionalSettingsPath(draftValue)
+  if (!normalizedDraft) return null
+  const normalizedCurrent = normalizeOptionalSettingsPath(currentValue)
+  if (!(normalizedCurrent && (normalizedDraft === '~' || normalizedDraft.startsWith('~/')))) {
+    return normalizedDraft
+  }
+
+  const suffix = normalizedDraft === '~' ? '' : normalizedDraft.slice(1)
+  if (normalizedDraft === '~' || normalizedCurrent.endsWith(suffix)) {
+    return `${normalizedCurrent.slice(0, normalizedCurrent.length - suffix.length)}${suffix}`
+  }
+
+  return normalizedDraft
+}
+
 export function useSettingsController({
   appSettings,
   resolvedPiDirectory,
@@ -107,7 +126,10 @@ export function useSettingsController({
   }
 
   const saveCustomPiDirectory = () => {
-    const nextCustomPiDirectory = normalizeOptionalSettingsPath(customPiDirectoryDraft)
+    const nextCustomPiDirectory = normalizeCustomPiDirectoryDraft(
+      customPiDirectoryDraft,
+      appSettings.customPiDirectory,
+    )
     const currentCustomPiDirectory = normalizeOptionalSettingsPath(appSettings.customPiDirectory)
     if (nextCustomPiDirectory === currentCustomPiDirectory) {
       return

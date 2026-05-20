@@ -175,13 +175,13 @@ async function ensureRuntimeHost(host: HostConnection) {
     throw new Error(`Pi runtime host ${host.label} is stopping.`)
   }
 
+  if (host.startPromise) {
+    return host.startPromise
+  }
+
   if (host.process && !host.process.killed && host.process.exitCode === null) {
     clearHostIdleTimer(host)
     return host.process
-  }
-
-  if (host.startPromise) {
-    return host.startPromise
   }
 
   clearHostIdleTimer(host)

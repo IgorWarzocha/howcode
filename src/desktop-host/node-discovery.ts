@@ -20,7 +20,9 @@ function isExecutableFile(filePath: string) {
 
 function runShellNodeProbe(shell: string) {
   return new Promise<string | null>((resolve) => {
-    const child = spawn(shell, ['-lc', 'command -v node'], {
+    const shellName = path.basename(shell)
+    const flags = shellName === 'sh' || shellName === 'dash' ? ['-c'] : ['-lc']
+    const child = spawn(shell, [...flags, 'command -v node'], {
       stdio: ['ignore', 'pipe', 'ignore'],
     })
     let output = ''

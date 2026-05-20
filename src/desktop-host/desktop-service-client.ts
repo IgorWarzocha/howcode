@@ -169,8 +169,8 @@ export class DesktopServiceClient {
   }
 
   private async ensureStarted() {
-    if (this.process && !this.process.killed && this.process.exitCode === null) return this.process
     if (this.startPromise) return await this.startPromise
+    if (this.process && !this.process.killed && this.process.exitCode === null) return this.process
 
     this.startPromise = (async () => {
       const nodeExecutable =
