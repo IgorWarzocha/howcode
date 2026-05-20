@@ -47,6 +47,7 @@ function CodeWorkspaceDefaultMain(props: CodeWorkspaceContentProps) {
       appSettings={appSettings}
       piSettings={props.shellState?.piSettings ?? defaultPiSettings}
       piTheme={props.shellState?.piTheme ?? null}
+      resolvedPiDirectory={props.shellState?.agentDir ?? null}
       archivedThreads={props.controller.archivedThreads}
       availableModels={props.activeComposerState?.availableModels ?? []}
       availableThinkingLevels={props.activeComposerState?.availableThinkingLevels ?? ['off']}

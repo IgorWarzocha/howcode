@@ -36,6 +36,7 @@ type CodeWorkspaceMainViewProps = {
   appSettings: AppSettings
   piSettings: PiSettings
   piTheme: PiThemeState | null
+  resolvedPiDirectory?: string | null | undefined
   archivedThreads: ArchivedThread[]
   availableModels: ComposerModel[]
   availableThinkingLevels: ComposerThinkingLevel[]
@@ -162,6 +163,7 @@ export function CodeWorkspaceMainView({
   appSettings,
   piSettings,
   piTheme,
+  resolvedPiDirectory,
   archivedThreads,
   availableModels,
   availableThinkingLevels,
@@ -237,6 +239,7 @@ export function CodeWorkspaceMainView({
         appSettings={appSettings}
         piSettings={piSettings}
         piTheme={piTheme}
+        resolvedPiDirectory={resolvedPiDirectory}
         availableModels={availableModels}
         availableThinkingLevels={availableThinkingLevels}
         currentModel={currentModel}

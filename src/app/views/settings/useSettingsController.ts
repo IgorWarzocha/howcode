@@ -17,9 +17,11 @@ import { useSettingsDictationController } from './useSettingsDictationController
 
 export function useSettingsController({
   appSettings,
+  resolvedPiDirectory,
   onAction,
 }: {
   appSettings: AppSettings
+  resolvedPiDirectory?: string | null | undefined
   projects: Project[]
   onAction: DesktopActionInvoker
 }) {
@@ -27,7 +29,7 @@ export function useSettingsController({
     appSettings.preferredProjectLocation ?? '',
   )
   const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
-    appSettings.customPiDirectory ?? '',
+    appSettings.customPiDirectory ?? resolvedPiDirectory ?? '',
   )
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
@@ -52,8 +54,8 @@ export function useSettingsController({
   }, [appSettings.preferredProjectLocation])
 
   useEffect(() => {
-    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
-  }, [appSettings.customPiDirectory])
+    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? resolvedPiDirectory ?? '')
+  }, [appSettings.customPiDirectory, resolvedPiDirectory])
 
   const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false)

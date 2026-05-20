@@ -24,7 +24,7 @@ function getDefaultElectronUserDataPath() {
 
 export function getDevUserDataPath() {
   return (
-    getProcessEnvironmentVariable('HOWCODE_USER_DATA_PATH')?.trim() ||
+    getProcessEnvironmentVariable('HOWCODE_DEV_USER_DATA_PATH')?.trim() ||
     path.join(getDefaultElectronUserDataPath(), 'dev')
   )
 }
