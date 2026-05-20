@@ -310,7 +310,7 @@ function CodeWorkspaceThreadFooter(props: CodeWorkspaceContentProps) {
       )}
       style={threadFooterStyle}
     >
-      <div className="pointer-events-none grid gap-2.5">
+      <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarAutoHidden}
           left={<CodeFooterLeft {...props} />}
@@ -329,7 +329,7 @@ function CodeSidebarFooter(props: CodeWorkspaceContentProps) {
   const { sidebarCompactMode } = props
   return (
     <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4">
-      <div className="pointer-events-none grid gap-2.5">
+      <div className="pointer-events-auto grid gap-2.5">
         <WorkspaceComposerDock
           compactControls={sidebarCompactMode}
           center={null}

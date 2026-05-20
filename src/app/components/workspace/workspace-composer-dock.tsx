@@ -41,8 +41,8 @@ export function WorkspaceComposerDock({
         <div
           className={cn(
             compactControls
-              ? 'pointer-events-auto relative z-20 mb-1.5 min-w-0 translate-x-10 justify-self-end self-end'
-              : 'pointer-events-auto relative z-20 mb-1.5 ml-3 min-w-0 self-end transition-transform duration-100 ease-out',
+              ? 'relative z-20 mb-1.5 min-w-0 translate-x-10 justify-self-end self-end'
+              : 'relative z-20 mb-1.5 ml-3 min-w-0 self-end transition-transform duration-100 ease-out',
             leftClassName,
           )}
           style={leftStyle}
@@ -50,13 +50,13 @@ export function WorkspaceComposerDock({
           {left}
         </div>
       ) : null}
-      <div className="pointer-events-auto relative z-10 col-start-2 w-full">{center}</div>
+      <div className="relative z-10 col-start-2 w-full">{center}</div>
       {right ? (
         <div
           className={cn(
             compactControls
-              ? 'pointer-events-auto relative z-20 col-start-3 mb-1.5 min-w-0 self-end'
-              : 'pointer-events-auto relative z-20 col-start-3 mb-1.5 min-w-0 self-end transition-transform duration-100 ease-out',
+              ? 'relative z-20 col-start-3 mb-1.5 min-w-0 self-end'
+              : 'relative z-20 col-start-3 mb-1.5 min-w-0 self-end transition-transform duration-100 ease-out',
             rightClassName,
           )}
           style={rightStyle}
