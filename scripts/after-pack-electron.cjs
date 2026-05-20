@@ -48,8 +48,6 @@ exports.default = async function afterPack(context) {
     validateCurrentNativeDependenciesLoad(resourcesPath)
   }
 
-  if (process.env.HOWCODE_BUILD_ALL_SERVICE_NATIVE_ABIS === '1') {
-    buildReleaseServiceNativeAbiBundles(resourcesPath)
-    patchNodePtyBundles()
-  }
+  buildReleaseServiceNativeAbiBundles(resourcesPath)
+  patchNodePtyBundles()
 }

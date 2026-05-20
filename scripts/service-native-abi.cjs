@@ -143,13 +143,15 @@ function probeNodeAbi(nodeExecutable) {
     encoding: 'utf8',
   })
   if (result.error || result.signal || result.status !== 0) {
+    const stdout = result.stdout?.trim() || ''
+    const stderr = result.stderr?.trim() || ''
     throw new Error(
       [
         `Failed to probe Node ABI for ${nodeExecutable}.`,
         result.error ? `error: ${result.error.message}` : '',
         result.signal ? `signal: ${result.signal}` : '',
-        result.stdout.trim(),
-        result.stderr.trim(),
+        stdout,
+        stderr,
       ]
         .filter(Boolean)
         .join('\n'),
@@ -210,13 +212,15 @@ function validateCurrentNativeDependenciesLoad(resourcesPath, nodeExecutable = p
   })
 
   if (result.error || result.signal || result.status !== 0) {
+    const stdout = result.stdout?.trim() || ''
+    const stderr = result.stderr?.trim() || ''
     throw new Error(
       [
         `Packaged native service dependency bundle for ABI ${abi} does not load under stock Node ${nodeExecutable}.`,
         result.error ? `error: ${result.error.message}` : '',
         result.signal ? `signal: ${result.signal}` : '',
-        result.stdout.trim(),
-        result.stderr.trim(),
+        stdout,
+        stderr,
       ]
         .filter(Boolean)
         .join('\n'),
