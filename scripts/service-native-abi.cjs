@@ -12,14 +12,13 @@ const {
 const os = require('node:os')
 const path = require('node:path')
 
-const serviceNativePackages = ['better-sqlite3', 'node-pty']
-const nativeServiceAbiDirectoryName = 'native-node-abi'
-const supportedServiceNodeMajors = ['24', '25', '26']
-const supportedServiceNodeAbis = ['137', '141', '147']
-const nativeRuntimeFiles = [
-  path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-  path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
-]
+const {
+  nativeServiceAbiDirectoryName,
+  nativeRuntimeFiles,
+  serviceNativePackages,
+  supportedServiceNodeAbis,
+  supportedServiceNodeMajors,
+} = require('../shared/service-native-abi.json')
 
 function getUnpackedAppPath(resourcesPath) {
   return path.join(resourcesPath, 'app.asar.unpacked')
@@ -130,27 +129,6 @@ function copyCurrentNativeDependenciesToAbiBundle(resourcesPath, abi = process.v
   return abiBundleRoot
 }
 
-function installAbiNativeDependencies(resourcesPath, abi) {
-  const unpackedAppPath = getUnpackedAppPath(resourcesPath)
-  const abiBundleRoot = getAbiBundleRoot(resourcesPath, abi)
-
-  if (!existsSync(abiBundleRoot)) {
-    throw new Error(
-      `Missing packaged native dependencies for Node ABI ${abi}. Supported ABIs: ${supportedServiceNodeAbis.join(', ')}.`,
-    )
-  }
-
-  for (const relativePath of nativeRuntimeFiles) {
-    const sourcePath = path.join(abiBundleRoot, relativePath)
-    const destinationPath = path.join(unpackedAppPath, relativePath)
-    if (!existsSync(sourcePath)) {
-      throw new Error(`Missing packaged native dependency for ABI ${abi}: ${sourcePath}`)
-    }
-    mkdirSync(path.dirname(destinationPath), { recursive: true })
-    copyFileSync(sourcePath, destinationPath)
-  }
-}
-
 function validateCurrentNativeDependenciesLoad(resourcesPath) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
   const result = spawnSync(
@@ -197,6 +175,39 @@ function readAbiManifest(resourcesPath, abi) {
   return JSON.parse(readFileSync(manifestPath, 'utf8'))
 }
 
+function validateAbiBundle(resourcesPath, abi) {
+  const abiBundleRoot = getAbiBundleRoot(resourcesPath, abi)
+  const manifestPath = path.join(abiBundleRoot, 'manifest.json')
+  if (!existsSync(manifestPath)) {
+    throw new Error(`Missing service native ABI manifest for Node ABI ${abi}: ${manifestPath}`)
+  }
+
+  const manifest = readAbiManifest(resourcesPath, abi)
+  if (manifest.abi !== String(abi)) {
+    throw new Error(`Service native ABI manifest mismatch at ${manifestPath}: expected ${abi}.`)
+  }
+
+  const manifestFiles = Array.isArray(manifest.files) ? manifest.files : []
+  for (const relativePath of nativeRuntimeFiles) {
+    if (!manifestFiles.includes(relativePath)) {
+      throw new Error(`Service native ABI manifest ${manifestPath} is missing ${relativePath}.`)
+    }
+    const filePath = path.join(abiBundleRoot, relativePath)
+    if (!existsSync(filePath)) {
+      throw new Error(`Missing service native dependency for Node ABI ${abi}: ${filePath}`)
+    }
+  }
+
+  for (const packageName of serviceNativePackages) {
+    const packageJsonPath = path.join(abiBundleRoot, 'node_modules', packageName, 'package.json')
+    if (!existsSync(packageJsonPath)) {
+      throw new Error(
+        `Missing service native package manifest for Node ABI ${abi}: ${packageJsonPath}`,
+      )
+    }
+  }
+}
+
 module.exports = {
   nativeRuntimeFiles,
   nativeServiceAbiDirectoryName,
@@ -206,9 +217,9 @@ module.exports = {
   copyCurrentNativeDependenciesToAbiBundle,
   getAbiBundleRoot,
   getUnpackedAppPath,
-  installAbiNativeDependencies,
   listPackagedAbiBundles,
   readAbiManifest,
   rebuildServiceNativeDependencies,
+  validateAbiBundle,
   validateCurrentNativeDependenciesLoad,
 }

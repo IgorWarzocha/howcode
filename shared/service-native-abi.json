@@ -1,0 +1,10 @@
+{
+  "nativeServiceAbiDirectoryName": "native-node-abi",
+  "serviceNativePackages": ["better-sqlite3", "node-pty"],
+  "supportedServiceNodeMajors": ["24", "25", "26"],
+  "supportedServiceNodeAbis": ["137", "141", "147"],
+  "nativeRuntimeFiles": [
+    "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+    "node_modules/node-pty/build/Release/pty.node"
+  ]
+}

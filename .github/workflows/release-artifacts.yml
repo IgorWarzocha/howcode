@@ -127,8 +127,6 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
 
       - name: Upload main artifacts
         if: github.event_name == 'push' && github.ref_name == 'main'
@@ -140,8 +138,6 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
 
       - name: Upload manual preview artifacts
         if: github.event_name == 'workflow_dispatch'
@@ -151,9 +147,8 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            artifacts/*
-            !artifacts/npm-launcher
-            artifacts/npm-launcher/*
+            artifacts/stable-*-update.json
+            artifacts/npm-launcher/*.tar.gz
 
       - name: Upload release files
         if: github.event_name == 'push' && github.ref_type == 'tag'
@@ -165,8 +160,6 @@ jobs:
           path: |
             artifacts/stable-*-update.json
             artifacts/npm-launcher/*.tar.gz
-            artifacts/electron/*.AppImage
-            artifacts/electron/*.exe
 
   cleanup-dev-artifacts:
     name: Cleanup old dev artifacts
@@ -238,7 +231,7 @@ jobs:
           path: release-assets
 
       - name: List channel release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
 
       - name: Prepare channel release notes
         env:
@@ -265,7 +258,7 @@ jobs:
           CHANNEL: ${{ github.ref_name }}
         run: |
           RELEASE_TAG="channel-$CHANNEL"
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1
@@ -281,7 +274,7 @@ jobs:
           release_title=$(cat channel-release-title.txt)
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz|.*\\.AppImage|.*\\.exe)$"))')
+            mapfile -t old_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name | select(test("^(stable-.*-update\\.json|howcode-[^-]+-[^-]+\\.tar\\.gz|archive-howcode-[^-]+-[^-]+-[a-f0-9]{64}\\.tar\\.gz)$"))')
             for old_asset in "${old_assets[@]}"; do
               gh release delete-asset "$RELEASE_TAG" "$old_asset" --yes
             done
@@ -308,13 +301,13 @@ jobs:
           path: release-assets
 
       - name: List release assets
-        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print | sort
+        run: find release-assets -maxdepth 2 -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print | sort
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.exe' \) -print0 | sort -z)
+          mapfile -d '' assets < <(find release-assets -type f \( -name 'stable-*-update.json' -o -name '*.tar.gz' \) -print0 | sort -z)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "No release assets found"
             exit 1

@@ -11,12 +11,17 @@ import path from 'node:path'
 
 const appName = 'howcode'
 const require = createRequire(import.meta.url)
-const { supportedServiceNodeAbis, serviceNativePackages, nativeServiceAbiDirectoryName } =
-  require('./service-native-abi.cjs') as {
-    supportedServiceNodeAbis: string[]
-    serviceNativePackages: string[]
-    nativeServiceAbiDirectoryName: string
-  }
+const {
+  nativeServiceAbiDirectoryName,
+  serviceNativePackages,
+  supportedServiceNodeAbis,
+  validateAbiBundle,
+} = require('./service-native-abi.cjs') as {
+  supportedServiceNodeAbis: string[]
+  serviceNativePackages: string[]
+  nativeServiceAbiDirectoryName: string
+  validateAbiBundle: (resourcesPath: string, abi: string) => void
+}
 
 const electronOutputRoot = path.join(process.cwd(), 'artifacts', 'electron')
 const artifactRoot = path.join(process.cwd(), 'artifacts')
@@ -187,18 +192,9 @@ async function createNormalizedArchive(bundlePath: string, target: Target) {
 }
 
 function validateUnpackedNativeRuntimeBundles(unpackedRoot: string) {
-  const missingAbiBundles = supportedServiceNodeAbis.filter((abi) =>
-    serviceNativePackages.some(
-      (packageName) =>
-        !existsSync(
-          path.join(unpackedRoot, nativeServiceAbiDirectoryName, abi, 'node_modules', packageName),
-        ),
-    ),
-  )
-  if (missingAbiBundles.length > 0) {
-    throw new Error(
-      `Packaged Electron bundle is missing service native dependency bundles for Node ABI: ${missingAbiBundles.join(', ')}.`,
-    )
+  const resourcesPath = path.dirname(unpackedRoot)
+  for (const abi of supportedServiceNodeAbis) {
+    validateAbiBundle(resourcesPath, abi)
   }
 
   const currentAbi = process.versions.modules

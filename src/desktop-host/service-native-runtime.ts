@@ -1,13 +1,9 @@
 import { spawn } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import serviceNativeAbi from '../../shared/service-native-abi.json'
 
-const nativeServiceAbiDirectoryName = 'native-node-abi'
-const supportedServiceNodeAbis = new Set(['137', '141', '147'])
-const nativeRuntimeFiles = [
-  path.join('node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-  path.join('node_modules', 'node-pty', 'build', 'Release', 'pty.node'),
-]
+const supportedServiceNodeAbis = new Set(serviceNativeAbi.supportedServiceNodeAbis)
 
 type NodeRuntimeProbe = {
   version: string
@@ -66,9 +62,13 @@ function getUnpackedAppPath(resourcesPath: string) {
   return path.join(resourcesPath, 'app.asar.unpacked')
 }
 
-function installAbiNativeDependencies(resourcesPath: string, abi: string) {
+function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
   const unpackedAppPath = getUnpackedAppPath(resourcesPath)
-  const abiBundleRoot = path.join(unpackedAppPath, nativeServiceAbiDirectoryName, abi)
+  const abiBundleRoot = path.join(
+    unpackedAppPath,
+    serviceNativeAbi.nativeServiceAbiDirectoryName,
+    abi,
+  )
 
   if (!existsSync(abiBundleRoot)) {
     throw new Error(
@@ -76,14 +76,24 @@ function installAbiNativeDependencies(resourcesPath: string, abi: string) {
     )
   }
 
-  for (const relativePath of nativeRuntimeFiles) {
+  const manifestPath = path.join(abiBundleRoot, 'manifest.json')
+  if (!existsSync(manifestPath)) {
+    throw new Error(`Missing packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
+  }
+
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    abi?: unknown
+    files?: unknown
+  }
+  if (manifest.abi !== abi || !Array.isArray(manifest.files)) {
+    throw new Error(`Invalid packaged native dependency manifest for ABI ${abi}: ${manifestPath}`)
+  }
+
+  for (const relativePath of serviceNativeAbi.nativeRuntimeFiles) {
     const sourcePath = path.join(abiBundleRoot, relativePath)
-    const destinationPath = path.join(unpackedAppPath, relativePath)
     if (!existsSync(sourcePath)) {
       throw new Error(`Missing packaged native dependency for ABI ${abi}: ${sourcePath}`)
     }
-    mkdirSync(path.dirname(destinationPath), { recursive: true })
-    copyFileSync(sourcePath, destinationPath)
   }
 }
 
@@ -100,7 +110,7 @@ export async function prepareServiceNativeRuntime(input: {
 
   const resourcesPath = input.resourcesPath?.trim()
   if (resourcesPath && existsSync(path.join(resourcesPath, 'app.asar.unpacked'))) {
-    installAbiNativeDependencies(resourcesPath, runtime.abi)
+    validateAbiNativeDependencies(resourcesPath, runtime.abi)
   }
 
   return runtime
