@@ -57,6 +57,7 @@ function BaselineSummaryButton({
   fileCountLabel,
   insertionCountLabel,
   onOpen,
+  onPreview,
   open,
   anchorRef,
 }: {
@@ -68,6 +69,7 @@ function BaselineSummaryButton({
   fileCountLabel: string
   insertionCountLabel: string
   onOpen: () => void
+  onPreview: () => void
   open: boolean
 }) {
   return (
@@ -81,6 +83,7 @@ function BaselineSummaryButton({
         open && 'text-[color:var(--text)]',
       )}
       onClick={onOpen}
+      onMouseEnter={onPreview}
     >
       <span
         className={cn(
@@ -133,6 +136,7 @@ function BaselineBranchButton({
   open,
   panelId,
   onOpen,
+  onPreview,
   onSetBranchSwitchInput,
   onSetBranchSwitchOpen,
   onSwitchBranch,
@@ -145,6 +149,7 @@ function BaselineBranchButton({
   branchSwitchInput: string
   branchSwitchOpen: boolean
   onOpen: () => void
+  onPreview: () => void
   onSetBranchSwitchInput: (value: string) => void
   onSetBranchSwitchOpen: (open: boolean) => void
   onSwitchBranch?: ((branchName: string) => void) | undefined
@@ -154,12 +159,7 @@ function BaselineBranchButton({
   const [panelPosition, setPanelPosition] = useState<CSSProperties | null>(null)
 
   const openBranchSwitch = () => {
-    if (!onSwitchBranch) {
-      onOpen()
-      return
-    }
-    onSetBranchSwitchInput('')
-    onSetBranchSwitchOpen(true)
+    onOpen()
   }
 
   const submitBranchSwitch = () => {
@@ -216,6 +216,7 @@ function BaselineBranchButton({
           openBranchSwitch()
         }}
         onClick={openBranchSwitch}
+        onMouseEnter={onPreview}
       >
         <span className="truncate">{branchLabel}</span>
       </button>
@@ -440,9 +441,32 @@ export function ComposerDiffBaselineSelector({
   )
 
   const closePopover = () => setOpen(false)
-  const togglePopover = (anchor: 'summary' | 'branch' | 'compact') => {
+  const openBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
     activeAnchorRef.current = anchor
+    setBranchSwitchOpen(false)
+    setOpen(true)
+  }
+  const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
+    activeAnchorRef.current = anchor
+    setBranchSwitchOpen(false)
     setOpen((current) => !current)
+  }
+  const openBranchSwitchPopover = () => {
+    if (!onSwitchBranch) {
+      openBaselinePopover('branch')
+      return
+    }
+    setOpen(false)
+    setBranchSwitchInput('')
+    setBranchSwitchOpen(true)
+  }
+  const previewBaselinePopover = (anchor: 'summary' | 'branch') => {
+    if (!(open || branchSwitchOpen)) return
+    openBaselinePopover(anchor)
+  }
+  const previewBranchSwitchPopover = () => {
+    if (!(open || branchSwitchOpen)) return
+    openBranchSwitchPopover()
   }
 
   useDismissibleLayer({
@@ -493,7 +517,8 @@ export function ComposerDiffBaselineSelector({
         fileCountLabel={fileCountLabel}
         insertionCountLabel={insertionCountLabel}
         open={open}
-        onOpen={() => togglePopover('summary')}
+        onOpen={() => toggleBaselinePopover('summary')}
+        onPreview={() => previewBaselinePopover('summary')}
       />
       {showBranchChip ? (
         <BaselineBranchButton
@@ -506,7 +531,8 @@ export function ComposerDiffBaselineSelector({
           branchLabel={branchLabel}
           open={open}
           panelId={panelId}
-          onOpen={() => togglePopover('branch')}
+          onOpen={openBranchSwitchPopover}
+          onPreview={previewBranchSwitchPopover}
           onSetBranchSwitchInput={setBranchSwitchInput}
           onSetBranchSwitchOpen={setBranchSwitchOpen}
           onSwitchBranch={onSwitchBranch}
@@ -522,7 +548,7 @@ export function ComposerDiffBaselineSelector({
           'composer-baseline-compact-trigger hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
           open && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
         )}
-        onClick={() => togglePopover('compact')}
+        onClick={() => toggleBaselinePopover('compact')}
         aria-label="Diff baseline selector"
         data-tooltip="Diff baseline"
       >
