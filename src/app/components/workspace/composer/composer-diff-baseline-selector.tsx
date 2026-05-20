@@ -188,7 +188,7 @@ function BaselineBranchButton({
         <SurfacePanel
           ref={branchSwitchPanelRef}
           data-open="true"
-          className="motion-popover absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl p-2"
+          className="absolute right-0 bottom-[calc(100%+0.35rem)] z-[140] grid w-64 gap-2 rounded-xl bg-[color:var(--panel)] p-2 opacity-100 backdrop-blur-none"
         >
           <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
             Switch branch

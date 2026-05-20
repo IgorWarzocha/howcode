@@ -1,5 +1,6 @@
 import { Check, CircleDot, ExternalLink, GitBranch } from 'lucide-react'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { parseGitHubRepositoryUrl } from '../../../shared/github-repository-url'
 import { GitHubInvertocatMark } from '../components/common/github-invertocat-mark'
 import { SkeletonBlock } from '../components/common/skeleton'
@@ -172,6 +173,7 @@ function TopSessionsSection({
 }
 
 function BranchSwitchPopover({
+  anchorRef,
   branchSwitchInput,
   currentBranch,
   filteredBranches,
@@ -183,6 +185,7 @@ function BranchSwitchPopover({
   onSetBranchSwitchOpen,
   onSubmitBranchSwitch,
 }: {
+  anchorRef: RefObject<HTMLElement | null>
   branchSwitchInput: string
   currentBranch: string | null | undefined
   filteredBranches: readonly string[]
@@ -194,11 +197,31 @@ function BranchSwitchPopover({
   onSetBranchSwitchOpen: (open: boolean) => void
   onSubmitBranchSwitch: () => void
 }) {
-  return (
+  const [position, setPosition] = useState<CSSProperties | null>(null)
+
+  useEffect(() => {
+    const anchor = anchorRef.current
+    if (!anchor) return
+    const updatePosition = () => {
+      const rect = anchor.getBoundingClientRect()
+      setPosition({ left: rect.left, top: rect.bottom + 6, width: 256 })
+    }
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [anchorRef])
+
+  if (!position || typeof document === 'undefined') return null
+
+  return createPortal(
     <SurfacePanel
       ref={panelRef}
-      data-open="true"
-      className="motion-popover absolute top-[calc(100%+0.35rem)] left-0 z-[80] grid w-64 gap-2 rounded-xl p-2"
+      className="fixed z-[160] grid gap-2 rounded-xl bg-[color:var(--panel)] p-2 opacity-100 backdrop-blur-none"
+      style={position}
     >
       <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
         Switch branch
@@ -244,7 +267,8 @@ function BranchSwitchPopover({
           </div>
         )}
       </div>
-    </SurfacePanel>
+    </SurfacePanel>,
+    document.body,
   )
 }
 
@@ -343,6 +367,7 @@ function ProjectRepositorySection({
               </button>
               {branchSwitchOpen ? (
                 <BranchSwitchPopover
+                  anchorRef={branchSwitchButtonRef}
                   branchSwitchInput={branchSwitchInput}
                   currentBranch={gitState.branch}
                   filteredBranches={filteredBranches}
