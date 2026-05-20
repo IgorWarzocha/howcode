@@ -202,6 +202,11 @@ export function ProjectOverview({
   const branchSwitchPanelRef = useRef<HTMLDivElement>(null)
   const branchSwitchInputRef = useRef<HTMLInputElement>(null)
 
+  const openBranchSwitch = () => {
+    setBranchSwitchInput(gitState?.branch ?? '')
+    setBranchSwitchOpen(true)
+  }
+
   const submitBranchSwitch = () => {
     const nextBranch = branchSwitchInput.trim()
     if (!nextBranch) return
@@ -291,11 +296,12 @@ export function ProjectOverview({
                     ref={branchSwitchButtonRef}
                     type="button"
                     className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={() => {
-                      setBranchSwitchInput(gitState.branch ?? '')
-                      setBranchSwitchOpen(true)
+                    onPointerDownCapture={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      openBranchSwitch()
                     }}
+                    onClick={openBranchSwitch}
                     aria-label="Switch branch"
                     aria-expanded={branchSwitchOpen}
                     aria-haspopup="dialog"

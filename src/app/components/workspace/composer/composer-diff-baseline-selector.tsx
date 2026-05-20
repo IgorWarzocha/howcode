@@ -141,6 +141,15 @@ function BaselineBranchButton({
   open: boolean
   panelId: string
 }) {
+  const openBranchSwitch = () => {
+    if (!onSwitchBranch) {
+      onOpen()
+      return
+    }
+    onSetBranchSwitchInput(branchLabel === 'Detached' ? '' : branchLabel)
+    onSetBranchSwitchOpen(true)
+  }
+
   const submitBranchSwitch = () => {
     const nextBranch = branchSwitchInput.trim()
     if (!nextBranch) return
@@ -157,19 +166,16 @@ function BaselineBranchButton({
         aria-expanded={open || branchSwitchOpen}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          'composer-branch-chip composer-footer-text inline-flex h-7 max-w-[12rem] items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          'composer-branch-chip composer-footer-text pointer-events-auto relative z-20 inline-flex h-7 max-w-[12rem] cursor-pointer select-none items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
           (open || branchSwitchOpen) &&
             'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
         )}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={() => {
-          if (!onSwitchBranch) {
-            onOpen()
-            return
-          }
-          onSetBranchSwitchInput(branchLabel === 'Detached' ? '' : branchLabel)
-          onSetBranchSwitchOpen(true)
+        onPointerDownCapture={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          openBranchSwitch()
         }}
+        onClick={openBranchSwitch}
       >
         <span className="truncate">{branchLabel}</span>
       </button>

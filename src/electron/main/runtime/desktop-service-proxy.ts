@@ -20,6 +20,7 @@ function getElectronResourcesPath() {
     resourcesPath?: string | undefined
   }
   return (
+    // biome-ignore lint/complexity/useLiteralKeys: process.env is typed with an index signature.
     process.env['HOWCODE_ELECTRON_RESOURCES_PATH']?.trim() ||
     processWithResourcesPath.resourcesPath ||
     ''
