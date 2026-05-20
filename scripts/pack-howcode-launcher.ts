@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -55,7 +55,9 @@ try {
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`)
 
   if (command === 'pack') {
-    runNpm(['pack', '--pack-destination', path.join(repoRoot, 'artifacts')])
+    const artifactDirectory = path.join(repoRoot, 'artifacts')
+    await mkdir(artifactDirectory, { recursive: true })
+    runNpm(['pack', '--pack-destination', artifactDirectory])
   } else if (command === 'publish-dry-run') {
     runNpm(['publish', '--dry-run', '--tag', npmTag])
   } else {

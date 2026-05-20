@@ -127,6 +127,10 @@ export class DesktopServiceClient {
 
   async invokeDynamic(moduleName: DesktopServiceModuleName, method: string, args: unknown[] = []) {
     const child = await this.ensureStarted()
+    if (!child.connected) {
+      throw new Error('Desktop service IPC channel is disconnected.')
+    }
+
     const id = randomUUID()
     const result = new Promise<unknown>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -140,7 +144,21 @@ export class DesktopServiceClient {
       this.pendingRequests.set(id, { resolve, reject, timeout })
     })
 
-    child.send({ type: 'request', id, module: moduleName, method, args })
+    const rejectSendFailure = (error: Error) => {
+      const pending = this.pendingRequests.get(id)
+      if (!pending) return
+      this.pendingRequests.delete(id)
+      clearTimeout(pending.timeout)
+      pending.reject(error)
+    }
+
+    try {
+      child.send({ type: 'request', id, module: moduleName, method, args }, (error) => {
+        if (error) rejectSendFailure(error)
+      })
+    } catch (error) {
+      rejectSendFailure(error instanceof Error ? error : new Error(String(error)))
+    }
     return await result
   }
 

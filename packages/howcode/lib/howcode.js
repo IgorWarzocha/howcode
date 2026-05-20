@@ -158,9 +158,10 @@ function shellSingleQuote(value) {
 async function writeLinuxCommandLauncher(paths) {
   const launcherPath = getLinuxCommandLauncherPath()
   const launcherDirectory = path.dirname(launcherPath)
+  const shellParameterExpansionStart = '${'
   const launcherContents = [
     '#!/bin/sh',
-    `export HOWCODE_REPO_ROOT=${shellSingleQuote(process.env.HOWCODE_REPO_ROOT || process.cwd())}`,
+    `export HOWCODE_REPO_ROOT=${shellParameterExpansionStart}HOWCODE_REPO_ROOT:-$(pwd)}`,
     `exec ${shellSingleQuote(paths.executablePath)} "$@"`,
     '',
   ].join('\n')

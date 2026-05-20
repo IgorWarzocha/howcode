@@ -21,6 +21,7 @@ const devServerMetadataPath = path.join(projectRoot, DEV_SERVER_METADATA_RELATIV
 const bridgeBuildPath = path.join(projectRoot, 'build', 'dev-web-bridge.mjs')
 const serviceHostBuildPath = path.join(projectRoot, 'build', 'desktop', 'service-host.mjs')
 const bridgeToken = crypto.randomUUID()
+const serviceHostWaitTimeoutMs = 30_000
 
 let bridge: { child: ChildProcess; port: number } | null = null
 let server: ViteDevServer | null = null
@@ -65,7 +66,13 @@ async function shutdown(exitCode = 0) {
 
 async function startDevWebBridge() {
   await buildDevWebBridge()
+  const serviceHostWaitStartedAt = Date.now()
   while (!existsSync(serviceHostBuildPath)) {
+    if (Date.now() - serviceHostWaitStartedAt > serviceHostWaitTimeoutMs) {
+      throw new Error(
+        `Timed out waiting for ${path.relative(projectRoot, serviceHostBuildPath)}. Is dev:runtime running?`,
+      )
+    }
     await delay(150)
   }
 

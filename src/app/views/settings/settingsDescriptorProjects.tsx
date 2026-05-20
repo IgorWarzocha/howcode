@@ -68,7 +68,11 @@ export function buildProjectsSettingsDescriptors({
               }
             }}
             className={cn(settingsInputClass, 'w-full pl-9')}
-            placeholder="Default: ~/.pi/agent"
+            placeholder={
+              controller.resolvedPiDirectory
+                ? `Default: ${controller.resolvedPiDirectory}`
+                : 'Default: ~/.pi/agent'
+            }
             aria-label="Custom Pi directory"
           />
         </div>

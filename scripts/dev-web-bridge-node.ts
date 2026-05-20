@@ -260,6 +260,15 @@ const handlers: DesktopRequestHandlerMap = {
   invokeAction: async ({ action, payload = {} }) => {
     try {
       const result = await piThreads.handleDesktopAction(action, payload)
+      if (
+        action === 'settings.update' &&
+        payload &&
+        typeof payload === 'object' &&
+        'key' in payload &&
+        payload.key === 'customPiDirectory'
+      ) {
+        await desktopService.dispose()
+      }
       return {
         ok: true,
         at: new Date().toISOString(),

@@ -29,7 +29,7 @@ export function useSettingsController({
     appSettings.preferredProjectLocation ?? '',
   )
   const [customPiDirectoryDraft, setCustomPiDirectoryDraft] = useState(
-    appSettings.customPiDirectory ?? resolvedPiDirectory ?? '',
+    appSettings.customPiDirectory ?? '',
   )
   const [gitCommitMenuOpen, setGitCommitMenuOpen] = useState(false)
   const [skillCreatorMenuOpen, setSkillCreatorMenuOpen] = useState(false)
@@ -54,8 +54,8 @@ export function useSettingsController({
   }, [appSettings.preferredProjectLocation])
 
   useEffect(() => {
-    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? resolvedPiDirectory ?? '')
-  }, [appSettings.customPiDirectory, resolvedPiDirectory])
+    setCustomPiDirectoryDraft(appSettings.customPiDirectory ?? '')
+  }, [appSettings.customPiDirectory])
 
   const closeGitCommitMenu = () => {
     setGitCommitMenuOpen(false)
@@ -186,6 +186,7 @@ export function useSettingsController({
     clearImagesBusy,
     clearImagesStatusMessage,
     customPiDirectoryDraft,
+    resolvedPiDirectory,
     favoriteFolderDraft,
     gitCommitButtonRef,
     gitCommitCurrentValue: getModelSettingValue(appSettings.gitCommitMessageModel),

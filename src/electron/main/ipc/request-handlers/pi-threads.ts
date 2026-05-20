@@ -93,6 +93,15 @@ export function createPiThreadsHandlers(
       try {
         const result = await piThreads.handleDesktopAction(action, payload)
         if (action === 'settings.update') await onSettingsChanged?.()
+        if (
+          action === 'settings.update' &&
+          payload &&
+          typeof payload === 'object' &&
+          'key' in payload &&
+          payload.key === 'customPiDirectory'
+        ) {
+          await piThreads.disposeDesktopRuntime?.()
+        }
         return {
           ok: true,
           at: new Date().toISOString(),

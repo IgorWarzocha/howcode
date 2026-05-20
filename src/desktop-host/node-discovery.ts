@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { accessSync, constants, statSync } from 'node:fs'
+import path from 'node:path'
 
 function getProcessEnvironmentVariable(name: string) {
   return process.env[name]
@@ -67,7 +68,7 @@ export async function getSystemNodeExecutable() {
     getProcessEnvironmentVariable('NODE'),
   ]) {
     const normalized = candidate?.trim()
-    if (normalized && isExecutableFile(normalized)) {
+    if (normalized && path.isAbsolute(normalized) && isExecutableFile(normalized)) {
       cachedNodeExecutable = normalized
       return cachedNodeExecutable
     }
