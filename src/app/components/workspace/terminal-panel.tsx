@@ -4,7 +4,11 @@ import { GitBranch, PanelRightClose, SquareTerminal } from 'lucide-react'
 import { memo, useRef } from 'react'
 import type { ProjectDiffBaseline, ProjectGitState } from '../../desktop/types'
 import { type FeatureStatusId, getFeatureStatusDataAttributes } from '../../features/feature-status'
-import { compactIconButtonClass } from '../../ui/classes'
+import {
+  compactIconButtonClass,
+  terminalDrawerFooterClass,
+  terminalTakeoverFooterClass,
+} from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { HowcodeLogoMark } from '../common/howcode-logo-mark'
 import { ToolbarButton } from '../common/toolbar-button'
@@ -73,8 +77,7 @@ function TerminalPanelComponent({
           stickToBottomOnOutput={false}
           className="terminal-viewport--flush relative z-0 min-h-0 rounded-none bg-[color:var(--workspace)]"
         />
-        <div className="relative z-[80] overflow-visible rounded-b-[20px] border-x border-b border-[color:var(--border)] bg-[color:var(--panel)] shadow-[var(--shadow)]">
-          <div className="h-px bg-[color:var(--border)]" />
+        <div className={terminalTakeoverFooterClass}>
           <div className={cn(workspaceFooterRowClass, 'rounded-b-[20px]')}>
             <ToolbarButton
               label="Desktop"
@@ -122,7 +125,7 @@ function TerminalPanelComponent({
   return (
     <section
       aria-label="Terminal drawer"
-      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-l border-[color:var(--border)] bg-[color:var(--workspace)]"
+      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden bg-[color:var(--workspace)]"
       {...getFeatureStatusDataAttributes(statusId)}
     >
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[color:var(--sidebar)]">
@@ -138,10 +141,13 @@ function TerminalPanelComponent({
           className="terminal-viewport--flush !min-h-0 rounded-none bg-[color:var(--sidebar)]"
         />
       </div>
-      <div className="flex h-[3.75rem] shrink-0 items-start justify-end gap-3 border-t border-[color:var(--border)] bg-[color:var(--workspace)] px-3 pt-1.5">
+      <div className={terminalDrawerFooterClass}>
         <button
           type="button"
-          className="box-border inline-flex h-8 min-h-8 w-8 min-w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--muted)] text-[15px] leading-none transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] [&>svg]:h-[15px] [&>svg]:w-[15px]"
+          className={cn(
+            compactIconButtonClass,
+            'h-7 w-7 rounded-md [&>svg]:h-[14px] [&>svg]:w-[14px]',
+          )}
           aria-label="Hide terminal"
           onClick={onClose}
           data-tooltip="Hide terminal"

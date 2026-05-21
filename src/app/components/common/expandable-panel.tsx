@@ -9,6 +9,7 @@ type ExpandablePanelProps = {
   header: ReactNode
   children?: ReactNode
   className?: string
+  wrapperClassName?: string
   triggerClassName?: string
   bodyClassName?: string
   ariaLabel?: string
@@ -23,6 +24,7 @@ export function ExpandablePanel({
   header,
   children,
   className,
+  wrapperClassName = 'overflow-hidden rounded-xl',
   triggerClassName,
   bodyClassName,
   ariaLabel,
@@ -41,7 +43,7 @@ export function ExpandablePanel({
   )
 
   return (
-    <div className={cn('overflow-hidden rounded-xl', className)}>
+    <div className={cn(wrapperClassName, className)}>
       {interactive ? (
         <button
           type="button"

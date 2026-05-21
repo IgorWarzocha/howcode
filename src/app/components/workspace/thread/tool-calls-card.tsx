@@ -3,6 +3,7 @@ import {
   processLedgerDetailBlockClass,
   processLedgerRowClass,
   processLedgerRowExpandedClass,
+  threadSessionSurfaceClass,
 } from '@howcode/ui'
 import { useState } from 'react'
 import type { Message } from '../../../types'
@@ -111,9 +112,10 @@ export function ToolCallsCard({
         onToggleGroupExpanded?.()
       }}
       panelId={`tool-call-group-${id}`}
-      className="overflow-visible rounded-none bg-transparent"
-      triggerClassName="rounded-md px-2 py-1.5 hover:bg-[color:var(--surface-hover)]"
-      bodyClassName="!border-0 px-0 py-1"
+      wrapperClassName="min-w-0 max-w-full overflow-hidden rounded-lg"
+      className="bg-transparent"
+      triggerClassName={`${threadSessionSurfaceClass} px-2 py-1.5 hover:bg-[color:var(--surface-hover)]`}
+      bodyClassName="!border-0 min-w-0 max-w-full overflow-hidden px-0 py-1"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
           <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
@@ -143,9 +145,10 @@ export function ToolCallsCard({
                 }))
               }}
               panelId={`tool-call-panel-${messageKey}`}
-              className="overflow-visible rounded-none bg-transparent"
+              wrapperClassName="min-w-0 max-w-full overflow-hidden rounded-lg"
+              className="bg-transparent"
               triggerClassName={cn(processLedgerRowClass, isError && 'text-[color:var(--danger)]')}
-              bodyClassName="!border-0 px-0 py-0"
+              bodyClassName="!border-0 min-w-0 max-w-full overflow-hidden px-0 py-0"
               showChevron={false}
               header={
                 <>

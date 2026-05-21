@@ -35,20 +35,21 @@ export const disclosureButtonClass =
 export const emptyStateCardClass =
   'rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]'
 
-export const processLedgerClass = 'grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 pl-3'
+export const processLedgerClass =
+  'grid min-w-0 max-w-full gap-1 border-l border-[color:var(--border)]/70 pl-3'
 
 export const processLedgerRowClass =
-  'min-h-8 rounded-md bg-transparent px-2 py-1.5 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--accent-border)]'
+  'min-h-8 min-w-0 max-w-full rounded-lg bg-transparent px-2 py-1.5 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--accent-border)]'
 
 export const foldedTimelineRowClass = `${processLedgerRowClass} folded-timeline-row`
 
 export const foldedUserTimelineRowClass = `${processLedgerRowClass} folded-timeline-row--user`
 
 export const processLedgerRowExpandedClass =
-  'mt-1 ml-2 grid min-w-0 gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
+  'mt-1 ml-2 grid min-w-0 max-w-[calc(100%-0.5rem)] gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
 
 export const processLedgerDetailBlockClass =
-  'grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 bg-[color:var(--folded-row-bg)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82'
+  'grid min-w-0 max-w-full gap-1 overflow-hidden border-l border-[color:var(--border)]/70 bg-[color:var(--folded-row-bg)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82'
 
 export const threadSessionSurfaceClass = 'thread-session-surface'
 
@@ -150,6 +151,12 @@ export const menuOptionClass =
 
 export const terminalOutputClass =
   'grid min-h-[92px] gap-2 rounded-[14px] border border-[rgba(137,146,183,0.08)] bg-[rgba(18,20,28,0.88)] p-2.5 font-mono text-xs'
+
+export const terminalTakeoverFooterClass =
+  'relative z-[80] overflow-visible rounded-b-[20px] bg-[color:var(--panel)] shadow-none'
+
+export const terminalDrawerFooterClass =
+  'flex h-[3.75rem] shrink-0 items-start justify-end gap-3 bg-[color:var(--workspace)] px-3 pt-1.5'
 
 export const diffPanelEmptyStateClass =
   'flex min-h-60 items-center justify-center px-5 text-center text-xs text-[color:var(--muted)]'
