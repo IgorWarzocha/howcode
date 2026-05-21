@@ -10,6 +10,7 @@ export {
   composerPopoverInputClass,
   composerPopoverOptionClass,
   composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
   composerPopoverSectionLabelClass,
   composerTextActionButtonClass,
   confirmPopoverClass,

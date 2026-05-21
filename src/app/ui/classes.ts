@@ -120,6 +120,9 @@ export const composerDividerClass = 'h-px bg-[color:var(--border)]'
 export const composerPopoverInputClass =
   'settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 text-[11.5px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]'
 
+export const composerPopoverPanelClass =
+  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
+
 export const composerPopoverOptionClass =
   'grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none'
 

@@ -1,5 +1,9 @@
+import {
+  composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
+  inlineEmptyNoteClass,
+} from '@howcode/ui'
 import type { RefObject } from 'react'
-import { composerPopoverOptionSelectedClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   type ComposerSkillMentions,
@@ -61,7 +65,8 @@ export function ComposerSkillMentionPanel({
       tabIndex={-1}
       aria-label="Composer skills"
       className={cn(
-        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
+        composerPopoverPanelClass,
+        'w-[26.5rem] max-w-[calc(100vw-2rem)]',
         skillMentions.skills.length > 10 && 'max-h-72 overflow-y-auto',
       )}
     >
@@ -76,7 +81,7 @@ export function ComposerSkillMentionPanel({
           />
         ))
       ) : (
-        <div className="px-2 py-2 text-[12px] text-[color:var(--muted)]">
+        <div className={inlineEmptyNoteClass}>
           {skillMentions.loading ? 'Loading skills…' : 'No matching skills'}
         </div>
       )}

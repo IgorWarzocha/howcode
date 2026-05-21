@@ -1,6 +1,11 @@
+import {
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+  composerPopoverPanelClass,
+  inlineEmptyNoteClass,
+} from '@howcode/ui'
 import { File, Folder } from 'lucide-react'
 import type { RefObject } from 'react'
-import { composerPopoverOptionClass, composerPopoverOptionSelectedClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   type ComposerFileMentions,
@@ -60,7 +65,8 @@ export function ComposerFileMentionPanel({
       tabIndex={-1}
       aria-label="Composer files"
       className={cn(
-        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
+        composerPopoverPanelClass,
+        'w-[26.5rem] max-w-[calc(100vw-2rem)]',
         fileMentions.files.length > 10 && 'max-h-72 overflow-y-auto',
       )}
     >
@@ -75,7 +81,7 @@ export function ComposerFileMentionPanel({
           />
         ))
       ) : (
-        <div className="px-2 py-2 text-[12px] text-[color:var(--muted)]">
+        <div className={inlineEmptyNoteClass}>
           {fileMentions.loading ? 'Finding files…' : 'No matching files'}
         </div>
       )}
