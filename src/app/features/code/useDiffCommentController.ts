@@ -1,11 +1,11 @@
-import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
-import type { AppShellController } from '../../app-shell/useAppShellController'
-import { buildDiffCommentPrompt } from '../../components/workspace/diff/diffCommentPrompt'
 import {
+  buildDiffCommentPrompt,
   diffCommentStore,
   getDiffCommentContextId,
   type SavedDiffComment,
-} from '../../components/workspace/diff/diffCommentStore'
+} from '@howcode/diff'
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
+import type { AppShellController } from '../../app-shell/useAppShellController'
 import { getDesktopActionErrorMessage } from '../../desktop/action-results'
 
 function getDiffCommentSendError(result: Awaited<ReturnType<AppShellController['handleAction']>>) {

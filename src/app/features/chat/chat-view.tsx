@@ -1,5 +1,4 @@
-import { ThreadTimeline } from '../../components/workspace/thread/thread-timeline'
-import { ThreadTimelineSkeleton } from '../../components/workspace/thread/thread-timeline-skeleton'
+import { ThreadTimeline, ThreadTimelineSkeleton } from '@howcode/thread'
 import type { Message } from '../../types'
 
 type ChatViewProps = {

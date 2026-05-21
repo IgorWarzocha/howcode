@@ -35,6 +35,49 @@ export const disclosureButtonClass =
 export const emptyStateCardClass =
   'rounded-xl border border-dashed border-[color:var(--border)] px-3 py-4 text-[12px] text-[color:var(--muted)]'
 
+export const processLedgerClass = 'grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 pl-3'
+
+export const processLedgerRowClass =
+  'min-h-8 rounded-md bg-transparent px-2 py-1.5 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--accent-border)]'
+
+export const foldedTimelineRowClass = `${processLedgerRowClass} folded-timeline-row`
+
+export const foldedUserTimelineRowClass = `${processLedgerRowClass} folded-timeline-row--user`
+
+export const processLedgerRowExpandedClass =
+  'mt-1 ml-2 grid min-w-0 gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
+
+export const threadSessionSurfaceClass = 'thread-session-surface'
+
+export const threadSessionControlClass = 'thread-session-control'
+
+export const threadUserMessageClass = `thread-user-message ${threadSessionSurfaceClass}`
+
+export const threadSessionStripClass = `grid min-w-0 gap-2 bg-[color:var(--folded-row-bg)] px-3 py-2.5 text-[13px] ${threadSessionSurfaceClass}`
+
+export const threadSessionErrorStripClass = `grid min-w-0 gap-2 bg-[color:color-mix(in_srgb,var(--danger-bg)_50%,transparent)] px-3 py-2.5 text-[color:var(--danger)] ${threadSessionSurfaceClass}`
+
+export const thinkingDisclosureClass = `overflow-visible bg-[color:var(--folded-row-bg)] ${threadSessionSurfaceClass}`
+
+export const thinkingDisclosureTriggerClass = `px-2.5 py-2 hover:bg-[color:var(--folded-row-hover-bg)] ${threadSessionSurfaceClass}`
+
+export const thinkingDisclosureBodyClass =
+  '!border-0 border-l border-[color:var(--border)]/70 px-3 py-2.5'
+
+export const artifactStripClass =
+  'rounded-xl border border-[color:var(--border)]/80 bg-[rgba(255,255,255,0.025)] px-3 py-2 text-left'
+
+export const changedFilesStripClass =
+  'flex min-w-0 items-center gap-2 rounded-xl border border-[color:var(--border)]/80 bg-[rgba(255,255,255,0.025)] px-3 py-2 text-[12px] text-[color:var(--muted)]'
+
+export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--border)]/70'
+
+export const quietListRowClass =
+  'grid min-w-0 gap-1 px-2 py-2 text-left transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)]'
+
+export const inlineEmptyNoteClass =
+  'px-2 py-1.5 text-[12px] leading-5 text-[color:var(--muted-2)]/85'
+
 export const segmentedControlClass =
   'inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--panel)] p-1'
 

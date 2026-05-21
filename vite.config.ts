@@ -1,8 +1,30 @@
 const sourceMappingUrlCommentPattern = /\n?\/\/# sourceMappingURL=.*\.js\.map\s*$/u
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+
+const projectRoot = fileURLToPath(new URL('.', import.meta.url))
+
+const howcodeAliases = {
+  '@howcode/common': path.resolve(projectRoot, 'src/app/components/common/index.ts'),
+  '@howcode/composer': path.resolve(projectRoot, 'src/app/components/workspace/composer/index.ts'),
+  '@howcode/desktop': path.resolve(projectRoot, 'src/app/desktop/index.ts'),
+  '@howcode/diff': path.resolve(projectRoot, 'src/app/components/workspace/diff/index.ts'),
+  '@howcode/extensions': path.resolve(projectRoot, 'src/app/features/extensions/index.ts'),
+  '@howcode/query': path.resolve(projectRoot, 'src/app/query/index.ts'),
+  '@howcode/settings': path.resolve(projectRoot, 'src/app/views/settings/index.ts'),
+  '@howcode/shared': path.resolve(projectRoot, 'shared'),
+  '@howcode/sidebar': path.resolve(projectRoot, 'src/app/components/sidebar/index.ts'),
+  '@howcode/skills': path.resolve(projectRoot, 'src/app/features/skills/index.ts'),
+  '@howcode/state': path.resolve(projectRoot, 'src/app/state/index.ts'),
+  '@howcode/terminal': path.resolve(projectRoot, 'src/app/components/workspace/terminal/index.ts'),
+  '@howcode/thread': path.resolve(projectRoot, 'src/app/components/workspace/thread/index.ts'),
+  '@howcode/ui': path.resolve(projectRoot, 'src/app/ui/index.ts'),
+  '@howcode/workspace': path.resolve(projectRoot, 'src/app/components/workspace/index.ts'),
+} as const
 
 function stripGhosttyPackageSourcemaps(): Plugin {
   return {
@@ -24,6 +46,9 @@ function stripGhosttyPackageSourcemaps(): Plugin {
 export default defineConfig({
   base: './',
   assetsInclude: ['**/*.wasm'],
+  resolve: {
+    alias: howcodeAliases,
+  },
   optimizeDeps: {
     exclude: ['@wterm/ghostty'],
   },

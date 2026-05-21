@@ -1,6 +1,6 @@
+import { DiffPanel } from '@howcode/workspace'
 import { defaultPiSettings } from '../../../../shared/default-pi-settings'
 import type { AppShellController } from '../../app-shell/useAppShellController'
-import { DiffPanel } from '../../components/workspace/diff-panel'
 import { mainPanelClass } from '../../ui/classes'
 import { FALLBACK_APP_SETTINGS } from './code-workspace-defaults'
 import { CodeWorkspaceMainView } from './code-workspace-main-view'

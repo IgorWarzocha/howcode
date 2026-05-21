@@ -1,3 +1,5 @@
+import { ComposerPromptSurface } from '@howcode/composer'
+import type { SavedDiffComment } from '@howcode/diff'
 import { type RefObject, useRef } from 'react'
 import type { ComposerSendMode, KeybindingOverrides } from '../../../../shared/keybindings'
 import type {
@@ -14,8 +16,6 @@ import type {
 } from '../../desktop/types'
 import type { Message, View } from '../../types'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
-import { ComposerPromptSurface } from './composer/composer-prompt-surface'
-import type { SavedDiffComment } from './diff/diffCommentStore'
 
 export type ComposerProps = {
   activeView: View

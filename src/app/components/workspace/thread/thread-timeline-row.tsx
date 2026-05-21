@@ -85,6 +85,7 @@ function TurnRow({
           secondary={preview.secondary}
           italicLabel={preview.italicLabel}
           mutedLabel={preview.italicLabel}
+          tone={row.userMessage?.role === 'user' ? 'user' : 'default'}
           onToggle={() => onToggleTurnCollapse?.()}
         />
       </TimelineRowShell>
@@ -97,7 +98,7 @@ function TurnRow({
       onToggle={onToggleTurnCollapse}
       toggleClassName={chevronOffsetClass}
     >
-      <div className="grid min-w-0 gap-3">
+      <div className="grid min-w-0 gap-2">
         {row.userMessage ? (
           <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
             <div data-message-id={row.userMessage.id}>
@@ -193,7 +194,7 @@ function SummaryRow({
         onToggle={onToggle}
         toggleClassName={chevronOffsetClass}
       >
-        <div className="grid min-w-0 gap-3">
+        <div className="grid min-w-0 gap-2">
           {showCompactionDivider ? (
             <div className="h-px w-full bg-[color:var(--border-strong)]" />
           ) : null}
@@ -213,7 +214,7 @@ function SummaryRow({
       onToggle={onToggle}
       toggleClassName={chevronOffsetClass}
     >
-      <div className="grid min-w-0 gap-3">
+      <div className="grid min-w-0 gap-2">
         {showCompactionDivider ? (
           <div className="h-px w-full bg-[color:var(--border-strong)]" />
         ) : null}

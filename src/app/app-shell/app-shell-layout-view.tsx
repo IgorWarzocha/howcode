@@ -1,7 +1,7 @@
+import { TerminalPanel } from '@howcode/workspace'
 import { PanelLeftOpen, PanelRightClose } from 'lucide-react'
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react'
 import { Sidebar } from '../components/sidebar/sidebar'
-import { TerminalPanel } from '../components/workspace/terminal-panel'
 import type { AppSettings, ProjectDiffBaseline, ProjectDiffRenderMode } from '../desktop/types'
 import { cn } from '../utils/cn'
 import { AppShellOverlays } from './app-shell-overlays'

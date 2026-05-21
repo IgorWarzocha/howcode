@@ -348,7 +348,7 @@ export function ThreadTimeline({
               : undefined
           }
         >
-          <div className="grid min-w-0 gap-4">{rows.map(renderRow)}</div>
+          <div className="grid min-w-0 gap-3">{rows.map(renderRow)}</div>
           <div ref={bottomSentinelRef} aria-hidden="true" className="h-px w-full" />
         </div>
       </div>

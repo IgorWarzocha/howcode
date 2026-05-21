@@ -1,6 +1,6 @@
+import { QueuedPromptsCard } from '@howcode/composer'
+import { Composer } from '@howcode/workspace'
 import { FolderGit2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { Composer } from '../../components/workspace/composer'
-import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
 import { GitOpsComposerPanel } from '../../components/workspace/git-ops-composer-panel'
 import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
 import type { Message } from '../../types'

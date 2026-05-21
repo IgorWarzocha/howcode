@@ -1,3 +1,5 @@
+import { ComposerDiffBaselineSelector, getGitOpsEntryButtonClass } from '@howcode/composer'
+import { TerminalViewport } from '@howcode/terminal'
 import { GitBranch, PanelRightClose, SquareTerminal } from 'lucide-react'
 import { memo, useRef } from 'react'
 import type { ProjectDiffBaseline, ProjectGitState } from '../../desktop/types'
@@ -6,15 +8,12 @@ import { compactIconButtonClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 import { HowcodeLogoMark } from '../common/howcode-logo-mark'
 import { ToolbarButton } from '../common/toolbar-button'
-import { ComposerDiffBaselineSelector } from './composer/composer-diff-baseline-selector'
-import { getGitOpsEntryButtonClass } from './composer/git-ops'
 import {
   WorkspaceBranchChip,
   workspaceFooterRowClass,
   workspaceFooterTextClass,
   workspaceFooterTrailingGroupClass,
 } from './footer/workspace-footer-primitives'
-import { TerminalViewport } from './terminal/terminal-viewport'
 
 const PI_TUI_KEEP_ALIVE_MS = 300_000
 const PI_TUI_SESSION_FILE_IDLE_POLL_MS = 5 * 60_000

@@ -1,5 +1,11 @@
+import {
+  processLedgerClass,
+  processLedgerRowClass,
+  processLedgerRowExpandedClass,
+} from '@howcode/ui'
 import { useState } from 'react'
 import type { Message } from '../../../types'
+import { cn } from '../../../utils/cn'
 import { getToolCallPreview, getToolCallTitle } from '../../../utils/thread-previews'
 import { ExpandablePanel } from '../../common/expandable-panel'
 
@@ -25,7 +31,7 @@ function renderToolCallBody(message: ToolCallMessage) {
         }
       >
         {message.args ? (
-          <div className="grid min-w-0 gap-1 rounded-lg bg-[rgba(255,255,255,0.03)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82">
+          <div className="grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 bg-[rgba(255,255,255,0.018)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82">
             <div className="font-sans text-[10.5px] tracking-[0.08em] text-[color:var(--muted-2)]/70 uppercase">
               Arguments
             </div>
@@ -104,9 +110,9 @@ export function ToolCallsCard({
         onToggleGroupExpanded?.()
       }}
       panelId={`tool-call-group-${id}`}
-      className="border border-[color:var(--border)] bg-[color:var(--message-tool-bg)]"
-      triggerClassName="hover:bg-[color:var(--surface-hover)]"
-      bodyClassName="border-[color:var(--border)] px-2 py-2"
+      className="overflow-visible rounded-none bg-transparent"
+      triggerClassName="rounded-md px-2 py-1.5 hover:bg-[color:var(--surface-hover)]"
+      bodyClassName="!border-0 px-0 py-1"
       header={
         <span className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
           <span className="truncate text-[12px] font-medium text-[color:var(--muted)]/90">
@@ -115,7 +121,7 @@ export function ToolCallsCard({
         </span>
       }
     >
-      <div className="grid min-w-0 gap-1">
+      <div className={processLedgerClass}>
         {messages.map((message, index) => {
           const messageKey = `${message.id}:${index}`
           const toolCallExpanded = expandedToolCallIds[messageKey] ?? false
@@ -136,14 +142,23 @@ export function ToolCallsCard({
                 }))
               }}
               panelId={`tool-call-panel-${messageKey}`}
-              className="bg-transparent"
-              triggerClassName="rounded-lg px-2 py-2 hover:bg-[color:var(--surface-hover)]"
-              bodyClassName="!border-0 px-2 pt-0 pb-2"
+              className="overflow-visible rounded-none bg-transparent"
+              triggerClassName={cn(processLedgerRowClass, isError && 'text-[color:var(--danger)]')}
+              bodyClassName="!border-0 px-0 py-0"
               showChevron={false}
               header={
                 <>
                   <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                    <span className="shrink-0 truncate text-[12px] leading-[1.2] text-[color:var(--muted)]/92">
+                    <span
+                      className={cn(
+                        'shrink-0 truncate text-[12px] leading-[1.2]',
+                        isError
+                          ? 'text-[color:var(--danger)]'
+                          : isRunning
+                            ? 'text-[color:var(--accent)]'
+                            : 'text-[color:var(--muted)]/92',
+                      )}
+                    >
                       {title}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[11.5px] leading-[1.2] text-[color:var(--muted-2)]/82">
@@ -163,7 +178,7 @@ export function ToolCallsCard({
                 </>
               }
             >
-              {renderToolCallBody(message)}
+              <div className={processLedgerRowExpandedClass}>{renderToolCallBody(message)}</div>
             </ExpandablePanel>
           )
         })}

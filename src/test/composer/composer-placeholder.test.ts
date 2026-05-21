@@ -1,5 +1,5 @@
+import { getComposerPlaceholderText } from '@howcode/composer'
 import { describe, expect, it } from 'vitest'
-import { getComposerPlaceholderText } from '../../app/components/workspace/composer/composer-prompt-surface-helpers'
 
 describe('composer placeholder text', () => {
   it('reflects Enter send mode', () => {

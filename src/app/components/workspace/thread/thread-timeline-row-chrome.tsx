@@ -1,6 +1,8 @@
+import { foldedTimelineRowClass, foldedUserTimelineRowClass } from '@howcode/ui'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { PointerEvent, ReactNode } from 'react'
 import { useRef } from 'react'
+import { cn } from '../../../utils/cn'
 import { chatRowShellClass } from './thread-layout'
 
 const clampOneLineClass =
@@ -17,6 +19,7 @@ export function FoldedTimelineRow({
   italicLabel = false,
   mutedLabel = false,
   trailing,
+  tone = 'default',
   onToggle,
 }: {
   label: string
@@ -25,12 +28,16 @@ export function FoldedTimelineRow({
   italicLabel?: boolean | undefined
   mutedLabel?: boolean | undefined
   trailing?: ReactNode | undefined
+  tone?: 'default' | 'user' | undefined
   onToggle: () => void
 }) {
   return (
     <button
       type="button"
-      className="grid w-full min-w-0 gap-1 rounded-xl border border-[color:var(--border)] bg-[color:var(--message-tool-bg)] px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]"
+      className={cn(
+        tone === 'user' ? foldedUserTimelineRowClass : foldedTimelineRowClass,
+        'grid w-full gap-1 py-2',
+      )}
       onClick={onToggle}
     >
       <div className="flex min-w-0 items-center gap-2">
