@@ -62,7 +62,7 @@ export async function probeNodeRuntime(nodeExecutable: string): Promise<NodeRunt
     child.once('error', (error) => {
       finish(() => reject(error))
     })
-    child.once('exit', (code) => {
+    child.once('close', (code) => {
       finish(() => {
         if (code !== 0) {
           reject(rejectNodeProbeExit(nodeExecutable, stderr, code))
@@ -117,6 +117,10 @@ function validateAbiNativeDependencies(resourcesPath: string, abi: string) {
   }
 }
 
+function hasPackagedNativeDependencies(resourcesPath: string) {
+  return existsSync(getUnpackedAppPath(resourcesPath))
+}
+
 export async function prepareServiceNativeRuntime(input: {
   nodeExecutable: string
   resourcesPath?: string | undefined
@@ -129,11 +133,7 @@ export async function prepareServiceNativeRuntime(input: {
   }
 
   const resourcesPath = input.resourcesPath?.trim()
-  if (resourcesPath) {
-    const unpackedAppPath = path.join(resourcesPath, 'app.asar.unpacked')
-    if (!existsSync(unpackedAppPath)) {
-      throw new Error(`Packaged resources path is missing app.asar.unpacked: ${unpackedAppPath}`)
-    }
+  if (resourcesPath && hasPackagedNativeDependencies(resourcesPath)) {
     validateAbiNativeDependencies(resourcesPath, runtime.abi)
   }
 
