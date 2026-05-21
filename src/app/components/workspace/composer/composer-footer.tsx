@@ -20,6 +20,10 @@ import {
 import { ComposerContextMeter } from './composer-context-meter'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 import { ComposerModelPopover } from './composer-model-popover'
+import {
+  notifyComposerPopoverOpened,
+  useComposerPopoverDismissSignal,
+} from './composer-popover-coordination'
 import { getGitOpsEntryButtonClass } from './git-ops'
 
 type ComposerFooterProps = {
@@ -89,6 +93,9 @@ export function ComposerFooter({
   thinkingLevel,
   thinkingLevelLabels,
 }: ComposerFooterProps) {
+  const contextDismissSignal = useComposerPopoverDismissSignal({
+    onDismiss: () => onSetOpenMenu((current) => (current === 'model' ? null : current)),
+  })
   const gitVisualMode = projectGitState?.isGitRepo
     ? projectGitState.fileCount > 0
       ? 'dirty'
@@ -125,8 +132,10 @@ export function ComposerFooter({
           tooltip="Model settings"
           icon={<Bot size={14} />}
           className={cn(workspaceFooterTextClass, 'pr-8')}
-          onMouseEnter={() => onSetOpenMenu('model')}
-          onClick={() => onSetOpenMenu((current) => (current === 'model' ? null : 'model'))}
+          onClick={() => {
+            notifyComposerPopoverOpened('model')
+            onSetOpenMenu((current) => (current === 'model' ? null : 'model'))
+          }}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}
           aria-controls="composer-model-menu"
@@ -134,6 +143,7 @@ export function ComposerFooter({
         <div className="absolute top-0 right-0">
           <ComposerContextMeter
             contextUsage={contextUsage}
+            dismissSignal={contextDismissSignal}
             messages={messages}
             compactDisabled={compactDisabled}
             isCompacting={isCompacting}

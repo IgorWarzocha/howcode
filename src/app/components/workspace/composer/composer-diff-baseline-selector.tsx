@@ -15,6 +15,10 @@ import {
 } from '../../../query/desktop-query'
 import { cn } from '../../../utils/cn'
 import { getBaselineCounts, matchesCommitSearch } from './composer-diff-baseline-options'
+import {
+  notifyComposerPopoverOpened,
+  useComposerPopoverDismissSignal,
+} from './composer-popover-coordination'
 import { getDiffBaselineLabel, getDiffBaselinePrefix } from './diff-baseline'
 import { BaselineSelectorPortal } from './diff-baseline-selector/baseline-selector-popover'
 import { ComposerBranchSelectorPopover } from './diff-baseline-selector/branch-selector-popover'
@@ -53,11 +57,13 @@ function useComposerBaselinePopoverControls({
 }) {
   const closePopover = () => setOpen(false)
   const openBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
+    notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
     setBranchSwitchOpen(false)
     setOpen(true)
   }
   const toggleBaselinePopover = (anchor: 'summary' | 'branch' | 'compact') => {
+    notifyComposerPopoverOpened('diff-baseline')
     activeAnchorRef.current = anchor
     setBranchSwitchOpen(false)
     setOpen((current) => !current)
@@ -69,6 +75,7 @@ function useComposerBaselinePopoverControls({
     }
 
     activeAnchorRef.current = 'branch'
+    notifyComposerPopoverOpened('diff-baseline')
     setOpen(false)
     setBranchSwitchInput('')
     setBranchSwitchOpen(true)
@@ -330,6 +337,14 @@ export function ComposerDiffBaselineSelector({
   const compactAnchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const activeAnchorRef = useRef<BaselineAnchorKind>('summary')
+
+  useComposerPopoverDismissSignal({
+    ignoreSource: 'diff-baseline',
+    onDismiss: () => {
+      setOpen(false)
+      setBranchSwitchOpen(false)
+    },
+  })
 
   const { baselineLabel, commitsQuery, counts, selectedCommitSha, visibleCommits } =
     useComposerBaselineData({

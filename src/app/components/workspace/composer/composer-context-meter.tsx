@@ -6,6 +6,7 @@ import { cn } from '../../../utils/cn'
 
 type ComposerContextMeterProps = {
   contextUsage: ComposerContextUsage | null
+  dismissSignal?: number | undefined
   messages?: Message[] | undefined
   isCompacting: boolean
   compactDisabled: boolean
@@ -181,6 +182,7 @@ function createHoverTriangleCleanup(input: {
 
 export function ComposerContextMeter({
   contextUsage,
+  dismissSignal,
   messages,
   isCompacting,
   compactDisabled,
@@ -193,6 +195,7 @@ export function ComposerContextMeter({
   const buttonRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const clearHoverTriangleRef = useRef<(() => void) | null>(null)
+  const lastDismissSignalRef = useRef(dismissSignal)
   const { availableTokens, contextWindow, meterPercent, percent, tokens } =
     getContextUsageValues(contextUsage)
   const tone = getMeterTone(percent)
@@ -258,6 +261,14 @@ export function ComposerContextMeter({
   )
 
   useEffect(() => clearHoverTriangle, [clearHoverTriangle])
+
+  useEffect(() => {
+    if (dismissSignal === lastDismissSignalRef.current) return
+    lastDismissSignalRef.current = dismissSignal
+    clearHoverTriangle()
+    setHovered(false)
+    setPinned(false)
+  }, [clearHoverTriangle, dismissSignal])
 
   useEffect(() => {
     if (open) {

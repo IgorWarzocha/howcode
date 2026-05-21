@@ -1,6 +1,10 @@
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { BranchSwitchPopover } from '../../components/workspace/branch-switch-popover'
+import {
+  notifyComposerPopoverOpened,
+  useComposerPopoverDismissSignal,
+} from '../../components/workspace/composer/composer-popover-coordination'
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project } from '../../types'
@@ -88,8 +92,13 @@ export function DashboardBranchSwitcher({
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  useComposerPopoverDismissSignal({
+    ignoreSource: 'dashboard-branch',
+    onDismiss: () => setBranchSwitchOpen(false),
+  })
 
   const toggleBranchSwitch = () => {
+    notifyComposerPopoverOpened('dashboard-branch')
     setBranchSwitchInput('')
     setBranchSwitchOpen((open) => !open)
   }
