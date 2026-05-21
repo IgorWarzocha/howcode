@@ -70,7 +70,6 @@ function TurnRow({
   const isCollapsed = collapsed && !isStreamingTurn
   const onToggleTurnCollapse =
     !canCollapseTurn || isStreamingTurn ? undefined : () => onToggleRowCollapse(row.id)
-  const chevronOffsetClass = 'mt-2'
   if (isCollapsed) {
     const preview = getCollapsedTurnPreview(row)
     return (
@@ -78,7 +77,7 @@ function TurnRow({
         expanded={false}
         ariaLabel="Expand turn"
         onToggle={onToggleTurnCollapse}
-        toggleClassName={chevronOffsetClass}
+        toggleClassName="mt-2"
       >
         <FoldedTimelineRow
           label={preview.label}
@@ -96,7 +95,7 @@ function TurnRow({
       expanded
       ariaLabel="Collapse turn"
       onToggle={onToggleTurnCollapse}
-      toggleClassName={chevronOffsetClass}
+      toggleClassName="mt-2"
     >
       <div className="grid min-w-0 gap-2">
         {row.userMessage ? (
@@ -110,61 +109,9 @@ function TurnRow({
             </div>
           </RowLeadToggleSurface>
         ) : null}
-        {row.items.map((item, index) =>
-          renderVisibleTurnItem({
-            item,
-            index,
-            onToggleTurnCollapse,
-            renderTurnItem,
-            row,
-            streamingAssistantMessageId,
-            activeFindMessageId,
-            findQuery,
-          }),
-        )}
+        {row.items.map(renderTurnItem)}
       </div>
     </TimelineRowShell>
-  )
-}
-
-function renderVisibleTurnItem(input: {
-  item: TimelineTurnItem
-  index: number
-  onToggleTurnCollapse?: (() => void) | undefined
-  renderTurnItem: RenderTurnItem
-  row: Extract<TimelineRow, { kind: 'turn' }>
-  streamingAssistantMessageId: string | null
-  activeFindMessageId: string | null
-  findQuery: string
-}) {
-  const {
-    item,
-    index,
-    onToggleTurnCollapse,
-    renderTurnItem,
-    row,
-    streamingAssistantMessageId,
-    activeFindMessageId,
-    findQuery,
-  } = input
-  if (row.userMessage || index > 0 || item.kind === 'tool-group') return renderTurnItem(item)
-  if (item.message.role === 'assistant')
-    return (
-      <div key={`lead:${item.id}`} data-message-id={item.message.id}>
-        <ThreadMessage
-          message={item.message}
-          findActive={item.message.id === activeFindMessageId}
-          findQuery={findQuery}
-          autoExpandThinking={item.message.id === streamingAssistantMessageId}
-          onToggleExpanded={onToggleTurnCollapse}
-          primaryToggleAction={onToggleTurnCollapse}
-        />
-      </div>
-    )
-  return (
-    <RowLeadToggleSurface key={`lead:${item.id}`} onToggle={onToggleTurnCollapse}>
-      {renderTurnItem(item)}
-    </RowLeadToggleSurface>
   )
 }
 
@@ -183,8 +130,6 @@ function SummaryRow({
     row.message.role === 'compactionSummary'
       ? 'Very long — expand only if you really need the full dump.'
       : null
-  const showCompactionDivider = row.message.role === 'compactionSummary'
-  const chevronOffsetClass = showCompactionDivider ? 'mt-[22px]' : 'mt-2'
   const onToggle = () => onToggleRowCollapse(row.id)
   if (collapsed)
     return (
@@ -192,12 +137,9 @@ function SummaryRow({
         expanded={false}
         ariaLabel={`Expand ${summaryLabel.toLowerCase()}`}
         onToggle={onToggle}
-        toggleClassName={chevronOffsetClass}
+        toggleClassName="mt-2"
       >
         <div className="grid min-w-0 gap-2">
-          {showCompactionDivider ? (
-            <div className="h-px w-full bg-[color:var(--border-strong)]" />
-          ) : null}
           <FoldedTimelineRow
             label={summaryLabel}
             secondary={summarySecondary}
@@ -213,12 +155,9 @@ function SummaryRow({
       expanded
       ariaLabel={`Collapse ${summaryLabel.toLowerCase()}`}
       onToggle={onToggle}
-      toggleClassName={chevronOffsetClass}
+      toggleClassName="mt-2"
     >
       <div className="grid min-w-0 gap-2">
-        {showCompactionDivider ? (
-          <div className="h-px w-full bg-[color:var(--border-strong)]" />
-        ) : null}
         <RowLeadToggleSurface onToggle={onToggle}>
           <div data-message-id={row.message.id}>
             <ThreadMessage message={row.message} />

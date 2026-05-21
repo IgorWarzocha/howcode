@@ -26,9 +26,6 @@ type ThreadMessageProps = {
   findQuery?: string | undefined
   findActive?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
-  firstCardOnly?: boolean | undefined
-  disableInnerExpansion?: boolean | undefined
-  primaryToggleAction?: (() => void) | undefined
 }
 
 function AssistantThinkingBlock({
@@ -38,7 +35,6 @@ function AssistantThinkingBlock({
   autoExpandThinking = false,
   onToggleExpanded,
   interactive = true,
-  primaryToggleAction,
 }: {
   thinkingContent: string[]
   thinkingHeaders?: string[] | undefined
@@ -46,7 +42,6 @@ function AssistantThinkingBlock({
   autoExpandThinking?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
   interactive?: boolean | undefined
-  primaryToggleAction?: (() => void) | undefined
 }) {
   const [expanded, setExpanded] = useState(autoExpandThinking)
   const previousAutoExpandRef = useRef(autoExpandThinking)
@@ -73,11 +68,6 @@ function AssistantThinkingBlock({
     <ExpandablePanel
       expanded={expanded}
       onToggle={() => {
-        if (primaryToggleAction) {
-          primaryToggleAction()
-          return
-        }
-
         if (!interactive) {
           return
         }
@@ -149,18 +139,15 @@ function UserMessageBlock({ message }: { message: ProseMessage }) {
 
 function AssistantMessageBlock({
   autoExpandThinking,
-  disableInnerExpansion,
-  firstCardOnly,
   message,
   onToggleExpanded,
-  primaryToggleAction,
 }: Omit<ThreadMessageProps, 'message'> & { message: ProseMessage }) {
   const hasThinking = Boolean(message.thinkingContent && message.thinkingContent.length > 0)
-  const showAssistantContent = message.content.length > 0 && !(firstCardOnly && hasThinking)
+  const showAssistantContent = message.content.length > 0
   const statusLabel = getAssistantStatusLabel(message)
   const statusClassName = getAssistantStatusClassName(message)
   return (
-    <div className="min-w-0">
+    <div className="grid min-w-0 gap-2">
       {hasThinking ? (
         <AssistantThinkingBlock
           thinkingContent={message.thinkingContent ?? []}
@@ -168,8 +155,6 @@ function AssistantMessageBlock({
           thinkingRedacted={message.thinkingRedacted}
           autoExpandThinking={autoExpandThinking}
           onToggleExpanded={onToggleExpanded}
-          interactive={!disableInnerExpansion}
-          primaryToggleAction={primaryToggleAction}
         />
       ) : null}
       {showAssistantContent ? (
