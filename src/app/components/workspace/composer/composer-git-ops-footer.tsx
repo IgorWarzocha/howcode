@@ -14,7 +14,11 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../../desktop/types'
-import { compactIconButtonClass, popoverPanelClass } from '../../../ui/classes'
+import {
+  compactIconButtonClass,
+  composerPopoverInputClass,
+  popoverPanelClass,
+} from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   workspaceFooterRowClass,
@@ -35,6 +39,7 @@ type ComposerGitOpsFooterProps = {
   onBack: () => void
   onSetDiffBaseline: (baseline: ProjectDiffBaseline) => void
   onSetDiffRenderMode: (mode: ProjectDiffRenderMode) => void
+  onSwitchBranch?: ((branchName: string) => void) | undefined
   onSetRepoUrl: (repoUrl: string) => void
   onToggleIncludeUnstaged: () => void
   onTogglePreview: () => void
@@ -57,6 +62,7 @@ export function ComposerGitOpsFooter({
   onBack,
   onSetDiffBaseline,
   onSetDiffRenderMode,
+  onSwitchBranch,
   onSetRepoUrl,
   onToggleIncludeUnstaged,
   onTogglePreview,
@@ -175,17 +181,15 @@ export function ComposerGitOpsFooter({
               <div
                 className={cn(
                   popoverPanelClass,
-                  'absolute bottom-[calc(100%+8px)] z-20 grid min-w-56 gap-2 rounded-xl border p-3',
+                  'absolute bottom-[calc(100%+8px)] z-20 grid min-w-56 gap-1.5 rounded-xl border-0 p-1.5',
                 )}
                 style={{ left: `${optionsPopoverLeft}px` }}
                 role="menu"
                 aria-label="GitOps settings"
               >
                 {hasOrigin ? null : (
-                  <label className="grid gap-1">
-                    <span className="px-1 text-[11px] text-[color:var(--muted)]">
-                      GitHub origin URL
-                    </span>
+                  <label className="grid gap-1 px-1 pb-1">
+                    <span className="text-[11px] text-[color:var(--muted)]">GitHub origin URL</span>
                     <input
                       ref={repoInputRef}
                       value={repoUrl}
@@ -199,7 +203,7 @@ export function ComposerGitOpsFooter({
                           saveOriginOnce()
                         }
                       }}
-                      className="min-h-7 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 text-[12px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted-2)]"
+                      className={composerPopoverInputClass}
                       placeholder="https://github.com/owner/repo"
                       aria-label="GitHub origin URL"
                     />
@@ -288,10 +292,12 @@ export function ComposerGitOpsFooter({
         {isGitRepo ? (
           <ComposerDiffBaselineSelector
             composerPanelRef={composerPanelRef}
+            branch={projectGitState?.branch ?? null}
             projectId={projectGitState?.projectId ?? ''}
             projectGitState={projectGitState}
             selectedBaseline={diffBaseline}
             onSelectBaseline={onSetDiffBaseline}
+            onSwitchBranch={onSwitchBranch}
           />
         ) : null}
         <button

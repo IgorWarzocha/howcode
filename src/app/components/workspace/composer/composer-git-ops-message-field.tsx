@@ -108,7 +108,7 @@ export function ComposerGitOpsMessageField({
 
   if (hasDiffComments) {
     return (
-      <div className="flex items-end justify-between gap-2 px-4 pb-3">
+      <div className="flex items-end justify-between gap-2 pr-4 pl-[1.1rem] pt-1 pb-1">
         <div className="min-w-0 flex-1">{field}</div>
         <div className="inline-flex items-center gap-2">{trailingAccessory}</div>
         {visibleStatusMessage ? (
@@ -120,7 +120,7 @@ export function ComposerGitOpsMessageField({
   }
 
   return (
-    <div className="grid content-end px-4 py-3">
+    <div className="grid content-end pr-4 pl-[1.1rem] pt-4 pb-1">
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0 flex-1">{field}</div>
         <div className="inline-flex items-center gap-2">{trailingAccessory}</div>

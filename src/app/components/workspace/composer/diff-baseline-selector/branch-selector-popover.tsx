@@ -1,4 +1,4 @@
-import { Check, GitPullRequestDraft } from 'lucide-react'
+import { Check, GitFork, GitPullRequestDraft } from 'lucide-react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -124,6 +124,31 @@ export function ComposerBranchSelectorPopover({
         className={composerPopoverInputClass}
         placeholder="Search branches"
       />
+      <div
+        className="grid min-h-[82px] gap-2 rounded-lg bg-[color:var(--surface-hover)] p-2.5"
+        {...getFeatureStatusDataAttributes('feature:composer.repo-selector')}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[color:var(--panel)] text-[color:var(--muted)]">
+              <GitFork size={14} />
+            </span>
+            <div className="min-w-0">
+              <div className="truncate text-[12.5px] font-medium text-[color:var(--text)]">
+                Repository
+              </div>
+              <div className="truncate text-[11px] text-[color:var(--muted)]">
+                Selector will live here instead of the removed top bar.
+              </div>
+            </div>
+          </div>
+          <span className={getFeatureStatusBadgeClass('feature:composer.repo-selector')}>Mock</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 text-[11px] text-[color:var(--muted)]">
+          <div className="rounded-md bg-[color:var(--panel)] px-2 py-1.5">origin</div>
+          <div className="rounded-md bg-[color:var(--panel)] px-2 py-1.5">Switch repo</div>
+        </div>
+      </div>
       <div
         className="grid min-h-[82px] gap-2 rounded-lg bg-[color:var(--surface-hover)] p-2.5"
         {...getFeatureStatusDataAttributes('feature:composer.worktrees')}

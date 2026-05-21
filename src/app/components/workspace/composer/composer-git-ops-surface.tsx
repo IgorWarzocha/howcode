@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useMemo } from 'react'
+import { type RefObject, useEffect } from 'react'
 import { useHowcodeKeybindingCommand } from '../../../app-shell/keybinding-events'
 import type {
   AppSettings,
@@ -9,7 +9,6 @@ import type {
 } from '../../../desktop/types'
 import { getFeatureStatusDataAttributes } from '../../../features/feature-status'
 import { composerTextActionButtonClass } from '../../../ui/classes'
-import { cn } from '../../../utils/cn'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import type { SavedDiffComment } from '../diff/diffCommentStore'
 import { ComposerDictationControls } from './composer-dictation-controls'
@@ -87,7 +86,6 @@ export function ComposerGitOpsSurface({
     hasDiffComments,
     hasOrigin,
     includeUnstaged,
-    isGitHubOrigin,
     isGitRepo,
     previewEnabled,
     primaryActionLabel,
@@ -110,11 +108,6 @@ export function ComposerGitOpsSurface({
     onSendDiffComments,
     projectGitState,
   })
-
-  const contentMinHeightClass = useMemo(
-    () => cn('relative', hasDiffComments && 'min-h-24'),
-    [hasDiffComments],
-  )
 
   const {
     cancelDictation,
@@ -182,7 +175,7 @@ export function ComposerGitOpsSurface({
   const primaryActionButton = (
     <button
       type="button"
-      className={composerTextActionButtonClass}
+      className={`${composerTextActionButtonClass} border-0 bg-[color:var(--surface-hover)] hover:bg-[color:var(--surface-hover)]`}
       onClick={() => {
         void handlePrimaryAction()
       }}
@@ -207,18 +200,11 @@ export function ComposerGitOpsSurface({
   return (
     <div className="grid gap-0" {...getFeatureStatusDataAttributes('feature:composer.git-ops')}>
       {/* Keep one-line default height here too, then let the field grow upward as content expands. */}
-      <div className={contentMinHeightClass}>
-        {/* Top git-ops controls are absolutely positioned inside this shared block. The prompt
-            composer mirrors this pattern with its + button, prompt body, and send controls. */}
+      <div className="relative">
         {hasDiffComments ? (
           <ComposerGitOpsTopBar
             commentCards={commentCards}
-            hasDiffComments={hasDiffComments}
-            hasOrigin={hasOrigin}
-            isGitHubOrigin={isGitHubOrigin}
-            isGitRepo={isGitRepo}
             onSelectDiffComment={onSelectDiffComment}
-            projectGitState={projectGitState}
           />
         ) : null}
         {hasDiffComments ? null : (
@@ -296,6 +282,9 @@ export function ComposerGitOpsSurface({
         onBack={onBack}
         onSetDiffBaseline={onSetDiffBaseline}
         onSetDiffRenderMode={onSetDiffRenderMode}
+        onSwitchBranch={(branchName) => {
+          void onAction('workspace.switch-branch', { projectId, value: branchName })
+        }}
         onSetRepoUrl={setRepoUrl}
         onToggleIncludeUnstaged={() => setIncludeUnstaged((current) => !current)}
         onTogglePreview={togglePreviewEnabled}

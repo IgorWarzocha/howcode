@@ -6,6 +6,7 @@ export type GitOpsCommentCard = {
   filePath: string
   fileName: string
   linesLabel: string
+  body: string
 }
 
 export function getActionResultMessage(result: DesktopActionResult | null) {
@@ -52,5 +53,6 @@ export function buildGitOpsCommentCards(diffComments: SavedDiffComment[]): GitOp
     filePath: comment.filePath,
     fileName: getCommentFileName(comment.filePath),
     linesLabel: getCommentLinesLabel(comment),
+    body: comment.body,
   }))
 }
