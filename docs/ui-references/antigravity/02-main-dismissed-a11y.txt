@@ -1,0 +1,47 @@
+[RootWebArea] Antigravity
+                    [button] Antigravity
+                    [StaticText] Antigravity
+                    [button] File
+                    [StaticText] File
+                    [button] View
+                    [StaticText] View
+                    [button] Window
+                    [StaticText] Window
+                    [navigation] Sidebar
+                    [button] Toggle Sidebar
+                    [button] Go Back
+                    [button] Go Forward
+                    [button] New Conversation
+                    [StaticText] New Conversation
+                    [button] Conversation History
+                    [StaticText] Conversation History
+                    [button] Scheduled Tasks
+                    [StaticText] Scheduled Tasks
+                    [heading] Projects
+                    [StaticText] Projects
+                    [button] Display Options
+                    [button] /home/igorw
+                    [StaticText] /home/igorw
+                    [StaticText] No conversations yet
+                    [button] /home/igorw/Downloads
+                    [StaticText] /home/igorw/Downloads
+                    [StaticText] No conversations yet
+                    [button] lucid-darwin
+                    [StaticText] lucid-darwin
+                    [button] 3D Sakura Diorama
+                    [StaticText] 3D Sakura Diorama
+                    [button] Settings
+                    [StaticText] Settings
+                    [button] lucid-darwin
+                    [StaticText] lucid-darwin
+                    [combobox] Message input
+                    [StaticText] Ask anything, @ to mention, / for actions
+                    [button] Add context
+                    [button] Select model, current: Gemini 3.5 Flash (High)
+                    [button] Select model, current: Gemini 3.5 Flash (High)
+                    [StaticText] Gemini 3.5 Flash (High)
+                    [button] Record voice memo
+                    [button] Select Environment
+                    [StaticText] Local
+      [listbox] Typeahead menu
+      [listbox] Typeahead menu

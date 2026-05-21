@@ -1,0 +1,428 @@
+{
+  "url": "https://127.0.0.1:42565/",
+  "title": "Antigravity",
+  "size": [1250, 1030],
+  "text": "Quotas Increased\n\nIf you are on a paid plan, your Gemini quota has been reset for the week and increased by 3x moving forward. Keep building!\n\nDismiss\nAntigravity\nFile\nView\nWindow\nNew Conversation\nConversation History\nScheduled Tasks\nProjects\n/home/igorw\nNo conversations yet\n/home/igorw/Downloads\nNo conversations yet\nlucid-darwin\n3D Sakura Diorama\nSettings\nlucid-darwin\n\nAsk anything, @ to mention, / for actions\n\nGemini 3.5 Flash (High)\nLocal",
+  "buttons": [
+    {
+      "i": 0,
+      "tag": "BUTTON",
+      "text": "Dismiss",
+      "cls": "rounded-md bg-primary px-2 py-1 font-medium text-primary-foreground text-sm transition-colors hover:bg-secondary",
+      "rect": {
+        "x": 339,
+        "y": 976,
+        "w": 68,
+        "h": 29
+      }
+    },
+    {
+      "i": 1,
+      "tag": "BUTTON",
+      "text": "Antigravity",
+      "cls": "px-1 py-1 text-sm select-none outline-none transition-colors duration-100 hover:bg-secondary",
+      "rect": {
+        "x": 8,
+        "y": 3,
+        "w": 79,
+        "h": 29
+      }
+    },
+    {
+      "i": 2,
+      "tag": "BUTTON",
+      "text": "File",
+      "cls": "px-1 py-1 text-sm select-none outline-none transition-colors duration-100 hover:bg-secondary",
+      "rect": {
+        "x": 91,
+        "y": 3,
+        "w": 31,
+        "h": 29
+      }
+    },
+    {
+      "i": 3,
+      "tag": "BUTTON",
+      "text": "View",
+      "cls": "px-1 py-1 text-sm select-none outline-none transition-colors duration-100 hover:bg-secondary",
+      "rect": {
+        "x": 127,
+        "y": 3,
+        "w": 40,
+        "h": 29
+      }
+    },
+    {
+      "i": 4,
+      "tag": "BUTTON",
+      "text": "Window",
+      "cls": "px-1 py-1 text-sm select-none outline-none transition-colors duration-100 hover:bg-secondary",
+      "rect": {
+        "x": 171,
+        "y": 3,
+        "w": 62,
+        "h": 29
+      }
+    },
+    {
+      "i": 5,
+      "tag": "BUTTON",
+      "text": "Toggle Sidebar",
+      "cls": "group outline-none w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary transition-[background] disabled:pointer-events-none",
+      "rect": {
+        "x": 8,
+        "y": 43,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 6,
+      "tag": "BUTTON",
+      "text": "Go Back",
+      "cls": "group outline-none w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary transition-[background] disabled:pointer-events-none",
+      "rect": {
+        "x": 40,
+        "y": 43,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 7,
+      "tag": "BUTTON",
+      "text": "Go Forward",
+      "cls": "group outline-none w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary transition-[background] disabled:pointer-events-none",
+      "rect": {
+        "x": 68,
+        "y": 43,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 8,
+      "tag": "DIV",
+      "text": "New Conversation",
+      "cls": "flex-grow flex items-center gap-1.5 group px-2 py-1 rounded-lg cursor-pointer h-8 min-w-0 border bg-sidebar-secondary",
+      "rect": {
+        "x": 8,
+        "y": 87,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 9,
+      "tag": "DIV",
+      "text": "Conversation History",
+      "cls": "flex-grow flex items-center gap-1.5 group px-2 py-1 rounded-lg cursor-pointer h-8 min-w-0 bg-transparent hover:bg-sidebar-muted text-secondary-foreground",
+      "rect": {
+        "x": 8,
+        "y": 125,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 10,
+      "tag": "DIV",
+      "text": "Scheduled Tasks",
+      "cls": "flex-grow flex items-center gap-1.5 group px-2 py-1 rounded-lg cursor-pointer h-8 min-w-0 bg-transparent hover:bg-sidebar-muted text-secondary-foreground",
+      "rect": {
+        "x": 8,
+        "y": 163,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 11,
+      "tag": "BUTTON",
+      "text": "Display Options",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary w-5 h-5 flex items-center justify-center rounded-md transition-colors",
+      "rect": {
+        "x": 200,
+        "y": 220,
+        "w": 20,
+        "h": 20
+      }
+    },
+    {
+      "i": 12,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary w-5 h-5 flex items-center justify-center rounded-md transition-colors",
+      "rect": {
+        "x": 224,
+        "y": 220,
+        "w": 20,
+        "h": 20
+      }
+    },
+    {
+      "i": 13,
+      "tag": "DIV",
+      "text": "/home/igorw",
+      "cls": "flex items-center gap-0 pl-1 pr-0.5 h-8 shrink-0 rounded-lg select-none hover:bg-muted text-muted-foreground hover:text-secondary-foreground cursor-pointer",
+      "rect": {
+        "x": 8,
+        "y": 252,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 14,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 15,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 16,
+      "tag": "DIV",
+      "text": "/home/igorw/Downloads",
+      "cls": "flex items-center gap-0 pl-1 pr-0.5 h-8 shrink-0 rounded-lg select-none hover:bg-muted text-muted-foreground hover:text-secondary-foreground cursor-pointer",
+      "rect": {
+        "x": 8,
+        "y": 325,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 17,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 18,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 19,
+      "tag": "DIV",
+      "text": "lucid-darwin",
+      "cls": "flex items-center gap-0 pl-1 pr-0.5 h-8 shrink-0 rounded-lg select-none hover:bg-muted text-muted-foreground hover:text-secondary-foreground cursor-pointer",
+      "rect": {
+        "x": 8,
+        "y": 398,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 20,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 21,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "text-muted-foreground hover:text-foreground hover:bg-sidebar-secondary transition-colors w-6 h-6 flex items-center justify-center rounded-md",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 22,
+      "tag": "DIV",
+      "text": "3D Sakura Diorama",
+      "cls": "select-none cursor-pointer rounded-lg min-h-[32px] py-1.5 flex flex-row gap-1 items-center justify-between px-2 outline-none ml-[22px]",
+      "rect": {
+        "x": 30,
+        "y": 431,
+        "w": 218,
+        "h": 33
+      }
+    },
+    {
+      "i": 23,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
+      "rect": {
+        "x": 170,
+        "y": 436,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 24,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
+      "rect": {
+        "x": 195,
+        "y": 436,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 25,
+      "tag": "BUTTON",
+      "text": "",
+      "cls": "w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
+      "rect": {
+        "x": 220,
+        "y": 436,
+        "w": 24,
+        "h": 24
+      }
+    },
+    {
+      "i": 26,
+      "tag": "DIV",
+      "text": "Settings",
+      "cls": "flex-grow flex items-center gap-1.5 group px-2 py-1 rounded-lg cursor-pointer h-8 min-w-0 bg-transparent hover:bg-sidebar-muted text-secondary-foreground",
+      "rect": {
+        "x": 8,
+        "y": 990,
+        "w": 240,
+        "h": 32
+      }
+    },
+    {
+      "i": 27,
+      "tag": "BUTTON",
+      "text": "lucid-darwin",
+      "cls": "px-3 h-7 hover:bg-muted text-foreground rounded-full text-sm flex items-center gap-1 w-fit max-w-[300px] select-none text-foreground",
+      "rect": {
+        "x": 433,
+        "y": 392,
+        "w": 145,
+        "h": 28
+      }
+    },
+    {
+      "i": 28,
+      "tag": "BUTTON",
+      "text": "Add context",
+      "cls": "p-1.5 rounded-full text-secondary-foreground hover:bg-secondary cursor-pointer",
+      "rect": {
+        "x": 440,
+        "y": 475,
+        "w": 28,
+        "h": 28
+      }
+    },
+    {
+      "i": 29,
+      "tag": "INPUT",
+      "text": "",
+      "cls": "hidden",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 30,
+      "tag": "DIV",
+      "text": "Gemini 3.5 Flash (High)",
+      "cls": "",
+      "rect": {
+        "x": 469,
+        "y": 475,
+        "w": 163,
+        "h": 28
+      }
+    },
+    {
+      "i": 31,
+      "tag": "BUTTON",
+      "text": "Gemini 3.5 Flash (High)",
+      "cls": "flex min-w-0 max-w-full cursor-pointer items-center h-7 gap-1 rounded-lg pr-1 pl-2 text-xs outline-none hover:bg-secondary transition-colors",
+      "rect": {
+        "x": 469,
+        "y": 475,
+        "w": 163,
+        "h": 28
+      }
+    },
+    {
+      "i": 32,
+      "tag": "BUTTON",
+      "text": "Record voice memo",
+      "cls": "flex items-center p-1.5 rounded-full transition-all duration-150 hover:bg-secondary cursor-pointer bg-transparent opacity-70",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 33,
+      "tag": "BUTTON",
+      "text": "Record voice memo",
+      "cls": "flex items-center p-1.5 rounded-full transition-all duration-150 hover:opacity-90 cursor-pointer bg-secondary",
+      "rect": {
+        "x": 1038,
+        "y": 475,
+        "w": 28,
+        "h": 28
+      }
+    },
+    {
+      "i": 34,
+      "tag": "BUTTON",
+      "text": "Local",
+      "cls": "outline-none p-1 hover:text-foreground cursor-pointer rounded-md flex items-center gap-0.5 text-muted-foreground w-fit text-xs gap-0.5",
+      "rect": {
+        "x": 446,
+        "y": 513,
+        "w": 73,
+        "h": 26
+      }
+    }
+  ]
+}
