@@ -42,11 +42,16 @@ export function CopyMessageButton({ label, text }: { label: string; text: string
   )
 }
 
-export function renderProse(content: string[], format: 'prose' | 'list' = 'prose') {
+export function renderProse(
+  content: string[],
+  format: 'prose' | 'list' = 'prose',
+  tone: 'default' | 'system' = 'default',
+) {
   if (format === 'list') {
     return (
       <MarkdownContent
         markdown={content.map((item) => `- ${item}`).join('\n')}
+        tone={tone}
         className="gap-1.5 text-pretty"
       />
     )
@@ -55,20 +60,20 @@ export function renderProse(content: string[], format: 'prose' | 'list' = 'prose
   return (
     <div className="grid min-w-0 gap-3 text-pretty [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
-        <MarkdownContent key={paragraph} markdown={paragraph} />
+        <MarkdownContent key={paragraph} markdown={paragraph} tone={tone} />
       ))}
     </div>
   )
 }
 
-export function renderThinking(content: string[]) {
+export function renderThinking(content: string[], tone: 'system' | 'thinking' = 'thinking') {
   return (
     <div className="grid min-w-0 gap-2 [overflow-wrap:anywhere]">
       {content.map((paragraph) => (
         <div key={paragraph} className="group/message relative min-w-0 pr-9">
           <MarkdownContent
             markdown={paragraph}
-            tone="thinking"
+            tone={tone}
             className="gap-1 text-[13px] leading-[1.62]"
           />
           <div className="absolute top-0 right-0">

@@ -83,7 +83,7 @@ function TurnRow({
           label={preview.label}
           secondary={preview.secondary}
           italicLabel={preview.italicLabel}
-          mutedLabel={preview.italicLabel}
+          mutedLabel={preview.mutedLabel ?? preview.italicLabel}
           tone={row.userMessage?.role === 'user' ? 'user' : 'default'}
           onToggle={() => onToggleTurnCollapse?.()}
         />

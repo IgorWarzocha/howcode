@@ -15,7 +15,7 @@ import { openExternalQuery } from '../../query/desktop-query'
 import { inlineCodeClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
 
-type MarkdownTone = 'default' | 'thinking' | 'user'
+type MarkdownTone = 'default' | 'thinking' | 'system' | 'user'
 
 type MarkdownContentProps = {
   markdown: string
@@ -27,6 +27,8 @@ function getToneTextClass(tone: MarkdownTone) {
   switch (tone) {
     case 'thinking':
       return 'text-[color:var(--muted-2)]/78 italic'
+    case 'system':
+      return 'text-[color:var(--muted)]/84'
     case 'user':
       return 'text-[color:var(--text)]/94'
     default:
@@ -38,6 +40,8 @@ function getToneStrongClass(tone: MarkdownTone) {
   switch (tone) {
     case 'thinking':
       return 'text-[color:var(--muted)]/88'
+    case 'system':
+      return 'text-[color:var(--muted)]/92'
     case 'user':
       return 'text-[color:var(--text)]/96'
     default:
@@ -169,32 +173,74 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
             </p>
           ),
           h1: ({ children }) => (
-            <h1 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
+            <h1
+              className={cn(
+                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                tone === 'system'
+                  ? 'text-[color:var(--muted)]/92'
+                  : 'text-[color:var(--markdown-heading)]',
+              )}
+            >
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
+            <h2
+              className={cn(
+                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                tone === 'system'
+                  ? 'text-[color:var(--muted)]/92'
+                  : 'text-[color:var(--markdown-heading)]',
+              )}
+            >
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
+            <h3
+              className={cn(
+                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                tone === 'system'
+                  ? 'text-[color:var(--muted)]/92'
+                  : 'text-[color:var(--markdown-heading)]',
+              )}
+            >
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="m-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold text-[color:var(--markdown-heading)] [overflow-wrap:anywhere]">
+            <h4
+              className={cn(
+                'm-0 max-w-full break-words text-[14px] leading-[1.68] font-semibold [overflow-wrap:anywhere]',
+                tone === 'system'
+                  ? 'text-[color:var(--muted)]/92'
+                  : 'text-[color:var(--markdown-heading)]',
+              )}
+            >
               {children}
             </h4>
           ),
           ul: ({ children }) => (
-            <ul className="m-0 grid list-disc gap-0.5 pl-5 marker:text-[color:var(--markdown-code)]">
+            <ul
+              className={cn(
+                'm-0 grid list-disc gap-0.5 pl-5',
+                tone === 'system'
+                  ? 'marker:text-[color:var(--muted)]/72'
+                  : 'marker:text-[color:var(--markdown-code)]',
+              )}
+            >
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="m-0 grid list-decimal gap-0.5 pl-5 marker:text-[color:var(--markdown-code)]">
+            <ol
+              className={cn(
+                'm-0 grid list-decimal gap-0.5 pl-5',
+                tone === 'system'
+                  ? 'marker:text-[color:var(--muted)]/72'
+                  : 'marker:text-[color:var(--markdown-code)]',
+              )}
+            >
               {children}
             </ol>
           ),
@@ -225,7 +271,14 @@ export function MarkdownContent({ markdown, tone = 'default', className }: Markd
             <thead className="bg-[color:var(--message-tool-bg)]">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border-b border-[color:var(--border)] px-3 py-2 font-medium text-[color:var(--markdown-heading)]">
+            <th
+              className={cn(
+                'border-b border-[color:var(--border)] px-3 py-2 font-medium',
+                tone === 'system'
+                  ? 'text-[color:var(--muted)]/92'
+                  : 'text-[color:var(--markdown-heading)]',
+              )}
+            >
               {children}
             </th>
           ),

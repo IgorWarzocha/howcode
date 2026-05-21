@@ -5,8 +5,6 @@ import type { TimelineRow, TimelineTurnItem } from './timeline-row'
 export function getMessagePreview(message: Message) {
   switch (message.role) {
     case 'user':
-    case 'custom':
-    case 'system':
     case 'branchSummary':
     case 'compactionSummary':
       return message.content.join(' ').trim()
@@ -14,6 +12,10 @@ export function getMessagePreview(message: Message) {
       return getAssistantPreview(message) ?? message.content.join(' ').trim()
     case 'toolResult':
       return [message.toolName, message.content.join(' ')].filter(Boolean).join(' — ')
+    case 'custom':
+      return [message.customType, message.content.join(' ')].filter(Boolean).join(' — ')
+    case 'system':
+      return [message.label, message.content.join(' ')].filter(Boolean).join(' — ')
     case 'bashExecution':
       return `$ ${message.command}`.trim()
     default:
@@ -55,6 +57,24 @@ export function getCollapsedTurnPreview(row: Extract<TimelineRow, { kind: 'turn'
 
   if (firstItem.kind === 'tool-group') {
     return { label: getToolGroupPreview(firstItem), secondary: null, italicLabel: false }
+  }
+
+  if (firstItem.message.role === 'custom') {
+    return {
+      label: firstItem.message.customType,
+      secondary: firstItem.message.content.join(' ').trim() || null,
+      italicLabel: false,
+      mutedLabel: true,
+    }
+  }
+
+  if (firstItem.message.role === 'system') {
+    return {
+      label: firstItem.message.label,
+      secondary: firstItem.message.content.join(' ').trim() || null,
+      italicLabel: false,
+      mutedLabel: true,
+    }
   }
 
   return {

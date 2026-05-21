@@ -209,7 +209,7 @@ function CustomMessageBlock({ message }: { message: CustomThreadMessage }) {
       <div className="break-words text-[12px] uppercase tracking-[0.08em] text-[color:var(--muted)] [overflow-wrap:anywhere]">
         {message.isError ? 'Extension error' : message.customType}
       </div>
-      {renderProse(message.content)}
+      {renderProse(message.content, 'prose', message.isError ? 'default' : 'system')}
     </div>
   )
 }
@@ -235,7 +235,7 @@ function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
       <div className="break-words text-[11px] not-italic uppercase tracking-[0.08em] text-[color:var(--muted-2)]/84 [overflow-wrap:anywhere]">
         {message.label}
       </div>
-      {renderThinking(message.content)}
+      {renderProse(message.content, 'prose', 'system')}
     </div>
   )
 }
