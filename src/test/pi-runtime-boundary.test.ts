@@ -15,6 +15,7 @@ const allowedPiRuntimeImportPrefixes = [
   'desktop/runtime-host/',
   'desktop/runtime/',
   'desktop/service-host.ts',
+  'desktop/service-host-runtime.ts',
   'desktop/pi-module.ts',
   // Package internals are only exported to Electron through runtime-host-bridge.ts; the host
   // imports these implementations directly so native package-manager dependencies stay in Node.

@@ -1,6 +1,7 @@
 ### 0.1.66
 
 - Split desktop Pi/runtime work into a stock-Node service so native deps stop fighting Electron.
+- Made packaged builds carry Node 24/25/26 native bundles, so the stock-Node service can start cleanly across user Node installs.
 - Added custom Pi directory settings and branch switching/selectors in the dashboard and composer.
 - Added configurable app keybindings.
 - Added thread find and result highlights.
