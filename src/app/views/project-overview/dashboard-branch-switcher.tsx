@@ -1,45 +1,33 @@
-import { Check, GitPullRequestDraft } from 'lucide-react'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { BranchSwitchPopover } from '../../components/workspace/branch-switch-popover'
 import type { DesktopActionInvoker, ProjectGitState } from '../../desktop/types'
-import {
-  getFeatureStatusBadgeClass,
-  getFeatureStatusDataAttributes,
-} from '../../features/feature-status'
 import { useDismissibleLayer } from '../../hooks/useDismissibleLayer'
 import type { Project } from '../../types'
 import { cn } from '../../utils/cn'
-
-const dashboardBranchPopoverInputClass =
-  'box-border block h-8 w-full min-w-0 rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 text-[11px] leading-4 text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]'
 
 function DashboardBranchSwitchPopover({
   anchorRef,
   branchSwitchInput,
   currentBranch,
-  filteredBranches,
+  branches,
   inputRef,
   panelRef,
-  projectId,
-  onAction,
   onSetBranchSwitchInput,
   onSetBranchSwitchOpen,
-  onSubmitBranchSwitch,
+  onSwitchBranch,
 }: {
   anchorRef: RefObject<HTMLElement | null>
   branchSwitchInput: string
   currentBranch: string | null | undefined
-  filteredBranches: readonly string[]
+  branches: readonly string[]
   inputRef: RefObject<HTMLInputElement | null>
   panelRef: RefObject<HTMLDivElement | null>
-  projectId: string
-  onAction: DesktopActionInvoker
   onSetBranchSwitchInput: (value: string) => void
   onSetBranchSwitchOpen: (open: boolean) => void
-  onSubmitBranchSwitch: () => void
+  onSwitchBranch: (branchName: string) => void
 }) {
   const [position, setPosition] = useState<CSSProperties | null>(null)
-  const visibleBranches = filteredBranches.slice(0, 5)
 
   useEffect(() => {
     const anchor = anchorRef.current
@@ -67,88 +55,19 @@ function DashboardBranchSwitchPopover({
   if (!position || typeof document === 'undefined') return null
 
   return createPortal(
-    <div
-      ref={panelRef}
-      className="fixed z-[160] isolate grid min-w-0 gap-2 rounded-xl border border-[color:var(--border-strong)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+    <BranchSwitchPopover
+      branchLabel={currentBranch}
+      branchListClassName="max-h-[8.5rem]"
+      branches={branches}
+      branchSwitchInput={branchSwitchInput}
+      inputRef={inputRef}
+      panelRef={panelRef}
+      className="fixed z-[160] isolate"
       style={{ ...position, boxSizing: 'border-box' }}
-    >
-      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-        Switch branch
-      </div>
-      <input
-        ref={inputRef}
-        value={branchSwitchInput}
-        onChange={(event) => onSetBranchSwitchInput(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') onSubmitBranchSwitch()
-          if (event.key === 'Escape') onSetBranchSwitchOpen(false)
-        }}
-        className={dashboardBranchPopoverInputClass}
-        placeholder="Search branches"
-      />
-      <div className="grid max-h-36 min-w-0 gap-0.5 overflow-y-auto">
-        {visibleBranches.length > 0 ? (
-          visibleBranches.map((branch) => (
-            <button
-              key={branch}
-              type="button"
-              className={cn(
-                'grid min-h-7 w-full grid-cols-[14px_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-2 py-1 text-left text-[10.5px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-                branch === currentBranch && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
-              )}
-              style={{ fontSize: 10.5, lineHeight: '16px' }}
-              onClick={() => {
-                onSetBranchSwitchOpen(false)
-                void onAction('workspace.switch-branch', { projectId, value: branch })
-              }}
-            >
-              <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
-                {branch === currentBranch ? <Check size={12} /> : null}
-              </span>
-              <span className="min-w-0 truncate">{branch}</span>
-            </button>
-          ))
-        ) : (
-          <div className="px-2 py-1.5 text-[12px] text-[color:var(--muted)]">
-            Press Enter to check out “{branchSwitchInput.trim()}”
-          </div>
-        )}
-      </div>
-      <div
-        className="grid min-h-[86px] min-w-0 gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-2.5"
-        style={{ boxSizing: 'border-box' }}
-        {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
-      >
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] text-[color:var(--muted)]">
-              <GitPullRequestDraft size={12} />
-            </span>
-            <div className="min-w-0">
-              <div className="truncate text-[11px] font-medium text-[color:var(--text)]">
-                Worktrees
-              </div>
-              <div className="truncate text-[10.5px] text-[color:var(--muted)]">
-                Reserved for branch workspaces.
-              </div>
-            </div>
-          </div>
-          <span
-            className={cn(getFeatureStatusBadgeClass('feature:composer.worktrees'), 'shrink-0')}
-          >
-            Mock
-          </span>
-        </div>
-        <div className="grid min-w-0 grid-cols-2 gap-1.5 text-[10.5px] text-[color:var(--muted)]">
-          <div className="min-w-0 truncate rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Create
-          </div>
-          <div className="min-w-0 truncate rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Open
-          </div>
-        </div>
-      </div>
-    </div>,
+      onSetBranchSwitchInput={onSetBranchSwitchInput}
+      onSetBranchSwitchOpen={onSetBranchSwitchOpen}
+      onSwitchBranch={onSwitchBranch}
+    />,
     document.body,
   )
 }
@@ -174,14 +93,8 @@ export function DashboardBranchSwitcher({
     setBranchSwitchInput('')
     setBranchSwitchOpen((open) => !open)
   }
-  const filteredBranches = (gitState.branches ?? []).filter((branch) =>
-    branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
-  )
-  const submitBranchSwitch = () => {
-    const nextBranch = branchSwitchInput.trim()
-    if (!nextBranch) return
-    setBranchSwitchOpen(false)
-    void onAction('workspace.switch-branch', { projectId: project.id, value: nextBranch })
+  const switchBranch = (branchName: string) => {
+    void onAction('workspace.switch-branch', { projectId: project.id, value: branchName })
   }
 
   useDismissibleLayer({
@@ -200,7 +113,10 @@ export function DashboardBranchSwitcher({
       <button
         ref={buttonRef}
         type="button"
-        className="pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-full bg-[rgba(169,178,215,0.08)] px-2 py-0.5 text-left text-[11px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(169,178,215,0.14)] hover:text-[color:var(--text)]"
+        className={cn(
+          'composer-footer-text pointer-events-auto relative z-20 inline-flex min-w-0 max-w-[14rem] shrink cursor-pointer items-center truncate rounded-md px-2 py-0.5 text-left transition-colors hover:bg-[color:var(--surface-hover)]',
+          branchSwitchOpen && 'bg-[color:var(--surface-hover)]',
+        )}
         onPointerDownCapture={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -213,21 +129,19 @@ export function DashboardBranchSwitcher({
         aria-expanded={branchSwitchOpen}
         aria-haspopup="dialog"
       >
-        {branchLabel}
+        <span className="truncate text-[color:var(--muted)]">{branchLabel}</span>
       </button>
       {branchSwitchOpen ? (
         <DashboardBranchSwitchPopover
           anchorRef={buttonRef}
+          branches={gitState.branches ?? []}
           branchSwitchInput={branchSwitchInput}
           currentBranch={gitState.branch}
-          filteredBranches={filteredBranches}
           inputRef={inputRef}
           panelRef={panelRef}
-          projectId={project.id}
-          onAction={onAction}
           onSetBranchSwitchInput={setBranchSwitchInput}
           onSetBranchSwitchOpen={setBranchSwitchOpen}
-          onSubmitBranchSwitch={submitBranchSwitch}
+          onSwitchBranch={switchBranch}
         />
       ) : null}
     </span>
