@@ -47,6 +47,9 @@ export const foldedUserTimelineRowClass = `${processLedgerRowClass} folded-timel
 export const processLedgerRowExpandedClass =
   'mt-1 ml-2 grid min-w-0 gap-2 border-l border-[color:var(--border)]/70 py-1.5 pl-3'
 
+export const processLedgerDetailBlockClass =
+  'grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 bg-[color:var(--folded-row-bg)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82'
+
 export const threadSessionSurfaceClass = 'thread-session-surface'
 
 export const threadSessionControlClass = 'thread-session-control'
@@ -64,11 +67,10 @@ export const thinkingDisclosureTriggerClass = `px-2.5 py-2 hover:bg-[color:var(-
 export const thinkingDisclosureBodyClass =
   '!border-0 border-l border-[color:var(--border)]/70 px-3 py-2.5'
 
-export const artifactStripClass =
-  'rounded-xl border border-[color:var(--border)]/80 bg-[rgba(255,255,255,0.025)] px-3 py-2 text-left'
+export const artifactStripClass = 'rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 text-left'
 
 export const changedFilesStripClass =
-  'flex min-w-0 items-center gap-2 rounded-xl border border-[color:var(--border)]/80 bg-[rgba(255,255,255,0.025)] px-3 py-2 text-[12px] text-[color:var(--muted)]'
+  'flex min-w-0 items-center gap-2 rounded-lg bg-[color:var(--folded-row-bg)] px-3 py-2 text-[12px] text-[color:var(--muted)]'
 
 export const quietListFrameClass = 'grid min-w-0 divide-y divide-[color:var(--border)]/70'
 
@@ -109,6 +111,23 @@ export const primaryButtonClass =
 
 export const composerTextActionButtonClass =
   'settings-control-text inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[color:var(--border)] bg-[color:var(--panel-2)] px-3 font-medium text-[color:var(--text)] transition-colors duration-150 ease-out hover:border-[color:var(--accent-border)] hover:bg-[color:var(--accent-bg-subtle)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--panel)] disabled:text-[color:var(--muted-2)]'
+
+export const composerPanelClass =
+  'grid gap-0 overflow-visible rounded-[20px] border border-[color:color-mix(in_srgb,var(--accent-border)_52%,transparent)] bg-[color:var(--panel)] shadow-none'
+
+export const composerDividerClass = 'h-px bg-[color:var(--border)]'
+
+export const composerPopoverInputClass =
+  'settings-control-text h-8 min-w-0 rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 text-[11.5px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]'
+
+export const composerPopoverOptionClass =
+  'grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none'
+
+export const composerPopoverOptionSelectedClass =
+  'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
+
+export const composerPopoverSectionLabelClass =
+  'px-2 pt-1 text-[10.5px] uppercase tracking-[0.08em] text-[color:var(--muted)]'
 
 export const interactiveCardClass =
   'rounded-[20px] border border-[color:var(--border)] bg-[color:var(--panel)] text-left shadow-[var(--shadow)] transition-colors duration-150 ease-out hover:bg-[color:var(--panel-2)]'

@@ -164,7 +164,7 @@ export function ComposerModelPopover({
             ref={modelSearchRef}
             value={modelSearch}
             onChange={(event) => setModelSearch(event.currentTarget.value)}
-            className="h-8 w-full rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--panel-2)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)]"
+            className="h-7 w-full rounded-md border-0 bg-[color:var(--surface-hover)] px-2.5 pl-8 text-[11px] text-[color:var(--text)] outline-none placeholder:text-[color:var(--muted)] focus:bg-[color:var(--surface-hover)]"
             placeholder={`Search ${modelsForProvider.length} models…`}
             aria-label="Search models"
           />
@@ -226,7 +226,7 @@ export function ComposerModelPopover({
   )
 
   const panelClassName = cn(
-    'grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-2xl border-[color:var(--border-strong)] p-1.5 text-[12px]',
+    'grid w-52 max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border-0 p-1.5 text-[12px]',
     sidePlacementEnabled
       ? 'fixed z-[120] max-h-[calc(100vh-1.5rem)] overflow-y-auto transition-opacity duration-150 ease-out'
       : 'absolute bottom-[calc(100%+8px)] left-0 z-[60]',

@@ -13,6 +13,7 @@ import type {
   InboxThread,
 } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
+import { composerPanelClass } from '../../../ui/classes'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
 import { ComposerPromptInputPanel } from '../composer/composer-prompt-input-panel'
 import { useComposerAttachmentPicker } from '../composer/useComposerAttachmentPicker'
@@ -326,7 +327,7 @@ export function InboxComposer({
       <div className="relative grid gap-0 overflow-visible">
         <section
           ref={composerPanelRef}
-          className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
+          className={composerPanelClass}
           aria-label="Inbox composer panel"
         >
           <ComposerPromptInputPanel
@@ -378,8 +379,6 @@ export function InboxComposer({
               {errorMessage}
             </output>
           ) : null}
-
-          <div className="h-px bg-[color:var(--border)]" />
 
           <InboxComposerFooter
             availableModels={availableModels}

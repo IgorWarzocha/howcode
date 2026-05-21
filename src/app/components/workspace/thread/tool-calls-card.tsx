@@ -1,5 +1,6 @@
 import {
   processLedgerClass,
+  processLedgerDetailBlockClass,
   processLedgerRowClass,
   processLedgerRowExpandedClass,
 } from '@howcode/ui'
@@ -31,7 +32,7 @@ function renderToolCallBody(message: ToolCallMessage) {
         }
       >
         {message.args ? (
-          <div className="grid min-w-0 gap-1 border-l border-[color:var(--border)]/70 bg-[rgba(255,255,255,0.018)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--muted-2)]/82">
+          <div className={processLedgerDetailBlockClass}>
             <div className="font-sans text-[10.5px] tracking-[0.08em] text-[color:var(--muted-2)]/70 uppercase">
               Arguments
             </div>

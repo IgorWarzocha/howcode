@@ -4,6 +4,8 @@ import {
   howcodeDismissTransientUiEvent,
   useHowcodeKeybindingCommand,
 } from '../../../app-shell/keybinding-events'
+import { composerPanelClass } from '../../../ui/classes'
+import { cn } from '../../../utils/cn'
 import type { ComposerProps } from '../composer'
 import { AskQuestionsCard } from './ask-questions-card'
 import { ComposerFooter } from './composer-footer'
@@ -238,6 +240,7 @@ export function ComposerPromptSurface({
   const attachmentButtonLabel = attachments.length > 0 ? 'Manage attachments' : 'Add attachment'
   const persistedSessionPath = getPersistedSessionPath(sessionPath)
   const canStopComposer = (composerIsStreaming || extensionRunning) && !isSending && !!sessionPath
+  const composerWorking = composerIsStreaming || extensionRunning
   const dismissComposerTransientUi = () => {
     setOpenMenu(null)
     slashCommands.dismiss()
@@ -321,7 +324,11 @@ export function ComposerPromptSurface({
         ) : null}
         <section
           ref={composerPanelRef}
-          className="grid gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
+          className={cn(
+            composerPanelClass,
+            'motion-composer-panel-pulse',
+            composerWorking && 'motion-composer-panel-pulse-active',
+          )}
           aria-label="Composer panel"
         >
           {/* Let the prompt column size itself to one line by default, then grow upward naturally as
@@ -395,7 +402,6 @@ export function ComposerPromptSurface({
               {errorMessage}
             </output>
           ) : null}
-          <div className="h-px bg-[color:var(--border)]" />
           <ComposerFooter
             availableModels={availableModels}
             availableThinkingLevels={availableThinkingLevels}

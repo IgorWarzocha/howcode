@@ -3,7 +3,11 @@ import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import type { ProjectCommitEntry, ProjectDiffBaseline } from '../../../../desktop/types'
-import { popoverPanelClass, settingsInputClass } from '../../../../ui/classes'
+import {
+  composerPopoverInputClass,
+  composerPopoverSectionLabelClass,
+  popoverPanelClass,
+} from '../../../../ui/classes'
 import { cn } from '../../../../utils/cn'
 import { SurfacePanel } from '../../../common/surface-panel'
 import { BaselineOption, baselineOptions, CommitOption } from '../composer-diff-baseline-options'
@@ -47,7 +51,7 @@ export function BaselineSelectorPortal({
       aria-label="Diff baseline selector"
       className={cn(
         popoverPanelClass,
-        'motion-popover fixed z-[120] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-2 rounded-2xl p-2 transition-[opacity,transform] duration-150 ease-out',
+        'motion-popover fixed z-[120] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-1.5 rounded-xl border-0 p-1.5 transition-[opacity,transform] duration-150 ease-out',
         positionReady ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
       )}
       style={{
@@ -57,9 +61,7 @@ export function BaselineSelectorPortal({
         width: panelWidth,
       }}
     >
-      <div className="px-2 pt-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-        Changes since
-      </div>
+      <div className={composerPopoverSectionLabelClass}>Changes since</div>
       <div className="grid min-h-0 gap-0.5 overflow-y-auto pb-0.5">
         {visibleCommits.length > 0 ? (
           visibleCommits.map((commit) => (
@@ -81,14 +83,14 @@ export function BaselineSelectorPortal({
       </div>
       <label className="relative block">
         <Search
-          size={14}
-          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[color:var(--muted)]"
+          size={13}
+          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[color:var(--muted)]"
         />
         <input
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder="Search commits"
-          className={cn(settingsInputClass, 'w-full pl-9')}
+          className={cn(composerPopoverInputClass, 'w-full pl-8')}
         />
       </label>
       {baselineOptions.map((option) => (

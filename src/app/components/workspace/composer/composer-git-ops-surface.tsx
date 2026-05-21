@@ -284,8 +284,6 @@ export function ComposerGitOpsSurface({
         />
       ) : null}
 
-      <div className="h-px bg-[color:var(--border)]" />
-
       {/* Footer row structure here is mirrored by the prompt composer footer. */}
       <ComposerGitOpsFooter
         composerPanelRef={composerPanelRef}

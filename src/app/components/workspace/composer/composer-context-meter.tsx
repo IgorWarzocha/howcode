@@ -2,7 +2,6 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react
 import type { ComposerContextUsage } from '../../../desktop/types'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Message } from '../../../types'
-import { ghostButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type ComposerContextMeterProps = {
@@ -11,6 +10,7 @@ type ComposerContextMeterProps = {
   isCompacting: boolean
   compactDisabled: boolean
   onCompact: () => void
+  onPreviewOpen?: (() => void) | undefined
 }
 
 const tokenFormatter = new Intl.NumberFormat('en', {
@@ -185,6 +185,7 @@ export function ComposerContextMeter({
   isCompacting,
   compactDisabled,
   onCompact,
+  onPreviewOpen,
 }: ComposerContextMeterProps) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
@@ -215,9 +216,10 @@ export function ComposerContextMeter({
 
   const openHoverPreview = useCallback(() => {
     clearHoverTriangle()
+    onPreviewOpen?.()
     loadUsageTotals()
     setHovered(true)
-  }, [clearHoverTriangle, loadUsageTotals])
+  }, [clearHoverTriangle, loadUsageTotals, onPreviewOpen])
 
   const closeHoverPreview = useCallback(() => {
     clearHoverTriangle()
@@ -292,7 +294,7 @@ export function ComposerContextMeter({
         <div
           ref={popoverRef}
           role="dialog"
-          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[var(--shadow)]"
+          className="absolute bottom-full left-0 z-[130] grid w-56 gap-2 rounded-xl bg-[color:var(--panel)] p-3 text-[12px] text-[color:var(--muted)] shadow-[var(--shadow)]"
           onMouseEnter={openHoverPreview}
           onMouseDown={(event) => event.preventDefault()}
         >
@@ -366,29 +368,25 @@ export function ComposerContextMeter({
             </div>
           ) : null}
           {isCompacting ? (
-            <div className="rounded-lg border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-1.5 text-[11px] text-[color:var(--accent)]">
+            <div className="mt-1 inline-flex h-7 items-center justify-center rounded-md bg-[color:var(--surface-hover)] px-2.5 text-[11px] text-[color:var(--accent)]">
               Compacting session context…
             </div>
-          ) : null}
-          <button
-            type="button"
-            className={cn(
-              ghostButtonClass,
-              'mt-1 justify-center border-[color:var(--border)] text-[color:var(--text)] disabled:cursor-not-allowed disabled:opacity-45',
-            )}
-            disabled={compactDisabled}
-            onClick={() => {
-              if (compactDisabled) {
-                return
-              }
+          ) : (
+            <button
+              type="button"
+              className="mt-1 inline-flex h-7 items-center justify-center rounded-md px-2.5 text-[12px] text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:text-[color:var(--muted-2)] disabled:opacity-55"
+              disabled={compactDisabled}
+              onClick={() => {
+                if (compactDisabled) {
+                  return
+                }
 
-              setHovered(false)
-              setPinned(false)
-              onCompact()
-            }}
-          >
-            Compact
-          </button>
+                onCompact()
+              }}
+            >
+              Compact
+            </button>
+          )}
         </div>
       ) : null}
     </div>

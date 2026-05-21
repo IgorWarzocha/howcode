@@ -185,8 +185,8 @@ function BaselineSummaryButton({
       aria-haspopup="dialog"
       aria-expanded={open}
       className={cn(
-        'composer-diff-summary composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-        open && 'text-[color:var(--text)]',
+        'composer-diff-summary composer-footer-text group relative inline-flex h-7 min-w-[9.5rem] items-center justify-end overflow-hidden rounded-lg px-2 text-right text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)]',
+        open && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
       )}
       onClick={onOpen}
       onMouseEnter={onPreview}
@@ -203,7 +203,9 @@ function BaselineSummaryButton({
         <span
           className={cn(
             'inline-flex h-full items-center',
-            counts && counts.insertions > 0 ? 'text-[#7ee0bb]' : 'text-[color:var(--muted)]',
+            counts && counts.insertions > 0
+              ? 'text-[color:color-mix(in_srgb,var(--green)_82%,var(--muted))]'
+              : 'text-[color:var(--muted)]',
           )}
         >
           +{insertionCountLabel}
@@ -221,7 +223,7 @@ function BaselineSummaryButton({
       </span>
       <span
         className={cn(
-          'composer-footer-text pointer-events-none absolute inset-0 flex h-full items-center justify-end truncate px-2 text-[color:var(--text)] transition-opacity duration-150 ease-out',
+          'composer-footer-text pointer-events-none absolute inset-0 flex h-full items-center justify-end truncate px-2 text-[color:var(--muted)] transition-opacity duration-150 ease-out',
           open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
         )}
       >
@@ -275,9 +277,8 @@ function BaselineBranchButton({
         aria-expanded={open || branchSwitchOpen}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          'composer-branch-chip composer-footer-text pointer-events-auto relative z-20 inline-flex h-7 max-w-[12rem] cursor-pointer select-none items-center rounded-lg border border-transparent px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:border-[color:var(--border)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
-          (open || branchSwitchOpen) &&
-            'border-[color:var(--border)] bg-[color:var(--surface-hover)] text-[color:var(--text)]',
+          'composer-branch-chip composer-footer-text pointer-events-auto relative z-20 inline-flex h-7 max-w-[12rem] cursor-pointer select-none items-center rounded-lg px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+          (open || branchSwitchOpen) && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
         )}
         onPointerDownCapture={(event) => {
           event.preventDefault()

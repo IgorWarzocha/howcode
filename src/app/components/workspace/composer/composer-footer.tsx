@@ -125,6 +125,7 @@ export function ComposerFooter({
           tooltip="Model settings"
           icon={<Bot size={14} />}
           className={cn(workspaceFooterTextClass, 'pr-8')}
+          onMouseEnter={() => onSetOpenMenu('model')}
           onClick={() => onSetOpenMenu((current) => (current === 'model' ? null : 'model'))}
           aria-haspopup="menu"
           aria-expanded={modelMenuOpen}
@@ -137,6 +138,7 @@ export function ComposerFooter({
             compactDisabled={compactDisabled}
             isCompacting={isCompacting}
             onCompact={onCompact}
+            onPreviewOpen={() => onSetOpenMenu((current) => (current === 'model' ? null : current))}
           />
         </div>
         {modelMenuOpen ? (

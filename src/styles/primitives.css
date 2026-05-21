@@ -294,7 +294,7 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .composer-footer-text {
   font-size: 12px;
-  line-height: 1;
+  line-height: 16px;
 }
 
 .composer-footer-row {

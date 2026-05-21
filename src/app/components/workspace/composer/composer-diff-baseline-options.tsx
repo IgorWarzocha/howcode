@@ -5,6 +5,7 @@ import type {
   ProjectDiffStatsResult,
   ProjectGitState,
 } from '../../../desktop/types'
+import { composerPopoverOptionClass, composerPopoverOptionSelectedClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 export const baselineOptions = [
@@ -64,8 +65,9 @@ export function CommitOption({
     <button
       type="button"
       className={cn(
-        'grid min-h-11 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+        composerPopoverOptionClass,
+        'min-h-10 py-1.5',
+        selected && composerPopoverOptionSelectedClass,
       )}
       onClick={onSelect}
       aria-label={`Select ${commit.subject || commit.shortSha}`}
@@ -74,7 +76,7 @@ export function CommitOption({
       <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
         {selected ? <Check size={14} /> : null}
       </span>
-      <span className="min-w-0">
+      <span className="min-w-0 leading-4">
         <span className="block truncate text-[12.5px] text-[color:var(--text)]">
           {commit.subject || '(no subject)'}
         </span>
@@ -99,15 +101,23 @@ export function BaselineOption({
     <button
       type="button"
       className={cn(
-        'grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-        selected && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+        composerPopoverOptionClass,
+        'min-h-8 py-1.5',
+        selected && composerPopoverOptionSelectedClass,
       )}
       onClick={onSelect}
     >
       <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
         {selected ? <Check size={14} /> : null}
       </span>
-      <span className="text-[12.5px] text-[color:var(--text)]">{label}</span>
+      <span
+        className={cn(
+          'text-[12.5px]',
+          selected ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
+        )}
+      >
+        {label}
+      </span>
     </button>
   )
 }

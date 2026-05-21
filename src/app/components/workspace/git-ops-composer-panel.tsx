@@ -7,6 +7,7 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../desktop/types'
+import { composerPanelClass } from '../../ui/classes'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { ComposerGitOpsSurface } from './composer/composer-git-ops-surface'
 import type { SavedDiffComment } from './diff/diffCommentStore'
@@ -144,7 +145,7 @@ export function GitOpsComposerPanel({
         ) : null}
         <section
           ref={composerPanelRef}
-          className="grid min-w-0 gap-0 overflow-visible rounded-[20px] border border-[color:var(--accent-border)] bg-[color:var(--panel)] shadow-none"
+          className={`${composerPanelClass} min-w-0`}
           aria-label="Git ops composer panel"
         >
           <ComposerGitOpsSurface

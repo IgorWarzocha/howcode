@@ -44,8 +44,8 @@ export function ComposerFilePickerAttachmentsPanel({
     <section
       role="application"
       className={cn(
-        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[rgba(169,178,215,0.08)] bg-[rgba(255,255,255,0.015)] py-2 pr-0 pl-2',
-        dropActive && 'bg-[rgba(255,255,255,0.04)]',
+        'min-h-0 overflow-x-hidden overflow-y-auto border-r border-[color:var(--border)] py-2 pr-2 pl-2',
+        dropActive && 'bg-[color:var(--surface-hover)]',
         className,
       )}
       onDragOver={(event) => {
@@ -65,7 +65,7 @@ export function ComposerFilePickerAttachmentsPanel({
           attachments.map((attachment) => (
             <div
               key={attachment.path}
-              className="flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:border-[rgba(169,178,215,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
+              className="flex h-5 min-w-0 items-center gap-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[10.5px] text-[color:var(--text)] transition-colors hover:bg-[color:var(--surface-hover)]"
               title={attachment.path}
             >
               <button
@@ -92,9 +92,8 @@ export function ComposerFilePickerAttachmentsPanel({
         ) : (
           <div
             className={cn(
-              'grid min-h-24 place-items-center rounded-xl border border-dashed border-transparent px-3 py-4 text-center text-[12px] text-[color:var(--muted)] transition-colors',
-              dropActive &&
-                'border-[rgba(169,178,215,0.12)] bg-[rgba(255,255,255,0.05)] text-[color:var(--text)]',
+              'grid min-h-24 place-items-center rounded-lg px-3 py-4 text-center text-[11.5px] text-[color:var(--muted)] transition-colors',
+              dropActive && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
           >
             {draggedAttachments.length > 0 ? 'Drop to attach' : 'No attachments yet.'}

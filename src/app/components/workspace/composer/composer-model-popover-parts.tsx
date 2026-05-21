@@ -29,13 +29,22 @@ export function ModelPopoverTriggerButton({
       type="button"
       className={cn(
         toolbarButtonClass,
-        'grid w-full gap-0.5 rounded-xl px-2.5 py-2 text-left hover:bg-[color:var(--surface-hover)]',
-        active && 'bg-[color:var(--accent-bg-subtle)] text-[color:var(--text)]',
+        'grid min-h-8 w-full grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-[color:var(--surface-hover)]',
+        active && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
       )}
       onClick={onClick}
     >
-      <span className="text-[11px] text-[color:var(--muted)]">{label}</span>
-      <span className="min-w-0 truncate text-[12px] text-[color:var(--text)]">{value}</span>
+      <span className="text-[10.5px] tracking-[0.06em] text-[color:var(--muted-2)] uppercase">
+        {label}
+      </span>
+      <span
+        className={cn(
+          'min-w-0 truncate text-[11.5px]',
+          active ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
+        )}
+      >
+        {value}
+      </span>
     </button>
   )
 }
@@ -55,8 +64,8 @@ export function ModelPopoverMenuList({ items }: { items: ComposerModelMenuOption
             aria-checked={item.selected}
             className={cn(
               menuOptionClass,
-              'mr-1 text-[12px] text-[color:var(--text)]',
-              item.selected && 'bg-[color:var(--accent-bg-subtle)]',
+              'mr-1 min-h-8 rounded-lg py-1.5 text-[11.5px] text-[color:var(--muted)] hover:text-[color:var(--text)]',
+              item.selected && 'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
             onClick={item.onSelect}
           >
@@ -66,7 +75,12 @@ export function ModelPopoverMenuList({ items }: { items: ComposerModelMenuOption
             <span className="min-w-0">
               <span className="block truncate">{item.label}</span>
               {item.description ? (
-                <span className="block truncate text-[10.5px] text-[color:var(--muted)]">
+                <span
+                  className={cn(
+                    'block truncate text-[10px]',
+                    item.selected ? 'text-[color:var(--muted)]' : 'text-[color:var(--muted-2)]',
+                  )}
+                >
                   {item.description}
                 </span>
               ) : null}

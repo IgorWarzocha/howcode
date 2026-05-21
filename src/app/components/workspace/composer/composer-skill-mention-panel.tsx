@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import { composerPopoverOptionSelectedClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   type ComposerSkillMentions,
@@ -23,16 +24,18 @@ function SkillMentionOption({
       role="option"
       aria-selected={selected}
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left',
+        'flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12.5px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none',
         selected
-          ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
+          ? composerPopoverOptionSelectedClass
           : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
       )}
       onPointerEnter={() => skillMentions.setSelectedIndex(index)}
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => skillMentions.selectSkill(skill)}
     >
-      <span className="shrink-0 text-[12px] text-[color:var(--text)]">${skill.name}</span>
+      <span className="max-w-56 flex-none truncate whitespace-nowrap text-[12px] text-[color:var(--text)]">
+        ${skill.name}
+      </span>
       {skill.description ? (
         <span className="min-w-0 truncate text-[12px] text-[color:var(--muted)]">
           {skill.description}
@@ -58,7 +61,7 @@ export function ComposerSkillMentionPanel({
       tabIndex={-1}
       aria-label="Composer skills"
       className={cn(
-        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
+        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
         skillMentions.skills.length > 10 && 'max-h-72 overflow-y-auto',
       )}
     >

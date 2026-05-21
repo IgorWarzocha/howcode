@@ -5,7 +5,13 @@ import {
   getFeatureStatusBadgeClass,
   getFeatureStatusDataAttributes,
 } from '../../../../features/feature-status'
-import { popoverPanelClass, settingsInputClass } from '../../../../ui/classes'
+import {
+  composerPopoverInputClass,
+  composerPopoverOptionClass,
+  composerPopoverOptionSelectedClass,
+  composerPopoverSectionLabelClass,
+  popoverPanelClass,
+} from '../../../../ui/classes'
 import { cn } from '../../../../utils/cn'
 import { SurfacePanel } from '../../../common/surface-panel'
 
@@ -49,9 +55,9 @@ export function ComposerBranchSelectorPopover({
     onSwitchBranch(nextBranch)
     onSetBranchSwitchOpen(false)
   }
-  const visibleBranches = branches
-    .filter((branch) => branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()))
-    .slice(0, 5)
+  const visibleBranches = branches.filter((branch) =>
+    branch.toLowerCase().includes(branchSwitchInput.trim().toLowerCase()),
+  )
 
   return createPortal(
     <SurfacePanel
@@ -61,7 +67,7 @@ export function ComposerBranchSelectorPopover({
       aria-label="Branch selector"
       className={cn(
         popoverPanelClass,
-        'motion-popover fixed z-[160] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2 rounded-2xl p-2 transition-[opacity,transform] duration-150 ease-out',
+        'motion-popover fixed z-[160] grid max-h-[calc(100vh-1rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-1.5 rounded-xl border-0 p-1.5 transition-[opacity,transform] duration-150 ease-out',
         positionReady ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-1 opacity-0',
       )}
       style={{
@@ -71,18 +77,17 @@ export function ComposerBranchSelectorPopover({
         width: `${panelPosition.width}px`,
       }}
     >
-      <div className="px-1 text-[11px] uppercase tracking-[0.08em] text-[color:var(--muted)]">
-        Switch branch
-      </div>
-      <div className="grid min-h-0 gap-0.5 overflow-y-auto pb-0.5">
+      <div className={composerPopoverSectionLabelClass}>Switch branch</div>
+      <div className="grid max-h-40 min-h-0 gap-0.5 overflow-y-auto pb-0.5 pr-1 [scrollbar-gutter:stable]">
         {visibleBranches.length > 0 ? (
           visibleBranches.map((branch) => (
             <button
               key={branch}
               type="button"
               className={cn(
-                'grid min-h-9 w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] text-[color:var(--muted)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[color:var(--text)]',
-                branch === branchLabel && 'bg-[rgba(255,255,255,0.06)] text-[color:var(--text)]',
+                composerPopoverOptionClass,
+                'min-h-8 py-1.5',
+                branch === branchLabel && composerPopoverOptionSelectedClass,
               )}
               onClick={() => {
                 onSwitchBranch(branch)
@@ -92,7 +97,14 @@ export function ComposerBranchSelectorPopover({
               <span className="inline-flex items-center justify-center text-[color:var(--accent)]">
                 {branch === branchLabel ? <Check size={13} /> : null}
               </span>
-              <span className="truncate">{branch}</span>
+              <span
+                className={cn(
+                  'truncate',
+                  branch === branchLabel ? 'text-[color:var(--text)]' : 'text-[color:var(--muted)]',
+                )}
+              >
+                {branch}
+              </span>
             </button>
           ))
         ) : (
@@ -109,16 +121,16 @@ export function ComposerBranchSelectorPopover({
           if (event.key === 'Enter') submitBranchSwitch()
           if (event.key === 'Escape') onSetBranchSwitchOpen(false)
         }}
-        className={settingsInputClass}
+        className={composerPopoverInputClass}
         placeholder="Search branches"
       />
       <div
-        className="grid min-h-[92px] gap-2 rounded-xl border border-dashed border-[color:var(--border)] bg-[rgba(255,255,255,0.025)] p-3"
+        className="grid min-h-[82px] gap-2 rounded-lg bg-[color:var(--surface-hover)] p-2.5"
         {...getFeatureStatusDataAttributes('feature:composer.worktrees')}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--panel-2)] text-[color:var(--muted)]">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[color:var(--panel)] text-[color:var(--muted)]">
               <GitPullRequestDraft size={14} />
             </span>
             <div className="min-w-0">
@@ -132,13 +144,9 @@ export function ComposerBranchSelectorPopover({
           </div>
           <span className={getFeatureStatusBadgeClass('feature:composer.worktrees')}>Mock</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-[11px] text-[color:var(--muted)]">
-          <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Create worktree
-          </div>
-          <div className="rounded-lg border border-[color:var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-1.5">
-            Open existing
-          </div>
+        <div className="grid grid-cols-2 gap-1.5 text-[11px] text-[color:var(--muted)]">
+          <div className="rounded-md bg-[color:var(--panel)] px-2 py-1.5">Create worktree</div>
+          <div className="rounded-md bg-[color:var(--panel)] px-2 py-1.5">Open existing</div>
         </div>
       </div>
     </SurfacePanel>,

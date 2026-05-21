@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import type { ComposerQueuedPrompt } from '../../../desktop/types'
-import { compactCardClass, compactIconButtonClass } from '../../../ui/classes'
+import { compactIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 
 type QueuedPromptsCardProps = {
@@ -26,7 +26,7 @@ export function QueuedPromptsCard({
     <div className="grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-2 overflow-visible">
       <div
         className={cn(
-          'col-start-2 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2',
+          'col-start-2 mx-auto grid w-full max-w-[664px] gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2 shadow-none',
         )}
       >
         <div className="pl-3.5 text-[12px] text-[color:var(--muted)]">
@@ -41,8 +41,7 @@ export function QueuedPromptsCard({
               <div
                 key={prompt.id}
                 className={cn(
-                  compactCardClass,
-                  'group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-xl border-transparent px-1 py-0 text-[12px] shadow-none hover:border-[color:var(--border)]',
+                  'group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-lg px-1 py-0 text-[12px] transition-colors hover:bg-[color:var(--surface-hover)]',
                   isPending && 'opacity-60',
                 )}
               >

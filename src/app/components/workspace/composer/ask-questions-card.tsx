@@ -18,17 +18,17 @@ function getInitialAnswers(questions: NativeAskQuestion[]) {
 }
 
 const askQuestionsCardClass =
-  'relative mx-auto grid w-full max-w-[664px] content-start gap-2 rounded-t-xl rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 pt-2.5 pb-4'
+  'relative mx-auto grid w-full max-w-[664px] content-start gap-1.5 rounded-t-lg rounded-b-none border border-[color:var(--border)] bg-[color:var(--panel)] px-3 pt-2.5 pb-3.5 shadow-none'
 
 function getQuestionOptionRowClass(input: { isOther: boolean; picked: boolean }) {
   const pickedOtherClass = input.picked
     ? 'text-[color:var(--text)]'
     : 'text-[color:var(--muted)] opacity-55'
   const pickedOptionClass = input.picked
-    ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
-    : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]'
+    ? 'bg-[color:var(--surface-hover)] text-[color:var(--text)]'
+    : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]'
   return cn(
-    'grid grid-cols-[16px_minmax(0,1fr)_auto] gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] leading-4 transition-colors',
+    'grid min-h-6 grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-left text-[11.5px] leading-4 transition-colors',
     input.isOther ? pickedOtherClass : pickedOptionClass,
   )
 }
@@ -45,7 +45,7 @@ function QuestionOptionMark({
   return (
     <span
       className={cn(
-        'inline-flex h-4 w-4 items-center justify-center self-start',
+        'inline-flex h-3.5 w-3.5 items-center justify-center self-center',
         isOther
           ? picked
             ? 'text-[color:var(--accent)]'
@@ -59,7 +59,7 @@ function QuestionOptionMark({
             ),
       )}
     >
-      <Check size={11} />
+      <Check size={10} />
     </span>
   )
 }
@@ -170,7 +170,7 @@ export function AskQuestionsCard({
           <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
             <button
               type="button"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)]"
               onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
               aria-label="Previous question"
             >
@@ -190,12 +190,12 @@ export function AskQuestionsCard({
           </div>
         </div>
 
-        <div className="grid gap-0.5">
+        <div className="grid gap-px">
           {questions.map((item, index) => (
             <button
               key={item.id}
               type="button"
-              className="grid grid-cols-[minmax(0,1fr)] rounded-lg px-2 py-1.5 text-left text-[12px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              className="grid grid-cols-[minmax(0,1fr)] rounded-md px-2 py-1 text-left text-[11.5px] leading-4 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--surface-hover)]"
               onClick={() => setActiveIndex(index)}
             >
               <span className="truncate text-[color:var(--text)]">{item.question}</span>
@@ -236,7 +236,7 @@ export function AskQuestionsCard({
         <div className="flex shrink-0 items-center gap-1 text-[11px] text-[color:var(--muted)]">
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-35"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] disabled:opacity-35"
             disabled={activeIndex === 0}
             onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
             aria-label="Previous question"
@@ -248,7 +248,7 @@ export function AskQuestionsCard({
           </span>
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)] disabled:opacity-35"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[color:var(--surface-hover)] disabled:opacity-35"
             onClick={() => setActiveIndex((index) => Math.min(reviewIndex, index + 1))}
             aria-label="Next question"
           >
@@ -257,7 +257,7 @@ export function AskQuestionsCard({
         </div>
       </div>
 
-      <div className="grid gap-0.5">
+      <div className="grid gap-px">
         {[
           ...question.options.map((option) => ({ ...option, syntheticOther: false as const })),
           { label: 'Other', syntheticOther: true as const },
@@ -285,7 +285,7 @@ export function AskQuestionsCard({
                 </button>
                 <button
                   type="button"
-                  className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+                  className="absolute top-1/2 right-2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)]"
                   onClick={() => void closeCard()}
                   aria-label="Dismiss"
                 >

@@ -14,15 +14,11 @@ import type {
   ProjectDiffRenderMode,
   ProjectGitState,
 } from '../../../desktop/types'
-import {
-  compactIconButtonClass,
-  diffPanelIconButtonClass,
-  diffPanelTurnChipSelectedClass,
-  popoverPanelClass,
-} from '../../../ui/classes'
+import { compactIconButtonClass, popoverPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   workspaceFooterRowClass,
+  workspaceFooterTextClass,
   workspaceFooterTrailingGroupClass,
 } from '../footer/workspace-footer-primitives'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
@@ -246,7 +242,10 @@ export function ComposerGitOpsFooter({
           {hasOrigin ? null : (
             <button
               type="button"
-              className="composer-origin-control composer-footer-text inline-flex h-7 items-center rounded-lg border border-[color:var(--border)] px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+              className={cn(
+                workspaceFooterTextClass,
+                'composer-origin-control inline-flex h-7 items-center rounded-lg px-2.5 py-0 text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
+              )}
               onClick={openOriginEditor}
               aria-label="Add GitHub origin"
               data-tooltip="Add GitHub origin"
@@ -257,10 +256,10 @@ export function ComposerGitOpsFooter({
           <button
             type="button"
             className={cn(
-              diffPanelIconButtonClass,
-              diffRenderMode === 'stacked'
-                ? diffPanelTurnChipSelectedClass
-                : 'border-[color:var(--border)] bg-transparent',
+              compactIconButtonClass,
+              'h-7 w-7',
+              diffRenderMode === 'stacked' &&
+                'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
             onClick={() => onSetDiffRenderMode('stacked')}
             aria-label="Unified diff view"
@@ -271,10 +270,10 @@ export function ComposerGitOpsFooter({
           <button
             type="button"
             className={cn(
-              diffPanelIconButtonClass,
-              diffRenderMode === 'split'
-                ? diffPanelTurnChipSelectedClass
-                : 'border-[color:var(--border)] bg-transparent',
+              compactIconButtonClass,
+              'h-7 w-7',
+              diffRenderMode === 'split' &&
+                'bg-[color:var(--surface-hover)] text-[color:var(--text)]',
             )}
             onClick={() => onSetDiffRenderMode('split')}
             aria-label="Split diff view"

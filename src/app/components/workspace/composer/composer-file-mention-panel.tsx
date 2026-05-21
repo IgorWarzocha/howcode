@@ -1,5 +1,6 @@
 import { File, Folder } from 'lucide-react'
 import type { RefObject } from 'react'
+import { composerPopoverOptionClass, composerPopoverOptionSelectedClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import {
   type ComposerFileMentions,
@@ -25,9 +26,10 @@ function FileMentionOption({
       role="option"
       aria-selected={selected}
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left',
+        composerPopoverOptionClass,
+        'flex min-h-8 py-1.5',
         selected
-          ? 'bg-[color:var(--accent-bg)] text-[color:var(--text)]'
+          ? composerPopoverOptionSelectedClass
           : 'text-[color:var(--muted)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]',
       )}
       onPointerEnter={() => fileMentions.setSelectedIndex(index)}
@@ -58,7 +60,7 @@ export function ComposerFileMentionPanel({
       tabIndex={-1}
       aria-label="Composer files"
       className={cn(
-        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
+        'pointer-events-auto w-[26.5rem] max-w-[calc(100vw-2rem)] scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]',
         fileMentions.files.length > 10 && 'max-h-72 overflow-y-auto',
       )}
     >
