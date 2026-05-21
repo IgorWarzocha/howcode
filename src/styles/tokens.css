@@ -31,8 +31,8 @@
   --message-code-bg: rgba(181, 189, 104, 0.1);
   --folded-row-bg: rgba(255, 255, 255, 0.035);
   --folded-row-hover-bg: rgba(255, 255, 255, 0.055);
-  --folded-user-row-bg: color-mix(in srgb, var(--message-user-bg) 42%, transparent);
-  --folded-user-row-hover-bg: color-mix(in srgb, var(--message-user-bg) 58%, transparent);
+  --folded-user-row-bg: color-mix(in srgb, var(--message-user-bg) 72%, transparent);
+  --folded-user-row-hover-bg: color-mix(in srgb, var(--message-user-bg) 84%, transparent);
   --markdown-heading: #f0c674;
   --markdown-link: #81a2be;
   --markdown-code: #8abeb7;

@@ -692,6 +692,6 @@ button[data-tooltip][data-tooltip-size="wide"]::after {
 
 .thread-user-message {
   border-color: transparent;
-  background: var(--message-user-bg);
+  background: var(--folded-user-row-bg);
   box-shadow: none;
 }

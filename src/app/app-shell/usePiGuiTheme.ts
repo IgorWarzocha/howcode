@@ -177,13 +177,13 @@ function getThemeValues(piTheme: PiThemeState): GuiThemeValues {
     '--folded-row-hover-bg': rgba(text, isLight ? 0.085 : 0.055, 'rgba(255, 255, 255, 0.055)'),
     '--folded-user-row-bg': rgba(
       color('userMessageBg', panel),
-      isLight ? 0.48 : 0.42,
-      'color-mix(in srgb, var(--message-user-bg) 42%, transparent)',
+      isLight ? 0.76 : 0.72,
+      'color-mix(in srgb, var(--message-user-bg) 72%, transparent)',
     ),
     '--folded-user-row-hover-bg': rgba(
       color('userMessageBg', panel),
-      isLight ? 0.62 : 0.58,
-      'color-mix(in srgb, var(--message-user-bg) 58%, transparent)',
+      isLight ? 0.88 : 0.84,
+      'color-mix(in srgb, var(--message-user-bg) 84%, transparent)',
     ),
     ...getMarkdownThemeValues(color, accent, muted, isLight),
     '--shadow': isLight ? '0 12px 36px rgba(0, 0, 0, 0.12)' : '0 12px 36px rgba(6, 7, 13, 0.18)',

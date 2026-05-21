@@ -201,6 +201,7 @@ function SummaryRow({
           <FoldedTimelineRow
             label={summaryLabel}
             secondary={summarySecondary}
+            mutedLabel
             singleLine
             onToggle={onToggle}
           />
