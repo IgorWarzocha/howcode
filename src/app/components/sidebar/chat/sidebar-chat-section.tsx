@@ -11,7 +11,7 @@ import type {
   DesktopActionInvoker,
 } from '../../../desktop/types'
 import { IconButton } from '../../common/icon-button'
-import { SurfacePanel } from '../../common/surface-panel'
+import { PopoverPanel } from '../../common/popover'
 import { ChatGroupRow } from './chat-group-row'
 import { ChatThreadDropItem } from './chat-thread-drop-item'
 import { SortableGroupItem } from './sortable-group-item'
@@ -219,7 +219,7 @@ export function SidebarChatSection({
                       />
 
                       {groupMenuOpen && editingGroupId !== group.id ? (
-                        <SurfacePanel
+                        <PopoverPanel
                           id={actionMenuId}
                           role="menu"
                           aria-label="Group actions"
@@ -238,7 +238,7 @@ export function SidebarChatSection({
                               <span className="truncate text-left">Rename</span>
                             </button>
                           </div>
-                        </SurfacePanel>
+                        </PopoverPanel>
                       ) : null}
                     </div>
 

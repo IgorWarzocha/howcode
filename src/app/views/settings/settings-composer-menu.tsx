@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import type { RefObject } from 'react'
-import { SurfacePanel } from '../../components/common/surface-panel'
+import { PopoverPanel } from '../../components/common/popover'
 import {
   appToneMutedClass,
   appTypeMetaClass,
@@ -32,7 +32,7 @@ export function SettingsComposerMenu({
   widthClassName,
 }: SettingsComposerMenuProps) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -64,6 +64,6 @@ export function SettingsComposerMenu({
           </span>
         </button>
       ))}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

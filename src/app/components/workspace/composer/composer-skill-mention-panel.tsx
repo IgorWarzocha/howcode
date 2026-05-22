@@ -9,6 +9,7 @@ import {
 } from '@howcode/ui'
 import type { RefObject } from 'react'
 import { cn } from '../../../utils/cn'
+import { PopoverPanel } from '../../common/popover'
 import {
   type ComposerSkillMentions,
   getComposerSkillMentionOptionId,
@@ -70,7 +71,8 @@ export function ComposerSkillMentionPanel({
 }) {
   if (!skillMentions.open) return null
   return (
-    <div
+    <PopoverPanel
+      surface={false}
       ref={panelRef}
       id={skillMentions.listboxId}
       role="listbox"
@@ -97,6 +99,6 @@ export function ComposerSkillMentionPanel({
           {skillMentions.loading ? 'Loading skills…' : 'No matching skills'}
         </div>
       )}
-    </div>
+    </PopoverPanel>
   )
 }

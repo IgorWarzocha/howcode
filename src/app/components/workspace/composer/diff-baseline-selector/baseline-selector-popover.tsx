@@ -11,7 +11,7 @@ import {
   popoverPanelClass,
 } from '../../../../ui/classes'
 import { cn } from '../../../../utils/cn'
-import { SurfacePanel } from '../../../common/surface-panel'
+import { PopoverPanel } from '../../../common/popover'
 import { BaselineOption, baselineOptions, CommitOption } from '../composer-diff-baseline-options'
 import type { BranchSelectorPanelPosition } from './branch-selector-popover'
 
@@ -46,7 +46,8 @@ export function BaselineSelectorPortal({
   const panelLeft = `${panelPosition.left}px`
   const panelWidth = `${panelPosition.width}px`
   return createPortal(
-    <SurfacePanel
+    <PopoverPanel
+      open={positionReady}
       id={panelId}
       ref={panelRef}
       data-open={positionReady ? 'true' : 'false'}
@@ -106,7 +107,7 @@ export function BaselineSelectorPortal({
           }}
         />
       ))}
-    </SurfacePanel>,
+    </PopoverPanel>,
     document.body,
   )
 }

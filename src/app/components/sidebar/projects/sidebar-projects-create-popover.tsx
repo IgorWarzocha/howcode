@@ -1,5 +1,6 @@
 import { FolderPlus, Search } from 'lucide-react'
 import { type RefObject, useEffect, useRef, useState } from 'react'
+import { getPopoverRootProps } from '../../common/popover'
 import { SidebarProjectsFolderBrowser } from './sidebar-projects-folder-browser'
 
 type SidebarProjectsCreatePopoverProps = {
@@ -54,6 +55,7 @@ export function SidebarProjectsCreatePopover({
       id={menuId}
       open
       aria-label="Create project"
+      {...getPopoverRootProps(open)}
       data-open={open ? 'true' : 'false'}
       className="sidebar-popover-panel sidebar-project-create-popover motion-popover"
     >

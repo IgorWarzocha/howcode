@@ -4,7 +4,7 @@ import type { DesktopAction } from '../../desktop/actions'
 import type { DesktopActionInvoker } from '../../desktop/types'
 import { appToneDangerClass, appTypeGroupTitleClass } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { SurfacePanel } from '../common/surface-panel'
+import { PopoverPanel } from '../common/popover'
 
 type ProjectMenuEntry = {
   icon: ReactNode
@@ -87,7 +87,7 @@ export function ProjectActionMenu({
   }
 
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -120,6 +120,6 @@ export function ProjectActionMenu({
           </button>
         ))}
       </div>
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

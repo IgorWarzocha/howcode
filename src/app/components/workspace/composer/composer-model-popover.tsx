@@ -10,7 +10,7 @@ import {
   popoverPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { SurfacePanel } from '../../common/surface-panel'
+import { PopoverPanel } from '../../common/popover'
 import {
   type ComposerModelMenuOption,
   ModelPopoverMenuList,
@@ -253,21 +253,21 @@ export function ComposerModelPopover({
 
   if (sidePlacementEnabled && typeof document !== 'undefined') {
     return createPortal(
-      <SurfacePanel
+      <PopoverPanel
         ref={panelRef}
         id="composer-model-menu"
         className={panelClassName}
         style={panelStyle}
       >
         {panelContents}
-      </SurfacePanel>,
+      </PopoverPanel>,
       document.body,
     )
   }
 
   return (
-    <SurfacePanel ref={panelRef} id="composer-model-menu" className={panelClassName}>
+    <PopoverPanel ref={panelRef} id="composer-model-menu" className={panelClassName}>
       {panelContents}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

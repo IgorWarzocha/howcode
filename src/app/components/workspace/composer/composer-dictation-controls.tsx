@@ -15,6 +15,7 @@ import {
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
 import type { SettingsOpenTarget } from '../../../views/settings/settingsTypes'
+import { PopoverPanel } from '../../common/popover'
 import { TextButton } from '../../common/text-button'
 
 type ComposerDictationControlsProps = {
@@ -105,9 +106,10 @@ function DictationPrompt({
   if (typeof document === 'undefined') return null
 
   return createPortal(
-    <div
+    <PopoverPanel
+      surface={false}
       ref={promptRef}
-      data-open={open ? 'true' : 'false'}
+      open={open}
       role="dialog"
       aria-label="Install speech-to-text model"
       style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
@@ -160,7 +162,7 @@ function DictationPrompt({
       >
         Hide permanently
       </TextButton>
-    </div>,
+    </PopoverPanel>,
     document.body,
   )
 }

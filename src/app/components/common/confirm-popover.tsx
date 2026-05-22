@@ -10,7 +10,7 @@ import {
   popoverPanelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
-import { SurfacePanel } from './surface-panel'
+import { PopoverPanel } from './popover'
 
 type ConfirmPopoverProps = {
   open: boolean
@@ -46,7 +46,7 @@ export function ConfirmPopover({
   }
 
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       className={cn(confirmPopoverClass, popoverPanelClass, className)}
       data-open="true"
@@ -76,6 +76,6 @@ export function ConfirmPopover({
       >
         {cancelLabel}
       </button>
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

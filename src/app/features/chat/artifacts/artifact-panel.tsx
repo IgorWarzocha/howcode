@@ -20,7 +20,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { SurfacePanel } from '../../../components/common/surface-panel'
+import { PopoverPanel } from '../../../components/common/popover'
 import { Tooltip } from '../../../components/common/tooltip'
 import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import {
@@ -125,7 +125,8 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
       </button>
       {open && typeof document !== 'undefined'
         ? createPortal(
-            <SurfacePanel
+            <PopoverPanel
+              open={positionReady}
               ref={menuRef}
               data-open={positionReady ? 'true' : 'false'}
               className={cn(
@@ -158,7 +159,7 @@ function ArtifactVersionSelect({ panel }: { panel: ReturnType<typeof useArtifact
                   <span className="truncate">{option.label}</span>
                 </button>
               ))}
-            </SurfacePanel>,
+            </PopoverPanel>,
             document.body,
           )
         : null}

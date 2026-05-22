@@ -11,6 +11,7 @@ import {
 } from '@howcode/ui'
 import type { RefObject } from 'react'
 import { cn } from '../../../utils/cn'
+import { PopoverPanel } from '../../common/popover'
 import {
   type ComposerSlashCommands,
   getComposerSlashCommandGroupLabel,
@@ -77,7 +78,8 @@ export function SlashCommandPanel({
 }) {
   if (!slashCommands.open) return null
   return (
-    <div
+    <PopoverPanel
+      surface={false}
       ref={panelRef}
       id={slashCommands.listboxId}
       role="listbox"
@@ -104,6 +106,6 @@ export function SlashCommandPanel({
           {slashCommands.loading ? 'Loading commands…' : 'No matching commands'}
         </div>
       )}
-    </div>
+    </PopoverPanel>
   )
 }

@@ -12,7 +12,7 @@ import { createPortal } from 'react-dom'
 import type { ComposerAttachment, ComposerFilePickerState } from '../../../desktop/types'
 import { appToneDangerClass, appTypeMetaClass, popoverPanelClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
-import { SurfacePanel } from '../../common/surface-panel'
+import { PopoverPanel } from '../../common/popover'
 import { ComposerFilePickerAttachmentsPanel } from './composer-file-picker-attachments-panel'
 import { ComposerFilePickerFileGrid } from './composer-file-picker-file-grid'
 import { ComposerFilePickerHeader } from './composer-file-picker-header'
@@ -289,16 +289,16 @@ export function ComposerFilePicker({
 
   if (sidePlacementEnabled && typeof document !== 'undefined') {
     return createPortal(
-      <SurfacePanel ref={panelRef} className={panelClassName} style={panelStyle}>
+      <PopoverPanel ref={panelRef} className={panelClassName} style={panelStyle}>
         {panelContents}
-      </SurfacePanel>,
+      </PopoverPanel>,
       document.body,
     )
   }
 
   return (
-    <SurfacePanel ref={panelRef} className={panelClassName}>
+    <PopoverPanel ref={panelRef} className={panelClassName}>
       {panelContents}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }

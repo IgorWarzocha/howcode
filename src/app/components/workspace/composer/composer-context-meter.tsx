@@ -12,6 +12,7 @@ import {
   appTypeSmallClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { PopoverPanel } from '../../common/popover'
 
 type ComposerContextMeterProps = {
   contextUsage: ComposerContextUsage | null
@@ -311,7 +312,8 @@ export function ComposerContextMeter({
       </button>
 
       {open ? (
-        <div
+        <PopoverPanel
+          surface={false}
           ref={popoverRef}
           role="dialog"
           className={cn(
@@ -421,7 +423,7 @@ export function ComposerContextMeter({
               Compact
             </button>
           )}
-        </div>
+        </PopoverPanel>
       ) : null}
     </div>
   )

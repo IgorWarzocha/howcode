@@ -22,6 +22,7 @@ import {
   popoverPanelClass,
 } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { PopoverPanel } from '../../common/popover'
 import {
   workspaceFooterRowClass,
   workspaceFooterTextClass,
@@ -180,7 +181,7 @@ export function ComposerGitOpsFooter({
             </button>
 
             {optionsOpen ? (
-              <div
+              <PopoverPanel
                 className={cn(
                   popoverPanelClass,
                   'absolute bottom-[calc(100%+8px)] z-20 grid min-w-56 gap-1.5 rounded-xl border-0 p-1.5',
@@ -244,7 +245,7 @@ export function ComposerGitOpsFooter({
                   }}
                   toggleSide="left"
                 />
-              </div>
+              </PopoverPanel>
             ) : null}
           </div>
           {hasOrigin ? null : (

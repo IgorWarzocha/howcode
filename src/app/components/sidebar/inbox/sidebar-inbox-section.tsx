@@ -22,7 +22,7 @@ import {
 import { cn } from '../../../utils/cn'
 import { EmptyStateCard } from '../../common/empty-state-card'
 import { IconButton } from '../../common/icon-button'
-import { SurfacePanel } from '../../common/surface-panel'
+import { PopoverPanel } from '../../common/popover'
 import { InboxThreadRow } from './inbox-thread-row'
 
 type InboxFilterMode = 'all' | 'terminal' | 'recent'
@@ -98,7 +98,7 @@ function SidebarInboxFilterMenu({
   onSelect: (filterMode: InboxFilterMode) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -127,7 +127,7 @@ function SidebarInboxFilterMenu({
           </button>
         )
       })}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 
@@ -141,7 +141,7 @@ function SidebarInboxClearMenu({
   onSelect: (olderThanDays: number | null) => void
 }) {
   return (
-    <SurfacePanel
+    <PopoverPanel
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -160,7 +160,7 @@ function SidebarInboxClearMenu({
           <span className="truncate text-left">{item.label}</span>
         </button>
       ))}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
 

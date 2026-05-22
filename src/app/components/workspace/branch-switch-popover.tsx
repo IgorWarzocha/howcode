@@ -17,6 +17,7 @@ import {
   composerPopoverSectionLabelClass,
 } from '../../ui/classes'
 import { cn } from '../../utils/cn'
+import { PopoverPanel } from '../common/popover'
 
 type BranchSwitchPopoverProps = {
   branchLabel: string | null | undefined
@@ -61,7 +62,9 @@ export function BranchSwitchPopover({
   }
 
   return (
-    <div
+    <PopoverPanel
+      surface={false}
+      open={visible}
       id={panelId}
       ref={panelRef}
       data-open={visible ? 'true' : 'false'}
@@ -142,7 +145,7 @@ export function BranchSwitchPopover({
         description="Reserved for linked branch workspaces."
         actions={['Create worktree', 'Open existing']}
       />
-    </div>
+    </PopoverPanel>
   )
 }
 

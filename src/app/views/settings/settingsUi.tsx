@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PopoverRoot } from '../../components/common/popover'
+import { PopoverPanel, PopoverRoot } from '../../components/common/popover'
 import { Tooltip } from '../../components/common/tooltip'
 import {
   appToneMutedClass,
@@ -165,7 +165,8 @@ export function InlineSelect({
         )}
       />
       {open ? (
-        <div
+        <PopoverPanel
+          surface={false}
           id={`${id}-menu`}
           className={cn(
             settingsPopoverPanelClass,
@@ -225,7 +226,7 @@ export function InlineSelect({
           ) : (
             <div className={`px-2 py-3 ${appTypeSmallClass} ${appToneMutedClass}`}>No matches</div>
           )}
-        </div>
+        </PopoverPanel>
       ) : null}
     </PopoverRoot>
   )

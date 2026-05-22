@@ -9,6 +9,7 @@ import {
 import { File, Folder } from 'lucide-react'
 import type { RefObject } from 'react'
 import { cn } from '../../../utils/cn'
+import { PopoverPanel } from '../../common/popover'
 import {
   type ComposerFileMentions,
   getComposerFileMentionOptionId,
@@ -60,7 +61,8 @@ export function ComposerFileMentionPanel({
 }) {
   if (!fileMentions.open) return null
   return (
-    <div
+    <PopoverPanel
+      surface={false}
       ref={panelRef}
       id={fileMentions.listboxId}
       role="listbox"
@@ -87,6 +89,6 @@ export function ComposerFileMentionPanel({
           {fileMentions.loading ? 'Finding files…' : 'No matching files'}
         </div>
       )}
-    </div>
+    </PopoverPanel>
   )
 }

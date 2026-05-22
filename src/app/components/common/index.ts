@@ -8,6 +8,7 @@ export {
   getPopoverBoundaryProps,
   getPopoverRootProps,
   PopoverBoundary,
+  PopoverPanel,
   PopoverRoot,
   popoverBoundaryAttribute,
   popoverOpenAttribute,

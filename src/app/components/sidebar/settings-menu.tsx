@@ -5,7 +5,7 @@ import { useAppUpdateFlow } from '../../hooks/useAppUpdateFlow'
 import { cn } from '../../utils/cn'
 import type { SettingsOpenTarget } from '../../views/settings/settingsTypes'
 import { FeatureStatusBadge } from '../common/feature-status-badge'
-import { SurfacePanel } from '../common/surface-panel'
+import { PopoverPanel } from '../common/popover'
 
 type SettingsMenuProps = {
   menuId: string
@@ -55,7 +55,8 @@ export function SettingsMenu({
   ]
 
   return (
-    <SurfacePanel
+    <PopoverPanel
+      open={open}
       ref={panelRef}
       id={menuId}
       role="menu"
@@ -97,6 +98,6 @@ export function SettingsMenu({
           </span>
         </button>
       ))}
-    </SurfacePanel>
+    </PopoverPanel>
   )
 }
