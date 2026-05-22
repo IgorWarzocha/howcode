@@ -117,6 +117,10 @@
   animation: standardSurfacePulse 1.15s ease-out 1;
 }
 
+.motion-settings-section-pulse:has([data-inline-select-open="true"]) {
+  z-index: 20;
+}
+
 .motion-overlay-panel {
   opacity: 0;
   transform: translateY(var(--motion-slide-y-md));

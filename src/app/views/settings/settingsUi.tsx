@@ -133,6 +133,7 @@ export function InlineSelect({
     <span
       className={cn(`relative block w-52 max-w-full ${appTypeSmallClass}`, className)}
       data-inline-select-root
+      data-inline-select-open={open ? 'true' : undefined}
     >
       <button
         type="button"

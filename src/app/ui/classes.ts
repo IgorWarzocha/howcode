@@ -188,7 +188,7 @@ export const composerPopoverPanelClass =
   'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[var(--shadow)]'
 
 export const settingsPopoverPanelClass =
-  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[#18181e] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.34)]'
+  'pointer-events-auto scroll-py-1.5 rounded-xl border-0 bg-[color:var(--panel)] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.34)]'
 
 export const composerPopoverOptionClass = `grid w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 text-left ${appTypeControlClass} ${appToneMutedClass} transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] focus-visible:bg-[color:var(--surface-hover)] focus-visible:outline-none`
 
