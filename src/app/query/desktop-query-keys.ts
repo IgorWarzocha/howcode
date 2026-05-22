@@ -7,7 +7,8 @@ export const desktopQueryKeys = {
   piPackageCatalog: (query: string) => ['desktop', 'piPackages', 'catalog', query] as const,
   configuredPiPackages: (projectPath?: string | null | undefined, chat = false) =>
     ['desktop', 'piPackages', 'configured', projectPath ?? null, chat] as const,
-  piSkillCatalog: (query: string) => ['desktop', 'piSkills', 'catalog', query] as const,
+  piSkillCatalog: (query: string, limit?: number | undefined) =>
+    ['desktop', 'piSkills', 'catalog', query, limit ?? null] as const,
   configuredPiSkills: (projectPath?: string | null | undefined, chat = false) =>
     ['desktop', 'piSkills', 'configured', projectPath ?? null, chat] as const,
   projectThreads: (projectId: string, chat = false) =>

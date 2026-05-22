@@ -1,6 +1,6 @@
 import { appToneSubtleClass, appTypeTinyClass } from './classes'
 
-export const skillsViewShellClass = 'view-shell--centered'
+export const skillsViewShellClass = 'view-shell--top-roomy'
 
 export const skillsListClass =
   'grid min-h-0 gap-0.5 overflow-y-scroll overflow-x-hidden pr-1 [scrollbar-gutter:stable]'

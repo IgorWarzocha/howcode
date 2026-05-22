@@ -256,20 +256,21 @@ export function BrowseSkillsSection({
   isPendingInstall,
   hasPendingInstall,
 }: BrowseSkillsSectionProps) {
-  const [browseOpen, setBrowseOpen] = useState(true)
+  const [browseOpen, setBrowseOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [submittedSearchInput, setSubmittedSearchInput] = useState('')
   const [selectedCatalogSources, setSelectedCatalogSources] = useState<string[]>([])
 
   const normalizedSearchInput = searchInput.trim()
   const hasSelectedCatalogSources = selectedCatalogSources.length > 0
+  const searchLimit = browseOpen ? 24 : 12
 
   const skillsQuery = useQuery({
-    queryKey: desktopQueryKeys.piSkillCatalog(submittedSearchInput),
+    queryKey: desktopQueryKeys.piSkillCatalog(submittedSearchInput, searchLimit),
     queryFn: () =>
       searchPiSkillsQuery({
         query: submittedSearchInput,
-        limit: 12,
+        limit: searchLimit,
       }),
     staleTime: 5 * 60_000,
     enabled: submittedSearchInput.length >= 2,
